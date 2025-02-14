@@ -1,0 +1,33 @@
+[project]
+name = "uncertainty-toolkit"
+version = "0.1.0"
+description = "The coolest and most used uncertainty library in Python."
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = ["numpy<=2.1.2,>=2.0.0", "scikit-learn>=1.6.1"]
+
+[project.optional-dependencies]
+cpu = ["torch>=2.6.0"]
+cuda12 = ["torch>=2.6.0"]
+
+[tool.uv]
+conflicts = [[{ extra = "cpu" }, { extra = "cuda12" }]]
+
+[tool.uv.sources]
+torch = [
+    { index = "torch-cpu", extra = "cpu" },
+    { index = "torch-cuda12", extra = "cuda12" },
+]
+
+[[tool.uv.index]]
+name = "torch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[[tool.uv.index]]
+name = "torch-cuda12"
+url = "https://download.pytorch.org/whl/cu124"
+explicit = true
+
+[dependency-groups]
+dev = ["ipykernel>=6.29.5", "ruff>=0.9.6"]
