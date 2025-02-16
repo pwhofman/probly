@@ -4,11 +4,14 @@ version = "0.1.0"
 description = "The coolest and most used uncertainty library in Python."
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = ["numpy<=2.1.2,>=2.0.0", "scikit-learn>=1.6.1"]
+dependencies = ["numpy<=2.1.2,>=2.0.0", "scikit-learn>=1.6.1", "tqdm>=4.67.1"]
+
+[project.scripts]
+uncertainty-toolkit = "ut:main"
 
 [project.optional-dependencies]
-cpu = ["torch>=2.6.0"]
-cuda12 = ["torch>=2.6.0"]
+cpu = ["torch==2.6.0"]
+cuda12 = ["torch==2.6.0"]
 
 [tool.uv]
 conflicts = [[{ extra = "cpu" }, { extra = "cuda12" }]]
@@ -31,3 +34,10 @@ explicit = true
 
 [dependency-groups]
 dev = ["ipykernel>=6.29.5", "ruff>=0.9.6"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ut"]

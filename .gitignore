@@ -1,11 +1,8 @@
-**/__pycache__/**
-*.pyc
-.portal
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
+.portal
 
 # C extensions
 *.so
