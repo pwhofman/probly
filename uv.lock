@@ -1,85 +1,14 @@
 version = 1
-revision = 1
 requires-python = ">=3.13"
 resolution-markers = [
-    "extra != 'extra-19-uncertainty-toolkit-cpu' and extra == 'extra-19-uncertainty-toolkit-cuda12'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "sys_platform != 'darwin' and extra == 'extra-19-uncertainty-toolkit-cpu' and extra != 'extra-19-uncertainty-toolkit-cuda12'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "sys_platform == 'darwin' and extra == 'extra-19-uncertainty-toolkit-cpu' and extra != 'extra-19-uncertainty-toolkit-cuda12'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "python_version < '0'",
-    "extra != 'extra-19-uncertainty-toolkit-cpu' and extra != 'extra-19-uncertainty-toolkit-cuda12'",
+    "extra != 'extra-6-probly-cpu' and extra == 'extra-6-probly-cuda12'",
+    "sys_platform != 'darwin' and extra == 'extra-6-probly-cpu' and extra != 'extra-6-probly-cuda12'",
+    "sys_platform == 'darwin' and extra == 'extra-6-probly-cpu' and extra != 'extra-6-probly-cuda12'",
+    "extra != 'extra-6-probly-cpu' and extra != 'extra-6-probly-cuda12'",
 ]
 conflicts = [[
-    { package = "uncertainty-toolkit", extra = "cpu" },
-    { package = "uncertainty-toolkit", extra = "cuda12" },
+    { package = "probly", extra = "cpu" },
+    { package = "probly", extra = "cuda12" },
 ]]
 
 [[package]]
@@ -197,7 +126,7 @@ name = "ipykernel"
 version = "6.29.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "appnope", marker = "sys_platform == 'darwin' or (extra == 'extra-19-uncertainty-toolkit-cpu' and extra == 'extra-19-uncertainty-toolkit-cuda12')" },
+    { name = "appnope", marker = "sys_platform == 'darwin' or (extra == 'extra-6-probly-cpu' and extra == 'extra-6-probly-cuda12')" },
     { name = "comm" },
     { name = "debugpy" },
     { name = "ipython" },
@@ -221,11 +150,11 @@ name = "ipython"
 version = "8.32.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "colorama", marker = "sys_platform == 'win32' or (extra == 'extra-19-uncertainty-toolkit-cpu' and extra == 'extra-19-uncertainty-toolkit-cuda12')" },
+    { name = "colorama", marker = "sys_platform == 'win32' or (extra == 'extra-6-probly-cpu' and extra == 'extra-6-probly-cuda12')" },
     { name = "decorator" },
     { name = "jedi" },
     { name = "matplotlib-inline" },
-    { name = "pexpect", marker = "(sys_platform != 'emscripten' and sys_platform != 'win32') or (sys_platform == 'emscripten' and extra == 'extra-19-uncertainty-toolkit-cpu' and extra == 'extra-19-uncertainty-toolkit-cuda12') or (sys_platform == 'win32' and extra == 'extra-19-uncertainty-toolkit-cpu' and extra == 'extra-19-uncertainty-toolkit-cuda12')" },
+    { name = "pexpect", marker = "(sys_platform != 'emscripten' and sys_platform != 'win32') or (sys_platform == 'emscripten' and extra == 'extra-6-probly-cpu' and extra == 'extra-6-probly-cuda12') or (sys_platform == 'win32' and extra == 'extra-6-probly-cpu' and extra == 'extra-6-probly-cuda12')" },
     { name = "prompt-toolkit" },
     { name = "pygments" },
     { name = "stack-data" },
@@ -291,7 +220,7 @@ version = "5.7.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "platformdirs" },
-    { name = "pywin32", marker = "(platform_python_implementation != 'PyPy' and sys_platform == 'win32') or (platform_python_implementation == 'PyPy' and extra == 'extra-19-uncertainty-toolkit-cpu' and extra == 'extra-19-uncertainty-toolkit-cuda12') or (sys_platform != 'win32' and extra == 'extra-19-uncertainty-toolkit-cpu' and extra == 'extra-19-uncertainty-toolkit-cuda12')" },
+    { name = "pywin32", marker = "(platform_python_implementation != 'PyPy' and sys_platform == 'win32') or (platform_python_implementation == 'PyPy' and extra == 'extra-6-probly-cpu' and extra == 'extra-6-probly-cuda12') or (sys_platform != 'win32' and extra == 'extra-6-probly-cpu' and extra == 'extra-6-probly-cuda12')" },
     { name = "traitlets" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/00/11/b56381fa6c3f4cc5d2cf54a7dbf98ad9aa0b339ef7a601d6053538b079a7/jupyter_core-5.7.2.tar.gz", hash = "sha256:aa5f8d32bbf6b431ac830496da7392035d6f61b4f54872f15c4bd2a9c3f536d9", size = 87629 }
@@ -573,6 +502,46 @@ wheels = [
 ]
 
 [[package]]
+name = "probly"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "numpy" },
+    { name = "scikit-learn" },
+    { name = "tqdm" },
+]
+
+[package.optional-dependencies]
+cpu = [
+    { name = "torch", version = "2.6.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform == 'darwin'" },
+    { name = "torch", version = "2.6.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform != 'darwin'" },
+]
+cuda12 = [
+    { name = "torch", version = "2.6.0+cu124", source = { registry = "https://download.pytorch.org/whl/cu124" } },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "ipykernel" },
+    { name = "ruff" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "numpy", specifier = ">=2.0.0,<=2.1.2" },
+    { name = "scikit-learn", specifier = ">=1.6.1" },
+    { name = "torch", marker = "extra == 'cpu'", specifier = "==2.6.0", index = "https://download.pytorch.org/whl/cpu", conflict = { package = "probly", extra = "cpu" } },
+    { name = "torch", marker = "extra == 'cuda12'", specifier = "==2.6.0", index = "https://download.pytorch.org/whl/cu124", conflict = { package = "probly", extra = "cuda12" } },
+    { name = "tqdm", specifier = ">=4.67.1" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "ipykernel", specifier = ">=6.29.5" },
+    { name = "ruff", specifier = ">=0.9.6" },
+]
+
+[[package]]
 name = "prompt-toolkit"
 version = "3.0.50"
 source = { registry = "https://pypi.org/simple" }
@@ -662,7 +631,7 @@ name = "pyzmq"
 version = "26.2.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "cffi", marker = "implementation_name == 'pypy' or (extra == 'extra-19-uncertainty-toolkit-cpu' and extra == 'extra-19-uncertainty-toolkit-cuda12')" },
+    { name = "cffi", marker = "implementation_name == 'pypy' or (extra == 'extra-6-probly-cpu' and extra == 'extra-6-probly-cuda12')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/5a/e3/8d0382cb59feb111c252b54e8728257416a38ffcb2243c4e4775a3c990fe/pyzmq-26.2.1.tar.gz", hash = "sha256:17d72a74e5e9ff3829deb72897a175333d3ef5b5413948cae3cf7ebf0b02ecca", size = 278433 }
 wheels = [
@@ -828,8 +797,8 @@ dependencies = [
     { name = "fsspec", marker = "sys_platform == 'darwin'" },
     { name = "jinja2", marker = "sys_platform == 'darwin'" },
     { name = "networkx", marker = "sys_platform == 'darwin'" },
-    { name = "setuptools", marker = "python_full_version >= '3.13' and sys_platform == 'darwin'" },
-    { name = "sympy", marker = "python_full_version >= '3.13' and sys_platform == 'darwin'" },
+    { name = "setuptools", marker = "sys_platform == 'darwin'" },
+    { name = "sympy", marker = "sys_platform == 'darwin'" },
     { name = "typing-extensions", marker = "sys_platform == 'darwin'" },
 ]
 wheels = [
@@ -848,8 +817,8 @@ dependencies = [
     { name = "fsspec", marker = "sys_platform != 'darwin'" },
     { name = "jinja2", marker = "sys_platform != 'darwin'" },
     { name = "networkx", marker = "sys_platform != 'darwin'" },
-    { name = "setuptools", marker = "python_full_version >= '3.13' and sys_platform != 'darwin'" },
-    { name = "sympy", marker = "python_full_version >= '3.13' and sys_platform != 'darwin'" },
+    { name = "setuptools", marker = "sys_platform != 'darwin'" },
+    { name = "sympy", marker = "sys_platform != 'darwin'" },
     { name = "typing-extensions", marker = "sys_platform != 'darwin'" },
 ]
 wheels = [
@@ -882,8 +851,8 @@ dependencies = [
     { name = "nvidia-nccl-cu12", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "nvidia-nvjitlink-cu12", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "nvidia-nvtx-cu12", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "setuptools", marker = "python_full_version >= '3.13'" },
-    { name = "sympy", marker = "python_full_version >= '3.13'" },
+    { name = "setuptools" },
+    { name = "sympy" },
     { name = "triton", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "typing-extensions" },
 ]
@@ -916,7 +885,7 @@ name = "tqdm"
 version = "4.67.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "colorama", marker = "sys_platform == 'win32' or (extra == 'extra-19-uncertainty-toolkit-cpu' and extra == 'extra-19-uncertainty-toolkit-cuda12')" },
+    { name = "colorama", marker = "sys_platform == 'win32' or (extra == 'extra-6-probly-cpu' and extra == 'extra-6-probly-cuda12')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/a8/4b/29b4ef32e036bb34e4ab51796dd745cdba7ed47ad142a9f4a1eb8e0c744d/tqdm-4.67.1.tar.gz", hash = "sha256:f8aef9c52c08c13a65f30ea34f4e5aac3fd1a34959879d7e59e63027286627f2", size = 169737 }
 wheels = [
@@ -947,47 +916,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/df/db/f35a00659bc03fec321ba8bce9420de607a1d37f8342eee1863174c69557/typing_extensions-4.12.2.tar.gz", hash = "sha256:1a7ead55c7e559dd4dee8856e3a88b41225abfe1ce8df57b7c13915fe121ffb8", size = 85321 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/26/9f/ad63fc0248c5379346306f8668cda6e2e2e9c95e01216d2b8ffd9ff037d0/typing_extensions-4.12.2-py3-none-any.whl", hash = "sha256:04e5ca0351e0f3f85c6853954072df659d0d13fac324d0072316b67d7794700d", size = 37438 },
-]
-
-[[package]]
-name = "uncertainty-toolkit"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "numpy" },
-    { name = "scikit-learn" },
-    { name = "tqdm" },
-]
-
-[package.optional-dependencies]
-cpu = [
-    { name = "torch", version = "2.6.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform == 'darwin'" },
-    { name = "torch", version = "2.6.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform != 'darwin'" },
-]
-cuda12 = [
-    { name = "torch", version = "2.6.0+cu124", source = { registry = "https://download.pytorch.org/whl/cu124" } },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "ipykernel" },
-    { name = "ruff" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "numpy", specifier = ">=2.0.0,<=2.1.2" },
-    { name = "scikit-learn", specifier = ">=1.6.1" },
-    { name = "torch", marker = "extra == 'cpu'", specifier = "==2.6.0", index = "https://download.pytorch.org/whl/cpu", conflict = { package = "uncertainty-toolkit", extra = "cpu" } },
-    { name = "torch", marker = "extra == 'cuda12'", specifier = "==2.6.0", index = "https://download.pytorch.org/whl/cu124", conflict = { package = "uncertainty-toolkit", extra = "cuda12" } },
-    { name = "tqdm", specifier = ">=4.67.1" },
-]
-provides-extras = ["cpu", "cuda12"]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "ipykernel", specifier = ">=6.29.5" },
-    { name = "ruff", specifier = ">=0.9.6" },
 ]
 
 [[package]]
