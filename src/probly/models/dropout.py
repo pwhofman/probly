@@ -25,6 +25,7 @@ class Dropout(nn.Module):
         and adding a dropout layer after each linear layer as suggested in ...
         """
         model = nn.Sequential()
+        #TODO: Check if this is correct. May add dropout after last layer
         for name, module in self.base.named_children():
             model.add_module(name, module)
             if isinstance(module, nn.Linear):
