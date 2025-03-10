@@ -38,6 +38,6 @@ class Dropout(nn.Module):
         Sets the model to evaluation mode, but keeps the dropout layers active.
         """
         super().eval()
-        for module in self.model.children():
+        for module in self.model.modules():
             if isinstance(module, nn.Dropout):
                 module.train()
