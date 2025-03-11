@@ -43,8 +43,10 @@ explicit = true
 
 [dependency-groups]
 dev = [
+    "coverage>=7.6.12",
     "ipykernel>=6.29.5",
- "ruff>=0.9.6",
+    "pytest>=8.3.5",
+    "ruff>=0.9.6",
 ]
 
 [build-system]
@@ -56,5 +58,14 @@ packages = ["src/probly"]
 
 [tool.ruff]
 line-length = 100
-lint.ignore = ["E501"]
 target-version = "py313"
+
+[tool.ruff.lint]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.coverage.report]
+fail_under = 95
+directory = "tests"
