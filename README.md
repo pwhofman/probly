@@ -2,8 +2,8 @@
 
 [![PyPI version](https://badge.fury.io/py/probly.svg)](https://badge.fury.io/py/probly)
 [![License](https://img.shields.io/badge/License-MIT-brightgreen.svg)](https://opensource.org/licenses/MIT)
-[![Coverage Status](https://coveralls.io/repos/github/KIuML/probly/badge.svg?branch=main)](https://coveralls.io/github/mmschlk/shapiq?branch=main)
-[![Tests](https://github.com/KIuML/probly/actions/workflows/unit-tests.yml/badge.svg)](https://github.com/mmschlk/shapiq/actions/workflows/unit-tests.yml)
+[![Coverage Status](https://coveralls.io/repos/github/KIuML/probly/badge.svg?branch=main)](https://coveralls.io/github/mmschlk/probly?branch=main)
+[![Tests](https://github.com/KIuML/probly/actions/workflows/unit-tests.yml/badge.svg)](https://github.com/mmschlk/probly/actions/workflows/unit-tests.yml)
 [![Read the Docs](https://readthedocs.org/projects/probly/badge/?version=latest)](https://probly.readthedocs.io/en/latest/?badge=latest)
 
 [![PyPI Version](https://img.shields.io/pypi/pyversions/probly.svg)](https://pypi.org/project/probly)
