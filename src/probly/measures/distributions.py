@@ -41,3 +41,18 @@ def epistemic_uncertainty_entropy(probs, base=2):
     probs_mean = np.repeat(np.expand_dims(probs_mean, 1), repeats=probs.shape[1], axis=1)
     eu = entropy(probs, probs_mean, axis=2, base=base).mean(axis=1)
     return eu
+
+def total_uncertainty_loss(probs, loss):
+    mean = np.mean(probs, axis=1)
+    tu = np.sum(mean * loss(mean), axis=1)
+    return tu
+
+def aleatoric_uncertainty_loss(probs, loss):
+    au = np.mean(np.sum(probs * loss(probs), axis=2), axis=1)
+    return au
+
+def epistemic_uncertainty_loss(probs, loss):
+    mean = np.mean(probs, axis=1)
+    eu = (np.sum(mean * loss(mean), axis=1) -
+          np.mean(np.sum(probs * loss(probs), axis=2), axis=1))
+    return eu
