@@ -1,5 +1,4 @@
 import matplotlib.pyplot as plt
-import mpltern
 
 def simplex_plot(probs):
     """

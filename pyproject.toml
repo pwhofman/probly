@@ -42,7 +42,10 @@ url = "https://download.pytorch.org/whl/cu124"
 explicit = true
 
 [dependency-groups]
-dev = ["ipykernel>=6.29.5", "ruff>=0.9.6"]
+dev = [
+    "ipykernel>=6.29.5",
+ "ruff>=0.9.6",
+]
 
 [build-system]
 requires = ["hatchling"]
@@ -50,3 +53,8 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/probly"]
+
+[tool.ruff]
+line-length = 100
+lint.ignore = ["E501"]
+target-version = "py313"
