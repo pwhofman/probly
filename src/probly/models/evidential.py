@@ -23,7 +23,7 @@ class Evidential(nn.Module):
         self.model = nn.Sequential(*list(base.children()), activation)
 
     def sample(self, x, num_samples):
-        dirichlet = torch.distributions.Dirichlet(self.model(x))
+        dirichlet = torch.distributions.Dirichlet(self.model(x) + 1.0)
         return torch.stack([dirichlet.sample() for _ in range(num_samples)]).swapaxes(0, 1)
 
 
