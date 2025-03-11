@@ -9,3 +9,9 @@ repos:
       - id: trailing-whitespace
       - id: mixed-line-ending
       - id: check-merge-conflict
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.9.10
+    hooks:
+      - id: ruff
+        name: ruff
+        entry: ruff check --no-cache --fix
