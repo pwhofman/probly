@@ -1,3 +1,4 @@
+from probly.utils import powerset, moebius
 import numpy as np
 from scipy.stats import entropy
 from scipy.optimize import minimize
@@ -25,3 +26,18 @@ def lower_entropy(probs, base=2):
         res = minimize(fun=fun, x0=x0[i], bounds=bounds, constraints=constraints)
         le[i] = -res.fun
     return le
+
+def generalised_hartley(probs, base=2):
+    """
+    Computes the generalised Hartley measure given the extreme points of
+    a credal set
+    outputs: array of shape (num_samples, num_members, num_classes)
+    """
+    gh = np.zeros(probs.shape[0])
+    idxs = list(range(probs.shape[2]))  # list of class indices
+    ps_A = powerset(idxs)  # powerset of all indices
+    ps_A.pop(0)  # remove empty set
+    for A in ps_A:
+        m_A = moebius(probs, A)
+        gh += m_A * (np.log(len(A)) / np.log(base))
+    return gh
