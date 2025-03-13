@@ -10,7 +10,7 @@ class Dropout(nn.Module):
     base (torch.nn.Module): The base model to be used for dropout.
     p (float): The probability of dropping out a neuron.
     """
-    def __init__(self, base, p):
+    def __init__(self, base, p=0.5):
         super(Dropout, self).__init__()
         self.base = base
         self.p = p
