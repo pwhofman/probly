@@ -56,3 +56,17 @@ def epistemic_uncertainty_loss(probs, loss):
     eu = (np.sum(mean * loss(mean), axis=1) -
           np.mean(np.sum(probs * loss(probs), axis=2), axis=1))
     return eu
+
+def total_uncertainty_variance(probs):
+    probs_mean = probs.mean(axis=1)
+    tu = np.sum(probs_mean * (1 - probs_mean), axis=1)
+    return tu
+
+def aleatoric_uncertainty_variance(probs):
+    au = np.sum(np.mean(probs * (1 - probs), axis=1), axis=1)
+    return au
+
+def epistemic_uncertainty_variance(probs):
+    probs_mean = probs.mean(axis=1, keepdims=True)
+    eu = np.sum(np.mean(probs * (probs - probs_mean), axis=1), axis=1)
+    return eu
