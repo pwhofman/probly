@@ -3,7 +3,7 @@ import torch.nn as nn
 
 class SubEnsemble(nn.Module):
     """
-    This class implements an ensemble of models which share a backbone and use
+    This class implements an ensemble of representation which share a backbone and use
     different classification heads that can be made up of multiple layers.
     The backbone is frozen and only the head can be trained.
 

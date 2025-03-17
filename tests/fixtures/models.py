@@ -1,4 +1,4 @@
-"""This fixture module contains some test models for the tests."""
+"""This fixture module contains some test representation for the tests."""
 
 import pytest
 import torch

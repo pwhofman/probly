@@ -3,7 +3,7 @@
 import pytest
 
 import torch
-from probly.models.dropout import Dropout
+from probly.representation.dropout import Dropout
 
 
 @pytest.mark.parametrize("probability", [0.1, 0.5])

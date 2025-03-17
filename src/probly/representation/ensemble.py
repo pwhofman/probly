@@ -3,7 +3,7 @@ import torch.nn as nn
 
 class Ensemble(nn.Module):
     """
-    This class implements an ensemble of models to be used for uncertainty quantification.
+    This class implements an ensemble of representation to be used for uncertainty quantification.
 
     Args:
     base (torch.nn.Module): The base model to be used.
