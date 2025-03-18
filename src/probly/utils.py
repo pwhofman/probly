@@ -24,3 +24,34 @@ def moebius(Q, A):
         dl = len(set(A) - set(B))
         m_A += ((-1) ** dl) * capacity(Q, B)
     return m_A
+
+def differential_entropy_gaussian(sigma2, base=2):
+    """
+    Compute the differential entropy of a Gaussian distribution given the variance.
+    https://en.wikipedia.org/wiki/Differential_entropy#
+    Args:
+        sigma2: float, variance of the Gaussian distribution
+        base: float, base of the logarithm
+    Returns:
+        diff_ent: float, differential entropy of the Gaussian distribution
+    """
+    diff_ent = 0.5 * np.log(2 * np.pi * np.e * sigma2) / np.log(base)
+    return diff_ent
+
+def kl_divergence_gaussian(mu1, sigma21, mu2, sigma22, base=2):
+    """
+    Compute the KL-divergence between two Gaussian distributions.
+    https://en.wikipedia.org/wiki/Kullback–Leibler_divergence#Examples
+    Args:
+        mu1: float, mean of the first Gaussian distribution
+        sigma21: float, variance of the first Gaussian distribution
+        mu2: float, mean of the second Gaussian distribution
+        sigma22: float, variance of the second Gaussian distribution
+        base: float, base of the logarithm
+    Returns:
+        kl_div: float, KL-divergence between the two Gaussian distributions
+    """
+    kl_div = (0.5 * np.log(sigma22 / sigma21) / np.log(base)
+              + (sigma21 + (mu1 - mu2) ** 2) / (2 * sigma22)
+              - 0.5)
+    return kl_div

@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.stats import entropy
 from scipy.optimize import minimize
-from probly.utils import powerset, moebius
+from ..utils import powerset, moebius
 
 def total_uncertainty_entropy(probs, base=2):
     """
