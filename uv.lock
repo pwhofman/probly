@@ -1,19 +1,85 @@
 version = 1
-revision = 1
 requires-python = ">=3.13"
 resolution-markers = [
     "extra != 'extra-6-probly-cpu' and extra == 'extra-6-probly-cuda12'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
     "sys_platform != 'darwin' and extra == 'extra-6-probly-cpu' and extra != 'extra-6-probly-cuda12'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
     "sys_platform == 'darwin' and extra == 'extra-6-probly-cpu' and extra != 'extra-6-probly-cuda12'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
+    "python_version < '0'",
     "extra != 'extra-6-probly-cpu' and extra != 'extra-6-probly-cuda12'",
 ]
 conflicts = [[
     { package = "probly", extra = "cpu" },
     { package = "probly", extra = "cuda12" },
 ]]
-
-[tool.uv]
-package = true
 
 [[package]]
 name = "anyio"
@@ -885,6 +951,18 @@ wheels = [
 ]
 
 [[package]]
+name = "mpltern"
+version = "1.0.4"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "matplotlib" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/b9/4a/6a4d93d676f21236362ebfff8534ffb74eb5fbda73fbe6c7f1c3ff5e251e/mpltern-1.0.4.tar.gz", hash = "sha256:204d54227406eea54b602abac1617d0e3c2c2484fbd6718f455c238bca7cc60d", size = 1365358 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/60/f6/251635c032d4eca83fa880c27e40c9849ef74110d971c3a64f6347cb5a3d/mpltern-1.0.4-py3-none-any.whl", hash = "sha256:68b1f2cb140c2984bee30bed4b652614a3070136f6fbda2eeb9e750aeb44aa78", size = 32910 },
+]
+
+[[package]]
 name = "mpmath"
 version = "1.3.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1285,9 +1363,9 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "matplotlib" },
+    { name = "mpltern" },
     { name = "notebook" },
     { name = "numpy" },
-    { name = "pre-commit" },
     { name = "scikit-learn" },
     { name = "torch", version = "2.6.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform == 'darwin' and extra == 'extra-6-probly-cpu') or (extra == 'extra-6-probly-cpu' and extra == 'extra-6-probly-cuda12')" },
     { name = "torch", version = "2.6.0", source = { registry = "https://pypi.org/simple" }, marker = "(extra == 'extra-6-probly-cpu' and extra == 'extra-6-probly-cuda12') or (extra != 'extra-6-probly-cpu' and extra != 'extra-6-probly-cuda12')" },
@@ -1299,8 +1377,8 @@ dependencies = [
 
 [package.optional-dependencies]
 cpu = [
-    { name = "torch", version = "2.6.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform == 'darwin' and extra == 'extra-6-probly-cpu') or (extra == 'extra-6-probly-cpu' and extra == 'extra-6-probly-cuda12')" },
-    { name = "torch", version = "2.6.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform != 'darwin' and extra == 'extra-6-probly-cpu') or (extra == 'extra-6-probly-cpu' and extra == 'extra-6-probly-cuda12')" },
+    { name = "torch", version = "2.6.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform == 'darwin'" },
+    { name = "torch", version = "2.6.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform != 'darwin'" },
 ]
 cuda12 = [
     { name = "torch", version = "2.6.0+cu124", source = { registry = "https://download.pytorch.org/whl/cu124" } },
@@ -1310,6 +1388,8 @@ cuda12 = [
 dev = [
     { name = "coverage" },
     { name = "ipykernel" },
+    { name = "notebook" },
+    { name = "pre-commit" },
     { name = "pytest" },
     { name = "ruff" },
 ]
@@ -1317,9 +1397,9 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "matplotlib", specifier = ">=3.10.1" },
+    { name = "mpltern", specifier = ">=1.0.4" },
     { name = "notebook", specifier = ">=7.3.2" },
     { name = "numpy", specifier = ">=2.0.0,<=2.1.2" },
-    { name = "pre-commit", specifier = ">=4.1.0" },
     { name = "scikit-learn", specifier = ">=1.6.1" },
     { name = "torch", specifier = ">=2.6.0" },
     { name = "torch", marker = "extra == 'cpu'", specifier = "==2.6.0", index = "https://download.pytorch.org/whl/cpu", conflict = { package = "probly", extra = "cpu" } },
@@ -1327,12 +1407,13 @@ requires-dist = [
     { name = "torchvision", specifier = ">=0.21.0" },
     { name = "tqdm", specifier = ">=4.67.1" },
 ]
-provides-extras = ["cpu", "cuda12"]
 
 [package.metadata.requires-dev]
 dev = [
     { name = "coverage", specifier = ">=7.6.12" },
     { name = "ipykernel", specifier = ">=6.29.5" },
+    { name = "notebook", specifier = ">=7.3.2" },
+    { name = "pre-commit", specifier = ">=4.1.0" },
     { name = "pytest", specifier = ">=8.3.5" },
     { name = "ruff", specifier = ">=0.9.6" },
 ]
@@ -1798,8 +1879,8 @@ dependencies = [
     { name = "fsspec", marker = "(sys_platform == 'darwin' and extra == 'extra-6-probly-cpu') or (extra == 'extra-6-probly-cpu' and extra == 'extra-6-probly-cuda12')" },
     { name = "jinja2", marker = "(sys_platform == 'darwin' and extra == 'extra-6-probly-cpu') or (extra == 'extra-6-probly-cpu' and extra == 'extra-6-probly-cuda12')" },
     { name = "networkx", marker = "(sys_platform == 'darwin' and extra == 'extra-6-probly-cpu') or (extra == 'extra-6-probly-cpu' and extra == 'extra-6-probly-cuda12')" },
-    { name = "setuptools", marker = "(sys_platform == 'darwin' and extra == 'extra-6-probly-cpu') or (extra == 'extra-6-probly-cpu' and extra == 'extra-6-probly-cuda12')" },
-    { name = "sympy", marker = "(sys_platform == 'darwin' and extra == 'extra-6-probly-cpu') or (extra == 'extra-6-probly-cpu' and extra == 'extra-6-probly-cuda12')" },
+    { name = "setuptools", marker = "(python_full_version >= '3.13' and sys_platform == 'darwin' and extra == 'extra-6-probly-cpu') or (extra == 'extra-6-probly-cpu' and extra == 'extra-6-probly-cuda12')" },
+    { name = "sympy", marker = "(python_full_version >= '3.13' and sys_platform == 'darwin' and extra == 'extra-6-probly-cpu') or (extra == 'extra-6-probly-cpu' and extra == 'extra-6-probly-cuda12')" },
     { name = "typing-extensions", marker = "(sys_platform == 'darwin' and extra == 'extra-6-probly-cpu') or (extra == 'extra-6-probly-cpu' and extra == 'extra-6-probly-cuda12')" },
 ]
 wheels = [
@@ -1828,8 +1909,8 @@ dependencies = [
     { name = "nvidia-nccl-cu12", marker = "(platform_machine == 'x86_64' and sys_platform == 'linux' and extra != 'extra-6-probly-cpu' and extra != 'extra-6-probly-cuda12') or (extra == 'extra-6-probly-cpu' and extra == 'extra-6-probly-cuda12')" },
     { name = "nvidia-nvjitlink-cu12", marker = "(platform_machine == 'x86_64' and sys_platform == 'linux' and extra != 'extra-6-probly-cpu' and extra != 'extra-6-probly-cuda12') or (extra == 'extra-6-probly-cpu' and extra == 'extra-6-probly-cuda12')" },
     { name = "nvidia-nvtx-cu12", marker = "(platform_machine == 'x86_64' and sys_platform == 'linux' and extra != 'extra-6-probly-cpu' and extra != 'extra-6-probly-cuda12') or (extra == 'extra-6-probly-cpu' and extra == 'extra-6-probly-cuda12')" },
-    { name = "setuptools", marker = "(extra == 'extra-6-probly-cpu' and extra == 'extra-6-probly-cuda12') or (extra != 'extra-6-probly-cpu' and extra != 'extra-6-probly-cuda12')" },
-    { name = "sympy", marker = "(extra == 'extra-6-probly-cpu' and extra == 'extra-6-probly-cuda12') or (extra != 'extra-6-probly-cpu' and extra != 'extra-6-probly-cuda12')" },
+    { name = "setuptools", marker = "(python_full_version >= '3.13' and extra != 'extra-6-probly-cpu' and extra != 'extra-6-probly-cuda12') or (extra == 'extra-6-probly-cpu' and extra == 'extra-6-probly-cuda12')" },
+    { name = "sympy", marker = "(python_full_version >= '3.13' and extra != 'extra-6-probly-cpu' and extra != 'extra-6-probly-cuda12') or (extra == 'extra-6-probly-cpu' and extra == 'extra-6-probly-cuda12')" },
     { name = "triton", marker = "(platform_machine == 'x86_64' and sys_platform == 'linux' and extra != 'extra-6-probly-cpu' and extra != 'extra-6-probly-cuda12') or (extra == 'extra-6-probly-cpu' and extra == 'extra-6-probly-cuda12')" },
     { name = "typing-extensions", marker = "(extra == 'extra-6-probly-cpu' and extra == 'extra-6-probly-cuda12') or (extra != 'extra-6-probly-cpu' and extra != 'extra-6-probly-cuda12')" },
 ]
@@ -1852,8 +1933,8 @@ dependencies = [
     { name = "fsspec", marker = "(sys_platform != 'darwin' and extra == 'extra-6-probly-cpu') or (extra == 'extra-6-probly-cpu' and extra == 'extra-6-probly-cuda12')" },
     { name = "jinja2", marker = "(sys_platform != 'darwin' and extra == 'extra-6-probly-cpu') or (extra == 'extra-6-probly-cpu' and extra == 'extra-6-probly-cuda12')" },
     { name = "networkx", marker = "(sys_platform != 'darwin' and extra == 'extra-6-probly-cpu') or (extra == 'extra-6-probly-cpu' and extra == 'extra-6-probly-cuda12')" },
-    { name = "setuptools", marker = "(sys_platform != 'darwin' and extra == 'extra-6-probly-cpu') or (extra == 'extra-6-probly-cpu' and extra == 'extra-6-probly-cuda12')" },
-    { name = "sympy", marker = "(sys_platform != 'darwin' and extra == 'extra-6-probly-cpu') or (extra == 'extra-6-probly-cpu' and extra == 'extra-6-probly-cuda12')" },
+    { name = "setuptools", marker = "(python_full_version >= '3.13' and sys_platform != 'darwin' and extra == 'extra-6-probly-cpu') or (extra == 'extra-6-probly-cpu' and extra == 'extra-6-probly-cuda12')" },
+    { name = "sympy", marker = "(python_full_version >= '3.13' and sys_platform != 'darwin' and extra == 'extra-6-probly-cpu') or (extra == 'extra-6-probly-cpu' and extra == 'extra-6-probly-cuda12')" },
     { name = "typing-extensions", marker = "(sys_platform != 'darwin' and extra == 'extra-6-probly-cpu') or (extra == 'extra-6-probly-cpu' and extra == 'extra-6-probly-cuda12')" },
 ]
 wheels = [
@@ -1886,8 +1967,8 @@ dependencies = [
     { name = "nvidia-nccl-cu12", marker = "(platform_machine == 'x86_64' and sys_platform == 'linux' and extra == 'extra-6-probly-cuda12') or (platform_machine != 'x86_64' and extra == 'extra-6-probly-cpu' and extra == 'extra-6-probly-cuda12') or (sys_platform != 'linux' and extra == 'extra-6-probly-cpu' and extra == 'extra-6-probly-cuda12')" },
     { name = "nvidia-nvjitlink-cu12", marker = "(platform_machine == 'x86_64' and sys_platform == 'linux' and extra == 'extra-6-probly-cuda12') or (platform_machine != 'x86_64' and extra == 'extra-6-probly-cpu' and extra == 'extra-6-probly-cuda12') or (sys_platform != 'linux' and extra == 'extra-6-probly-cpu' and extra == 'extra-6-probly-cuda12')" },
     { name = "nvidia-nvtx-cu12", marker = "(platform_machine == 'x86_64' and sys_platform == 'linux' and extra == 'extra-6-probly-cuda12') or (platform_machine != 'x86_64' and extra == 'extra-6-probly-cpu' and extra == 'extra-6-probly-cuda12') or (sys_platform != 'linux' and extra == 'extra-6-probly-cpu' and extra == 'extra-6-probly-cuda12')" },
-    { name = "setuptools", marker = "extra == 'extra-6-probly-cuda12'" },
-    { name = "sympy", marker = "extra == 'extra-6-probly-cuda12'" },
+    { name = "setuptools", marker = "(python_full_version >= '3.13' and extra == 'extra-6-probly-cuda12') or (extra == 'extra-6-probly-cpu' and extra == 'extra-6-probly-cuda12')" },
+    { name = "sympy", marker = "(python_full_version >= '3.13' and extra == 'extra-6-probly-cuda12') or (extra == 'extra-6-probly-cpu' and extra == 'extra-6-probly-cuda12')" },
     { name = "triton", marker = "(platform_machine == 'x86_64' and sys_platform == 'linux' and extra == 'extra-6-probly-cuda12') or (platform_machine != 'x86_64' and extra == 'extra-6-probly-cpu' and extra == 'extra-6-probly-cuda12') or (sys_platform != 'linux' and extra == 'extra-6-probly-cpu' and extra == 'extra-6-probly-cuda12')" },
     { name = "typing-extensions", marker = "extra == 'extra-6-probly-cuda12'" },
 ]
@@ -1910,6 +1991,7 @@ dependencies = [
     { name = "torch", version = "2.6.0+cu124", source = { registry = "https://download.pytorch.org/whl/cu124" }, marker = "extra == 'extra-6-probly-cuda12'" },
 ]
 wheels = [
+    { url = "https://files.pythonhosted.org/packages/4e/fe/5e193353706dab96fe73ae100d5a633ff635ce310e0d92f3bc2958d075b1/torchvision-0.21.0-1-cp313-cp313-manylinux_2_28_aarch64.whl", hash = "sha256:7e9e9afa150e40cd2a8f0701c43cb82a8d724f512896455c0918b987f94b84a4", size = 2280711 },
     { url = "https://files.pythonhosted.org/packages/f9/56/47d456b61c3bbce7bed4af3925c83d405bb87468e659fd3cf3d9840c3b51/torchvision-0.21.0-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:659b76c86757cb2ee4ca2db245e0740cfc3081fef46f0f1064d11adb4a8cee31", size = 1784141 },
     { url = "https://files.pythonhosted.org/packages/cb/4c/99880813aa50e64447fb1c4c6c804a793d2d78f7f7c53e99ddee7fa175fa/torchvision-0.21.0-cp313-cp313-manylinux1_x86_64.whl", hash = "sha256:084ac3f5a1f50c70d630a488d19bf62f323018eae1b1c1232f2b7047d3a7b76d", size = 7238714 },
     { url = "https://files.pythonhosted.org/packages/0b/2d/3c3ee10608310a395594aac7da8640372ed79c6585910ccae6919658dcdc/torchvision-0.21.0-cp313-cp313-manylinux_2_28_aarch64.whl", hash = "sha256:5045a3a5f21ec3eea6962fa5f2fa2d4283f854caec25ada493fcf4aab2925467", size = 2281252 },
