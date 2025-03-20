@@ -6,9 +6,9 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "matplotlib>=3.10.1",
+    "mpltern>=1.0.4",
     "notebook>=7.3.2",
     "numpy<=2.1.2,>=2.0.0",
-    "pre-commit>=4.1.0",
     "scikit-learn>=1.6.1",
     "torch>=2.6.0",
     "torchvision>=0.21.0",
@@ -45,6 +45,8 @@ explicit = true
 dev = [
     "coverage>=7.6.12",
     "ipykernel>=6.29.5",
+    "notebook>=7.3.2",
+    "pre-commit>=4.1.0",
     "pytest>=8.3.5",
     "ruff>=0.9.6",
 ]
