@@ -55,3 +55,8 @@ def kl_divergence_gaussian(mu1, sigma21, mu2, sigma22, base=2):
               + (sigma21 + (mu1 - mu2) ** 2) / (2 * sigma22)
               - 0.5)
     return kl_div
+
+def torch_reset_all_parameters(model):
+    for child in model.children():
+        if hasattr(child, 'reset_parameters'):
+            child.reset_parameters()
