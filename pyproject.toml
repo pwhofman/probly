@@ -3,7 +3,7 @@ name = "probly"
 version = "0.1.0"
 description = "The coolest and most used uncertainty library in Python."
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.10"
 dependencies = [
     "matplotlib>=3.10.1",
     "mpltern>=1.0.4",
