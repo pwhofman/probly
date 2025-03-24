@@ -1,21 +1,55 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "probly"
 version = "0.1.0"
+dynamic = ["readme"]
 description = "Uncertainty Representation and Quantification for Machine Learning"
 license = "MIT"
-license-files = ["LICENSE"]
-readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
+    # core
     "matplotlib>=3.10.1",
     "mpltern>=1.0.4",
-    "notebook>=7.3.2",
     "numpy<=2.1.2,>=2.0.0",
     "scikit-learn>=1.6.1",
     "torch>=2.6.0",
     "torchvision>=0.21.0",
     "tqdm>=4.67.1",
 ]
+authors = [
+    {name = "Paul Hofman", email = "paul.hofman@ifi.lmu.de"},
+]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    'Operating System :: Microsoft :: Windows',
+    'Operating System :: Unix',
+    'Operating System :: MacOS',
+    'Programming Language :: Python :: 3',
+    'Programming Language :: Python :: 3.10',
+    'Programming Language :: Python :: 3.11',
+    'Programming Language :: Python :: 3.12',
+    'Programming Language :: Python :: 3.13',
+]
+
+[tool.setuptools.packages.find]
+where = ["./src"]
+include = ["probly*"]
+
+[tool.setuptools.dynamic]
+readme = {file = ["README.md", "CHANGELOG.md"], content-type = "text/markdown"}
+
+[project.urls]
+# documentation = TODO: we need to add the documentation
+source = "https://github.com/pwhofman/probly"
+tracker = "https://github.com/pwhofman/probly/issues"
+changelog = "https://github.com/pwhofman/probly/blob/main/CHANGELOG.md"
 
 [project.scripts]
 probly = "probly:main"
@@ -44,32 +78,39 @@ url = "https://download.pytorch.org/whl/cu124"
 explicit = true
 
 [dependency-groups]
-dev = [
-    "coverage>=7.6.12",
-    "ipykernel>=6.29.5",
-    "notebook>=7.3.2",
-    "pre-commit>=4.1.0",
+test = [
     "pytest>=8.3.5",
-    "ruff>=0.9.6",
+    "pytest-cov>=6.0.0",
+    "pytest-xdist>=3.6.1",
+]
+lint = [
+    "ruff>=0.11.2",
+    "pre-commit>=4.2.0",
+]
+dev = [
+    "ipykernel>=6.29.5",
+    "notebook>=7.3.3",
+    "ipywidgets",
+    {include-group = "test"},
+    {include-group = "lint"},
 ]
 
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[tool.hatch.build.targets.wheel]
-packages = ["src/probly"]
-
 [tool.ruff]
+lint.select = ["E", "F", "I", "UP"]  # https://beta.ruff.rs/docs/rules/
+lint.ignore = ["E501"]
 line-length = 100
 target-version = "py310"
 
-[tool.ruff.lint]
-ignore = ["E501"]
-select = ["E", "F", "I", "UP"]
+[tool.ruff.lint.isort]
+known-first-party = ["probly"]
+extra-standard-library = ["typing_extensions"]
+combine-as-imports = true
+force-wrap-aliases = true
+
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+minversion = "8.0"
 
 [tool.coverage.report]
 fail_under = 95
