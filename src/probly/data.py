@@ -1,14 +1,15 @@
+import json
 import os
 
-import json
 import numpy as np
 import torch
 import torchvision
 from PIL import Image
 
+
 class CIFAR10H(torchvision.datasets.CIFAR10):
     def __init__(self, root, transform=None, download=False):
-        super(CIFAR10H, self).__init__(root, train=False, transform=transform, download=download)
+        super().__init__(root, train=False, transform=transform, download=download)
         first_order_path = os.path.join(self.root, 'cifar-10h-master/data/cifar10h-counts.npy')
         self.counts = np.load(first_order_path)
         self.counts = torch.tensor(self.counts, dtype=torch.float32)
@@ -18,7 +19,7 @@ class DCICDataset(torch.utils.data.Dataset):
     def __init__(self, root, transform=None, first_order=True):
 
         root = os.path.expanduser(root)
-        with open(os.path.join(root, 'annotations.json'), 'r') as f:
+        with open(os.path.join(root, 'annotations.json')) as f:
             annotations = json.load(f)
 
         self.root = os.path.dirname(root)
@@ -66,4 +67,4 @@ class DCICDataset(torch.utils.data.Dataset):
 
 class Benthic(DCICDataset):
     def __init__(self, root, transform=None, first_order=True):
-        super(Benthic, self).__init__(os.path.join(root, 'Benthic'), transform, first_order)
+        super().__init__(os.path.join(root, 'Benthic'), transform, first_order)

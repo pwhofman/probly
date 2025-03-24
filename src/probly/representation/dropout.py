@@ -1,4 +1,5 @@
 import copy
+
 import torch
 import torch.nn as nn
 
@@ -12,7 +13,7 @@ class Dropout(nn.Module):
     p (float): The probability of dropping out a neuron.
     """
     def __init__(self, base, p=0.25):
-        super(Dropout, self).__init__()
+        super().__init__()
         self.base = base
         self.p = p
         self.model = None

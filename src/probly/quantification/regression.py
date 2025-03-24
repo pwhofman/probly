@@ -1,5 +1,7 @@
 import numpy as np
+
 from ..utils import differential_entropy_gaussian, kl_divergence_gaussian
+
 
 def total_variance(probs):
     """

@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 
+
 class SubEnsemble(nn.Module):
     """
     This class implements an ensemble of representation which share a backbone and use
@@ -14,7 +15,7 @@ class SubEnsemble(nn.Module):
     network or a single layer.
     """
     def __init__(self, base, num_heads, head):
-        super(SubEnsemble, self).__init__()
+        super().__init__()
         self.base = base
         self.models = None
         self._convert(base, num_heads, head)

@@ -1,9 +1,10 @@
-from ..utils import torch_reset_all_parameters
-
 import copy
 
 import torch
 import torch.nn as nn
+
+from ..utils import torch_reset_all_parameters
+
 
 class Ensemble(nn.Module):
     """
@@ -14,7 +15,7 @@ class Ensemble(nn.Module):
     num_members (int): The number of members in the ensemble.
     """
     def __init__(self, base, num_members):
-        super(Ensemble, self).__init__()
+        super().__init__()
         self._convert(base, num_members)
 
     def forward(self, x):

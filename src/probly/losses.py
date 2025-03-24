@@ -8,7 +8,7 @@ class EvidentialLogLoss(nn.Module):
     https://arxiv.org/pdf/1806.01768
     """
     def __init__(self):
-        super(EvidentialLogLoss, self).__init__()
+        super().__init__()
 
     def forward(self, inputs, targets):
         alphas = inputs + 1.0
@@ -21,7 +21,7 @@ class EvidentialCELoss(nn.Module):
     https://arxiv.org/pdf/1806.01768
     """
     def __init__(self):
-        super(EvidentialCELoss, self).__init__()
+        super().__init__()
 
     def forward(self, inputs, targets):
         alphas = inputs + 1.0
@@ -35,7 +35,7 @@ class EvidentialMSELoss(nn.Module):
     """
 
     def __init__(self):
-        super(EvidentialMSELoss, self).__init__()
+        super().__init__()
 
     def forward(self, inputs, targets):
         alphas = inputs + 1.0
@@ -52,7 +52,7 @@ class EvidentialKLDivergence(nn.Module):
     https://arxiv.org/pdf/1806.01768
     """
     def __init__(self):
-        super(EvidentialKLDivergence, self).__init__()
+        super().__init__()
 
     def forward(self, inputs, targets):
         alphas = inputs + 1.0

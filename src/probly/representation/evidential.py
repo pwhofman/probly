@@ -3,6 +3,7 @@ import copy
 import torch
 import torch.nn as nn
 
+
 class Evidential(nn.Module):
     """
     This class implements an evidential deep learning model to be used for uncertainty quantification.

@@ -1,8 +1,8 @@
 """Test for the dropout module."""
 
 import pytest
-
 import torch
+
 from probly.representation.dropout import Dropout
 
 

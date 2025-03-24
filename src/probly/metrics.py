@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def expected_calibration_error(probs, labels, num_bins=10):
     """
     Compute the expected calibration error (ECE) of the predicted probabilities.

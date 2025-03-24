@@ -1,6 +1,7 @@
 import numpy as np
 import sklearn.metrics as sm
 
+
 def selective_prediction(criterion, losses, num_bins=50):
     """
     Perform selective prediction based on criterion and losses.

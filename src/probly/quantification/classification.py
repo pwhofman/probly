@@ -1,7 +1,9 @@
 import numpy as np
-from scipy.stats import entropy
 from scipy.optimize import minimize
-from ..utils import powerset, moebius
+from scipy.stats import entropy
+
+from ..utils import moebius, powerset
+
 
 def total_entropy(probs, base=2):
     """

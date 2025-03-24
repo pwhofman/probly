@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 
+
 def simplex_plot(probs):
     """
     Plot probability distributions on the simplex.
