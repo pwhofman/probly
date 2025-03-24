@@ -1,3 +1,5 @@
+import copy
+
 import torch
 import torch.nn as nn
 
@@ -7,19 +9,17 @@ class Evidential(nn.Module):
 
     Args:
     base (torch.nn.Module): The base model to be used.
-    num_members (int): The number of members in the ensemble.
+    activation (torch.nn.Module): The activation function that will be used.
     """
     def __init__(self, base, activation=nn.Softplus()):
-        super(Evidential, self).__init__()
-        self.base = base
-        self.model = None
+        super().__init__()
         self._convert(base, activation)
 
     def forward(self, x):
         return self.model(x)
 
     def _convert(self, base, activation):
-        self.model = nn.Sequential(*list(base.children()), activation)
+        self.model = nn.Sequential(copy.deepcopy(base), activation)
 
     def sample(self, x, num_samples):
         dirichlet = torch.distributions.Dirichlet(self.model(x) + 1.0)

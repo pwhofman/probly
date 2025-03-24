@@ -232,3 +232,16 @@ def generalised_hartley(probs, base=2):
         m_A = moebius(probs, A)
         gh += m_A * (np.log(len(A)) / np.log(base))
     return gh
+
+def evidential_uncertainty(evidences):
+    """
+    Compute the evidential uncertainty given the evidences.
+    Args:
+        evidences: array of shape (num_instances, num_classes)
+    Returns:
+        eu: array of shape (num_instances,)
+    """
+    strenghts = np.sum(evidences + 1.0, axis=1)
+    K = np.full(evidences.shape[0], evidences.shape[1])
+    eu = K / strenghts
+    return eu

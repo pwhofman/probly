@@ -57,6 +57,11 @@ def kl_divergence_gaussian(mu1, sigma21, mu2, sigma22, base=2):
     return kl_div
 
 def torch_reset_all_parameters(model):
+    """
+    Reset all parameters of a torch model.
+    Args:
+        model: torch.nn.Module, model to reset parameters
+    """
     for child in model.children():
         if hasattr(child, 'reset_parameters'):
             child.reset_parameters()
