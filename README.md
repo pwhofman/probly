@@ -17,7 +17,7 @@ pip install probly
 
 ## ⭐ Quickstart
 
-`probly` makes it easy to make models uncertainty-aware and perform several downstream tasks:
+`probly` makes it very easy to make models uncertainty-aware and perform several downstream tasks:
 
 ```python
 import probly
