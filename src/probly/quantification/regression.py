@@ -1,7 +1,7 @@
 import numpy as np
 from ..utils import differential_entropy_gaussian, kl_divergence_gaussian
 
-def total_uncertainty_variance(probs):
+def total_variance(probs):
     """
     Computes the total uncertainty using variance-based measures.
     Assumes that the input is from a distribution over parameters of
@@ -13,10 +13,10 @@ def total_uncertainty_variance(probs):
     Returns:
         tu: numpy.ndarray, shape (n_instances,)
     """
-    tu = np.mean(probs[:, :, 1], axis=1) + np.var(probs[:, :, 0], axis=1)
-    return tu
+    tv = np.mean(probs[:, :, 1], axis=1) + np.var(probs[:, :, 0], axis=1)
+    return tv
 
-def aleatoric_uncertainty_variance(probs):
+def expected_conditional_variance(probs):
     """
     Computes the aleatoric uncertainty using variance-based measures.
     Assumes that the input is from a distribution over parameters of
@@ -28,10 +28,10 @@ def aleatoric_uncertainty_variance(probs):
     Returns:
         au: numpy.ndarray, shape (n_instances,)
     """
-    au = np.mean(probs[:, :, 1], axis=1)
-    return au
+    ecv = np.mean(probs[:, :, 1], axis=1)
+    return ecv
 
-def epistemic_uncertainty_variance(probs):
+def variance_conditional_expectation(probs):
     """
     Computes the epistemic uncertainty using variance-based measures.
     Assumes that the input is from a distribution over parameters of
@@ -43,10 +43,10 @@ def epistemic_uncertainty_variance(probs):
     Returns:
         eu: numpy.ndarray, shape (n_instances,)
     """
-    eu = np.var(probs[:, :, 0], axis=1)
-    return eu
+    vce = np.var(probs[:, :, 0], axis=1)
+    return vce
 
-def total_uncertainty_entropy(probs):
+def total_differential_entropy(probs):
     """
     Computes the epistemic uncertainty using entropy-based measures.
     Assumes that the input is from a distribution over parameters of
@@ -59,10 +59,10 @@ def total_uncertainty_entropy(probs):
         tu: numpy.ndarray, shape (n_instances,)
     """
     sigma2_mean = np.mean(probs[:, :, 1], axis=1) + np.var(probs[:, :, 0], axis=1)
-    tu = differential_entropy_gaussian(sigma2_mean)
-    return tu
+    tde = differential_entropy_gaussian(sigma2_mean)
+    return tde
 
-def aleatoric_uncertainty_entropy(probs):
+def conditional_differential_entropy(probs):
     """
     Computes the aleatoric uncertainty using entropy-based measures.
     Assumes that the input is from a distribution over parameters of
@@ -74,10 +74,10 @@ def aleatoric_uncertainty_entropy(probs):
     Returns:
         au: numpy.ndarray, shape (n_instances,)
     """
-    au = np.mean(differential_entropy_gaussian(probs[:, :, 1]), axis=1)
-    return au
+    cde = np.mean(differential_entropy_gaussian(probs[:, :, 1]), axis=1)
+    return cde
 
-def epistemic_uncertainty_entropy(probs):
+def mutual_information(probs):
     """
     Computes the epistemic uncertainty using entropy-based measures.
     Assumes that the input is from a distribution over parameters of
@@ -94,5 +94,5 @@ def epistemic_uncertainty_entropy(probs):
     sigma2_mean = np.mean(probs[:, :, 1], axis=1) + np.var(probs[:, :, 0], axis=1)
     mu_mean = np.repeat(np.expand_dims(mu_mean, 1), repeats=probs.shape[1], axis=1)
     sigma2_mean = np.repeat(np.expand_dims(sigma2_mean, 1), repeats=probs.shape[1], axis=1)
-    eu = np.mean(kl_divergence_gaussian(probs[:, :, 0], probs[:, :, 1], mu_mean, sigma2_mean), axis=1)
-    return eu
+    mi = np.mean(kl_divergence_gaussian(probs[:, :, 0], probs[:, :, 1], mu_mean, sigma2_mean), axis=1)
+    return mi

@@ -1,5 +1,5 @@
-import torch
+import torch.nn as nn
 
 
-class PostNet(torch.Module):
+class PostNet(nn.Module):
     pass
