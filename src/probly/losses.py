@@ -4,12 +4,21 @@ import torch.nn.functional as F
 
 class EvidentialLogLoss(torch.nn.Module):
     """
-    https://arxiv.org/pdf/1806.01768
+    Evidential Log Loss based on https://arxiv.org/pdf/1806.01768.
     """
-    def __init__(self):
+
+    def __init__(self) -> None:
         super().__init__()
 
-    def forward(self, inputs, targets):
+    def forward(self, inputs: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
+        """
+        Forward pass of the evidential log loss.
+        Args:
+            inputs: torch.Tensor of size (n_instances, n_classes)
+            targets: torch.Tensor of size (n_instances,)
+        Returns:
+            loss: torch.Tensor, mean loss value
+        """
         alphas = inputs + 1.0
         strengths = torch.sum(alphas, dim=1)
         loss = torch.mean(torch.log(strengths) - torch.log(alphas[torch.arange(targets.shape[0]), targets]))
@@ -18,12 +27,21 @@ class EvidentialLogLoss(torch.nn.Module):
 
 class EvidentialCELoss(torch.nn.Module):
     """
-    https://arxiv.org/pdf/1806.01768
+    Evidential Cross Entropy Loss based on https://arxiv.org/pdf/1806.01768.
     """
-    def __init__(self):
+
+    def __init__(self) -> None:
         super().__init__()
 
-    def forward(self, inputs, targets):
+    def forward(self, inputs: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
+        """
+        Forward pass of the evidential cross entropy loss.
+        Args:
+            inputs: torch.Tensor of size (n_instances, n_classes)
+            targets: torch.Tensor of size (n_instances,)
+        Returns:
+            loss: torch.Tensor, mean loss value
+        """
         alphas = inputs + 1.0
         strengths = torch.sum(alphas, dim=1)
         loss = torch.mean(torch.digamma(strengths) - torch.digamma(alphas[torch.arange(targets.shape[0]), targets]))
@@ -32,13 +50,21 @@ class EvidentialCELoss(torch.nn.Module):
 
 class EvidentialMSELoss(torch.nn.Module):
     """
-    https://arxiv.org/pdf/1806.01768
+    Evidential Mean Square Error Loss based on https://arxiv.org/pdf/1806.01768.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
-    def forward(self, inputs, targets):
+    def forward(self, inputs: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
+        """
+        Forward pass of the evidential mean squared error loss.
+        Args:
+            inputs: torch.Tensor of size (n_instances, n_classes)
+            targets: torch.Tensor of size (n_instances,)
+        Returns:
+            loss: torch.Tensor, mean loss value
+        """
         alphas = inputs + 1.0
         strengths = torch.sum(alphas, dim=1)
         y = F.one_hot(targets, inputs.shape[1])
@@ -51,12 +77,21 @@ class EvidentialMSELoss(torch.nn.Module):
 
 class EvidentialKLDivergence(torch.nn.Module):
     """
-    https://arxiv.org/pdf/1806.01768
+    Evidential KL Divergence Loss based on https://arxiv.org/pdf/1806.01768.
     """
-    def __init__(self):
+
+    def __init__(self) -> None:
         super().__init__()
 
-    def forward(self, inputs, targets):
+    def forward(self, inputs: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
+        """
+        Forward pass of the evidential KL divergence loss.
+        Args:
+            inputs: torch.Tensor of size (n_instances, n_classes)
+            targets: torch.Tensor of size (n_instances,)
+        Returns:
+            loss: torch.Tensor, mean loss value
+        """
         alphas = inputs + 1.0
         y = F.one_hot(targets, inputs.shape[1])
         alphas_tilde = y + (1 - y) * alphas

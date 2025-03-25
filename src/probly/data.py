@@ -19,15 +19,16 @@ class CIFAR10H(torchvision.datasets.CIFAR10):
 
 
 class DCICDataset(torch.utils.data.Dataset):
+    """
+    A Dataset class for the DCICDataset.
+    Args:
+        root: str, root directory of the dataset
+        transform: optional transform to apply to the data
+        first_order: bool, whether to use first order data or not
+    """
+
     def __init__(self, root: str, transform: Callable | None = None,
                  first_order: bool = True) -> None:
-        """
-        A Dataset class for the DCICDataset.
-        Args:
-            root: str, root directory of the dataset
-            transform: optional transform to apply to the data
-            first_order: bool, whether to use first order data or not
-        """
         root = os.path.expanduser(root)
         with open(os.path.join(root, 'annotations.json')) as f:
             annotations = json.load(f)
@@ -91,5 +92,6 @@ class DCICDataset(torch.utils.data.Dataset):
 
 
 class Benthic(DCICDataset):
-    def __init__(self, root: str, transform: Callable | None = None, first_order: bool = True):
+    def __init__(self, root: str, transform: Callable | None = None,
+                 first_order: bool = True) -> None:
         super().__init__(os.path.join(root, 'Benthic'), transform, first_order)
