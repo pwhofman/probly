@@ -1,5 +1,9 @@
+import copy
+
 import torch
 import torch.nn as nn
+
+from ..utils import torch_reset_all_parameters
 
 
 class SubEnsemble(nn.Module):
@@ -16,8 +20,6 @@ class SubEnsemble(nn.Module):
     """
     def __init__(self, base, num_heads, head):
         super().__init__()
-        self.base = base
-        self.models = None
         self._convert(base, num_heads, head)
 
     def forward(self, x):
@@ -26,4 +28,8 @@ class SubEnsemble(nn.Module):
     def _convert(self, base, num_heads, head):
         for param in base.parameters():
             param.requires_grad = False
-        self.models = nn.ModuleList([nn.Sequential(base, head) for _ in range(num_heads)])
+        self.models = nn.ModuleList()
+        for _ in range(num_heads):
+            h = copy.deepcopy(head)
+            torch_reset_all_parameters(h)
+            self.models.append(nn.Sequential(base, h))
