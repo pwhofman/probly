@@ -7,12 +7,12 @@ from scipy.stats import entropy
 from ..utils import moebius, powerset
 
 
-def total_entropy(probs: np.ndarray, base: int = 2) -> np.ndarray:
+def total_entropy(probs: np.ndarray, base: float = 2) -> np.ndarray:
     """
     Compute the total uncertainty using samples from a second-order distribution.
     Args:
         probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
-        base: int, default=2
+        base: float, default=2
     Returns:
         te: numpy.ndarray of shape (n_instances,)
     """
@@ -20,12 +20,12 @@ def total_entropy(probs: np.ndarray, base: int = 2) -> np.ndarray:
     return te
 
 
-def conditional_entropy(probs: np.ndarray, base: int = 2) -> np.ndarray:
+def conditional_entropy(probs: np.ndarray, base: float = 2) -> np.ndarray:
     """
     Compute the aleatoric uncertainty using samples from a second-order distribution.
     Args:
         probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
-        base: int, default=2
+        base: float, default=2
     Returns:
         ce: numpy.ndarray of shape (n_instances,)
     """
@@ -33,12 +33,12 @@ def conditional_entropy(probs: np.ndarray, base: int = 2) -> np.ndarray:
     return ce
 
 
-def mutual_information(probs: np.ndarray, base: int = 2) -> np.ndarray:
+def mutual_information(probs: np.ndarray, base: float = 2) -> np.ndarray:
     """
     Compute the epistemic uncertainty using samples from a second-order distribution.
     Args:
         probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
-        base: int, default=2
+        base: float, default=2
     Returns:
         mi: numpy.ndarray of shape (n_instances,)
     """
@@ -191,7 +191,7 @@ def epistemic_uncertainty_distance(probs: np.ndarray) -> np.ndarray:
     return eu
 
 
-def upper_entropy(probs: np.ndarray, base: int = 2) -> np.ndarray:
+def upper_entropy(probs: np.ndarray, base: float = 2) -> np.ndarray:
     """
     Computes the upper entropy of a credal set. Given the probs array the lower and upper
     probabilities are computed and the credal set is assumed to be a convex set including all
@@ -199,7 +199,7 @@ def upper_entropy(probs: np.ndarray, base: int = 2) -> np.ndarray:
     of this set is computed.
     Args:
         probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
-        base: int, default=2
+        base: float, default=2
     Returns:
         ue: numpy.ndarray of shape (n_instances,)
     """
@@ -217,7 +217,7 @@ def upper_entropy(probs: np.ndarray, base: int = 2) -> np.ndarray:
     return ue
 
 
-def lower_entropy(probs: np.ndarray, base: int = 2) -> np.ndarray:
+def lower_entropy(probs: np.ndarray, base: float = 2) -> np.ndarray:
     """
      Computes the lower entropy of a credal set. Given the probs array the lower and upper
      probabilities are computed and the credal set is assumed to be a convex set including all
@@ -225,7 +225,7 @@ def lower_entropy(probs: np.ndarray, base: int = 2) -> np.ndarray:
      of this set is computed.
      Args:
          probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
-         base: int, default=2
+         base: float, default=2
      Returns:
          le: numpy.ndarray of shape (n_instances,)
      """
@@ -243,23 +243,23 @@ def lower_entropy(probs: np.ndarray, base: int = 2) -> np.ndarray:
     return le
 
 
-def generalised_hartley(probs: np.ndarray, base: int = 2) -> np.ndarray:
+def generalised_hartley(probs: np.ndarray, base: float = 2) -> np.ndarray:
     """
     Computes the generalised Hartley measure given the extreme points of
     a credal set.
     Args:
         probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
-        base: int, default=2
+        base: float, default=2
     Returns:
         gh: numpy.ndarray of shape (n_instances,)
     """
     gh = np.zeros(probs.shape[0])
     idxs = list(range(probs.shape[2]))  # list of class indices
-    ps_A = powerset(idxs)  # powerset of all indices
-    ps_A.pop(0)  # remove empty set
-    for A in ps_A:
-        m_A = moebius(probs, A)
-        gh += m_A * (np.log(len(A)) / np.log(base))
+    ps_a = powerset(idxs)  # powerset of all indices
+    ps_a.pop(0)  # remove empty set
+    for a in ps_a:
+        m_a = moebius(probs, a)
+        gh += m_a * (np.log(len(a)) / np.log(base))
     return gh
 
 
@@ -271,7 +271,7 @@ def evidential_uncertainty(evidences: np.ndarray) -> np.ndarray:
     Returns:
         eu: numpy.ndarray of shape (n_instances,)
     """
-    strenghts = np.sum(evidences + 1.0, axis=1)
-    K = np.full(evidences.shape[0], evidences.shape[1])
-    eu = K / strenghts
+    strengths = np.sum(evidences + 1.0, axis=1)
+    k = np.full(evidences.shape[0], evidences.shape[1])
+    eu = k / strengths
     return eu
