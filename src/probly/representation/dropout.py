@@ -7,25 +7,34 @@ import torch.nn as nn
 class Dropout(nn.Module):
     """
     This class implements a dropout layer to be used for uncertainty quantification.
-
     Args:
-    base (torch.nn.Module): The base model to be used for dropout.
-    p (float): The probability of dropping out a neuron.
+        base: torch.nn.Module, The base model to be used for dropout.
+        p: float, The probability of dropping out a neuron.
     """
-    def __init__(self, base, p=0.25):
+
+    def __init__(self, base: nn.Module, p: float = 0.25) -> None:
         super().__init__()
         self.base = base
         self.p = p
         self.model = None
         self._convert(base)
 
-    def forward(self, x, samples):
-        return torch.stack([self.model(x) for _ in range(samples)], dim=1)
+    def forward(self, x: torch.Tensor, n_samples: int) -> torch.Tensor:
+        """
+        Forward pass of the dropout ensemble.
+        Args:
+            x: torch.Tensor, input data
+        Returns:
+            torch.Tensor, ensemble output
+        """
+        return torch.stack([self.model(x) for _ in range(n_samples)], dim=1)
 
-    def _convert(self, base):
+    def _convert(self, base: nn.Module) -> None:
         """
         Converts the base model to a dropout model, stored in model, by looping through all the layers
-        and adding a dropout layer after each linear layer as suggested in ...
+        and adding a dropout layer after each linear layer.
+        Args:
+            base: torch.nn.Module, The base model to be used for dropout.
         """
         self.model = copy.deepcopy(base)
         first = True
@@ -35,7 +44,7 @@ class Dropout(nn.Module):
                     setattr(self.model, name, nn.Sequential(nn.Dropout(p=self.p), module))
             first = False
 
-    def eval(self):
+    def eval(self) -> None:
         """
         Sets the model to evaluation mode, but keeps the dropout layers active.
         """

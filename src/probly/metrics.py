@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def expected_calibration_error(probs, labels, num_bins=10):
+def expected_calibration_error(probs: np.ndarray, labels: np.ndarray, num_bins: int = 10) -> float:
     """
     Compute the expected calibration error (ECE) of the predicted probabilities.
     Args:
