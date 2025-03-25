@@ -1,64 +1,92 @@
 import itertools
+from collections.abc import Iterable
 
 import numpy as np
+import torch
 
 
-def powerset(iterable):
-    "powerset([1,2,3]) --> () (1,) (2,) (3,) (1,2) (1,3) (2,3) (1,2,3)"
-    s = list(iterable)
-    return list(itertools.chain.from_iterable(itertools.combinations(s, r) for r in range(len(s)+1)))
-
-def capacity(Q, A):
-    """Computes the capacity of a set Q given a set A"""
-    sum = np.sum(Q[:, :, A], axis=2)
-    min = np.min(sum, axis=1)
-    return min
-
-def moebius(Q, A):
-    """Computes the Moebius function of a set Q given a set A.
-    Q: array of shape (num_samples, num_members, num_classes)
-    A: set of indices
+def powerset(iterable: Iterable) -> list[tuple]:
     """
-    ps_B = powerset(A)  # powerset of A
-    ps_B.pop(0)  # remove empty set
-    m_A = np.zeros(Q.shape[0])
-    for B in ps_B:
-        dl = len(set(A) - set(B))
-        m_A += ((-1) ** dl) * capacity(Q, B)
-    return m_A
+    Generate the power set of a given iterable.
+    Args:
+        iterable: Iterable
+    Returns:
+        List[tuple], power set of the given iterable
+    """
+    s = list(iterable)
+    return list(
+        itertools.chain.from_iterable(itertools.combinations(s, r) for r in range(len(s) + 1)))
 
-def differential_entropy_gaussian(sigma2, base=2):
+
+def capacity(q: np.ndarray, a: Iterable) -> np.ndarray:
+    """
+    Compute the capacity of set q given set a.
+    Args:
+        q: numpy.ndarray, shape (n_instances, n_samples, n_classes)
+        a: Iterable, shape (n_classes,), indices indicating subset of classes
+    Returns:
+        min_capacity: numpy.ndarray, shape (n_instances,), capacity of q given a
+    """
+    selected_sum = np.sum(q[:, :, a], axis=2)
+    min_capacity = np.min(selected_sum, axis=1)
+    return min_capacity
+
+
+def moebius(q: np.ndarray, a: Iterable) -> np.ndarray:
+    """
+    Computes the Moebius function of a set q given a set a.
+    Args:
+        q: numpy.ndarray of shape (num_samples, num_members, num_classes)
+        a: numpy.ndarray, shape (n_classes,), indices indicating subset of classes
+    Returns:
+        m_a: numpy.ndarray, shape (n_instances,), moebius value of q given a
+    """
+    ps_a = powerset(a)  # powerset of A
+    ps_a.pop(0)  # remove empty set
+    m_a = np.zeros(q.shape[0])
+    for b in ps_a:
+        dl = len(set(a) - set(b))
+        m_a += ((-1) ** dl) * capacity(q, b)
+    return m_a
+
+
+def differential_entropy_gaussian(sigma2: float | np.ndarray,
+                                  base: float = 2) -> float | np.ndarray:
     """
     Compute the differential entropy of a Gaussian distribution given the variance.
-    https://en.wikipedia.org/wiki/Differential_entropy#
+    https://en.wikipedia.org/wiki/Differential_entropy
     Args:
-        sigma2: float, variance of the Gaussian distribution
+        sigma2: float or numpy.ndarray shape (n_instances,), variance of the Gaussian distribution
         base: float, base of the logarithm
     Returns:
-        diff_ent: float, differential entropy of the Gaussian distribution
+        diff_ent: float or numpy.ndarray shape (n_instances,), differential entropy of the Gaussian distribution
     """
     diff_ent = 0.5 * np.log(2 * np.pi * np.e * sigma2) / np.log(base)
     return diff_ent
 
-def kl_divergence_gaussian(mu1, sigma21, mu2, sigma22, base=2):
+
+def kl_divergence_gaussian(mu1: float | np.ndarray, sigma21: float | np.ndarray,
+                           mu2: float | np.ndarray, sigma22: float | np.ndarray,
+                           base: float = 2) -> float | np.ndarray:
     """
     Compute the KL-divergence between two Gaussian distributions.
     https://en.wikipedia.org/wiki/Kullback–Leibler_divergence#Examples
     Args:
-        mu1: float, mean of the first Gaussian distribution
-        sigma21: float, variance of the first Gaussian distribution
-        mu2: float, mean of the second Gaussian distribution
-        sigma22: float, variance of the second Gaussian distribution
+        mu1: float or numpy.ndarray shape (n_instances,), mean of the first Gaussian distribution
+        sigma21: float or numpy.ndarray shape (n_instances,), variance of the first Gaussian distribution
+        mu2: float or numpy.ndarray shape (n_instances,), mean of the second Gaussian distribution
+        sigma22: float or numpy.ndarray shape (n_instances,), variance of the second Gaussian distribution
         base: float, base of the logarithm
     Returns:
-        kl_div: float, KL-divergence between the two Gaussian distributions
+        kl_div: float or numpy.ndarray shape (n_instances,), KL-divergence between the two Gaussian distributions
     """
     kl_div = (0.5 * np.log(sigma22 / sigma21) / np.log(base)
               + (sigma21 + (mu1 - mu2) ** 2) / (2 * sigma22)
               - 0.5)
     return kl_div
 
-def torch_reset_all_parameters(model):
+
+def torch_reset_all_parameters(model: torch.nn.Module) -> None:
     """
     Reset all parameters of a torch model.
     Args:
