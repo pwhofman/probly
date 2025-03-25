@@ -32,7 +32,7 @@ def capacity(q: np.ndarray, a: Iterable) -> np.ndarray:
     return min_capacity
 
 
-def moebius(q, a):
+def moebius(q: np.ndarray, a: Iterable) -> np.ndarray:
     """
     Computes the Moebius function of a set q given a set a.
     Args:
@@ -50,33 +50,35 @@ def moebius(q, a):
     return m_a
 
 
-def differential_entropy_gaussian(sigma2: float, base: int = 2) -> float:
+def differential_entropy_gaussian(sigma2: float | np.ndarray,
+                                  base: float = 2) -> float | np.ndarray:
     """
     Compute the differential entropy of a Gaussian distribution given the variance.
     https://en.wikipedia.org/wiki/Differential_entropy
     Args:
-        sigma2: float, variance of the Gaussian distribution
-        base: int, base of the logarithm
+        sigma2: float or numpy.ndarray shape (n_instances,), variance of the Gaussian distribution
+        base: float, base of the logarithm
     Returns:
-        diff_ent: float, differential entropy of the Gaussian distribution
+        diff_ent: float or numpy.ndarray shape (n_instances,), differential entropy of the Gaussian distribution
     """
     diff_ent = 0.5 * np.log(2 * np.pi * np.e * sigma2) / np.log(base)
     return diff_ent
 
 
-def kl_divergence_gaussian(mu1: float, sigma21: float, mu2: float, sigma22: float,
-                           base: int = 2) -> float:
+def kl_divergence_gaussian(mu1: float | np.ndarray, sigma21: float | np.ndarray,
+                           mu2: float | np.ndarray, sigma22: float | np.ndarray,
+                           base: float = 2) -> float | np.ndarray:
     """
     Compute the KL-divergence between two Gaussian distributions.
     https://en.wikipedia.org/wiki/Kullback–Leibler_divergence#Examples
     Args:
-        mu1: float, mean of the first Gaussian distribution
-        sigma21: float, variance of the first Gaussian distribution
-        mu2: float, mean of the second Gaussian distribution
-        sigma22: float, variance of the second Gaussian distribution
-        base: int, base of the logarithm
+        mu1: float or numpy.ndarray shape (n_instances,), mean of the first Gaussian distribution
+        sigma21: float or numpy.ndarray shape (n_instances,), variance of the first Gaussian distribution
+        mu2: float or numpy.ndarray shape (n_instances,), mean of the second Gaussian distribution
+        sigma22: float or numpy.ndarray shape (n_instances,), variance of the second Gaussian distribution
+        base: float, base of the logarithm
     Returns:
-        kl_div: float, KL-divergence between the two Gaussian distributions
+        kl_div: float or numpy.ndarray shape (n_instances,), KL-divergence between the two Gaussian distributions
     """
     kl_div = (0.5 * np.log(sigma22 / sigma21) / np.log(base)
               + (sigma21 + (mu1 - mu2) ** 2) / (2 * sigma22)
