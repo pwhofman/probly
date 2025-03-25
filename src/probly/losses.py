@@ -1,9 +1,8 @@
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 
 
-class EvidentialLogLoss(nn.Module):
+class EvidentialLogLoss(torch.nn.Module):
     """
     https://arxiv.org/pdf/1806.01768
     """
@@ -16,7 +15,8 @@ class EvidentialLogLoss(nn.Module):
         loss = torch.mean(torch.log(strengths) - torch.log(alphas[torch.arange(targets.shape[0]), targets]))
         return loss
 
-class EvidentialCELoss(nn.Module):
+
+class EvidentialCELoss(torch.nn.Module):
     """
     https://arxiv.org/pdf/1806.01768
     """
@@ -29,7 +29,8 @@ class EvidentialCELoss(nn.Module):
         loss = torch.mean(torch.digamma(strengths) - torch.digamma(alphas[torch.arange(targets.shape[0]), targets]))
         return loss
 
-class EvidentialMSELoss(nn.Module):
+
+class EvidentialMSELoss(torch.nn.Module):
     """
     https://arxiv.org/pdf/1806.01768
     """
@@ -47,7 +48,8 @@ class EvidentialMSELoss(nn.Module):
         loss = torch.mean(torch.sum(err + var, dim=1))
         return loss
 
-class EvidentialKLDivergence(nn.Module):
+
+class EvidentialKLDivergence(torch.nn.Module):
     """
     https://arxiv.org/pdf/1806.01768
     """

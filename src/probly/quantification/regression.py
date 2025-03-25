@@ -1,10 +1,9 @@
-import numpy
 import numpy as np
 
 from ..utils import differential_entropy_gaussian, kl_divergence_gaussian
 
 
-def total_variance(probs: numpy.ndarray) -> numpy.ndarray:
+def total_variance(probs: np.ndarray) -> np.ndarray:
     """
     Computes the total uncertainty using variance-based measures.
     Assumes that the input is from a distribution over parameters of
@@ -20,7 +19,7 @@ def total_variance(probs: numpy.ndarray) -> numpy.ndarray:
     return tv
 
 
-def expected_conditional_variance(probs: numpy.ndarray) -> numpy.ndarray:
+def expected_conditional_variance(probs: np.ndarray) -> np.ndarray:
     """
     Computes the aleatoric uncertainty using variance-based measures.
     Assumes that the input is from a distribution over parameters of
@@ -36,7 +35,7 @@ def expected_conditional_variance(probs: numpy.ndarray) -> numpy.ndarray:
     return ecv
 
 
-def variance_conditional_expectation(probs: numpy.ndarray) -> numpy.ndarray:
+def variance_conditional_expectation(probs: np.ndarray) -> np.ndarray:
     """
     Computes the epistemic uncertainty using variance-based measures.
     Assumes that the input is from a distribution over parameters of
@@ -52,7 +51,7 @@ def variance_conditional_expectation(probs: numpy.ndarray) -> numpy.ndarray:
     return vce
 
 
-def total_differential_entropy(probs: numpy.ndarray) -> numpy.ndarray:
+def total_differential_entropy(probs: np.ndarray) -> np.ndarray:
     """
     Computes the epistemic uncertainty using entropy-based measures.
     Assumes that the input is from a distribution over parameters of
@@ -69,7 +68,7 @@ def total_differential_entropy(probs: numpy.ndarray) -> numpy.ndarray:
     return tde
 
 
-def conditional_differential_entropy(probs: numpy.ndarray) -> numpy.ndarray:
+def conditional_differential_entropy(probs: np.ndarray) -> np.ndarray:
     """
     Computes the aleatoric uncertainty using entropy-based measures.
     Assumes that the input is from a distribution over parameters of
@@ -85,7 +84,7 @@ def conditional_differential_entropy(probs: numpy.ndarray) -> numpy.ndarray:
     return cde
 
 
-def mutual_information(probs: numpy.ndarray) -> numpy.ndarray:
+def mutual_information(probs: np.ndarray) -> np.ndarray:
     """
     Computes the epistemic uncertainty using entropy-based measures.
     Assumes that the input is from a distribution over parameters of
