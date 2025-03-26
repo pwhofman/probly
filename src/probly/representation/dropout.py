@@ -14,7 +14,6 @@ class Dropout(nn.Module):
 
     def __init__(self, base: nn.Module, p: float = 0.25) -> None:
         super().__init__()
-        self.base = base
         self.p = p
         self.model = None
         self._convert(base)
@@ -32,17 +31,23 @@ class Dropout(nn.Module):
     def _convert(self, base: nn.Module) -> None:
         """
         Converts the base model to a dropout model, stored in model, by looping through all the layers
-        and adding a dropout layer after each linear layer.
+        and adding a dropout layer before each linear layer.
         Args:
             base: torch.nn.Module, The base model to be used for dropout.
         """
         self.model = copy.deepcopy(base)
-        first = True
-        for name, module in self.model.named_modules():
-            if isinstance(module, nn.Linear):
-                if not first:
-                    setattr(self.model, name, nn.Sequential(nn.Dropout(p=self.p), module))
-            first = False
+
+        def apply_dropout(module, first_layer=True):
+            for name, child in module.named_children():
+                if isinstance(child, nn.Linear) and not first_layer:
+                    setattr(module, name, nn.Sequential(nn.Dropout(p=self.p), child))  # add dropout
+                else:
+                    if first_layer and not isinstance(child,
+                                                      nn.Sequential):  # ignore Sequential layers as first layers
+                        first_layer = False  # skip first layer
+                    apply_dropout(child, first_layer=first_layer)  # apply recursively to all layers
+
+        apply_dropout(self.model)
 
     def eval(self) -> None:
         """
