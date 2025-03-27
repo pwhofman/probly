@@ -10,6 +10,10 @@ class Evidential(nn.Module):
     Args:
         base: torch.nn.Module, The base model to be used.
         activation: torch.nn.Module, The activation function that will be used.
+
+    Attributes:
+        model: torch.nn.Module, The transformed model with an activation function suitable
+        for evidential classification.
     """
 
     def __init__(self, base: nn.Module, activation: nn.Module = nn.Softplus()) -> None:

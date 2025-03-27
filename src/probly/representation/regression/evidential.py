@@ -11,6 +11,10 @@ class Evidential(nn.Module):
     This class implements an evidential deep learning model for regression.
     Args:
         base: torch.nn.Module, The base model to be used.
+
+    Attributes:
+        model: torch.nn.Module, The transformed model with a normal inverse gamma layer suitable
+        for evidential regression.
     """
 
     def __init__(self, base: nn.Module) -> None:

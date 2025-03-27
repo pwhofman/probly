@@ -13,12 +13,15 @@ class DropConnect(nn.Module):
     Args:
         base: torch.nn.Module, The base model to be used for DropConnect.
         p: float, The probability of dropping out individual weights.
+
+    Attributes:
+        p: float, The probability of dropping out individual weights.
+        model: torch.nn.Module, The transformed model with DropConnect layers.
     """
 
     def __init__(self, base: nn.Module, p: float = 0.25) -> None:
         super().__init__()
         self.p = p
-        self.model = None
         self._convert(base)
 
     def forward(self, x: torch.Tensor, n_samples: int) -> torch.Tensor:

@@ -15,6 +15,10 @@ class SubEnsemble(nn.Module):
         base: torch.nn.Module, The base model to be used.
         n_heads: int, The number of heads in the ensemble.
         head: torch.nn.Module, The classification head to be used. Can be a complete network or a single layer.
+
+    Attributes:
+        models: torch.nn.ModuleList, The list of models in the ensemble consisting of the frozen
+        base model and the trainable heads.
     """
 
     def __init__(self, base: nn.Module, n_heads: int, head: nn.Module) -> None:

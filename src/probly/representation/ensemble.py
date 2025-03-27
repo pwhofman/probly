@@ -12,6 +12,9 @@ class Ensemble(nn.Module):
     Args:
         base: torch.nn.Module, The base model to be used.
         n_members: int, The number of members in the ensemble.
+
+    Attributes:
+        models: torch.nn.ModuleList, The list of models in the ensemble based on the base model.
     """
 
     def __init__(self, base: nn.Module, n_members: int) -> None:
