@@ -1,5 +1,9 @@
+import copy
+
 import torch
 import torch.nn as nn
+
+from ..utils import torch_reset_all_parameters
 
 
 class SubEnsemble(nn.Module):
@@ -11,12 +15,14 @@ class SubEnsemble(nn.Module):
         base: torch.nn.Module, The base model to be used.
         n_heads: int, The number of heads in the ensemble.
         head: torch.nn.Module, The classification head to be used. Can be a complete network or a single layer.
+
+    Attributes:
+        models: torch.nn.ModuleList, The list of models in the ensemble consisting of the frozen
+        base model and the trainable heads.
     """
 
     def __init__(self, base: nn.Module, n_heads: int, head: nn.Module) -> None:
         super().__init__()
-        self.base = base
-        self.models = None
         self._convert(base, n_heads, head)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -39,4 +45,8 @@ class SubEnsemble(nn.Module):
         """
         for param in base.parameters():
             param.requires_grad = False
-        self.models = nn.ModuleList([nn.Sequential(base, head) for _ in range(n_heads)])
+        self.models = nn.ModuleList()
+        for _ in range(n_heads):
+            h = copy.deepcopy(head)
+            torch_reset_all_parameters(h)
+            self.models.append(nn.Sequential(base, h))
