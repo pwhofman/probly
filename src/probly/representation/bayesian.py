@@ -24,9 +24,24 @@ class Bayesian(nn.Module):
         self._convert(base, posterior_std, prior_mean, prior_std)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Forward pass of the Bayesian model.
+        Args:
+            x: torch.Tensor, input data
+        Returns:
+            torch.Tensor, model output
+        """
         return self.model(x)
 
     def represent_uncertainty(self, x: torch.Tensor, n_samples: int=25) -> torch.Tensor:
+        """
+        Forward pass that gives an uncertainty representation.
+        Args:
+            x: torch.Tensor, input data
+            n_samples: int, number of samples to draw from posterior
+        Returns:
+            torch.Tensor, uncertainty representation, samples from the posterior
+        """
         return torch.stack([self.model(x) for _ in range(n_samples)], dim=1)
 
     def _convert(self,
