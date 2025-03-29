@@ -26,6 +26,7 @@ class Dropout(nn.Module):
         Forward pass of the dropout ensemble.
         Args:
             x: torch.Tensor, input data
+            n_samples: int, number of samples
         Returns:
             torch.Tensor, ensemble output
         """

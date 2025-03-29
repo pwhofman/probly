@@ -1,8 +1,9 @@
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 
 
-class EvidentialLogLoss(torch.nn.Module):
+class EvidentialLogLoss(nn.Module):
     """
     Evidential Log Loss based on https://arxiv.org/pdf/1806.01768.
     """
@@ -25,7 +26,7 @@ class EvidentialLogLoss(torch.nn.Module):
         return loss
 
 
-class EvidentialCELoss(torch.nn.Module):
+class EvidentialCELoss(nn.Module):
     """
     Evidential Cross Entropy Loss based on https://arxiv.org/pdf/1806.01768.
     """
@@ -48,7 +49,7 @@ class EvidentialCELoss(torch.nn.Module):
         return loss
 
 
-class EvidentialMSELoss(torch.nn.Module):
+class EvidentialMSELoss(nn.Module):
     """
     Evidential Mean Square Error Loss based on https://arxiv.org/pdf/1806.01768.
     """
@@ -75,7 +76,7 @@ class EvidentialMSELoss(torch.nn.Module):
         return loss
 
 
-class EvidentialKLDivergence(torch.nn.Module):
+class EvidentialKLDivergence(nn.Module):
     """
     Evidential KL Divergence Loss based on https://arxiv.org/pdf/1806.01768.
     """
@@ -105,7 +106,8 @@ class EvidentialKLDivergence(torch.nn.Module):
         loss = torch.mean(first + second)
         return loss
 
-class EvidentialNIGNLLLoss(torch.nn.Module):
+
+class EvidentialNIGNLLLoss(nn.Module):
     """
     Evidential normal inverse gamma negative log likelihood loss based on
     https://arxiv.org/abs/1910.02600.
@@ -131,7 +133,8 @@ class EvidentialNIGNLLLoss(torch.nn.Module):
                 - torch.lgamma(inputs['alpha'] + 0.5)).mean()
         return loss
 
-class EvidentialRegressionRegularization(torch.nn.Module):
+      
+class EvidentialRegressionRegularization(nn.Module):
     def __init__(self) -> None:
         super().__init__()
 
@@ -146,3 +149,35 @@ class EvidentialRegressionRegularization(torch.nn.Module):
         """
         loss = (torch.abs(targets - inputs['gamma']) * (2 * inputs['nu'] + inputs['alpha'])).mean()
         return loss
+      
+  
+class FocalLoss(nn.Module):
+     """
+     Focal Loss based on https://arxiv.org/pdf/1708.02002
+     Args:
+         alpha: float, control importance of minority class
+         gamma: float, control loss for hard instances
+     """
+
+     def __init__(self, alpha: float = 1, gamma: float = 2) -> None:
+         super().__init__()
+         self.alpha = alpha
+         self.gamma = gamma
+
+     def forward(self, inputs: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
+         """
+         Forward pass of the focal loss.
+         Args:
+             inputs: torch.Tensor of size (n_instances, n_classes)
+             targets: torch.Tensor of size (n_instances,)
+         Returns:
+             loss: torch.Tensor, mean loss value
+         """
+         targets_one_hot = F.one_hot(targets, num_classes=inputs.shape[-1])
+         prob = F.softmax(inputs, dim=-1)
+         p_t = torch.sum(prob * targets_one_hot, dim=-1)
+
+         log_prob = torch.log(prob)
+         loss = -self.alpha * (1 - p_t) ** self.gamma * torch.sum(log_prob * targets_one_hot, dim=-1)
+
+         return torch.mean(loss)
