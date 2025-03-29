@@ -133,7 +133,7 @@ class EvidentialNIGNLLLoss(nn.Module):
                 - torch.lgamma(inputs['alpha'] + 0.5)).mean()
         return loss
 
-      
+
 class EvidentialRegressionRegularization(nn.Module):
     def __init__(self) -> None:
         super().__init__()
@@ -149,8 +149,8 @@ class EvidentialRegressionRegularization(nn.Module):
         """
         loss = (torch.abs(targets - inputs['gamma']) * (2 * inputs['nu'] + inputs['alpha'])).mean()
         return loss
-      
-  
+
+
 class FocalLoss(nn.Module):
      """
      Focal Loss based on https://arxiv.org/pdf/1708.02002
@@ -181,3 +181,13 @@ class FocalLoss(nn.Module):
          loss = -self.alpha * (1 - p_t) ** self.gamma * torch.sum(log_prob * targets_one_hot, dim=-1)
 
          return torch.mean(loss)
+
+
+class EvidenceLowerBound(nn.Module):
+    def __init__(self, kl_penalty):
+        super().__init__()
+        self.kl_penalty = kl_penalty
+
+    def forward(self, inputs, targets, kl):
+        loss = F.cross_entropy(inputs, targets) + self.kl_penalty * kl
+        return loss
