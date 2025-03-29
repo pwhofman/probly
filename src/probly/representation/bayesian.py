@@ -7,17 +7,42 @@ from .layers import BayesConv2d, BayesLinear
 
 
 class Bayesian(nn.Module):
-    def __init__(self, base, posterior_std=0.05, prior_mean=0.0, prior_std=1.0):
+    """
+    This class implements a dropout model to be used for uncertainty quantification.
+    Args:
+        base: torch.nn.Module, The base model.
+
+    Attributes:
+        model: torch.nn.Module, The transformed model with Bayesian layers.
+    """
+    def __init__(self,
+                 base: nn.Module,
+                 posterior_std: float=0.05,
+                 prior_mean: float=0.0,
+                 prior_std: float=1.0):
         super().__init__()
         self._convert(base, posterior_std, prior_mean, prior_std)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.model(x)
 
-    def represent_uncertainty(self, x, n_samples=25):
+    def represent_uncertainty(self, x: torch.Tensor, n_samples: int=25) -> torch.Tensor:
         return torch.stack([self.model(x) for _ in range(n_samples)], dim=1)
 
-    def _convert(self, base, posterior_std, prior_mean, prior_std):
+    def _convert(self,
+                 base: nn.Module,
+                 posterior_std: float,
+                 prior_mean: float,
+                 prior_std: float) -> None:
+        """
+        Converts the base model to a Bayesian model, stored in model, by replacing all layers by
+        Bayesian layers.
+        Args:
+            base: torch.nn.Module, The base model to be used for dropout.
+            posterior_std: float, The posterior standard deviation.
+            prior_mean: float, The prior mean.
+            prior_std: float, The prior standard deviation.
+        """
         self.model = copy.deepcopy(base)
         self.n_parameters = 0
         for name, child in self.model.named_children():
@@ -43,7 +68,10 @@ class Bayesian(nn.Module):
 
 
     @property
-    def kl_divergence(self):
+    def kl_divergence(self) -> torch.Tensor:
+        """
+        Collects the KL divergence of the model by summing the KL divergence of each layer.
+        """
         kl = 0
         for module in self.model.modules():
             if isinstance(module, BayesLinear | BayesConv2d):

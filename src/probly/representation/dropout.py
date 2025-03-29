@@ -6,7 +6,7 @@ import torch.nn as nn
 
 class Dropout(nn.Module):
     """
-    This class implements a dropout layer to be used for uncertainty quantification.
+    This class implements a dropout model to be used for uncertainty quantification.
     Args:
         base: torch.nn.Module, The base model to be used for dropout.
         p: float, The probability of dropping out a neuron.
