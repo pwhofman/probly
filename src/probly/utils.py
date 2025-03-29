@@ -3,6 +3,7 @@ from collections.abc import Iterable
 
 import numpy as np
 import torch
+import torch.nn as nn
 
 
 def powerset(iterable: Iterable) -> list[tuple]:
@@ -63,6 +64,29 @@ def differential_entropy_gaussian(sigma2: float | np.ndarray,
     """
     diff_ent = 0.5 * np.log(2 * np.pi * np.e * sigma2) / np.log(base)
     return diff_ent
+
+
+def kl_divergence_gaussian_torch(mu1: nn.Parameter,
+                                 sigma21: nn.Parameter,
+                                 mu2: nn.Parameter,
+                                 sigma22: nn.Parameter,
+                                 base = torch.tensor(2)) -> torch.tensor:
+    """
+    Compute the KL-divergence between two Gaussian distributions.
+    https://en.wikipedia.org/wiki/Kullback–Leibler_divergence#Examples
+    Args:
+        mu1: float or numpy.ndarray shape (n_instances,), mean of the first Gaussian distribution
+        sigma21: float or numpy.ndarray shape (n_instances,), variance of the first Gaussian distribution
+        mu2: float or numpy.ndarray shape (n_instances,), mean of the second Gaussian distribution
+        sigma22: float or numpy.ndarray shape (n_instances,), variance of the second Gaussian distribution
+        base: float, base of the logarithm
+    Returns:
+        kl_div: float or numpy.ndarray shape (n_instances,), KL-divergence between the two Gaussian distributions
+    """
+    kl_div = (0.5 * torch.log(sigma22 / sigma21) / torch.log(base)
+              + (sigma21 + (mu1 - mu2) ** 2) / (2 * sigma22)
+              - 0.5)
+    return kl_div
 
 
 def kl_divergence_gaussian(mu1: float | np.ndarray, sigma21: float | np.ndarray,
