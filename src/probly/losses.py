@@ -97,7 +97,7 @@ class EvidentialKLDivergence(nn.Module):
         y = F.one_hot(targets, inputs.shape[1])
         alphas_tilde = y + (1 - y) * alphas
         strengths_tilde = torch.sum(alphas_tilde, dim=1)
-        K = torch.full((inputs.shape[0],), inputs.shape[1])
+        K = torch.full((inputs.shape[0],), inputs.shape[1], device=inputs.device)
         first = (torch.lgamma(strengths_tilde) -
                  torch.lgamma(K) -
                  torch.sum(torch.lgamma(alphas_tilde), dim=1)
@@ -133,7 +133,7 @@ class EvidentialNIGNLLLoss(nn.Module):
                 - torch.lgamma(inputs['alpha'] + 0.5)).mean()
         return loss
 
-      
+
 class EvidentialRegressionRegularization(nn.Module):
     def __init__(self) -> None:
         super().__init__()
@@ -149,8 +149,8 @@ class EvidentialRegressionRegularization(nn.Module):
         """
         loss = (torch.abs(targets - inputs['gamma']) * (2 * inputs['nu'] + inputs['alpha'])).mean()
         return loss
-      
-  
+
+
 class FocalLoss(nn.Module):
      """
      Focal Loss based on https://arxiv.org/pdf/1708.02002
