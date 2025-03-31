@@ -50,7 +50,7 @@ class Dropout(nn.Module):
         """
         self.model = copy.deepcopy(base)
 
-        def apply_dropout(module, first_layer=True):
+        def apply_dropout(module: nn.Module, first_layer: bool = True) -> None:
             for name, child in module.named_children():
                 if isinstance(child, nn.Linear) and not first_layer:
                     setattr(module, name, nn.Sequential(nn.Dropout(p=self.p), child))  # add dropout

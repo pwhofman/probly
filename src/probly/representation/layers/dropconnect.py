@@ -17,7 +17,7 @@ class DropConnectLinear(nn.Module):
 
     """
 
-    def __init__(self, base_layer: nn.Linear, p: float = 0.25):
+    def __init__(self, base_layer: nn.Linear, p: float = 0.25) -> None:
         """Initialize a DropConnectLinear layer based on given linear base layer.
 
         Args:

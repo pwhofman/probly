@@ -53,7 +53,7 @@ class DropConnect(nn.Module):
         """
         self.model = copy.deepcopy(base)
 
-        def apply_drop_connect(module, first_layer=True):
+        def apply_drop_connect(module: nn.Module, first_layer: bool = True) -> None:
             for name, child in module.named_children():
                 if isinstance(child, nn.Linear) and not first_layer:
                     setattr(module, name, DropConnectLinear(child, p=self.p))  # add DropConnect

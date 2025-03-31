@@ -15,14 +15,16 @@ class Evidential(nn.Module):
 
     """
 
-    def __init__(self, base: nn.Module, activation: nn.Module = nn.Softplus()) -> None:
+    def __init__(self, base: nn.Module, activation: nn.Module = None) -> None:
         """Initialize an evidential model by converting the base model into an evidential model.
 
         Args:
-            base: torch.nn.Module, the base model to be used.
-            activation: torch.nn.Module, the activation function that will be used.
+            base: torch.nn.Module, the base model to be used
+            activation: torch.nn.Module, the activation function that will be used
         """
         super().__init__()
+        if activation is None:
+            activation = nn.Softplus()
         self._convert(base, activation)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:

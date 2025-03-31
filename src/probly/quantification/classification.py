@@ -212,7 +212,7 @@ def epistemic_uncertainty_distance(probs: np.ndarray) -> np.ndarray:
 
     """
 
-    def fun(q, p):
+    def fun(q: np.ndarray, p: np.ndarray) -> np.ndarray:
         f = np.mean(np.linalg.norm(p - q[None, :], ord=1, axis=1))
         return f
 
@@ -241,7 +241,7 @@ def upper_entropy(probs: np.ndarray, base: float = 2) -> np.ndarray:
 
     """
 
-    def fun(x):
+    def fun(x: np.ndarray) -> np.ndarray:
         return -entropy(x, base=base)
 
     x0 = probs.mean(axis=1)
@@ -269,7 +269,7 @@ def lower_entropy(probs: np.ndarray, base: float = 2) -> np.ndarray:
 
     """
 
-    def fun(x):
+    def fun(x: np.ndarray) -> np.ndarray:
         return entropy(x, base=base)
 
     x0 = probs.mean(axis=1)

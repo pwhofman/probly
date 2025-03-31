@@ -163,7 +163,7 @@ class EvidentialRegressionRegularization(nn.Module):
         """Initialize an instance of the evidential regression regularization class."""
         super().__init__()
 
-    def forward(self, inputs, targets):
+    def forward(self, inputs: dict[str, torch.Tensor], targets: torch.Tensor) -> torch.Tensor:
         """Forward pass of the evidential regression regularization.
 
         Args:
