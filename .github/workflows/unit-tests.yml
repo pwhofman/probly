@@ -30,7 +30,7 @@ jobs:
             **/uv.lock
 
     - name: Install dependencies
-      run: uv sync --all-extras --dev
+      run: uv sync --dev
 
     - name: Test with pytest
       run: uv run pytest -n logical
