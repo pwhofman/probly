@@ -86,14 +86,12 @@ class DCICDataset(torch.utils.data.Dataset):
         self.label_mappings = {
             label: idx
             for idx, label in enumerate(
-                set(
+                {
                     label for labels in self.image_labels.values() for label in labels
-                )  # TODO simplify code here
+                }  # TODO simplify code here
             )
         }
-        self.num_classes = len(
-            set(label for labels in self.image_labels.values() for label in labels)
-        )
+        self.num_classes = len({label for labels in self.image_labels.values() for label in labels})
 
         self.data = []
         self.targets = []
