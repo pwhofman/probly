@@ -1,3 +1,5 @@
+"""Init module for layer implementations."""
+
 from .dropconnect import DropConnectLinear
 from .normalinversegamma import NormalInverseGammaLinear
 

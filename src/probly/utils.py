@@ -1,3 +1,5 @@
+"""General utility functions for all other modules."""
+
 import itertools
 from collections.abc import Iterable
 

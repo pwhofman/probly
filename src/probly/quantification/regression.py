@@ -1,10 +1,13 @@
+"""Collection of uncertainty quantification measures for regression settings."""
+
 import numpy as np
 
 from ..utils import differential_entropy_gaussian, kl_divergence_gaussian
 
 
 def total_variance(probs: np.ndarray) -> np.ndarray:
-    """Computes the total uncertainty using variance-based measures.
+    """Compute total variance as the total uncertainty using variance-based measures.
+
     Assumes that the input is from a distribution over parameters of
     a normal distribution. The first element of the parameter vector is the mean
     and the second element is the variance.
@@ -22,8 +25,9 @@ def total_variance(probs: np.ndarray) -> np.ndarray:
 
 
 def expected_conditional_variance(probs: np.ndarray) -> np.ndarray:
-    """Computes the aleatoric uncertainty using variance-based measures.
-    Assumes that the input is from a distribution over parameters of
+    """Compute expected conditional variance as the aleatoric uncertainty using variance-based measures.
+
+    Assume that the input is from a distribution over parameters of
     a normal distribution. The first element of the parameter vector is the mean
     and the second element is the variance.
     The aleatoric uncertainty is the mean of the variance of the samples.
@@ -40,8 +44,9 @@ def expected_conditional_variance(probs: np.ndarray) -> np.ndarray:
 
 
 def variance_conditional_expectation(probs: np.ndarray) -> np.ndarray:
-    """Computes the epistemic uncertainty using variance-based measures.
-    Assumes that the input is from a distribution over parameters of
+    """Compute variance of conditional expectation as the epistemic uncertainty using variance-based measures.
+
+    Assume that the input is from a distribution over parameters of
     a normal distribution. The first element of the parameter vector is the mean
     and the second element is the variance.
     The epistemic uncertainty is the variance of the mean of the samples.
@@ -58,8 +63,9 @@ def variance_conditional_expectation(probs: np.ndarray) -> np.ndarray:
 
 
 def total_differential_entropy(probs: np.ndarray) -> np.ndarray:
-    """Computes the epistemic uncertainty using entropy-based measures.
-    Assumes that the input is from a distribution over parameters of
+    """Compute total differential entropy as the epistemic uncertainty using entropy-based measures.
+
+    Assume that the input is from a distribution over parameters of
     a normal distribution. The first element of the parameter vector is the mean
     and the second element is the variance.
     The total uncertainty is the differential entropy of the mixture of normal distributions.
@@ -77,8 +83,9 @@ def total_differential_entropy(probs: np.ndarray) -> np.ndarray:
 
 
 def conditional_differential_entropy(probs: np.ndarray) -> np.ndarray:
-    """Computes the aleatoric uncertainty using entropy-based measures.
-    Assumes that the input is from a distribution over parameters of
+    """Compute conditional differential entropy as the aleatoric uncertainty using entropy-based measures.
+
+    Assume that the input is from a distribution over parameters of
     a normal distribution. The first element of the parameter vector is the mean
     and the second element is the variance.
     The aleatoric uncertainty is the mean of the differential entropy of the samples.
@@ -95,8 +102,9 @@ def conditional_differential_entropy(probs: np.ndarray) -> np.ndarray:
 
 
 def mutual_information(probs: np.ndarray) -> np.ndarray:
-    """Computes the epistemic uncertainty using entropy-based measures.
-    Assumes that the input is from a distribution over parameters of
+    """Compute mutual information as the epistemic uncertainty using entropy-based measures.
+
+    Assume that the input is from a distribution over parameters of
     a normal distribution. The first element of the parameter vector is the mean
     and the second element is the variance.
     The epistemic uncertainty is the expected KL-divergence of the samples

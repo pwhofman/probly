@@ -1,3 +1,5 @@
+"""DropConnect class implementation."""
+
 import copy
 
 import torch
@@ -7,20 +9,25 @@ from .layers import DropConnectLinear
 
 
 class DropConnect(nn.Module):
-    """This class implements DropConnect to be used for uncertainty quantification
-    based on http://proceedings.mlr.press/v28/wan13.pdf.
+    """Implementation of a DropConnect model to be used for uncertainty quantification.
 
-    Args:
-        base: torch.nn.Module, The base model to be used for DropConnect.
-        p: float, The probability of dropping out individual weights.
+    Implementation is based on http://proceedings.mlr.press/v28/wan13.pdf.
 
     Attributes:
-        p: float, The probability of dropping out individual weights.
-        model: torch.nn.Module, The transformed model with DropConnect layers.
+        p: float, the probability of dropping out individual weights.
+        model: torch.nn.Module, the model with DropConnect layers.
 
     """
 
     def __init__(self, base: nn.Module, p: float = 0.25) -> None:
+        """Initialize an instance of the DropConnect class.
+
+        Convert the base model into a DropConnect model.
+
+        Args:
+            base: torch.nn.Module, The base model to be used.
+            p: float, the probability of dropping out individual weights.
+        """
         super().__init__()
         self.p = p
         self._convert(base)
@@ -38,7 +45,7 @@ class DropConnect(nn.Module):
         return torch.stack([self.model(x) for _ in range(n_samples)], dim=1)
 
     def _convert(self, base: nn.Module) -> None:
-        """Converts the base model to a DropConnect model, stored in `self.model`, by modifying all `nn.Linear` layers.
+        """Converts the base model to a DropConnect model by modifying all `nn.Linear` layers.
 
         Args:
             base: torch.nn.Module, The base model to be used for DropConnect.

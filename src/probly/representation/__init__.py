@@ -1,3 +1,5 @@
+"""Init module for representation implementations."""
+
 from .dropconnect import DropConnect
 from .dropout import Dropout
 from .ensemble import Ensemble

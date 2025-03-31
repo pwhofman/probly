@@ -1,3 +1,5 @@
+"""Collection of uncertainty quantification measures for classification settings."""
+
 from collections.abc import Callable
 
 import numpy as np
@@ -8,7 +10,9 @@ from ..utils import moebius, powerset
 
 
 def total_entropy(probs: np.ndarray, base: float = 2) -> np.ndarray:
-    """Compute the total uncertainty using samples from a second-order distribution.
+    """Compute the total entropy as the total uncertainty.
+
+    The computation is based on samples from a second-order distribution.
 
     Args:
         probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
@@ -22,7 +26,9 @@ def total_entropy(probs: np.ndarray, base: float = 2) -> np.ndarray:
 
 
 def conditional_entropy(probs: np.ndarray, base: float = 2) -> np.ndarray:
-    """Compute the aleatoric uncertainty using samples from a second-order distribution.
+    """Compute conditional entropy as the aleatoric uncertainty.
+
+    The computation is based on samples from a second-order distribution.
 
     Args:
         probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
@@ -36,7 +42,9 @@ def conditional_entropy(probs: np.ndarray, base: float = 2) -> np.ndarray:
 
 
 def mutual_information(probs: np.ndarray, base: float = 2) -> np.ndarray:
-    """Compute the epistemic uncertainty using samples from a second-order distribution.
+    """Compute the mutual information as epistemic uncertainty.
+
+    The computation is based on samples from a second-order distribution.
 
     Args:
         probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
@@ -52,8 +60,9 @@ def mutual_information(probs: np.ndarray, base: float = 2) -> np.ndarray:
 
 
 def expected_loss(probs: np.ndarray, loss_fn: Callable[[np.ndarray], np.ndarray]) -> np.ndarray:
-    """Computes the expected loss of the second-order distribution using samples
-    from the second-order distribution.
+    """Compute the expected loss of the second-order distribution.
+
+    The computation is based on samples from a second-order distribution.
 
     Args:
         probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
@@ -69,8 +78,9 @@ def expected_loss(probs: np.ndarray, loss_fn: Callable[[np.ndarray], np.ndarray]
 
 
 def expected_entropy(probs: np.ndarray, loss_fn: Callable[[np.ndarray], np.ndarray]) -> np.ndarray:
-    """Computes the expected entropy of the second-order distribution using samples
-    from the second-order distribution.
+    """Compute the expected entropy of the second-order distribution.
+
+    The computation is based on samples from a second-order distribution.
 
     Args:
         probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
@@ -87,8 +97,9 @@ def expected_entropy(probs: np.ndarray, loss_fn: Callable[[np.ndarray], np.ndarr
 def expected_divergence(
     probs: np.ndarray, loss_fn: Callable[[np.ndarray], np.ndarray]
 ) -> np.ndarray:
-    """Computes the expected divergence to the mean of the second-order distribution using samples
-    from the second-order distribution.
+    """Compute the expected divergence to the mean of the second-order distribution.
+
+     The computation is based on samples from a second-order distribution.
 
     Args:
         probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
@@ -106,8 +117,9 @@ def expected_divergence(
 
 
 def total_variance(probs: np.ndarray) -> np.ndarray:
-    """Computes the total uncertainty using variance-based measures based on samples from
-    a second-order distribution.
+    """Compute the total uncertainty using variance-based measures.
+
+    The computation is based on samples from a second-order distribution.
 
     Args:
         probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
@@ -122,8 +134,9 @@ def total_variance(probs: np.ndarray) -> np.ndarray:
 
 
 def expected_conditional_variance(probs: np.ndarray) -> np.ndarray:
-    """Computes the aleatoric uncertainty using variance-based measures based on samples from
-    a second-order distribution.
+    """Compute the aleatoric uncertainty using variance-based measures.
+
+     The computation is based on samples from a second-order distribution.
 
     Args:
         probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
@@ -137,8 +150,9 @@ def expected_conditional_variance(probs: np.ndarray) -> np.ndarray:
 
 
 def variance_conditional_expectation(probs: np.ndarray) -> np.ndarray:
-    """Computes the epistemic uncertainty using variance-based measures based on samples from
-    a second-order distribution.
+    """Compute the epistemic uncertainty using variance-based measures.
+
+     The computation is based on samples from a second-order distribution.
 
     Args:
         probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
@@ -154,6 +168,7 @@ def variance_conditional_expectation(probs: np.ndarray) -> np.ndarray:
 
 def total_uncertainty_distance(probs: np.ndarray) -> np.ndarray:
     """Compute the total uncertainty using samples from a second-order distribution.
+
     The measure of total uncertainty is from https://arxiv.org/pdf/2312.00995.
 
     Args:
@@ -170,6 +185,7 @@ def total_uncertainty_distance(probs: np.ndarray) -> np.ndarray:
 
 def aleatoric_uncertainty_distance(probs: np.ndarray) -> np.ndarray:
     """Compute the aleatoric uncertainty using samples from a second-order distribution.
+
     The measure of aleatoric uncertainty is from https://arxiv.org/pdf/2312.00995.
 
     Args:
@@ -185,6 +201,7 @@ def aleatoric_uncertainty_distance(probs: np.ndarray) -> np.ndarray:
 
 def epistemic_uncertainty_distance(probs: np.ndarray) -> np.ndarray:
     """Compute the epistemic uncertainty using samples from a second-order distribution.
+
     The measure of epistemic uncertainty is from https://arxiv.org/pdf/2312.00995.
 
     Args:
@@ -210,10 +227,11 @@ def epistemic_uncertainty_distance(probs: np.ndarray) -> np.ndarray:
 
 
 def upper_entropy(probs: np.ndarray, base: float = 2) -> np.ndarray:
-    """Computes the upper entropy of a credal set. Given the probs array the lower and upper
-    probabilities are computed and the credal set is assumed to be a convex set including all
-    probability distributions in the interval [lower, upper] for all classes. The upper entropy
-    of this set is computed.
+    """Compute the upper entropy of a credal set.
+
+    Given the probs array the lower and upper probabilities are computed and the credal set is
+    assumed to be a convex set including all probability distributions in the interval [lower, upper]
+    for all classes. The upper entropy of this set is computed.
 
     Args:
         probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
@@ -237,10 +255,11 @@ def upper_entropy(probs: np.ndarray, base: float = 2) -> np.ndarray:
 
 
 def lower_entropy(probs: np.ndarray, base: float = 2) -> np.ndarray:
-    """Computes the lower entropy of a credal set. Given the probs array the lower and upper
-    probabilities are computed and the credal set is assumed to be a convex set including all
-    probability distributions in the interval [lower, upper] for all classes. The lower entropy
-    of this set is computed.
+    """Compute the lower entropy of a credal set.
+
+    Given the probs array the lower and upper probabilities are computed and the credal set is
+    assumed to be a convex set including all probability distributions in the interval [lower, upper]
+    for all classes. The lower entropy of this set is computed.
 
     Args:
         probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
@@ -264,8 +283,9 @@ def lower_entropy(probs: np.ndarray, base: float = 2) -> np.ndarray:
 
 
 def generalised_hartley(probs: np.ndarray, base: float = 2) -> np.ndarray:
-    """Computes the generalised Hartley measure given the extreme points of
-    a credal set.
+    """Compute the generalised Hartley measure.
+
+     Based on the extreme points of a credal set the generalised Hartley measure is computed.
 
     Args:
         probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)

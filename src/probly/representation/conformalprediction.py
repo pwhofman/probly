@@ -4,8 +4,8 @@ import torch.nn.functional as F
 
 
 class ConformalPrediction:
-    """
-    This class implements conformal prediction for a given model.
+    """This class implements conformal prediction for a given model.
+
     Args:
         base: torch.nn.Module, The base model to be used for conformal prediction.
         alpha: float, The error rate for conformal prediction.
@@ -14,6 +14,7 @@ class ConformalPrediction:
         model: torch.nn.Module, The base model.
         alpha: float, The error rate for conformal prediction.
         q: float, The quantile value for conformal prediction.
+
     """
 
     def __init__(self, base: torch.nn.Module, alpha: float = 0.05) -> None:
@@ -21,23 +22,25 @@ class ConformalPrediction:
         self.alpha = alpha
 
     def __call__(self, x: torch.Tensor) -> torch.Tensor:
-        """
-        Forward pass of the model without conformal prediction.
+        """Forward pass of the model without conformal prediction.
+
         Args:
             x: torch.Tensor, input data
         Returns:
             torch.Tensor, model output
+
         """
         return self.model(x)
 
     def represent_uncertainty(self, x: torch.Tensor) -> torch.Tensor:
-        """
-        Represent the uncertainty of the model by a conformal prediction set.
+        """Represent the uncertainty of the model by a conformal prediction set.
+
         Args:
             x: torch.Tensor, input data
         Returns:
             torch.Tensor of shape (n_instances, n_classes), the conformal prediction set,
             where each element is a boolean indicating whether the class is included in the set.
+
         """
         with torch.no_grad():
             outputs = self.model(x)
@@ -46,10 +49,11 @@ class ConformalPrediction:
         return sets
 
     def calibrate(self, loader: torch.utils.data.DataLoader) -> None:
-        """
-        Perform the calibration step for conformal prediction.
+        """Perform the calibration step for conformal prediction.
+
         Args:
             loader: DataLoader, The data loader for the calibration set.
+
         """
         self.model.eval()
         scores = []

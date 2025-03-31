@@ -1,3 +1,5 @@
+"""Collection of performance metrics to evaluate predictions."""
+
 import numpy as np
 
 
@@ -32,14 +34,16 @@ def expected_calibration_error(probs: np.ndarray, labels: np.ndarray, num_bins: 
 
 
 def coverage(preds: np.ndarray, targets: np.ndarray) -> float:
-    """
-    Compute the coverage of set-valued predictions.
+    """Compute the coverage of set-valued predictions.
+
     Args:
         preds: numpy.ndarray of shape (n_instances, n_classes) or
         (n_instances, n_samples, n_classes)
         targets: numpy.ndarray of shape (n_instances,) or (n_instances, n_classes)
+
     Returns:
         cov: float, coverage of the set-valued predictions
+
     """
     if preds.ndim == 2:
         cov = np.mean(preds[np.arange(preds.shape[0]), targets])
@@ -54,15 +58,19 @@ def coverage(preds: np.ndarray, targets: np.ndarray) -> float:
 
 
 def efficiency(preds: np.ndarray) -> float:
-    """
-    Compute the efficiency of set-valued predictions. In the case of a set over classes this
-    is the mean of the number of classes in the set. In the case of a credal set, this is computed
-    by the mean difference between the upper and lower probabilities.
+    """Compute the efficiency of set-valued predictions.
+
+    In the case of a set over classes this is the mean of the number of classes in the set. In the
+    case of a credal set, this is computed by the mean difference between the upper and lower
+    probabilities.
+
     Args:
         preds: numpy.ndarray of shape (n_instances, n_classes) or
         (n_instances, n_samples, n_classes)
+
     Returns:
         eff: float, efficiency of the set-valued predictions
+
     """
     if preds.ndim == 2:
         eff = np.mean(preds)

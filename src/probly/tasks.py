@@ -1,3 +1,5 @@
+"""Collection of downstream tasks to evaluate performance of uncertainty measures."""
+
 import numpy as np
 import sklearn.metrics as sm
 
@@ -5,7 +7,9 @@ import sklearn.metrics as sm
 def selective_prediction(
     criterion: np.ndarray, losses: np.ndarray, n_bins: int = 50
 ) -> tuple[float, np.ndarray]:
-    """Perform selective prediction based on criterion and losses.
+    """Selective prediction downstream task for evaluation.
+
+    Perform selective prediction based on criterion and losses.
     The criterion is used the sort the losses. In line with uncertainty
     literature the sorting is done in descending order, i.e.
     the losses with the largest criterion are rejected first.

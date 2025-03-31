@@ -99,13 +99,14 @@ dev = [
 [tool.ruff]
 line-length = 100
 target-version = "py310"
+output-format = "full"
 lint.select = [
     "E",
     "F",
     "I",
     "UP",
     "A",
-    #"D"  # TODO: Enable this in the near future
+    #"D",
 #  "ANN", # Handled by mypy
 #  "ARG",
 #  "B",
@@ -186,6 +187,16 @@ exclude = [
     "site-packages",
     "venv",
 ]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+#[tool.ruff.lint]
+# Extend what ruff is allowed to fix, even it it may break
+# This is okay given we use it all the time and it ensures
+# better practices. Would be dangerous if using for first
+# time on established project.
+# extend-safe-fixes = ["ALL"] # TODO use at some point
 
 # Exclude a variety of commonly ignored directories.
 [tool.ruff.lint.per-file-ignores]
