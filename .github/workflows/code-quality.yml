@@ -1,0 +1,37 @@
+# This workflow will install Python dependencies, run code-quality checks
+
+name: code-quality
+
+on:
+  pull_request:
+    branches:
+      - "*"
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.10"
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
+      with:
+          enable-cache: true
+
+    - name: Install pre-commit
+      run: |
+        uv sync --only-group lint
+        uv run pre-commit install
+
+    - name: Run code-quality checks
+      run: uv run pre-commit run --all-files
