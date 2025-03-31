@@ -44,6 +44,7 @@ def _root_traverser(
 ) -> t.TraverserResult[Module]:
     if state[ROOT] is None:
         state[ROOT] = obj
+        state[tnn.LAYER_COUNT] = 0
     return obj, state
 
 
