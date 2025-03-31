@@ -7,14 +7,7 @@ import torch.nn.init as init
 
 
 class BayesLinear(nn.Module):
-    """This class implements a Bayesian linear layer.
-    Args:
-        in_features: int, number of input features
-        out_features: int, number of output features
-        bias: bool, whether to use a bias term
-        posterior_std: float, initial standard deviation of the posterior
-        prior_mean: float, mean of the prior
-        prior_std: float, standard deviation of the prior
+    """Implements a Bayesian linear layer.
 
     Attributes:
         in_features: int, number of input features
@@ -39,6 +32,17 @@ class BayesLinear(nn.Module):
         prior_mean: float = 0.0,
         prior_std: float = 1.0,
     ) -> None:
+        """Initializes the Bayesian linear layer.
+
+        Reparameterize the standard deviation of the posterior weights using the re-parameterization trick.
+        Args:
+            in_features: int, number of input features
+            out_features: int, number of output features
+            bias: bool, whether to use a bias term
+            posterior_std: float, initial standard deviation of the posterior
+            prior_mean: float, mean of the prior
+            prior_std: float, standard deviation of the prior
+        """
         super().__init__()
         self.in_features = in_features
         self.out_features = out_features
@@ -52,8 +56,10 @@ class BayesLinear(nn.Module):
         self.weight_rho = nn.Parameter(torch.full((out_features, in_features), rho))
 
         # prior weights
-        self.weight_prior_mu = torch.full((out_features, in_features), prior_mean)
-        self.weight_prior_sigma = torch.full((out_features, in_features), prior_std)
+        self.register_buffer("weight_prior_mu", torch.full((out_features, in_features), prior_mean))
+        self.register_buffer(
+            "weight_prior_sigma", torch.full((out_features, in_features), prior_std)
+        )
 
         if self.bias:
             # posterior bias
@@ -61,8 +67,8 @@ class BayesLinear(nn.Module):
             self.bias_rho = nn.Parameter(torch.full((out_features,), rho))
 
             # prior bias
-            self.bias_prior_mu = torch.full((out_features,), prior_mean)
-            self.bias_prior_sigma = torch.full((out_features,), prior_std)
+            self.register_buffer("bias_prior_mu", torch.full((out_features,), prior_mean))
+            self.register_buffer("bias_prior_sigma", torch.full((out_features,), prior_std))
 
         self.reset_parameters()
 
@@ -120,19 +126,8 @@ class BayesLinear(nn.Module):
 
 
 class BayesConv2d(nn.Module):
-    """This class implements a Bayesian convolutional layer.
-    Args:
-        in_channels: int, number of input channels
-        out_channels: int, number of output channels
-        kernel_size: int or tuple, size of the convolutional kernel
-        stride: int or tuple, stride of the convolution
-        padding: int or tuple, padding of the convolution
-        dilation: int or tuple, dilation of the convolution
-        groups: int, number of groups for grouped convolution
-        bias: bool, whether to use a bias term
-        posterior_std: float, initial standard deviation of the posterior
-        prior_mean: float, mean of the prior
-        prior_std: float, standard deviation of the prior
+    """Implementation of a Bayesian convolutional layer.
+
     Attributes:
         in_channels: int, number of input channels
         out_channels: int, number of output channels
@@ -166,6 +161,23 @@ class BayesConv2d(nn.Module):
         prior_mean: float = 0.0,
         prior_std: float = 1.0,
     ) -> None:
+        """Initializes the Bayesian convolutional layer.
+
+        Reparameterize the standard deviation of the posterior weights using the re-parameterization trick.
+
+        Args:
+            in_channels: int, number of input channels
+            out_channels: int, number of output channels
+            kernel_size: int or tuple, size of the convolutional kernel
+            stride: int or tuple, stride of the convolution
+            padding: int or tuple, padding of the convolution
+            dilation: int or tuple, dilation of the convolution
+            groups: int, number of groups for grouped convolution
+            bias: bool, whether to use a bias term
+            posterior_std: float, initial standard deviation of the posterior
+            prior_mean: float, mean of the prior
+            prior_std: float, standard deviation of the prior
+        """
         super().__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -188,11 +200,14 @@ class BayesConv2d(nn.Module):
         )
 
         # prior weights
-        self.weight_prior_mu = torch.full(
-            (out_channels, in_channels // groups, *kernel_size), prior_mean
+        self.register_buffer(
+            "weight_prior_mu",
+            torch.full((out_channels, in_channels // groups, *kernel_size), prior_mean),
         )
-        self.weight_prior_sigma = torch.full(
-            (out_channels, in_channels // groups, *kernel_size), prior_std
+
+        self.register_buffer(
+            "weight_prior_sigma",
+            torch.full((out_channels, in_channels // groups, *kernel_size), prior_std),
         )
 
         if self.bias:
@@ -201,8 +216,8 @@ class BayesConv2d(nn.Module):
             self.bias_rho = nn.Parameter(torch.full((out_channels,), rho))
 
             # prior bias
-            self.bias_prior_mu = torch.full((out_channels,), prior_mean)
-            self.bias_prior_sigma = torch.full((out_channels,), prior_std)
+            self.register_buffer("bias_prior_mu", torch.full((out_channels,), prior_mean))
+            self.register_buffer("bias_prior_sigma", torch.full((out_channels,), prior_std))
 
         self.reset_parameters()
 
