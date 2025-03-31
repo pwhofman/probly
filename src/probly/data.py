@@ -21,7 +21,7 @@ class CIFAR10H(torchvision.datasets.CIFAR10):
     """
 
     def __init__(
-        self, root: str, transform: Callable | None = None, download: bool = False
+        self, root: str, transform: Callable | None = None, *, download: bool = False
     ) -> None:
         """Initialize an instance of the CIFAR10H class.
 
@@ -55,7 +55,7 @@ class DCICDataset(torch.utils.data.Dataset):
     """
 
     def __init__(
-        self, root: str, transform: Callable | None = None, first_order: bool = True
+        self, root: str, transform: Callable | None = None, *, first_order: bool = True
     ) -> None:
         """Initialize an instance of the DCICDataset class.
 
@@ -138,7 +138,7 @@ class Benthic(DCICDataset):
     """Implementation of the Benthic dataset."""
 
     def __init__(
-        self, root: str, transform: Callable | None = None, first_order: bool = True
+        self, root: str, transform: Callable | None = None, *, first_order: bool = True
     ) -> None:
         """Initialize an instance of the Benthic dataset class.
 
@@ -147,4 +147,4 @@ class Benthic(DCICDataset):
             transform: optional transform to apply to the data
             first_order: bool, whether to use first order data or class labels
         """
-        super().__init__(os.path.join(root, "Benthic"), transform, first_order)
+        super().__init__(os.path.join(root, "Benthic"), transform, first_order=first_order)

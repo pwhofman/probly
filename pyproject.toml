@@ -117,10 +117,10 @@ select = [
     "BLE",
     "C4",
     "ERA",
-#  "FBT",
+    "FBT",
     "INP",
     "N",
-    #"NPY",
+    #"NPY", # use numpy generator
     "PD",
     "PLC",
     "PLE",
@@ -139,11 +139,9 @@ select = [
     "T10",
     #"T20", # remove print statements
     "TID",
-#  "TCH",
-#  "UP",
-#  "N",
-#  "W",
-#  "YTT",
+    "TCH",
+    "W",
+    "YTT",
 ]
 ignore = [
     "N812", # Checks for lowercase imports that are aliased to non-lowercase names.
