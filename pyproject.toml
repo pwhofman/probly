@@ -8,20 +8,19 @@ version = "0.1.0"
 dynamic = ["readme"]
 description = "Uncertainty Representation and Quantification for Machine Learning"
 license = "MIT"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 dependencies = [
     # core
     "matplotlib>=3.10.1",
     "mpltern>=1.0.4",
+    "multimethod>=2.0",
     "numpy<=2.1.2,>=2.0.0",
     "scikit-learn>=1.6.1",
     "torch>=2.6.0",
     "torchvision>=0.21.0",
     "tqdm>=4.67.1",
 ]
-authors = [
-    {name = "Paul Hofman", email = "paul.hofman@ifi.lmu.de"},
-]
+authors = [{ name = "Paul Hofman", email = "paul.hofman@ifi.lmu.de" }]
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
     "Intended Audience :: Developers",
@@ -43,7 +42,10 @@ where = ["./src"]
 include = ["probly*"]
 
 [tool.setuptools.dynamic]
-readme = {file = ["README.md", "CHANGELOG.md"], content-type = "text/markdown"}
+readme = { file = [
+    "README.md",
+    "CHANGELOG.md",
+], content-type = "text/markdown" }
 
 [project.urls]
 # documentation = TODO: we need to add the documentation
@@ -78,25 +80,19 @@ url = "https://download.pytorch.org/whl/cu124"
 explicit = true
 
 [dependency-groups]
-test = [
-    "pytest>=8.3.5",
-    "pytest-cov>=6.0.0",
-    "pytest-xdist>=3.6.1",
-]
-lint = [
-    "ruff>=0.11.2",
-    "pre-commit>=4.2.0",
-]
+test = ["pytest>=8.3.5", "pytest-cov>=6.0.0", "pytest-xdist>=3.6.1"]
+lint = ["ruff>=0.11.2", "pre-commit>=4.2.0"]
 dev = [
     "ipykernel>=6.29.5",
     "notebook>=7.3.3",
     "ipywidgets",
-    {include-group = "test"},
-    {include-group = "lint"},
+    { include-group = "test" },
+    { include-group = "lint" },
+    "pyright>=1.1.398",
 ]
 
 [tool.ruff]
-lint.select = ["E", "F", "I", "UP"]  # https://beta.ruff.rs/docs/rules/
+lint.select = ["E", "F", "I", "UP"] # https://beta.ruff.rs/docs/rules/
 lint.ignore = ["E501"]
 line-length = 100
 target-version = "py310"
