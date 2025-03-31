@@ -22,7 +22,7 @@ class Bayesian(nn.Module):
         posterior_std: float = 0.05,
         prior_mean: float = 0.0,
         prior_std: float = 1.0,
-    ):
+    ) -> None:
         super().__init__()
         self._convert(base, posterior_std, prior_mean, prior_std)
 
@@ -60,39 +60,44 @@ class Bayesian(nn.Module):
             prior_std: float, The prior standard deviation.
         """
         self.model = copy.deepcopy(base)
-        self.n_parameters = 0
-        for name, child in self.model.named_children():
-            if isinstance(child, nn.Linear):
-                setattr(
-                    self.model,
-                    name,
-                    BayesLinear(
-                        child.in_features,
-                        child.out_features,
-                        child.bias is not None,
-                        posterior_std,
-                        prior_mean,
-                        prior_std,
-                    ),
-                )
-            elif isinstance(child, nn.Conv2d):
-                setattr(
-                    self.model,
-                    name,
-                    BayesConv2d(
-                        child.in_channels,
-                        child.out_channels,
-                        child.kernel_size,
-                        child.stride,
-                        child.padding,
-                        child.dilation,
-                        child.groups,
-                        child.bias is not None,
-                        posterior_std,
-                        prior_mean,
-                        prior_std,
-                    ),
-                )
+
+        def apply_bayesian(module):
+            for name, child in module.named_children():
+                if isinstance(child, nn.Linear):
+                    setattr(
+                        module,
+                        name,
+                        BayesLinear(
+                            child.in_features,
+                            child.out_features,
+                            child.bias is not None,
+                            posterior_std,
+                            prior_mean,
+                            prior_std,
+                        ),
+                    )
+                elif isinstance(child, nn.Conv2d):
+                    setattr(
+                        module,
+                        name,
+                        BayesConv2d(
+                            child.in_channels,
+                            child.out_channels,
+                            child.kernel_size,
+                            child.stride,
+                            child.padding,
+                            child.dilation,
+                            child.groups,
+                            child.bias is not None,
+                            posterior_std,
+                            prior_mean,
+                            prior_std,
+                        ),
+                    )
+                else:
+                    apply_bayesian(child)  # apply recursively to all layers
+
+        apply_bayesian(self.model)
 
     @property
     def kl_divergence(self) -> torch.Tensor:

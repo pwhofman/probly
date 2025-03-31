@@ -7,6 +7,29 @@ import torch.nn.init as init
 
 
 class BayesLinear(nn.Module):
+    """This class implements a Bayesian linear layer.
+    Args:
+        in_features: int, number of input features
+        out_features: int, number of output features
+        bias: bool, whether to use a bias term
+        posterior_std: float, initial standard deviation of the posterior
+        prior_mean: float, mean of the prior
+        prior_std: float, standard deviation of the prior
+
+    Attributes:
+        in_features: int, number of input features
+        out_features: int, number of output features
+        bias: bool, whether to use a bias term
+        weight_mu: torch.Tensor, mean of the posterior weights
+        weight_rho: torch.Tensor, transformed standard deviation of the posterior weights
+        weight_prior_mu: torch.Tensor, mean of the prior weights
+        weight_prior_sigma: torch.Tensor, standard deviation of the prior weights
+        bias_mu: torch.Tensor, mean of the posterior bias
+        bias_rho: torch.Tensor, transformed standard deviation of the posterior bias
+        bias_prior_mu: torch.Tensor, mean of the prior bias
+        bias_prior_sigma: torch.Tensor, standard deviation of the prior bias
+    """
+
     def __init__(
         self,
         in_features: int,
@@ -15,7 +38,7 @@ class BayesLinear(nn.Module):
         posterior_std: float = 0.05,
         prior_mean: float = 0.0,
         prior_std: float = 1.0,
-    ):
+    ) -> None:
         super().__init__()
         self.in_features = in_features
         self.out_features = out_features
@@ -66,7 +89,7 @@ class BayesLinear(nn.Module):
         # uniform(-1/sqrt(in_features), 1/sqrt(in_features)). For details, see
         # https://github.com/pytorch/pytorch/issues/57109
         init.kaiming_uniform_(self.weight_mu, a=math.sqrt(5))
-        if self.bias is not None:
+        if self.bias is not False:
             fan_in, _ = init._calculate_fan_in_and_fan_out(self.weight_mu)
             bound = 1 / math.sqrt(fan_in) if fan_in > 0 else 0
             init.uniform_(self.bias_mu, -bound, bound)
@@ -97,6 +120,38 @@ class BayesLinear(nn.Module):
 
 
 class BayesConv2d(nn.Module):
+    """This class implements a Bayesian convolutional layer.
+    Args:
+        in_channels: int, number of input channels
+        out_channels: int, number of output channels
+        kernel_size: int or tuple, size of the convolutional kernel
+        stride: int or tuple, stride of the convolution
+        padding: int or tuple, padding of the convolution
+        dilation: int or tuple, dilation of the convolution
+        groups: int, number of groups for grouped convolution
+        bias: bool, whether to use a bias term
+        posterior_std: float, initial standard deviation of the posterior
+        prior_mean: float, mean of the prior
+        prior_std: float, standard deviation of the prior
+    Attributes:
+        in_channels: int, number of input channels
+        out_channels: int, number of output channels
+        kernel_size: int or tuple, size of the convolutional kernel
+        stride: int or tuple, stride of the convolution
+        padding: int or tuple, padding of the convolution
+        dilation: int or tuple, dilation of the convolution
+        groups: int, number of groups for grouped convolution
+        bias: bool, whether to use a bias term
+        weight_mu: torch.Tensor, mean of the posterior weights
+        weight_rho: torch.Tensor, transformed standard deviation of the posterior weights
+        weight_prior_mu: torch.Tensor, mean of the prior weights
+        weight_prior_sigma: torch.Tensor, standard deviation of the prior weights
+        bias_mu: torch.Tensor, mean of the posterior bias
+        bias_rho: torch.Tensor, transformed standard deviation of the posterior bias
+        bias_prior_mu: torch.Tensor, mean of the prior bias
+        bias_prior_sigma: torch.Tensor, standard deviation of the prior bias
+    """
+
     def __init__(
         self,
         in_channels: int,
@@ -110,7 +165,7 @@ class BayesConv2d(nn.Module):
         posterior_std: float = 0.05,
         prior_mean: float = 0.0,
         prior_std: float = 1.0,
-    ):
+    ) -> None:
         super().__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -181,7 +236,7 @@ class BayesConv2d(nn.Module):
         # uniform(-1/sqrt(k), 1/sqrt(k)), where k = weight.size(1) * prod(*kernel_size)
         # For more details see: https://github.com/pytorch/pytorch/issues/15314#issuecomment-477448573
         init.kaiming_uniform_(self.weight_mu, a=math.sqrt(5))
-        if self.bias is not None:
+        if self.bias is not False:
             fan_in, _ = init._calculate_fan_in_and_fan_out(self.weight_mu)
             if fan_in != 0:
                 bound = 1 / math.sqrt(fan_in)
