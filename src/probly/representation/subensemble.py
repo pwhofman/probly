@@ -1,16 +1,16 @@
 import copy
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from ..utils import torch_reset_all_parameters
 
 
 class SubEnsemble(nn.Module):
-    """
-    This class implements an ensemble of representation which share a backbone and use
+    """This class implements an ensemble of representation which share a backbone and use
     different classification heads that can be made up of multiple layers.
     The backbone is frozen and only the head can be trained.
+
     Args:
         base: torch.nn.Module, The base model to be used.
         n_heads: int, The number of heads in the ensemble.
@@ -19,6 +19,7 @@ class SubEnsemble(nn.Module):
     Attributes:
         models: torch.nn.ModuleList, The list of models in the ensemble consisting of the frozen
         base model and the trainable heads.
+
     """
 
     def __init__(self, base: nn.Module, n_heads: int, head: nn.Module) -> None:
@@ -26,22 +27,24 @@ class SubEnsemble(nn.Module):
         self._convert(base, n_heads, head)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """
-        Forward pass of the sub-ensemble.
+        """Forward pass of the sub-ensemble.
+
         Args:
             x: torch.Tensor, input data
         Returns:
             torch.Tensor, model output
+
         """
         return torch.stack([model(x) for model in self.models], dim=1)
 
     def _convert(self, base: nn.Module, n_heads: int, head: nn.Module) -> None:
-        """
-        Convert a model into an ensemble with trainable heads.
+        """Convert a model into an ensemble with trainable heads.
+
         Args:
             base: torch.nn.Module, The base model to be used.
             n_heads: int, The number of heads in the ensemble.
             head: torch.nn.Module, The classification heads to be used. Can be a complete network or a single layer.
+
         """
         for param in base.parameters():
             param.requires_grad = False

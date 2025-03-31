@@ -1,10 +1,9 @@
 import math
 
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
-import torch.nn.init as init
-from torch import Tensor
+from torch import Tensor, nn
+from torch.nn import init
 
 
 class NormalInverseGammaLinear(nn.Module):
@@ -21,12 +20,12 @@ class NormalInverseGammaLinear(nn.Module):
             self.beta_bias = nn.Parameter(torch.empty(out_features, device=device))
         self.reset_parameters()
 
-    def forward(self, input: Tensor) -> dict[str, Tensor]:
-        gamma = F.linear(input, self.gamma, self.gamma_bias)
-        nu = F.softplus(F.linear(input, self.nu, self.nu_bias))
-        alpha = F.softplus(F.linear(input, self.alpha, self.alpha_bias)) + 1
-        beta = F.softplus(F.linear(input, self.beta, self.beta_bias))
-        return {'gamma': gamma, 'nu': nu, 'alpha': alpha, 'beta': beta}
+    def forward(self, x: Tensor) -> dict[str, Tensor]:
+        gamma = F.linear(x, self.gamma, self.gamma_bias)
+        nu = F.softplus(F.linear(x, self.nu, self.nu_bias))
+        alpha = F.softplus(F.linear(x, self.alpha, self.alpha_bias)) + 1
+        beta = F.softplus(F.linear(x, self.beta, self.beta_bias))
+        return {"gamma": gamma, "nu": nu, "alpha": alpha, "beta": beta}
 
     def reset_parameters(self) -> None:
         # Setting a=sqrt(5) in kaiming_uniform is the same as initializing with

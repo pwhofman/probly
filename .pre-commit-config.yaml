@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    rev: v5.0.0
     hooks:
       - id: check-json
       - id: check-yaml
@@ -13,5 +13,5 @@ repos:
     rev: v0.9.10
     hooks:
       - id: ruff
-        name: ruff
-        entry: ruff check --no-cache --fix
+        args: [--fix, --exit-non-zero-on-fix, --no-cache]
+      - id: ruff-format

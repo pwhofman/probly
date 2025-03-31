@@ -1,5 +1,5 @@
-"""This module contains fixtures for the tests."""
+"""Test fixtures for the package."""
 
 pytest_plugins = [
-     "tests.fixtures.representation",
-  ]
+    "tests.fixtures.models",
+]
