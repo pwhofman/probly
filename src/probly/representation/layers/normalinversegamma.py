@@ -7,7 +7,30 @@ from torch.nn import init
 
 
 class NormalInverseGammaLinear(nn.Module):
+    """Custom Linear layer modeling the parameters of a normal-inverse-gamma-distribution
+
+    Attributes:
+        gamma: torch.Tensor, shape (out_features, in_features), the mean of the normal distribution.
+        nu: torch.Tensor, shape (out_features, in_features), parameter of the normal distribution.
+        alpha: torch.Tensor, shape (out_features, in_features), parameter of the inverse-gamma distribution.
+        beta: torch.Tensor, shape (out_features, in_features), parameter of the inverse-gamma distribution.
+        gamma_bias: torch.Tensor, shape (out_features), the mean of the normal distribution for the bias.
+        nu_bias: torch.Tensor, shape (out_features), parameter of the normal distribution for the bias.
+        alpha_bias: torch.Tensor, shape (out_features), parameter of the inverse-gamma distribution for the bias.
+        beta_bias: torch.Tensor, shape (out_features), parameter of the inverse-gamma distribution for the bias.
+        bias: bool, whether to include bias in the layer.
+
+    """
+
     def __init__(self, in_features: int, out_features: int, bias: bool = True, device=None) -> None:
+        """Initialize a NormalInverseGammaLinear layer.
+        Args:
+            in_features: int, number of input features.
+            out_features: int, number of output features.
+            bias: bool, whether to include bias in the layer.
+            device: torch.device, device to initialize the parameters on.
+
+        """
         super().__init__()
         self.gamma = nn.Parameter(torch.empty((out_features, in_features), device=device))
         self.nu = nn.Parameter(torch.empty((out_features, in_features), device=device))
@@ -21,6 +44,12 @@ class NormalInverseGammaLinear(nn.Module):
         self.reset_parameters()
 
     def forward(self, x: Tensor) -> dict[str, Tensor]:
+        """Forward pass of the NormalInverseGamma layer.
+        Args:
+            x: torch.Tensor, input data
+        Returns:
+            dict[str, torch.Tensor], layer output containing the parameters of the normal-inverse-gamma distribution
+        """
         gamma = F.linear(x, self.gamma, self.gamma_bias)
         nu = F.softplus(F.linear(x, self.nu, self.nu_bias))
         alpha = F.softplus(F.linear(x, self.alpha, self.alpha_bias)) + 1
