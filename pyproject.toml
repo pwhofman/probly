@@ -106,7 +106,7 @@ lint.select = [
     "I",
     "UP",
     "A",
-    #"D",
+    "D",
 #  "ANN", # Handled by mypy
 #  "ARG",
 #  "B",

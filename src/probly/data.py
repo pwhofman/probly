@@ -1,3 +1,5 @@
+"""Collection of dataset classes for loading data from different datasets."""
+
 import json
 import os
 from collections.abc import Callable
@@ -9,9 +11,25 @@ from PIL import Image
 
 
 class CIFAR10H(torchvision.datasets.CIFAR10):
+    """A Dataset class for the CIFAR10H dataset.
+
+    The dataset can be found at https://zenodo.org/records/7180818.
+
+    Attributes:
+        counts: torch.Tensor,
+        targets: torch.Tensor,
+    """
+
     def __init__(
         self, root: str, transform: Callable | None = None, download: bool = False
     ) -> None:
+        """Initialize an instance of the CIFAR10H class.
+
+        Args:
+            root: str, root directory of the dataset
+            transform: optional transform to apply to the data
+            download: bool, whether to download the CIFAR10 dataset or not
+        """
         super().__init__(root, train=False, transform=transform, download=download)
         first_order_path = os.path.join(self.root, "cifar-10h-master/data/cifar10h-counts.npy")
         self.counts = np.load(first_order_path)
@@ -22,23 +40,37 @@ class CIFAR10H(torchvision.datasets.CIFAR10):
 class DCICDataset(torch.utils.data.Dataset):
     """A Dataset class for the DCICDataset.
 
-    Args:
-        root: str, root directory of the dataset
-        transform: optional transform to apply to the data
-        first_order: bool, whether to use first order data or not
+    The dataset can be found at https://zenodo.org/records/7180818.
 
+    Attributes:
+        root: str, root directory of the dataset
+        transform: transform to apply to the data
+        image_labels: dict, dictionary of image labels grouped by image
+        image_paths: list, image paths
+        label_mappings: dict, # TODO
+        num_classes: int, number of classes
+        data: list, images
+        targets: list, labels
+        # TODO remove unnecessary fields
     """
 
     def __init__(
         self, root: str, transform: Callable | None = None, first_order: bool = True
     ) -> None:
+        """Initialize an instance of the DCICDataset class.
+
+        Args:
+            root: str, root directory of the dataset
+            transform: optional transform to apply to the data
+            first_order: bool, whether to use first order data or class labels
+        """
         root = os.path.expanduser(root)
         with open(os.path.join(root, "annotations.json")) as f:
             annotations = json.load(f)
 
         self.root = os.path.dirname(root)
         self.transform = transform
-        self.image_labels = {}  # Dictionary to group annotations by image
+        self.image_labels = {}
 
         for entry in annotations:
             for annotation in entry["annotations"]:
@@ -54,7 +86,9 @@ class DCICDataset(torch.utils.data.Dataset):
         self.label_mappings = {
             label: idx
             for idx, label in enumerate(
-                set(label for labels in self.image_labels.values() for label in labels)
+                set(
+                    label for labels in self.image_labels.values() for label in labels
+                )  # TODO simplify code here
             )
         }
         self.num_classes = len(
@@ -103,7 +137,16 @@ class DCICDataset(torch.utils.data.Dataset):
 
 
 class Benthic(DCICDataset):
+    """Implementation of the Benthic dataset."""
+
     def __init__(
         self, root: str, transform: Callable | None = None, first_order: bool = True
     ) -> None:
+        """Initialize an instance of the Benthic dataset class.
+
+        Args:
+            root: str, root directory of the dataset
+            transform: optional transform to apply to the data
+            first_order: bool, whether to use first order data or class labels
+        """
         super().__init__(os.path.join(root, "Benthic"), transform, first_order)

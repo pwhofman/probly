@@ -1,3 +1,5 @@
+"""Normal-inverse-gamma layer implementation."""
+
 import math
 
 import torch
@@ -7,7 +9,7 @@ from torch.nn import init
 
 
 class NormalInverseGammaLinear(nn.Module):
-    """Custom Linear layer modeling the parameters of a normal-inverse-gamma-distribution
+    """Custom Linear layer modeling the parameters of a normal-inverse-gamma-distribution.
 
     Attributes:
         gamma: torch.Tensor, shape (out_features, in_features), the mean of the normal distribution.
@@ -23,7 +25,8 @@ class NormalInverseGammaLinear(nn.Module):
     """
 
     def __init__(self, in_features: int, out_features: int, bias: bool = True, device=None) -> None:
-        """Initialize a NormalInverseGammaLinear layer.
+        """Initialize an instance of the NormalInverseGammaLinear layer.
+
         Args:
             in_features: int, number of input features.
             out_features: int, number of output features.
@@ -45,6 +48,7 @@ class NormalInverseGammaLinear(nn.Module):
 
     def forward(self, x: Tensor) -> dict[str, Tensor]:
         """Forward pass of the NormalInverseGamma layer.
+
         Args:
             x: torch.Tensor, input data
         Returns:
@@ -57,9 +61,12 @@ class NormalInverseGammaLinear(nn.Module):
         return {"gamma": gamma, "nu": nu, "alpha": alpha, "beta": beta}
 
     def reset_parameters(self) -> None:
-        # Setting a=sqrt(5) in kaiming_uniform is the same as initializing with
-        # uniform(-1/sqrt(in_features), 1/sqrt(in_features)). For details, see
-        # https://github.com/pytorch/pytorch/issues/57109
+        """Reset the parameters of the NormalInverseGamma layer.
+
+        Setting a=sqrt(5) in kaiming_uniform is the same as initializing with
+        uniform(-1/sqrt(in_features), 1/sqrt(in_features)). For details, see
+        https://github.com/pytorch/pytorch/issues/57109.
+        """
         init.kaiming_uniform_(self.gamma, a=math.sqrt(5))
         init.kaiming_uniform_(self.nu, a=math.sqrt(5))
         init.kaiming_uniform_(self.alpha, a=math.sqrt(5))
