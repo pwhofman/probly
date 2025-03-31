@@ -209,7 +209,7 @@ class ELBOLoss(nn.Module):
         kl_penalty: float, weight for KL divergence term
     """
 
-    def __init__(self, kl_penalty: float) -> None:
+    def __init__(self, kl_penalty: float = 1e-5) -> None:
         super().__init__()
         self.kl_penalty = kl_penalty
 
