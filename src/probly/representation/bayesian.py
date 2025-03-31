@@ -7,10 +7,9 @@ from .layers import BayesConv2d, BayesLinear
 
 
 class Bayesian(nn.Module):
-    """
-    This class implements a dropout model to be used for uncertainty quantification.
-    Args:
-        base: torch.nn.Module, The base model.
+    """Implementation of a Bayesian neural network to be used for uncertainty quantification.
+
+    Implementation is based on https://arxiv.org/abs/1505.05424.
 
     Attributes:
         model: torch.nn.Module, The transformed model with Bayesian layers.
@@ -23,6 +22,16 @@ class Bayesian(nn.Module):
         prior_mean: float = 0.0,
         prior_std: float = 1.0,
     ) -> None:
+        """Initialize an instance of the Bayesian class
+
+        Convert the base model into a Bayesian model by replacing suitable layers by Bayesian layers.
+
+        Args:
+            base: torch.nn.Module, The base model.
+            posterior_std: float, The initial posterior standard deviation.
+            prior_mean: float, The prior mean.
+            prior_std: float, The prior standard deviation.
+        """
         super().__init__()
         self._convert(base, posterior_std, prior_mean, prior_std)
 
