@@ -30,6 +30,7 @@ def expected_calibration_error(probs: np.ndarray, labels: np.ndarray, num_bins: 
 
     return ece
 
+
 def coverage(preds: np.ndarray, targets: np.ndarray) -> float:
     """
     Compute the coverage of set-valued predictions.
@@ -50,6 +51,7 @@ def coverage(preds: np.ndarray, targets: np.ndarray) -> float:
     else:
         raise ValueError(f"Expected 2D or 3D array, got {preds.ndim}D")
     return cov
+
 
 def efficiency(preds: np.ndarray) -> float:
     """

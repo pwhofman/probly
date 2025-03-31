@@ -15,7 +15,8 @@ class ConformalPrediction:
         alpha: float, The error rate for conformal prediction.
         q: float, The quantile value for conformal prediction.
     """
-    def __init__(self, base: torch.nn.Module, alpha: float=0.05) -> None:
+
+    def __init__(self, base: torch.nn.Module, alpha: float = 0.05) -> None:
         self.model = base
         self.alpha = alpha
 
@@ -60,4 +61,4 @@ class ConformalPrediction:
                 scores.append(score)
         scores = np.concatenate(scores)
         n = scores.shape[0]
-        self.q = np.quantile(scores, np.ceil((n+1)*(1-self.alpha))/n, method='inverted_cdf')
+        self.q = np.quantile(scores, np.ceil((n + 1) * (1 - self.alpha)) / n, method="inverted_cdf")
