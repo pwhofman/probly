@@ -17,7 +17,7 @@ class CIFAR10H(torchvision.datasets.CIFAR10):
 
     Attributes:
         counts: torch.Tensor,
-        targets: torch.Tensor,
+        targets: torch.Tensor size (n_instances, n_classes), first-order distribution
     """
 
     def __init__(
