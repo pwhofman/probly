@@ -52,8 +52,10 @@ class BayesLinear(nn.Module):
         self.weight_rho = nn.Parameter(torch.full((out_features, in_features), rho))
 
         # prior weights
-        self.weight_prior_mu = torch.full((out_features, in_features), prior_mean)
-        self.weight_prior_sigma = torch.full((out_features, in_features), prior_std)
+        self.register_buffer("weight_prior_mu", torch.full((out_features, in_features), prior_mean))
+        self.register_buffer(
+            "weight_prior_sigma", torch.full((out_features, in_features), prior_std)
+        )
 
         if self.bias:
             # posterior bias
@@ -61,8 +63,8 @@ class BayesLinear(nn.Module):
             self.bias_rho = nn.Parameter(torch.full((out_features,), rho))
 
             # prior bias
-            self.bias_prior_mu = torch.full((out_features,), prior_mean)
-            self.bias_prior_sigma = torch.full((out_features,), prior_std)
+            self.register_buffer("bias_prior_mu", torch.full((out_features,), prior_mean))
+            self.register_buffer("bias_prior_sigma", torch.full((out_features,), prior_std))
 
         self.reset_parameters()
 
@@ -188,11 +190,14 @@ class BayesConv2d(nn.Module):
         )
 
         # prior weights
-        self.weight_prior_mu = torch.full(
-            (out_channels, in_channels // groups, *kernel_size), prior_mean
+        self.register_buffer(
+            "weight_prior_mu",
+            torch.full((out_channels, in_channels // groups, *kernel_size), prior_mean),
         )
-        self.weight_prior_sigma = torch.full(
-            (out_channels, in_channels // groups, *kernel_size), prior_std
+
+        self.register_buffer(
+            "weight_prior_sigma",
+            torch.full((out_channels, in_channels // groups, *kernel_size), prior_std),
         )
 
         if self.bias:
@@ -201,8 +206,8 @@ class BayesConv2d(nn.Module):
             self.bias_rho = nn.Parameter(torch.full((out_channels,), rho))
 
             # prior bias
-            self.bias_prior_mu = torch.full((out_channels,), prior_mean)
-            self.bias_prior_sigma = torch.full((out_channels,), prior_std)
+            self.register_buffer("bias_prior_mu", torch.full((out_channels,), prior_mean))
+            self.register_buffer("bias_prior_sigma", torch.full((out_channels,), prior_std))
 
         self.reset_parameters()
 
