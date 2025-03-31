@@ -104,13 +104,14 @@ lint.select = [
     "F",
     "I",
     "UP",
-    "A"
-  # "ANN", # Handled by mypy
+    "A",
+    #"D"  # TODO: Enable this in the near future
+#  "ANN", # Handled by mypy
 #  "ARG",
 #  "B",
 #  "BLE",
 #  "C4",
-  # "D", # TODO: Enable this in the near future
+#  "D",
 #  "E",
 #  "ERA",
 #  "F",
