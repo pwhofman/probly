@@ -1,11 +1,13 @@
 # probly: Uncertainty Representation and Quantification for Machine Learning
-
+<div align="center">
+    
 [![PyPI version](https://badge.fury.io/py/probly.svg)](https://badge.fury.io/py/probly)
 [![License](https://img.shields.io/badge/License-MIT-brightgreen.svg)](https://opensource.org/licenses/MIT)
 [![PePy](https://static.pepy.tech/badge/probly?style=flat-square)](https://pepy.tech/project/probly)
 [![PyPI status](https://img.shields.io/pypi/status/probly.svg?color=blue)](https://pypi.org/project/probly)
 ![Contributions Welcome](https://img.shields.io/badge/contributions-welcome-brightgreen)
 ![Last Commit](https://img.shields.io/github/last-commit/pwhofman/probly)
+</div>
 
 ## 🛠️ Install
 `probly` is intended to work with **Python 3.10 and above**. Installation can be done via `pip`:
