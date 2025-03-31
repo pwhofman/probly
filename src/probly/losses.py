@@ -1,70 +1,75 @@
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
+from torch import nn
 
 
 class EvidentialLogLoss(nn.Module):
-    """
-    Evidential Log Loss based on https://arxiv.org/pdf/1806.01768.
-    """
+    """Evidential Log Loss based on https://arxiv.org/pdf/1806.01768."""
 
     def __init__(self) -> None:
         super().__init__()
 
     def forward(self, inputs: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
-        """
-        Forward pass of the evidential log loss.
+        """Forward pass of the evidential log loss.
+
         Args:
             inputs: torch.Tensor of size (n_instances, n_classes)
             targets: torch.Tensor of size (n_instances,)
+
         Returns:
             loss: torch.Tensor, mean loss value
+
         """
         alphas = inputs + 1.0
         strengths = torch.sum(alphas, dim=1)
-        loss = torch.mean(torch.log(strengths) - torch.log(alphas[torch.arange(targets.shape[0]), targets]))
+        loss = torch.mean(
+            torch.log(strengths) - torch.log(alphas[torch.arange(targets.shape[0]), targets])
+        )
         return loss
 
 
 class EvidentialCELoss(nn.Module):
-    """
-    Evidential Cross Entropy Loss based on https://arxiv.org/pdf/1806.01768.
-    """
+    """Evidential Cross Entropy Loss based on https://arxiv.org/pdf/1806.01768."""
 
     def __init__(self) -> None:
         super().__init__()
 
     def forward(self, inputs: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
-        """
-        Forward pass of the evidential cross entropy loss.
+        """Forward pass of the evidential cross entropy loss.
+
         Args:
             inputs: torch.Tensor of size (n_instances, n_classes)
             targets: torch.Tensor of size (n_instances,)
+
         Returns:
             loss: torch.Tensor, mean loss value
+
         """
         alphas = inputs + 1.0
         strengths = torch.sum(alphas, dim=1)
-        loss = torch.mean(torch.digamma(strengths) - torch.digamma(alphas[torch.arange(targets.shape[0]), targets]))
+        loss = torch.mean(
+            torch.digamma(strengths)
+            - torch.digamma(alphas[torch.arange(targets.shape[0]), targets])
+        )
         return loss
 
 
 class EvidentialMSELoss(nn.Module):
-    """
-    Evidential Mean Square Error Loss based on https://arxiv.org/pdf/1806.01768.
-    """
+    """Evidential Mean Square Error Loss based on https://arxiv.org/pdf/1806.01768."""
 
     def __init__(self) -> None:
         super().__init__()
 
     def forward(self, inputs: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
-        """
-        Forward pass of the evidential mean squared error loss.
+        """Forward pass of the evidential mean squared error loss.
+
         Args:
             inputs: torch.Tensor of size (n_instances, n_classes)
             targets: torch.Tensor of size (n_instances,)
+
         Returns:
             loss: torch.Tensor, mean loss value
+
         """
         alphas = inputs + 1.0
         strengths = torch.sum(alphas, dim=1)
@@ -77,60 +82,69 @@ class EvidentialMSELoss(nn.Module):
 
 
 class EvidentialKLDivergence(nn.Module):
-    """
-    Evidential KL Divergence Loss based on https://arxiv.org/pdf/1806.01768.
-    """
+    """Evidential KL Divergence Loss based on https://arxiv.org/pdf/1806.01768."""
 
     def __init__(self) -> None:
         super().__init__()
 
     def forward(self, inputs: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
-        """
-        Forward pass of the evidential KL divergence loss.
+        """Forward pass of the evidential KL divergence loss.
+
         Args:
             inputs: torch.Tensor of size (n_instances, n_classes)
             targets: torch.Tensor of size (n_instances,)
+
         Returns:
             loss: torch.Tensor, mean loss value
+
         """
         alphas = inputs + 1.0
         y = F.one_hot(targets, inputs.shape[1])
         alphas_tilde = y + (1 - y) * alphas
         strengths_tilde = torch.sum(alphas_tilde, dim=1)
         K = torch.full((inputs.shape[0],), inputs.shape[1], device=inputs.device)
-        first = (torch.lgamma(strengths_tilde) -
-                 torch.lgamma(K) -
-                 torch.sum(torch.lgamma(alphas_tilde), dim=1)
-                 )
-        second = torch.sum((alphas_tilde - 1) * (torch.digamma(alphas_tilde) - torch.digamma(strengths_tilde)[:, None]), dim=1)
+        first = (
+            torch.lgamma(strengths_tilde)
+            - torch.lgamma(K)
+            - torch.sum(torch.lgamma(alphas_tilde), dim=1)
+        )
+        second = torch.sum(
+            (alphas_tilde - 1)
+            * (torch.digamma(alphas_tilde) - torch.digamma(strengths_tilde)[:, None]),
+            dim=1,
+        )
         loss = torch.mean(first + second)
         return loss
 
 
 class EvidentialNIGNLLLoss(nn.Module):
-    """
-    Evidential normal inverse gamma negative log likelihood loss based on
+    """Evidential normal inverse gamma negative log likelihood loss based on
     https://arxiv.org/abs/1910.02600.
     """
+
     def __init__(self) -> None:
         super().__init__()
 
     def forward(self, inputs: dict[str, torch.Tensor], targets: torch.Tensor) -> torch.Tensor:
-        """
-        Forward pass of the evidential normal inverse gamma negative log likelihood loss.
+        """Forward pass of the evidential normal inverse gamma negative log likelihood loss.
+
         Args:
             inputs: dict[str, torch.Tensor] with keys 'gamma', 'nu', 'alpha', 'beta'
             targets: torch.Tensor of size (n_instances,)
+
         Returns:
             loss: torch.Tensor, mean loss value
+
         """
-        omega = 2 * inputs['beta'] * (1 + inputs['nu'])
-        loss = (0.5 * torch.log(torch.pi / inputs['nu'])
-                - inputs['alpha'] * torch.log(omega)
-                + (inputs['alpha'] + 0.5) * torch.log((targets - inputs['gamma']) ** 2 *
-                                                      inputs['nu'] + omega)
-                + torch.lgamma(inputs['alpha'])
-                - torch.lgamma(inputs['alpha'] + 0.5)).mean()
+        omega = 2 * inputs["beta"] * (1 + inputs["nu"])
+        loss = (
+            0.5 * torch.log(torch.pi / inputs["nu"])
+            - inputs["alpha"] * torch.log(omega)
+            + (inputs["alpha"] + 0.5)
+            * torch.log((targets - inputs["gamma"]) ** 2 * inputs["nu"] + omega)
+            + torch.lgamma(inputs["alpha"])
+            - torch.lgamma(inputs["alpha"] + 0.5)
+        ).mean()
         return loss
 
 
@@ -139,45 +153,48 @@ class EvidentialRegressionRegularization(nn.Module):
         super().__init__()
 
     def forward(self, inputs, targets):
-        """
-        Forward pass of the evidential regression regularizer.
+        """Forward pass of the evidential regression regularizer.
+
         Args:
             inputs: dict[str, torch.Tensor] with keys 'gamma', 'nu', 'alpha', 'beta'
             targets: torch.Tensor of size (n_instances,)
+
         Returns:
             loss: torch.Tensor, mean loss value
+
         """
-        loss = (torch.abs(targets - inputs['gamma']) * (2 * inputs['nu'] + inputs['alpha'])).mean()
+        loss = (torch.abs(targets - inputs["gamma"]) * (2 * inputs["nu"] + inputs["alpha"])).mean()
         return loss
 
 
 class FocalLoss(nn.Module):
-     """
-     Focal Loss based on https://arxiv.org/pdf/1708.02002
-     Args:
-         alpha: float, control importance of minority class
-         gamma: float, control loss for hard instances
-     """
+    """Focal Loss based on https://arxiv.org/pdf/1708.02002
+    Args:
+        alpha: float, control importance of minority class
+        gamma: float, control loss for hard instances
+    """
 
-     def __init__(self, alpha: float = 1, gamma: float = 2) -> None:
-         super().__init__()
-         self.alpha = alpha
-         self.gamma = gamma
+    def __init__(self, alpha: float = 1, gamma: float = 2) -> None:
+        super().__init__()
+        self.alpha = alpha
+        self.gamma = gamma
 
-     def forward(self, inputs: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
-         """
-         Forward pass of the focal loss.
-         Args:
-             inputs: torch.Tensor of size (n_instances, n_classes)
-             targets: torch.Tensor of size (n_instances,)
-         Returns:
-             loss: torch.Tensor, mean loss value
-         """
-         targets_one_hot = F.one_hot(targets, num_classes=inputs.shape[-1])
-         prob = F.softmax(inputs, dim=-1)
-         p_t = torch.sum(prob * targets_one_hot, dim=-1)
+    def forward(self, inputs: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
+        """Forward pass of the focal loss.
 
-         log_prob = torch.log(prob)
-         loss = -self.alpha * (1 - p_t) ** self.gamma * torch.sum(log_prob * targets_one_hot, dim=-1)
+        Args:
+            inputs: torch.Tensor of size (n_instances, n_classes)
+            targets: torch.Tensor of size (n_instances,)
 
-         return torch.mean(loss)
+        Returns:
+            loss: torch.Tensor, mean loss value
+
+        """
+        targets_one_hot = F.one_hot(targets, num_classes=inputs.shape[-1])
+        prob = F.softmax(inputs, dim=-1)
+        p_t = torch.sum(prob * targets_one_hot, dim=-1)
+
+        log_prob = torch.log(prob)
+        loss = -self.alpha * (1 - p_t) ** self.gamma * torch.sum(log_prob * targets_one_hot, dim=-1)
+
+        return torch.mean(loss)

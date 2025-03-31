@@ -13,5 +13,4 @@ repos:
     rev: v0.9.10
     hooks:
       - id: ruff
-        name: ruff
-        entry: ruff check --no-cache --fix
+        args: [--fix, --exit-non-zero-on-fix, --no-cache]
