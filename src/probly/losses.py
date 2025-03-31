@@ -205,13 +205,17 @@ class ELBOLoss(nn.Module):
     Evidence lower bound loss based on https://arxiv.org/abs/1505.05424.
     Args:
         kl_penalty: float, weight for KL divergence term
+    Attributes:
+        kl_penalty: float, weight for KL divergence term
     """
 
-    def __init__(self, kl_penalty):
+    def __init__(self, kl_penalty: float) -> None:
         super().__init__()
         self.kl_penalty = kl_penalty
 
-    def forward(self, inputs, targets, kl):
+    def forward(
+        self, inputs: torch.Tensor, targets: torch.Tensor, kl: torch.Tensor
+    ) -> torch.Tensor:
         """
         Forward pass of the ELBO loss.
         Args:
