@@ -31,6 +31,7 @@ class BayesLinear(nn.Module):
         posterior_std: float = 0.05,
         prior_mean: float = 0.0,
         prior_std: float = 1.0,
+        init_layer: nn.Module = None,
     ) -> None:
         """Initializes the Bayesian linear layer.
 
@@ -42,6 +43,7 @@ class BayesLinear(nn.Module):
             posterior_std: float, initial standard deviation of the posterior
             prior_mean: float, mean of the prior
             prior_std: float, standard deviation of the prior
+            init_layer: nn.Module, layer to initialize the weights from
         """
         super().__init__()
         self.in_features = in_features
@@ -52,25 +54,40 @@ class BayesLinear(nn.Module):
         rho = torch.log(torch.exp(torch.tensor(posterior_std)) - 1)
 
         # posterior weights
-        self.weight_mu = nn.Parameter(torch.empty((out_features, in_features)))
+        if init_layer is None:
+            self.weight_mu = nn.Parameter(torch.empty((out_features, in_features)))
+        else:
+            self.weight_mu = nn.Parameter(init_layer.weight.data)
         self.weight_rho = nn.Parameter(torch.full((out_features, in_features), rho))
 
         # prior weights
-        self.register_buffer("weight_prior_mu", torch.full((out_features, in_features), prior_mean))
+        if init_layer is None:
+            self.register_buffer(
+                "weight_prior_mu", torch.full((out_features, in_features), prior_mean)
+            )
+        else:
+            self.register_buffer("weight_prior_mu", init_layer.weight.data)
         self.register_buffer(
             "weight_prior_sigma", torch.full((out_features, in_features), prior_std)
         )
 
         if self.bias:
             # posterior bias
-            self.bias_mu = nn.Parameter(torch.empty((out_features,)))
+            if init_layer is None:
+                self.bias_mu = nn.Parameter(torch.empty((out_features,)))
+            else:
+                self.bias_mu = nn.Parameter(init_layer.bias.data)
             self.bias_rho = nn.Parameter(torch.full((out_features,), rho))
 
             # prior bias
-            self.register_buffer("bias_prior_mu", torch.full((out_features,), prior_mean))
+            if init_layer is None:
+                self.register_buffer("bias_prior_mu", torch.full((out_features,), prior_mean))
+            else:
+                self.register_buffer("bias_prior_mu", init_layer.bias.data)
             self.register_buffer("bias_prior_sigma", torch.full((out_features,), prior_std))
 
-        self.reset_parameters()
+        if init_layer is None:
+            self.reset_parameters()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -160,6 +177,7 @@ class BayesConv2d(nn.Module):
         posterior_std: float = 0.05,
         prior_mean: float = 0.0,
         prior_std: float = 1.0,
+        init_layer: nn.Module = None,
     ) -> None:
         """Initializes the Bayesian convolutional layer.
 
@@ -177,6 +195,7 @@ class BayesConv2d(nn.Module):
             posterior_std: float, initial standard deviation of the posterior
             prior_mean: float, mean of the prior
             prior_std: float, standard deviation of the prior
+            init_layer: nn.Module, layer to initialize the weights from
         """
         super().__init__()
         self.in_channels = in_channels
@@ -192,18 +211,24 @@ class BayesConv2d(nn.Module):
         rho = torch.log(torch.exp(torch.tensor(posterior_std)) - 1)
 
         # posterior weights
-        self.weight_mu = nn.Parameter(
-            torch.empty((out_channels, in_channels // groups, *kernel_size))
-        )
+        if init_layer is None:
+            self.weight_mu = nn.Parameter(
+                torch.empty((out_channels, in_channels // groups, *kernel_size))
+            )
+        else:
+            self.weight_mu = nn.Parameter(init_layer.weight.data)
         self.weight_rho = nn.Parameter(
             torch.full((out_channels, in_channels // groups, *kernel_size), rho)
         )
 
         # prior weights
-        self.register_buffer(
-            "weight_prior_mu",
-            torch.full((out_channels, in_channels // groups, *kernel_size), prior_mean),
-        )
+        if init_layer is None:
+            self.register_buffer(
+                "weight_prior_mu",
+                torch.full((out_channels, in_channels // groups, *kernel_size), prior_mean),
+            )
+        else:
+            self.register_buffer("weight_prior_mu", init_layer.weight.data)
 
         self.register_buffer(
             "weight_prior_sigma",
@@ -212,14 +237,21 @@ class BayesConv2d(nn.Module):
 
         if self.bias:
             # posterior bias
-            self.bias_mu = nn.Parameter(torch.empty((out_channels,)))
+            if init_layer is None:
+                self.bias_mu = nn.Parameter(torch.empty((out_channels,)))
+            else:
+                self.bias_mu = nn.Parameter(init_layer.bias.data)
             self.bias_rho = nn.Parameter(torch.full((out_channels,), rho))
 
             # prior bias
-            self.register_buffer("bias_prior_mu", torch.full((out_channels,), prior_mean))
+            if init_layer is None:
+                self.register_buffer("bias_prior_mu", torch.full((out_channels,), prior_mean))
+            else:
+                self.register_buffer("bias_prior_mu", init_layer.bias.data)
             self.register_buffer("bias_prior_sigma", torch.full((out_channels,), prior_std))
 
-        self.reset_parameters()
+        if init_layer is None:
+            self.reset_parameters()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """

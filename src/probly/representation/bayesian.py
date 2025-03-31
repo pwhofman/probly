@@ -18,6 +18,7 @@ class Bayesian(nn.Module):
     def __init__(
         self,
         base: nn.Module,
+        use_base_weights: bool = False,
         posterior_std: float = 0.05,
         prior_mean: float = 0.0,
         prior_std: float = 1.0,
@@ -28,12 +29,13 @@ class Bayesian(nn.Module):
 
         Args:
             base: torch.nn.Module, The base model.
+            use_base_weights: bool, If True, the weights of the base model are used as the prior mean.
             posterior_std: float, The initial posterior standard deviation.
             prior_mean: float, The prior mean.
             prior_std: float, The prior standard deviation.
         """
         super().__init__()
-        self._convert(base, posterior_std, prior_mean, prior_std)
+        self._convert(base, use_base_weights, posterior_std, prior_mean, prior_std)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -57,13 +59,19 @@ class Bayesian(nn.Module):
         return torch.stack([self.model(x) for _ in range(n_samples)], dim=1)
 
     def _convert(
-        self, base: nn.Module, posterior_std: float, prior_mean: float, prior_std: float
+        self,
+        base: nn.Module,
+        use_base_weights: bool,
+        posterior_std: float,
+        prior_mean: float,
+        prior_std: float,
     ) -> None:
         """
         Converts the base model to a Bayesian model, stored in model, by replacing all layers by
         Bayesian layers.
         Args:
             base: torch.nn.Module, The base model to be used for dropout.
+            use_base_weights: bool, If True, the weights of the base model are used as the prior mean.
             posterior_std: float, The posterior standard deviation.
             prior_mean: float, The prior mean.
             prior_std: float, The prior standard deviation.
@@ -83,6 +91,7 @@ class Bayesian(nn.Module):
                             posterior_std,
                             prior_mean,
                             prior_std,
+                            child if use_base_weights else None,
                         ),
                     )
                 elif isinstance(child, nn.Conv2d):
@@ -101,6 +110,7 @@ class Bayesian(nn.Module):
                             posterior_std,
                             prior_mean,
                             prior_std,
+                            child if use_base_weights else None,
                         ),
                     )
                 else:
