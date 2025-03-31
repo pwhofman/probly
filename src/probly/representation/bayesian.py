@@ -15,11 +15,14 @@ class Bayesian(nn.Module):
     Attributes:
         model: torch.nn.Module, The transformed model with Bayesian layers.
     """
-    def __init__(self,
-                 base: nn.Module,
-                 posterior_std: float=0.05,
-                 prior_mean: float=0.0,
-                 prior_std: float=1.0):
+
+    def __init__(
+        self,
+        base: nn.Module,
+        posterior_std: float = 0.05,
+        prior_mean: float = 0.0,
+        prior_std: float = 1.0,
+    ):
         super().__init__()
         self._convert(base, posterior_std, prior_mean, prior_std)
 
@@ -33,7 +36,7 @@ class Bayesian(nn.Module):
         """
         return self.model(x)
 
-    def represent_uncertainty(self, x: torch.Tensor, n_samples: int=25) -> torch.Tensor:
+    def represent_uncertainty(self, x: torch.Tensor, n_samples: int = 25) -> torch.Tensor:
         """
         Forward pass that gives an uncertainty representation.
         Args:
@@ -44,11 +47,9 @@ class Bayesian(nn.Module):
         """
         return torch.stack([self.model(x) for _ in range(n_samples)], dim=1)
 
-    def _convert(self,
-                 base: nn.Module,
-                 posterior_std: float,
-                 prior_mean: float,
-                 prior_std: float) -> None:
+    def _convert(
+        self, base: nn.Module, posterior_std: float, prior_mean: float, prior_std: float
+    ) -> None:
         """
         Converts the base model to a Bayesian model, stored in model, by replacing all layers by
         Bayesian layers.
@@ -62,25 +63,36 @@ class Bayesian(nn.Module):
         self.n_parameters = 0
         for name, child in self.model.named_children():
             if isinstance(child, nn.Linear):
-                setattr(self.model, name, BayesLinear(child.in_features,
-                                                      child.out_features,
-                                                      child.bias is not None,
-                                                      posterior_std,
-                                                      prior_mean,
-                                                      prior_std))
+                setattr(
+                    self.model,
+                    name,
+                    BayesLinear(
+                        child.in_features,
+                        child.out_features,
+                        child.bias is not None,
+                        posterior_std,
+                        prior_mean,
+                        prior_std,
+                    ),
+                )
             elif isinstance(child, nn.Conv2d):
-                setattr(self.model, name, BayesConv2d(child.in_channels,
-                                                      child.out_channels,
-                                                      child.kernel_size,
-                                                      child.stride,
-                                                      child.padding,
-                                                      child.dilation,
-                                                      child.groups,
-                                                      child.bias is not None,
-                                                      posterior_std,
-                                                      prior_mean,
-                                                      prior_std))
-
+                setattr(
+                    self.model,
+                    name,
+                    BayesConv2d(
+                        child.in_channels,
+                        child.out_channels,
+                        child.kernel_size,
+                        child.stride,
+                        child.padding,
+                        child.dilation,
+                        child.groups,
+                        child.bias is not None,
+                        posterior_std,
+                        prior_mean,
+                        prior_std,
+                    ),
+                )
 
     @property
     def kl_divergence(self) -> torch.Tensor:

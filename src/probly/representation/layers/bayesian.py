@@ -7,13 +7,15 @@ import torch.nn.init as init
 
 
 class BayesLinear(nn.Module):
-    def __init__(self,
-                 in_features: int,
-                 out_features: int,
-                 bias: bool=True,
-                 posterior_std: float=0.05,
-                 prior_mean:float =0.0,
-                 prior_std:float =1.0):
+    def __init__(
+        self,
+        in_features: int,
+        out_features: int,
+        bias: bool = True,
+        posterior_std: float = 0.05,
+        prior_mean: float = 0.0,
+        prior_std: float = 1.0,
+    ):
         super().__init__()
         self.in_features = in_features
         self.out_features = out_features
@@ -40,7 +42,6 @@ class BayesLinear(nn.Module):
             self.bias_prior_sigma = torch.full((out_features,), prior_std)
 
         self.reset_parameters()
-
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -75,30 +76,41 @@ class BayesLinear(nn.Module):
         """
         Computes the KL-divergence between the posterior and prior.
         """
-        kl = torch.sum(_kl_divergence_gaussian(self.weight_mu,
-                                               torch.log1p(torch.exp(self.weight_rho)) ** 2,
-                                               self.weight_prior_mu,
-                                               self.weight_prior_sigma ** 2))
+        kl = torch.sum(
+            _kl_divergence_gaussian(
+                self.weight_mu,
+                torch.log1p(torch.exp(self.weight_rho)) ** 2,
+                self.weight_prior_mu,
+                self.weight_prior_sigma**2,
+            )
+        )
         if self.bias:
-            kl += torch.sum(_kl_divergence_gaussian(self.bias_mu,
-                                                    torch.log1p(torch.exp(self.bias_rho)) ** 2,
-                                                    self.bias_prior_mu,
-                                                    self.bias_prior_sigma ** 2))
+            kl += torch.sum(
+                _kl_divergence_gaussian(
+                    self.bias_mu,
+                    torch.log1p(torch.exp(self.bias_rho)) ** 2,
+                    self.bias_prior_mu,
+                    self.bias_prior_sigma**2,
+                )
+            )
         return kl
 
+
 class BayesConv2d(nn.Module):
-    def __init__(self,
-                 in_channels: int,
-                 out_channels: int,
-                 kernel_size: int | tuple,
-                 stride: int | tuple=1,
-                 padding: int=0,
-                 dilation: int=1,
-                 groups: int=1,
-                 bias: bool=True,
-                 posterior_std: float=0.05,
-                 prior_mean: float=0.0,
-                 prior_std: float=1.0):
+    def __init__(
+        self,
+        in_channels: int,
+        out_channels: int,
+        kernel_size: int | tuple,
+        stride: int | tuple = 1,
+        padding: int = 0,
+        dilation: int = 1,
+        groups: int = 1,
+        bias: bool = True,
+        posterior_std: float = 0.05,
+        prior_mean: float = 0.0,
+        prior_std: float = 1.0,
+    ):
         super().__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -114,15 +126,19 @@ class BayesConv2d(nn.Module):
 
         # posterior weights
         self.weight_mu = nn.Parameter(
-            torch.empty((out_channels, in_channels // groups, *kernel_size)))
+            torch.empty((out_channels, in_channels // groups, *kernel_size))
+        )
         self.weight_rho = nn.Parameter(
-            torch.full((out_channels, in_channels // groups, *kernel_size), rho))
+            torch.full((out_channels, in_channels // groups, *kernel_size), rho)
+        )
 
         # prior weights
-        self.weight_prior_mu = (
-            torch.full((out_channels, in_channels // groups, *kernel_size), prior_mean))
-        self.weight_prior_sigma = (
-            torch.full((out_channels, in_channels // groups, *kernel_size), prior_std))
+        self.weight_prior_mu = torch.full(
+            (out_channels, in_channels // groups, *kernel_size), prior_mean
+        )
+        self.weight_prior_sigma = torch.full(
+            (out_channels, in_channels // groups, *kernel_size), prior_std
+        )
 
         if self.bias:
             # posterior bias
@@ -150,12 +166,14 @@ class BayesConv2d(nn.Module):
             bias = self.bias_mu + torch.log1p(torch.exp(self.bias_rho)) * eps_bias
             x = F.conv2d(x, weight, bias, self.stride, self.padding, self.dilation, self.groups)
         else:
-            x = F.conv2d(x,
-                         weight,
-                         stride=self.stride,
-                         padding=self.padding,
-                         dilation=self.dilation,
-                         groups=self.groups)
+            x = F.conv2d(
+                x,
+                weight,
+                stride=self.stride,
+                padding=self.padding,
+                dilation=self.dilation,
+                groups=self.groups,
+            )
         return x
 
     def reset_parameters(self) -> None:
@@ -174,22 +192,29 @@ class BayesConv2d(nn.Module):
         """
         Compute the KL-divergence between the posterior and prior.
         """
-        kl = torch.sum(_kl_divergence_gaussian(self.weight_mu,
-                                               torch.log1p(torch.exp(self.weight_rho)) ** 2,
-                                               self.weight_prior_mu,
-                                               self.weight_prior_sigma ** 2))
+        kl = torch.sum(
+            _kl_divergence_gaussian(
+                self.weight_mu,
+                torch.log1p(torch.exp(self.weight_rho)) ** 2,
+                self.weight_prior_mu,
+                self.weight_prior_sigma**2,
+            )
+        )
         if self.bias:
-            kl += torch.sum(_kl_divergence_gaussian(self.bias_mu,
-                                                    torch.log1p(torch.exp(self.bias_rho)) ** 2,
-                                                    self.bias_prior_mu,
-                                                    self.bias_prior_sigma ** 2))
+            kl += torch.sum(
+                _kl_divergence_gaussian(
+                    self.bias_mu,
+                    torch.log1p(torch.exp(self.bias_rho)) ** 2,
+                    self.bias_prior_mu,
+                    self.bias_prior_sigma**2,
+                )
+            )
         return kl
 
 
-def _kl_divergence_gaussian(mu1: torch.Tensor,
-                            sigma21: torch.Tensor,
-                            mu2: torch.Tensor,
-                            sigma22: torch.Tensor) -> torch.Tensor:
+def _kl_divergence_gaussian(
+    mu1: torch.Tensor, sigma21: torch.Tensor, mu2: torch.Tensor, sigma22: torch.Tensor
+) -> torch.Tensor:
     """
     Compute the KL-divergence between two Gaussian distributions.
     https://en.wikipedia.org/wiki/Kullback–Leibler_divergence#Examples
@@ -201,7 +226,5 @@ def _kl_divergence_gaussian(mu1: torch.Tensor,
     Returns:
         kl_div: float or numpy.ndarray shape (n_instances,), KL-divergence between the two Gaussian distributions
     """
-    kl_div = (0.5 * torch.log(sigma22 / sigma21)
-              + (sigma21 + (mu1 - mu2) ** 2) / (2 * sigma22)
-              - 0.5)
+    kl_div = 0.5 * torch.log(sigma22 / sigma21) + (sigma21 + (mu1 - mu2) ** 2) / (2 * sigma22) - 0.5
     return kl_div
