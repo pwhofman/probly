@@ -58,13 +58,9 @@ class DropConnect(nn.Module):
                 if isinstance(child, nn.Linear) and not first_layer:
                     setattr(module, name, DropConnectLinear(child, p=self.p))  # add DropConnect
                 else:
-                    if first_layer and not isinstance(
-                        child, nn.Sequential
-                    ):  # ignore Sequential layers as first layers
+                    if first_layer and not isinstance(child, nn.Sequential):  # ignore Sequential layers as first layers
                         first_layer = False  # skip first layer
-                    apply_drop_connect(
-                        child, first_layer=first_layer
-                    )  # apply recursively to all layers
+                    apply_drop_connect(child, first_layer=first_layer)  # apply recursively to all layers
 
         apply_drop_connect(self.model)
 

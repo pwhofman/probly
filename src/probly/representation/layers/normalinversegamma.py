@@ -24,9 +24,7 @@ class NormalInverseGammaLinear(nn.Module):
 
     """
 
-    def __init__(
-        self, in_features: int, out_features: int, device: torch.device = None, *, bias: bool = True
-    ) -> None:
+    def __init__(self, in_features: int, out_features: int, device: torch.device = None, *, bias: bool = True) -> None:
         """Initialize an instance of the NormalInverseGammaLinear layer.
 
         Args:

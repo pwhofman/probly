@@ -20,9 +20,7 @@ class CIFAR10H(torchvision.datasets.CIFAR10):
         targets: torch.Tensor size (n_instances, n_classes), first-order distribution
     """
 
-    def __init__(
-        self, root: str, transform: Callable | None = None, *, download: bool = False
-    ) -> None:
+    def __init__(self, root: str, transform: Callable | None = None, *, download: bool = False) -> None:
         """Initialize an instance of the CIFAR10H class.
 
         Args:
@@ -54,9 +52,7 @@ class DCICDataset(torch.utils.data.Dataset):
         # TODO remove unnecessary fields
     """
 
-    def __init__(
-        self, root: str, transform: Callable | None = None, *, first_order: bool = True
-    ) -> None:
+    def __init__(self, root: str, transform: Callable | None = None, *, first_order: bool = True) -> None:
         """Initialize an instance of the DCICDataset class.
 
         Args:
@@ -86,9 +82,8 @@ class DCICDataset(torch.utils.data.Dataset):
         self.label_mappings = {
             label: idx
             for idx, label in enumerate(
-                {
-                    label for labels in self.image_labels.values() for label in labels
-                }  # TODO simplify code here
+                {label for labels in self.image_labels.values() for label in labels}
+                # TODO simplify code here
             )
         }
         self.num_classes = len({label for labels in self.image_labels.values() for label in labels})
@@ -137,9 +132,7 @@ class DCICDataset(torch.utils.data.Dataset):
 class Benthic(DCICDataset):
     """Implementation of the Benthic dataset."""
 
-    def __init__(
-        self, root: str, transform: Callable | None = None, *, first_order: bool = True
-    ) -> None:
+    def __init__(self, root: str, transform: Callable | None = None, *, first_order: bool = True) -> None:
         """Initialize an instance of the Benthic dataset class.
 
         Args:

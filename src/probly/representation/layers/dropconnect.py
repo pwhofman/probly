@@ -29,9 +29,7 @@ class DropConnectLinear(nn.Module):
         self.out_features = base_layer.out_features
         self.p = p
         self.weights = nn.Parameter(base_layer.weight.clone().detach())
-        self.bias = (
-            nn.Parameter(base_layer.bias.clone().detach()) if base_layer.bias is not None else None
-        )
+        self.bias = nn.Parameter(base_layer.bias.clone().detach()) if base_layer.bias is not None else None
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward pass of the DropConnect layer.

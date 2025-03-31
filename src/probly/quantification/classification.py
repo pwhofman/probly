@@ -94,9 +94,7 @@ def expected_entropy(probs: np.ndarray, loss_fn: Callable[[np.ndarray], np.ndarr
     return ee
 
 
-def expected_divergence(
-    probs: np.ndarray, loss_fn: Callable[[np.ndarray], np.ndarray]
-) -> np.ndarray:
+def expected_divergence(probs: np.ndarray, loss_fn: Callable[[np.ndarray], np.ndarray]) -> np.ndarray:
     """Compute the expected divergence to the mean of the second-order distribution.
 
      The computation is based on samples from a second-order distribution.
@@ -110,9 +108,7 @@ def expected_divergence(
 
     """
     mean = np.mean(probs, axis=1)
-    ed = np.sum(mean * loss_fn(mean), axis=1) - np.mean(
-        np.sum(probs * loss_fn(probs), axis=2), axis=1
-    )
+    ed = np.sum(mean * loss_fn(mean), axis=1) - np.mean(np.sum(probs * loss_fn(probs), axis=2), axis=1)
     return ed
 
 
@@ -192,7 +188,7 @@ def aleatoric_uncertainty_distance(probs: np.ndarray) -> np.ndarray:
         probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
 
     Returns:
-        tu: numpy.ndarray of shape (n_instances,)
+        au: numpy.ndarray of shape (n_instances,)
 
     """
     au = 1 - np.mean(np.max(probs, axis=2), axis=1)
@@ -213,8 +209,7 @@ def epistemic_uncertainty_distance(probs: np.ndarray) -> np.ndarray:
     """
 
     def fun(q: np.ndarray, p: np.ndarray) -> np.ndarray:
-        f = np.mean(np.linalg.norm(p - q[None, :], ord=1, axis=1))
-        return f
+        return np.mean(np.linalg.norm(p - q[None, :], ord=1, axis=1))
 
     x0 = probs.mean(axis=1)
     constraints = {"type": "eq", "fun": lambda x: np.sum(x) - 1}

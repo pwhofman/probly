@@ -25,9 +25,7 @@ class EvidentialLogLoss(nn.Module):
         """
         alphas = inputs + 1.0
         strengths = torch.sum(alphas, dim=1)
-        loss = torch.mean(
-            torch.log(strengths) - torch.log(alphas[torch.arange(targets.shape[0]), targets])
-        )
+        loss = torch.mean(torch.log(strengths) - torch.log(alphas[torch.arange(targets.shape[0]), targets]))
         return loss
 
 
@@ -51,10 +49,7 @@ class EvidentialCELoss(nn.Module):
         """
         alphas = inputs + 1.0
         strengths = torch.sum(alphas, dim=1)
-        loss = torch.mean(
-            torch.digamma(strengths)
-            - torch.digamma(alphas[torch.arange(targets.shape[0]), targets])
-        )
+        loss = torch.mean(torch.digamma(strengths) - torch.digamma(alphas[torch.arange(targets.shape[0]), targets]))
         return loss
 
 
@@ -108,15 +103,10 @@ class EvidentialKLDivergence(nn.Module):
         y = F.one_hot(targets, inputs.shape[1])
         alphas_tilde = y + (1 - y) * alphas
         strengths_tilde = torch.sum(alphas_tilde, dim=1)
-        K = torch.full((inputs.shape[0],), inputs.shape[1], device=inputs.device)
-        first = (
-            torch.lgamma(strengths_tilde)
-            - torch.lgamma(K)
-            - torch.sum(torch.lgamma(alphas_tilde), dim=1)
-        )
+        k = torch.full((inputs.shape[0],), inputs.shape[1], device=inputs.device)
+        first = torch.lgamma(strengths_tilde) - torch.lgamma(k) - torch.sum(torch.lgamma(alphas_tilde), dim=1)
         second = torch.sum(
-            (alphas_tilde - 1)
-            * (torch.digamma(alphas_tilde) - torch.digamma(strengths_tilde)[:, None]),
+            (alphas_tilde - 1) * (torch.digamma(alphas_tilde) - torch.digamma(strengths_tilde)[:, None]),
             dim=1,
         )
         loss = torch.mean(first + second)
@@ -148,8 +138,7 @@ class EvidentialNIGNLLLoss(nn.Module):
         loss = (
             0.5 * torch.log(torch.pi / inputs["nu"])
             - inputs["alpha"] * torch.log(omega)
-            + (inputs["alpha"] + 0.5)
-            * torch.log((targets - inputs["gamma"]) ** 2 * inputs["nu"] + omega)
+            + (inputs["alpha"] + 0.5) * torch.log((targets - inputs["gamma"]) ** 2 * inputs["nu"] + omega)
             + torch.lgamma(inputs["alpha"])
             - torch.lgamma(inputs["alpha"] + 0.5)
         ).mean()
