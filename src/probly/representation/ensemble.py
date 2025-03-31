@@ -5,7 +5,7 @@ import copy
 import torch
 from torch import nn
 
-from ..utils import torch_reset_all_parameters
+from probly.utils import torch_reset_all_parameters
 
 
 class Ensemble(nn.Module):

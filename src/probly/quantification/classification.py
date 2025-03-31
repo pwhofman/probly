@@ -6,7 +6,7 @@ import numpy as np
 from scipy.optimize import minimize
 from scipy.stats import entropy
 
-from ..utils import moebius, powerset
+from probly.utils import moebius, powerset
 
 
 def total_entropy(probs: np.ndarray, base: float = 2) -> np.ndarray:

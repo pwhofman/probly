@@ -5,7 +5,7 @@ import copy
 import torch
 from torch import nn
 
-from ..layers import NormalInverseGammaLinear
+from probly.representation.layers import NormalInverseGammaLinear
 
 
 class Evidential(nn.Module):
