@@ -16,6 +16,7 @@ def test_dropout(
     Args:
         model_small_2d_2d: A small model with 2 input and 2 output neurons.
         probability: The probability of dropping out a neuron.
+
     """
     dropout_model = Dropout(model_small_2d_2d, p=probability)
     assert dropout_model.p == probability
