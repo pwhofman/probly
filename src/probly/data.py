@@ -1,8 +1,8 @@
 """Collection of dataset classes for loading data from different datasets."""
 
 import json
-import os
 from collections.abc import Callable
+from pathlib import Path
 
 import numpy as np
 import torch
@@ -29,7 +29,7 @@ class CIFAR10H(torchvision.datasets.CIFAR10):
             download: bool, whether to download the CIFAR10 dataset or not
         """
         super().__init__(root, train=False, transform=transform, download=download)
-        first_order_path = os.path.join(self.root, "cifar-10h-master/data/cifar10h-counts.npy")
+        first_order_path = Path(self.root) / "cifar-10h-master" / "data" / "cifar10h-counts.npy"
         self.counts = np.load(first_order_path)
         self.counts = torch.tensor(self.counts, dtype=torch.float32)
         self.targets = self.counts / self.counts.sum(dim=1, keepdim=True)
@@ -52,19 +52,19 @@ class DCICDataset(torch.utils.data.Dataset):
         # TODO remove unnecessary fields
     """
 
-    def __init__(self, root: str, transform: Callable | None = None, *, first_order: bool = True) -> None:
+    def __init__(self, root: Path | str, transform: Callable | None = None, *, first_order: bool = True) -> None:
         """Initialize an instance of the DCICDataset class.
 
         Args:
-            root: str, root directory of the dataset
+            root: Path or str, root directory of the dataset
             transform: optional transform to apply to the data
             first_order: bool, whether to use first order data or class labels
         """
-        root = os.path.expanduser(root)
-        with open(os.path.join(root, "annotations.json")) as f:
+        root = Path(root).expanduser() / "annotations.json"
+        with root.open() as f:
             annotations = json.load(f)
 
-        self.root = os.path.dirname(root)
+        self.root = root.parent
         self.transform = transform
         self.image_labels = {}
 
@@ -91,7 +91,7 @@ class DCICDataset(torch.utils.data.Dataset):
         self.data = []
         self.targets = []
         for img_path in self.image_paths:
-            full_img_path = os.path.join(self.root, img_path)
+            full_img_path = Path(self.root) / img_path
             image = Image.open(full_img_path)
             self.data.append(image)
             labels = self.image_labels[img_path]
@@ -132,12 +132,12 @@ class DCICDataset(torch.utils.data.Dataset):
 class Benthic(DCICDataset):
     """Implementation of the Benthic dataset."""
 
-    def __init__(self, root: str, transform: Callable | None = None, *, first_order: bool = True) -> None:
+    def __init__(self, root: Path | str, transform: Callable | None = None, *, first_order: bool = True) -> None:
         """Initialize an instance of the Benthic dataset class.
 
         Args:
-            root: str, root directory of the dataset
+            root: Path or str, root directory of the dataset
             transform: optional transform to apply to the data
             first_order: bool, whether to use first order data or class labels
         """
-        super().__init__(os.path.join(root, "Benthic"), transform, first_order=first_order)
+        super().__init__(Path(root) / "Benthic", transform, first_order=first_order)

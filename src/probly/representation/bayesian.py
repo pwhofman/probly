@@ -1,9 +1,11 @@
+"""Bayesian Neural Network (BNN) implementation."""
+
 import copy
 
 import torch
-import torch.nn as nn
+from torch import nn
 
-from .layers import BayesConv2d, BayesLinear
+from probly.representation.layers import BayesConv2d, BayesLinear
 
 
 class Bayesian(nn.Module):
@@ -23,7 +25,7 @@ class Bayesian(nn.Module):
         prior_mean: float = 0.0,
         prior_std: float = 1.0,
     ) -> None:
-        """Initialize an instance of the Bayesian class
+        """Initialize an instance of the Bayesian class.
 
         Convert the base model into a Bayesian model by replacing suitable layers by Bayesian layers.
 
@@ -38,8 +40,8 @@ class Bayesian(nn.Module):
         self._convert(base, use_base_weights, posterior_std, prior_mean, prior_std)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """
-        Forward pass of the Bayesian model.
+        """Forward pass of the Bayesian model.
+
         Args:
             x: torch.Tensor, input data
         Returns:
@@ -48,8 +50,8 @@ class Bayesian(nn.Module):
         return self.model(x)
 
     def represent_uncertainty(self, x: torch.Tensor, n_samples: int = 25) -> torch.Tensor:
-        """
-        Forward pass that gives an uncertainty representation.
+        """Forward pass that gives an uncertainty representation.
+
         Args:
             x: torch.Tensor, input data
             n_samples: int, number of samples to draw from posterior
@@ -66,9 +68,8 @@ class Bayesian(nn.Module):
         prior_mean: float,
         prior_std: float,
     ) -> None:
-        """
-        Converts the base model to a Bayesian model, stored in model, by replacing all layers by
-        Bayesian layers.
+        """Converts the base model to a Bayesian model by replacing all layers by Bayesian layers.
+
         Args:
             base: torch.nn.Module, The base model to be used for dropout.
             use_base_weights: bool, If True, the weights of the base model are used as the prior mean.
@@ -78,7 +79,7 @@ class Bayesian(nn.Module):
         """
         self.model = copy.deepcopy(base)
 
-        def apply_bayesian(module):
+        def apply_bayesian(module: nn.Module) -> None:
             for name, child in module.named_children():
                 if isinstance(child, nn.Linear):
                     setattr(
@@ -120,9 +121,7 @@ class Bayesian(nn.Module):
 
     @property
     def kl_divergence(self) -> torch.Tensor:
-        """
-        Collects the KL divergence of the model by summing the KL divergence of each layer.
-        """
+        """Collects the KL divergence of the model by summing the KL divergence of each layer."""
         kl = 0
         for module in self.model.modules():
             if isinstance(module, BayesLinear | BayesConv2d):
