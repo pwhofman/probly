@@ -118,7 +118,7 @@ select = [
     "FBT",
     "INP",
     "N",
-    "NPY", # use numpy generator
+    "NPY",
     "PD",
     "PLC",
     "PLE",
@@ -126,7 +126,7 @@ select = [
     "PLW",
     "PIE",
     "PT",
-    "PTH", # use Path instead of os.path
+    "PTH",
     "Q",
     "PGH004",
     "RET",
@@ -145,7 +145,7 @@ ignore = [
     "N812", # Checks for lowercase imports that are aliased to non-lowercase names (e.g. torch.nn.functional as F)
     "RET504", # Unnecessary assignment to {name} before return statement
     "PLR2004", # Magic value used in comparison, consider replacing {value} with a constant variable
-    "FBT", # enforce keyword for bool #TODO
+    "FBT", # enforce keyword for bool
     "PLR0913", # too many arguments (>5)
 ]
 # Exclude a variety of commonly ignored directories.
