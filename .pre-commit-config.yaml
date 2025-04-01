@@ -15,3 +15,4 @@ repos:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix, --no-cache]
       - id: ruff-format
+        args: [--verbose]
