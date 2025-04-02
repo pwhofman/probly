@@ -1,24 +1,30 @@
+"""Evidential model class implementation."""
+
 import copy
 
 import torch
 from torch import nn
 
-from ..layers import NormalInverseGammaLinear
+from probly.representation.layers import NormalInverseGammaLinear
 
 
 class Evidential(nn.Module):
     """This class implements an evidential deep learning model for regression.
 
-    Args:
-        base: torch.nn.Module, The base model to be used.
-
     Attributes:
-        model: torch.nn.Module, The transformed model with a normal inverse gamma layer suitable
+        model: torch.nn.Module, The evidential model with a normal inverse gamma layer suitable
         for evidential regression.
 
     """
 
     def __init__(self, base: nn.Module) -> None:
+        """Initialize the Evidential model.
+
+        Convert the base model into an evidential deep learning regression model.
+
+        Args:
+            base: torch.nn.Module, The base model to be used.
+        """
         super().__init__()
         self._convert(base)
 
@@ -35,7 +41,8 @@ class Evidential(nn.Module):
 
     def _convert(self, base: nn.Module) -> None:
         """Convert a model into an evidential deep learning regression model.
-        Replaces the last layer by a layer parameterizing a normal inverse gamma distribution.
+
+        Replace the last layer by a layer parameterizing a normal inverse gamma distribution.
 
         Args:
             base: torch.nn.Module, The base model to be used.

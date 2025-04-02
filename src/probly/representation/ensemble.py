@@ -1,24 +1,30 @@
+"""Ensemble class implementation."""
+
 import copy
 
 import torch
 from torch import nn
 
-from ..utils import torch_reset_all_parameters
+from probly.utils import torch_reset_all_parameters
 
 
 class Ensemble(nn.Module):
-    """This class implements an ensemble of representation to be used for uncertainty quantification.
-
-    Args:
-        base: torch.nn.Module, The base model to be used.
-        n_members: int, The number of members in the ensemble.
+    """Implementation of an ensemble representation to be used for uncertainty quantification.
 
     Attributes:
-        models: torch.nn.ModuleList, The list of models in the ensemble based on the base model.
+        models: torch.nn.ModuleList, the list of models in the ensemble based on the base model.
 
     """
 
     def __init__(self, base: nn.Module, n_members: int) -> None:
+        """Initialization of an instance of the Ensemble class.
+
+        Ensemble members are constructed based on copies of the base model.
+
+        Args:
+            base: torch.nn.Module, the base model to be used.
+            n_members: int, the number of members in the ensemble.
+        """
         super().__init__()
         self._convert(base, n_members)
 
@@ -37,8 +43,8 @@ class Ensemble(nn.Module):
         """Convert the base model to an ensemble with n_members members.
 
         Args:
-            base: torch.nn.Module, The base model to be converted.
-            n_members: int, The number of members in the ensemble.
+            base: torch.nn.Module, the base model to be converted.
+            n_members: int, the number of members in the ensemble.
 
         """
         self.models = nn.ModuleList()

@@ -1,8 +1,10 @@
-from .bayesian import Bayesian
-from .dropconnect import DropConnect
-from .dropout import Dropout
-from .ensemble import Ensemble
-from .evidential import Evidential
-from .subensemble import SubEnsemble
+"""Init module for representation implementations."""
 
-__all__ = ["Bayesian", "Dropout", "DropConnect", "Ensemble", "Evidential", "SubEnsemble"]
+from probly.representation.bayesian import Bayesian
+from probly.representation.dropconnect import DropConnect
+from probly.representation.dropout import Dropout
+from probly.representation.ensemble import Ensemble
+from probly.representation.evidential import Evidential
+from probly.representation.subensemble import SubEnsemble
+
+__all__ = ["Bayesian", "DropConnect", "Dropout", "Ensemble", "Evidential", "SubEnsemble"]

@@ -1,9 +1,11 @@
+"""Bayesian layer implementation."""
+
 import math
 
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
-import torch.nn.init as init
+from torch import nn
+from torch.nn import init
 
 
 class BayesLinear(nn.Module):
@@ -36,6 +38,7 @@ class BayesLinear(nn.Module):
         """Initializes the Bayesian linear layer.
 
         Reparameterize the standard deviation of the posterior weights using the re-parameterization trick.
+
         Args:
             in_features: int, number of input features
             out_features: int, number of output features
@@ -62,14 +65,10 @@ class BayesLinear(nn.Module):
 
         # prior weights
         if init_layer is None:
-            self.register_buffer(
-                "weight_prior_mu", torch.full((out_features, in_features), prior_mean)
-            )
+            self.register_buffer("weight_prior_mu", torch.full((out_features, in_features), prior_mean))
         else:
             self.register_buffer("weight_prior_mu", init_layer.weight.data)
-        self.register_buffer(
-            "weight_prior_sigma", torch.full((out_features, in_features), prior_std)
-        )
+        self.register_buffer("weight_prior_sigma", torch.full((out_features, in_features), prior_std))
 
         if self.bias:
             # posterior bias
@@ -90,8 +89,8 @@ class BayesLinear(nn.Module):
             self.reset_parameters()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """
-        Forward pass of the Bayesian linear layer.
+        """Forward pass of the Bayesian linear layer.
+
         Args:
             x: torch.Tensor, input data
         Returns:
@@ -108,9 +107,12 @@ class BayesLinear(nn.Module):
         return x
 
     def reset_parameters(self) -> None:
-        # Setting a=sqrt(5) in kaiming_uniform is the same as initializing with
-        # uniform(-1/sqrt(in_features), 1/sqrt(in_features)). For details, see
-        # https://github.com/pytorch/pytorch/issues/57109
+        """Reset the parameters of the Bayesian conv2d layer.
+
+        Setting a=sqrt(5) in kaiming_uniform is the same as initializing with
+        uniform(-1/sqrt(k), 1/sqrt(k)), where k = weight.size(1) * prod(*kernel_size)
+        For more details see: https://github.com/pytorch/pytorch/issues/15314#issuecomment-477448573
+        """
         init.kaiming_uniform_(self.weight_mu, a=math.sqrt(5))
         if self.bias is not False:
             fan_in, _ = init._calculate_fan_in_and_fan_out(self.weight_mu)
@@ -119,9 +121,7 @@ class BayesLinear(nn.Module):
 
     @property
     def kl_divergence(self) -> torch.Tensor:
-        """
-        Computes the KL-divergence between the posterior and prior.
-        """
+        """Computes the KL-divergence between the posterior and prior."""
         kl = torch.sum(
             _kl_divergence_gaussian(
                 self.weight_mu,
@@ -212,14 +212,10 @@ class BayesConv2d(nn.Module):
 
         # posterior weights
         if init_layer is None:
-            self.weight_mu = nn.Parameter(
-                torch.empty((out_channels, in_channels // groups, *kernel_size))
-            )
+            self.weight_mu = nn.Parameter(torch.empty((out_channels, in_channels // groups, *kernel_size)))
         else:
             self.weight_mu = nn.Parameter(init_layer.weight.data)
-        self.weight_rho = nn.Parameter(
-            torch.full((out_channels, in_channels // groups, *kernel_size), rho)
-        )
+        self.weight_rho = nn.Parameter(torch.full((out_channels, in_channels // groups, *kernel_size), rho))
 
         # prior weights
         if init_layer is None:
@@ -254,8 +250,8 @@ class BayesConv2d(nn.Module):
             self.reset_parameters()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """
-        Forward pass of the Bayesian conv2d layer.
+        """Forward pass of the Bayesian conv2d layer.
+
         Args:
             x: torch.Tensor, input data
         Returns:
@@ -279,9 +275,12 @@ class BayesConv2d(nn.Module):
         return x
 
     def reset_parameters(self) -> None:
-        # Setting a=sqrt(5) in kaiming_uniform is the same as initializing with
-        # uniform(-1/sqrt(k), 1/sqrt(k)), where k = weight.size(1) * prod(*kernel_size)
-        # For more details see: https://github.com/pytorch/pytorch/issues/15314#issuecomment-477448573
+        """Reset the parameters of the Bayesian conv2d layer.
+
+        Setting a=sqrt(5) in kaiming_uniform is the same as initializing with
+        uniform(-1/sqrt(k), 1/sqrt(k)), where k = weight.size(1) * prod(*kernel_size)
+        For more details see: https://github.com/pytorch/pytorch/issues/15314#issuecomment-477448573
+        """
         init.kaiming_uniform_(self.weight_mu, a=math.sqrt(5))
         if self.bias is not False:
             fan_in, _ = init._calculate_fan_in_and_fan_out(self.weight_mu)
@@ -291,9 +290,7 @@ class BayesConv2d(nn.Module):
 
     @property
     def kl_divergence(self) -> torch.Tensor:
-        """
-        Compute the KL-divergence between the posterior and prior.
-        """
+        """Compute the KL-divergence between the posterior and prior."""
         kl = torch.sum(
             _kl_divergence_gaussian(
                 self.weight_mu,
@@ -317,9 +314,9 @@ class BayesConv2d(nn.Module):
 def _kl_divergence_gaussian(
     mu1: torch.Tensor, sigma21: torch.Tensor, mu2: torch.Tensor, sigma22: torch.Tensor
 ) -> torch.Tensor:
-    """
-    Compute the KL-divergence between two Gaussian distributions.
-    https://en.wikipedia.org/wiki/Kullback–Leibler_divergence#Examples
+    """Compute the KL-divergence between two Gaussian distributions.
+
+    https://en.wikipedia.org/wiki/Kullback-Leibler_divergence#Examples
     Args:
         mu1: torch.Tensor, mean of the first Gaussian distribution
         sigma21: torch.Tensor, variance of the first Gaussian distribution

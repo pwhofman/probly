@@ -1,3 +1,5 @@
+"""Evidental deep learning model class implementation."""
+
 import copy
 
 import torch
@@ -5,19 +7,21 @@ from torch import nn
 
 
 class Evidential(nn.Module):
-    """This class implements an evidential deep learning model to be used for uncertainty quantification.
-
-    Args:
-        base: torch.nn.Module, The base model to be used.
-        activation: torch.nn.Module, The activation function that will be used.
+    """Implementation of an evidential deep learning model to be used for uncertainty quantification.
 
     Attributes:
-        model: torch.nn.Module, The transformed model with an activation function suitable
+        model: torch.nn.Module, the model with an activation function suitable
         for evidential classification.
 
     """
 
-    def __init__(self, base: nn.Module, activation: nn.Module = nn.Softplus()) -> None:
+    def __init__(self, base: nn.Module, activation: nn.Module = nn.Softplus()) -> None:  # noqa: B008
+        """Initialize an evidential model by converting the base model into an evidential model.
+
+        Args:
+            base: torch.nn.Module, the base model to be used
+            activation: torch.nn.Module, the activation function that will be used
+        """
         super().__init__()
         self._convert(base, activation)
 
@@ -36,8 +40,8 @@ class Evidential(nn.Module):
         """Convert a model into an evidential deep learning model.
 
         Args:
-            base: torch.nn.Module, The base model to be used.
-            activation: torch.nn.Module, The activation function that will be used.
+            base: torch.nn.Module, the base model to be used.
+            activation: torch.nn.Module, the activation function that will be used.
 
         """
         self.model = nn.Sequential(copy.deepcopy(base), activation)

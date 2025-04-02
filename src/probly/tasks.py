@@ -1,11 +1,13 @@
+"""Collection of downstream tasks to evaluate performance of uncertainty measures."""
+
 import numpy as np
 import sklearn.metrics as sm
 
 
-def selective_prediction(
-    criterion: np.ndarray, losses: np.ndarray, n_bins: int = 50
-) -> tuple[float, np.ndarray]:
-    """Perform selective prediction based on criterion and losses.
+def selective_prediction(criterion: np.ndarray, losses: np.ndarray, n_bins: int = 50) -> tuple[float, np.ndarray]:
+    """Selective prediction downstream task for evaluation.
+
+    Perform selective prediction based on criterion and losses.
     The criterion is used the sort the losses. In line with uncertainty
     literature the sorting is done in descending order, i.e.
     the losses with the largest criterion are rejected first.
@@ -20,9 +22,7 @@ def selective_prediction(
 
     """
     if n_bins > len(losses):
-        raise ValueError(
-            "The number of bins can not be larger than the number of elements criterion"
-        )
+        raise ValueError("The number of bins can not be larger than the number of elements criterion")
     sort_idxs = np.argsort(criterion)[::-1]
     losses_sorted = losses[sort_idxs]
     bin_len = len(losses) // n_bins
@@ -35,9 +35,7 @@ def selective_prediction(
     return auroc, bin_losses
 
 
-def out_of_distribution_detection(
-    in_distribution: np.ndarray, out_distribution: np.ndarray
-) -> float:
+def out_of_distribution_detection(in_distribution: np.ndarray, out_distribution: np.ndarray) -> float:
     """Perform out-of-distribution detection using prediction functionals from id and ood data.
 
     This can be epistemic uncertainty, as is common, but also e.g. softmax confidence.

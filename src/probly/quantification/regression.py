@@ -1,10 +1,13 @@
+"""Collection of uncertainty quantification measures for regression settings."""
+
 import numpy as np
 
-from ..utils import differential_entropy_gaussian, kl_divergence_gaussian
+from probly.utils import differential_entropy_gaussian, kl_divergence_gaussian
 
 
 def total_variance(probs: np.ndarray) -> np.ndarray:
-    """Computes the total uncertainty using variance-based measures.
+    """Compute total variance as the total uncertainty using variance-based measures.
+
     Assumes that the input is from a distribution over parameters of
     a normal distribution. The first element of the parameter vector is the mean
     and the second element is the variance.
@@ -14,7 +17,7 @@ def total_variance(probs: np.ndarray) -> np.ndarray:
         probs: numpy.ndarray, shape (n_instances, n_samples, (mu, sigma^2))
 
     Returns:
-        tu: numpy.ndarray, shape (n_instances,)
+        tv: numpy.ndarray, shape (n_instances,)
 
     """
     tv = np.mean(probs[:, :, 1], axis=1) + np.var(probs[:, :, 0], axis=1)
@@ -22,8 +25,9 @@ def total_variance(probs: np.ndarray) -> np.ndarray:
 
 
 def expected_conditional_variance(probs: np.ndarray) -> np.ndarray:
-    """Computes the aleatoric uncertainty using variance-based measures.
-    Assumes that the input is from a distribution over parameters of
+    """Compute expected conditional variance as the aleatoric uncertainty using variance-based measures.
+
+    Assume that the input is from a distribution over parameters of
     a normal distribution. The first element of the parameter vector is the mean
     and the second element is the variance.
     The aleatoric uncertainty is the mean of the variance of the samples.
@@ -32,7 +36,7 @@ def expected_conditional_variance(probs: np.ndarray) -> np.ndarray:
         probs: numpy.ndarray, shape (n_instances, n_samples, (mu, sigma^2))
 
     Returns:
-        au: numpy.ndarray, shape (n_instances,)
+        ecv: numpy.ndarray, shape (n_instances,)
 
     """
     ecv = np.mean(probs[:, :, 1], axis=1)
@@ -40,8 +44,9 @@ def expected_conditional_variance(probs: np.ndarray) -> np.ndarray:
 
 
 def variance_conditional_expectation(probs: np.ndarray) -> np.ndarray:
-    """Computes the epistemic uncertainty using variance-based measures.
-    Assumes that the input is from a distribution over parameters of
+    """Compute variance of conditional expectation as the epistemic uncertainty using variance-based measures.
+
+    Assume that the input is from a distribution over parameters of
     a normal distribution. The first element of the parameter vector is the mean
     and the second element is the variance.
     The epistemic uncertainty is the variance of the mean of the samples.
@@ -50,7 +55,7 @@ def variance_conditional_expectation(probs: np.ndarray) -> np.ndarray:
         probs: numpy.ndarray, shape (n_instances, n_samples, (mu, sigma^2))
 
     Returns:
-        eu: numpy.ndarray, shape (n_instances,)
+        vce: numpy.ndarray, shape (n_instances,)
 
     """
     vce = np.var(probs[:, :, 0], axis=1)
@@ -58,8 +63,9 @@ def variance_conditional_expectation(probs: np.ndarray) -> np.ndarray:
 
 
 def total_differential_entropy(probs: np.ndarray) -> np.ndarray:
-    """Computes the epistemic uncertainty using entropy-based measures.
-    Assumes that the input is from a distribution over parameters of
+    """Compute total differential entropy as the epistemic uncertainty using entropy-based measures.
+
+    Assume that the input is from a distribution over parameters of
     a normal distribution. The first element of the parameter vector is the mean
     and the second element is the variance.
     The total uncertainty is the differential entropy of the mixture of normal distributions.
@@ -68,7 +74,7 @@ def total_differential_entropy(probs: np.ndarray) -> np.ndarray:
         probs: numpy.ndarray, shape (n_instances, n_samples, (mu, sigma^2))
 
     Returns:
-        tu: numpy.ndarray, shape (n_instances,)
+        tde: numpy.ndarray, shape (n_instances,)
 
     """
     sigma2_mean = np.mean(probs[:, :, 1], axis=1) + np.var(probs[:, :, 0], axis=1)
@@ -77,8 +83,9 @@ def total_differential_entropy(probs: np.ndarray) -> np.ndarray:
 
 
 def conditional_differential_entropy(probs: np.ndarray) -> np.ndarray:
-    """Computes the aleatoric uncertainty using entropy-based measures.
-    Assumes that the input is from a distribution over parameters of
+    """Compute conditional differential entropy as the aleatoric uncertainty using entropy-based measures.
+
+    Assume that the input is from a distribution over parameters of
     a normal distribution. The first element of the parameter vector is the mean
     and the second element is the variance.
     The aleatoric uncertainty is the mean of the differential entropy of the samples.
@@ -87,7 +94,7 @@ def conditional_differential_entropy(probs: np.ndarray) -> np.ndarray:
         probs: numpy.ndarray, shape (n_instances, n_samples, (mu, sigma^2))
 
     Returns:
-        au: numpy.ndarray, shape (n_instances,)
+        cde: numpy.ndarray, shape (n_instances,)
 
     """
     cde = np.mean(differential_entropy_gaussian(probs[:, :, 1]), axis=1)
@@ -95,8 +102,9 @@ def conditional_differential_entropy(probs: np.ndarray) -> np.ndarray:
 
 
 def mutual_information(probs: np.ndarray) -> np.ndarray:
-    """Computes the epistemic uncertainty using entropy-based measures.
-    Assumes that the input is from a distribution over parameters of
+    """Compute mutual information as the epistemic uncertainty using entropy-based measures.
+
+    Assume that the input is from a distribution over parameters of
     a normal distribution. The first element of the parameter vector is the mean
     and the second element is the variance.
     The epistemic uncertainty is the expected KL-divergence of the samples
@@ -106,14 +114,12 @@ def mutual_information(probs: np.ndarray) -> np.ndarray:
         probs: numpy.ndarray, shape (n_instances, n_samples, (mu, sigma^2))
 
     Returns:
-        eu: numpy.ndarray, shape (n_instances,)
+        mi: numpy.ndarray, shape (n_instances,)
 
     """
     mu_mean = np.mean(probs[:, :, 0], axis=1)
     sigma2_mean = np.mean(probs[:, :, 1], axis=1) + np.var(probs[:, :, 0], axis=1)
     mu_mean = np.repeat(np.expand_dims(mu_mean, 1), repeats=probs.shape[1], axis=1)
     sigma2_mean = np.repeat(np.expand_dims(sigma2_mean, 1), repeats=probs.shape[1], axis=1)
-    mi = np.mean(
-        kl_divergence_gaussian(probs[:, :, 0], probs[:, :, 1], mu_mean, sigma2_mean), axis=1
-    )
+    mi = np.mean(kl_divergence_gaussian(probs[:, :, 0], probs[:, :, 1], mu_mean, sigma2_mean), axis=1)
     return mi

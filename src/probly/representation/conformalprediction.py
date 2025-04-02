@@ -1,28 +1,33 @@
+"""Conformal prediction implementation."""
+
 import numpy as np
 import torch
 import torch.nn.functional as F
 
 
 class ConformalPrediction:
-    """
-    This class implements conformal prediction for a given model.
-    Args:
-        base: torch.nn.Module, The base model to be used for conformal prediction.
-        alpha: float, The error rate for conformal prediction.
+    """Implementation of conformal prediction for a given model.
 
     Attributes:
-        model: torch.nn.Module, The base model.
-        alpha: float, The error rate for conformal prediction.
-        q: float, The quantile value for conformal prediction.
+        model: torch.nn.Module, the base model.
+        alpha: float, the error rate for conformal prediction.
+        q: float, the quantile value for conformal prediction.
     """
 
     def __init__(self, base: torch.nn.Module, alpha: float = 0.05) -> None:
+        """Initialize an instance of the ConformalPrediction class.
+
+        Args:
+            base: torch.nn.Module, the base model to be used for conformal prediction.
+            alpha: float, the error rate for conformal prediction.
+        """
         self.model = base
         self.alpha = alpha
+        self.q = None
 
     def __call__(self, x: torch.Tensor) -> torch.Tensor:
-        """
-        Forward pass of the model without conformal prediction.
+        """Forward pass of the model without conformal prediction.
+
         Args:
             x: torch.Tensor, input data
         Returns:
@@ -31,13 +36,14 @@ class ConformalPrediction:
         return self.model(x)
 
     def represent_uncertainty(self, x: torch.Tensor) -> torch.Tensor:
-        """
-        Represent the uncertainty of the model by a conformal prediction set.
+        """Represent the uncertainty of the model by a conformal prediction set.
+
         Args:
             x: torch.Tensor, input data
         Returns:
             torch.Tensor of shape (n_instances, n_classes), the conformal prediction set,
             where each element is a boolean indicating whether the class is included in the set.
+
         """
         with torch.no_grad():
             outputs = self.model(x)
@@ -46,10 +52,11 @@ class ConformalPrediction:
         return sets
 
     def calibrate(self, loader: torch.utils.data.DataLoader) -> None:
-        """
-        Perform the calibration step for conformal prediction.
+        """Perform the calibration step for conformal prediction.
+
         Args:
             loader: DataLoader, The data loader for the calibration set.
+
         """
         self.model.eval()
         scores = []

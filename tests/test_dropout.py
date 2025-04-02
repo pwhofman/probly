@@ -23,6 +23,6 @@ def test_dropout(
     assert dropout_model.model is not None
     list_of_layers = list(dropout_model.model.children())
     for layer in list_of_layers:
-        for name, module in layer.named_modules():
+        for _, module in layer.named_modules():
             if isinstance(module, torch.nn.Dropout):
                 assert module.p == probability

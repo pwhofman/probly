@@ -30,31 +30,19 @@ def is_installed(pkg_name: str) -> bool:
 
 
 # torch related: (torch itself is a main dependency) -----------------------------------------------
-skip_if_no_torchvision = pytest.mark.skipif(
-    not is_installed("torchvision"), reason="torchvision is not installed"
-)
+skip_if_no_torchvision = pytest.mark.skipif(not is_installed("torchvision"), reason="torchvision is not installed")
 
 # sklearn-like: ------------------------------------------------------------------------------------
-skip_if_no_sklearn = pytest.mark.skipif(
-    not is_installed("sklearn"), reason="sklearn is not installed"
-)
+skip_if_no_sklearn = pytest.mark.skipif(not is_installed("sklearn"), reason="sklearn is not installed")
 
-skip_if_no_xgboost = pytest.mark.skipif(
-    not is_installed("xgboost"), reason="xgboost is not installed"
-)
+skip_if_no_xgboost = pytest.mark.skipif(not is_installed("xgboost"), reason="xgboost is not installed")
 
-skip_if_no_lightgbm = pytest.mark.skipif(
-    not is_installed("lightgbm"), reason="lightgbm is not installed"
-)
+skip_if_no_lightgbm = pytest.mark.skipif(not is_installed("lightgbm"), reason="lightgbm is not installed")
 
 # tensorflow related: ------------------------------------------------------------------------------
-skip_if_no_tensorflow = pytest.mark.skipif(
-    not is_installed("tensorflow"), reason="tensorflow is not installed"
-)
+skip_if_no_tensorflow = pytest.mark.skipif(not is_installed("tensorflow"), reason="tensorflow is not installed")
 
 skip_if_no_keras = pytest.mark.skipif(not is_installed("keras"), reason="keras is not installed")
 
 # misc: --------------------------------------------------------------------------------------------
-skip_if_no_tabpfn = pytest.mark.skipif(
-    not is_installed("tabpfn"), reason="TabPFN is not available."
-)
+skip_if_no_tabpfn = pytest.mark.skipif(not is_installed("tabpfn"), reason="TabPFN is not available.")
