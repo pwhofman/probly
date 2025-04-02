@@ -12,7 +12,7 @@ class DropConnectLinear(nn.Module):
         in_features: int, number of input features.
         out_features: int, number of output features.
         p: float, probability of dropping individual weights.
-        weights: torch.Tensor, weight matrix of the layer
+        weight: torch.Tensor, weight matrix of the layer
         bias: torch.Tensor, bias of the layer
 
     """
@@ -28,7 +28,7 @@ class DropConnectLinear(nn.Module):
         self.in_features = base_layer.in_features
         self.out_features = base_layer.out_features
         self.p = p
-        self.weights = nn.Parameter(base_layer.weight.clone().detach())
+        self.weight = nn.Parameter(base_layer.weight.clone().detach())
         self.bias = nn.Parameter(base_layer.bias.clone().detach()) if base_layer.bias is not None else None
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -42,11 +42,11 @@ class DropConnectLinear(nn.Module):
         """
         if self.training:
             mask = (torch.rand_like(self.weight) > self.p).float()
-            weights = self.weights * mask  # Apply DropConnect
+            weight = self.weight * mask  # Apply DropConnect
         else:
-            weights = self.weights * (1 - self.p)  # Scale weights at inference time
+            weight = self.weight * (1 - self.p)  # Scale weights at inference time
 
-        return F.linear(x, weights, self.bias)
+        return F.linear(x, weight, self.bias)
 
     def extra_repr(self) -> str:
         """Expose description of in- and out-features of this layer."""
