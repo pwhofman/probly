@@ -38,13 +38,13 @@ class Dropout(nn.Module):
         return self.model(x)
 
     def predict_pointwise(self, x: torch.Tensor, n_samples: int) -> torch.Tensor:
-        """Forward pass that gives a pointwise prediction by taking the mean over the samples.
+        """Forward pass that gives a point-wise prediction by taking the mean over the samples.
 
         Args:
             x: torch.Tensor, input data
             n_samples: int, number of samples
         Returns:
-            torch.Tensor, pointwise prediction
+            torch.Tensor, point-wise prediction
         """
         return torch.stack([self.model(x) for _ in range(n_samples)], dim=1).mean(dim=1)
 

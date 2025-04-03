@@ -47,12 +47,12 @@ class SubEnsemble(nn.Module):
         return torch.stack([model(x) for model in self.models], dim=1).mean(dim=1)
 
     def predict_pointwise(self, x: torch.Tensor) -> torch.Tensor:
-        """Forward pass that gives a pointwise prediction.
+        """Forward pass that gives a point-wise prediction.
 
         Args:
             x: torch.Tensor, input data
         Returns:
-            torch.Tensor, pointwise prediction
+            torch.Tensor, point-wise prediction
         """
         return torch.stack([model(x) for model in self.models], dim=1).mean(dim=1)
 
