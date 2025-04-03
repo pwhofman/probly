@@ -51,7 +51,7 @@ class Ensemble(nn.Module):
         """
         if logits:
             return torch.stack([model(x) for model in self.models], dim=1).mean(dim=1)
-        return F.softmax(torch.stack([model(x) for model in self.models], dim=1).mean(dim=1), dim=-1)
+        return torch.stack([F.softmax(model(x), dim=1) for model in self.models], dim=1).mean(dim=1)
 
     def predict_representation(self, x: torch.Tensor, logits: bool = False) -> torch.Tensor:
         """Forward pass that gives an uncertainty representation.
@@ -64,7 +64,7 @@ class Ensemble(nn.Module):
         """
         if logits:
             return torch.stack([model(x) for model in self.models], dim=1)
-        return F.softmax(torch.stack([model(x) for model in self.models], dim=1), dim=-1)
+        return torch.stack([F.softmax(model(x), dim=1) for model in self.models], dim=1)
 
     def _convert(self, base: nn.Module, n_members: int) -> None:
         """Convert the base model to an ensemble with n_members members.

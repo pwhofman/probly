@@ -35,14 +35,18 @@ class ConformalPrediction:
         """
         return self.model(x)
 
-    def predict_pointwise(self, x: torch.Tensor) -> torch.Tensor:
+    def predict_pointwise(self, x: torch.Tensor, logits: bool = False) -> torch.Tensor:
         """Forward pass of the model without conformal prediction.
 
         Args:
             x: torch.Tensor, input data
+            logits: bool, whether to return the logits.
+
         Returns:
             torch.Tensor, model output
         """
+        if logits:
+            return self.model(x)
         return F.softmax(self.model(x), dim=1)
 
     def predict_representation(self, x: torch.Tensor) -> torch.Tensor:
