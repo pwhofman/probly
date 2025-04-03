@@ -32,15 +32,36 @@ class DropConnect(nn.Module):
         self.p = p
         self._convert(base)
 
-    def forward(self, x: torch.Tensor, n_samples: int) -> torch.Tensor:
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward pass of the DropConnect ensemble.
 
         Args:
             x: torch.Tensor, input data
-            n_samples: int, number of stochastic forward passes
         Returns:
             torch.Tensor, ensemble output
 
+        """
+        return self.model(x)
+
+    def predict_pointwise(self, x: torch.Tensor, n_samples: int) -> torch.Tensor:
+        """Forward pass that gives a pointwise prediction by taking the mean over the samples.
+
+        Args:
+            x: torch.Tensor, input data
+            n_samples: int, number of samples
+        Returns:
+            torch.Tensor, pointwise prediction
+        """
+        return torch.stack([self.model(x) for _ in range(n_samples)], dim=1).mean(dim=1)
+
+    def predict_representation(self, x: torch.Tensor, n_samples: int) -> torch.Tensor:
+        """Forward pass that gives an uncertainty representation.
+
+        Args:
+            x: torch.Tensor, input data
+            n_samples: int, number of samples
+        Returns:
+            torch.Tensor, uncertainty representation
         """
         return torch.stack([self.model(x) for _ in range(n_samples)], dim=1)
 
