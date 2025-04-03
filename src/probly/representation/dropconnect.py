@@ -4,8 +4,9 @@ import copy
 
 import torch
 from torch import nn
+from torch.nn import functional as F
 
-from .layers import DropConnectLinear
+from probly.representation.layers import DropConnectLinear
 
 
 class DropConnect(nn.Module):
@@ -32,17 +33,44 @@ class DropConnect(nn.Module):
         self.p = p
         self._convert(base)
 
-    def forward(self, x: torch.Tensor, n_samples: int) -> torch.Tensor:
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward pass of the DropConnect ensemble.
 
         Args:
             x: torch.Tensor, input data
-            n_samples: int, number of stochastic forward passes
         Returns:
             torch.Tensor, ensemble output
 
         """
-        return torch.stack([self.model(x) for _ in range(n_samples)], dim=1)
+        return self.model(x)
+
+    def predict_pointwise(self, x: torch.Tensor, n_samples: int, logits: bool = False) -> torch.Tensor:
+        """Forward pass that gives a point-wise prediction by taking the mean over the samples.
+
+        Args:
+            x: torch.Tensor, input data
+            n_samples: int, number of samples
+            logits: bool, whether to return the logits or probabilities
+        Returns:
+            torch.Tensor, point-wise prediction
+        """
+        if logits:
+            return torch.stack([self.model(x) for _ in range(n_samples)], dim=1).mean(dim=1)
+        return torch.stack([F.softmax(self.model(x), dim=1) for _ in range(n_samples)], dim=1).mean(dim=1)
+
+    def predict_representation(self, x: torch.Tensor, n_samples: int, logits: bool = False) -> torch.Tensor:
+        """Forward pass that gives an uncertainty representation.
+
+        Args:
+            x: torch.Tensor, input data
+            n_samples: int, number of samples
+            logits: bool, whether to return the logits or probabilities
+        Returns:
+            torch.Tensor, uncertainty representation
+        """
+        if logits:
+            return torch.stack([self.model(x) for _ in range(n_samples)], dim=1)
+        return torch.stack([F.softmax(self.model(x), dim=1) for _ in range(n_samples)], dim=1)
 
     def _convert(self, base: nn.Module) -> None:
         """Converts the base model to a DropConnect model by modifying all `nn.Linear` layers.

@@ -4,6 +4,7 @@ import copy
 
 import torch
 from torch import nn
+from torch.nn import functional as F
 
 from probly.representation.layers import BayesConv2d, BayesLinear
 
@@ -49,16 +50,33 @@ class Bayesian(nn.Module):
         """
         return self.model(x)
 
-    def represent_uncertainty(self, x: torch.Tensor, n_samples: int = 25) -> torch.Tensor:
+    def predict_pointwise(self, x: torch.Tensor, n_samples: int, logits: bool = False) -> torch.Tensor:
+        """Forward pass that gives a point-wise prediction.
+
+        Args:
+            x: torch.Tensor, input data
+            n_samples: int, number of samples to draw from posterior
+            logits: bool, whether to return logits or probabilities
+        Returns:
+            torch.Tensor, point-wise prediction
+        """
+        if logits:
+            return torch.stack([self.model(x) for _ in range(n_samples)], dim=1).mean(dim=1)
+        return torch.stack([F.softmax(self.model(x), dim=1) for _ in range(n_samples)], dim=1).mean(dim=1)
+
+    def predict_representation(self, x: torch.Tensor, n_samples: int, logits: bool = False) -> torch.Tensor:
         """Forward pass that gives an uncertainty representation.
 
         Args:
             x: torch.Tensor, input data
             n_samples: int, number of samples to draw from posterior
+            logits: bool, whether to return logits or probabilities
         Returns:
             torch.Tensor, uncertainty representation, samples from the posterior
         """
-        return torch.stack([self.model(x) for _ in range(n_samples)], dim=1)
+        if logits:
+            return torch.stack([self.model(x) for _ in range(n_samples)], dim=1)
+        return torch.stack([F.softmax(self.model(x), dim=1) for _ in range(n_samples)], dim=1)
 
     def _convert(
         self,

@@ -36,6 +36,28 @@ class Evidential(nn.Module):
         """
         return self.model(x)
 
+    def predict_pointwise(self, x: torch.Tensor) -> torch.Tensor:
+        """Forward pass of the model for point-wise prediction.
+
+        Args:
+            x: torch.Tensor, input data
+        Returns:
+            torch.Tensor, model output
+
+        """
+        return self.model(x)
+
+    def predict_representation(self, x: torch.Tensor) -> torch.Tensor:
+        """Forward pass of the model for uncertainty representation.
+
+        Args:
+            x: torch.Tensor, input data
+        Returns:
+            torch.Tensor, model output
+
+        """
+        return self.model(x)
+
     def _convert(self, base: nn.Module, activation: nn.Module) -> None:
         """Convert a model into an evidential deep learning model.
 

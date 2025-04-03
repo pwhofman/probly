@@ -4,6 +4,7 @@ import copy
 
 import torch
 from torch import nn
+from torch.nn import functional as F
 
 
 class Dropout(nn.Module):
@@ -26,17 +27,44 @@ class Dropout(nn.Module):
         self.p = p
         self._convert(base)
 
-    def forward(self, x: torch.Tensor, n_samples: int) -> torch.Tensor:
-        """Forward pass of the dropout ensemble.
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Forward pass of the dropout model.
 
         Args:
             x: torch.Tensor, input data
-            n_samples: int, number of samples
         Returns:
             torch.Tensor, ensemble output
 
         """
-        return torch.stack([self.model(x) for _ in range(n_samples)], dim=1)
+        return self.model(x)
+
+    def predict_pointwise(self, x: torch.Tensor, n_samples: int, logits: bool = False) -> torch.Tensor:
+        """Forward pass that gives a point-wise prediction by taking the mean over the samples.
+
+        Args:
+            x: torch.Tensor, input data
+            n_samples: int, number of samples
+            logits: bool, whether to return logits or probabilities
+        Returns:
+            torch.Tensor, point-wise prediction
+        """
+        if logits:
+            return torch.stack([self.model(x) for _ in range(n_samples)], dim=1).mean(dim=1)
+        return torch.stack([F.softmax(self.model(x), dim=1) for _ in range(n_samples)], dim=1).mean(dim=1)
+
+    def predict_representation(self, x: torch.Tensor, n_samples: int, logits: bool = False) -> torch.Tensor:
+        """Forward pass that gives an uncertainty representation.
+
+        Args:
+            x: torch.Tensor, input data
+            n_samples: int, number of samples
+            logits: bool, whether to return logits or probabilities
+        Returns:
+            torch.Tensor, uncertainty representation
+        """
+        if logits:
+            return torch.stack([self.model(x) for _ in range(n_samples)], dim=1)
+        return torch.stack([F.softmax(self.model(x), dim=1) for _ in range(n_samples)], dim=1)
 
     def _convert(self, base: nn.Module) -> None:
         """Convert base model to a dropout model.
