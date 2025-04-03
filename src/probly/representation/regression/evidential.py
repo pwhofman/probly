@@ -40,7 +40,7 @@ class Evidential(nn.Module):
         return self.model(x)
 
     def predict_pointwise(self, x: torch.Tensor) -> torch.Tensor:
-        """Forward pass of the model for pointwise prediction.
+        """Forward pass of the model for point-wise prediction.
 
         Args:
             x: torch.Tensor, input data

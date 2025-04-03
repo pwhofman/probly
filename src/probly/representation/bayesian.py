@@ -49,18 +49,18 @@ class Bayesian(nn.Module):
         """
         return self.model(x)
 
-    def predict_pointwise(self, x: torch.Tensor, n_samples: int = 25) -> torch.Tensor:
-        """Forward pass that gives a pointwise prediction.
+    def predict_pointwise(self, x: torch.Tensor, n_samples: int) -> torch.Tensor:
+        """Forward pass that gives a point-wise prediction.
 
         Args:
             x: torch.Tensor, input data
             n_samples: int, number of samples to draw from posterior
         Returns:
-            torch.Tensor, pointwise prediction
+            torch.Tensor, point-wise prediction
         """
         return torch.stack([self.model(x) for _ in range(n_samples)], dim=1).mean(dim=1)
 
-    def predict_representation(self, x: torch.Tensor, n_samples: int = 25) -> torch.Tensor:
+    def predict_representation(self, x: torch.Tensor, n_samples: int) -> torch.Tensor:
         """Forward pass that gives an uncertainty representation.
 
         Args:
