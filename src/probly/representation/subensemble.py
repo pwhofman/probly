@@ -44,6 +44,26 @@ class SubEnsemble(nn.Module):
             torch.Tensor, model output
 
         """
+        return torch.stack([model(x) for model in self.models], dim=1).mean(dim=1)
+
+    def predict_pointwise(self, x: torch.Tensor) -> torch.Tensor:
+        """Forward pass that gives a pointwise prediction.
+
+        Args:
+            x: torch.Tensor, input data
+        Returns:
+            torch.Tensor, pointwise prediction
+        """
+        return torch.stack([model(x) for model in self.models], dim=1).mean(dim=1)
+
+    def predict_representation(self, x: torch.Tensor) -> torch.Tensor:
+        """Forward pass that gives an uncertainty representation.
+
+        Args:
+            x: torch.Tensor, input data
+        Returns:
+            torch.Tensor, uncertainty representation
+        """
         return torch.stack([model(x) for model in self.models], dim=1)
 
     def _convert(self, base: nn.Module, n_heads: int, head: nn.Module) -> None:
