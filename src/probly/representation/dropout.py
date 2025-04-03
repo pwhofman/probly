@@ -52,15 +52,18 @@ class Dropout(nn.Module):
             return torch.stack([self.model(x) for _ in range(n_samples)], dim=1).mean(dim=1)
         return F.softmax(torch.stack([self.model(x) for _ in range(n_samples)], dim=1).mean(dim=1), dim=-1)
 
-    def predict_representation(self, x: torch.Tensor, n_samples: int) -> torch.Tensor:
+    def predict_representation(self, x: torch.Tensor, n_samples: int, logits: bool = False) -> torch.Tensor:
         """Forward pass that gives an uncertainty representation.
 
         Args:
             x: torch.Tensor, input data
             n_samples: int, number of samples
+            logits: bool, whether to return logits or probabilities
         Returns:
             torch.Tensor, uncertainty representation
         """
+        if logits:
+            return torch.stack([self.model(x) for _ in range(n_samples)], dim=1)
         return F.softmax(torch.stack([self.model(x) for _ in range(n_samples)], dim=1), dim=-1)
 
     def _convert(self, base: nn.Module) -> None:
