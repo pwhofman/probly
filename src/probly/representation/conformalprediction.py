@@ -35,7 +35,17 @@ class ConformalPrediction:
         """
         return self.model(x)
 
-    def represent_uncertainty(self, x: torch.Tensor) -> torch.Tensor:
+    def predict_pointwise(self, x: torch.Tensor) -> torch.Tensor:
+        """Forward pass of the model without conformal prediction.
+
+        Args:
+            x: torch.Tensor, input data
+        Returns:
+            torch.Tensor, model output
+        """
+        return F.softmax(self.model(x), dim=1)
+
+    def predict_representation(self, x: torch.Tensor) -> torch.Tensor:
         """Represent the uncertainty of the model by a conformal prediction set.
 
         Args:
@@ -43,7 +53,6 @@ class ConformalPrediction:
         Returns:
             torch.Tensor of shape (n_instances, n_classes), the conformal prediction set,
             where each element is a boolean indicating whether the class is included in the set.
-
         """
         with torch.no_grad():
             outputs = self.model(x)
