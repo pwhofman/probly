@@ -61,7 +61,7 @@ class Dropout(nn.Module):
         Returns:
             torch.Tensor, uncertainty representation
         """
-        return torch.stack([self.model(x) for _ in range(n_samples)], dim=1)
+        return F.softmax(torch.stack([self.model(x) for _ in range(n_samples)], dim=1), dim=-1)
 
     def _convert(self, base: nn.Module) -> None:
         """Convert base model to a dropout model.

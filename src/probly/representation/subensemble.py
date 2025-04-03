@@ -68,7 +68,7 @@ class SubEnsemble(nn.Module):
         Returns:
             torch.Tensor, uncertainty representation
         """
-        return torch.stack([model(x) for model in self.models], dim=1)
+        return F.softmax(torch.stack([model(x) for model in self.models], dim=1), dim=-1)
 
     def _convert(self, base: nn.Module, n_heads: int, head: nn.Module) -> None:
         """Convert a model into an ensemble with trainable heads.

@@ -67,7 +67,7 @@ class DropConnect(nn.Module):
         Returns:
             torch.Tensor, uncertainty representation
         """
-        return torch.stack([self.model(x) for _ in range(n_samples)], dim=1)
+        return F.softmax(torch.stack([self.model(x) for _ in range(n_samples)], dim=1), dim=-1)
 
     def _convert(self, base: nn.Module) -> None:
         """Converts the base model to a DropConnect model by modifying all `nn.Linear` layers.
