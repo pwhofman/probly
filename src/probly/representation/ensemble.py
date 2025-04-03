@@ -4,6 +4,7 @@ import copy
 
 import torch
 from torch import nn
+from torch.nn import functional as F
 
 from probly.utils import torch_reset_all_parameters
 
@@ -39,15 +40,18 @@ class Ensemble(nn.Module):
         """
         return torch.stack([model(x) for model in self.models], dim=1).mean(dim=1)
 
-    def predict_pointwise(self, x: torch.Tensor) -> torch.Tensor:
+    def predict_pointwise(self, x: torch.Tensor, logits: bool = False) -> torch.Tensor:
         """Forward pass that gives a point-wise prediction.
 
         Args:
             x: torch.Tensor, input data
+            logits: bool, whether to return logits or probabilities
         Returns:
             torch.Tensor, point-wise prediction
         """
-        return torch.stack([model(x) for model in self.models], dim=1).mean(dim=1)
+        if logits:
+            return torch.stack([model(x) for model in self.models], dim=1).mean(dim=1)
+        return F.softmax(torch.stack([model(x) for model in self.models], dim=1).mean(dim=1), dim=-1)
 
     def predict_representation(self, x: torch.Tensor) -> torch.Tensor:
         """Forward pass that gives an uncertainty representation.
