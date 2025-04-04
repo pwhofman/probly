@@ -12,7 +12,7 @@ requires-python = ">=3.10"
 dependencies = [
     # core
     "matplotlib>=3.8.0",
-    "mpltern,
+    "mpltern",
     "numpy>=2.0.0",
     "torch>=2.0.0",
     "torchvision",
