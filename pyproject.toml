@@ -11,11 +11,11 @@ license = "MIT"
 requires-python = ">=3.10"
 dependencies = [
     # core
-    "matplotlib>=3.10.1",
-    "mpltern>=1.0.4",
-    "numpy<=2.1.2,>=2.0.0",
-    "torch>=2.6.0",
-    "torchvision>=0.21.0",
+    "matplotlib>=3.8.0",
+    "mpltern,
+    "numpy>=2.0.0",
+    "torch>=2.0.0",
+    "torchvision",
 ]
 authors = [
     {name = "Paul Hofman", email = "paul.hofman@ifi.lmu.de"},
