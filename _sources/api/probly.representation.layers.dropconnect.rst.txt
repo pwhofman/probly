@@ -1,0 +1,12 @@
+probly.representation.layers.dropconnect
+========================================
+
+.. automodule:: probly.representation.layers.dropconnect
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      DropConnectLinear
+   

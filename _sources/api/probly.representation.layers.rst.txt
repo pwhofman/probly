@@ -1,0 +1,15 @@
+probly.representation.layers
+============================
+
+.. automodule:: probly.representation.layers
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   bayesian
+   dropconnect
+   normalinversegamma

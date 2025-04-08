@@ -1,0 +1,14 @@
+﻿probly.quantification
+=====================
+
+.. automodule:: probly.quantification
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   classification
+   regression

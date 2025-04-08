@@ -1,0 +1,13 @@
+probly.representation.layers.bayesian
+=====================================
+
+.. automodule:: probly.representation.layers.bayesian
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      BayesConv2d
+      BayesLinear
+   

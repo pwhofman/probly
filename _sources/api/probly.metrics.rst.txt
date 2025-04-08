@@ -1,0 +1,14 @@
+﻿probly.metrics
+==============
+
+.. automodule:: probly.metrics
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      coverage
+      efficiency
+      expected_calibration_error
+   

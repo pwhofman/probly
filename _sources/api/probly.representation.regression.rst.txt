@@ -1,0 +1,13 @@
+probly.representation.regression
+================================
+
+.. automodule:: probly.representation.regression
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   evidential

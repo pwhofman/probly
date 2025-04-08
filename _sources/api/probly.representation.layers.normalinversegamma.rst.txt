@@ -1,0 +1,12 @@
+probly.representation.layers.normalinversegamma
+===============================================
+
+.. automodule:: probly.representation.layers.normalinversegamma
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      NormalInverseGammaLinear
+   

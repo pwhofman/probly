@@ -1,0 +1,14 @@
+﻿probly.data
+===========
+
+.. automodule:: probly.data
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Benthic
+      CIFAR10H
+      DCICDataset
+   

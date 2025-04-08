@@ -1,0 +1,12 @@
+probly.representation.ensemble
+==============================
+
+.. automodule:: probly.representation.ensemble
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Ensemble
+   

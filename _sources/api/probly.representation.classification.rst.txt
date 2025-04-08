@@ -1,0 +1,13 @@
+probly.representation.classification
+====================================
+
+.. automodule:: probly.representation.classification
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   evidential

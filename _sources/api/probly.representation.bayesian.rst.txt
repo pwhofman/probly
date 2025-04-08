@@ -1,0 +1,12 @@
+probly.representation.bayesian
+==============================
+
+.. automodule:: probly.representation.bayesian
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Bayesian
+   

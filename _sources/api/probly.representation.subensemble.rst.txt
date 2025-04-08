@@ -1,0 +1,12 @@
+probly.representation.subensemble
+=================================
+
+.. automodule:: probly.representation.subensemble
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      SubEnsemble
+   

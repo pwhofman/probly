@@ -1,0 +1,12 @@
+probly.representation.regression.evidential
+===========================================
+
+.. automodule:: probly.representation.regression.evidential
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Evidential
+   

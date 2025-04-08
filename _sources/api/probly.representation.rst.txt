@@ -1,0 +1,21 @@
+﻿probly.representation
+=====================
+
+.. automodule:: probly.representation
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   bayesian
+   classification
+   conformalprediction
+   dropconnect
+   dropout
+   ensemble
+   layers
+   regression
+   subensemble

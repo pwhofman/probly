@@ -1,0 +1,19 @@
+﻿probly.losses
+=============
+
+.. automodule:: probly.losses
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      ELBOLoss
+      EvidentialCELoss
+      EvidentialKLDivergence
+      EvidentialLogLoss
+      EvidentialMSELoss
+      EvidentialNIGNLLLoss
+      EvidentialRegressionRegularization
+      FocalLoss
+   
