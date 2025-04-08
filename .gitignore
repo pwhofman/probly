@@ -256,3 +256,8 @@ fabric.properties
 
 # add docs to gitignore
 docs/source/api
+
+.idea/
+
+# add docs to gitignore
+docs/source/api
