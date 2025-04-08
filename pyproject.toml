@@ -225,8 +225,8 @@ convention = "google"
     "I002",
     "RUF022"  # to allow __all__ be not alphabetically ordered
 ]
-"*.ipynb" = ["T20", "NPY002"]
-"docs/**/*.py" = ["INP001", "PTH"]
+"*.ipynb" = ["T20", "NPY002", "I002"]
+"docs/**/*.py" = ["INP001", "PTH", "I002"]
 
 # Use isort-compatible settings
 [tool.ruff.isort]
