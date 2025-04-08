@@ -10,10 +10,15 @@
 </div>
 
 ## 🛠️ Install
-`probly` is intended to work with **Python 3.10 and above**. Installation can be done via `pip`:
+`probly` is intended to work with **Python 3.10 and above**. Installation can be done via `pip` and
+or `uv`:
 
 ```sh
 pip install probly
+```
+
+```sh
+uv add probly
 ```
 
 ## ⭐ Quickstart
