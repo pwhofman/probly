@@ -1,5 +1,7 @@
 """Collection of performance metrics to evaluate predictions."""
 
+from __future__ import annotations
+
 import numpy as np
 
 __all__ = [

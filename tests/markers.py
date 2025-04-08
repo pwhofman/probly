@@ -9,6 +9,8 @@ Markers should only be used on optional dependencies, i.e. packages that are not
 
 """
 
+from __future__ import annotations
+
 import importlib.util
 
 import pytest

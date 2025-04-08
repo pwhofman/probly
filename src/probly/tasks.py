@@ -1,5 +1,7 @@
 """Collection of downstream tasks to evaluate performance of uncertainty measures."""
 
+from __future__ import annotations
+
 import numpy as np
 import sklearn.metrics as sm
 

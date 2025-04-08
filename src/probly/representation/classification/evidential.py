@@ -1,5 +1,7 @@
 """Evidental deep learning model class implementation."""
 
+from __future__ import annotations
+
 import copy
 
 import torch
