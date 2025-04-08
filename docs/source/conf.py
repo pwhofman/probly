@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.abspath("../../examples"))
 project = "probly"
 copyright = "2025, probly team"  # noqa: A001
 author = "probly team"
-release = "0.2.0"
+release = "0.2.0"  # TODO: make automatic
 version = "0.2.0"
 
 # -- General configuration ---------------------------------------------------
@@ -61,8 +61,8 @@ html_css_files = [
 pygments_dark_style = "monokai"
 html_theme_options = {
     "sidebar_hide_name": True,
-    "light_logo": "logo/probly_logo.svg",
-    "dark_logo": "logo/probly_logo.svg",
+    "light_logo": "logo/logo_light.png",
+    "dark_logo": "logo/logo_dark.png",
 }
 
 html_sidebars = {
