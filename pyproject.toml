@@ -222,11 +222,11 @@ convention = "google"
     "C901",
 ]
 "__init__.py" = [
-    # "I002",
+    "I002",
     "RUF022"  # to allow __all__ be not alphabetically ordered
 ]
-"*.ipynb" = ["T20", "NPY002"]
-"docs/**/*.py" = ["INP001", "PTH"]
+"*.ipynb" = ["T20", "NPY002", "I002"]
+"docs/**/*.py" = ["INP001", "PTH", "I002"]
 
 # Use isort-compatible settings
 [tool.ruff.isort]
@@ -234,6 +234,9 @@ known-first-party = ["probly"]
 force-sort-within-sections = true
 combine-as-imports = true
 force-single-line = false
+no-lines-before = ["future"]
+required-imports = ["from __future__ import annotations"]
+extra-standard-library = ["typing_extensions"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -1,13 +1,18 @@
 """Collection of dataset classes for loading data from different datasets."""
 
-from collections.abc import Callable
+from __future__ import annotations
+
 import json
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import numpy as np
 from PIL import Image
 import torch
 import torchvision
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 
 class CIFAR10H(torchvision.datasets.CIFAR10):

@@ -1,5 +1,7 @@
 """Test for the dropout module."""
 
+from __future__ import annotations
+
 import pytest
 import torch
 

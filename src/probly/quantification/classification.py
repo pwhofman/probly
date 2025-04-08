@@ -1,12 +1,17 @@
 """Collection of uncertainty quantification measures for classification settings."""
 
-from collections.abc import Callable
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import numpy as np
 from scipy.optimize import minimize
 from scipy.stats import entropy
 
 from probly.utils import moebius, powerset
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 
 def total_entropy(probs: np.ndarray, base: float = 2) -> np.ndarray:

@@ -1,11 +1,18 @@
 """Collection of uncertainty quantification measures for regression settings."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import numpy as np
 
 from probly.utils import differential_entropy_gaussian, kl_divergence_gaussian
 
+if TYPE_CHECKING:
+    import numpy.typing as npt
 
-def total_variance(probs: np.ndarray) -> np.ndarray:
+
+def total_variance(probs: npt.NDArray[np.floating]) -> npt.NDArray[np.floating]:
     """Compute total variance as the total uncertainty using variance-based measures.
 
     Assumes that the input is from a distribution over parameters of

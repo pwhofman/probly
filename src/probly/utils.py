@@ -1,10 +1,16 @@
 """General utility functions for all other modules."""
 
-from collections.abc import Iterable
+from __future__ import annotations
+
 import itertools
+from typing import TYPE_CHECKING
 
 import numpy as np
-import torch
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
+    import torch
 
 
 def powerset(iterable: Iterable) -> list[tuple]:
