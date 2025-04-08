@@ -1,5 +1,6 @@
 # probly: Uncertainty Representation and Quantification for Machine Learning
 <div align="center">
+ <img src="logo_light.png" alt="probly" width="300"/>
 
 [![PyPI version](https://badge.fury.io/py/probly.svg)](https://badge.fury.io/py/probly)
 [![License](https://img.shields.io/badge/License-MIT-brightgreen.svg)](https://opensource.org/licenses/MIT)
