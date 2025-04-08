@@ -219,6 +219,7 @@ convention = "google"
 ]
 "__init__.py" = ["I002"]
 "*.ipynb" = ["T20", "NPY002"]
+"docs/**/*.py" = ["INP001", "PTH"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
