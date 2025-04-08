@@ -9,6 +9,7 @@ The `probly` Python package
 `probly` is a Python package for **uncertainty representation** and **quantification** for machine learning.
 
 If you like what we are doing, let us know by giving us a star on GitHub! ⭐
+If you have any questions, suggestions, or issues, please open an issue on GitHub.
 
 
 .. toctree::
