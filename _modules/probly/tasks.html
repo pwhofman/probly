@@ -5,7 +5,7 @@
     <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../../genindex.html" /><link rel="search" title="Search" href="../../search.html" />
 
     <!-- Generated with Sphinx 8.1.3 and Furo 2024.08.06 -->
-        <title>probly.metrics - probly 0.2.0 documentation</title>
+        <title>probly.tasks - probly 0.2.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=354aac6f" />
     <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -274,103 +274,65 @@
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <h1>Source code for probly.metrics</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;Collection of performance metrics to evaluate predictions.&quot;&quot;&quot;</span>
+          <h1>Source code for probly.tasks</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Collection of downstream tasks to evaluate performance of uncertainty measures.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-
-<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="s2">&quot;coverage&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;efficiency&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;expected_calibration_error&quot;</span><span class="p">,</span>
-<span class="p">]</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sklearn.metrics</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sm</span>
 
 
-<div class="viewcode-block" id="expected_calibration_error">
-<a class="viewcode-back" href="../../api/probly.metrics.html#probly.metrics.expected_calibration_error">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">expected_calibration_error</span><span class="p">(</span><span class="n">probs</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">labels</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">num_bins</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute the expected calibration error (ECE) of the predicted probabilities.</span>
+<div class="viewcode-block" id="selective_prediction">
+<a class="viewcode-back" href="../../api/probly.tasks.html#probly.tasks.selective_prediction">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">selective_prediction</span><span class="p">(</span><span class="n">criterion</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">losses</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">n_bins</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Selective prediction downstream task for evaluation.</span>
 
-<span class="sd">    Args:</span>
-<span class="sd">        probs: The predicted probabilities as an array of shape (n_instances, n_classes).</span>
-<span class="sd">        labels: The true labels as an array of shape (n_instances,).</span>
-<span class="sd">        num_bins: The number of bins to use for the calibration error calculation.</span>
-
-<span class="sd">    Returns:</span>
-<span class="sd">        ece: The expected calibration error.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">confs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">probs</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-    <span class="n">preds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">probs</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-    <span class="n">bins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">num_bins</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">endpoint</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">bin_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">digitize</span><span class="p">(</span><span class="n">confs</span><span class="p">,</span> <span class="n">bins</span><span class="p">,</span> <span class="n">right</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
-    <span class="n">num_instances</span> <span class="o">=</span> <span class="n">probs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-    <span class="n">ece</span> <span class="o">=</span> <span class="mi">0</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_bins</span><span class="p">):</span>
-        <span class="n">_bin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">bin_indices</span> <span class="o">==</span> <span class="n">i</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="c1"># check if bin is empty</span>
-        <span class="k">if</span> <span class="n">_bin</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">continue</span>
-        <span class="n">acc_bin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">preds</span><span class="p">[</span><span class="n">_bin</span><span class="p">]</span> <span class="o">==</span> <span class="n">labels</span><span class="p">[</span><span class="n">_bin</span><span class="p">])</span>
-        <span class="n">conf_bin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">confs</span><span class="p">[</span><span class="n">_bin</span><span class="p">])</span>
-        <span class="n">weight</span> <span class="o">=</span> <span class="n">_bin</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">num_instances</span>
-        <span class="n">ece</span> <span class="o">+=</span> <span class="n">weight</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">acc_bin</span> <span class="o">-</span> <span class="n">conf_bin</span><span class="p">)</span>
-    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">ece</span><span class="p">)</span></div>
-
-
-
-<div class="viewcode-block" id="coverage">
-<a class="viewcode-back" href="../../api/probly.metrics.html#probly.metrics.coverage">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">coverage</span><span class="p">(</span><span class="n">preds</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">targets</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute the coverage of set-valued predictions.</span>
+<span class="sd">    Perform selective prediction based on criterion and losses.</span>
+<span class="sd">    The criterion is used the sort the losses. In line with uncertainty</span>
+<span class="sd">    literature the sorting is done in descending order, i.e.</span>
+<span class="sd">    the losses with the largest criterion are rejected first.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        preds: The predictions as an array of shape `(n_instances, n_classes)` or</span>
-<span class="sd">            `(n_instances, n_samples, n_classes)`</span>
-<span class="sd">        targets: The targets as an array of shape `(n_instances,)` or `(n_instances, n_classes)`</span>
-
+<span class="sd">        criterion: numpy.ndarray shape (n_instances,), criterion values</span>
+<span class="sd">        losses: numpy.ndarray shape (n_instances,), loss values</span>
+<span class="sd">        n_bins: int, number of bins</span>
 <span class="sd">    Returns:</span>
-<span class="sd">        cov: The coverage of the set-valued predictions</span>
+<span class="sd">        auroc: float, area under the loss curve</span>
+<span class="sd">        bin_losses: numpy.ndarray shape (n_bins,), loss per bin</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">preds</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
-        <span class="n">cov</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">preds</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">preds</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">targets</span><span class="p">])</span>
-    <span class="k">elif</span> <span class="n">preds</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
-        <span class="n">probs_lower</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmin</span><span class="p">(</span><span class="n">preds</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">decimals</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
-        <span class="n">probs_upper</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">preds</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">decimals</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
-        <span class="n">covered</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">((</span><span class="n">probs_lower</span> <span class="o">&lt;=</span> <span class="n">targets</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">targets</span> <span class="o">&lt;=</span> <span class="n">probs_upper</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-        <span class="n">cov</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">covered</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Expected 2D or 3D array, got </span><span class="si">{</span><span class="n">preds</span><span class="o">.</span><span class="n">ndim</span><span class="si">}</span><span class="s2">D&quot;</span><span class="p">)</span>
-    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">cov</span><span class="p">)</span></div>
+    <span class="k">if</span> <span class="n">n_bins</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">losses</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The number of bins can not be larger than the number of elements criterion&quot;</span><span class="p">)</span>
+    <span class="n">sort_idxs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">criterion</span><span class="p">)[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">losses_sorted</span> <span class="o">=</span> <span class="n">losses</span><span class="p">[</span><span class="n">sort_idxs</span><span class="p">]</span>
+    <span class="n">bin_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">losses</span><span class="p">)</span> <span class="o">//</span> <span class="n">n_bins</span>
+    <span class="n">bin_losses</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">n_bins</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_bins</span><span class="p">):</span>
+        <span class="n">bin_losses</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">losses_sorted</span><span class="p">[(</span><span class="n">i</span> <span class="o">*</span> <span class="n">bin_len</span><span class="p">)</span> <span class="p">:])</span>
+
+    <span class="c1"># Also compute the area under the loss curve based on the bin losses.</span>
+    <span class="n">auroc</span> <span class="o">=</span> <span class="n">sm</span><span class="o">.</span><span class="n">auc</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">n_bins</span><span class="p">),</span> <span class="n">bin_losses</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">auroc</span><span class="p">,</span> <span class="n">bin_losses</span></div>
 
 
 
-<div class="viewcode-block" id="efficiency">
-<a class="viewcode-back" href="../../api/probly.metrics.html#probly.metrics.efficiency">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">efficiency</span><span class="p">(</span><span class="n">preds</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute the efficiency of set-valued predictions.</span>
+<div class="viewcode-block" id="out_of_distribution_detection">
+<a class="viewcode-back" href="../../api/probly.tasks.html#probly.tasks.out_of_distribution_detection">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">out_of_distribution_detection</span><span class="p">(</span><span class="n">in_distribution</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">out_distribution</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Perform out-of-distribution detection using prediction functionals from id and ood data.</span>
 
-<span class="sd">    In the case of a set over classes this is the mean of the number of classes in the set. In the</span>
-<span class="sd">    case of a credal set, this is computed by the mean difference between the upper and lower</span>
-<span class="sd">    probabilities.</span>
+<span class="sd">    This can be epistemic uncertainty, as is common, but also e.g. softmax confidence.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        preds: The predictions as an array of shape `(n_instances, n_classes)` or</span>
-<span class="sd">            of shape `(n_instances, n_samples, n_classes)`.</span>
-
+<span class="sd">        in_distribution: in-distribution prediction functionals</span>
+<span class="sd">        out_distribution: out-of-distribution prediction functionals</span>
 <span class="sd">    Returns:</span>
-<span class="sd">        eff: The efficiency of the set-valued predictions.</span>
+<span class="sd">        auroc: float, area under the roc curve</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">preds</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
-        <span class="n">eff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">preds</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="n">preds</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
-        <span class="n">probs_lower</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmin</span><span class="p">(</span><span class="n">preds</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">decimals</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
-        <span class="n">probs_upper</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">preds</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">decimals</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
-        <span class="n">eff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">probs_upper</span> <span class="o">-</span> <span class="n">probs_lower</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Expected 2D or 3D array, got </span><span class="si">{</span><span class="n">preds</span><span class="o">.</span><span class="n">ndim</span><span class="si">}</span><span class="s2">D&quot;</span><span class="p">)</span>
-    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">eff</span><span class="p">)</span></div>
+    <span class="n">preds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">in_distribution</span><span class="p">,</span> <span class="n">out_distribution</span><span class="p">))</span>
+    <span class="n">labels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">in_distribution</span><span class="p">)),</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">out_distribution</span><span class="p">))))</span>
+    <span class="n">auroc</span> <span class="o">=</span> <span class="n">sm</span><span class="o">.</span><span class="n">roc_auc_score</span><span class="p">(</span><span class="n">labels</span><span class="p">,</span> <span class="n">preds</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">auroc</span></div>
 
 </pre></div>
         </article>
