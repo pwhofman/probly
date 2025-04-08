@@ -1,6 +1,10 @@
 # probly: Uncertainty Representation and Quantification for Machine Learning
 <div align="center">
- <img src="docs/source/_static/logo/logo_light.png" alt="probly" width="300"/>
+<picture>
+  <source srcset="docs/source/_static/logo/logo_dark.png" media="(prefers-color-scheme: dark)">
+  <source srcset="docs/source/_static/logo/logo_light.png" media="(prefers-color-scheme: light)">
+  <img src="docs/source/_static/logo/logo_light.png" alt="probly logo" width="300" />
+</picture>
 
 [![PyPI version](https://badge.fury.io/py/probly.svg)](https://badge.fury.io/py/probly)
 [![License](https://img.shields.io/badge/License-MIT-brightgreen.svg)](https://opensource.org/licenses/MIT)
