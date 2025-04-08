@@ -186,6 +186,7 @@ exclude = [
     "node_modules",
     "site-packages",
     "venv",
+    "docs/build",  # Exclude docs build directory
 ]
 
 [tool.ruff.lint.pydocstyle]
@@ -212,14 +213,24 @@ convention = "google"
     "FBT001",
     "D100",
     "PLR2004",
-    "PD901",   #  X is a bad variable name. (pandas)
+    "PD901",
     "TCH",
     "N803",
-    "C901",  # Too complex
+    "C901",
 ]
-"__init__.py" = ["I002"]
+"__init__.py" = [
+    # "I002",
+    "RUF022"  # to allow __all__ be not alphabetically ordered
+]
 "*.ipynb" = ["T20", "NPY002"]
 "docs/**/*.py" = ["INP001", "PTH"]
+
+# Use isort-compatible settings
+[tool.ruff.isort]
+known-first-party = ["probly"]
+force-sort-within-sections = true
+combine-as-imports = true
+force-single-line = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

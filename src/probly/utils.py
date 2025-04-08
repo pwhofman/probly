@@ -1,7 +1,7 @@
 """General utility functions for all other modules."""
 
-import itertools
 from collections.abc import Iterable
+import itertools
 
 import numpy as np
 import torch
