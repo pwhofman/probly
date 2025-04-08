@@ -2,17 +2,23 @@
 
 import numpy as np
 
+__all__ = [
+    "coverage",
+    "efficiency",
+    "expected_calibration_error",
+]
+
 
 def expected_calibration_error(probs: np.ndarray, labels: np.ndarray, num_bins: int = 10) -> float:
     """Compute the expected calibration error (ECE) of the predicted probabilities.
 
     Args:
-        probs: numpy.ndarray of shape (n_instances, n_classes)
-        labels: numpy.ndarray of shape (n_instances,)
-        num_bins: int
-    Returns:
-        ece: float
+        probs: The predicted probabilities as an array of shape (n_instances, n_classes).
+        labels: The true labels as an array of shape (n_instances,).
+        num_bins: The number of bins to use for the calibration error calculation.
 
+    Returns:
+        ece: The expected calibration error.
     """
     confs = np.max(probs, axis=1)
     preds = np.argmax(probs, axis=1)
@@ -29,20 +35,19 @@ def expected_calibration_error(probs: np.ndarray, labels: np.ndarray, num_bins: 
         conf_bin = np.mean(confs[_bin])
         weight = _bin.shape[0] / num_instances
         ece += weight * np.abs(acc_bin - conf_bin)
-
-    return ece
+    return float(ece)
 
 
 def coverage(preds: np.ndarray, targets: np.ndarray) -> float:
     """Compute the coverage of set-valued predictions.
 
     Args:
-        preds: numpy.ndarray of shape (n_instances, n_classes) or
-        (n_instances, n_samples, n_classes)
-        targets: numpy.ndarray of shape (n_instances,) or (n_instances, n_classes)
+        preds: The predictions as an array of shape `(n_instances, n_classes)` or
+            `(n_instances, n_samples, n_classes)`
+        targets: The targets as an array of shape `(n_instances,)` or `(n_instances, n_classes)`
 
     Returns:
-        cov: float, coverage of the set-valued predictions
+        cov: The coverage of the set-valued predictions
 
     """
     if preds.ndim == 2:
@@ -54,7 +59,7 @@ def coverage(preds: np.ndarray, targets: np.ndarray) -> float:
         cov = np.mean(covered)
     else:
         raise ValueError(f"Expected 2D or 3D array, got {preds.ndim}D")
-    return cov
+    return float(cov)
 
 
 def efficiency(preds: np.ndarray) -> float:
@@ -65,11 +70,11 @@ def efficiency(preds: np.ndarray) -> float:
     probabilities.
 
     Args:
-        preds: numpy.ndarray of shape (n_instances, n_classes) or
-        (n_instances, n_samples, n_classes)
+        preds: The predictions as an array of shape `(n_instances, n_classes)` or
+            of shape `(n_instances, n_samples, n_classes)`.
 
     Returns:
-        eff: float, efficiency of the set-valued predictions
+        eff: The efficiency of the set-valued predictions.
 
     """
     if preds.ndim == 2:
@@ -80,4 +85,4 @@ def efficiency(preds: np.ndarray) -> float:
         eff = np.mean(probs_upper - probs_lower)
     else:
         raise ValueError(f"Expected 2D or 3D array, got {preds.ndim}D")
-    return eff
+    return float(eff)

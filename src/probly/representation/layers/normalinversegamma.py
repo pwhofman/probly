@@ -3,9 +3,9 @@
 import math
 
 import torch
-import torch.nn.functional as F
 from torch import Tensor, nn
 from torch.nn import init
+import torch.nn.functional as F
 
 
 class NormalInverseGammaLinear(nn.Module):

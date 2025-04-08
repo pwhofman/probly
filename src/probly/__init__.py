@@ -1,1 +1,1 @@
-"""Init module of the probly package."""
+"""probly: Uncertainty Representation and Quantification for Machine Learning."""
