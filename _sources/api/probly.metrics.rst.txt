@@ -8,7 +8,11 @@
 
    .. autosummary::
    
+      brier_score
       coverage
       efficiency
       expected_calibration_error
+      log_loss
+      spherical_score
+      zero_one_loss
    
