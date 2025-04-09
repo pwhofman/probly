@@ -90,7 +90,7 @@ def efficiency(preds: np.ndarray) -> float:
     return float(eff)
 
 
-def log_loss(probs: np.ndarray, targets: np.ndarray) -> float:
+def log_loss(probs: np.ndarray, targets: np.ndarray) -> float | np.ndarray:
     """Compute the log loss of the predicted probabilities.
 
     Args:
@@ -109,7 +109,7 @@ def log_loss(probs: np.ndarray, targets: np.ndarray) -> float:
     return loss
 
 
-def brier_score(probs: np.ndarray, targets: np.ndarray) -> float:
+def brier_score(probs: np.ndarray, targets: np.ndarray) -> float | np.ndarray:
     """Compute the Brier score of the predicted probabilities.
 
     We assume the score to be negatively-oriented, i.e. lower is better.
@@ -130,7 +130,7 @@ def brier_score(probs: np.ndarray, targets: np.ndarray) -> float:
     return loss
 
 
-def zero_one_loss(probs: np.ndarray, targets: np.ndarray) -> float:
+def zero_one_loss(probs: np.ndarray, targets: np.ndarray) -> float | np.ndarray:
     """Compute the zero-one loss of the predicted probabilities.
 
     Args:
@@ -149,7 +149,7 @@ def zero_one_loss(probs: np.ndarray, targets: np.ndarray) -> float:
     return loss
 
 
-def spherical_score(probs: np.ndarray, targets: np.ndarray) -> float:
+def spherical_score(probs: np.ndarray, targets: np.ndarray) -> float | np.ndarray:
     """Compute the spherical score of the predicted probabilities.
 
     We assume the score to be negatively-oriented, i.e. lower is better.

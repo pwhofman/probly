@@ -71,7 +71,7 @@ def expected_loss(probs: np.ndarray, loss_fn: Callable[[np.ndarray, np.ndarray |
 
     Args:
         probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
-        loss_fn: Callable[[numpy.ndarray], numpy.ndarray]
+        loss_fn: Callable[[numpy.ndarray, np.ndarray | None], numpy.ndarray]
 
     Returns:
         el: numpy.ndarray, shape (n_instances,)
@@ -89,7 +89,7 @@ def expected_entropy(probs: np.ndarray, loss_fn: Callable[[np.ndarray, np.ndarra
 
     Args:
         probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
-        loss_fn: Callable[[numpy.ndarray], numpy.ndarray]
+        loss_fn: Callable[[numpy.ndarray, np.ndarray | None], numpy.ndarray]
 
     Returns:
         ee: numpy.ndarray, shape (n_instances,)
@@ -108,7 +108,7 @@ def expected_divergence(
 
     Args:
         probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
-        loss_fn: Callable[[numpy.ndarray], numpy.ndarray]
+        loss_fn: Callable[[numpy.ndarray, np.ndarray | None], numpy.ndarray]
 
     Returns:
         ed: numpy.ndarray, shape (n_instances,)
