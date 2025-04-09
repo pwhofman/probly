@@ -88,3 +88,83 @@ def efficiency(preds: np.ndarray) -> float:
     else:
         raise ValueError(f"Expected 2D or 3D array, got {preds.ndim}D")
     return float(eff)
+
+
+def log_loss(probs: np.ndarray, targets: np.ndarray) -> float | np.ndarray:
+    """Compute the log loss of the predicted probabilities.
+
+    Args:
+        probs: The predicted probabilities as an array of shape (n_instances, n_classes).
+        targets: The true labels as an array of shape (n_instances,). If None, the log loss is
+            computed for all classes. This can be used for uncertainty quantification.
+
+    Returns:
+        loss: The log loss.
+    """
+    if targets is None:
+        loss = -np.log(probs)
+    else:
+        loss = -np.log(probs[np.arange(probs.shape[0]), targets])
+        loss = np.mean(loss)
+    return loss
+
+
+def brier_score(probs: np.ndarray, targets: np.ndarray) -> float | np.ndarray:
+    """Compute the Brier score of the predicted probabilities.
+
+    We assume the score to be negatively-oriented, i.e. lower is better.
+
+    Args:
+        probs: The predicted probabilities as an array of shape (n_instances, n_classes).
+        targets: The true labels as an array of shape (n_instances,). If None, the Brier score is
+            computed for all classes. This can be used for uncertainty quantification.
+
+    Returns:
+        loss: The Brier score.
+    """
+    if targets is None:
+        loss = 1 - 2 * probs + np.sum(probs**2, -1)[..., None]
+    else:
+        loss = 1 - 2 * probs[np.arange(probs.shape[0]), targets] + np.sum(probs**2, axis=1)
+        loss = np.mean(loss)
+    return loss
+
+
+def zero_one_loss(probs: np.ndarray, targets: np.ndarray) -> float | np.ndarray:
+    """Compute the zero-one loss of the predicted probabilities.
+
+    Args:
+        probs: The predicted probabilities as an array of shape (n_instances, n_classes).
+        targets: The true labels as an array of shape (n_instances,). If None, the zero-one loss is
+            computed for all classes. This can be used for uncertainty quantification.
+
+    Returns:
+        loss: The zero-one loss.
+    """
+    if targets is None:
+        loss = probs != np.max(probs, axis=-1)[..., None]
+    else:
+        loss = np.argmax(probs, axis=1) != targets
+        loss = np.mean(loss)
+    return loss
+
+
+def spherical_score(probs: np.ndarray, targets: np.ndarray) -> float | np.ndarray:
+    """Compute the spherical score of the predicted probabilities.
+
+    We assume the score to be negatively-oriented, i.e. lower is better.
+
+    Args:
+        probs: The predicted probabilities as an array of shape (n_instances, n_classes).
+        targets: The true labels as an array of shape (n_instances,). If None, the spherical score is
+            computed for all classes. This can be used for uncertainty quantification.
+
+    Returns:
+        loss: The spherical score.
+    """
+    if targets is None:
+        loss = 1 - probs / np.sqrt(np.sum(probs**2, -1))[..., None]
+    else:
+        loss = 1 - probs[np.arange(probs.shape[0]), targets] / np.sqrt(np.sum(probs**2, axis=1))
+        loss = np.mean(loss)
+    return loss

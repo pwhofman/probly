@@ -64,56 +64,58 @@ def mutual_information(probs: np.ndarray, base: float = 2) -> np.ndarray:
     return mi
 
 
-def expected_loss(probs: np.ndarray, loss_fn: Callable[[np.ndarray], np.ndarray]) -> np.ndarray:
+def expected_loss(probs: np.ndarray, loss_fn: Callable[[np.ndarray, np.ndarray | None], np.ndarray]) -> np.ndarray:
     """Compute the expected loss of the second-order distribution.
 
     The computation is based on samples from a second-order distribution.
 
     Args:
         probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
-        loss_fn: Callable[[numpy.ndarray], numpy.ndarray]
+        loss_fn: Callable[[numpy.ndarray, np.ndarray | None], numpy.ndarray]
 
     Returns:
         el: numpy.ndarray, shape (n_instances,)
 
     """
     mean = np.mean(probs, axis=1)
-    el = np.sum(mean * loss_fn(mean), axis=1)
+    el = np.sum(mean * loss_fn(mean, None), axis=1)
     return el
 
 
-def expected_entropy(probs: np.ndarray, loss_fn: Callable[[np.ndarray], np.ndarray]) -> np.ndarray:
+def expected_entropy(probs: np.ndarray, loss_fn: Callable[[np.ndarray, np.ndarray | None], np.ndarray]) -> np.ndarray:
     """Compute the expected entropy of the second-order distribution.
 
     The computation is based on samples from a second-order distribution.
 
     Args:
         probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
-        loss_fn: Callable[[numpy.ndarray], numpy.ndarray]
+        loss_fn: Callable[[numpy.ndarray, np.ndarray | None], numpy.ndarray]
 
     Returns:
         ee: numpy.ndarray, shape (n_instances,)
 
     """
-    ee = np.mean(np.sum(probs * loss_fn(probs), axis=2), axis=1)
+    ee = np.mean(np.sum(probs * loss_fn(probs, None), axis=2), axis=1)
     return ee
 
 
-def expected_divergence(probs: np.ndarray, loss_fn: Callable[[np.ndarray], np.ndarray]) -> np.ndarray:
+def expected_divergence(
+    probs: np.ndarray, loss_fn: Callable[[np.ndarray, np.ndarray | None], np.ndarray]
+) -> np.ndarray:
     """Compute the expected divergence to the mean of the second-order distribution.
 
      The computation is based on samples from a second-order distribution.
 
     Args:
         probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
-        loss_fn: Callable[[numpy.ndarray], numpy.ndarray]
+        loss_fn: Callable[[numpy.ndarray, np.ndarray | None], numpy.ndarray]
 
     Returns:
         ed: numpy.ndarray, shape (n_instances,)
 
     """
     mean = np.mean(probs, axis=1)
-    ed = np.sum(mean * loss_fn(mean), axis=1) - np.mean(np.sum(probs * loss_fn(probs), axis=2), axis=1)
+    ed = np.sum(mean * loss_fn(mean, None), axis=1) - np.mean(np.sum(probs * loss_fn(probs, None), axis=2), axis=1)
     return ed
 
 
