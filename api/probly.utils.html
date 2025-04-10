@@ -303,6 +303,12 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#probly.utils.powerset" title="probly.utils.powerset"><code class="xref py py-obj docutils literal notranslate"><span class="pre">powerset</span></code></a>(iterable)</p></td>
 <td><p>Generate the power set of a given iterable.</p></td>
 </tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#probly.utils.temperature_softmax" title="probly.utils.temperature_softmax"><code class="xref py py-obj docutils literal notranslate"><span class="pre">temperature_softmax</span></code></a>(logits, temperature)</p></td>
+<td><p>Compute the softmax of logits with temperature scaling applied.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#probly.utils.torch_collect_outputs" title="probly.utils.torch_collect_outputs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">torch_collect_outputs</span></code></a>(model, loader, device)</p></td>
+<td><p>Collect outputs and targets from a model for a given data loader.</p></td>
+</tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#probly.utils.torch_reset_all_parameters" title="probly.utils.torch_reset_all_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">torch_reset_all_parameters</span></code></a>(module)</p></td>
 <td><p>Reset all parameters of a torch module.</p></td>
 </tr>
@@ -450,6 +456,56 @@
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="probly.utils.temperature_softmax">
+<span class="sig-prename descclassname"><span class="pre">probly.utils.</span></span><span class="sig-name descname"><span class="pre">temperature_softmax</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logits</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temperature</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/utils.html#temperature_softmax"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.utils.temperature_softmax" title="Link to this definition">¶</a></dt>
+<dd><p>Compute the softmax of logits with temperature scaling applied.</p>
+<p>Computes the softmax based on the logits divided by the temperature. Assumes that the last dimension
+of logits is the class dimension.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>logits</strong> (<a class="reference external" href="https://pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.6)"><em>Tensor</em></a>) – torch.Tensor, shape (n_instances, n_classes), logits to apply softmax on</p></li>
+<li><p><strong>temperature</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a><em> | </em><a class="reference external" href="https://pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.6)"><em>Tensor</em></a>) – float, temperature scaling factor</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>torch.Tensor, shape (n_instances, n_classes), softmax of logits with temperature scaling applied</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>ts</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="probly.utils.torch_collect_outputs">
+<span class="sig-prename descclassname"><span class="pre">probly.utils.</span></span><span class="sig-name descname"><span class="pre">torch_collect_outputs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loader</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/utils.html#torch_collect_outputs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.utils.torch_collect_outputs" title="Link to this definition">¶</a></dt>
+<dd><p>Collect outputs and targets from a model for a given data loader.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>, <a class="reference external" href="https://pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>]</span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>model</strong> (<a class="reference external" href="https://pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.6)"><em>Module</em></a>) – torch.nn.Module, model to collect outputs from</p></li>
+<li><p><strong>loader</strong> (<a class="reference external" href="https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader" title="(in PyTorch v2.6)"><em>DataLoader</em></a>) – torch.utils.data.DataLoader, data loader to collect outputs from</p></li>
+<li><p><strong>device</strong> (<a class="reference external" href="https://pytorch.org/docs/stable/tensor_attributes.html#torch.device" title="(in PyTorch v2.6)"><em>device</em></a>) – torch.device, device to move data to</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>torch.Tensor, shape (n_instances, n_classes), model outputs
+targets: torch.Tensor, shape (n_instances,), target labels</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>outputs</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="probly.utils.torch_reset_all_parameters">
 <span class="sig-prename descclassname"><span class="pre">probly.utils.</span></span><span class="sig-name descname"><span class="pre">torch_reset_all_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">module</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/utils.html#torch_reset_all_parameters"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.utils.torch_reset_all_parameters" title="Link to this definition">¶</a></dt>
 <dd><p>Reset all parameters of a torch module.</p>
@@ -518,6 +574,8 @@
 <li><a class="reference internal" href="#probly.utils.kl_divergence_gaussian"><code class="docutils literal notranslate"><span class="pre">kl_divergence_gaussian()</span></code></a></li>
 <li><a class="reference internal" href="#probly.utils.moebius"><code class="docutils literal notranslate"><span class="pre">moebius()</span></code></a></li>
 <li><a class="reference internal" href="#probly.utils.powerset"><code class="docutils literal notranslate"><span class="pre">powerset()</span></code></a></li>
+<li><a class="reference internal" href="#probly.utils.temperature_softmax"><code class="docutils literal notranslate"><span class="pre">temperature_softmax()</span></code></a></li>
+<li><a class="reference internal" href="#probly.utils.torch_collect_outputs"><code class="docutils literal notranslate"><span class="pre">torch_collect_outputs()</span></code></a></li>
 <li><a class="reference internal" href="#probly.utils.torch_reset_all_parameters"><code class="docutils literal notranslate"><span class="pre">torch_reset_all_parameters()</span></code></a></li>
 </ul>
 </li>

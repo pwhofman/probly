@@ -562,6 +562,58 @@
         <span class="k">return</span> <span class="n">loss</span></div>
 </div>
 
+
+
+<div class="viewcode-block" id="ExpectedCalibrationError">
+<a class="viewcode-back" href="../../api/probly.losses.html#probly.losses.ExpectedCalibrationError">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ExpectedCalibrationError</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Expected Calibration Error (ECE).</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        num_bins: int, number of bins to use for calibration</span>
+<span class="sd">        self.bins: torch.Tensor, the actual bins for calibration</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num_bins</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes an instance of the ExpectedCalibrationError class.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            num_bins: int, number of bins to use for calibration</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_bins</span> <span class="o">=</span> <span class="n">num_bins</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bins</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">num_bins</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ExpectedCalibrationError.forward">
+<a class="viewcode-back" href="../../api/probly.losses.html#probly.losses.ExpectedCalibrationError.forward">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inputs</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">targets</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Forward pass of the expected calibration error.</span>
+
+<span class="sd">        Assumes that inputs are probability distributions over classes.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            inputs: torch.Tensor of size (n_instances, n_classes).</span>
+<span class="sd">            targets: torch.Tensor of size (n_instances,)</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            loss: torch.Tensor, mean loss value</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">confs</span><span class="p">,</span> <span class="n">preds</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">bin_indices</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">bucketize</span><span class="p">(</span><span class="n">confs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bins</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">inputs</span><span class="o">.</span><span class="n">device</span><span class="p">),</span> <span class="n">right</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="n">num_instances</span> <span class="o">=</span> <span class="n">inputs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">loss</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_bins</span><span class="p">):</span>
+            <span class="n">_bin</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">bin_indices</span> <span class="o">==</span> <span class="n">i</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="c1"># check if bin is empty</span>
+            <span class="k">if</span> <span class="n">_bin</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">acc_bin</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">mean</span><span class="p">((</span><span class="n">preds</span><span class="p">[</span><span class="n">_bin</span><span class="p">]</span> <span class="o">==</span> <span class="n">targets</span><span class="p">[</span><span class="n">_bin</span><span class="p">])</span><span class="o">.</span><span class="n">float</span><span class="p">())</span>
+            <span class="n">conf_bin</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">confs</span><span class="p">[</span><span class="n">_bin</span><span class="p">])</span>
+            <span class="n">weight</span> <span class="o">=</span> <span class="n">_bin</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">num_instances</span>
+            <span class="n">loss</span> <span class="o">+=</span> <span class="n">weight</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">acc_bin</span> <span class="o">-</span> <span class="n">conf_bin</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">loss</span></div>
+</div>
+
 </pre></div>
         </article>
       </div>

@@ -13,5 +13,7 @@
       kl_divergence_gaussian
       moebius
       powerset
+      temperature_softmax
+      torch_collect_outputs
       torch_reset_all_parameters
    

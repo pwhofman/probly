@@ -15,5 +15,6 @@
       EvidentialMSELoss
       EvidentialNIGNLLLoss
       EvidentialRegressionRegularization
+      ExpectedCalibrationError
       FocalLoss
    

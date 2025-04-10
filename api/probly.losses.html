@@ -309,7 +309,10 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#probly.losses.EvidentialRegressionRegularization" title="probly.losses.EvidentialRegressionRegularization"><code class="xref py py-obj docutils literal notranslate"><span class="pre">EvidentialRegressionRegularization</span></code></a>()</p></td>
 <td><p>Implementation of the evidential regression regularization.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#probly.losses.FocalLoss" title="probly.losses.FocalLoss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FocalLoss</span></code></a>([alpha, gamma])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#probly.losses.ExpectedCalibrationError" title="probly.losses.ExpectedCalibrationError"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ExpectedCalibrationError</span></code></a>([num_bins])</p></td>
+<td><p>Expected Calibration Error (ECE).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#probly.losses.FocalLoss" title="probly.losses.FocalLoss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FocalLoss</span></code></a>([alpha, gamma])</p></td>
 <td><p>Focal Loss based on <a class="reference external" href="https://arxiv.org/abs/1708.02002">https://arxiv.org/abs/1708.02002</a>.</p></td>
 </tr>
 </tbody>
@@ -551,6 +554,54 @@
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="probly.losses.ExpectedCalibrationError">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.losses.</span></span><span class="sig-name descname"><span class="pre">ExpectedCalibrationError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_bins</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/losses.html#ExpectedCalibrationError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.losses.ExpectedCalibrationError" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></a></p>
+<p>Expected Calibration Error (ECE).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>num_bins</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>)</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="probly.losses.ExpectedCalibrationError.num_bins">
+<span class="sig-name descname"><span class="pre">num_bins</span></span><a class="headerlink" href="#probly.losses.ExpectedCalibrationError.num_bins" title="Link to this definition">¶</a></dt>
+<dd><p>int, number of bins to use for calibration</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="probly.losses.ExpectedCalibrationError.self.bins">
+<span class="sig-prename descclassname"><span class="pre">self.</span></span><span class="sig-name descname"><span class="pre">bins</span></span><a class="headerlink" href="#probly.losses.ExpectedCalibrationError.self.bins" title="Link to this definition">¶</a></dt>
+<dd><p>torch.Tensor, the actual bins for calibration</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="probly.losses.ExpectedCalibrationError.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">targets</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/losses.html#ExpectedCalibrationError.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.losses.ExpectedCalibrationError.forward" title="Link to this definition">¶</a></dt>
+<dd><p>Forward pass of the expected calibration error.</p>
+<p>Assumes that inputs are probability distributions over classes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>inputs</strong> (<a class="reference external" href="https://pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.6)"><em>Tensor</em></a>) – torch.Tensor of size (n_instances, n_classes).</p></li>
+<li><p><strong>targets</strong> (<a class="reference external" href="https://pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.6)"><em>Tensor</em></a>) – torch.Tensor of size (n_instances,)</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>torch.Tensor, mean loss value</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>loss</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="probly.losses.FocalLoss">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.losses.</span></span><span class="sig-name descname"><span class="pre">FocalLoss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/losses.html#FocalLoss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.losses.FocalLoss" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></a></p>
@@ -685,6 +736,12 @@
 </li>
 <li><a class="reference internal" href="#probly.losses.EvidentialRegressionRegularization"><code class="docutils literal notranslate"><span class="pre">EvidentialRegressionRegularization</span></code></a><ul>
 <li><a class="reference internal" href="#probly.losses.EvidentialRegressionRegularization.forward"><code class="docutils literal notranslate"><span class="pre">EvidentialRegressionRegularization.forward()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#probly.losses.ExpectedCalibrationError"><code class="docutils literal notranslate"><span class="pre">ExpectedCalibrationError</span></code></a><ul>
+<li><a class="reference internal" href="#probly.losses.ExpectedCalibrationError.num_bins"><code class="docutils literal notranslate"><span class="pre">ExpectedCalibrationError.num_bins</span></code></a></li>
+<li><a class="reference internal" href="#probly.losses.ExpectedCalibrationError.self.bins"><code class="docutils literal notranslate"><span class="pre">ExpectedCalibrationError.self.bins</span></code></a></li>
+<li><a class="reference internal" href="#probly.losses.ExpectedCalibrationError.forward"><code class="docutils literal notranslate"><span class="pre">ExpectedCalibrationError.forward()</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#probly.losses.FocalLoss"><code class="docutils literal notranslate"><span class="pre">FocalLoss</span></code></a><ul>
