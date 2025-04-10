@@ -51,36 +51,11 @@ include = ["probly*"]
 readme = {file = ["README.md", "CHANGELOG.md"], content-type = "text/markdown"}
 
 [project.urls]
-# documentation = TODO: we need to add the documentation
+documentation = "https://pwhofman.github.io/probly"
 source = "https://github.com/pwhofman/probly"
 tracker = "https://github.com/pwhofman/probly/issues"
 changelog = "https://github.com/pwhofman/probly/blob/main/CHANGELOG.md"
 
-[project.scripts]
-probly = "probly:main"
-
-[project.optional-dependencies]
-cpu = ["torch==2.6.0"]
-cuda12 = ["torch==2.6.0"]
-
-[tool.uv]
-conflicts = [[{ extra = "cpu" }, { extra = "cuda12" }]]
-
-[tool.uv.sources]
-torch = [
-    { index = "torch-cpu", extra = "cpu" },
-    { index = "torch-cuda12", extra = "cuda12" },
-]
-
-[[tool.uv.index]]
-name = "torch-cpu"
-url = "https://download.pytorch.org/whl/cpu"
-explicit = true
-
-[[tool.uv.index]]
-name = "torch-cuda12"
-url = "https://download.pytorch.org/whl/cu124"
-explicit = true
 
 [dependency-groups]
 test = [
