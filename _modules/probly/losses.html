@@ -614,6 +614,58 @@
         <span class="k">return</span> <span class="n">loss</span></div>
 </div>
 
+
+
+<div class="viewcode-block" id="LabelRelaxationLoss">
+<a class="viewcode-back" href="../../api/probly.losses.html#probly.losses.LabelRelaxationLoss">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">LabelRelaxationLoss</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Label Relaxation Loss from https://ojs.aaai.org/index.php/AAAI/article/view/17041.</span>
+
+<span class="sd">    This loss is used to improve the calibration of a neural network. It works by minimizing</span>
+<span class="sd">    the Kullback-Leibler divergence between the predicted probabilities and the target distribution in the credal set</span>
+<span class="sd">    defined by the alpha parameter. The target distribution is the distribution in the credal set that minimizes the</span>
+<span class="sd">    Kullback-Leibler divergence from the predicted probabilities. If the predicted probability distribution</span>
+<span class="sd">    is in the credal set, the loss is zero.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        alpha: float, the parameter that controls the amount of label relaxation. Increasing alpha, increases the size</span>
+<span class="sd">            of the credal set and thus the amount of label relaxation.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">alpha</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes an instance of the LabelRelaxationLoss class.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            alpha: float, the parameter that controls the amount of label relaxation.</span>
+<span class="sd">                Increasing alpha, increases the size of the credal set and thus the amount of label relaxation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="n">alpha</span>
+
+<div class="viewcode-block" id="LabelRelaxationLoss.forward">
+<a class="viewcode-back" href="../../api/probly.losses.html#probly.losses.LabelRelaxationLoss.forward">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inputs</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">targets</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Forward pass of the label relaxation loss.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            inputs: torch.Tensor of size (n_instances, n_classes)</span>
+<span class="sd">            targets: torch.Tensor of size (n_instances,)</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            loss: torch.Tensor, mean loss value</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">inputs_probs</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+            <span class="n">inv_one_hot</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">F</span><span class="o">.</span><span class="n">one_hot</span><span class="p">(</span><span class="n">targets</span><span class="p">,</span> <span class="n">inputs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">targets_real</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span> <span class="o">*</span> <span class="n">inputs_probs</span> <span class="o">/</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">inv_one_hot</span> <span class="o">*</span> <span class="n">inputs_probs</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdim</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">targets_real</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">targets</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">targets</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span>
+
+        <span class="n">kl_div</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">F</span><span class="o">.</span><span class="n">kl_div</span><span class="p">(</span><span class="n">inputs_probs</span><span class="o">.</span><span class="n">log</span><span class="p">(),</span> <span class="n">targets_real</span><span class="p">,</span> <span class="n">log_target</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">reduction</span><span class="o">=</span><span class="s2">&quot;none&quot;</span><span class="p">),</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">loss</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">inv_one_hot</span> <span class="o">*</span> <span class="n">inputs_probs</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">kl_div</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">loss</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span></div>
+</div>
+
 </pre></div>
         </article>
       </div>

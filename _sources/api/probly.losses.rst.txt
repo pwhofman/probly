@@ -17,4 +17,5 @@
       EvidentialRegressionRegularization
       ExpectedCalibrationError
       FocalLoss
+      LabelRelaxationLoss
    
