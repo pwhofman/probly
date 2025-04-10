@@ -133,7 +133,7 @@ def torch_collect_outputs(
     return outputs, targets
 
 
-def temperature_softmax(logits: torch.Tensor, temperature: float = 1.0) -> torch.Tensor:
+def temperature_softmax(logits: torch.Tensor, temperature: float | torch.Tensor) -> torch.Tensor:
     """Compute the softmax of logits with temperature scaling applied.
 
     Computes the softmax based on the logits divided by the temperature. Assumes that the last dimension
