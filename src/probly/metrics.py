@@ -108,7 +108,7 @@ def coverage_convex_hull(probs: np.ndarray, targets: np.ndarray) -> float:
     covered = 0
     n_extrema = probs.shape[1]
     c = np.zeros(n_extrema)  # we do not care about the coefficients in this case
-    bounds = [(0, 1)]
+    bounds = [(0, 1)] * n_extrema
     for i in range(probs.shape[0]):
         a_eq = np.vstack((probs[i].T, np.ones(n_extrema)))
         b_eq = np.concatenate((targets[i], [1]), axis=0)
