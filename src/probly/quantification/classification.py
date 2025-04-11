@@ -322,7 +322,7 @@ def lower_entropy_convex_hull(probs: np.ndarray, base: float = 2) -> np.ndarray:
         probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
         base: float, default=2
     Returns:
-        ue: numpy.ndarray of shape (n_instances,)
+        le: numpy.ndarray of shape (n_instances,)
 
     """
 
