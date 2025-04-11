@@ -18,10 +18,12 @@ probly.quantification.classification
       expected_loss
       generalised_hartley
       lower_entropy
+      lower_entropy_convex_hull
       mutual_information
       total_entropy
       total_uncertainty_distance
       total_variance
       upper_entropy
+      upper_entropy_convex_hull
       variance_conditional_expectation
    

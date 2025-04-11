@@ -318,19 +318,25 @@
 <tr class="row-even"><td><p><a class="reference internal" href="#probly.quantification.classification.lower_entropy" title="probly.quantification.classification.lower_entropy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lower_entropy</span></code></a>(probs[, base])</p></td>
 <td><p>Compute the lower entropy of a credal set.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#probly.quantification.classification.mutual_information" title="probly.quantification.classification.mutual_information"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mutual_information</span></code></a>(probs[, base])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#probly.quantification.classification.lower_entropy_convex_hull" title="probly.quantification.classification.lower_entropy_convex_hull"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lower_entropy_convex_hull</span></code></a>(probs[, base])</p></td>
+<td><p>Compute the lower entropy of a credal set.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#probly.quantification.classification.mutual_information" title="probly.quantification.classification.mutual_information"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mutual_information</span></code></a>(probs[, base])</p></td>
 <td><p>Compute the mutual information as epistemic uncertainty.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#probly.quantification.classification.total_entropy" title="probly.quantification.classification.total_entropy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">total_entropy</span></code></a>(probs[, base])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#probly.quantification.classification.total_entropy" title="probly.quantification.classification.total_entropy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">total_entropy</span></code></a>(probs[, base])</p></td>
 <td><p>Compute the total entropy as the total uncertainty.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#probly.quantification.classification.total_uncertainty_distance" title="probly.quantification.classification.total_uncertainty_distance"><code class="xref py py-obj docutils literal notranslate"><span class="pre">total_uncertainty_distance</span></code></a>(probs)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#probly.quantification.classification.total_uncertainty_distance" title="probly.quantification.classification.total_uncertainty_distance"><code class="xref py py-obj docutils literal notranslate"><span class="pre">total_uncertainty_distance</span></code></a>(probs)</p></td>
 <td><p>Compute the total uncertainty using samples from a second-order distribution.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#probly.quantification.classification.total_variance" title="probly.quantification.classification.total_variance"><code class="xref py py-obj docutils literal notranslate"><span class="pre">total_variance</span></code></a>(probs)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#probly.quantification.classification.total_variance" title="probly.quantification.classification.total_variance"><code class="xref py py-obj docutils literal notranslate"><span class="pre">total_variance</span></code></a>(probs)</p></td>
 <td><p>Compute the total uncertainty using variance-based measures.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#probly.quantification.classification.upper_entropy" title="probly.quantification.classification.upper_entropy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">upper_entropy</span></code></a>(probs[, base])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#probly.quantification.classification.upper_entropy" title="probly.quantification.classification.upper_entropy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">upper_entropy</span></code></a>(probs[, base])</p></td>
+<td><p>Compute the upper entropy of a credal set.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#probly.quantification.classification.upper_entropy_convex_hull" title="probly.quantification.classification.upper_entropy_convex_hull"><code class="xref py py-obj docutils literal notranslate"><span class="pre">upper_entropy_convex_hull</span></code></a>(probs[, base])</p></td>
 <td><p>Compute the upper entropy of a credal set.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#probly.quantification.classification.variance_conditional_expectation" title="probly.quantification.classification.variance_conditional_expectation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">variance_conditional_expectation</span></code></a>(probs)</p></td>
@@ -569,6 +575,31 @@ for all classes. The lower entropy of this set is computed.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="probly.quantification.classification.lower_entropy_convex_hull">
+<span class="sig-prename descclassname"><span class="pre">probly.quantification.classification.</span></span><span class="sig-name descname"><span class="pre">lower_entropy_convex_hull</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/quantification/classification.html#lower_entropy_convex_hull"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.quantification.classification.lower_entropy_convex_hull" title="Link to this definition">¶</a></dt>
+<dd><p>Compute the lower entropy of a credal set.</p>
+<p>Given the probs the convex hull defined by the extreme points in probs is considered.
+The lower entropy of this set is computed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>probs</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><em>ndarray</em></a>) – numpy.ndarray of shape (n_instances, n_samples, n_classes)</p></li>
+<li><p><strong>base</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – float, default=2</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray of shape (n_instances,)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>le</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="probly.quantification.classification.mutual_information">
 <span class="sig-prename descclassname"><span class="pre">probly.quantification.classification.</span></span><span class="sig-name descname"><span class="pre">mutual_information</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/quantification/classification.html#mutual_information"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.quantification.classification.mutual_information" title="Link to this definition">¶</a></dt>
 <dd><p>Compute the mutual information as epistemic uncertainty.</p>
@@ -685,6 +716,31 @@ for all classes. The upper entropy of this set is computed.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="probly.quantification.classification.upper_entropy_convex_hull">
+<span class="sig-prename descclassname"><span class="pre">probly.quantification.classification.</span></span><span class="sig-name descname"><span class="pre">upper_entropy_convex_hull</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/quantification/classification.html#upper_entropy_convex_hull"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.quantification.classification.upper_entropy_convex_hull" title="Link to this definition">¶</a></dt>
+<dd><p>Compute the upper entropy of a credal set.</p>
+<p>Given the probs the convex hull defined by the extreme points in probs is considered.
+The upper entropy of this set is computed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>probs</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><em>ndarray</em></a>) – numpy.ndarray of shape (n_instances, n_samples, n_classes)</p></li>
+<li><p><strong>base</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – float, default=2</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray of shape (n_instances,)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>ue</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="probly.quantification.classification.variance_conditional_expectation">
 <span class="sig-prename descclassname"><span class="pre">probly.quantification.classification.</span></span><span class="sig-name descname"><span class="pre">variance_conditional_expectation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/quantification/classification.html#variance_conditional_expectation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.quantification.classification.variance_conditional_expectation" title="Link to this definition">¶</a></dt>
 <dd><p>Compute the epistemic uncertainty using variance-based measures.
@@ -773,11 +829,13 @@ for all classes. The upper entropy of this set is computed.</p>
 <li><a class="reference internal" href="#probly.quantification.classification.expected_loss"><code class="docutils literal notranslate"><span class="pre">expected_loss()</span></code></a></li>
 <li><a class="reference internal" href="#probly.quantification.classification.generalised_hartley"><code class="docutils literal notranslate"><span class="pre">generalised_hartley()</span></code></a></li>
 <li><a class="reference internal" href="#probly.quantification.classification.lower_entropy"><code class="docutils literal notranslate"><span class="pre">lower_entropy()</span></code></a></li>
+<li><a class="reference internal" href="#probly.quantification.classification.lower_entropy_convex_hull"><code class="docutils literal notranslate"><span class="pre">lower_entropy_convex_hull()</span></code></a></li>
 <li><a class="reference internal" href="#probly.quantification.classification.mutual_information"><code class="docutils literal notranslate"><span class="pre">mutual_information()</span></code></a></li>
 <li><a class="reference internal" href="#probly.quantification.classification.total_entropy"><code class="docutils literal notranslate"><span class="pre">total_entropy()</span></code></a></li>
 <li><a class="reference internal" href="#probly.quantification.classification.total_uncertainty_distance"><code class="docutils literal notranslate"><span class="pre">total_uncertainty_distance()</span></code></a></li>
 <li><a class="reference internal" href="#probly.quantification.classification.total_variance"><code class="docutils literal notranslate"><span class="pre">total_variance()</span></code></a></li>
 <li><a class="reference internal" href="#probly.quantification.classification.upper_entropy"><code class="docutils literal notranslate"><span class="pre">upper_entropy()</span></code></a></li>
+<li><a class="reference internal" href="#probly.quantification.classification.upper_entropy_convex_hull"><code class="docutils literal notranslate"><span class="pre">upper_entropy_convex_hull()</span></code></a></li>
 <li><a class="reference internal" href="#probly.quantification.classification.variance_conditional_expectation"><code class="docutils literal notranslate"><span class="pre">variance_conditional_expectation()</span></code></a></li>
 </ul>
 </li>
