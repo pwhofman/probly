@@ -280,7 +280,7 @@ def lower_entropy(probs: np.ndarray, base: float = 2) -> np.ndarray:
     for i in range(probs.shape[0]):
         bounds = list(zip(np.min(probs[i], axis=0), np.max(probs[i], axis=0), strict=False))
         res = minimize(fun=fun, x0=x0[i], bounds=bounds, constraints=constraints)
-        le[i] = -res.fun
+        le[i] = res.fun
     return le
 
 
