@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import numpy as np
+from scipy.optimize import linprog
 
 __all__ = [
     "coverage",
@@ -88,6 +89,33 @@ def efficiency(preds: np.ndarray) -> float:
     else:
         raise ValueError(f"Expected 2D or 3D array, got {preds.ndim}D")
     return float(eff)
+
+
+def coverage_convex_hull(probs: np.ndarray, targets: np.ndarray) -> float:
+    """Compute the coverage given the credal set defined by the convex hull of the predicted probabilities.
+
+    The coverage is defined as the proportion of instances whose true distribution is contained in the convex hull.
+    This is computed using linear programming by checking whether the target distribution can be expressed as
+    a convex combination of the predicted distributions.
+
+    Args:
+        probs: The predicted probabilities as an array of shape (n_instances, n_samples, n_classes).
+        targets: The true labels as an array of shape (n_instances, n_classes).
+
+    Returns:
+        cov: The coverage.
+    """
+    covered = 0
+    n_extrema = probs.shape[1]
+    c = np.zeros(n_extrema)  # we do not care about the coefficients in this case
+    bounds = [(0, 1)] * n_extrema
+    for i in range(probs.shape[0]):
+        a_eq = np.vstack((probs[i].T, np.ones(n_extrema)))
+        b_eq = np.concatenate((targets[i], [1]), axis=0)
+        res = linprog(c=c, A_eq=a_eq, b_eq=b_eq, bounds=bounds)
+        covered += res.success
+    cov = covered / probs.shape[0]
+    return cov
 
 
 def log_loss(probs: np.ndarray, targets: np.ndarray) -> float | np.ndarray:

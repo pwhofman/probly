@@ -280,7 +280,63 @@ def lower_entropy(probs: np.ndarray, base: float = 2) -> np.ndarray:
     for i in range(probs.shape[0]):
         bounds = list(zip(np.min(probs[i], axis=0), np.max(probs[i], axis=0), strict=False))
         res = minimize(fun=fun, x0=x0[i], bounds=bounds, constraints=constraints)
-        le[i] = -res.fun
+        le[i] = res.fun
+    return le
+
+
+def upper_entropy_convex_hull(probs: np.ndarray, base: float = 2) -> np.ndarray:
+    """Compute the upper entropy of a credal set.
+
+    Given the probs the convex hull defined by the extreme points in probs is considered.
+    The upper entropy of this set is computed.
+
+    Args:
+        probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
+        base: float, default=2
+    Returns:
+        ue: numpy.ndarray of shape (n_instances,)
+
+    """
+
+    def fun(w: np.ndarray, extrema: np.ndarray) -> np.ndarray:
+        prob = w @ extrema
+        return -entropy(prob, base=base)
+
+    w0 = np.ones(probs.shape[1]) / probs.shape[1]
+    constraints = {"type": "eq", "fun": lambda x: np.sum(x) - 1}
+    bounds = [(0, 1)] * probs.shape[1]
+    ue = np.empty(probs.shape[0])
+    for i in range(probs.shape[0]):
+        res = minimize(fun=fun, args=probs[i], x0=w0, bounds=bounds, constraints=constraints)
+        ue[i] = -res.fun
+    return ue
+
+
+def lower_entropy_convex_hull(probs: np.ndarray, base: float = 2) -> np.ndarray:
+    """Compute the lower entropy of a credal set.
+
+    Given the probs the convex hull defined by the extreme points in probs is considered.
+    The lower entropy of this set is computed.
+
+    Args:
+        probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
+        base: float, default=2
+    Returns:
+        le: numpy.ndarray of shape (n_instances,)
+
+    """
+
+    def fun(w: np.ndarray, extrema: np.ndarray) -> np.ndarray:
+        prob = w @ extrema
+        return entropy(prob, base=base)
+
+    w0 = np.ones(probs.shape[1]) / probs.shape[1]
+    constraints = {"type": "eq", "fun": lambda x: np.sum(x) - 1}
+    bounds = [(0, 1)] * probs.shape[1]
+    le = np.empty(probs.shape[0])
+    for i in range(probs.shape[0]):
+        res = minimize(fun=fun, args=probs[i], x0=w0, bounds=bounds, constraints=constraints)
+        le[i] = res.fun
     return le
 
 
