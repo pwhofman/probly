@@ -97,7 +97,7 @@ class DCICDataset(torch.utils.data.Dataset):
         self.targets = []
         for img_path in self.image_paths:
             full_img_path = Path(self.root) / img_path
-            image = Image.open(full_img_path)
+            image = Image.open(full_img_path).convert("RGB").copy()  # TODO: optimize this loading process
             self.data.append(image)
             labels = self.image_labels[img_path]
             label_indices = [self.label_mappings[label] for label in labels]
