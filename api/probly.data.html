@@ -292,10 +292,10 @@
 <td><p>Implementation of the Benthic dataset.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#probly.data.CIFAR10H" title="probly.data.CIFAR10H"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CIFAR10H</span></code></a>(root[, transform, download])</p></td>
-<td><p>A Dataset class for the CIFAR10H dataset.</p></td>
+<td><p>A Dataset class for the CIFAR10H dataset introduced in <a class="reference external" href="https://arxiv.org/abs/1908.07086">https://arxiv.org/abs/1908.07086</a>.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#probly.data.DCICDataset" title="probly.data.DCICDataset"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DCICDataset</span></code></a>(root[, transform, first_order])</p></td>
-<td><p>A Dataset class for the DCICDataset.</p></td>
+<td><p>A Dataset base class for the DCICDatasets introduced in <a class="reference external" href="https://arxiv.org/abs/2207.06214">https://arxiv.org/abs/2207.06214</a>.</p></td>
 </tr>
 </tbody>
 </table>
@@ -305,6 +305,7 @@
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.data.</span></span><span class="sig-name descname"><span class="pre">Benthic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">root</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transform</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">first_order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/data.html#Benthic"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.data.Benthic" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#probly.data.DCICDataset" title="probly.data.DCICDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">DCICDataset</span></code></a></p>
 <p>Implementation of the Benthic dataset.</p>
+<p>The dataset can be found at <a class="reference external" href="https://zenodo.org/records/7180818">https://zenodo.org/records/7180818</a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -320,8 +321,8 @@
 <dt class="sig sig-object py" id="probly.data.CIFAR10H">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.data.</span></span><span class="sig-name descname"><span class="pre">CIFAR10H</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">root</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transform</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">download</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/data.html#CIFAR10H"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.data.CIFAR10H" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">CIFAR10</span></code></p>
-<p>A Dataset class for the CIFAR10H dataset.</p>
-<p>The dataset can be found at <a class="reference external" href="https://zenodo.org/records/7180818">https://zenodo.org/records/7180818</a>.</p>
+<p>A Dataset class for the CIFAR10H dataset introduced in <a class="reference external" href="https://arxiv.org/abs/1908.07086">https://arxiv.org/abs/1908.07086</a>.</p>
+<p>The dataset can be found at <a class="reference external" href="https://github.com/jcpeterson/cifar-10h">https://github.com/jcpeterson/cifar-10h</a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -349,8 +350,8 @@
 <dt class="sig sig-object py" id="probly.data.DCICDataset">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.data.</span></span><span class="sig-name descname"><span class="pre">DCICDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">root</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transform</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">first_order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/data.html#DCICDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.data.DCICDataset" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://pytorch.org/docs/stable/data.html#torch.utils.data.Dataset" title="(in PyTorch v2.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a></p>
-<p>A Dataset class for the DCICDataset.</p>
-<p>The dataset can be found at <a class="reference external" href="https://zenodo.org/records/7180818">https://zenodo.org/records/7180818</a>.</p>
+<p>A Dataset base class for the DCICDatasets introduced in <a class="reference external" href="https://arxiv.org/abs/2207.06214">https://arxiv.org/abs/2207.06214</a>.</p>
+<p>These datasets can be found at <a class="reference external" href="https://zenodo.org/records/7180818">https://zenodo.org/records/7180818</a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">

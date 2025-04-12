@@ -295,9 +295,9 @@
 <div class="viewcode-block" id="CIFAR10H">
 <a class="viewcode-back" href="../../api/probly.data.html#probly.data.CIFAR10H">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">CIFAR10H</span><span class="p">(</span><span class="n">torchvision</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">CIFAR10</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;A Dataset class for the CIFAR10H dataset.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A Dataset class for the CIFAR10H dataset introduced in https://arxiv.org/abs/1908.07086.</span>
 
-<span class="sd">    The dataset can be found at https://zenodo.org/records/7180818.</span>
+<span class="sd">    The dataset can be found at https://github.com/jcpeterson/cifar-10h.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        counts: torch.Tensor,</span>
@@ -323,9 +323,9 @@
 <div class="viewcode-block" id="DCICDataset">
 <a class="viewcode-back" href="../../api/probly.data.html#probly.data.DCICDataset">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">DCICDataset</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">Dataset</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;A Dataset class for the DCICDataset.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A Dataset base class for the DCICDatasets introduced in https://arxiv.org/abs/2207.06214.</span>
 
-<span class="sd">    The dataset can be found at https://zenodo.org/records/7180818.</span>
+<span class="sd">    These datasets can be found at https://zenodo.org/records/7180818.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        root: str, root directory of the dataset</span>
@@ -420,7 +420,10 @@
 <div class="viewcode-block" id="Benthic">
 <a class="viewcode-back" href="../../api/probly.data.html#probly.data.Benthic">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">Benthic</span><span class="p">(</span><span class="n">DCICDataset</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Implementation of the Benthic dataset.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Implementation of the Benthic dataset.</span>
+
+<span class="sd">    The dataset can be found at https://zenodo.org/records/7180818.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">root</span><span class="p">:</span> <span class="n">Path</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span> <span class="n">transform</span><span class="p">:</span> <span class="n">Callable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">first_order</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize an instance of the Benthic dataset class.</span>
