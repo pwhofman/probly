@@ -16,9 +16,9 @@ if TYPE_CHECKING:
 
 
 class CIFAR10H(torchvision.datasets.CIFAR10):
-    """A Dataset class for the CIFAR10H dataset.
+    """A Dataset class for the CIFAR10H dataset introduced in https://arxiv.org/abs/1908.07086.
 
-    The dataset can be found at https://zenodo.org/records/7180818.
+    The dataset can be found at https://github.com/jcpeterson/cifar-10h.
 
     Attributes:
         counts: torch.Tensor,
@@ -41,9 +41,9 @@ class CIFAR10H(torchvision.datasets.CIFAR10):
 
 
 class DCICDataset(torch.utils.data.Dataset):
-    """A Dataset class for the DCICDataset.
+    """A Dataset base class for the DCICDatasets introduced in https://arxiv.org/abs/2207.06214.
 
-    The dataset can be found at https://zenodo.org/records/7180818.
+    These datasets can be found at https://zenodo.org/records/7180818.
 
     Attributes:
         root: str, root directory of the dataset
@@ -135,7 +135,10 @@ class DCICDataset(torch.utils.data.Dataset):
 
 
 class Benthic(DCICDataset):
-    """Implementation of the Benthic dataset."""
+    """Implementation of the Benthic dataset.
+
+    The dataset can be found at https://zenodo.org/records/7180818.
+    """
 
     def __init__(self, root: Path | str, transform: Callable | None = None, *, first_order: bool = True) -> None:
         """Initialize an instance of the Benthic dataset class.
