@@ -65,8 +65,8 @@ class DCICDataset(torch.utils.data.Dataset):
             transform: optional transform to apply to the data
             first_order: bool, whether to use first order data or class labels
         """
-        root = Path(root).expanduser() / "annotations.json"
-        with root.open() as f:
+        root = Path(root).expanduser()
+        with (Path(root).expanduser() / "annotations.json").open() as f:
             annotations = json.load(f)
 
         self.root = root.parent
