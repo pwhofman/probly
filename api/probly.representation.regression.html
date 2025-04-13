@@ -356,6 +356,30 @@
 </dl>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="probly.representation.regression.Evidential.sample">
+<span class="sig-name descname"><span class="pre">sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_samples</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/regression/evidential.html#Evidential.sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.regression.Evidential.sample" title="Link to this definition">¶</a></dt>
+<dd><p>Sample from the predicted distribution for a given input x.</p>
+<p>Returns a tensor of shape (n_instances, n_samples, 2) representing the parameters of the sampled normal
+distributions. The mean of the normal distribution is the gamma parameter and the variance is sampled from
+an inverse gamma distribution and divided by the nu parameter. The first dimension is the mean and
+the second dimension is the variance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>x</strong> (<a class="reference external" href="https://pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.6)"><em>Tensor</em></a>) – torch.Tensor, input data</p></li>
+<li><p><strong>n_samples</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>) – int, number of samples</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>torch.Tensor, samples</p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 <p class="rubric">Modules</p>
@@ -431,6 +455,7 @@
 <li><a class="reference internal" href="#probly.representation.regression.Evidential.forward"><code class="docutils literal notranslate"><span class="pre">Evidential.forward()</span></code></a></li>
 <li><a class="reference internal" href="#probly.representation.regression.Evidential.predict_pointwise"><code class="docutils literal notranslate"><span class="pre">Evidential.predict_pointwise()</span></code></a></li>
 <li><a class="reference internal" href="#probly.representation.regression.Evidential.predict_representation"><code class="docutils literal notranslate"><span class="pre">Evidential.predict_representation()</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.regression.Evidential.sample"><code class="docutils literal notranslate"><span class="pre">Evidential.sample()</span></code></a></li>
 </ul>
 </li>
 </ul>

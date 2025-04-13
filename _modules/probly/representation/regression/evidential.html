@@ -367,10 +367,34 @@
                     <span class="n">name</span><span class="p">,</span>
                     <span class="n">NormalInverseGammaLinear</span><span class="p">(</span><span class="n">child</span><span class="o">.</span><span class="n">in_features</span><span class="p">,</span> <span class="n">child</span><span class="o">.</span><span class="n">out_features</span><span class="p">),</span>
                 <span class="p">)</span>
-                <span class="k">break</span></div>
+                <span class="k">break</span>
 
+<div class="viewcode-block" id="Evidential.sample">
+<a class="viewcode-back" href="../../../../api/probly.representation.regression.evidential.html#probly.representation.regression.Evidential.sample">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sample from the predicted distribution for a given input x.</span>
 
-    <span class="c1"># TODO: Implement sample method</span>
+<span class="sd">        Returns a tensor of shape (n_instances, n_samples, 2) representing the parameters of the sampled normal</span>
+<span class="sd">        distributions. The mean of the normal distribution is the gamma parameter and the variance is sampled from</span>
+<span class="sd">        an inverse gamma distribution and divided by the nu parameter. The first dimension is the mean and</span>
+<span class="sd">        the second dimension is the variance.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x: torch.Tensor, input data</span>
+<span class="sd">            n_samples: int, number of samples</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            torch.Tensor, samples</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">inverse_gamma</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">InverseGamma</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="s2">&quot;alpha&quot;</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="s2">&quot;beta&quot;</span><span class="p">])</span>
+        <span class="n">sigma2</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">inverse_gamma</span><span class="o">.</span><span class="n">sample</span><span class="p">()</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_samples</span><span class="p">)])</span><span class="o">.</span><span class="n">swapaxes</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">normal_mu</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="s2">&quot;gamma&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">normal_sigma2</span> <span class="o">=</span> <span class="n">sigma2</span> <span class="o">/</span> <span class="n">x</span><span class="p">[</span><span class="s2">&quot;nu&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">((</span><span class="n">normal_mu</span><span class="p">,</span> <span class="n">normal_sigma2</span><span class="p">),</span> <span class="n">dim</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">x</span></div>
+</div>
+
 </pre></div>
         </article>
       </div>
