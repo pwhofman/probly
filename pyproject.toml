@@ -198,7 +198,8 @@ convention = "google"
 ]
 "__init__.py" = [
     "I002",
-    "RUF022"  # to allow __all__ be not alphabetically ordered
+    "RUF022",  # to allow __all__ be not alphabetically ordered
+    "PLC0414", # to allow import module as module in inits, contradicts F401
 ]
 "*.ipynb" = ["T20", "NPY002", "I002"]
 "docs/**/*.py" = ["INP001", "PTH", "I002"]
