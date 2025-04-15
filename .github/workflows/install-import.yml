@@ -24,4 +24,4 @@ jobs:
         run: uv pip install .
 
       - name: Test import
-        run: uv run python -c "import importlib.metadata; import probly; print(importlib.metadata.version("probly")); print('✅ probly imported successfully')"
+        run: uv run python -c "import probly; print('✅ probly imported successfully')"
