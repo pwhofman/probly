@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import matplotlib.pyplot as plt
+import mpltern  # noqa: F401, required for ternary projection, do not remove
 
 if TYPE_CHECKING:
     import numpy as np
