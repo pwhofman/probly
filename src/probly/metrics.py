@@ -118,6 +118,35 @@ def coverage_convex_hull(probs: np.ndarray, targets: np.ndarray) -> float:
     return cov
 
 
+def covered_efficiency(preds: np.ndarray, targets: np.ndarray) -> float:
+    """Compute the efficiency of the set-valued predictions for which the ground truth is covered.
+
+    In the case of a set over classes this is the mean of the number of classes in the set. In the
+    case of a credal set, this is computed by the mean difference between the upper and lower
+    probabilities.
+
+    Args:
+        preds: The predictions as an array of shape `(n_instances, n_classes)` or
+            of shape `(n_instances, n_samples, n_classes)`.
+        targets: The true labels as an array of shape (n_instances, n_classes).
+
+    Returns:
+        ceff: The efficiency of the set-valued predictions for which the ground truth is covered.
+
+    """
+    if preds.ndim == 2:
+        covered = preds[np.arange(preds.shape[0]), targets]
+        ceff = np.mean(preds[covered])
+    elif preds.ndim == 3:
+        probs_lower = np.round(np.nanmin(preds, axis=1), decimals=3)
+        probs_upper = np.round(np.nanmax(preds, axis=1), decimals=3)
+        covered = np.all((probs_lower <= targets) & (targets <= probs_upper), axis=1)
+        ceff = np.mean((probs_upper - probs_lower)[covered])
+    else:
+        raise ValueError(f"Expected 2D or 3D array, got {preds.ndim}D")
+    return float(ceff)
+
+
 def log_loss(probs: np.ndarray, targets: np.ndarray) -> float | np.ndarray:
     """Compute the log loss of the predicted probabilities.
 
