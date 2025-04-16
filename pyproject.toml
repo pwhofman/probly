@@ -48,6 +48,7 @@ where = ["./src"]
 include = ["probly*"]
 
 [tool.setuptools.dynamic]
+version = {attr = "probly.__version__"}
 readme = {file = ["README.md", "CHANGELOG.md"], content-type = "text/markdown"}
 
 [project.urls]
