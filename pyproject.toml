@@ -4,8 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "probly"
-version = "0.2.0"
-dynamic = ["readme"]
+dynamic = ["version", "readme"]
 description = "Uncertainty Representation and Quantification for Machine Learning"
 license = "MIT"
 requires-python = ">=3.10"
