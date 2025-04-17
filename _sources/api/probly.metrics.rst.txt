@@ -11,6 +11,7 @@
       brier_score
       coverage
       coverage_convex_hull
+      covered_efficiency
       efficiency
       expected_calibration_error
       log_loss

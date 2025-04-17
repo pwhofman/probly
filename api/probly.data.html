@@ -297,6 +297,21 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#probly.data.DCICDataset" title="probly.data.DCICDataset"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DCICDataset</span></code></a>(root[, transform, first_order])</p></td>
 <td><p>A Dataset base class for the DCICDatasets introduced in <a class="reference external" href="https://arxiv.org/abs/2207.06214">https://arxiv.org/abs/2207.06214</a>.</p></td>
 </tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#probly.data.ImageNetReaL" title="probly.data.ImageNetReaL"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ImageNetReaL</span></code></a>(root[, transform])</p></td>
+<td><p>A Dataset class for the ImageNet ReaL dataset introduced in <a class="reference external" href="https://arxiv.org/abs/2006.07159">https://arxiv.org/abs/2006.07159</a>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#probly.data.Plankton" title="probly.data.Plankton"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Plankton</span></code></a>(root[, transform, first_order])</p></td>
+<td><p>Implementation of the Plankton dataset.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#probly.data.QualityMRI" title="probly.data.QualityMRI"><code class="xref py py-obj docutils literal notranslate"><span class="pre">QualityMRI</span></code></a>(root[, transform, first_order])</p></td>
+<td><p>Implementation of the QualityMRI dataset.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#probly.data.Treeversity1" title="probly.data.Treeversity1"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Treeversity1</span></code></a>(root[, transform, first_order])</p></td>
+<td><p>Implementation of the Treeversity#1 dataset.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#probly.data.Treeversity6" title="probly.data.Treeversity6"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Treeversity6</span></code></a>(root[, transform, first_order])</p></td>
+<td><p>Implementation of the Treeversity#6 dataset.</p></td>
+</tr>
 </tbody>
 </table>
 </div>
@@ -416,6 +431,99 @@
 
 </dd></dl>
 
+<dl class="py class">
+<dt class="sig sig-object py" id="probly.data.ImageNetReaL">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.data.</span></span><span class="sig-name descname"><span class="pre">ImageNetReaL</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">root</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transform</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/data.html#ImageNetReaL"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.data.ImageNetReaL" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ImageNet</span></code></p>
+<p>A Dataset class for the ImageNet ReaL dataset introduced in <a class="reference external" href="https://arxiv.org/abs/2006.07159">https://arxiv.org/abs/2006.07159</a>.</p>
+<p>This dataset is a re-labeled version of the ImageNet validation set, where each image can belong
+to multiple classes resulting in a distribution over classes.
+The ImageNet dataset needs to be downloaded from <a class="reference external" href="https://www.image-net.org">https://www.image-net.org</a> and the first order labels can be
+downloaded from <a class="reference external" href="https://github.com/google-research/reassessed-imagenet">https://github.com/google-research/reassessed-imagenet</a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>root</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>)</p></li>
+<li><p><strong>transform</strong> (<em>Callable</em><em> | </em><em>None</em>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="probly.data.ImageNetReaL.dists">
+<span class="sig-name descname"><span class="pre">dists</span></span><a class="headerlink" href="#probly.data.ImageNetReaL.dists" title="Link to this definition">¶</a></dt>
+<dd><p>list, list of distributions over target classes.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="probly.data.Plankton">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.data.</span></span><span class="sig-name descname"><span class="pre">Plankton</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">root</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transform</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">first_order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/data.html#Plankton"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.data.Plankton" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#probly.data.DCICDataset" title="probly.data.DCICDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">DCICDataset</span></code></a></p>
+<p>Implementation of the Plankton dataset.</p>
+<p>The dataset can be found at <a class="reference external" href="https://zenodo.org/records/7180818">https://zenodo.org/records/7180818</a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>root</strong> (<em>Path</em><em> | </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>)</p></li>
+<li><p><strong>transform</strong> (<em>Callable</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>first_order</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="probly.data.QualityMRI">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.data.</span></span><span class="sig-name descname"><span class="pre">QualityMRI</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">root</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transform</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">first_order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/data.html#QualityMRI"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.data.QualityMRI" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#probly.data.DCICDataset" title="probly.data.DCICDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">DCICDataset</span></code></a></p>
+<p>Implementation of the QualityMRI dataset.</p>
+<p>The dataset can be found at <a class="reference external" href="https://zenodo.org/records/7180818">https://zenodo.org/records/7180818</a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>root</strong> (<em>Path</em><em> | </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>)</p></li>
+<li><p><strong>transform</strong> (<em>Callable</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>first_order</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="probly.data.Treeversity1">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.data.</span></span><span class="sig-name descname"><span class="pre">Treeversity1</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">root</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transform</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">first_order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/data.html#Treeversity1"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.data.Treeversity1" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#probly.data.DCICDataset" title="probly.data.DCICDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">DCICDataset</span></code></a></p>
+<p>Implementation of the Treeversity#1 dataset.</p>
+<p>The dataset can be found at <a class="reference external" href="https://zenodo.org/records/7180818">https://zenodo.org/records/7180818</a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>root</strong> (<em>Path</em><em> | </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>)</p></li>
+<li><p><strong>transform</strong> (<em>Callable</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>first_order</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="probly.data.Treeversity6">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.data.</span></span><span class="sig-name descname"><span class="pre">Treeversity6</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">root</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transform</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">first_order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/data.html#Treeversity6"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.data.Treeversity6" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#probly.data.DCICDataset" title="probly.data.DCICDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">DCICDataset</span></code></a></p>
+<p>Implementation of the Treeversity#6 dataset.</p>
+<p>The dataset can be found at <a class="reference external" href="https://zenodo.org/records/7180818">https://zenodo.org/records/7180818</a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>root</strong> (<em>Path</em><em> | </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>)</p></li>
+<li><p><strong>transform</strong> (<em>Callable</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>first_order</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
 
         </article>
@@ -491,6 +599,14 @@
 <li><a class="reference internal" href="#probly.data.DCICDataset.targets"><code class="docutils literal notranslate"><span class="pre">DCICDataset.targets</span></code></a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#probly.data.ImageNetReaL"><code class="docutils literal notranslate"><span class="pre">ImageNetReaL</span></code></a><ul>
+<li><a class="reference internal" href="#probly.data.ImageNetReaL.dists"><code class="docutils literal notranslate"><span class="pre">ImageNetReaL.dists</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#probly.data.Plankton"><code class="docutils literal notranslate"><span class="pre">Plankton</span></code></a></li>
+<li><a class="reference internal" href="#probly.data.QualityMRI"><code class="docutils literal notranslate"><span class="pre">QualityMRI</span></code></a></li>
+<li><a class="reference internal" href="#probly.data.Treeversity1"><code class="docutils literal notranslate"><span class="pre">Treeversity1</span></code></a></li>
+<li><a class="reference internal" href="#probly.data.Treeversity6"><code class="docutils literal notranslate"><span class="pre">Treeversity6</span></code></a></li>
 </ul>
 </li>
 </ul>

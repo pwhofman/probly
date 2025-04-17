@@ -290,6 +290,7 @@
 
 <span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
 
 
 <div class="viewcode-block" id="CIFAR10H">
@@ -317,6 +318,58 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">counts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">first_order_path</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">counts</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">counts</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">targets</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdim</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="ImageNetReaL">
+<a class="viewcode-back" href="../../api/probly.data.html#probly.data.ImageNetReaL">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ImageNetReaL</span><span class="p">(</span><span class="n">torchvision</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">ImageNet</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A Dataset class for the ImageNet ReaL dataset introduced in https://arxiv.org/abs/2006.07159.</span>
+
+<span class="sd">    This dataset is a re-labeled version of the ImageNet validation set, where each image can belong</span>
+<span class="sd">    to multiple classes resulting in a distribution over classes.</span>
+<span class="sd">    The ImageNet dataset needs to be downloaded from https://www.image-net.org and the first order labels can be</span>
+<span class="sd">    downloaded from https://github.com/google-research/reassessed-imagenet.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        dists: list, list of distributions over target classes.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">root</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">transform</span><span class="p">:</span> <span class="n">Callable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize an instance of the ImageNetReaL class.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            root: str, root directory of the dataset</span>
+<span class="sd">            transform: optional transform to apply to the data</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="n">root</span><span class="p">,</span> <span class="n">split</span><span class="o">=</span><span class="s2">&quot;val&quot;</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">transform</span><span class="p">)</span>
+        <span class="n">root</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">root</span><span class="p">)</span><span class="o">.</span><span class="n">expanduser</span><span class="p">()</span>
+        <span class="k">with</span> <span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">root</span><span class="p">)</span><span class="o">.</span><span class="n">expanduser</span><span class="p">()</span> <span class="o">/</span> <span class="s2">&quot;reassessed-imagenet-master/real.json&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">open</span><span class="p">()</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">real</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+        <span class="n">real_labels</span> <span class="o">=</span> <span class="p">{</span><span class="sa">f</span><span class="s2">&quot;ILSVRC2012_val_</span><span class="si">{</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="si">:</span><span class="s2">08d</span><span class="si">}</span><span class="s2">.JPEG&quot;</span><span class="p">:</span> <span class="n">labels</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">labels</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">real</span><span class="p">)}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dists</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">img</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">samples</span><span class="p">:</span>
+            <span class="n">labels</span> <span class="o">=</span> <span class="n">real_labels</span><span class="p">[</span><span class="n">img</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
+            <span class="n">dist</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">classes</span><span class="p">))</span>
+            <span class="n">dist</span><span class="p">[</span><span class="n">labels</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="n">dist</span> <span class="o">=</span> <span class="n">dist</span> <span class="o">/</span> <span class="n">dist</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dists</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dist</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the item at the specified index.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            index (int): Index</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            tuple: (sample, dist) where dist is a distribution over target classes.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">path</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">samples</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+        <span class="n">sample</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">loader</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">sample</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">sample</span><span class="p">)</span>
+        <span class="n">dist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dists</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">sample</span><span class="p">,</span> <span class="n">dist</span></div>
 
 
 
@@ -434,6 +487,86 @@
 <span class="sd">            first_order: bool, whether to use first order data or class labels</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">root</span><span class="p">)</span> <span class="o">/</span> <span class="s2">&quot;Benthic&quot;</span><span class="p">,</span> <span class="n">transform</span><span class="p">,</span> <span class="n">first_order</span><span class="o">=</span><span class="n">first_order</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="Plankton">
+<a class="viewcode-back" href="../../api/probly.data.html#probly.data.Plankton">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Plankton</span><span class="p">(</span><span class="n">DCICDataset</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Implementation of the Plankton dataset.</span>
+
+<span class="sd">    The dataset can be found at https://zenodo.org/records/7180818.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">root</span><span class="p">:</span> <span class="n">Path</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span> <span class="n">transform</span><span class="p">:</span> <span class="n">Callable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">first_order</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize an instance of the Plankton dataset class.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            root: Path or str, root directory of the dataset</span>
+<span class="sd">            transform: optional transform to apply to the data</span>
+<span class="sd">            first_order: bool, whether to use first order data or class labels</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">root</span><span class="p">)</span> <span class="o">/</span> <span class="s2">&quot;Plankton&quot;</span><span class="p">,</span> <span class="n">transform</span><span class="p">,</span> <span class="n">first_order</span><span class="o">=</span><span class="n">first_order</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="QualityMRI">
+<a class="viewcode-back" href="../../api/probly.data.html#probly.data.QualityMRI">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">QualityMRI</span><span class="p">(</span><span class="n">DCICDataset</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Implementation of the QualityMRI dataset.</span>
+
+<span class="sd">    The dataset can be found at https://zenodo.org/records/7180818.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">root</span><span class="p">:</span> <span class="n">Path</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span> <span class="n">transform</span><span class="p">:</span> <span class="n">Callable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">first_order</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize an instance of the QualityMRI dataset class.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            root: Path or str, root directory of the dataset</span>
+<span class="sd">            transform: optional transform to apply to the data</span>
+<span class="sd">            first_order: bool, whether to use first order data or class labels</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">root</span><span class="p">)</span> <span class="o">/</span> <span class="s2">&quot;QualityMRI&quot;</span><span class="p">,</span> <span class="n">transform</span><span class="p">,</span> <span class="n">first_order</span><span class="o">=</span><span class="n">first_order</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="Treeversity1">
+<a class="viewcode-back" href="../../api/probly.data.html#probly.data.Treeversity1">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Treeversity1</span><span class="p">(</span><span class="n">DCICDataset</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Implementation of the Treeversity#1 dataset.</span>
+
+<span class="sd">    The dataset can be found at https://zenodo.org/records/7180818.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">root</span><span class="p">:</span> <span class="n">Path</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span> <span class="n">transform</span><span class="p">:</span> <span class="n">Callable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">first_order</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize an instance of the Treeversity#1 dataset class.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            root: Path or str, root directory of the dataset</span>
+<span class="sd">            transform: optional transform to apply to the data</span>
+<span class="sd">            first_order: bool, whether to use first order data or class labels</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">root</span><span class="p">)</span> <span class="o">/</span> <span class="s2">&quot;Treeversity#1&quot;</span><span class="p">,</span> <span class="n">transform</span><span class="p">,</span> <span class="n">first_order</span><span class="o">=</span><span class="n">first_order</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="Treeversity6">
+<a class="viewcode-back" href="../../api/probly.data.html#probly.data.Treeversity6">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Treeversity6</span><span class="p">(</span><span class="n">DCICDataset</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Implementation of the Treeversity#6 dataset.</span>
+
+<span class="sd">    The dataset can be found at https://zenodo.org/records/7180818.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">root</span><span class="p">:</span> <span class="n">Path</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span> <span class="n">transform</span><span class="p">:</span> <span class="n">Callable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">first_order</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize an instance of the Treeversity#6 dataset class.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            root: Path or str, root directory of the dataset</span>
+<span class="sd">            transform: optional transform to apply to the data</span>
+<span class="sd">            first_order: bool, whether to use first order data or class labels</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">root</span><span class="p">)</span> <span class="o">/</span> <span class="s2">&quot;Treeversity#6&quot;</span><span class="p">,</span> <span class="n">transform</span><span class="p">,</span> <span class="n">first_order</span><span class="o">=</span><span class="n">first_order</span><span class="p">)</span></div>
 
 </pre></div>
         </article>

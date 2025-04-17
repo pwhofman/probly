@@ -11,4 +11,9 @@
       Benthic
       CIFAR10H
       DCICDataset
+      ImageNetReaL
+      Plankton
+      QualityMRI
+      Treeversity1
+      Treeversity6
    
