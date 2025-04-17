@@ -13,6 +13,7 @@ import torchvision
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+    from typing import Any
 
 
 class CIFAR10H(torchvision.datasets.CIFAR10):
@@ -38,6 +39,55 @@ class CIFAR10H(torchvision.datasets.CIFAR10):
         self.counts = np.load(first_order_path)
         self.counts = torch.tensor(self.counts, dtype=torch.float32)
         self.targets = self.counts / self.counts.sum(dim=1, keepdim=True)
+
+
+class ImageNetReaL(torchvision.datasets.ImageNet):
+    """A Dataset class for the ImageNet ReaL dataset introduced in https://arxiv.org/abs/2006.07159.
+
+    This dataset is a re-labeled version of the ImageNet validation set, where each image can belong
+    to multiple classes resulting in a distribution over classes.
+    The ImageNet dataset needs to be downloaded from https://www.image-net.org and the first order labels can be
+    downloaded from https://github.com/google-research/reassessed-imagenet.
+
+    Attributes:
+        dists: list, list of distributions over target classes.
+    """
+
+    def __init__(self, root: str, transform: Callable | None = None) -> None:
+        """Initialize an instance of the ImageNetReaL class.
+
+        Args:
+            root: str, root directory of the dataset
+            transform: optional transform to apply to the data
+        """
+        super().__init__(root=root, split="val", transform=transform)
+        root = Path(root).expanduser()
+        with (Path(root).expanduser() / "reassessed-imagenet-master/real.json").open() as f:
+            real = json.load(f)
+        real_labels = {f"ILSVRC2012_val_{(i + 1):08d}.JPEG": labels for i, labels in enumerate(real)}
+        self.dists = []
+        for img, _ in self.samples:
+            labels = real_labels[img.split("/")[-1]]
+            dist = torch.zeros(len(self.classes))
+            dist[labels] = 1
+            dist = dist / dist.sum()
+            self.dists.append(dist)
+
+    def __getitem__(self, index: int) -> tuple[Any, Any]:
+        """Get the item at the specified index.
+
+        Args:
+            index (int): Index
+
+        Returns:
+            tuple: (sample, dist) where dist is a distribution over target classes.
+        """
+        path, _ = self.samples[index]
+        sample = self.loader(path)
+        if self.transform is not None:
+            sample = self.transform(sample)
+        dist = self.dists[index]
+        return sample, dist
 
 
 class DCICDataset(torch.utils.data.Dataset):
@@ -149,3 +199,71 @@ class Benthic(DCICDataset):
             first_order: bool, whether to use first order data or class labels
         """
         super().__init__(Path(root) / "Benthic", transform, first_order=first_order)
+
+
+class Plankton(DCICDataset):
+    """Implementation of the Plankton dataset.
+
+    The dataset can be found at https://zenodo.org/records/7180818.
+    """
+
+    def __init__(self, root: Path | str, transform: Callable | None = None, *, first_order: bool = True) -> None:
+        """Initialize an instance of the Plankton dataset class.
+
+        Args:
+            root: Path or str, root directory of the dataset
+            transform: optional transform to apply to the data
+            first_order: bool, whether to use first order data or class labels
+        """
+        super().__init__(Path(root) / "Plankton", transform, first_order=first_order)
+
+
+class QualityMRI(DCICDataset):
+    """Implementation of the QualityMRI dataset.
+
+    The dataset can be found at https://zenodo.org/records/7180818.
+    """
+
+    def __init__(self, root: Path | str, transform: Callable | None = None, *, first_order: bool = True) -> None:
+        """Initialize an instance of the QualityMRI dataset class.
+
+        Args:
+            root: Path or str, root directory of the dataset
+            transform: optional transform to apply to the data
+            first_order: bool, whether to use first order data or class labels
+        """
+        super().__init__(Path(root) / "QualityMRI", transform, first_order=first_order)
+
+
+class Treeversity1(DCICDataset):
+    """Implementation of the Treeversity#1 dataset.
+
+    The dataset can be found at https://zenodo.org/records/7180818.
+    """
+
+    def __init__(self, root: Path | str, transform: Callable | None = None, *, first_order: bool = True) -> None:
+        """Initialize an instance of the Treeversity#1 dataset class.
+
+        Args:
+            root: Path or str, root directory of the dataset
+            transform: optional transform to apply to the data
+            first_order: bool, whether to use first order data or class labels
+        """
+        super().__init__(Path(root) / "Treeversity#1", transform, first_order=first_order)
+
+
+class Treeversity6(DCICDataset):
+    """Implementation of the Treeversity#6 dataset.
+
+    The dataset can be found at https://zenodo.org/records/7180818.
+    """
+
+    def __init__(self, root: Path | str, transform: Callable | None = None, *, first_order: bool = True) -> None:
+        """Initialize an instance of the Treeversity#6 dataset class.
+
+        Args:
+            root: Path or str, root directory of the dataset
+            transform: optional transform to apply to the data
+            first_order: bool, whether to use first order data or class labels
+        """
+        super().__init__(Path(root) / "Treeversity#6", transform, first_order=first_order)
