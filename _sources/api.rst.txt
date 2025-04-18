@@ -5,6 +5,7 @@ API Reference
    :toctree: api/
    :recursive:
 
+   probly.calibration
    probly.representation
    probly.quantification
    probly.metrics
