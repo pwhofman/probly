@@ -10,7 +10,7 @@
 [![License](https://img.shields.io/badge/License-MIT-brightgreen.svg)](https://opensource.org/licenses/MIT)
 [![PePy](https://static.pepy.tech/badge/probly?style=flat-square)](https://pepy.tech/project/probly)
 [![PyPI status](https://img.shields.io/pypi/status/probly.svg?color=blue)](https://pypi.org/project/probly)
-![Contributions Welcome](https://img.shields.io/badge/contributions-welcome-brightgreen)
+[![Contributions Welcome](https://img.shields.io/badge/contributions-welcome-brightgreen)](.github/CONTRIBUTING.md)
 ![Last Commit](https://img.shields.io/github/last-commit/pwhofman/probly)
 </div>
 
