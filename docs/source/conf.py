@@ -6,6 +6,8 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 from __future__ import annotations
 
+import importlib
+import inspect
 import os
 import sys
 
@@ -31,7 +33,7 @@ extensions = [
     "sphinx.ext.autodoc",  # generates API documentation from docstrings
     "sphinx.ext.autosummary",  # generates .rst files for each module
     "sphinx_autodoc_typehints",  # optional, nice for type hints in docs
-    "sphinx.ext.viewcode",  # adds [source] links to code
+    "sphinx.ext.linkcode",  # adds [source] links to code that link to GitHub
     "sphinx.ext.napoleon",  # for Google-style docstrings
     "sphinx.ext.duration",  # optional, show the duration of the build
     "myst_parser",  # for markdown support
@@ -53,6 +55,40 @@ intersphinx_mapping = {
     "PIL": ("https://pillow.readthedocs.io/en/stable/", None),
     "torch": ("https://pytorch.org/docs/stable/", None),
 }
+
+
+def linkcode_resolve(domain: str, info: dict[str, str]) -> str | None:
+    """Resolve the link to the source code in GitHub.
+
+    This function is required by sphinx.ext.linkcode and is used to generate links to the source code on GitHub.
+
+    Args:
+        domain (str): The domain of the object.
+        info (dict[str, str]): The information about the object.
+
+    Returns:
+        str | None: The URL to the source code or None if not found.
+    """
+    if domain != "py" or not info["module"]:
+        return None
+
+    try:
+        module = importlib.import_module(info["module"])
+        obj = module
+        for part in info["fullname"].split("."):
+            obj = getattr(obj, part)
+        fn = inspect.getsourcefile(obj)
+        source, lineno = inspect.getsourcelines(obj)
+        root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+        relpath = os.path.relpath(fn, start=root)
+    except (ModuleNotFoundError, AttributeError, TypeError, OSError):
+        return None
+
+    base = "https://github.com/pwhofman/probly"
+    tag = "v0.2.0-pre-alpha" if version == "0.2.0" else f"v{version}"
+
+    return f"{base}/blob/{tag}/{relpath}#L{lineno}"
+
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
