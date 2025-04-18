@@ -9,6 +9,8 @@ from __future__ import annotations
 import os
 import sys
 
+import probly
+
 # -- Path setup --------------------------------------------------------------
 sys.path.insert(0, os.path.abspath("../../src"))
 sys.path.insert(0, os.path.abspath("../../examples"))
@@ -19,8 +21,8 @@ sys.path.insert(0, os.path.abspath("../../examples"))
 project = "probly"
 copyright = "2025, probly team"  # noqa: A001
 author = "probly team"
-release = "0.2.0"  # TODO: make automatic
-version = "0.2.0"
+release = probly.__version__
+version = probly.__version__
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
