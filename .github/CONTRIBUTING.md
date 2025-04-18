@@ -46,5 +46,5 @@ We use [Ruff](https://docs.astral.sh/ruff/) for linting and formatting, the rule
 However, if your development environment is set up correctly, the Ruff pre-commit hook should take care of this for you.
 
 ### Documentation
-If you are adding new features, make sure to add document them in the docstring;
+If you are adding new features, make sure to document them in the docstring;
 our docstrings follow the [Google Style Guide](https://google.github.io/styleguide/pyguide.html#docstrings).
