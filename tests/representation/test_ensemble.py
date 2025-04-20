@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 import torch
 
-from probly.representation.ensemble import Ensemble
+from probly.representation import Ensemble
 
 
 @pytest.fixture
