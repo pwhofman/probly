@@ -1,4 +1,4 @@
-"""Test for the ensemble module."""
+"""Test for the subensemble module."""
 
 from __future__ import annotations
 
