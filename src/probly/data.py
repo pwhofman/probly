@@ -68,9 +68,12 @@ class ImageNetReaL(torchvision.datasets.ImageNet):
         self.dists = []
         for img, _ in self.samples:
             labels = real_labels[img.split("/")[-1]]
-            dist = torch.zeros(len(self.classes))
-            dist[labels] = 1
-            dist = dist / dist.sum()
+            if labels:
+                dist = torch.zeros(len(self.classes))
+                dist[labels] = 1
+                dist = dist / dist.sum()
+            else:
+                dist = torch.ones(len(self.classes)) / len(self.classes)
             self.dists.append(dist)
 
     def __getitem__(self, index: int) -> tuple[Any, Any]:
