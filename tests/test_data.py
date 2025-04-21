@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from unittest.mock import mock_open, patch
 
 import numpy as np
 import torch
 
-from probly.data import CIFAR10H, ImageNetReaL
+from probly.data import CIFAR10H, Benthic, ImageNetReaL, Plankton, Treeversity1, Treeversity6
 
 
 def patch_cifar10_init(self, root, train, transform, download):  # noqa: ARG001, the init requires these arguments
@@ -40,3 +41,35 @@ def test_imagenetreal(tmp_path):
     dataset = ImageNetReaL(str(tmp_path))
     for dist in dataset.dists:
         assert torch.isclose(torch.sum(dist), torch.tensor(1.0))
+
+
+@patch("probly.data.DCICDataset.__init__", return_value=None)
+def test_benthic(mock_dcic_init):
+    root = "some/path"
+    _ = Benthic(root, first_order=False)
+    expected = Path(root) / "Benthic"
+    mock_dcic_init.assert_called_once_with(expected, None, first_order=False)
+
+
+@patch("probly.data.DCICDataset.__init__", return_value=None)
+def test_plankton(mock_dcic_init):
+    root = "some/path"
+    _ = Plankton(root, first_order=False)
+    expected = Path(root) / "Plankton"
+    mock_dcic_init.assert_called_once_with(expected, None, first_order=False)
+
+
+@patch("probly.data.DCICDataset.__init__", return_value=None)
+def test_treeversity1(mock_dcic_init):
+    root = "some/path"
+    _ = Treeversity1(root, first_order=False)
+    expected = Path(root) / "Treeversity#1"
+    mock_dcic_init.assert_called_once_with(expected, None, first_order=False)
+
+
+@patch("probly.data.DCICDataset.__init__", return_value=None)
+def test_treeversity6(mock_dcic_init):
+    root = "some/path"
+    _ = Treeversity6(root, first_order=False)
+    expected = Path(root) / "Treeversity#6"
+    mock_dcic_init.assert_called_once_with(expected, None, first_order=False)
