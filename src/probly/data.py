@@ -26,7 +26,7 @@ class CIFAR10H(torchvision.datasets.CIFAR10):
         targets: torch.Tensor size (n_instances, n_classes), first-order distribution
     """
 
-    def __init__(self, root: str, transform: Callable | None = None, *, download: bool = False) -> None:
+    def __init__(self, root: str, transform: Callable[..., Any] | None = None, *, download: bool = False) -> None:
         """Initialize an instance of the CIFAR10H class.
 
         Args:
@@ -53,7 +53,7 @@ class ImageNetReaL(torchvision.datasets.ImageNet):
         dists: list, list of distributions over target classes.
     """
 
-    def __init__(self, root: str, transform: Callable | None = None) -> None:
+    def __init__(self, root: str | Path, transform: Callable[..., Any] | None = None) -> None:
         """Initialize an instance of the ImageNetReaL class.
 
         Args:
@@ -110,7 +110,9 @@ class DCICDataset(torch.utils.data.Dataset):
         # TODO remove unnecessary fields
     """
 
-    def __init__(self, root: Path | str, transform: Callable | None = None, *, first_order: bool = True) -> None:
+    def __init__(
+        self, root: Path | str, transform: Callable[..., Any] | None = None, *, first_order: bool = True
+    ) -> None:
         """Initialize an instance of the DCICDataset class.
 
         Args:
@@ -124,7 +126,7 @@ class DCICDataset(torch.utils.data.Dataset):
 
         self.root = root.parent
         self.transform = transform
-        self.image_labels = {}
+        self.image_labels: dict[str, list[int]] = {}
 
         for entry in annotations:
             for annotation in entry["annotations"]:
@@ -193,7 +195,9 @@ class Benthic(DCICDataset):
     The dataset can be found at https://zenodo.org/records/7180818.
     """
 
-    def __init__(self, root: Path | str, transform: Callable | None = None, *, first_order: bool = True) -> None:
+    def __init__(
+        self, root: Path | str, transform: Callable[..., Any] | None = None, *, first_order: bool = True
+    ) -> None:
         """Initialize an instance of the Benthic dataset class.
 
         Args:
@@ -210,7 +214,9 @@ class Plankton(DCICDataset):
     The dataset can be found at https://zenodo.org/records/7180818.
     """
 
-    def __init__(self, root: Path | str, transform: Callable | None = None, *, first_order: bool = True) -> None:
+    def __init__(
+        self, root: Path | str, transform: Callable[..., Any] | None = None, *, first_order: bool = True
+    ) -> None:
         """Initialize an instance of the Plankton dataset class.
 
         Args:
@@ -227,7 +233,9 @@ class QualityMRI(DCICDataset):
     The dataset can be found at https://zenodo.org/records/7180818.
     """
 
-    def __init__(self, root: Path | str, transform: Callable | None = None, *, first_order: bool = True) -> None:
+    def __init__(
+        self, root: Path | str, transform: Callable[..., Any] | None = None, *, first_order: bool = True
+    ) -> None:
         """Initialize an instance of the QualityMRI dataset class.
 
         Args:
@@ -244,7 +252,9 @@ class Treeversity1(DCICDataset):
     The dataset can be found at https://zenodo.org/records/7180818.
     """
 
-    def __init__(self, root: Path | str, transform: Callable | None = None, *, first_order: bool = True) -> None:
+    def __init__(
+        self, root: Path | str, transform: Callable[..., Any] | None = None, *, first_order: bool = True
+    ) -> None:
         """Initialize an instance of the Treeversity#1 dataset class.
 
         Args:
@@ -261,7 +271,9 @@ class Treeversity6(DCICDataset):
     The dataset can be found at https://zenodo.org/records/7180818.
     """
 
-    def __init__(self, root: Path | str, transform: Callable | None = None, *, first_order: bool = True) -> None:
+    def __init__(
+        self, root: Path | str, transform: Callable[..., Any] | None = None, *, first_order: bool = True
+    ) -> None:
         """Initialize an instance of the Treeversity#6 dataset class.
 
         Args:

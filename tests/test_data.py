@@ -2,9 +2,17 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+    from typing import Any
+
+    from torchvision.datasets import CIFAR10, ImageNet
+
 import json
 from pathlib import Path
-from unittest.mock import mock_open, patch
+from unittest.mock import MagicMock, mock_open, patch
 
 import numpy as np
 import torch
@@ -12,13 +20,13 @@ import torch
 from probly.data import CIFAR10H, Benthic, ImageNetReaL, Plankton, Treeversity1, Treeversity6
 
 
-def patch_cifar10_init(self, root, train, transform, download):  # noqa: ARG001, the init requires these arguments
+def patch_cifar10_init(self: CIFAR10, root: str, train: bool, transform: Callable[..., Any], download: bool) -> None:  # noqa: ARG001, the init requires these arguments
     self.root = root
 
 
 @patch("probly.data.np.load")
 @patch("probly.data.torchvision.datasets.CIFAR10.__init__", new=patch_cifar10_init)
-def test_cifar10h(mock_np_load, tmp_path):
+def test_cifar10h(mock_np_load: MagicMock, tmp_path: Path) -> None:
     counts = np.ones((5, 10))
     mock_np_load.return_value = counts
     dataset = CIFAR10H(root=str(tmp_path))
@@ -26,7 +34,7 @@ def test_cifar10h(mock_np_load, tmp_path):
     assert torch.allclose(torch.sum(dataset.targets, dim=1), torch.ones(5))
 
 
-def patch_imagenet_init(self, root, split, transform):  # noqa: ARG001, the init requires these arguments
+def patch_imagenet_init(self: ImageNet, root: str, split: str, transform: Callable[..., Any]) -> None:  # noqa: ARG001, the init requires these arguments
     self.samples = [
         ("some/path/ILSVRC2012_val_00000001.JPEG", 0),
         ("some/path/ILSVRC2012_val_00000002.JPEG", 1),
@@ -37,14 +45,14 @@ def patch_imagenet_init(self, root, split, transform):  # noqa: ARG001, the init
 
 @patch("probly.data.torchvision.datasets.ImageNet.__init__", new=patch_imagenet_init)
 @patch("pathlib.Path.open", new_callable=mock_open, read_data=json.dumps([[], [1], [1, 2]]))
-def test_imagenetreal(tmp_path):
+def test_imagenetreal(tmp_path: Path) -> None:
     dataset = ImageNetReaL(str(tmp_path))
     for dist in dataset.dists:
         assert torch.isclose(torch.sum(dist), torch.tensor(1.0))
 
 
 @patch("probly.data.DCICDataset.__init__", return_value=None)
-def test_benthic(mock_dcic_init):
+def test_benthic(mock_dcic_init: MagicMock) -> None:
     root = "some/path"
     _ = Benthic(root, first_order=False)
     expected = Path(root) / "Benthic"
@@ -52,7 +60,7 @@ def test_benthic(mock_dcic_init):
 
 
 @patch("probly.data.DCICDataset.__init__", return_value=None)
-def test_plankton(mock_dcic_init):
+def test_plankton(mock_dcic_init: MagicMock) -> None:
     root = "some/path"
     _ = Plankton(root, first_order=False)
     expected = Path(root) / "Plankton"
@@ -60,7 +68,7 @@ def test_plankton(mock_dcic_init):
 
 
 @patch("probly.data.DCICDataset.__init__", return_value=None)
-def test_treeversity1(mock_dcic_init):
+def test_treeversity1(mock_dcic_init: MagicMock) -> None:
     root = "some/path"
     _ = Treeversity1(root, first_order=False)
     expected = Path(root) / "Treeversity#1"
@@ -68,7 +76,7 @@ def test_treeversity1(mock_dcic_init):
 
 
 @patch("probly.data.DCICDataset.__init__", return_value=None)
-def test_treeversity6(mock_dcic_init):
+def test_treeversity6(mock_dcic_init: MagicMock) -> None:
     root = "some/path"
     _ = Treeversity6(root, first_order=False)
     expected = Path(root) / "Treeversity#6"
