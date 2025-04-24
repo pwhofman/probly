@@ -52,4 +52,4 @@ def out_of_distribution_detection(in_distribution: np.ndarray, out_distribution:
     preds = np.concatenate((in_distribution, out_distribution))
     labels = np.concatenate((np.zeros(len(in_distribution)), np.ones(len(out_distribution))))
     auroc = sm.roc_auc_score(labels, preds)
-    return auroc
+    return float(auroc)

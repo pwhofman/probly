@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterable
 
 
-def powerset(iterable: Iterable) -> list[tuple]:
+def powerset(iterable: Iterable[int]) -> list[tuple[()]]:
     """Generate the power set of a given iterable.
 
     Args:
@@ -27,7 +27,7 @@ def powerset(iterable: Iterable) -> list[tuple]:
     return list(itertools.chain.from_iterable(itertools.combinations(s, r) for r in range(len(s) + 1)))
 
 
-def capacity(q: np.ndarray, a: Iterable) -> np.ndarray:
+def capacity(q: np.ndarray, a: Iterable[int]) -> np.ndarray:
     """Compute the capacity of set q given set a.
 
     Args:
@@ -42,7 +42,7 @@ def capacity(q: np.ndarray, a: Iterable) -> np.ndarray:
     return min_capacity
 
 
-def moebius(q: np.ndarray, a: Iterable) -> np.ndarray:
+def moebius(q: np.ndarray, a: Iterable[int]) -> np.ndarray:
     """Compute the Moebius function of a set q given a set a.
 
     Args:

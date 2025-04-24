@@ -66,6 +66,7 @@ test = [
 lint = [
     "ruff>=0.11.2",  # for linting
     "pre-commit>=4.2.0",  # for running the linters pre-commit hooks
+    "mypy>=1.15.0" # for static type checking
 ]
 docs = [
     "sphinx>=8.0.0",
@@ -221,3 +222,11 @@ minversion = "8.0"
 [tool.coverage.report]
 fail_under = 0
 directory = "tests"
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+ignore_missing_imports = true # to avoid issues with torch, numpy, scipy, etc. stubs
+disallow_subclassing_any = false # to make sure we can subclass from e.g. torch.nn.Module
+disable_error_code = "misc" # disable errors caused by torch not typing decorators, wrapping would be overkill
+exclude = "docs"
