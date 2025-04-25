@@ -1,9 +1,10 @@
 """Init module for representation implementations."""
 
+from probly.representation import classification, regression
 from probly.representation.bayesian import Bayesian
 from probly.representation.dropconnect import DropConnect
 from probly.representation.dropout import Dropout
 from probly.representation.ensemble import Ensemble
 from probly.representation.subensemble import SubEnsemble
 
-__all__ = ["Bayesian", "DropConnect", "Dropout", "Ensemble", "SubEnsemble"]
+__all__ = ["classification", "regression", "Bayesian", "DropConnect", "Dropout", "Ensemble", "SubEnsemble"]
