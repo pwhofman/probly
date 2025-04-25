@@ -12,7 +12,7 @@ from probly.representation.dropout import Dropout
 def test_dropout(
     model_small_2d_2d: torch.nn.Module,
     probability: float,
-):
+) -> None:
     """Test for the dropout module.
 
     Args:

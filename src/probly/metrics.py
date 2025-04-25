@@ -115,7 +115,7 @@ def coverage_convex_hull(probs: np.ndarray, targets: np.ndarray) -> float:
         res = linprog(c=c, A_eq=a_eq, b_eq=b_eq, bounds=bounds)
         covered += res.success
     cov = covered / probs.shape[0]
-    return cov
+    return float(cov)
 
 
 def covered_efficiency(preds: np.ndarray, targets: np.ndarray) -> float:

@@ -25,7 +25,6 @@ class ConformalPrediction:
         """
         self.model = base
         self.alpha = alpha
-        self.q = None
 
     def __call__(self, x: torch.Tensor) -> torch.Tensor:
         """Forward pass of the model without conformal prediction.
@@ -74,13 +73,13 @@ class ConformalPrediction:
 
         """
         self.model.eval()
-        scores = []
+        scores_ = []
         with torch.no_grad():
             for inputs, targets in loader:
                 outputs = self.model(inputs)
-                score = 1 - F.softmax(outputs, dim=1).numpy()
+                score = 1 - F.softmax(outputs, dim=1)
                 score = score[torch.arange(score.shape[0]), targets]
-                scores.append(score)
-        scores = np.concatenate(scores)
+                scores_.append(score)
+        scores = torch.concatenate(scores_).numpy()
         n = scores.shape[0]
         self.q = np.quantile(scores, np.ceil((n + 1) * (1 - self.alpha)) / n, method="inverted_cdf")
