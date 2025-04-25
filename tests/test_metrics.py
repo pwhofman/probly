@@ -85,8 +85,8 @@ def test_efficiency(
     validate_metric(eff)
 
     probs, _ = sample_first_order_data
-    cov = efficiency(probs)
-    validate_metric(cov)
+    eff = efficiency(probs)
+    validate_metric(eff)
 
 
 def test_coverage_convex_hull(sample_first_order_data: tuple[np.array, np.array]) -> None:
