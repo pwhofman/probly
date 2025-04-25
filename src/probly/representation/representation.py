@@ -77,7 +77,7 @@ class DistributionRepresentation(Representation):
     """
 
     first_order_distribution: DistributionFirstOrder | str
-    second_order_distribution: DistributionSecondOrder | str = None
+    second_order_distribution: DistributionSecondOrder | str
 
 
 class Problem(str, Enum):
