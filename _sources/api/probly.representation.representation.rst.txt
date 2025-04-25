@@ -1,0 +1,18 @@
+probly.representation.representation
+====================================
+
+.. automodule:: probly.representation.representation
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      CredalRepresentation
+      CredalStructure
+      DistributionFirstOrder
+      DistributionRepresentation
+      DistributionSecondOrder
+      Problem
+      Representation
+   
