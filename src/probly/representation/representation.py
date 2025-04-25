@@ -17,9 +17,9 @@ class Representation(ABC):
     Attributes:
         data: The data representing the uncertainty.
         problem: The type of problem (e.g. classification, regression).
-        n_instances: The number of instances in the data.
-        n_samples: The number of samples in the data.
-        n_classes: The number of classes in the data.
+        n_instances: The number of data instances.
+        n_samples: The number of samples of first-order distributions.
+        n_targets: The number of targets to predict.
     """
 
     data: np.ndarray
@@ -28,7 +28,7 @@ class Representation(ABC):
     # Derived attributes
     n_instances: int = field(init=False)
     n_samples: int = field(init=False)
-    n_classes: int = field(init=False)
+    n_targets: int = field(init=False)
 
     def __post_init__(self) -> None:
         """Post init method to convert data to numpy array (if possible) and set derived attributes."""
@@ -43,7 +43,7 @@ class Representation(ABC):
         # Set the derived attributes / fields
         self.n_instances = self.data.shape[0]
         self.n_samples = self.data.shape[1]
-        self.n_classes = self.data.shape[2]
+        self.n_targets = self.data.shape[2]
 
 
 @dataclass
@@ -53,9 +53,9 @@ class CredalRepresentation(Representation):
     Attributes:
         data: The data representing the credal set.
         problem: The type of problem (e.g. classification, regression).
-        n_instances: The number of instances in the data.
-        n_samples: The number of samples in the data.
-        n_classes: The number of classes in the data.
+        n_instances: The number of data instances.
+        n_samples: The number of samples of first-order distributions.
+        n_targets: The number of targets to predict.
         structure: The structure of the credal set (e.g. convex hull, minmax interval, finite approx.).
     """
 
@@ -69,9 +69,9 @@ class DistributionRepresentation(Representation):
     Attributes:
         data: The data representing the second-order distribution.
         problem: The type of problem (e.g. classification, regression).
-        n_instances: The number of instances in the data.
-        n_samples: The number of samples in the data.
-        n_classes: The number of classes in the data.
+        n_instances: The number of data instances.
+        n_samples: The number of samples of first-order distributions.
+        n_targets: The number of targets to predict.
         first_order_distribution: The first-order distribution.
         second_order_distribution: The second-order distribution.
     """
