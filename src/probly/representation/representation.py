@@ -106,4 +106,4 @@ class DistributionSecondOrder(str, Enum):
     """Enum representing the second-order distribution."""
 
     DIRICHLET = "dirichlet"
-    SAMPLES = None
+    SAMPLES = "samples"
