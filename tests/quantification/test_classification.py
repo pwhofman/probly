@@ -7,6 +7,8 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pytest
 
+from tests.utils import validate_uncertainty
+
 if TYPE_CHECKING:
     from collections.abc import Callable
 
@@ -39,13 +41,6 @@ def sample_second_order_data() -> tuple[np.ndarray, np.ndarray]:
     probs2d = rng.dirichlet(np.ones(2), (10, 5))
     probs3d = rng.dirichlet(np.ones(3), (10, 5))
     return probs2d, probs3d
-
-
-def validate_uncertainty(uncertainty: np.array) -> None:
-    assert isinstance(uncertainty, np.ndarray)
-    assert not np.isnan(uncertainty).any()
-    assert not np.isinf(uncertainty).any()
-    assert (uncertainty >= 0).all()
 
 
 @pytest.mark.parametrize(

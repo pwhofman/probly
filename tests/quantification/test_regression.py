@@ -7,6 +7,8 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pytest
 
+from tests.utils import validate_uncertainty
+
 if TYPE_CHECKING:
     from collections.abc import Callable
 
@@ -28,13 +30,6 @@ def sample_second_order_params() -> np.ndarray:
     sigma2 = rng.uniform(1e-20, 100, (5, 10))
     params = np.stack((mu, sigma2), axis=2)
     return params
-
-
-def validate_uncertainty(uncertainty: np.array) -> None:
-    assert isinstance(uncertainty, np.ndarray)
-    assert not np.isnan(uncertainty).any()
-    assert not np.isinf(uncertainty).any()
-    assert (uncertainty >= 0).all()
 
 
 @pytest.mark.parametrize(

@@ -18,6 +18,7 @@ from probly.metrics import (
     spherical_score,
     zero_one_loss,
 )
+from tests.utils import validate_uncertainty
 
 
 @pytest.fixture
@@ -49,13 +50,6 @@ def validate_metric(metric: float) -> None:
     assert not math.isnan(metric)
     assert not math.isinf(metric)
     assert metric >= 0
-
-
-def validate_uncertainty(uncertainty: np.array) -> None:
-    assert isinstance(uncertainty, np.ndarray)
-    assert not np.isnan(uncertainty).any()
-    assert not np.isinf(uncertainty).any()
-    assert (uncertainty >= 0).all()
 
 
 def test_expected_calibration_error() -> None:
