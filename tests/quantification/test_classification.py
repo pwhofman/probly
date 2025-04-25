@@ -75,7 +75,7 @@ def test_uncertainty_function(
 
 @pytest.mark.parametrize("uncertainty_fn", [expected_loss, expected_entropy, expected_divergence])
 def test_loss_uncertainty_function(
-    uncertainty_fn: Callable[[np.ndarray, Callable[[np.array, np.array | None], np.array]], np.ndarray],
+    uncertainty_fn: Callable[[np.ndarray, Callable[[np.ndarray, np.ndarray | None], np.ndarray]], np.ndarray],
     sample_second_order_data: tuple[np.ndarray, np.ndarray],
 ) -> None:
     probs2d, probs3d = sample_second_order_data
