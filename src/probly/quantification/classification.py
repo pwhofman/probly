@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 from scipy.optimize import minimize
 from scipy.stats import entropy
+from tqdm import tqdm
 
 from probly.utils import moebius, powerset
 
@@ -222,7 +223,7 @@ def epistemic_uncertainty_distance(probs: np.ndarray) -> np.ndarray:
     constraints = {"type": "eq", "fun": lambda x: np.sum(x) - 1}
     bounds = [(0, 1)] * probs.shape[2]
     eu = np.empty(probs.shape[0])
-    for i in range(probs.shape[0]):
+    for i in tqdm(range(probs.shape[0])):
         res = minimize(fun=fun, x0=x0[i], bounds=bounds, constraints=constraints, args=probs[i])
         eu[i] = 0.5 * res.fun
     return eu
@@ -249,7 +250,7 @@ def upper_entropy(probs: np.ndarray, base: float = 2) -> np.ndarray:
     x0 = probs.mean(axis=1)
     constraints = {"type": "eq", "fun": lambda x: np.sum(x) - 1}
     ue = np.empty(probs.shape[0])
-    for i in range(probs.shape[0]):
+    for i in tqdm(range(probs.shape[0])):
         bounds = list(zip(np.min(probs[i], axis=0), np.max(probs[i], axis=0), strict=False))
         res = minimize(fun=fun, x0=x0[i], bounds=bounds, constraints=constraints)
         ue[i] = -res.fun
@@ -277,7 +278,7 @@ def lower_entropy(probs: np.ndarray, base: float = 2) -> np.ndarray:
     x0 = probs.mean(axis=1)
     constraints = {"type": "eq", "fun": lambda x: np.sum(x) - 1}
     le = np.empty(probs.shape[0])
-    for i in range(probs.shape[0]):
+    for i in tqdm(range(probs.shape[0])):
         bounds = list(zip(np.min(probs[i], axis=0), np.max(probs[i], axis=0), strict=False))
         res = minimize(fun=fun, x0=x0[i], bounds=bounds, constraints=constraints)
         le[i] = res.fun
@@ -306,7 +307,7 @@ def upper_entropy_convex_hull(probs: np.ndarray, base: float = 2) -> np.ndarray:
     constraints = {"type": "eq", "fun": lambda x: np.sum(x) - 1}
     bounds = [(0, 1)] * probs.shape[1]
     ue = np.empty(probs.shape[0])
-    for i in range(probs.shape[0]):
+    for i in tqdm(range(probs.shape[0])):
         res = minimize(fun=fun, args=probs[i], x0=w0, bounds=bounds, constraints=constraints)
         ue[i] = -res.fun
     return ue
@@ -334,7 +335,7 @@ def lower_entropy_convex_hull(probs: np.ndarray, base: float = 2) -> np.ndarray:
     constraints = {"type": "eq", "fun": lambda x: np.sum(x) - 1}
     bounds = [(0, 1)] * probs.shape[1]
     le = np.empty(probs.shape[0])
-    for i in range(probs.shape[0]):
+    for i in tqdm(range(probs.shape[0])):
         res = minimize(fun=fun, args=probs[i], x0=w0, bounds=bounds, constraints=constraints)
         le[i] = res.fun
     return le
@@ -356,7 +357,7 @@ def generalised_hartley(probs: np.ndarray, base: float = 2) -> np.ndarray:
     idxs = list(range(probs.shape[2]))  # list of class indices
     ps_a = powerset(idxs)  # powerset of all indices
     ps_a.pop(0)  # remove empty set
-    for a in ps_a:
+    for a in tqdm(ps_a):
         m_a = moebius(probs, a)
         gh += m_a * (np.log(len(a)) / np.log(base))
     return gh
