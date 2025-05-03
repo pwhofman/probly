@@ -12,6 +12,8 @@ __all__ = [
     "expected_calibration_error",
 ]
 
+ROUND_DECIMALS = 3  # Number of decimals to round probabilities to when computing coverage, efficiency, etc.
+
 
 def expected_calibration_error(probs: np.ndarray, labels: np.ndarray, num_bins: int = 10) -> float:
     """Compute the expected calibration error (ECE) of the predicted probabilities.
@@ -57,8 +59,8 @@ def coverage(preds: np.ndarray, targets: np.ndarray) -> float:
     if preds.ndim == 2:
         cov = np.mean(preds[np.arange(preds.shape[0]), targets])
     elif preds.ndim == 3:
-        probs_lower = np.round(np.nanmin(preds, axis=1), decimals=3)
-        probs_upper = np.round(np.nanmax(preds, axis=1), decimals=3)
+        probs_lower = np.round(np.nanmin(preds, axis=1), decimals=ROUND_DECIMALS)
+        probs_upper = np.round(np.nanmax(preds, axis=1), decimals=ROUND_DECIMALS)
         covered = np.all((probs_lower <= targets) & (targets <= probs_upper), axis=1)
         cov = np.mean(covered)
     else:
@@ -84,8 +86,8 @@ def efficiency(preds: np.ndarray) -> float:
     if preds.ndim == 2:
         eff = 1 - np.mean(preds)
     elif preds.ndim == 3:
-        probs_lower = np.round(np.nanmin(preds, axis=1), decimals=3)
-        probs_upper = np.round(np.nanmax(preds, axis=1), decimals=3)
+        probs_lower = np.round(np.nanmin(preds, axis=1), decimals=ROUND_DECIMALS)
+        probs_upper = np.round(np.nanmax(preds, axis=1), decimals=ROUND_DECIMALS)
         eff = 1 - np.mean(probs_upper - probs_lower)
     else:
         raise ValueError(f"Expected 2D or 3D array, got {preds.ndim}D")
@@ -139,8 +141,8 @@ def covered_efficiency(preds: np.ndarray, targets: np.ndarray) -> float:
         covered = preds[np.arange(preds.shape[0]), targets]
         ceff = 1 - np.mean(preds[covered])
     elif preds.ndim == 3:
-        probs_lower = np.round(np.nanmin(preds, axis=1), decimals=3)
-        probs_upper = np.round(np.nanmax(preds, axis=1), decimals=3)
+        probs_lower = np.round(np.nanmin(preds, axis=1), decimals=ROUND_DECIMALS)
+        probs_upper = np.round(np.nanmax(preds, axis=1), decimals=ROUND_DECIMALS)
         covered = np.all((probs_lower <= targets) & (targets <= probs_upper), axis=1)
         ceff = 1 - np.mean((probs_upper - probs_lower)[covered])
     else:
