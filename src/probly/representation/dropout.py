@@ -40,7 +40,9 @@ class Dropout(nn.Module):
         """
         return self.model(x)
 
-    def predict_pointwise(self, x: torch.Tensor, n_samples: int, logits: bool = False) -> torch.Tensor:
+    def predict_pointwise(
+        self, x: torch.Tensor, n_samples: int, logits: bool = False
+    ) -> torch.Tensor:
         """Forward pass that gives a point-wise prediction by taking the mean over the samples.
 
         Args:
@@ -51,10 +53,16 @@ class Dropout(nn.Module):
             torch.Tensor, point-wise prediction
         """
         if logits:
-            return torch.stack([self.model(x) for _ in range(n_samples)], dim=1).mean(dim=1)
-        return torch.stack([F.softmax(self.model(x), dim=1) for _ in range(n_samples)], dim=1).mean(dim=1)
+            return torch.stack([self.model(x) for _ in range(n_samples)], dim=1).mean(
+                dim=1
+            )
+        return torch.stack(
+            [F.softmax(self.model(x), dim=1) for _ in range(n_samples)], dim=1
+        ).mean(dim=1)
 
-    def predict_representation(self, x: torch.Tensor, n_samples: int, logits: bool = False) -> torch.Tensor:
+    def predict_representation(
+        self, x: torch.Tensor, n_samples: int, logits: bool = False
+    ) -> torch.Tensor:
         """Forward pass that gives an uncertainty representation.
 
         Args:
@@ -66,7 +74,9 @@ class Dropout(nn.Module):
         """
         if logits:
             return torch.stack([self.model(x) for _ in range(n_samples)], dim=1)
-        return torch.stack([F.softmax(self.model(x), dim=1) for _ in range(n_samples)], dim=1)
+        return torch.stack(
+            [F.softmax(self.model(x), dim=1) for _ in range(n_samples)], dim=1
+        )
 
     def _convert(self, base: nn.Module) -> None:
         """Convert base model to a dropout model.
@@ -87,7 +97,9 @@ class Dropout(nn.Module):
                         module, name, nn.Sequential(nn.Dropout(p=self.p), child)
                     )  # add dropout
                 else:
-                    if first_layer and not isinstance(child, nn.Sequential):  # ignore Sequential layers as first layers
+                    if first_layer and not isinstance(
+                        child, nn.Sequential
+                    ):  # ignore Sequential layers as first layers
                         first_layer = False  # skip first layer
                     apply_dropout(
                         child, first_layer=first_layer
@@ -95,7 +107,7 @@ class Dropout(nn.Module):
 
         apply_dropout(self.model)
 
-    def eval(self):
+    def eval(self) -> Dropout:
         """Sets the model to evaluation mode, but keeps the dropout layers active."""
         super().eval()
         for module in self.model.modules():

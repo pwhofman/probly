@@ -1,7 +1,6 @@
-"""
-Generic traverser helpers for neural networks.
+"""Generic traverser helpers for neural networks."""
 
-"""
+from __future__ import annotations
 
 from typing import Any
 
@@ -14,7 +13,7 @@ LAYER_COUNT = t.GlobalVariable[int](
 
 @t.computed
 def is_first_layer(s) -> bool:
-    "Whether the current layer is the first layer."
+    """Whether the current layer is the first layer."""
     return s[LAYER_COUNT] == 0
 
 

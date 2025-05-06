@@ -1,5 +1,3 @@
-from typing import TypeAlias
-
 from . import composition, core, decorators, generic
 
 ## Core
@@ -7,10 +5,10 @@ from . import composition, core, decorators, generic
 Variable = core.Variable
 GlobalVariable = core.GlobalVariable
 StackVariable = core.StackVariable
-core.ComputedVariable = core.ComputedVariable
-computed: TypeAlias = (
-    core.ComputedVariable
-)  # Alias for convenience (intended to be used as a decorator)
+ComputedVariable = core.ComputedVariable
+computed = (
+    ComputedVariable  # Alias for convenience (intended to be used as a decorator)
+)
 
 type State[T] = core.State[T]
 type TraverserResult[T] = core.TraverserResult[T]

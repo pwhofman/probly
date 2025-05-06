@@ -1,10 +1,12 @@
-import copy
+from __future__ import annotations
+
 from collections import OrderedDict
+import copy
 
 from torch.nn import Module, Sequential
 
 import probly.traverse as t
-import probly.traverse.generic as generic
+from probly.traverse import generic
 from probly.traverse.decorators import traverser
 
 from . import nn as tnn
@@ -55,9 +57,9 @@ torch_traverser = t.sequential(
 tnn.nn_traverser.register(Module, torch_traverser)
 
 
-@tnn.layer_count_traverser.register(vars=dict(count=tnn.LAYER_COUNT), update_vars=True)
+@tnn.layer_count_traverser.register(vars={"count": tnn.LAYER_COUNT}, update_vars=True)
 def _(obj: Module, count: int):
-    return obj, dict(count=count + 1)
+    return obj, {"count": count + 1}
 
 
 @tnn.layer_count_traverser.register

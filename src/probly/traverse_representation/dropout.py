@@ -1,4 +1,6 @@
-import torch.nn as nn
+from __future__ import annotations
+
+from torch import nn
 
 from probly.traverse import (
     singledispatch_traverser,
@@ -10,36 +12,34 @@ from .drop import Drop, P
 dropout_traverser = singledispatch_traverser(name="dropout_traverser")
 
 
-def prepend_dropout(obj: nn.Module, p: float):
+def _prepend_dropout(obj: nn.Module, p: float) -> nn.Sequential:
     return nn.Sequential(nn.Dropout(p=p), obj)
 
 
-def register(cls: type):
+def register(cls: type) -> None:
+    """Register a class to be prepended by Dropout layers."""
     dropout_traverser.register(
-        cls, prepend_dropout, skip_if=is_first_layer, vars=dict(p=P)
+        cls, _prepend_dropout, skip_if=is_first_layer, vars={"p": P}
     )
 
 
 @singledispatch_traverser
-def eval_traverser(obj: nn.Dropout):
+def _eval_dropout_traverser(obj: nn.Dropout) -> nn.Dropout:
     """Ensure that Dropout layers are active during evaluation."""
     return obj.train()
 
 
 class Dropout(Drop):
-    """
-    This class implements a dropout layer to be used for uncertainty quantification.
-    Args:
-        base: torch.nn.Module, The base model to be used for dropout.
-        p: float, The probability of dropping out a neuron.
+    """Implementation of a Dropout ensemble class to be used for uncertainty quantification.
 
     Attributes:
         p: float, The probability of dropout.
-        model: torch.nn.Module, The transformed model with Dropout layers.
+        model: torch.nn.Module, The model with Dropout layers.
+
     """
 
     _convert_traverser = dropout_traverser
-    _eval_traverser = eval_traverser
+    _eval_traverser = _eval_dropout_traverser
 
 
 register(nn.Linear)
