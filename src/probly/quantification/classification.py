@@ -1,14 +1,24 @@
-from collections.abc import Callable
+"""Collection of uncertainty quantification measures for classification settings."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import numpy as np
 from scipy.optimize import minimize
 from scipy.stats import entropy
+from tqdm import tqdm
 
-from ..utils import moebius, powerset
+from probly.utils import moebius, powerset
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 
 def total_entropy(probs: np.ndarray, base: float = 2) -> np.ndarray:
-    """Compute the total uncertainty using samples from a second-order distribution.
+    """Compute the total entropy as the total uncertainty.
+
+    The computation is based on samples from a second-order distribution.
 
     Args:
         probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
@@ -22,7 +32,9 @@ def total_entropy(probs: np.ndarray, base: float = 2) -> np.ndarray:
 
 
 def conditional_entropy(probs: np.ndarray, base: float = 2) -> np.ndarray:
-    """Compute the aleatoric uncertainty using samples from a second-order distribution.
+    """Compute conditional entropy as the aleatoric uncertainty.
+
+    The computation is based on samples from a second-order distribution.
 
     Args:
         probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
@@ -36,7 +48,9 @@ def conditional_entropy(probs: np.ndarray, base: float = 2) -> np.ndarray:
 
 
 def mutual_information(probs: np.ndarray, base: float = 2) -> np.ndarray:
-    """Compute the epistemic uncertainty using samples from a second-order distribution.
+    """Compute the mutual information as epistemic uncertainty.
+
+    The computation is based on samples from a second-order distribution.
 
     Args:
         probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
@@ -51,63 +65,65 @@ def mutual_information(probs: np.ndarray, base: float = 2) -> np.ndarray:
     return mi
 
 
-def expected_loss(probs: np.ndarray, loss_fn: Callable[[np.ndarray], np.ndarray]) -> np.ndarray:
-    """Computes the expected loss of the second-order distribution using samples
-    from the second-order distribution.
+def expected_loss(probs: np.ndarray, loss_fn: Callable[[np.ndarray, np.ndarray | None], np.ndarray]) -> np.ndarray:
+    """Compute the expected loss of the second-order distribution.
+
+    The computation is based on samples from a second-order distribution.
 
     Args:
         probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
-        loss_fn: Callable[[numpy.ndarray], numpy.ndarray]
+        loss_fn: Callable[[numpy.ndarray, np.ndarray | None], numpy.ndarray]
 
     Returns:
         el: numpy.ndarray, shape (n_instances,)
 
     """
     mean = np.mean(probs, axis=1)
-    el = np.sum(mean * loss_fn(mean), axis=1)
+    el = np.sum(mean * loss_fn(mean, None), axis=1)
     return el
 
 
-def expected_entropy(probs: np.ndarray, loss_fn: Callable[[np.ndarray], np.ndarray]) -> np.ndarray:
-    """Computes the expected entropy of the second-order distribution using samples
-    from the second-order distribution.
+def expected_entropy(probs: np.ndarray, loss_fn: Callable[[np.ndarray, np.ndarray | None], np.ndarray]) -> np.ndarray:
+    """Compute the expected entropy of the second-order distribution.
+
+    The computation is based on samples from a second-order distribution.
 
     Args:
         probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
-        loss_fn: Callable[[numpy.ndarray], numpy.ndarray]
+        loss_fn: Callable[[numpy.ndarray, np.ndarray | None], numpy.ndarray]
 
     Returns:
         ee: numpy.ndarray, shape (n_instances,)
 
     """
-    ee = np.mean(np.sum(probs * loss_fn(probs), axis=2), axis=1)
+    ee = np.mean(np.sum(probs * loss_fn(probs, None), axis=2), axis=1)
     return ee
 
 
 def expected_divergence(
-    probs: np.ndarray, loss_fn: Callable[[np.ndarray], np.ndarray]
+    probs: np.ndarray, loss_fn: Callable[[np.ndarray, np.ndarray | None], np.ndarray]
 ) -> np.ndarray:
-    """Computes the expected divergence to the mean of the second-order distribution using samples
-    from the second-order distribution.
+    """Compute the expected divergence to the mean of the second-order distribution.
+
+     The computation is based on samples from a second-order distribution.
 
     Args:
         probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
-        loss_fn: Callable[[numpy.ndarray], numpy.ndarray]
+        loss_fn: Callable[[numpy.ndarray, np.ndarray | None], numpy.ndarray]
 
     Returns:
         ed: numpy.ndarray, shape (n_instances,)
 
     """
     mean = np.mean(probs, axis=1)
-    ed = np.sum(mean * loss_fn(mean), axis=1) - np.mean(
-        np.sum(probs * loss_fn(probs), axis=2), axis=1
-    )
+    ed = np.sum(mean * loss_fn(mean, None), axis=1) - np.mean(np.sum(probs * loss_fn(probs, None), axis=2), axis=1)
     return ed
 
 
 def total_variance(probs: np.ndarray) -> np.ndarray:
-    """Computes the total uncertainty using variance-based measures based on samples from
-    a second-order distribution.
+    """Compute the total uncertainty using variance-based measures.
+
+    The computation is based on samples from a second-order distribution.
 
     Args:
         probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
@@ -122,8 +138,9 @@ def total_variance(probs: np.ndarray) -> np.ndarray:
 
 
 def expected_conditional_variance(probs: np.ndarray) -> np.ndarray:
-    """Computes the aleatoric uncertainty using variance-based measures based on samples from
-    a second-order distribution.
+    """Compute the aleatoric uncertainty using variance-based measures.
+
+     The computation is based on samples from a second-order distribution.
 
     Args:
         probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
@@ -137,8 +154,9 @@ def expected_conditional_variance(probs: np.ndarray) -> np.ndarray:
 
 
 def variance_conditional_expectation(probs: np.ndarray) -> np.ndarray:
-    """Computes the epistemic uncertainty using variance-based measures based on samples from
-    a second-order distribution.
+    """Compute the epistemic uncertainty using variance-based measures.
+
+     The computation is based on samples from a second-order distribution.
 
     Args:
         probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
@@ -154,6 +172,7 @@ def variance_conditional_expectation(probs: np.ndarray) -> np.ndarray:
 
 def total_uncertainty_distance(probs: np.ndarray) -> np.ndarray:
     """Compute the total uncertainty using samples from a second-order distribution.
+
     The measure of total uncertainty is from https://arxiv.org/pdf/2312.00995.
 
     Args:
@@ -170,13 +189,14 @@ def total_uncertainty_distance(probs: np.ndarray) -> np.ndarray:
 
 def aleatoric_uncertainty_distance(probs: np.ndarray) -> np.ndarray:
     """Compute the aleatoric uncertainty using samples from a second-order distribution.
+
     The measure of aleatoric uncertainty is from https://arxiv.org/pdf/2312.00995.
 
     Args:
         probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
 
     Returns:
-        tu: numpy.ndarray of shape (n_instances,)
+        au: numpy.ndarray of shape (n_instances,)
 
     """
     au = 1 - np.mean(np.max(probs, axis=2), axis=1)
@@ -185,6 +205,7 @@ def aleatoric_uncertainty_distance(probs: np.ndarray) -> np.ndarray:
 
 def epistemic_uncertainty_distance(probs: np.ndarray) -> np.ndarray:
     """Compute the epistemic uncertainty using samples from a second-order distribution.
+
     The measure of epistemic uncertainty is from https://arxiv.org/pdf/2312.00995.
 
     Args:
@@ -195,25 +216,25 @@ def epistemic_uncertainty_distance(probs: np.ndarray) -> np.ndarray:
 
     """
 
-    def fun(q, p):
-        f = np.mean(np.linalg.norm(p - q[None, :], ord=1, axis=1))
-        return f
+    def fun(q: np.ndarray, p: np.ndarray) -> np.ndarray:
+        return np.mean(np.linalg.norm(p - q[None, :], ord=1, axis=1))
 
     x0 = probs.mean(axis=1)
     constraints = {"type": "eq", "fun": lambda x: np.sum(x) - 1}
     bounds = [(0, 1)] * probs.shape[2]
     eu = np.empty(probs.shape[0])
-    for i in range(probs.shape[0]):
+    for i in tqdm(range(probs.shape[0])):
         res = minimize(fun=fun, x0=x0[i], bounds=bounds, constraints=constraints, args=probs[i])
         eu[i] = 0.5 * res.fun
     return eu
 
 
 def upper_entropy(probs: np.ndarray, base: float = 2) -> np.ndarray:
-    """Computes the upper entropy of a credal set. Given the probs array the lower and upper
-    probabilities are computed and the credal set is assumed to be a convex set including all
-    probability distributions in the interval [lower, upper] for all classes. The upper entropy
-    of this set is computed.
+    """Compute the upper entropy of a credal set.
+
+    Given the probs array the lower and upper probabilities are computed and the credal set is
+    assumed to be a convex set including all probability distributions in the interval [lower, upper]
+    for all classes. The upper entropy of this set is computed.
 
     Args:
         probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
@@ -223,13 +244,13 @@ def upper_entropy(probs: np.ndarray, base: float = 2) -> np.ndarray:
 
     """
 
-    def fun(x):
+    def fun(x: np.ndarray) -> np.ndarray:
         return -entropy(x, base=base)
 
     x0 = probs.mean(axis=1)
     constraints = {"type": "eq", "fun": lambda x: np.sum(x) - 1}
     ue = np.empty(probs.shape[0])
-    for i in range(probs.shape[0]):
+    for i in tqdm(range(probs.shape[0])):
         bounds = list(zip(np.min(probs[i], axis=0), np.max(probs[i], axis=0), strict=False))
         res = minimize(fun=fun, x0=x0[i], bounds=bounds, constraints=constraints)
         ue[i] = -res.fun
@@ -237,10 +258,11 @@ def upper_entropy(probs: np.ndarray, base: float = 2) -> np.ndarray:
 
 
 def lower_entropy(probs: np.ndarray, base: float = 2) -> np.ndarray:
-    """Computes the lower entropy of a credal set. Given the probs array the lower and upper
-    probabilities are computed and the credal set is assumed to be a convex set including all
-    probability distributions in the interval [lower, upper] for all classes. The lower entropy
-    of this set is computed.
+    """Compute the lower entropy of a credal set.
+
+    Given the probs array the lower and upper probabilities are computed and the credal set is
+    assumed to be a convex set including all probability distributions in the interval [lower, upper]
+    for all classes. The lower entropy of this set is computed.
 
     Args:
         probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
@@ -250,22 +272,79 @@ def lower_entropy(probs: np.ndarray, base: float = 2) -> np.ndarray:
 
     """
 
-    def fun(x):
+    def fun(x: np.ndarray) -> np.ndarray:
         return entropy(x, base=base)
 
     x0 = probs.mean(axis=1)
     constraints = {"type": "eq", "fun": lambda x: np.sum(x) - 1}
     le = np.empty(probs.shape[0])
-    for i in range(probs.shape[0]):
+    for i in tqdm(range(probs.shape[0])):
         bounds = list(zip(np.min(probs[i], axis=0), np.max(probs[i], axis=0), strict=False))
         res = minimize(fun=fun, x0=x0[i], bounds=bounds, constraints=constraints)
-        le[i] = -res.fun
+        le[i] = res.fun
+    return le
+
+
+def upper_entropy_convex_hull(probs: np.ndarray, base: float = 2) -> np.ndarray:
+    """Compute the upper entropy of a credal set.
+
+    Given the probs the convex hull defined by the extreme points in probs is considered.
+    The upper entropy of this set is computed.
+
+    Args:
+        probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
+        base: float, default=2
+    Returns:
+        ue: numpy.ndarray of shape (n_instances,)
+
+    """
+
+    def fun(w: np.ndarray, extrema: np.ndarray) -> np.ndarray:
+        prob = w @ extrema
+        return -entropy(prob, base=base)
+
+    w0 = np.ones(probs.shape[1]) / probs.shape[1]
+    constraints = {"type": "eq", "fun": lambda x: np.sum(x) - 1}
+    bounds = [(0, 1)] * probs.shape[1]
+    ue = np.empty(probs.shape[0])
+    for i in tqdm(range(probs.shape[0])):
+        res = minimize(fun=fun, args=probs[i], x0=w0, bounds=bounds, constraints=constraints)
+        ue[i] = -res.fun
+    return ue
+
+
+def lower_entropy_convex_hull(probs: np.ndarray, base: float = 2) -> np.ndarray:
+    """Compute the lower entropy of a credal set.
+
+    Given the probs the convex hull defined by the extreme points in probs is considered.
+    The lower entropy of this set is computed.
+
+    Args:
+        probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
+        base: float, default=2
+    Returns:
+        le: numpy.ndarray of shape (n_instances,)
+
+    """
+
+    def fun(w: np.ndarray, extrema: np.ndarray) -> np.ndarray:
+        prob = w @ extrema
+        return entropy(prob, base=base)
+
+    w0 = np.ones(probs.shape[1]) / probs.shape[1]
+    constraints = {"type": "eq", "fun": lambda x: np.sum(x) - 1}
+    bounds = [(0, 1)] * probs.shape[1]
+    le = np.empty(probs.shape[0])
+    for i in tqdm(range(probs.shape[0])):
+        res = minimize(fun=fun, args=probs[i], x0=w0, bounds=bounds, constraints=constraints)
+        le[i] = res.fun
     return le
 
 
 def generalised_hartley(probs: np.ndarray, base: float = 2) -> np.ndarray:
-    """Computes the generalised Hartley measure given the extreme points of
-    a credal set.
+    """Compute the generalised Hartley measure.
+
+     Based on the extreme points of a credal set the generalised Hartley measure is computed.
 
     Args:
         probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
@@ -278,7 +357,7 @@ def generalised_hartley(probs: np.ndarray, base: float = 2) -> np.ndarray:
     idxs = list(range(probs.shape[2]))  # list of class indices
     ps_a = powerset(idxs)  # powerset of all indices
     ps_a.pop(0)  # remove empty set
-    for a in ps_a:
+    for a in tqdm(ps_a):
         m_a = moebius(probs, a)
         gh += m_a * (np.log(len(a)) / np.log(base))
     return gh

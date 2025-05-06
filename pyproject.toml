@@ -4,23 +4,28 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "probly"
-version = "0.1.0"
-dynamic = ["readme"]
+dynamic = ["version", "readme"]
 description = "Uncertainty Representation and Quantification for Machine Learning"
 license = "MIT"
 requires-python = ">=3.12"
 dependencies = [
     # core
-    "matplotlib>=3.10.1",
-    "mpltern>=1.0.4",
-    "multimethod>=2.0",
-    "numpy<=2.1.2,>=2.0.0",
-    "scikit-learn>=1.6.1",
-    "torch>=2.6.0",
-    "torchvision>=0.21.0",
-    "tqdm>=4.67.1",
+    "scipy",
+    "matplotlib>=3.8.0",
+    "mpltern",
+    "numpy>=2.0.0",
+    "torch>=2.0.0",
+    "torchvision",
+    "scikit-learn",
+    "tqdm",
 ]
-authors = [{ name = "Paul Hofman", email = "paul.hofman@ifi.lmu.de" }]
+authors = [
+    {name = "Paul Hofman", email = "paul.hofman@ifi.lmu.de"},
+    {name = "Timo Löhr"},
+    {name = "Maximilian Muschalik"},
+    {name = "Clemens Damke"},
+    {name = "Alireza Javanmardi"}
+]
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
     "Intended Audience :: Developers",
@@ -42,42 +47,15 @@ where = ["./src"]
 include = ["probly*"]
 
 [tool.setuptools.dynamic]
-readme = { file = [
-    "README.md",
-    "CHANGELOG.md",
-], content-type = "text/markdown" }
+version = {attr = "probly.__version__"}
+readme = {file = ["README.md", "CHANGELOG.md"], content-type = "text/markdown"}
 
 [project.urls]
-# documentation = TODO: we need to add the documentation
+documentation = "https://pwhofman.github.io/probly"
 source = "https://github.com/pwhofman/probly"
 tracker = "https://github.com/pwhofman/probly/issues"
 changelog = "https://github.com/pwhofman/probly/blob/main/CHANGELOG.md"
 
-[project.scripts]
-probly = "probly:main"
-
-[project.optional-dependencies]
-cpu = ["torch==2.6.0"]
-cuda12 = ["torch==2.6.0"]
-
-[tool.uv]
-conflicts = [[{ extra = "cpu" }, { extra = "cuda12" }]]
-
-[tool.uv.sources]
-torch = [
-    { index = "torch-cpu", extra = "cpu" },
-    { index = "torch-cuda12", extra = "cuda12" },
-]
-
-[[tool.uv.index]]
-name = "torch-cpu"
-url = "https://download.pytorch.org/whl/cpu"
-explicit = true
-
-[[tool.uv.index]]
-name = "torch-cuda12"
-url = "https://download.pytorch.org/whl/cu124"
-explicit = true
 
 [dependency-groups]
 test = [
@@ -86,80 +64,79 @@ test = [
     "pytest-xdist>=3.6.1", # for parallel testing
 ]
 lint = [
-    "ruff>=0.11.2",      # for linting
-    "pre-commit>=4.2.0", # for running the linters pre-commit hooks
+    "ruff>=0.11.2",  # for linting
+    "pre-commit>=4.2.0",  # for running the linters pre-commit hooks
+    "mypy>=1.15.0" # for static type checking
+]
+docs = [
+    "sphinx>=8.0.0",
+    "furo",                     # Beautiful modern theme (or use sphinx-rtd-theme)
+    "myst-parser",              # Optional: Markdown support
+    "sphinx-copybutton",        # Optional: Adds copy buttons to code blocks
+    "sphinx-autodoc-typehints", # Optional: Show type hints in your API docs
 ]
 dev = [
     "ipykernel>=6.29.5",
     "notebook>=7.3.3",
     "ipywidgets",
-    { include-group = "test" },
-    { include-group = "lint" },
-    "pyright>=1.1.398",
+    {include-group = "test"},
+    {include-group = "lint"},
+    {include-group = "docs"},
 ]
 
 
 [tool.ruff]
-line-length = 100
+line-length = 120
 target-version = "py310"
-lint.select = [
+output-format = "full"
+
+[tool.ruff.lint]
+select = [
     "E",
     "F",
     "I",
     "UP",
     "A",
-    #"D"  # TODO: Enable this in the near future
-    #  "ANN", # Handled by mypy
-    #  "ARG",
-    #  "B",
-    #  "BLE",
-    #  "C4",
-    #  "D",
-    #  "E",
-    #  "ERA",
-    #  "F",
-    #  "FBT",
-    #  "I",
-    #  "INP",
-    #  "N",
-    #  "NPY",
-    #  "PD",
-    #  "PLC",
-    #  "PLE",
-    #  "PLR",
-    #  "PLW",
-    #  "PIE",
-    #  "PT",
-    #  "PTH",
-    #  "Q",
-    #  "PGH004",
-    #  "RET",
-    #  "RUF",
-    #  "C90",
-    #  "S",
-    #  "SIM",
-    #  "T10",
-    #  "T20",
-    #  "TID",
-    #  "TCH",
-    #  "UP",
-    #  "N",
-    #  "W",
-    #  "YTT",
+    "D",
+    "ANN",
+    "ARG",
+    "B",
+    "BLE",
+    "C4",
+    "ERA",
+    "FBT",
+    "INP",
+    "N",
+    "NPY",
+    "PD",
+    "PLC",
+    "PLE",
+    "PLR",
+    "PLW",
+    "PIE",
+    "PT",
+    "PTH",
+    "Q",
+    "PGH004",
+    "RET",
+    "RUF",
+    "C90",
+    "S",
+    "SIM",
+    "T10",
+    "T20",
+    "TID",
+    "TCH",
+    "W",
+    "YTT",
 ]
-lint.ignore = [
-    "N812",    # Checks for lowercase imports that are aliased to non-lowercase names.
-    "E501",    # Line too long
-    "D203",    # 1 blank line required before class docstring
-    "D211",    # No blank lines allowed before class docstring
-    "D213",    # Multi-line docstring summary should start at the second line
-    "N806",    # Variable X in function should be lowercase
-    "N803",    # Argument name `X` should be lowercase
-    "COM812",  # Trailing comma missing (conflicts with formatter)
+ignore = [
+    "N812", # Checks for lowercase imports that are aliased to non-lowercase names (e.g. torch.nn.functional as F)
+    "RET504", # Unnecessary assignment to {name} before return statement
     "PLR2004", # Magic value used in comparison, consider replacing {value} with a constant variable
-    "RET504",  # Unnecessary assignment to {name} before return statement
+    "FBT", # enforce keyword for bool
+    "PLR0913", # too many arguments (>5)
 ]
-
 # Exclude a variety of commonly ignored directories.
 exclude = [
     ".bzr",
@@ -188,7 +165,18 @@ exclude = [
     "node_modules",
     "site-packages",
     "venv",
+    "docs/build",  # Exclude docs build directory
 ]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+#[tool.ruff.lint]
+# Extend what ruff is allowed to fix, even it it may break
+# This is okay given we use it all the time and it ensures
+# better practices. Would be dangerous if using for first
+# time on established project.
+# extend-safe-fixes = ["ALL"] # TODO use at some point
 
 # Exclude a variety of commonly ignored directories.
 [tool.ruff.lint.per-file-ignores]
@@ -204,17 +192,43 @@ exclude = [
     "FBT001",
     "D100",
     "PLR2004",
-    "PD901",   #  X is a bad variable name. (pandas)
+    "PD901",
     "TCH",
     "N803",
-    "C901",    # Too complex
+    "C901",
 ]
-"__init__.py" = ["I002"]
+"__init__.py" = [
+    "I002",
+    "RUF022",  # to allow __all__ be not alphabetically ordered
+    "PLC0414", # to allow import module as module in inits, contradicts F401
+]
+"*.ipynb" = ["T20", "NPY002", "I002"]
+"docs/**/*.py" = ["INP001", "PTH", "I002"]
+
+# Use isort-compatible settings
+[tool.ruff.isort]
+known-first-party = ["probly"]
+force-sort-within-sections = true
+combine-as-imports = true
+force-single-line = false
+no-lines-before = ["future"]
+required-imports = ["from __future__ import annotations"]
+extra-standard-library = ["typing_extensions"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 minversion = "8.0"
 
 [tool.coverage.report]
-fail_under = 0
 directory = "tests"
+exclude_lines = [
+    "if TYPE_CHECKING",
+]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+ignore_missing_imports = true # to avoid issues with torch, numpy, scipy, etc. stubs
+disallow_subclassing_any = false # to make sure we can subclass from e.g. torch.nn.Module
+disable_error_code = "misc" # disable errors caused by torch not typing decorators, wrapping would be overkill
+exclude = "docs"

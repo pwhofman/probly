@@ -1,11 +1,20 @@
+"""General utility functions for all other modules."""
+
+from __future__ import annotations
+
 import itertools
-from collections.abc import Iterable
+from typing import TYPE_CHECKING
 
 import numpy as np
 import torch
+import torch.nn.functional as F
+from tqdm import tqdm
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 
-def powerset(iterable: Iterable) -> list[tuple]:
+def powerset(iterable: Iterable[int]) -> list[tuple[()]]:
     """Generate the power set of a given iterable.
 
     Args:
@@ -15,12 +24,10 @@ def powerset(iterable: Iterable) -> list[tuple]:
 
     """
     s = list(iterable)
-    return list(
-        itertools.chain.from_iterable(itertools.combinations(s, r) for r in range(len(s) + 1))
-    )
+    return list(itertools.chain.from_iterable(itertools.combinations(s, r) for r in range(len(s) + 1)))
 
 
-def capacity(q: np.ndarray, a: Iterable) -> np.ndarray:
+def capacity(q: np.ndarray, a: Iterable[int]) -> np.ndarray:
     """Compute the capacity of set q given set a.
 
     Args:
@@ -35,7 +42,7 @@ def capacity(q: np.ndarray, a: Iterable) -> np.ndarray:
     return min_capacity
 
 
-def moebius(q: np.ndarray, a: Iterable) -> np.ndarray:
+def moebius(q: np.ndarray, a: Iterable[int]) -> np.ndarray:
     """Compute the Moebius function of a set q given a set a.
 
     Args:
@@ -54,9 +61,7 @@ def moebius(q: np.ndarray, a: Iterable) -> np.ndarray:
     return m_a
 
 
-def differential_entropy_gaussian(
-    sigma2: float | np.ndarray, base: float = 2
-) -> float | np.ndarray:
+def differential_entropy_gaussian(sigma2: float | np.ndarray, base: float = 2) -> float | np.ndarray:
     """Compute the differential entropy of a Gaussian distribution given the variance.
 
     https://en.wikipedia.org/wiki/Differential_entropy
@@ -88,11 +93,7 @@ def kl_divergence_gaussian(
     Returns:
         kl_div: float or numpy.ndarray shape (n_instances,), KL-divergence between the two Gaussian distributions
     """
-    kl_div = (
-        0.5 * np.log(sigma22 / sigma21) / np.log(base)
-        + (sigma21 + (mu1 - mu2) ** 2) / (2 * sigma22)
-        - 0.5
-    )
+    kl_div = 0.5 * np.log(sigma22 / sigma21) / np.log(base) + (sigma21 + (mu1 - mu2) ** 2) / (2 * sigma22) - 0.5
     return kl_div
 
 
@@ -108,3 +109,41 @@ def torch_reset_all_parameters(module: torch.nn.Module) -> None:
     for child in module.children():
         if hasattr(child, "reset_parameters"):
             child.reset_parameters()
+
+
+@torch.no_grad()
+def torch_collect_outputs(
+    model: torch.nn.Module, loader: torch.utils.data.DataLoader, device: torch.device
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Collect outputs and targets from a model for a given data loader.
+
+    Args:
+        model: torch.nn.Module, model to collect outputs from
+        loader: torch.utils.data.DataLoader, data loader to collect outputs from
+        device: torch.device, device to move data to
+    Returns:
+        outputs: torch.Tensor, shape (n_instances, n_classes), model outputs
+        targets: torch.Tensor, shape (n_instances,), target labels
+    """
+    outputs = torch.empty(0, device=device)
+    targets = torch.empty(0, device=device)
+    for inpt, target in tqdm(loader):
+        outputs = torch.cat((outputs, model(inpt.to(device))), dim=0)
+        targets = torch.cat((targets, target.to(device)), dim=0)
+    return outputs, targets
+
+
+def temperature_softmax(logits: torch.Tensor, temperature: float | torch.Tensor) -> torch.Tensor:
+    """Compute the softmax of logits with temperature scaling applied.
+
+    Computes the softmax based on the logits divided by the temperature. Assumes that the last dimension
+    of logits is the class dimension.
+
+    Args:
+        logits: torch.Tensor, shape (n_instances, n_classes), logits to apply softmax on
+        temperature: float, temperature scaling factor
+    Returns:
+        ts: torch.Tensor, shape (n_instances, n_classes), softmax of logits with temperature scaling applied
+    """
+    ts = F.softmax(logits / temperature, dim=-1)
+    return ts

@@ -32,9 +32,9 @@ jobs:
       run: uv sync --dev
 
     - name: Measure coverage
-      run: uv run pytest --cov=shapiq --cov-report=xml -n logical
+      run: uv run pytest --cov=probly --cov-report=xml
 
-#    - name: Coveralls
-#      uses: coverallsapp/github-action@v2
+#    - name: Upload coverage to codecov TODO: uncomment when going public
+#      uses: codecov/codecov-action@v3
 #      with:
-#        path-to-lcov: coverage.xml
+#        fail_ci_if_error: true

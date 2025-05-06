@@ -1,28 +1,34 @@
+"""Conformal prediction implementation."""
+
+from __future__ import annotations
+
 import numpy as np
 import torch
 import torch.nn.functional as F
 
 
 class ConformalPrediction:
-    """
-    This class implements conformal prediction for a given model.
-    Args:
-        base: torch.nn.Module, The base model to be used for conformal prediction.
-        alpha: float, The error rate for conformal prediction.
+    """Implementation of conformal prediction for a given model.
 
     Attributes:
-        model: torch.nn.Module, The base model.
-        alpha: float, The error rate for conformal prediction.
-        q: float, The quantile value for conformal prediction.
+        model: torch.nn.Module, the base model.
+        alpha: float, the error rate for conformal prediction.
+        q: float, the quantile value for conformal prediction.
     """
 
     def __init__(self, base: torch.nn.Module, alpha: float = 0.05) -> None:
+        """Initialize an instance of the ConformalPrediction class.
+
+        Args:
+            base: torch.nn.Module, the base model to be used for conformal prediction.
+            alpha: float, the error rate for conformal prediction.
+        """
         self.model = base
         self.alpha = alpha
 
     def __call__(self, x: torch.Tensor) -> torch.Tensor:
-        """
-        Forward pass of the model without conformal prediction.
+        """Forward pass of the model without conformal prediction.
+
         Args:
             x: torch.Tensor, input data
         Returns:
@@ -30,9 +36,23 @@ class ConformalPrediction:
         """
         return self.model(x)
 
-    def represent_uncertainty(self, x: torch.Tensor) -> torch.Tensor:
+    def predict_pointwise(self, x: torch.Tensor, logits: bool = False) -> torch.Tensor:
+        """Forward pass of the model without conformal prediction.
+
+        Args:
+            x: torch.Tensor, input data
+            logits: bool, whether to return the logits.
+
+        Returns:
+            torch.Tensor, model output
         """
-        Represent the uncertainty of the model by a conformal prediction set.
+        if logits:
+            return self.model(x)
+        return F.softmax(self.model(x), dim=1)
+
+    def predict_representation(self, x: torch.Tensor) -> torch.Tensor:
+        """Represent the uncertainty of the model by a conformal prediction set.
+
         Args:
             x: torch.Tensor, input data
         Returns:
@@ -46,19 +66,20 @@ class ConformalPrediction:
         return sets
 
     def calibrate(self, loader: torch.utils.data.DataLoader) -> None:
-        """
-        Perform the calibration step for conformal prediction.
+        """Perform the calibration step for conformal prediction.
+
         Args:
             loader: DataLoader, The data loader for the calibration set.
+
         """
         self.model.eval()
-        scores = []
+        scores_ = []
         with torch.no_grad():
             for inputs, targets in loader:
                 outputs = self.model(inputs)
-                score = 1 - F.softmax(outputs, dim=1).numpy()
+                score = 1 - F.softmax(outputs, dim=1)
                 score = score[torch.arange(score.shape[0]), targets]
-                scores.append(score)
-        scores = np.concatenate(scores)
+                scores_.append(score)
+        scores = torch.concatenate(scores_).numpy()
         n = scores.shape[0]
         self.q = np.quantile(scores, np.ceil((n + 1) * (1 - self.alpha)) / n, method="inverted_cdf")
