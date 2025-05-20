@@ -87,6 +87,18 @@ def test_loss_uncertainty_function(
         validate_uncertainty(uncertainty)
 
 
+def test_lower_entropy() -> None:
+    probs = np.array([[[1, 0, 0], [0, 1, 0], [0, 0, 1]]])
+    le = lower_entropy(probs)
+    assert le == pytest.approx(0.0)
+
+
+def test_upper_entropy() -> None:
+    probs = np.array([[[1, 0, 0], [0, 1, 0], [0, 0, 1]]])
+    ue = upper_entropy(probs)
+    assert ue == pytest.approx(1.5849625007)
+
+
 def test_evidential_uncertainty() -> None:
     rng = np.random.default_rng()
     evidence = rng.uniform(0, 100, (10, 3))
