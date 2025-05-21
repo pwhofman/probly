@@ -113,7 +113,9 @@ def torch_reset_all_parameters(module: torch.nn.Module) -> None:
 
 @torch.no_grad()
 def torch_collect_outputs(
-    model: torch.nn.Module, loader: torch.utils.data.DataLoader, device: torch.device
+    model: torch.nn.Module,
+    loader: torch.utils.data.DataLoader,
+    device: torch.device,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Collect outputs and targets from a model for a given data loader.
 

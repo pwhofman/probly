@@ -64,7 +64,8 @@ def coverage(preds: np.ndarray, targets: np.ndarray) -> float:
         covered = np.all((probs_lower <= targets) & (targets <= probs_upper), axis=1)
         cov = np.mean(covered)
     else:
-        raise ValueError(f"Expected 2D or 3D array, got {preds.ndim}D")
+        msg = f"Expected 2D or 3D array, got {preds.ndim}D"
+        raise ValueError(msg)
     return float(cov)
 
 
@@ -90,7 +91,8 @@ def efficiency(preds: np.ndarray) -> float:
         probs_upper = np.round(np.nanmax(preds, axis=1), decimals=ROUND_DECIMALS)
         eff = 1 - np.mean(probs_upper - probs_lower)
     else:
-        raise ValueError(f"Expected 2D or 3D array, got {preds.ndim}D")
+        msg = f"Expected 2D or 3D array, got {preds.ndim}D"
+        raise ValueError(msg)
     return float(eff)
 
 
@@ -146,7 +148,8 @@ def covered_efficiency(preds: np.ndarray, targets: np.ndarray) -> float:
         covered = np.all((probs_lower <= targets) & (targets <= probs_upper), axis=1)
         ceff = 1 - np.mean((probs_upper - probs_lower)[covered])
     else:
-        raise ValueError(f"Expected 2D or 3D array, got {preds.ndim}D")
+        msg = f"Expected 2D or 3D array, got {preds.ndim}D"
+        raise ValueError(msg)
     return float(ceff)
 
 

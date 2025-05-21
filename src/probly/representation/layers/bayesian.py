@@ -117,7 +117,7 @@ class BayesLinear(nn.Module):
         """
         init.kaiming_uniform_(self.weight_mu, a=math.sqrt(5))
         if self.bias is not False:
-            fan_in, _ = init._calculate_fan_in_and_fan_out(self.weight_mu)
+            fan_in, _ = init._calculate_fan_in_and_fan_out(self.weight_mu)  # noqa: SLF001
             bound = 1 / math.sqrt(fan_in) if fan_in > 0 else 0
             init.uniform_(self.bias_mu, -bound, bound)
 
@@ -130,7 +130,7 @@ class BayesLinear(nn.Module):
                 torch.log1p(torch.exp(self.weight_rho)) ** 2,
                 self.weight_prior_mu,
                 self.weight_prior_sigma**2,
-            )
+            ),
         )
         if self.bias:
             kl += torch.sum(
@@ -139,7 +139,7 @@ class BayesLinear(nn.Module):
                     torch.log1p(torch.exp(self.bias_rho)) ** 2,
                     self.bias_prior_mu,
                     self.bias_prior_sigma**2,
-                )
+                ),
             )
         return kl
 
@@ -285,7 +285,7 @@ class BayesConv2d(nn.Module):
         """
         init.kaiming_uniform_(self.weight_mu, a=math.sqrt(5))
         if self.bias is not False:
-            fan_in, _ = init._calculate_fan_in_and_fan_out(self.weight_mu)
+            fan_in, _ = init._calculate_fan_in_and_fan_out(self.weight_mu)  # noqa: SLF001
             if fan_in != 0:
                 bound = 1 / math.sqrt(fan_in)
                 init.uniform_(self.bias_mu, -bound, bound)
@@ -299,7 +299,7 @@ class BayesConv2d(nn.Module):
                 torch.log1p(torch.exp(self.weight_rho)) ** 2,
                 self.weight_prior_mu,
                 self.weight_prior_sigma**2,
-            )
+            ),
         )
         if self.bias:
             kl += torch.sum(
@@ -308,13 +308,16 @@ class BayesConv2d(nn.Module):
                     torch.log1p(torch.exp(self.bias_rho)) ** 2,
                     self.bias_prior_mu,
                     self.bias_prior_sigma**2,
-                )
+                ),
             )
         return kl
 
 
 def _kl_divergence_gaussian(
-    mu1: torch.Tensor, sigma21: torch.Tensor, mu2: torch.Tensor, sigma22: torch.Tensor
+    mu1: torch.Tensor,
+    sigma21: torch.Tensor,
+    mu2: torch.Tensor,
+    sigma22: torch.Tensor,
 ) -> torch.Tensor:
     """Compute the KL-divergence between two Gaussian distributions.
 
