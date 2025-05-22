@@ -162,6 +162,11 @@ def intersection_probability(probs: np.ndarray) -> np.ndarray:
     lower = np.min(probs, axis=1)
     upper = np.max(probs, axis=1)
     diff = upper - lower
-    alpha = (1 - np.sum(lower, axis=1)) / np.sum(diff, axis=1)
+    diff_sum = np.sum(diff, axis=1)
+    lower_sum = np.sum(lower, axis=1)
+    # Compute alpha for instances for which probability intervals are not empty, otherwise set alpha to 0.
+    alpha = np.zeros(probs.shape[0])
+    nonzero_idxs = diff_sum != 0
+    alpha[nonzero_idxs] = (1 - lower_sum[nonzero_idxs]) / diff_sum[nonzero_idxs]
     int_probs = lower + alpha[:, None] * diff
     return int_probs
