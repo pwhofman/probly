@@ -157,7 +157,7 @@ def intersection_probability(probs: np.ndarray) -> np.ndarray:
     Args:
         probs: numpy.ndarray, shape (n_instances, n_samples, n_classes), credal sets
     Returns:
-        int_probs: numpy.ndarray, shape (n_instances,), intersection probability of the credal sets
+        int_probs: numpy.ndarray, shape (n_instances, n_classes), intersection probability of the credal sets
     """
     lower = np.min(probs, axis=1)
     upper = np.max(probs, axis=1)
