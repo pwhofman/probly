@@ -44,7 +44,8 @@ def sample_second_order_params() -> np.ndarray:
     ],
 )
 def test_uncertainty_function(
-    uncertainty_fn: Callable[[np.ndarray], np.ndarray], sample_second_order_params: np.ndarray
+    uncertainty_fn: Callable[[np.ndarray], np.ndarray],
+    sample_second_order_params: np.ndarray,
 ) -> None:
     uncertainty = uncertainty_fn(sample_second_order_params)
     validate_uncertainty(uncertainty)

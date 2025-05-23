@@ -91,51 +91,14 @@ target-version = "py310"
 output-format = "full"
 
 [tool.ruff.lint]
-select = [
-    "E",
-    "F",
-    "I",
-    "UP",
-    "A",
-    "D",
-    "ANN",
-    "ARG",
-    "B",
-    "BLE",
-    "C4",
-    "ERA",
-    "FBT",
-    "INP",
-    "N",
-    "NPY",
-    "PD",
-    "PLC",
-    "PLE",
-    "PLR",
-    "PLW",
-    "PIE",
-    "PT",
-    "PTH",
-    "Q",
-    "PGH004",
-    "RET",
-    "RUF",
-    "C90",
-    "S",
-    "SIM",
-    "T10",
-    "T20",
-    "TID",
-    "TCH",
-    "W",
-    "YTT",
-]
+select = ["ALL"]
 ignore = [
     "N812", # Checks for lowercase imports that are aliased to non-lowercase names (e.g. torch.nn.functional as F)
     "RET504", # Unnecessary assignment to {name} before return statement
     "PLR2004", # Magic value used in comparison, consider replacing {value} with a constant variable
     "FBT", # enforce keyword for bool
     "PLR0913", # too many arguments (>5)
+    "FIX002",  # TODOS are fine in code
 ]
 # Exclude a variety of commonly ignored directories.
 exclude = [
@@ -176,7 +139,6 @@ convention = "google"
 # This is okay given we use it all the time and it ensures
 # better practices. Would be dangerous if using for first
 # time on established project.
-# extend-safe-fixes = ["ALL"] # TODO use at some point
 
 # Exclude a variety of commonly ignored directories.
 [tool.ruff.lint.per-file-ignores]
@@ -202,7 +164,12 @@ convention = "google"
     "RUF022",  # to allow __all__ be not alphabetically ordered
     "PLC0414", # to allow import module as module in inits, contradicts F401
 ]
-"*.ipynb" = ["T20", "NPY002", "I002"]
+"*.ipynb" = [
+    "T20",
+    "NPY002",
+    "I002",
+    "PERF401",  # its fine to have not performance optimized code in notebooks
+]
 "docs/**/*.py" = ["INP001", "PTH", "I002"]
 
 # Use isort-compatible settings

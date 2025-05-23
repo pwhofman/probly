@@ -103,7 +103,8 @@ def expected_entropy(probs: np.ndarray, loss_fn: Callable[[np.ndarray, np.ndarra
 
 
 def expected_divergence(
-    probs: np.ndarray, loss_fn: Callable[[np.ndarray, np.ndarray | None], np.ndarray]
+    probs: np.ndarray,
+    loss_fn: Callable[[np.ndarray, np.ndarray | None], np.ndarray],
 ) -> np.ndarray:
     """Compute the expected divergence to the mean of the second-order distribution.
 

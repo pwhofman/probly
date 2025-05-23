@@ -38,7 +38,8 @@ class Representation(ABC):
         elif isinstance(self.data, np.ndarray):
             pass
         else:
-            raise TypeError("data must be a numpy array or torch tensor")
+            msg = "data must be a numpy array or torch tensor"
+            raise TypeError(msg)
 
         # Set the derived attributes / fields
         self.n_instances = self.data.shape[0]

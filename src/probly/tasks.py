@@ -24,7 +24,8 @@ def selective_prediction(criterion: np.ndarray, losses: np.ndarray, n_bins: int 
 
     """
     if n_bins > len(losses):
-        raise ValueError("The number of bins can not be larger than the number of elements criterion")
+        msg = "The number of bins can not be larger than the number of elements criterion"
+        raise ValueError(msg)
     sort_idxs = np.argsort(criterion)[::-1]
     losses_sorted = losses[sort_idxs]
     bin_len = len(losses) // n_bins

@@ -73,7 +73,8 @@ def simplex_vertices() -> np.ndarray:
     ],
 )
 def test_uncertainty_function(
-    uncertainty_fn: Callable[[np.ndarray], np.ndarray], sample_second_order_data: tuple[np.ndarray, np.ndarray]
+    uncertainty_fn: Callable[[np.ndarray], np.ndarray],
+    sample_second_order_data: tuple[np.ndarray, np.ndarray],
 ) -> None:
     probs2d, probs3d = sample_second_order_data
     uncertainty = uncertainty_fn(probs2d)

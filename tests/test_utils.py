@@ -63,7 +63,7 @@ def test_torch_collect_outputs(conv_linear_model: torch.nn.Module) -> None:
             torch.randn(
                 2,
             ),
-        )
+        ),
     )
     outputs, targets = torch_collect_outputs(conv_linear_model, loader, torch.device("cpu"))
     assert outputs.shape == (2, 2)
