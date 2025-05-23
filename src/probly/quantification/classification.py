@@ -278,7 +278,7 @@ def lower_entropy(probs: np.ndarray, base: float = 2) -> np.ndarray:
         return entropy(x, base=base)
 
     x0 = probs.mean(axis=1)
-    # If the initial solution is uniform, because minimize will fail otherwise
+    # If the initial solution is uniform, slightly perturb it, because minimize will fail otherwise
     uniform_idxs = np.all(np.isclose(x0, 1 / probs.shape[2]), axis=1)
     x0[uniform_idxs, 0] += MINIMIZE_EPS
     x0[uniform_idxs, 1] -= MINIMIZE_EPS
