@@ -14,7 +14,7 @@ from probly.utils import moebius, powerset
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-MINIMIZE_EPS = 1e-3  # Epsilon to avoid problems when initial solution is e.g. exactly uniform
+MINIMIZE_EPS = 1e-3  # A small epsilon to avoid problems when the initial solution of minimize is exactly uniform
 
 
 def total_entropy(probs: np.ndarray, base: float = 2) -> np.ndarray:
@@ -250,8 +250,6 @@ def upper_entropy(probs: np.ndarray, base: float = 2) -> np.ndarray:
         return -entropy(x, base=base)
 
     x0 = probs.mean(axis=1)
-    x0[:, 0] += MINIMIZE_EPS
-    x0[:, 1] -= MINIMIZE_EPS
     constraints = {"type": "eq", "fun": lambda x: np.sum(x) - 1}
     ue = np.empty(probs.shape[0])
     for i in tqdm(range(probs.shape[0])):
@@ -280,8 +278,11 @@ def lower_entropy(probs: np.ndarray, base: float = 2) -> np.ndarray:
         return entropy(x, base=base)
 
     x0 = probs.mean(axis=1)
-    x0[:, 0] += MINIMIZE_EPS
-    x0[:, 1] -= MINIMIZE_EPS
+    # If the initial solution is uniform, because minimize will fail otherwise
+    uniform_idxs = np.all(np.isclose(x0, 1 / probs.shape[2]), axis=1)
+    x0[uniform_idxs, 0] += MINIMIZE_EPS
+    x0[uniform_idxs, 1] -= MINIMIZE_EPS
+
     constraints = {"type": "eq", "fun": lambda x: np.sum(x) - 1}
     le = np.empty(probs.shape[0])
     for i in tqdm(range(probs.shape[0])):
