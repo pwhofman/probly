@@ -8,6 +8,7 @@ from torch.utils.data import DataLoader, TensorDataset
 
 from probly.utils import (
     differential_entropy_gaussian,
+    intersection_probability,
     kl_divergence_gaussian,
     powerset,
     temperature_softmax,
@@ -73,3 +74,22 @@ def test_temperature_softmax() -> None:
     x = torch.tensor([[1.0, 2.0], [3.0, 4.0]])
     assert torch.equal(temperature_softmax(x, 2.0), torch.softmax(x / 2.0, dim=1))
     assert torch.equal(temperature_softmax(x, torch.tensor(1.0)), torch.softmax(x, dim=1))
+
+
+def test_intersection_probability() -> None:
+    rng = np.random.default_rng()
+
+    probs = rng.dirichlet(np.ones(2), size=(5, 5))
+    int_prob = intersection_probability(probs)
+    assert int_prob.shape == (5, 2)
+    assert np.allclose(np.sum(int_prob, axis=1), 1.0)
+
+    probs = rng.dirichlet(np.ones(10), size=(5, 5))
+    int_prob = intersection_probability(probs)
+    assert int_prob.shape == (5, 10)
+    assert np.allclose(np.sum(int_prob, axis=1), 1.0)
+
+    probs = np.array([1 / 3, 1 / 3, 1 / 3] * 5).reshape(1, 5, 3)
+    int_prob = intersection_probability(probs)
+    assert int_prob.shape == (1, 3)
+    assert np.allclose(np.sum(int_prob, axis=1), 1.0)
