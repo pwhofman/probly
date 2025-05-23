@@ -43,6 +43,16 @@ def sample_second_order_data() -> tuple[np.ndarray, np.ndarray]:
     return probs2d, probs3d
 
 
+@pytest.fixture
+def simplex_uniform() -> np.ndarray:
+    return np.array([[[1 / 3, 1 / 3, 1 / 3], [1 / 3, 1 / 3, 1 / 3], [1 / 3, 1 / 3, 1 / 3]]])
+
+
+@pytest.fixture
+def simplex_vertices() -> np.ndarray:
+    return np.array([[[1, 0, 0], [0, 1, 0], [0, 0, 1]]])
+
+
 @pytest.mark.parametrize(
     "uncertainty_fn",
     [
@@ -85,6 +95,22 @@ def test_loss_uncertainty_function(
 
         uncertainty = uncertainty_fn(probs3d, loss_fn)
         validate_uncertainty(uncertainty)
+
+
+def test_lower_entropy(simplex_vertices: np.ndarray, simplex_uniform: np.ndarray) -> None:
+    le = lower_entropy(simplex_vertices)
+    assert le == pytest.approx(0.0)
+
+    le = lower_entropy(simplex_uniform)
+    assert le == pytest.approx(1.5849625007)
+
+
+def test_upper_entropy(simplex_vertices: np.ndarray, simplex_uniform: np.ndarray) -> None:
+    ue = upper_entropy(simplex_vertices)
+    assert ue == pytest.approx(1.5849625007)
+
+    ue = upper_entropy(simplex_uniform)
+    assert ue == pytest.approx(1.5849625007)
 
 
 def test_evidential_uncertainty() -> None:
