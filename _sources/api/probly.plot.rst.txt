@@ -8,5 +8,6 @@
 
    .. autosummary::
    
+      credal_set_plot
       simplex_plot
    
