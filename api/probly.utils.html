@@ -299,22 +299,25 @@
 <tr class="row-even"><td><p><a class="reference internal" href="#probly.utils.differential_entropy_gaussian" title="probly.utils.differential_entropy_gaussian"><code class="xref py py-obj docutils literal notranslate"><span class="pre">differential_entropy_gaussian</span></code></a>(sigma2[, base])</p></td>
 <td><p>Compute the differential entropy of a Gaussian distribution given the variance.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#probly.utils.kl_divergence_gaussian" title="probly.utils.kl_divergence_gaussian"><code class="xref py py-obj docutils literal notranslate"><span class="pre">kl_divergence_gaussian</span></code></a>(mu1, sigma21, mu2, ...)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#probly.utils.intersection_probability" title="probly.utils.intersection_probability"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intersection_probability</span></code></a>(probs)</p></td>
+<td><p>Compute the intersection probability of a credal set based on intervals of lower and upper probabilities.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#probly.utils.kl_divergence_gaussian" title="probly.utils.kl_divergence_gaussian"><code class="xref py py-obj docutils literal notranslate"><span class="pre">kl_divergence_gaussian</span></code></a>(mu1, sigma21, mu2, ...)</p></td>
 <td><p>Compute the KL-divergence between two Gaussian distributions.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#probly.utils.moebius" title="probly.utils.moebius"><code class="xref py py-obj docutils literal notranslate"><span class="pre">moebius</span></code></a>(q, a)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#probly.utils.moebius" title="probly.utils.moebius"><code class="xref py py-obj docutils literal notranslate"><span class="pre">moebius</span></code></a>(q, a)</p></td>
 <td><p>Compute the Moebius function of a set q given a set a.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#probly.utils.powerset" title="probly.utils.powerset"><code class="xref py py-obj docutils literal notranslate"><span class="pre">powerset</span></code></a>(iterable)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#probly.utils.powerset" title="probly.utils.powerset"><code class="xref py py-obj docutils literal notranslate"><span class="pre">powerset</span></code></a>(iterable)</p></td>
 <td><p>Generate the power set of a given iterable.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#probly.utils.temperature_softmax" title="probly.utils.temperature_softmax"><code class="xref py py-obj docutils literal notranslate"><span class="pre">temperature_softmax</span></code></a>(logits, temperature)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#probly.utils.temperature_softmax" title="probly.utils.temperature_softmax"><code class="xref py py-obj docutils literal notranslate"><span class="pre">temperature_softmax</span></code></a>(logits, temperature)</p></td>
 <td><p>Compute the softmax of logits with temperature scaling applied.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#probly.utils.torch_collect_outputs" title="probly.utils.torch_collect_outputs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">torch_collect_outputs</span></code></a>(model, loader, device)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#probly.utils.torch_collect_outputs" title="probly.utils.torch_collect_outputs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">torch_collect_outputs</span></code></a>(model, loader, device)</p></td>
 <td><p>Collect outputs and targets from a model for a given data loader.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#probly.utils.torch_reset_all_parameters" title="probly.utils.torch_reset_all_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">torch_reset_all_parameters</span></code></a>(module)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#probly.utils.torch_reset_all_parameters" title="probly.utils.torch_reset_all_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">torch_reset_all_parameters</span></code></a>(module)</p></td>
 <td><p>Reset all parameters of a torch module.</p></td>
 </tr>
 </tbody>
@@ -373,6 +376,27 @@
 <li><p><strong>sigma2</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a><em> | </em><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><em>ndarray</em></a>)</p></li>
 <li><p><strong>base</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>)</p></li>
 </ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="probly.utils.intersection_probability">
+<span class="sig-prename descclassname"><span class="pre">probly.utils.</span></span><span class="sig-name descname"><span class="pre">intersection_probability</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.2.0-pre-alpha/src/probly/utils.py#L152"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.utils.intersection_probability" title="Link to this definition">¶</a></dt>
+<dd><p>Compute the intersection probability of a credal set based on intervals of lower and upper probabilities.</p>
+<p>Computes the intersection probability from <a class="reference external" href="https://arxiv.org/pdf/2201.01729">https://arxiv.org/pdf/2201.01729</a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>probs</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><em>ndarray</em></a>) – numpy.ndarray, shape (n_instances, n_samples, n_classes), credal sets</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray, shape (n_instances, n_classes), intersection probability of the credal sets</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int_probs</p>
 </dd>
 </dl>
 </dd></dl>
@@ -468,12 +492,12 @@
 of logits is the class dimension.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span></p>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
-<li><p><strong>logits</strong> (<a class="reference external" href="https://pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.7)"><em>Tensor</em></a>) – torch.Tensor, shape (n_instances, n_classes), logits to apply softmax on</p></li>
-<li><p><strong>temperature</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a><em> | </em><a class="reference external" href="https://pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.7)"><em>Tensor</em></a>) – float, temperature scaling factor</p></li>
+<li><p><strong>logits</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.7)"><em>Tensor</em></a>) – torch.Tensor, shape (n_instances, n_classes), logits to apply softmax on</p></li>
+<li><p><strong>temperature</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a><em> | </em><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.7)"><em>Tensor</em></a>) – float, temperature scaling factor</p></li>
 </ul>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -491,13 +515,13 @@ of logits is the class dimension.</p>
 <dd><p>Collect outputs and targets from a model for a given data loader.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>, <a class="reference external" href="https://pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>]</span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>, <a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>]</span></p>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
-<li><p><strong>model</strong> (<a class="reference external" href="https://pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.7)"><em>Module</em></a>) – torch.nn.Module, model to collect outputs from</p></li>
-<li><p><strong>loader</strong> (<a class="reference external" href="https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader" title="(in PyTorch v2.7)"><em>DataLoader</em></a>) – torch.utils.data.DataLoader, data loader to collect outputs from</p></li>
-<li><p><strong>device</strong> (<a class="reference external" href="https://pytorch.org/docs/stable/tensor_attributes.html#torch.device" title="(in PyTorch v2.7)"><em>device</em></a>) – torch.device, device to move data to</p></li>
+<li><p><strong>model</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.7)"><em>Module</em></a>) – torch.nn.Module, model to collect outputs from</p></li>
+<li><p><strong>loader</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader" title="(in PyTorch v2.7)"><em>DataLoader</em></a>) – torch.utils.data.DataLoader, data loader to collect outputs from</p></li>
+<li><p><strong>device</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensor_attributes.html#torch.device" title="(in PyTorch v2.7)"><em>device</em></a>) – torch.device, device to move data to</p></li>
 </ul>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -519,7 +543,7 @@ targets: torch.Tensor, shape (n_instances,), target labels</p>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>module</strong> (<a class="reference external" href="https://pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.7)"><em>Module</em></a>) – torch.nn.Module, module to reset parameters</p>
+<dd class="field-even"><p><strong>module</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.7)"><em>Module</em></a>) – torch.nn.Module, module to reset parameters</p>
 </dd>
 </dl>
 </dd></dl>
@@ -576,6 +600,7 @@ targets: torch.Tensor, shape (n_instances,), target labels</p>
 <li><a class="reference internal" href="#">probly.utils</a><ul>
 <li><a class="reference internal" href="#probly.utils.capacity"><code class="docutils literal notranslate"><span class="pre">capacity()</span></code></a></li>
 <li><a class="reference internal" href="#probly.utils.differential_entropy_gaussian"><code class="docutils literal notranslate"><span class="pre">differential_entropy_gaussian()</span></code></a></li>
+<li><a class="reference internal" href="#probly.utils.intersection_probability"><code class="docutils literal notranslate"><span class="pre">intersection_probability()</span></code></a></li>
 <li><a class="reference internal" href="#probly.utils.kl_divergence_gaussian"><code class="docutils literal notranslate"><span class="pre">kl_divergence_gaussian()</span></code></a></li>
 <li><a class="reference internal" href="#probly.utils.moebius"><code class="docutils literal notranslate"><span class="pre">moebius()</span></code></a></li>
 <li><a class="reference internal" href="#probly.utils.powerset"><code class="docutils literal notranslate"><span class="pre">powerset()</span></code></a></li>

@@ -10,6 +10,7 @@
    
       capacity
       differential_entropy_gaussian
+      intersection_probability
       kl_divergence_gaussian
       moebius
       powerset
