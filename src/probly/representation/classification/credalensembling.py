@@ -45,7 +45,9 @@ class CredalEnsembling(Ensemble):
             x_representative = torch.mean(x, dim=1)
             dists = torch.cdist(x, x_representative.unsqueeze(dim=1), p=2).squeeze(dim=2)
         elif distance == "kl":
-            pass  # TODO(pwhofman): Implement KL-divergence metric https://github.com/pwhofman/probly/issues/99
+            msg = "KL-divergence metric is not implemented yet."
+            raise NotImplementedError(msg)
+            # TODO(pwhofman): Implement KL-divergence metric https://github.com/pwhofman/probly/issues/99
         else:
             msg = f"Unknown distance metric: {distance}"
             raise ValueError(msg)
