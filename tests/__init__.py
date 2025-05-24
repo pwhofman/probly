@@ -1,1 +1,1 @@
-"""Test module for the package."""
+"""Tests for probly."""
