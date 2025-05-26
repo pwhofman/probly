@@ -10,4 +10,5 @@ probly.representation.classification
    :toctree:
    :recursive:
 
+   credalensembling
    evidential

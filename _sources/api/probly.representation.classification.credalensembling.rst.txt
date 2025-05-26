@@ -1,0 +1,12 @@
+probly.representation.classification.credalensembling
+=====================================================
+
+.. automodule:: probly.representation.classification.credalensembling
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      CredalEnsembling
+   

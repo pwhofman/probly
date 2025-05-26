@@ -3,10 +3,10 @@
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="probly.representation.ensemble" href="probly.representation.ensemble.html" /><link rel="prev" title="probly.representation.dropconnect" href="probly.representation.dropconnect.html" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="probly.representation.classification.evidential" href="probly.representation.classification.evidential.html" /><link rel="prev" title="probly.representation.classification" href="probly.representation.classification.html" />
 
     <!-- Generated with Sphinx 8.1.3 and Furo 2024.08.06 -->
-        <title>probly.representation.dropout - probly 0.2.0 documentation</title>
+        <title>probly.representation.classification.credalensembling - probly 0.2.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=354aac6f" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -212,14 +212,14 @@
 </li>
 <li class="toctree-l2 current has-children"><a class="reference internal" href="probly.representation.html">probly.representation</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of probly.representation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
 <li class="toctree-l3"><a class="reference internal" href="probly.representation.bayesian.html">probly.representation.bayesian</a></li>
-<li class="toctree-l3 has-children"><a class="reference internal" href="probly.representation.classification.html">probly.representation.classification</a><input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><div class="visually-hidden">Toggle navigation of probly.representation.classification</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
-<li class="toctree-l4"><a class="reference internal" href="probly.representation.classification.credalensembling.html">probly.representation.classification.credalensembling</a></li>
+<li class="toctree-l3 current has-children"><a class="reference internal" href="probly.representation.classification.html">probly.representation.classification</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><div class="visually-hidden">Toggle navigation of probly.representation.classification</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l4 current current-page"><a class="current reference internal" href="#">probly.representation.classification.credalensembling</a></li>
 <li class="toctree-l4"><a class="reference internal" href="probly.representation.classification.evidential.html">probly.representation.classification.evidential</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="probly.representation.conformalprediction.html">probly.representation.conformalprediction</a></li>
 <li class="toctree-l3"><a class="reference internal" href="probly.representation.dropconnect.html">probly.representation.dropconnect</a></li>
-<li class="toctree-l3 current current-page"><a class="current reference internal" href="#">probly.representation.dropout</a></li>
+<li class="toctree-l3"><a class="reference internal" href="probly.representation.dropout.html">probly.representation.dropout</a></li>
 <li class="toctree-l3"><a class="reference internal" href="probly.representation.ensemble.html">probly.representation.ensemble</a></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="probly.representation.layers.html">probly.representation.layers</a><input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><div class="visually-hidden">Toggle navigation of probly.representation.layers</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l4"><a class="reference internal" href="probly.representation.layers.bayesian.html">probly.representation.layers.bayesian</a></li>
@@ -267,7 +267,7 @@
         </a>
         <div class="content-icon-container">
           <div class="view-this-page">
-  <a class="muted-link" href="../_sources/api/probly.representation.dropout.rst.txt" title="View this page">
+  <a class="muted-link" href="../_sources/api/probly.representation.classification.credalensembling.rst.txt" title="View this page">
     <svg><use href="#svg-eye"></use></svg>
     <span class="visually-hidden">View this page</span>
   </a>
@@ -287,96 +287,42 @@
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="module-probly.representation.dropout">
-<span id="probly-representation-dropout"></span><h1>probly.representation.dropout<a class="headerlink" href="#module-probly.representation.dropout" title="Link to this heading">¶</a></h1>
-<p>Dropout class implementation.</p>
+          <section id="module-probly.representation.classification.credalensembling">
+<span id="probly-representation-classification-credalensembling"></span><h1>probly.representation.classification.credalensembling<a class="headerlink" href="#module-probly.representation.classification.credalensembling" title="Link to this heading">¶</a></h1>
+<p>Credal Ensembling class implementation.</p>
 <p class="rubric">Classes</p>
 <div class="table-wrapper autosummary longtable docutils container">
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#probly.representation.dropout.Dropout" title="probly.representation.dropout.Dropout"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Dropout</span></code></a>(base[, p])</p></td>
-<td><p>Implementation of a Dropout ensemble class to be used for uncertainty quantification.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#probly.representation.classification.credalensembling.CredalEnsembling" title="probly.representation.classification.credalensembling.CredalEnsembling"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CredalEnsembling</span></code></a>(base, n_members)</p></td>
+<td><p>Implementation of a credal ensembling representation to be used for uncertainty quantification.</p></td>
 </tr>
 </tbody>
 </table>
 </div>
 <dl class="py class">
-<dt class="sig sig-object py" id="probly.representation.dropout.Dropout">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.dropout.</span></span><span class="sig-name descname"><span class="pre">Dropout</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.25</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.2.0-pre-alpha/src/probly/representation/dropout.py#L12"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.dropout.Dropout" title="Link to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></a></p>
-<p>Implementation of a Dropout ensemble class to be used for uncertainty quantification.</p>
+<dt class="sig sig-object py" id="probly.representation.classification.credalensembling.CredalEnsembling">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.classification.credalensembling.</span></span><span class="sig-name descname"><span class="pre">CredalEnsembling</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_members</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.2.0-pre-alpha/src/probly/representation/classification/credalensembling.py#L11"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.classification.credalensembling.CredalEnsembling" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="probly.representation.ensemble.html#probly.representation.ensemble.Ensemble" title="probly.representation.ensemble.Ensemble"><code class="xref py py-class docutils literal notranslate"><span class="pre">Ensemble</span></code></a></p>
+<p>Implementation of a credal ensembling representation to be used for uncertainty quantification.</p>
+<p>The Credal Ensembling representation was introduced in <a class="reference external" href="https://link.springer.com/article/10.1007/s10994-024-06703-y">https://link.springer.com/article/10.1007/s10994-024-06703-y</a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>base</strong> (<em>nn.Module</em>)</p></li>
-<li><p><strong>p</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>)</p></li>
+<li><p><strong>n_members</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>)</p></li>
 </ul>
 </dd>
 </dl>
 <dl class="py attribute">
-<dt class="sig sig-object py" id="probly.representation.dropout.Dropout.p">
-<span class="sig-name descname"><span class="pre">p</span></span><a class="headerlink" href="#probly.representation.dropout.Dropout.p" title="Link to this definition">¶</a></dt>
-<dd><p>float, The probability of dropout.</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="probly.representation.dropout.Dropout.model">
-<span class="sig-name descname"><span class="pre">model</span></span><a class="headerlink" href="#probly.representation.dropout.Dropout.model" title="Link to this definition">¶</a></dt>
-<dd><p>torch.nn.Module, The model with Dropout layers.</p>
+<dt class="sig sig-object py" id="probly.representation.classification.credalensembling.CredalEnsembling.models">
+<span class="sig-name descname"><span class="pre">models</span></span><a class="headerlink" href="#probly.representation.classification.credalensembling.CredalEnsembling.models" title="Link to this definition">¶</a></dt>
+<dd><p>torch.nn.ModuleList, the list of models in the ensemble based on the base model.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="probly.representation.dropout.Dropout.eval">
-<span class="sig-name descname"><span class="pre">eval</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.2.0-pre-alpha/src/probly/representation/dropout.py#L94"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.dropout.Dropout.eval" title="Link to this definition">¶</a></dt>
-<dd><p>Sets the model to evaluation mode, but keeps the dropout layers active.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="probly.representation.dropout.Dropout.forward">
-<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.2.0-pre-alpha/src/probly/representation/dropout.py#L32"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.dropout.Dropout.forward" title="Link to this definition">¶</a></dt>
-<dd><p>Forward pass of the dropout model.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span></p>
-</dd>
-<dt class="field-even">Parameters<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>x</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.7)"><em>Tensor</em></a>) – torch.Tensor, input data</p>
-</dd>
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>torch.Tensor, ensemble output</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="probly.representation.dropout.Dropout.predict_pointwise">
-<span class="sig-name descname"><span class="pre">predict_pointwise</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logits</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.2.0-pre-alpha/src/probly/representation/dropout.py#L43"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.dropout.Dropout.predict_pointwise" title="Link to this definition">¶</a></dt>
-<dd><p>Forward pass that gives a point-wise prediction by taking the mean over the samples.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span></p>
-</dd>
-<dt class="field-even">Parameters<span class="colon">:</span></dt>
-<dd class="field-even"><ul class="simple">
-<li><p><strong>x</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.7)"><em>Tensor</em></a>) – torch.Tensor, input data</p></li>
-<li><p><strong>n_samples</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>) – int, number of samples</p></li>
-<li><p><strong>logits</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>) – bool, whether to return logits or probabilities</p></li>
-</ul>
-</dd>
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>torch.Tensor, point-wise prediction</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="probly.representation.dropout.Dropout.predict_representation">
-<span class="sig-name descname"><span class="pre">predict_representation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logits</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.2.0-pre-alpha/src/probly/representation/dropout.py#L57"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.dropout.Dropout.predict_representation" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="probly.representation.classification.credalensembling.CredalEnsembling.predict_representation">
+<span class="sig-name descname"><span class="pre">predict_representation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'euclidean'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.2.0-pre-alpha/src/probly/representation/classification/credalensembling.py#L31"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.classification.credalensembling.CredalEnsembling.predict_representation" title="Link to this definition">¶</a></dt>
 <dd><p>Forward pass that gives an uncertainty representation.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -385,8 +331,9 @@
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
 <li><p><strong>x</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.7)"><em>Tensor</em></a>) – torch.Tensor, input data</p></li>
-<li><p><strong>n_samples</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>) – int, number of samples</p></li>
-<li><p><strong>logits</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>) – bool, whether to return logits or probabilities</p></li>
+<li><p><strong>alpha</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – float, the portion of farthest members in terms of distance to be removed</p></li>
+<li><p><strong>distance</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – str, the distance metric to be used for the representation
+(e.g., ‘euclidean’, ‘kl’)</p></li>
 </ul>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -404,23 +351,23 @@
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="probly.representation.ensemble.html">
+          <a class="next-page" href="probly.representation.classification.evidential.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">probly.representation.ensemble</div>
+                <div class="title">probly.representation.classification.evidential</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="probly.representation.dropconnect.html">
+          <a class="prev-page" href="probly.representation.classification.html">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">probly.representation.dropconnect</div>
+                <div class="title">probly.representation.classification</div>
                 
               </div>
             </a>
@@ -454,14 +401,10 @@
         <div class="toc-tree-container">
           <div class="toc-tree">
             <ul>
-<li><a class="reference internal" href="#">probly.representation.dropout</a><ul>
-<li><a class="reference internal" href="#probly.representation.dropout.Dropout"><code class="docutils literal notranslate"><span class="pre">Dropout</span></code></a><ul>
-<li><a class="reference internal" href="#probly.representation.dropout.Dropout.p"><code class="docutils literal notranslate"><span class="pre">Dropout.p</span></code></a></li>
-<li><a class="reference internal" href="#probly.representation.dropout.Dropout.model"><code class="docutils literal notranslate"><span class="pre">Dropout.model</span></code></a></li>
-<li><a class="reference internal" href="#probly.representation.dropout.Dropout.eval"><code class="docutils literal notranslate"><span class="pre">Dropout.eval()</span></code></a></li>
-<li><a class="reference internal" href="#probly.representation.dropout.Dropout.forward"><code class="docutils literal notranslate"><span class="pre">Dropout.forward()</span></code></a></li>
-<li><a class="reference internal" href="#probly.representation.dropout.Dropout.predict_pointwise"><code class="docutils literal notranslate"><span class="pre">Dropout.predict_pointwise()</span></code></a></li>
-<li><a class="reference internal" href="#probly.representation.dropout.Dropout.predict_representation"><code class="docutils literal notranslate"><span class="pre">Dropout.predict_representation()</span></code></a></li>
+<li><a class="reference internal" href="#">probly.representation.classification.credalensembling</a><ul>
+<li><a class="reference internal" href="#probly.representation.classification.credalensembling.CredalEnsembling"><code class="docutils literal notranslate"><span class="pre">CredalEnsembling</span></code></a><ul>
+<li><a class="reference internal" href="#probly.representation.classification.credalensembling.CredalEnsembling.models"><code class="docutils literal notranslate"><span class="pre">CredalEnsembling.models</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.classification.credalensembling.CredalEnsembling.predict_representation"><code class="docutils literal notranslate"><span class="pre">CredalEnsembling.predict_representation()</span></code></a></li>
 </ul>
 </li>
 </ul>
