@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="probly.quantification" href="probly.quantification.html" /><link rel="prev" title="probly.representation.representation" href="probly.representation.representation.html" />
 
     <!-- Generated with Sphinx 8.1.3 and Furo 2024.08.06 -->
-        <title>probly.representation.subensemble - probly 0.2.0 documentation</title>
+        <title>probly.representation.subensemble - probly 0.3.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=354aac6f" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">probly 0.2.0 documentation</div></a>
+      <a href="../index.html"><div class="brand">probly 0.3.0 documentation</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -302,7 +302,7 @@
 </div>
 <dl class="py class">
 <dt class="sig sig-object py" id="probly.representation.subensemble.SubEnsemble">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.subensemble.</span></span><span class="sig-name descname"><span class="pre">SubEnsemble</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_members</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">head</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.2.0-pre-alpha/src/probly/representation/subensemble.py#L14"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.subensemble.SubEnsemble" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.subensemble.</span></span><span class="sig-name descname"><span class="pre">SubEnsemble</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_members</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">head</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.3.0/src/probly/representation/subensemble.py#L14"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.subensemble.SubEnsemble" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></a></p>
 <p>Ensemble class of members with shared, frozen backbone and trainable heads.</p>
 <p>This class implements an ensemble of models which share a backbone and use
@@ -330,7 +330,7 @@ The backbone is frozen and only the head can be trained.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="probly.representation.subensemble.SubEnsemble.forward">
-<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.2.0-pre-alpha/src/probly/representation/subensemble.py#L41"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.subensemble.SubEnsemble.forward" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.3.0/src/probly/representation/subensemble.py#L41"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.subensemble.SubEnsemble.forward" title="Link to this definition">¶</a></dt>
 <dd><p>Forward pass of the sub-ensemble.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -347,7 +347,7 @@ The backbone is frozen and only the head can be trained.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="probly.representation.subensemble.SubEnsemble.predict_pointwise">
-<span class="sig-name descname"><span class="pre">predict_pointwise</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logits</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.2.0-pre-alpha/src/probly/representation/subensemble.py#L52"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.subensemble.SubEnsemble.predict_pointwise" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">predict_pointwise</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logits</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.3.0/src/probly/representation/subensemble.py#L52"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.subensemble.SubEnsemble.predict_pointwise" title="Link to this definition">¶</a></dt>
 <dd><p>Forward pass that gives a point-wise prediction.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -367,7 +367,7 @@ The backbone is frozen and only the head can be trained.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="probly.representation.subensemble.SubEnsemble.predict_representation">
-<span class="sig-name descname"><span class="pre">predict_representation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logits</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.2.0-pre-alpha/src/probly/representation/subensemble.py#L65"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.subensemble.SubEnsemble.predict_representation" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">predict_representation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logits</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.3.0/src/probly/representation/subensemble.py#L65"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.subensemble.SubEnsemble.predict_representation" title="Link to this definition">¶</a></dt>
 <dd><p>Forward pass that gives an uncertainty representation.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -463,7 +463,7 @@ The backbone is frozen and only the head can be trained.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=938c9ccc"></script>
+</div><script src="../_static/documentation_options.js?v=e259d695"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/scripts/furo.js?v=5fa4622c"></script>

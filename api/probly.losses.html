@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="probly.plot" href="probly.plot.html" /><link rel="prev" title="probly.metrics" href="probly.metrics.html" />
 
     <!-- Generated with Sphinx 8.1.3 and Furo 2024.08.06 -->
-        <title>probly.losses - probly 0.2.0 documentation</title>
+        <title>probly.losses - probly 0.3.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=354aac6f" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">probly 0.2.0 documentation</div></a>
+      <a href="../index.html"><div class="brand">probly 0.3.0 documentation</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -329,7 +329,7 @@
 </div>
 <dl class="py class">
 <dt class="sig sig-object py" id="probly.losses.ELBOLoss">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.losses.</span></span><span class="sig-name descname"><span class="pre">ELBOLoss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kl_penalty</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-05</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.2.0-pre-alpha/src/probly/losses.py#L212"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.losses.ELBOLoss" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.losses.</span></span><span class="sig-name descname"><span class="pre">ELBOLoss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kl_penalty</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-05</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.3.0/src/probly/losses.py#L212"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.losses.ELBOLoss" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></a></p>
 <p>Evidence lower bound loss based on <a class="reference external" href="https://arxiv.org/abs/1505.05424">https://arxiv.org/abs/1505.05424</a>.</p>
 <dl class="field-list simple">
@@ -345,7 +345,7 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="probly.losses.ELBOLoss.forward">
-<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">targets</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kl</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.2.0-pre-alpha/src/probly/losses.py#L228"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.losses.ELBOLoss.forward" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">targets</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kl</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.3.0/src/probly/losses.py#L228"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.losses.ELBOLoss.forward" title="Link to this definition">¶</a></dt>
 <dd><p>Forward pass of the ELBO loss.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -371,14 +371,14 @@
 
 <dl class="py class">
 <dt class="sig sig-object py" id="probly.losses.EvidentialCELoss">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.losses.</span></span><span class="sig-name descname"><span class="pre">EvidentialCELoss</span></span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.2.0-pre-alpha/src/probly/losses.py#L34"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.losses.EvidentialCELoss" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.losses.</span></span><span class="sig-name descname"><span class="pre">EvidentialCELoss</span></span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.3.0/src/probly/losses.py#L34"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.losses.EvidentialCELoss" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></a></p>
 <p>Evidential Cross Entropy Loss based on <a class="reference external" href="https://arxiv.org/abs/1806.01768">https://arxiv.org/abs/1806.01768</a>.</p>
 <dl class="field-list simple">
 </dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="probly.losses.EvidentialCELoss.forward">
-<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">targets</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.2.0-pre-alpha/src/probly/losses.py#L41"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.losses.EvidentialCELoss.forward" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">targets</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.3.0/src/probly/losses.py#L41"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.losses.EvidentialCELoss.forward" title="Link to this definition">¶</a></dt>
 <dd><p>Forward pass of the evidential cross entropy loss.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -403,14 +403,14 @@
 
 <dl class="py class">
 <dt class="sig sig-object py" id="probly.losses.EvidentialKLDivergence">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.losses.</span></span><span class="sig-name descname"><span class="pre">EvidentialKLDivergence</span></span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.2.0-pre-alpha/src/probly/losses.py#L86"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.losses.EvidentialKLDivergence" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.losses.</span></span><span class="sig-name descname"><span class="pre">EvidentialKLDivergence</span></span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.3.0/src/probly/losses.py#L86"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.losses.EvidentialKLDivergence" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></a></p>
 <p>Evidential KL Divergence Loss based on <a class="reference external" href="https://arxiv.org/abs/1806.01768">https://arxiv.org/abs/1806.01768</a>.</p>
 <dl class="field-list simple">
 </dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="probly.losses.EvidentialKLDivergence.forward">
-<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">targets</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.2.0-pre-alpha/src/probly/losses.py#L93"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.losses.EvidentialKLDivergence.forward" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">targets</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.3.0/src/probly/losses.py#L93"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.losses.EvidentialKLDivergence.forward" title="Link to this definition">¶</a></dt>
 <dd><p>Forward pass of the evidential KL divergence loss.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -435,14 +435,14 @@
 
 <dl class="py class">
 <dt class="sig sig-object py" id="probly.losses.EvidentialLogLoss">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.losses.</span></span><span class="sig-name descname"><span class="pre">EvidentialLogLoss</span></span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.2.0-pre-alpha/src/probly/losses.py#L10"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.losses.EvidentialLogLoss" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.losses.</span></span><span class="sig-name descname"><span class="pre">EvidentialLogLoss</span></span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.3.0/src/probly/losses.py#L10"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.losses.EvidentialLogLoss" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></a></p>
 <p>Evidential Log Loss based on <a class="reference external" href="https://arxiv.org/abs/1806.01768">https://arxiv.org/abs/1806.01768</a>.</p>
 <dl class="field-list simple">
 </dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="probly.losses.EvidentialLogLoss.forward">
-<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">targets</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.2.0-pre-alpha/src/probly/losses.py#L17"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.losses.EvidentialLogLoss.forward" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">targets</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.3.0/src/probly/losses.py#L17"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.losses.EvidentialLogLoss.forward" title="Link to this definition">¶</a></dt>
 <dd><p>Forward pass of the evidential log loss.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -467,14 +467,14 @@
 
 <dl class="py class">
 <dt class="sig sig-object py" id="probly.losses.EvidentialMSELoss">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.losses.</span></span><span class="sig-name descname"><span class="pre">EvidentialMSELoss</span></span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.2.0-pre-alpha/src/probly/losses.py#L58"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.losses.EvidentialMSELoss" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.losses.</span></span><span class="sig-name descname"><span class="pre">EvidentialMSELoss</span></span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.3.0/src/probly/losses.py#L58"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.losses.EvidentialMSELoss" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></a></p>
 <p>Evidential Mean Square Error Loss based on <a class="reference external" href="https://arxiv.org/abs/1806.01768">https://arxiv.org/abs/1806.01768</a>.</p>
 <dl class="field-list simple">
 </dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="probly.losses.EvidentialMSELoss.forward">
-<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">targets</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.2.0-pre-alpha/src/probly/losses.py#L65"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.losses.EvidentialMSELoss.forward" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">targets</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.3.0/src/probly/losses.py#L65"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.losses.EvidentialMSELoss.forward" title="Link to this definition">¶</a></dt>
 <dd><p>Forward pass of the evidential mean squared error loss.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -499,7 +499,7 @@
 
 <dl class="py class">
 <dt class="sig sig-object py" id="probly.losses.EvidentialNIGNLLLoss">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.losses.</span></span><span class="sig-name descname"><span class="pre">EvidentialNIGNLLLoss</span></span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.2.0-pre-alpha/src/probly/losses.py#L118"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.losses.EvidentialNIGNLLLoss" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.losses.</span></span><span class="sig-name descname"><span class="pre">EvidentialNIGNLLLoss</span></span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.3.0/src/probly/losses.py#L118"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.losses.EvidentialNIGNLLLoss" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></a></p>
 <p>Evidential normal inverse gamma negative log likelihood loss.</p>
 <p>Implementation is based on <a class="reference external" href="https://arxiv.org/abs/1910.02600">https://arxiv.org/abs/1910.02600</a>.</p>
@@ -507,7 +507,7 @@
 </dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="probly.losses.EvidentialNIGNLLLoss.forward">
-<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">targets</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.2.0-pre-alpha/src/probly/losses.py#L128"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.losses.EvidentialNIGNLLLoss.forward" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">targets</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.3.0/src/probly/losses.py#L128"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.losses.EvidentialNIGNLLLoss.forward" title="Link to this definition">¶</a></dt>
 <dd><p>Forward pass of the evidential normal inverse gamma negative log likelihood loss.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -532,14 +532,14 @@
 
 <dl class="py class">
 <dt class="sig sig-object py" id="probly.losses.EvidentialRegressionRegularization">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.losses.</span></span><span class="sig-name descname"><span class="pre">EvidentialRegressionRegularization</span></span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.2.0-pre-alpha/src/probly/losses.py#L150"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.losses.EvidentialRegressionRegularization" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.losses.</span></span><span class="sig-name descname"><span class="pre">EvidentialRegressionRegularization</span></span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.3.0/src/probly/losses.py#L150"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.losses.EvidentialRegressionRegularization" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></a></p>
 <p>Implementation of the evidential regression regularization.</p>
 <dl class="field-list simple">
 </dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="probly.losses.EvidentialRegressionRegularization.forward">
-<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">targets</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.2.0-pre-alpha/src/probly/losses.py#L157"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.losses.EvidentialRegressionRegularization.forward" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">targets</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.3.0/src/probly/losses.py#L157"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.losses.EvidentialRegressionRegularization.forward" title="Link to this definition">¶</a></dt>
 <dd><p>Forward pass of the evidential regression regularization.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -564,7 +564,7 @@
 
 <dl class="py class">
 <dt class="sig sig-object py" id="probly.losses.ExpectedCalibrationError">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.losses.</span></span><span class="sig-name descname"><span class="pre">ExpectedCalibrationError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_bins</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.2.0-pre-alpha/src/probly/losses.py#L242"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.losses.ExpectedCalibrationError" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.losses.</span></span><span class="sig-name descname"><span class="pre">ExpectedCalibrationError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_bins</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.3.0/src/probly/losses.py#L242"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.losses.ExpectedCalibrationError" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></a></p>
 <p>Expected Calibration Error (ECE).</p>
 <dl class="field-list simple">
@@ -586,7 +586,7 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="probly.losses.ExpectedCalibrationError.forward">
-<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">targets</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.2.0-pre-alpha/src/probly/losses.py#L260"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.losses.ExpectedCalibrationError.forward" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">targets</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.3.0/src/probly/losses.py#L260"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.losses.ExpectedCalibrationError.forward" title="Link to this definition">¶</a></dt>
 <dd><p>Forward pass of the expected calibration error.</p>
 <p>Assumes that inputs are probability distributions over classes.</p>
 <dl class="field-list simple">
@@ -612,7 +612,7 @@
 
 <dl class="py class">
 <dt class="sig sig-object py" id="probly.losses.FocalLoss">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.losses.</span></span><span class="sig-name descname"><span class="pre">FocalLoss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.2.0-pre-alpha/src/probly/losses.py#L172"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.losses.FocalLoss" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.losses.</span></span><span class="sig-name descname"><span class="pre">FocalLoss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.3.0/src/probly/losses.py#L172"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.losses.FocalLoss" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></a></p>
 <p>Focal Loss based on <a class="reference external" href="https://arxiv.org/abs/1708.02002">https://arxiv.org/abs/1708.02002</a>.</p>
 <dl class="field-list simple">
@@ -637,7 +637,7 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="probly.losses.FocalLoss.forward">
-<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">targets</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.2.0-pre-alpha/src/probly/losses.py#L191"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.losses.FocalLoss.forward" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">targets</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.3.0/src/probly/losses.py#L191"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.losses.FocalLoss.forward" title="Link to this definition">¶</a></dt>
 <dd><p>Forward pass of the focal loss.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -662,7 +662,7 @@
 
 <dl class="py class">
 <dt class="sig sig-object py" id="probly.losses.LabelRelaxationLoss">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.losses.</span></span><span class="sig-name descname"><span class="pre">LabelRelaxationLoss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.2.0-pre-alpha/src/probly/losses.py#L288"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.losses.LabelRelaxationLoss" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.losses.</span></span><span class="sig-name descname"><span class="pre">LabelRelaxationLoss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.3.0/src/probly/losses.py#L288"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.losses.LabelRelaxationLoss" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></a></p>
 <p>Label Relaxation Loss from <a class="reference external" href="https://ojs.aaai.org/index.php/AAAI/article/view/17041">https://ojs.aaai.org/index.php/AAAI/article/view/17041</a>.</p>
 <p>This loss is used to improve the calibration of a neural network. It works by minimizing
@@ -684,7 +684,7 @@ of the credal set and thus the amount of label relaxation.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="probly.losses.LabelRelaxationLoss.forward">
-<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">targets</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.2.0-pre-alpha/src/probly/losses.py#L312"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.losses.LabelRelaxationLoss.forward" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">targets</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.3.0/src/probly/losses.py#L312"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.losses.LabelRelaxationLoss.forward" title="Link to this definition">¶</a></dt>
 <dd><p>Forward pass of the label relaxation loss.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -822,7 +822,7 @@ of the credal set and thus the amount of label relaxation.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=938c9ccc"></script>
+</div><script src="../_static/documentation_options.js?v=e259d695"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/scripts/furo.js?v=5fa4622c"></script>

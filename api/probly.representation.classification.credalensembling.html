@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="probly.representation.classification.evidential" href="probly.representation.classification.evidential.html" /><link rel="prev" title="probly.representation.classification" href="probly.representation.classification.html" />
 
     <!-- Generated with Sphinx 8.1.3 and Furo 2024.08.06 -->
-        <title>probly.representation.classification.credalensembling - probly 0.2.0 documentation</title>
+        <title>probly.representation.classification.credalensembling - probly 0.3.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=354aac6f" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">probly 0.2.0 documentation</div></a>
+      <a href="../index.html"><div class="brand">probly 0.3.0 documentation</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -302,7 +302,7 @@
 </div>
 <dl class="py class">
 <dt class="sig sig-object py" id="probly.representation.classification.credalensembling.CredalEnsembling">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.classification.credalensembling.</span></span><span class="sig-name descname"><span class="pre">CredalEnsembling</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_members</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.2.0-pre-alpha/src/probly/representation/classification/credalensembling.py#L11"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.classification.credalensembling.CredalEnsembling" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.classification.credalensembling.</span></span><span class="sig-name descname"><span class="pre">CredalEnsembling</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_members</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.3.0/src/probly/representation/classification/credalensembling.py#L11"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.classification.credalensembling.CredalEnsembling" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="probly.representation.ensemble.html#probly.representation.ensemble.Ensemble" title="probly.representation.ensemble.Ensemble"><code class="xref py py-class docutils literal notranslate"><span class="pre">Ensemble</span></code></a></p>
 <p>Implementation of a credal ensembling representation to be used for uncertainty quantification.</p>
 <p>The Credal Ensembling representation was introduced in <a class="reference external" href="https://link.springer.com/article/10.1007/s10994-024-06703-y">https://link.springer.com/article/10.1007/s10994-024-06703-y</a>.</p>
@@ -322,7 +322,7 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="probly.representation.classification.credalensembling.CredalEnsembling.predict_representation">
-<span class="sig-name descname"><span class="pre">predict_representation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'euclidean'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.2.0-pre-alpha/src/probly/representation/classification/credalensembling.py#L31"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.classification.credalensembling.CredalEnsembling.predict_representation" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">predict_representation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'euclidean'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.3.0/src/probly/representation/classification/credalensembling.py#L31"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.classification.credalensembling.CredalEnsembling.predict_representation" title="Link to this definition">¶</a></dt>
 <dd><p>Forward pass that gives an uncertainty representation.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -418,7 +418,7 @@
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=938c9ccc"></script>
+</div><script src="../_static/documentation_options.js?v=e259d695"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/scripts/furo.js?v=5fa4622c"></script>

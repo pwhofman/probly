@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="probly.metrics" href="probly.metrics.html" /><link rel="prev" title="probly.quantification.classification" href="probly.quantification.classification.html" />
 
     <!-- Generated with Sphinx 8.1.3 and Furo 2024.08.06 -->
-        <title>probly.quantification.regression - probly 0.2.0 documentation</title>
+        <title>probly.quantification.regression - probly 0.3.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=354aac6f" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -168,7 +168,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">probly 0.2.0 documentation</div></a>
+      <a href="../index.html"><div class="brand">probly 0.3.0 documentation</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -317,7 +317,7 @@
 </div>
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.quantification.regression.conditional_differential_entropy">
-<span class="sig-prename descclassname"><span class="pre">probly.quantification.regression.</span></span><span class="sig-name descname"><span class="pre">conditional_differential_entropy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.2.0-pre-alpha/src/probly/quantification/regression.py#L92"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.quantification.regression.conditional_differential_entropy" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">probly.quantification.regression.</span></span><span class="sig-name descname"><span class="pre">conditional_differential_entropy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.3.0/src/probly/quantification/regression.py#L92"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.quantification.regression.conditional_differential_entropy" title="Link to this definition">¶</a></dt>
 <dd><p>Compute conditional differential entropy as the aleatoric uncertainty using entropy-based measures.</p>
 <p>Assume that the input is from a distribution over parameters of
 a normal distribution. The first element of the parameter vector is the mean
@@ -341,7 +341,7 @@ The aleatoric uncertainty is the mean of the differential entropy of the samples
 
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.quantification.regression.expected_conditional_variance">
-<span class="sig-prename descclassname"><span class="pre">probly.quantification.regression.</span></span><span class="sig-name descname"><span class="pre">expected_conditional_variance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.2.0-pre-alpha/src/probly/quantification/regression.py#L34"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.quantification.regression.expected_conditional_variance" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">probly.quantification.regression.</span></span><span class="sig-name descname"><span class="pre">expected_conditional_variance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.3.0/src/probly/quantification/regression.py#L34"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.quantification.regression.expected_conditional_variance" title="Link to this definition">¶</a></dt>
 <dd><p>Compute expected conditional variance as the aleatoric uncertainty using variance-based measures.</p>
 <p>Assume that the input is from a distribution over parameters of
 a normal distribution. The first element of the parameter vector is the mean
@@ -365,7 +365,7 @@ The aleatoric uncertainty is the mean of the variance of the samples.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.quantification.regression.mutual_information">
-<span class="sig-prename descclassname"><span class="pre">probly.quantification.regression.</span></span><span class="sig-name descname"><span class="pre">mutual_information</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.2.0-pre-alpha/src/probly/quantification/regression.py#L111"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.quantification.regression.mutual_information" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">probly.quantification.regression.</span></span><span class="sig-name descname"><span class="pre">mutual_information</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.3.0/src/probly/quantification/regression.py#L111"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.quantification.regression.mutual_information" title="Link to this definition">¶</a></dt>
 <dd><p>Compute mutual information as the epistemic uncertainty using entropy-based measures.</p>
 <p>Assume that the input is from a distribution over parameters of
 a normal distribution. The first element of the parameter vector is the mean
@@ -390,7 +390,7 @@ to the mean distribution.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.quantification.regression.total_differential_entropy">
-<span class="sig-prename descclassname"><span class="pre">probly.quantification.regression.</span></span><span class="sig-name descname"><span class="pre">total_differential_entropy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.2.0-pre-alpha/src/probly/quantification/regression.py#L72"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.quantification.regression.total_differential_entropy" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">probly.quantification.regression.</span></span><span class="sig-name descname"><span class="pre">total_differential_entropy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.3.0/src/probly/quantification/regression.py#L72"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.quantification.regression.total_differential_entropy" title="Link to this definition">¶</a></dt>
 <dd><p>Compute total differential entropy as the epistemic uncertainty using entropy-based measures.</p>
 <p>Assume that the input is from a distribution over parameters of
 a normal distribution. The first element of the parameter vector is the mean
@@ -414,7 +414,7 @@ The total uncertainty is the differential entropy of the mixture of normal distr
 
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.quantification.regression.total_variance">
-<span class="sig-prename descclassname"><span class="pre">probly.quantification.regression.</span></span><span class="sig-name descname"><span class="pre">total_variance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.2.0-pre-alpha/src/probly/quantification/regression.py#L15"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.quantification.regression.total_variance" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">probly.quantification.regression.</span></span><span class="sig-name descname"><span class="pre">total_variance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.3.0/src/probly/quantification/regression.py#L15"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.quantification.regression.total_variance" title="Link to this definition">¶</a></dt>
 <dd><p>Compute total variance as the total uncertainty using variance-based measures.</p>
 <p>Assumes that the input is from a distribution over parameters of
 a normal distribution. The first element of the parameter vector is the mean
@@ -438,7 +438,7 @@ The total uncertainty is the variance of the mixture of normal distributions.</p
 
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.quantification.regression.variance_conditional_expectation">
-<span class="sig-prename descclassname"><span class="pre">probly.quantification.regression.</span></span><span class="sig-name descname"><span class="pre">variance_conditional_expectation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.2.0-pre-alpha/src/probly/quantification/regression.py#L53"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.quantification.regression.variance_conditional_expectation" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">probly.quantification.regression.</span></span><span class="sig-name descname"><span class="pre">variance_conditional_expectation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.3.0/src/probly/quantification/regression.py#L53"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.quantification.regression.variance_conditional_expectation" title="Link to this definition">¶</a></dt>
 <dd><p>Compute variance of conditional expectation as the epistemic uncertainty using variance-based measures.</p>
 <p>Assume that the input is from a distribution over parameters of
 a normal distribution. The first element of the parameter vector is the mean
@@ -535,7 +535,7 @@ The epistemic uncertainty is the variance of the mean of the samples.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=938c9ccc"></script>
+</div><script src="../_static/documentation_options.js?v=e259d695"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/scripts/furo.js?v=5fa4622c"></script>
