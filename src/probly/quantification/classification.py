@@ -159,7 +159,7 @@ def expected_conditional_variance(probs: np.ndarray) -> np.ndarray:
 def variance_conditional_expectation(probs: np.ndarray) -> np.ndarray:
     """Compute the epistemic uncertainty using variance-based measures.
 
-     The computation is based on samples from a second-order distribution.
+    The computation is based on samples from a second-order distribution.
 
     Args:
         probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
