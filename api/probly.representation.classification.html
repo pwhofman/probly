@@ -291,6 +291,50 @@
 <span id="probly-representation-classification"></span><h1>probly.representation.classification<a class="headerlink" href="#module-probly.representation.classification" title="Link to this heading">¶</a></h1>
 <p>Init module for classification specific representation methods.</p>
 <dl class="py class">
+<dt class="sig sig-object py" id="probly.representation.classification.CredalEnsembling">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.classification.</span></span><span class="sig-name descname"><span class="pre">CredalEnsembling</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_members</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.3.0/src/probly/representation/classification/credalensembling.py#L11"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.classification.CredalEnsembling" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="probly.representation.ensemble.html#probly.representation.ensemble.Ensemble" title="probly.representation.ensemble.Ensemble"><code class="xref py py-class docutils literal notranslate"><span class="pre">Ensemble</span></code></a></p>
+<p>Implementation of a credal ensembling representation to be used for uncertainty quantification.</p>
+<p>The Credal Ensembling representation was introduced in <a class="reference external" href="https://link.springer.com/article/10.1007/s10994-024-06703-y">https://link.springer.com/article/10.1007/s10994-024-06703-y</a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>base</strong> (<em>nn.Module</em>)</p></li>
+<li><p><strong>n_members</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="probly.representation.classification.CredalEnsembling.models">
+<span class="sig-name descname"><span class="pre">models</span></span><a class="headerlink" href="#probly.representation.classification.CredalEnsembling.models" title="Link to this definition">¶</a></dt>
+<dd><p>torch.nn.ModuleList, the list of models in the ensemble based on the base model.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="probly.representation.classification.CredalEnsembling.predict_representation">
+<span class="sig-name descname"><span class="pre">predict_representation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'euclidean'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.3.0/src/probly/representation/classification/credalensembling.py#L31"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.classification.CredalEnsembling.predict_representation" title="Link to this definition">¶</a></dt>
+<dd><p>Forward pass that gives an uncertainty representation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>x</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.7)"><em>Tensor</em></a>) – torch.Tensor, input data</p></li>
+<li><p><strong>alpha</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – float, the portion of farthest members in terms of distance to be removed</p></li>
+<li><p><strong>distance</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – str, the distance metric to be used for the representation
+(e.g., ‘euclidean’, ‘kl’)</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>torch.Tensor, uncertainty representation</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="probly.representation.classification.Evidential">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.classification.</span></span><span class="sig-name descname"><span class="pre">Evidential</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">activation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">Softplus(beta=1.0,</span> <span class="pre">threshold=20.0)</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/pwhofman/probly/blob/v0.3.0/src/probly/representation/classification/evidential.py#L11"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.classification.Evidential" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></a></p>
@@ -458,6 +502,11 @@
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">probly.representation.classification</a><ul>
+<li><a class="reference internal" href="#probly.representation.classification.CredalEnsembling"><code class="docutils literal notranslate"><span class="pre">CredalEnsembling</span></code></a><ul>
+<li><a class="reference internal" href="#probly.representation.classification.CredalEnsembling.models"><code class="docutils literal notranslate"><span class="pre">CredalEnsembling.models</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.classification.CredalEnsembling.predict_representation"><code class="docutils literal notranslate"><span class="pre">CredalEnsembling.predict_representation()</span></code></a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#probly.representation.classification.Evidential"><code class="docutils literal notranslate"><span class="pre">Evidential</span></code></a><ul>
 <li><a class="reference internal" href="#probly.representation.classification.Evidential.model"><code class="docutils literal notranslate"><span class="pre">Evidential.model</span></code></a></li>
 <li><a class="reference internal" href="#probly.representation.classification.Evidential.forward"><code class="docutils literal notranslate"><span class="pre">Evidential.forward()</span></code></a></li>
