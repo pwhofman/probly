@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 
 class CIFAR10H(torchvision.datasets.CIFAR10):
-    """A Dataset class for the CIFAR10H dataset introduced in https://arxiv.org/abs/1908.07086.
+    """A Dataset class for the CIFAR10H dataset introduced in :cite:`petersonHumanUncertainty2019`.
 
     The dataset can be found at https://github.com/jcpeterson/cifar-10h.
 
@@ -42,7 +42,7 @@ class CIFAR10H(torchvision.datasets.CIFAR10):
 
 
 class ImageNetReaL(torchvision.datasets.ImageNet):
-    """A Dataset class for the ImageNet ReaL dataset introduced in https://arxiv.org/abs/2006.07159.
+    """A Dataset class for the ImageNet ReaL dataset introduced in :cite:`beyerDoneImageNet2020`.
 
     This dataset is a re-labeled version of the ImageNet validation set, where each image can belong
     to multiple classes resulting in a distribution over classes.
@@ -94,7 +94,7 @@ class ImageNetReaL(torchvision.datasets.ImageNet):
 
 
 class DCICDataset(torch.utils.data.Dataset):
-    """A Dataset base class for the DCICDatasets introduced in https://arxiv.org/abs/2207.06214.
+    """A Dataset base class for the DCICDatasets introduced in :cite:`schmarjeIsOne2022`.
 
     These datasets can be found at https://zenodo.org/records/7180818.
 

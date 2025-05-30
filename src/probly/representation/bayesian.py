@@ -14,7 +14,7 @@ from probly.representation.layers import BayesConv2d, BayesLinear
 class Bayesian(nn.Module):
     """Implementation of a Bayesian neural network to be used for uncertainty quantification.
 
-    Implementation is based on https://arxiv.org/abs/1505.05424.
+    Implementation is based on :cite:`blundellWeightUncertainty2015`.
 
     Attributes:
         model: torch.nn.Module, The transformed model with Bayesian layers.
