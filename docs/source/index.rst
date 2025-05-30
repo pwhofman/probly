@@ -17,6 +17,7 @@ If you have any questions, suggestions, or issues, please open an issue on GitHu
    :caption: Content
 
    methods
+   references
 
 .. toctree::
    :maxdepth: 2

@@ -52,7 +52,3 @@ These methods adjust the model's probabilities to better reflect the true probab
 
 #### Temperature Scaling
 {cite:p}`guoOnCalibration2017`
-
-# References
-```{bibliography} references.bib
-```
