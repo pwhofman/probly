@@ -27,7 +27,6 @@ jobs:
 
       - name: Copy content to docs/source folder
         run: |
-          cp docs/methods.md docs/source/methods.md
           cp .github/CONTRIBUTING.md docs/source/contributing.md
 
       - name: Build Sphinx documentation

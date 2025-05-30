@@ -5,13 +5,10 @@ The following methods are currently implemented in `probly`.
 ### Second-order Distributions
 These methods represent (epistemic) uncertainty by a second-order distribution over distributions.
 #### Bayesian Neural Networks
-[https://arxiv.org/abs/1505.05424](https://arxiv.org/abs/1505.05424)
+Text {cite:p}`blundellWeightUncertainty2015`
 #### Dropout
-https://arxiv.org/abs/1506.02142
-
 
 #### Deep Ensembles
-https://arxiv.org/abs/1612.01474
 #### Evidential Deep Learning
 
 ### Credal Sets
@@ -38,3 +35,7 @@ https://arxiv.org/abs/1612.01474
 #### Temperature Scaling
 
 ####
+
+## References
+```{bibliography} references.bib
+```

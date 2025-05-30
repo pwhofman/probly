@@ -41,11 +41,14 @@ extensions = [
     "sphinx.ext.mathjax",  # for math support
     "sphinx.ext.doctest",  # for testing code snippets in the docs
     "sphinx_copybutton",  # adds a copy button to code blocks
-    "sphinx.ext.autosectionlabel",  # for auto-generating section labels
+    "sphinx.ext.autosectionlabel",  # for auto-generating section labels,
+    "sphinxcontrib.bibtex",  # for bibliography support
 ]
 
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+bibtex_bibfiles = ["references.bib"]
+bibtex_default_style = "alpha"
 
 intersphinx_mapping = {
     "python3": ("https://docs.python.org/3", None),
