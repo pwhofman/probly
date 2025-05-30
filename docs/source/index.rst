@@ -13,7 +13,19 @@ If you have any questions, suggestions, or issues, please open an issue on GitHu
 
 
 .. toctree::
+   :maxdepth: 1
+   :caption: Content
+
+   methods
+
+.. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: API
 
    api
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Development
+
+   contributing
