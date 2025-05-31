@@ -117,8 +117,11 @@ html_sidebars = {
         "sidebar/navigation.html",
         "sidebar/ethical-ads.html",
         "sidebar/scroll-end.html",
+        "sidebar/footer.html",  # to get the github link in the footer of the sidebar
     ],
 }
+
+html_show_sourcelink = False  # to remove button next to dark mode showing source in txt format
 
 # -- Autodoc ---------------------------------------------------------------------------------------
 autosummary_generate = True
