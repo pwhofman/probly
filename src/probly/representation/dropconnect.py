@@ -14,7 +14,7 @@ from probly.representation.layers import DropConnectLinear
 class DropConnect(nn.Module):
     """Implementation of a DropConnect model to be used for uncertainty quantification.
 
-    Implementation is based on https://proceedings.mlr.press/v28/wan13.pdf.
+    Implementation is based on :cite:`mobinyDropConnectEffective2019`.
 
     Attributes:
         p: float, the probability of dropping out individual weights.

@@ -11,7 +11,7 @@ from probly.representation import Ensemble
 class CredalEnsembling(Ensemble):
     """Implementation of a credal ensembling representation to be used for uncertainty quantification.
 
-    The Credal Ensembling representation was introduced in https://link.springer.com/article/10.1007/s10994-024-06703-y.
+    The Credal Ensembling representation was introduced in :cite:`nguyenCredalEnsembling2025`.
 
     Attributes:
         models: torch.nn.ModuleList, the list of models in the ensemble based on the base model.

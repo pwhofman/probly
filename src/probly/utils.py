@@ -154,7 +154,7 @@ def temperature_softmax(logits: torch.Tensor, temperature: float | torch.Tensor)
 def intersection_probability(probs: np.ndarray) -> np.ndarray:
     """Compute the intersection probability of a credal set based on intervals of lower and upper probabilities.
 
-    Computes the intersection probability from https://arxiv.org/pdf/2201.01729.
+    Computes the intersection probability from :cite:`cuzzolinIntersectionProbability2022`.
 
     Args:
         probs: numpy.ndarray, shape (n_instances, n_samples, n_classes), credal sets

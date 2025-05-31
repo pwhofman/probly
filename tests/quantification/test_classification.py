@@ -12,7 +12,7 @@ from tests.utils import validate_uncertainty
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-from probly.metrics import brier_score, log_loss, zero_one_loss
+from probly.metrics import brier_score, log_loss, spherical_score, zero_one_loss
 from probly.quantification.classification import (
     aleatoric_uncertainty_distance,
     conditional_entropy,
@@ -90,7 +90,7 @@ def test_loss_uncertainty_function(
     sample_second_order_data: tuple[np.ndarray, np.ndarray],
 ) -> None:
     probs2d, probs3d = sample_second_order_data
-    for loss_fn in [log_loss, brier_score, zero_one_loss]:
+    for loss_fn in [log_loss, brier_score, zero_one_loss, spherical_score]:
         uncertainty = uncertainty_fn(probs2d, loss_fn)
         validate_uncertainty(uncertainty)
 

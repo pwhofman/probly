@@ -41,11 +41,14 @@ extensions = [
     "sphinx.ext.mathjax",  # for math support
     "sphinx.ext.doctest",  # for testing code snippets in the docs
     "sphinx_copybutton",  # adds a copy button to code blocks
-    "sphinx.ext.autosectionlabel",  # for auto-generating section labels
+    "sphinx.ext.autosectionlabel",  # for auto-generating section labels,
+    "sphinxcontrib.bibtex",  # for bibliography support
 ]
 
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+bibtex_bibfiles = ["references.bib"]
+bibtex_default_style = "alpha"
 
 intersphinx_mapping = {
     "python3": ("https://docs.python.org/3", None),
@@ -114,8 +117,11 @@ html_sidebars = {
         "sidebar/navigation.html",
         "sidebar/ethical-ads.html",
         "sidebar/scroll-end.html",
+        "sidebar/footer.html",  # to get the github link in the footer of the sidebar
     ],
 }
+
+html_show_sourcelink = False  # to remove button next to dark mode showing source in txt format
 
 # -- Autodoc ---------------------------------------------------------------------------------------
 autosummary_generate = True

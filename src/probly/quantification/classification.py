@@ -176,7 +176,7 @@ def variance_conditional_expectation(probs: np.ndarray) -> np.ndarray:
 def total_uncertainty_distance(probs: np.ndarray) -> np.ndarray:
     """Compute the total uncertainty using samples from a second-order distribution.
 
-    The measure of total uncertainty is from https://arxiv.org/pdf/2312.00995.
+    The measure of total uncertainty is from :cite:`saleSecondOrder2024`.
 
     Args:
         probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
@@ -193,7 +193,7 @@ def total_uncertainty_distance(probs: np.ndarray) -> np.ndarray:
 def aleatoric_uncertainty_distance(probs: np.ndarray) -> np.ndarray:
     """Compute the aleatoric uncertainty using samples from a second-order distribution.
 
-    The measure of aleatoric uncertainty is from https://arxiv.org/pdf/2312.00995.
+    The measure of aleatoric uncertainty is from :cite:`saleSecondOrder2024`.
 
     Args:
         probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
@@ -209,7 +209,7 @@ def aleatoric_uncertainty_distance(probs: np.ndarray) -> np.ndarray:
 def epistemic_uncertainty_distance(probs: np.ndarray) -> np.ndarray:
     """Compute the epistemic uncertainty using samples from a second-order distribution.
 
-    The measure of epistemic uncertainty is from https://arxiv.org/pdf/2312.00995.
+    The measure of epistemic uncertainty is from :cite:`saleSecondOrder2024`.
 
     Args:
         probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)

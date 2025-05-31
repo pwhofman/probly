@@ -8,7 +8,7 @@ import torch.nn.functional as F
 
 
 class EvidentialLogLoss(nn.Module):
-    """Evidential Log Loss based on https://arxiv.org/abs/1806.01768."""
+    """Evidential Log Loss based on :cite:`sensoyEvidentialDeep2018`."""
 
     def __init__(self) -> None:
         """Intialize an instance of the EvidentialLogLoss class."""
@@ -32,7 +32,7 @@ class EvidentialLogLoss(nn.Module):
 
 
 class EvidentialCELoss(nn.Module):
-    """Evidential Cross Entropy Loss based on https://arxiv.org/abs/1806.01768."""
+    """Evidential Cross Entropy Loss based on :cite:`sensoyEvidentialDeep2018`."""
 
     def __init__(self) -> None:
         """Intialize an instance of the EvidentialCELoss class."""
@@ -56,7 +56,7 @@ class EvidentialCELoss(nn.Module):
 
 
 class EvidentialMSELoss(nn.Module):
-    """Evidential Mean Square Error Loss based on https://arxiv.org/abs/1806.01768."""
+    """Evidential Mean Square Error Loss based on :cite:`sensoyEvidentialDeep2018`."""
 
     def __init__(self) -> None:
         """Intialize an instance of the EvidentialMSELoss class."""
@@ -84,7 +84,7 @@ class EvidentialMSELoss(nn.Module):
 
 
 class EvidentialKLDivergence(nn.Module):
-    """Evidential KL Divergence Loss based on https://arxiv.org/abs/1806.01768."""
+    """Evidential KL Divergence Loss based on :cite:`sensoyEvidentialDeep2018`."""
 
     def __init__(self) -> None:
         """Initialize an instance of the EvidentialKLDivergence class."""
@@ -118,7 +118,7 @@ class EvidentialKLDivergence(nn.Module):
 class EvidentialNIGNLLLoss(nn.Module):
     """Evidential normal inverse gamma negative log likelihood loss.
 
-    Implementation is based on https://arxiv.org/abs/1910.02600.
+    Implementation is based on :cite:`aminiDeepEvidential2020`.
     """
 
     def __init__(self) -> None:
@@ -170,7 +170,7 @@ class EvidentialRegressionRegularization(nn.Module):
 
 
 class FocalLoss(nn.Module):
-    """Focal Loss based on https://arxiv.org/abs/1708.02002.
+    """Focal Loss based on :cite:`linFocalLoss2017`.
 
     Attributes:
         alpha: float, control importance of minority class
@@ -210,7 +210,7 @@ class FocalLoss(nn.Module):
 
 
 class ELBOLoss(nn.Module):
-    """Evidence lower bound loss based on https://arxiv.org/abs/1505.05424.
+    """Evidence lower bound loss based on :cite:`blundellWeightUncertainty2015`.
 
     Attributes:
         kl_penalty: float, weight for KL divergence term
@@ -286,7 +286,7 @@ class ExpectedCalibrationError(nn.Module):
 
 
 class LabelRelaxationLoss(nn.Module):
-    """Label Relaxation Loss from https://ojs.aaai.org/index.php/AAAI/article/view/17041.
+    """Label Relaxation Loss from :cite:`lienenFromLabel2021`.
 
     This loss is used to improve the calibration of a neural network. It works by minimizing
     the Kullback-Leibler divergence between the predicted probabilities and the target distribution in the credal set

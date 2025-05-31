@@ -74,6 +74,7 @@ docs = [
     "myst-parser",              # Optional: Markdown support
     "sphinx-copybutton",        # Optional: Adds copy buttons to code blocks
     "sphinx-autodoc-typehints", # Optional: Show type hints in your API docs
+    "sphinxcontrib-bibtex",     # Optional: For bibliography support
 ]
 dev = [
     "ipykernel>=6.29.5",
