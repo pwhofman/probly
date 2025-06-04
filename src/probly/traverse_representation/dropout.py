@@ -1,3 +1,5 @@
+"""Dropout ensemble implementation for uncertainty quantification."""
+
 from __future__ import annotations
 
 from torch import nn
@@ -19,7 +21,10 @@ def _prepend_dropout(obj: nn.Module, p: float) -> nn.Sequential:
 def register(cls: type) -> None:
     """Register a class to be prepended by Dropout layers."""
     dropout_traverser.register(
-        cls, _prepend_dropout, skip_if=is_first_layer, vars={"p": P}
+        cls,
+        _prepend_dropout,
+        skip_if=is_first_layer,
+        vars={"p": P},
     )
 
 
