@@ -105,7 +105,6 @@ def test_top_sequential_basic() -> None:
 
 def test_top_sequential_with_name() -> None:
     """Test top_sequential with custom name."""
-
     composed = top_sequential(dummy_traverser, name="top_test")
     assert composed.__name__ == "top_test"  # type: ignore  # noqa: PGH003
     assert "top_test" in composed.__qualname__
@@ -182,7 +181,9 @@ class TestSingledispatchTraverser:
 
         @traverser.register(int)
         def int_handler(
-            obj: int, state: State[Any], traverse: TraverserCallback[Any]
+            obj: int,
+            state: State[Any],
+            traverse: TraverserCallback[Any],  # noqa: ARG001
         ) -> TraverserResult[Any]:
             return obj * 2, state
 

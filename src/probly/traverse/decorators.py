@@ -88,7 +88,9 @@ def _skip_if[T](traverser: Traverser[T], pred: StatePredicate) -> Traverser[T]:
     """
 
     def _traverser(
-        obj: T, state: State[T], traverse: TraverserCallback[T]
+        obj: T,
+        state: State[T],
+        traverse: TraverserCallback[T],
     ) -> TraverserResult[T]:
         if pred(state):
             return obj, state

@@ -1,4 +1,8 @@
-import torch.nn as nn
+"""DropConnect traverser for converting DropConnect layers in a model."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from probly.representation.layers import DropConnectLinear
 from probly.traverse import (
@@ -7,6 +11,9 @@ from probly.traverse import (
 from probly.traverse_nn import is_first_layer
 
 from .drop import Drop, P
+
+if TYPE_CHECKING:
+    from torch import nn
 
 dropconnect_traverser = singledispatch_traverser(name="dropconnect_traverser")
 
