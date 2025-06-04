@@ -41,11 +41,14 @@ extensions = [
     "sphinx.ext.mathjax",  # for math support
     "sphinx.ext.doctest",  # for testing code snippets in the docs
     "sphinx_copybutton",  # adds a copy button to code blocks
-    "sphinx.ext.autosectionlabel",  # for auto-generating section labels
+    "sphinx.ext.autosectionlabel",  # for auto-generating section labels,
+    "sphinxcontrib.bibtex",  # for bibliography support
 ]
 
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+bibtex_bibfiles = ["references.bib"]
+bibtex_default_style = "alpha"
 
 intersphinx_mapping = {
     "python3": ("https://docs.python.org/3", None),
@@ -97,7 +100,8 @@ html_static_path = ["_static"]
 html_css_files = [
     "css/custom.css",
 ]
-# html_favicon = "_static/logo/"  # TODO: add favicon  # noqa: ERA001
+# TODO(pwhofman): add favicon Issue: https://github.com/pwhofman/probly/issues/95
+# html_favicon = "_static/logo/"  # noqa: ERA001
 pygments_dark_style = "monokai"
 html_theme_options = {
     "sidebar_hide_name": True,
@@ -113,8 +117,11 @@ html_sidebars = {
         "sidebar/navigation.html",
         "sidebar/ethical-ads.html",
         "sidebar/scroll-end.html",
-    ]
+        "sidebar/footer.html",  # to get the github link in the footer of the sidebar
+    ],
 }
+
+html_show_sourcelink = False  # to remove button next to dark mode showing source in txt format
 
 # -- Autodoc ---------------------------------------------------------------------------------------
 autosummary_generate = True
@@ -127,7 +134,9 @@ autodoc_default_options = {
     "exclude-members": "__weakref__",
 }
 autoclass_content = "class"
-autodoc_inherit_docstrings = False  # TODO: maybe set this to True
+# TODO(pwhofman): maybe set this to True, Issue https://github.com/pwhofman/probly/issues/94
+autodoc_inherit_docstrings = False
+
 autodoc_typehints = "both"  # to show type hints in the docstring
 
 # -- Copy Paste Button -----------------------------------------------------------------------------

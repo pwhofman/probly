@@ -5,7 +5,6 @@ from __future__ import annotations
 import pytest
 import torch
 
-import probly
 from probly.losses import (
     ELBOLoss,
     EvidentialCELoss,
@@ -18,7 +17,7 @@ from probly.losses import (
     FocalLoss,
     LabelRelaxationLoss,
 )
-from probly.representation import Bayesian
+from probly.representation import Bayesian, classification, regression
 
 
 @pytest.fixture
@@ -38,8 +37,8 @@ def sample_outputs(conv_linear_model: torch.nn.Module) -> tuple[torch.Tensor, to
 @pytest.fixture
 def evidential_classification_model(
     conv_linear_model: torch.nn.Module,
-) -> probly.representation.classification.Evidential:
-    model = probly.representation.classification.Evidential(conv_linear_model)
+) -> classification.Evidential:
+    model = classification.Evidential(conv_linear_model)
     return model
 
 
@@ -52,7 +51,8 @@ def validate_loss(loss: torch.Tensor) -> None:
 
 
 def test_evidential_log_loss(
-    sample_classification_data: tuple[torch.Tensor, torch.Tensor], evidential_classification_model: torch.nn.Module
+    sample_classification_data: tuple[torch.Tensor, torch.Tensor],
+    evidential_classification_model: torch.nn.Module,
 ) -> None:
     inputs, targets = sample_classification_data
     outputs = evidential_classification_model(inputs)
@@ -62,7 +62,8 @@ def test_evidential_log_loss(
 
 
 def test_evidential_ce_loss(
-    sample_classification_data: tuple[torch.Tensor, torch.Tensor], evidential_classification_model: torch.nn.Module
+    sample_classification_data: tuple[torch.Tensor, torch.Tensor],
+    evidential_classification_model: torch.nn.Module,
 ) -> None:
     inputs, targets = sample_classification_data
     outputs = evidential_classification_model(inputs)
@@ -72,7 +73,8 @@ def test_evidential_ce_loss(
 
 
 def test_evidential_mse_loss(
-    sample_classification_data: tuple[torch.Tensor, torch.Tensor], evidential_classification_model: torch.nn.Module
+    sample_classification_data: tuple[torch.Tensor, torch.Tensor],
+    evidential_classification_model: torch.nn.Module,
 ) -> None:
     inputs, targets = sample_classification_data
     outputs = evidential_classification_model(inputs)
@@ -82,7 +84,8 @@ def test_evidential_mse_loss(
 
 
 def test_evidential_kl_divergence(
-    sample_classification_data: tuple[torch.Tensor, torch.Tensor], evidential_classification_model: torch.nn.Module
+    sample_classification_data: tuple[torch.Tensor, torch.Tensor],
+    evidential_classification_model: torch.nn.Module,
 ) -> None:
     inputs, targets = sample_classification_data
     outputs = evidential_classification_model(inputs)
@@ -94,7 +97,7 @@ def test_evidential_kl_divergence(
 def test_evidential_nig_nll_loss(regression_model_1d: torch.nn.Module, regression_model_2d: torch.nn.Module) -> None:
     inputs = torch.randn(2, 2)
     targets = torch.randn(2, 1)
-    model = probly.representation.regression.Evidential(regression_model_1d)
+    model = regression.Evidential(regression_model_1d)
     outputs = model(inputs)
     criterion = EvidentialNIGNLLLoss()
     loss = criterion(outputs, targets)
@@ -102,7 +105,7 @@ def test_evidential_nig_nll_loss(regression_model_1d: torch.nn.Module, regressio
 
     inputs = torch.randn(2, 4)
     targets = torch.randn(2, 2)
-    model = probly.representation.regression.Evidential(regression_model_2d)
+    model = regression.Evidential(regression_model_2d)
     outputs = model(inputs)
     criterion = EvidentialNIGNLLLoss()
     loss = criterion(outputs, targets)
@@ -110,11 +113,12 @@ def test_evidential_nig_nll_loss(regression_model_1d: torch.nn.Module, regressio
 
 
 def test_evidential_regression_regularization(
-    regression_model_1d: torch.nn.Module, regression_model_2d: torch.nn.Module
+    regression_model_1d: torch.nn.Module,
+    regression_model_2d: torch.nn.Module,
 ) -> None:
     inputs = torch.randn(2, 2)
     targets = torch.randn(2, 1)
-    model = probly.representation.regression.Evidential(regression_model_1d)
+    model = regression.Evidential(regression_model_1d)
     outputs = model(inputs)
     criterion = EvidentialRegressionRegularization()
     loss = criterion(outputs, targets)
@@ -122,7 +126,7 @@ def test_evidential_regression_regularization(
 
     inputs = torch.randn(2, 4)
     targets = torch.randn(2, 2)
-    model = probly.representation.regression.Evidential(regression_model_2d)
+    model = regression.Evidential(regression_model_2d)
     outputs = model(inputs)
     criterion = EvidentialRegressionRegularization()
     loss = criterion(outputs, targets)
@@ -134,11 +138,13 @@ def test_focal_loss(sample_outputs: tuple[torch.Tensor, torch.Tensor]) -> None:
     criterion = FocalLoss()
     loss = criterion(outputs, targets)
     validate_loss(loss)
-    # TODO: Add tests for different values of alpha and gamma
+    # TODO(pwhofman): Add tests for different values of alpha and gamma
+    # https://github.com/pwhofman/probly/issues/92
 
 
 def test_elbo_loss(
-    sample_classification_data: tuple[torch.Tensor, torch.Tensor], conv_linear_model: torch.nn.Module
+    sample_classification_data: tuple[torch.Tensor, torch.Tensor],
+    conv_linear_model: torch.nn.Module,
 ) -> None:
     inputs, targets = sample_classification_data
     model = Bayesian(conv_linear_model)

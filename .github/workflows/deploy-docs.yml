@@ -25,6 +25,10 @@ jobs:
       - name: Install pandoc
         run: sudo apt-get install -y pandoc
 
+      - name: Copy content to docs/source folder
+        run: |
+          cp .github/CONTRIBUTING.md docs/source/contributing.md
+
       - name: Build Sphinx documentation
         working-directory: ./docs
         run: |

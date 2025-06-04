@@ -74,7 +74,7 @@ class NormalInverseGammaLinear(nn.Module):
         init.kaiming_uniform_(self.alpha, a=math.sqrt(5))
         init.kaiming_uniform_(self.beta, a=math.sqrt(5))
         if self.gamma_bias is not None:
-            fan_in, _ = init._calculate_fan_in_and_fan_out(self.gamma)
+            fan_in, _ = init._calculate_fan_in_and_fan_out(self.gamma)  # noqa: SLF001
             bound = 1 / math.sqrt(fan_in) if fan_in > 0 else 0
             init.uniform_(self.gamma_bias, -bound, bound)
             init.uniform_(self.nu_bias, -bound, bound)

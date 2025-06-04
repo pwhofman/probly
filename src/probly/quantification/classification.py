@@ -14,6 +14,8 @@ from probly.utils import moebius, powerset
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+MINIMIZE_EPS = 1e-3  # A small epsilon to avoid problems when the initial solution of minimize is exactly uniform
+
 
 def total_entropy(probs: np.ndarray, base: float = 2) -> np.ndarray:
     """Compute the total entropy as the total uncertainty.
@@ -101,7 +103,8 @@ def expected_entropy(probs: np.ndarray, loss_fn: Callable[[np.ndarray, np.ndarra
 
 
 def expected_divergence(
-    probs: np.ndarray, loss_fn: Callable[[np.ndarray, np.ndarray | None], np.ndarray]
+    probs: np.ndarray,
+    loss_fn: Callable[[np.ndarray, np.ndarray | None], np.ndarray],
 ) -> np.ndarray:
     """Compute the expected divergence to the mean of the second-order distribution.
 
@@ -173,7 +176,7 @@ def variance_conditional_expectation(probs: np.ndarray) -> np.ndarray:
 def total_uncertainty_distance(probs: np.ndarray) -> np.ndarray:
     """Compute the total uncertainty using samples from a second-order distribution.
 
-    The measure of total uncertainty is from https://arxiv.org/pdf/2312.00995.
+    The measure of total uncertainty is from :cite:`saleSecondOrder2024`.
 
     Args:
         probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
@@ -190,7 +193,7 @@ def total_uncertainty_distance(probs: np.ndarray) -> np.ndarray:
 def aleatoric_uncertainty_distance(probs: np.ndarray) -> np.ndarray:
     """Compute the aleatoric uncertainty using samples from a second-order distribution.
 
-    The measure of aleatoric uncertainty is from https://arxiv.org/pdf/2312.00995.
+    The measure of aleatoric uncertainty is from :cite:`saleSecondOrder2024`.
 
     Args:
         probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
@@ -206,7 +209,7 @@ def aleatoric_uncertainty_distance(probs: np.ndarray) -> np.ndarray:
 def epistemic_uncertainty_distance(probs: np.ndarray) -> np.ndarray:
     """Compute the epistemic uncertainty using samples from a second-order distribution.
 
-    The measure of epistemic uncertainty is from https://arxiv.org/pdf/2312.00995.
+    The measure of epistemic uncertainty is from :cite:`saleSecondOrder2024`.
 
     Args:
         probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
@@ -276,6 +279,11 @@ def lower_entropy(probs: np.ndarray, base: float = 2) -> np.ndarray:
         return entropy(x, base=base)
 
     x0 = probs.mean(axis=1)
+    # If the initial solution is uniform, slightly perturb it, because minimize will fail otherwise
+    uniform_idxs = np.all(np.isclose(x0, 1 / probs.shape[2]), axis=1)
+    x0[uniform_idxs, 0] += MINIMIZE_EPS
+    x0[uniform_idxs, 1] -= MINIMIZE_EPS
+
     constraints = {"type": "eq", "fun": lambda x: np.sum(x) - 1}
     le = np.empty(probs.shape[0])
     for i in tqdm(range(probs.shape[0])):

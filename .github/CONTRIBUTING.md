@@ -42,7 +42,7 @@ If the feature you are implementing is based on a paper, make sure to include a 
 in the docstring.
 
 ### Code style
-We use [Ruff](https://docs.astral.sh/ruff/) for linting and formatting, the rules of which can be found in the [pyproject.toml](../pyproject.toml) file.
+We use [Ruff](https://docs.astral.sh/ruff/) for linting and formatting, the rules of which can be found in the [pyproject.toml](https://github.com/pwhofman/probly/blob/main/pyproject.toml) file.
 However, if your development environment is set up correctly, the Ruff pre-commit hook should take care of this for you.
 
 ### Documentation

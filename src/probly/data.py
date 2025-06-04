@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 
 class CIFAR10H(torchvision.datasets.CIFAR10):
-    """A Dataset class for the CIFAR10H dataset introduced in https://arxiv.org/abs/1908.07086.
+    """A Dataset class for the CIFAR10H dataset introduced in :cite:`petersonHumanUncertainty2019`.
 
     The dataset can be found at https://github.com/jcpeterson/cifar-10h.
 
@@ -42,7 +42,7 @@ class CIFAR10H(torchvision.datasets.CIFAR10):
 
 
 class ImageNetReaL(torchvision.datasets.ImageNet):
-    """A Dataset class for the ImageNet ReaL dataset introduced in https://arxiv.org/abs/2006.07159.
+    """A Dataset class for the ImageNet ReaL dataset introduced in :cite:`beyerDoneImageNet2020`.
 
     This dataset is a re-labeled version of the ImageNet validation set, where each image can belong
     to multiple classes resulting in a distribution over classes.
@@ -94,7 +94,7 @@ class ImageNetReaL(torchvision.datasets.ImageNet):
 
 
 class DCICDataset(torch.utils.data.Dataset):
-    """A Dataset base class for the DCICDatasets introduced in https://arxiv.org/abs/2207.06214.
+    """A Dataset base class for the DCICDatasets introduced in :cite:`schmarjeIsOne2022`.
 
     These datasets can be found at https://zenodo.org/records/7180818.
 
@@ -111,7 +111,11 @@ class DCICDataset(torch.utils.data.Dataset):
     """
 
     def __init__(
-        self, root: Path | str, transform: Callable[..., Any] | None = None, *, first_order: bool = True
+        self,
+        root: Path | str,
+        transform: Callable[..., Any] | None = None,
+        *,
+        first_order: bool = True,
     ) -> None:
         """Initialize an instance of the DCICDataset class.
 
@@ -139,20 +143,15 @@ class DCICDataset(torch.utils.data.Dataset):
                 self.image_labels[img_path].append(label)
 
         self.image_paths = list(self.image_labels.keys())
-        self.label_mappings = {
-            label: idx
-            for idx, label in enumerate(
-                {label for labels in self.image_labels.values() for label in labels}
-                # TODO simplify code here
-            )
-        }
+        unique_labels = {label for labels in self.image_labels.values() for label in labels}
+        self.label_mappings = {label: idx for idx, label in enumerate(unique_labels)}
         self.num_classes = len({label for labels in self.image_labels.values() for label in labels})
-
         self.data = []
         self.targets = []
         for img_path in self.image_paths:
             full_img_path = Path(self.root) / img_path
-            image = Image.open(full_img_path).convert("RGB").copy()  # TODO: optimize this loading process
+            # TODO(pwhofman): optimize this loading process https://github.com/pwhofman/probly/issues/93
+            image = Image.open(full_img_path).convert("RGB").copy()
             self.data.append(image)
             labels = self.image_labels[img_path]
             label_indices = [self.label_mappings[label] for label in labels]
@@ -196,7 +195,11 @@ class Benthic(DCICDataset):
     """
 
     def __init__(
-        self, root: Path | str, transform: Callable[..., Any] | None = None, *, first_order: bool = True
+        self,
+        root: Path | str,
+        transform: Callable[..., Any] | None = None,
+        *,
+        first_order: bool = True,
     ) -> None:
         """Initialize an instance of the Benthic dataset class.
 
@@ -215,7 +218,11 @@ class Plankton(DCICDataset):
     """
 
     def __init__(
-        self, root: Path | str, transform: Callable[..., Any] | None = None, *, first_order: bool = True
+        self,
+        root: Path | str,
+        transform: Callable[..., Any] | None = None,
+        *,
+        first_order: bool = True,
     ) -> None:
         """Initialize an instance of the Plankton dataset class.
 
@@ -234,7 +241,11 @@ class QualityMRI(DCICDataset):
     """
 
     def __init__(
-        self, root: Path | str, transform: Callable[..., Any] | None = None, *, first_order: bool = True
+        self,
+        root: Path | str,
+        transform: Callable[..., Any] | None = None,
+        *,
+        first_order: bool = True,
     ) -> None:
         """Initialize an instance of the QualityMRI dataset class.
 
@@ -253,7 +264,11 @@ class Treeversity1(DCICDataset):
     """
 
     def __init__(
-        self, root: Path | str, transform: Callable[..., Any] | None = None, *, first_order: bool = True
+        self,
+        root: Path | str,
+        transform: Callable[..., Any] | None = None,
+        *,
+        first_order: bool = True,
     ) -> None:
         """Initialize an instance of the Treeversity#1 dataset class.
 
@@ -272,7 +287,11 @@ class Treeversity6(DCICDataset):
     """
 
     def __init__(
-        self, root: Path | str, transform: Callable[..., Any] | None = None, *, first_order: bool = True
+        self,
+        root: Path | str,
+        transform: Callable[..., Any] | None = None,
+        *,
+        first_order: bool = True,
     ) -> None:
         """Initialize an instance of the Treeversity#6 dataset class.
 

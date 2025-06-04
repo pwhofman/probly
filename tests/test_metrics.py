@@ -8,6 +8,7 @@ import numpy as np
 import pytest
 
 from probly.metrics import (
+    ROUND_DECIMALS,
     brier_score,
     coverage,
     coverage_convex_hull,
@@ -66,7 +67,8 @@ def test_expected_calibration_error() -> None:
 
 
 def test_coverage(
-    sample_conformal_data: tuple[np.array, np.array], sample_first_order_data: tuple[np.array, np.array]
+    sample_conformal_data: tuple[np.array, np.array],
+    sample_first_order_data: tuple[np.array, np.array],
 ) -> None:
     preds, targets = sample_conformal_data
     cov = coverage(preds, targets)
@@ -78,7 +80,8 @@ def test_coverage(
 
 
 def test_efficiency(
-    sample_conformal_data: tuple[np.array, np.array], sample_first_order_data: tuple[np.array, np.array]
+    sample_conformal_data: tuple[np.array, np.array],
+    sample_first_order_data: tuple[np.array, np.array],
 ) -> None:
     preds, _ = sample_conformal_data
     eff = efficiency(preds)
@@ -96,19 +99,33 @@ def test_coverage_convex_hull(sample_first_order_data: tuple[np.array, np.array]
 
 
 def test_covered_efficiency(
-    sample_conformal_data: tuple[np.array, np.array], sample_first_order_data: tuple[np.array, np.array]
+    sample_conformal_data: tuple[np.array, np.array],
+    sample_first_order_data: tuple[np.array, np.array],
 ) -> None:
     preds, targets = sample_conformal_data
     eff = covered_efficiency(preds, targets)
-    validate_metric(eff)
+    covered = preds[np.arange(preds.shape[0]), targets]
+    # if none of the instances cover the target, the efficiency should be np.nan
+    if not np.any(covered):
+        assert math.isnan(eff)
+    else:
+        validate_metric(eff)
 
     probs, targets = sample_first_order_data
     eff = covered_efficiency(probs, targets)
-    validate_metric(eff)
+    probs_lower = np.round(np.nanmin(probs, axis=1), decimals=ROUND_DECIMALS)
+    probs_upper = np.round(np.nanmax(probs, axis=1), decimals=ROUND_DECIMALS)
+    covered = np.all((probs_lower <= targets) & (targets <= probs_upper), axis=1)
+    # if none of the instances cover the target, the efficiency should be np.nan
+    if not np.any(covered):
+        assert math.isnan(eff)
+    else:
+        validate_metric(eff)
 
 
 def test_log_loss(
-    sample_zero_order_data: tuple[np.array, np.array], sample_first_order_data: tuple[np.array, np.array]
+    sample_zero_order_data: tuple[np.array, np.array],
+    sample_first_order_data: tuple[np.array, np.array],
 ) -> None:
     probs, targets = sample_zero_order_data
     loss = log_loss(probs, targets)
@@ -120,7 +137,8 @@ def test_log_loss(
 
 
 def test_brier_score(
-    sample_zero_order_data: tuple[np.array, np.array], sample_first_order_data: tuple[np.array, np.array]
+    sample_zero_order_data: tuple[np.array, np.array],
+    sample_first_order_data: tuple[np.array, np.array],
 ) -> None:
     probs, targets = sample_zero_order_data
     loss = brier_score(probs, targets)
@@ -132,7 +150,8 @@ def test_brier_score(
 
 
 def test_zero_one_loss(
-    sample_zero_order_data: tuple[np.array, np.array], sample_first_order_data: tuple[np.array, np.array]
+    sample_zero_order_data: tuple[np.array, np.array],
+    sample_first_order_data: tuple[np.array, np.array],
 ) -> None:
     probs, targets = sample_zero_order_data
     loss = zero_one_loss(probs, targets)
@@ -144,7 +163,8 @@ def test_zero_one_loss(
 
 
 def test_spherical_score(
-    sample_zero_order_data: tuple[np.array, np.array], sample_first_order_data: tuple[np.array, np.array]
+    sample_zero_order_data: tuple[np.array, np.array],
+    sample_first_order_data: tuple[np.array, np.array],
 ) -> None:
     probs, targets = sample_zero_order_data
     loss = spherical_score(probs, targets)

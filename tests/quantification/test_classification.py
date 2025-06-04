@@ -12,7 +12,7 @@ from tests.utils import validate_uncertainty
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-from probly.metrics import brier_score, log_loss, zero_one_loss
+from probly.metrics import brier_score, log_loss, spherical_score, zero_one_loss
 from probly.quantification.classification import (
     aleatoric_uncertainty_distance,
     conditional_entropy,
@@ -43,6 +43,16 @@ def sample_second_order_data() -> tuple[np.ndarray, np.ndarray]:
     return probs2d, probs3d
 
 
+@pytest.fixture
+def simplex_uniform() -> np.ndarray:
+    return np.array([[[1 / 3, 1 / 3, 1 / 3], [1 / 3, 1 / 3, 1 / 3], [1 / 3, 1 / 3, 1 / 3]]])
+
+
+@pytest.fixture
+def simplex_vertices() -> np.ndarray:
+    return np.array([[[1, 0, 0], [0, 1, 0], [0, 0, 1]]])
+
+
 @pytest.mark.parametrize(
     "uncertainty_fn",
     [
@@ -63,7 +73,8 @@ def sample_second_order_data() -> tuple[np.ndarray, np.ndarray]:
     ],
 )
 def test_uncertainty_function(
-    uncertainty_fn: Callable[[np.ndarray], np.ndarray], sample_second_order_data: tuple[np.ndarray, np.ndarray]
+    uncertainty_fn: Callable[[np.ndarray], np.ndarray],
+    sample_second_order_data: tuple[np.ndarray, np.ndarray],
 ) -> None:
     probs2d, probs3d = sample_second_order_data
     uncertainty = uncertainty_fn(probs2d)
@@ -79,12 +90,28 @@ def test_loss_uncertainty_function(
     sample_second_order_data: tuple[np.ndarray, np.ndarray],
 ) -> None:
     probs2d, probs3d = sample_second_order_data
-    for loss_fn in [log_loss, brier_score, zero_one_loss]:
+    for loss_fn in [log_loss, brier_score, zero_one_loss, spherical_score]:
         uncertainty = uncertainty_fn(probs2d, loss_fn)
         validate_uncertainty(uncertainty)
 
         uncertainty = uncertainty_fn(probs3d, loss_fn)
         validate_uncertainty(uncertainty)
+
+
+def test_lower_entropy(simplex_vertices: np.ndarray, simplex_uniform: np.ndarray) -> None:
+    le = lower_entropy(simplex_vertices)
+    assert le == pytest.approx(0.0)
+
+    le = lower_entropy(simplex_uniform)
+    assert le == pytest.approx(1.5849625007)
+
+
+def test_upper_entropy(simplex_vertices: np.ndarray, simplex_uniform: np.ndarray) -> None:
+    ue = upper_entropy(simplex_vertices)
+    assert ue == pytest.approx(1.5849625007)
+
+    ue = upper_entropy(simplex_uniform)
+    assert ue == pytest.approx(1.5849625007)
 
 
 def test_evidential_uncertainty() -> None:
