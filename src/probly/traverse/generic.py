@@ -1,10 +1,15 @@
+"""Traverser for standard Python datatypes (tuples, lists, dicts, sets).
+
+This module provides a generic traverser that can handle common Python data structures
+using single dispatch. It includes configurable behavior for cloning and traversing
+dictionary keys.
 """
-Traverser for standard Python datatypes (tuples, lists, dicts, sets).
-"""
+
+from __future__ import annotations
 
 from typing import Any
 
-from probly.traverse.composition import singledispatch_traverser
+from probly.traverse.composition import SingledispatchTraverser
 from probly.traverse.core import (
     StackVariable,
     State,
@@ -13,71 +18,139 @@ from probly.traverse.core import (
 )
 
 CLONE = StackVariable[bool](
-    "CLONE", "Whether to clone datastructures before making changes.", default=True
+    "CLONE",
+    "Whether to clone datastructures before making changes.",
+    default=True,
 )
 TRAVERSE_KEYS = StackVariable[bool](
-    "TRAVERSE_KEYS", "Whether to traverse the keys of dictionaries.", default=False
+    "TRAVERSE_KEYS",
+    "Whether to traverse the keys of dictionaries.",
+    default=False,
 )
 
 
-generic_traverser = singledispatch_traverser(name="generic_traverser")
+generic_traverser = SingledispatchTraverser(name="generic_traverser")
 
 
 @generic_traverser.register
 def _tuple_traverser(
-    obj: tuple, state: State[tuple], traverse: TraverserCallback[Any]
+    obj: tuple,
+    state: State[tuple],
+    traverse: TraverserCallback[Any],
 ) -> TraverserResult[tuple]:
+    """Traverse tuple elements and reconstruct the tuple.
+
+    Always creates a new tuple since tuples are immutable.
+
+    Args:
+        obj: The tuple to traverse.
+        state: Current traversal state.
+        traverse: Callback for traversing child elements.
+
+    Returns:
+        A new tuple with traversed elements and updated state.
+    """
     new_obj = []
-    for i, o in enumerate(obj):
-        o, state = traverse(o, state, i)
-        new_obj.append(o)
+    for i, element in enumerate(obj):
+        new_element, state = traverse(element, state, i)
+        new_obj.append(new_element)
     return tuple(new_obj), state
 
 
 @generic_traverser.register
 def _list_traverser(
-    obj: list, state: State[list], traverse: TraverserCallback[Any]
+    obj: list,
+    state: State[list],
+    traverse: TraverserCallback[Any],
 ) -> TraverserResult[list]:
+    """Traverse list elements, optionally cloning the list.
+
+    Behavior depends on the CLONE variable:
+    - If True: Creates a new list with traversed elements
+    - If False: Modifies the original list in-place
+
+    Args:
+        obj: The list to traverse.
+        state: Current traversal state.
+        traverse: Callback for traversing child elements.
+
+    Returns:
+        The modified or new list and updated state.
+    """
     if state[CLONE]:
         new_obj = obj.__class__()
-        for i, o in enumerate(obj):
-            o, state = traverse(o, state, i)
-            new_obj.append(o)
+        for i, element in enumerate(obj):
+            new_element, state = traverse(element, state, i)
+            new_obj.append(new_element)
         return new_obj, state
 
-    for i, o in enumerate(obj):
-        o, state = traverse(o, state, i)
-        obj[i] = o
+    for i, element in enumerate(obj):
+        new_element, state = traverse(element, state, i)
+        obj[i] = new_element
     return obj, state
 
 
 @generic_traverser.register
 def _dict_traverser(
-    obj: dict, state: State[dict], traverse: TraverserCallback[Any]
+    obj: dict,
+    state: State[dict],
+    traverse: TraverserCallback[Any],
 ) -> TraverserResult[dict]:
+    """Traverse dictionary values and optionally keys.
+
+    Behavior depends on CLONE and TRAVERSE_KEYS variables:
+    - CLONE=True or TRAVERSE_KEYS=True: Creates a new dictionary
+    - CLONE=False and TRAVERSE_KEYS=False: Modifies original dictionary
+    - TRAVERSE_KEYS=True: Also traverses dictionary keys
+
+    Args:
+        obj: The dictionary to traverse.
+        state: Current traversal state.
+        traverse: Callback for traversing child elements.
+
+    Returns:
+        The modified or new dictionary and updated state.
+    """
     traverse_keys = state[TRAVERSE_KEYS]
     if state[CLONE] or traverse_keys:
         new_obj = obj.__class__()
-        for k, v in obj.items():
+        for key, value in obj.items():
             if traverse_keys:
-                k, state = traverse(k, state)
-            v, state = traverse(v, state, k)
-            new_obj[k] = v
+                new_key, state = traverse(key, state)
+            else:
+                new_key = key
+            new_value, state = traverse(value, state, new_key)
+            new_obj[new_key] = new_value
         return new_obj, state
 
-    for k, v in obj.items():
-        v, state = traverse(v, state, k)
-        obj[k] = v
+    for key, value in obj.items():
+        new_value, state = traverse(value, state, key)
+        obj[key] = new_value
 
     return obj, state
 
 
 @generic_traverser.register
 def _set_traverser(
-    obj: set, state: State[set], traverse: TraverserCallback[Any]
+    obj: set,
+    state: State[set],
+    traverse: TraverserCallback[Any],
 ) -> TraverserResult[set]:
+    """Traverse set elements and reconstruct the set.
+
+    Always creates a new set since sets are unordered and elements
+    may change during traversal.
+
+    Args:
+        obj: The set to traverse.
+        state: Current traversal state.
+        traverse: Callback for traversing child elements.
+
+    Returns:
+        A new set with traversed elements and updated state.
+    """
     new_obj = obj.__class__()
-    for o in obj:
-        o, state = traverse(o, state)
-        new_obj.add(o)
+    for element in obj:
+        new_element, state = traverse(element, state)
+        new_obj.add(new_element)
     return new_obj, state

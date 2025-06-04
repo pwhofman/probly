@@ -505,7 +505,7 @@ class State[T]:
             - Stack state creates a new child scope from the parent's stack state
 
             When no parent is provided (root state):
-            - A traverser must be explicitly provided
+            - If no traverser is provided, the identity traverser is used
             - New global and stack states are initialized
         """
         self.object = obj
@@ -523,8 +523,7 @@ class State[T]:
             )
         else:
             if traverser is None:
-                msg = "Traverser must be provided for the root state."
-                raise ValueError(msg)
+                traverser = identity_traverser
             self.traverser = traverser
             self._global_state = {}
             self._stack_state = ChainMap({})

@@ -102,13 +102,10 @@ class TestState:
         assert child_state.object == "test_obj"
         assert child_state.meta == "test_meta"
 
-    def test_state_initialization_error_no_traverser(self):
+    def test_state_initialization_without_traverser(self):
         """Test that State raises error when no traverser provided for root state."""
-        with pytest.raises(
-            ValueError,
-            match="Traverser must be provided for the root state",
-        ):
-            State()
+        state = State()
+        assert state.traverser is identity_traverser
 
     def test_push_and_pop(self):
         """Test pushing and popping states."""

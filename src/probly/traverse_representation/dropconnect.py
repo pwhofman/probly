@@ -8,7 +8,7 @@ from probly.traverse_nn import is_first_layer
 
 from .drop import Drop, P
 
-dropconnect_traverser = singledispatch_traverser(name="dropout_traverser")
+dropconnect_traverser = singledispatch_traverser(name="dropconnect_traverser")
 
 
 @dropconnect_traverser.register(skip_if=is_first_layer, vars={"p": P})
