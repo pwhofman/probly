@@ -117,18 +117,6 @@ class Variable[V](ABC):
             self.default = default
             self.fallback = None
 
-    @classmethod
-    def _unregistered_init(
-        cls,
-        index: int,
-        name: str | None = None,
-        doc: str | None = None,
-        default: V | Variable[V] = None,
-    ) -> Variable[V]:
-        var = cls.__new__(cls)
-        Variable.__init__(var, index, name, doc, default)
-        return var
-
     def __repr__(self) -> str:
         """Return a string representation of the object.
 

@@ -12,6 +12,7 @@ from functools import update_wrapper
 import inspect
 import logging
 from typing import Any, Literal, NotRequired, Protocol, TypedDict, Unpack, overload
+import warnings
 
 from probly.traverse.core import (
     State,
@@ -66,16 +67,6 @@ class VarTraverser[T](Protocol):
         ...
 
 
-class TraverserDecoratorKwargs(TypedDict):
-    """Type definition for traverser decorator keyword arguments."""
-
-    mode: NotRequired[Mode]
-    traverse_if: NotRequired[StatePredicate | None]
-    skip_if: NotRequired[StatePredicate | None]
-    vars: NotRequired[dict[str, Variable] | None]
-    update_vars: NotRequired[bool]
-
-
 def _skip_if[T](traverser: Traverser[T], pred: StatePredicate) -> Traverser[T]:
     """Create a conditional traverser that skips execution based on a predicate.
 
@@ -99,21 +90,12 @@ def _skip_if[T](traverser: Traverser[T], pred: StatePredicate) -> Traverser[T]:
     return _traverser
 
 
-@overload
-def traverser[T](
-    **kwargs: Unpack[TraverserDecoratorKwargs],
-) -> Callable[[LooseTraverser[T]], Traverser[T]]: ...
-
-
-@overload
-def traverser[T](
-    traverser_fn: LooseTraverser[T],
-    **kwargs: Unpack[TraverserDecoratorKwargs],
-) -> Traverser[T]: ...
-
+class SignatureDetectionWarning(UserWarning):
+    """Custom warning for signature detection issues in traversers."""
 
 def _detect_traverser_type[T](  # noqa: C901, PLR0912
     traverser_fn: LooseTraverser[T],
+    mode: Mode = "auto",
 ) -> tuple[Mode, str | None, str | None, str | None]:
     """Detect the type and signature of a traverser function.
 
@@ -152,34 +134,57 @@ def _detect_traverser_type[T](  # noqa: C901, PLR0912
     traverse_pos = None
     argspec = inspect.getfullargspec(traverser_fn)
 
-    if argspec.args:
-        if len(argspec.args) == 0:
-            return (
-                "identity",
-                None,
-                None,
-                None,
-            )
-
-        for i, arg in enumerate(argspec.args):
-            if arg == "state":
-                state_name = arg
-                state_pos = i
-                continue
-            if arg == "traverse":
-                traverse_name = arg
-                traverse_pos = i
-                continue
-            if arg == "obj" or obj_name is None:
-                obj_name = arg
-                obj_pos = i
-
-    if obj_pos is not None and obj_pos != 0:
-        logger.warning(
-            "A traverser should always take the object as its first argument",
-            extra={"obj_pos": obj_pos},
+    if not argspec.args or len(argspec.args) == 0:
+        return (
+            "identity",
+            None,
+            None,
+            None,
         )
 
+    for i, arg in enumerate(argspec.args):
+        if (state_name is None and mode == "state") or (arg == "state" and mode in {"auto", "state"}):
+            state_name = arg
+            state_pos = i
+            continue
+        if arg == "traverse" and mode == "auto":
+            traverse_name = arg
+            traverse_pos = i
+            continue
+        if (arg == "obj" or obj_name is None) and mode in {"auto", "obj"}:
+            obj_name = arg
+            obj_pos = i
+
+    if obj_pos is not None and obj_pos != 0:
+        warnings.warn(
+            "A traverser should always take the object as its first argument",
+            SignatureDetectionWarning,
+            stacklevel=2,
+        )
+        
+    if obj_pos is None and state_pos is None and traverse_pos is None:
+        if len(argspec.args) == 1:
+            if mode == "obj" or mode == "auto":
+                obj_name = argspec.args[0]
+            elif mode == "state":
+                state_name = argspec.args[0]
+            else:
+                msg = f"Traverser signature with one parameter '{argspec.args[0]}' irresolvable with mode '{mode}'."
+                raise ValueError(msg)
+        
+        elif len(argspec.args) == 2:
+            if mode == "obj_state":
+                obj_name = argspec.args[0]
+                state_name = argspec.args[1]
+            elif mode == "obj_traverse":
+                obj_name = argspec.args[0]
+                traverse_name = argspec.args[1]
+            else:
+                msg = f"Traverser signature with two parameters '{argspec.args[0]}', '{argspec.args[1]}' irresolvable with mode '{mode}'."
+                raise ValueError(msg)
+        else:
+            return "full_positional", None, None, None
+            
     if obj_name is not None and state_name is not None and traverse_name is not None:
         if obj_pos == 0 and state_pos == 1 and traverse_pos == 2:
             return "full_positional", None, None, None
@@ -197,6 +202,28 @@ def _detect_traverser_type[T](  # noqa: C901, PLR0912
         raise ValueError(msg)
 
     return mode, obj_name, state_name, traverse_name
+
+
+class TraverserDecoratorKwargs(TypedDict):
+    """Type definition for traverser decorator keyword arguments."""
+
+    mode: NotRequired[Mode]
+    traverse_if: NotRequired[StatePredicate | None]
+    skip_if: NotRequired[StatePredicate | None]
+    vars: NotRequired[dict[str, Variable] | None]
+    update_vars: NotRequired[bool]
+
+@overload
+def traverser[T](
+    **kwargs: Unpack[TraverserDecoratorKwargs],
+) -> Callable[[LooseTraverser[T]], Traverser[T]]: ...
+
+
+@overload
+def traverser[T](
+    traverser_fn: LooseTraverser[T],
+    **kwargs: Unpack[TraverserDecoratorKwargs],
+) -> Traverser[T]: ...
 
 
 def traverser[T](  # noqa: C901, PGH003, PLR0912, PLR0915 # type: ignore
@@ -220,10 +247,11 @@ def traverser[T](  # noqa: C901, PGH003, PLR0912, PLR0915 # type: ignore
             - "auto": Automatically detect the mode based on parameter names.
               Expects parameter names `obj`, `state` and `traverse`. If no parameter named `obj`
               is present, the first parameter not called `state` or `traverse` is assumed to be `obj`.
-            - "full": Function takes obj, state, traverse parameters.
-            - "obj": Function only takes obj parameter.
-            - "state": Function only takes state parameter.
-            - "obj_state": Function takes obj and state parameters.
+            - "full": Function either takes three parameters named `obj`, `state` and `traverse` in arbitrary order,
+              or three differently named parameters representing obj, state and traverse respectively.
+            - "obj": Function only takes a single obj parameter.
+            - "state": Function only takes a single state parameter.
+            - "obj_state": Function takes an obj and a state parameter.
             - "obj_traverse": Function takes obj and traverse parameters.
         traverse_if: Predicate to determine when traversal should happen.
         skip_if: Predicate to determine when traversal should be skipped.
@@ -263,12 +291,9 @@ def traverser[T](  # noqa: C901, PGH003, PLR0912, PLR0915 # type: ignore
         return _decorator  # type: ignore  # noqa: PGH003
 
     # Directly wrap traverser_fn:
+    detected_mode, obj_name, state_name, traverse_name = _detect_traverser_type(traverser_fn, mode)
     if mode == "auto":
-        mode, obj_name, state_name, traverse_name = _detect_traverser_type(traverser_fn)
-    else:
-        obj_name = "obj"
-        state_name = "state"
-        traverse_name = "traverse"
+        mode = detected_mode
 
     if mode == "identity":
         return identity_traverser
@@ -279,11 +304,37 @@ def traverser[T](  # noqa: C901, PGH003, PLR0912, PLR0915 # type: ignore
     if vars is None and update_vars:
         msg = "Cannot use `update_vars=True` without `vars`."
         raise ValueError(msg)
+    elif vars is not None and mode in {"obj_state", "state", "full"}:
+        msg = f"Cannot use both `vars` and `mode='{mode}'` at the same time."
+        raise ValueError(msg)
+    
+    if mode != "full" and detected_mode != "full_positional":
+        if obj_name is None and mode in {"obj", "obj_state", "obj_traverse", "full"}:
+            warnings.warn(
+                "No positional object argument found in traverser. Using 'obj' kwarg as default.",
+                SignatureDetectionWarning,
+                stacklevel=2,
+            )
+            obj_name = "obj"
+        if state_name is None and mode in {"state", "obj_state", "full"}:
+            warnings.warn(
+                "No positional state argument found in traverser. Using 'state' kwarg as default.",
+                SignatureDetectionWarning,
+                stacklevel=2,
+            )
+            state_name = "state"
+        if traverse_name is None and mode in {"obj_traverse", "full"}:
+            warnings.warn(
+                "No positional traverse argument found in traverser. Using 'traverse' kwarg as default.",
+                SignatureDetectionWarning,
+                stacklevel=2,
+            )
+            traverse_name = "traverse"
 
-    if mode == "full":
-        if vars is not None:
-            msg = "Cannot use both `vars` and `mode='full'` at the same time."
-            raise ValueError(msg)
+    if mode == "full":        
+        if detected_mode == "full_positional":
+            # If the function is already a full positional traverser, return it directly
+            return traverser_fn
 
         def _traverser(
             obj: T,
@@ -297,9 +348,8 @@ def traverser[T](  # noqa: C901, PGH003, PLR0912, PLR0915 # type: ignore
                     traverse_name: traverse,
                 },  # type: ignore  # noqa: PGH003
             )
-
-    elif mode == "obj":
-
+    
+    elif mode == "obj":        
         def _traverser(
             obj: T,
             state: State[T],
@@ -321,10 +371,6 @@ def traverser[T](  # noqa: C901, PGH003, PLR0912, PLR0915 # type: ignore
             return obj, state
 
     elif mode == "state":
-        if vars is not None:
-            msg = "Cannot use both `vars` and `mode='state'` at the same time."
-            raise ValueError(msg)
-
         def _traverser(
             obj: T,
             state: State[T],
@@ -334,10 +380,6 @@ def traverser[T](  # noqa: C901, PGH003, PLR0912, PLR0915 # type: ignore
             return obj, state
 
     elif mode == "obj_state":
-        if vars is not None:
-            msg = "Cannot use both `vars` and `mode='obj_state'` at the same time."
-            raise ValueError(msg)
-
         def _traverser(
             obj: T,
             state: State[T],
@@ -346,7 +388,6 @@ def traverser[T](  # noqa: C901, PGH003, PLR0912, PLR0915 # type: ignore
             return traverser_fn(**{obj_name: obj, state_name: state})  # type: ignore  # noqa: PGH003
 
     elif mode == "obj_traverse":
-
         def _traverser(
             obj: T,
             state: State[T],

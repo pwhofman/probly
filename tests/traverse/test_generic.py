@@ -358,6 +358,7 @@ class TestSetTraverser:
 
         result, new_state = _set_traverser(test_set, state, identity_traverse)
         assert isinstance(result, CustomSet)
+        assert result is not test_set  # New set created
         assert result == {1, 2, 3}
 
 
