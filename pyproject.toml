@@ -153,6 +153,7 @@ convention = "google"
     "D404",
     "ANN001",
     "ANN201",
+    "ANN202",
     "FBT001",
     "D100",
     "PLR2004",
@@ -161,6 +162,7 @@ convention = "google"
     "N803",
     "C901",
 ]
+"tests/traverse/**/*.py" = ["ARG001"]
 "__init__.py" = [
     "I002",
     "RUF022",  # to allow __all__ be not alphabetically ordered
@@ -189,7 +191,11 @@ testpaths = ["tests"]
 minversion = "8.0"
 
 [tool.coverage.report]
-directory = "tests"
+exclude_also = [
+    "def __repr__",
+    "if __name__ == .__main__.:",
+    "\\s*\\.\\.\\.\\s*",
+]
 exclude_lines = [
     "if TYPE_CHECKING",
 ]

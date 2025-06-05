@@ -7,7 +7,6 @@ traverser functions with various modes of operation.
 
 from __future__ import annotations
 
-import inspect
 from typing import Any
 from unittest.mock import Mock
 
@@ -22,7 +21,6 @@ from probly.traverse.core import (
     identity_traverser,
 )
 from probly.traverse.decorators import (
-    Mode,
     SignatureDetectionWarning,
     TraverserDecoratorKwargs,
     VarTraverser,
@@ -30,7 +28,6 @@ from probly.traverse.decorators import (
     _skip_if,
     traverser,
 )
-
 
 # Test Variables
 TEST_GLOBAL_VAR = GlobalVariable[int]("test_global", "A test global variable", 42)
@@ -40,8 +37,8 @@ TEST_STACK_VAR = StackVariable[str]("test_stack", "A test stack variable", "defa
 def dummy_traverse(
     obj: Any,  # noqa: ANN401
     state: State,
-    meta: Any = None,  # noqa: ANN401, ARG001
-    traverser: Any = None,  # noqa: ANN401, ARG001
+    meta: Any = None,  # noqa: ANN401
+    traverser: Any = None,  # noqa: ANN401
 ) -> TraverserResult:
     """Dummy traverse function for testing."""
     return obj, state
@@ -53,7 +50,7 @@ class TestDetectTraverserType:
     def test_detect_identity_traverser(self) -> None:
         """Test detection of identity traverser (no arguments)."""
 
-        def no_args():
+        def no_args() -> int:
             return 42
 
         # Identity traverser should be detected correctly now
@@ -74,7 +71,7 @@ class TestDetectTraverserType:
         assert obj_name == "obj"
         assert state_name is None
         assert traverse_name is None
-        
+
     def test_detect_obj_only_renamed_traverser(self) -> None:
         """Test detection of obj-only traverser."""
 
@@ -98,14 +95,17 @@ class TestDetectTraverserType:
         assert obj_name is None
         assert state_name == "state"
         assert traverse_name is None
-        
+
     def test_detect_state_only_renamed_traverser(self) -> None:
         """Test detection of state-only traverser."""
 
         def state_only(s):
             return s
 
-        mode, obj_name, state_name, traverse_name = _detect_traverser_type(state_only, "state")
+        mode, obj_name, state_name, traverse_name = _detect_traverser_type(
+            state_only,
+            "state",
+        )
         assert mode == "state"
         assert obj_name is None
         assert state_name == "s"
@@ -117,19 +117,28 @@ class TestDetectTraverserType:
         def obj_state(state, obj):
             return obj, state
 
-        mode, obj_name, state_name, traverse_name = _detect_traverser_type(obj_state)
+        with pytest.warns(
+            SignatureDetectionWarning,
+            match="should always take the object as its first argument",
+        ):
+            mode, obj_name, state_name, traverse_name = _detect_traverser_type(
+                obj_state,
+            )
         assert mode == "obj_state"
         assert obj_name == "obj"
         assert state_name == "state"
         assert traverse_name is None
-    
+
     def test_detect_obj_state_renamed_traverser(self) -> None:
         """Test detection of obj-state traverser."""
 
         def obj_state(o, s):
             return o, s
 
-        mode, obj_name, state_name, traverse_name = _detect_traverser_type(obj_state, "obj_state")
+        mode, obj_name, state_name, traverse_name = _detect_traverser_type(
+            obj_state,
+            "obj_state",
+        )
         assert mode == "obj_state"
         assert obj_name == "o"
         assert state_name == "s"
@@ -141,19 +150,28 @@ class TestDetectTraverserType:
         def obj_traverse(traverse, obj):
             return obj
 
-        mode, obj_name, state_name, traverse_name = _detect_traverser_type(obj_traverse)
+        with pytest.warns(
+            SignatureDetectionWarning,
+            match="should always take the object as its first argument",
+        ):
+            mode, obj_name, state_name, traverse_name = _detect_traverser_type(
+                obj_traverse,
+            )
         assert mode == "obj_traverse"
         assert obj_name == "obj"
         assert state_name is None
         assert traverse_name == "traverse"
-        
+
     def test_detect_obj_traverse_renamed_traverser(self) -> None:
         """Test detection of obj-traverse traverser."""
 
         def obj_traverse(item, visit):
             return item
 
-        mode, obj_name, state_name, traverse_name = _detect_traverser_type(obj_traverse, "obj_traverse")
+        mode, obj_name, state_name, traverse_name = _detect_traverser_type(
+            obj_traverse,
+            "obj_traverse",
+        )
         assert mode == "obj_traverse"
         assert obj_name == "item"
         assert state_name is None
@@ -162,27 +180,42 @@ class TestDetectTraverserType:
     def test_detect_full_traverser(self) -> None:
         """Test detection of full traverser."""
 
-        def full_traverser(traverse, state, obj): # Shuffled args
+        def full_traverser(
+            traverse,
+            state,
+            obj,
+        ):  # Shuffled args
             return obj, state
 
-        with pytest.warns(SignatureDetectionWarning, match="should always take the object as its first argument"):
-            mode, obj_name, state_name, traverse_name = _detect_traverser_type(full_traverser)
+        with pytest.warns(
+            SignatureDetectionWarning,
+            match="should always take the object as its first argument",
+        ):
+            mode, obj_name, state_name, traverse_name = _detect_traverser_type(
+                full_traverser,
+            )
             assert mode == "full"
-            assert obj_name is "obj"
-            assert state_name is "state"
-            assert traverse_name is "traverse"
-        
+            assert obj_name == "obj"
+            assert state_name == "state"
+            assert traverse_name == "traverse"
+
     def test_detect_full_renamed_traverser(self) -> None:
         """Test detection of full traverser."""
 
-        def full_traverser(traverse, item, state): # Shuffled args
+        def full_traverser(traverse, item, state):  # Shuffled args
             return item, state
 
-        mode, obj_name, state_name, traverse_name = _detect_traverser_type(full_traverser)
+        with pytest.warns(
+            SignatureDetectionWarning,
+            match="should always take the object as its first argument",
+        ):
+            mode, obj_name, state_name, traverse_name = _detect_traverser_type(
+                full_traverser,
+            )
         assert mode == "full"
-        assert obj_name is "item"
-        assert state_name is "state"
-        assert traverse_name is "traverse"
+        assert obj_name == "item"
+        assert state_name == "state"
+        assert traverse_name == "traverse"
 
     def test_detect_full_positional_traverser(self) -> None:
         """Test detection of full positional traverser."""
@@ -190,7 +223,9 @@ class TestDetectTraverserType:
         def full_positional(obj, state, traverse):
             return obj, state
 
-        mode, obj_name, state_name, traverse_name = _detect_traverser_type(full_positional)
+        mode, obj_name, state_name, traverse_name = _detect_traverser_type(
+            full_positional,
+        )
         assert mode == "full_positional"
         assert obj_name is None
         assert state_name is None
@@ -209,26 +244,32 @@ class TestDetectTraverserType:
         assert obj_name == "item"
         assert state_name is None
         assert traverse_name is None
-        
+
     def test_detect_misleading_traverse_signature(self) -> None:
         """Test detection of misleading function signature."""
 
         def unsupported(traverse):
             return None
 
-        mode, obj_name, state_name, traverse_name = _detect_traverser_type(unsupported, "obj")
+        mode, obj_name, state_name, traverse_name = _detect_traverser_type(
+            unsupported,
+            "obj",
+        )
         assert mode == "obj"
         assert obj_name == "traverse"
         assert state_name is None
         assert traverse_name is None
-        
+
     def test_detect_misleading_state_signature(self) -> None:
         """Test detection of misleading function signature."""
 
         def unsupported(state):
             return None
 
-        mode, obj_name, state_name, traverse_name = _detect_traverser_type(unsupported, "obj")
+        mode, obj_name, state_name, traverse_name = _detect_traverser_type(
+            unsupported,
+            "obj",
+        )
         assert mode == "obj"
         assert obj_name == "state"
         assert state_name is None
@@ -240,7 +281,10 @@ class TestDetectTraverserType:
         def unsupported(traverse):
             return None
 
-        with pytest.raises(ValueError, match="Could not detect traverser type"):
+        with pytest.raises(
+            ValueError,
+            match="signature with params 'traverse' irresolvable with mode 'auto'",
+        ):
             _detect_traverser_type(unsupported)
 
 
@@ -253,7 +297,7 @@ class TestSkipIf:
         predicate = Mock(return_value=True)
 
         conditional_traverser = _skip_if(mock_traverser, predicate)
-        
+
         obj = "test"
         state = State()
         result, new_state = conditional_traverser(obj, state, dummy_traverse)
@@ -271,7 +315,7 @@ class TestSkipIf:
         predicate = Mock(return_value=False)
 
         conditional_traverser = _skip_if(mock_traverser, predicate)
-        
+
         obj = "test"
         state = State()
         result, new_state = conditional_traverser(obj, state, dummy_traverse)
@@ -287,7 +331,7 @@ class TestSkipIf:
         var = StackVariable[bool]("skip_flag", default=True)
 
         conditional_traverser = _skip_if(mock_traverser, var)
-        
+
         obj = "test"
         state = State()
         result, new_state = conditional_traverser(obj, state, dummy_traverse)
@@ -309,11 +353,11 @@ class TestTraverserDecorator:
             return obj * 2
 
         assert callable(simple_traverser)
-        
+
         obj = 5
         state = State()
         result, new_state = simple_traverser(obj, state, dummy_traverse)
-        
+
         assert result == 10
         assert new_state == state
 
@@ -327,7 +371,7 @@ class TestTraverserDecorator:
         obj = 4
         state = State()
         result, new_state = obj_traverser(obj, state, dummy_traverse)
-        
+
         assert result == 12
         assert new_state == state
 
@@ -338,11 +382,11 @@ class TestTraverserDecorator:
             return obj + 1
 
         wrapped = traverser(raw_traverser)
-        
+
         obj = 10
         state = State()
         result, new_state = wrapped(obj, state, dummy_traverse)
-        
+
         assert result == 11
         assert new_state == state
 
@@ -356,7 +400,7 @@ class TestTraverserDecorator:
         obj = "test"
         state = State()
         result, new_state = auto_traverser(obj, state, dummy_traverse)
-        
+
         assert result == obj
         assert new_state == state
 
@@ -388,7 +432,7 @@ class TestTraverserDecorator:
         obj = "hello"
         state = State()
         result, new_state = obj_traverser(obj, state, dummy_traverse)
-        
+
         assert result == "HELLO"
         assert new_state == state
 
@@ -403,7 +447,7 @@ class TestTraverserDecorator:
         obj = "test"
         state = State()
         result, new_state = state_traverser(obj, state, dummy_traverse)
-        
+
         assert result == obj  # Object unchanged
         assert new_state == new_state_mock
 
@@ -417,7 +461,7 @@ class TestTraverserDecorator:
         obj = 5
         state = State()
         result, new_state = obj_state_traverser(obj, state, dummy_traverse)
-        
+
         assert result == 10
         assert new_state == state
 
@@ -431,7 +475,7 @@ class TestTraverserDecorator:
         obj = "hello"
         state = State()
         result, new_state = obj_traverse_traverser(obj, state, dummy_traverse)
-        
+
         assert result == "HELLO"
         assert new_state == state
 
@@ -445,7 +489,7 @@ class TestTraverserDecorator:
         obj = 3
         state = State()
         result, new_state = full_traverser(obj, state, dummy_traverse)
-        
+
         assert result == 6
         assert new_state == state
 
@@ -459,7 +503,7 @@ class TestTraverserDecorator:
         obj = 5
         state = State().update({TEST_GLOBAL_VAR: 3})
         result, new_state = var_traverser(obj, state, dummy_traverse)
-        
+
         assert result == 15
         assert new_state == state
 
@@ -473,7 +517,7 @@ class TestTraverserDecorator:
         obj = "test"
         state = State().update({TEST_GLOBAL_VAR: 5})
         result, new_state = updating_traverser(obj, state, dummy_traverse)
-        
+
         assert result == obj
         assert TEST_GLOBAL_VAR.get(new_state) == 6
 
@@ -517,46 +561,70 @@ class TestTraverserDecorator:
 
     def test_error_vars_without_update_vars(self) -> None:
         """Test error when update_vars=True but no vars provided."""
-        with pytest.raises(ValueError, match="Cannot use `update_vars=True` without `vars`"):
+        with pytest.raises(
+            ValueError, match="Cannot use `update_vars=True` without `vars`"
+        ):
+
             @traverser(update_vars=True)
             def bad_traverser(obj):
                 return obj
 
     def test_error_vars_with_full_mode(self) -> None:
         """Test error when using vars with full mode."""
-        with pytest.raises(ValueError, match="Cannot use both `vars` and `mode='full'`"):
+        with pytest.raises(
+            ValueError, match="Cannot use both `vars` and `mode='full'`"
+        ):
+
             @traverser(mode="full", vars={"test": TEST_GLOBAL_VAR})
             def bad_traverser(obj, state, traverse):
                 return obj, state
 
     def test_error_vars_with_state_mode(self) -> None:
         """Test error when using vars with state mode."""
-        with pytest.raises(ValueError, match="Cannot use both `vars` and `mode='state'`"):
+        with pytest.raises(
+            ValueError, match="Cannot use both `vars` and `mode='state'`"
+        ):
+
             @traverser(mode="state", vars={"test": TEST_GLOBAL_VAR})
             def bad_traverser(state):
                 return state
 
     def test_error_vars_with_obj_state_mode(self) -> None:
         """Test error when using vars with obj_state mode."""
-        with pytest.raises(ValueError, match="Cannot use both `vars` and `mode='obj_state'`"):
+        with pytest.raises(
+            ValueError, match="Cannot use both `vars` and `mode='obj_state'`"
+        ):
+
             @traverser(mode="obj_state", vars={"test": TEST_GLOBAL_VAR})
             def bad_traverser(obj, state):
                 return obj, state
 
     def test_error_invalid_mode(self) -> None:
         """Test error when using invalid mode."""
-        with pytest.raises(ValueError, match="Traverser signature with one parameter 'obj' irresolvable with mode 'invalid'"):
-            @traverser(mode="invalid")  # type: ignore
+        with pytest.raises(
+            ValueError,
+            match="signature with params 'obj' irresolvable with mode 'invalid'",
+        ):
+
+            @traverser(mode="invalid")  # type: ignore  # noqa: PGH003
             def bad_traverser(obj):
                 return obj
-        
-        with pytest.raises(ValueError, match="Traverser signature with two parameters 'obj', 'state' irresolvable with mode 'invalid'"):
-            @traverser(mode="invalid")  # type: ignore
+
+        with pytest.raises(
+            ValueError,
+            match="signature with params 'obj', 'state' irresolvable with mode 'invalid'",
+        ):
+
+            @traverser(mode="invalid")  # type: ignore  # noqa: PGH003
             def bad_traverser(obj, state):
                 return obj
-            
-        with pytest.raises(ValueError, match="Mode 'invalid' could not be applied to given traverser"):
-            @traverser(mode="invalid")  # type: ignore
+
+        with pytest.raises(
+            ValueError,
+            match="signature with params 'obj', 'state', 'traverse' irresolvable with mode 'invalid'",
+        ):
+
+            @traverser(mode="invalid")  # type: ignore  # noqa: PGH003
             def bad_traverser(obj, state, traverse):
                 return obj
 
@@ -568,7 +636,7 @@ class TestTraverserDecorator:
             return obj
 
         wrapped = traverser(original_function)
-        
+
         assert hasattr(wrapped, "__name__")
         assert hasattr(wrapped, "__doc__")
 
@@ -589,7 +657,7 @@ class TestTraverserDecorator:
         obj = 5
         state = State()
         result, new_state = traverse_using_traverser(obj, state, mock_traverse)
-        
+
         assert result == 22  # (5*2) + (6*2)
         assert len(calls) == 2
         assert calls[0] == (5, None)
@@ -608,7 +676,7 @@ class TestVarTraverserProtocol:
 
         # This should type-check as VarTraverser
         var_traverser: VarTraverser[str] = var_func
-        
+
         # Test that it can be called
         result = var_traverser("test", dummy_traverse, prefix=">>")
         assert result == ">>test"
@@ -627,7 +695,7 @@ class TestTraverserDecoratorKwargs:
             "vars": None,
             "update_vars": False,
         }
-        
+
         assert kwargs["mode"] == "obj"
         assert kwargs["traverse_if"] is None
         assert kwargs["skip_if"] is None
@@ -639,7 +707,7 @@ class TestTraverserDecoratorKwargs:
         kwargs: TraverserDecoratorKwargs = {
             "mode": "auto",
         }
-        
+
         assert kwargs["mode"] == "auto"
 
 
@@ -667,14 +735,14 @@ class TestComplexScenarios:
         obj = "test"
         state = State().update({counter_var: 5, active_var: True})
         result, new_state = complex_traverser(obj, state, dummy_traverse)
-        
+
         assert result == "item_6_test"
         assert counter_var.get(new_state) == 6
 
         # Test when not active
         state = State().update({counter_var: 5, active_var: False})
         result, new_state = complex_traverser(obj, state, dummy_traverse)
-        
+
         assert result == obj  # Should be unchanged
         assert counter_var.get(new_state) == 5  # Counter should not increment
 
@@ -694,18 +762,18 @@ class TestComplexScenarios:
         # Test both flags False
         obj = 5
         state = State().update({flag1: False, flag2: False})
-        
+
         result1, state1 = first_traverser(obj, state, dummy_traverse)
         result2, state2 = second_traverser(result1, state1, dummy_traverse)
-        
+
         assert result2 == 20  # (5 * 2) + 10
 
         # Test first flag True
         state = State().update({flag1: True, flag2: False})
-        
+
         result1, state1 = first_traverser(obj, state, dummy_traverse)
         result2, state2 = second_traverser(result1, state1, dummy_traverse)
-        
+
         assert result2 == 15  # 5 + 10 (first traverser skipped)
 
     def test_variable_fallback_behavior(self) -> None:
@@ -721,7 +789,7 @@ class TestComplexScenarios:
         obj = 3
         state = State().update({fallback_var: 50})
         result, new_state = fallback_traverser(obj, state, dummy_traverse)
-        
+
         assert result == 150  # 3 * 50 (using fallback)
 
 
