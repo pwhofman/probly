@@ -41,7 +41,7 @@ def dummy_traverse(
     traverser: Any = None,  # noqa: ANN401
 ) -> TraverserResult:
     """Dummy traverse function for testing."""
-    return obj, state
+    return obj, state  # pragma: no cover
 
 
 class TestDetectTraverserType:
@@ -51,7 +51,7 @@ class TestDetectTraverserType:
         """Test detection of identity traverser (no arguments)."""
 
         def no_args() -> int:
-            return 42
+            return 42  # pragma: no cover
 
         # Identity traverser should be detected correctly now
         mode, obj_name, state_name, traverse_name = _detect_traverser_type(no_args)
@@ -64,7 +64,7 @@ class TestDetectTraverserType:
         """Test detection of obj-only traverser."""
 
         def obj_only(obj):
-            return obj
+            return obj  # pragma: no cover
 
         mode, obj_name, state_name, traverse_name = _detect_traverser_type(obj_only)
         assert mode == "obj"
@@ -76,7 +76,7 @@ class TestDetectTraverserType:
         """Test detection of obj-only traverser."""
 
         def obj_only(item):
-            return item
+            return item  # pragma: no cover
 
         mode, obj_name, state_name, traverse_name = _detect_traverser_type(obj_only)
         assert mode == "obj"
@@ -88,7 +88,7 @@ class TestDetectTraverserType:
         """Test detection of state-only traverser."""
 
         def state_only(state):
-            return state
+            return state  # pragma: no cover
 
         mode, obj_name, state_name, traverse_name = _detect_traverser_type(state_only)
         assert mode == "state"
@@ -100,7 +100,7 @@ class TestDetectTraverserType:
         """Test detection of state-only traverser."""
 
         def state_only(s):
-            return s
+            return s  # pragma: no cover
 
         mode, obj_name, state_name, traverse_name = _detect_traverser_type(
             state_only,
@@ -115,7 +115,7 @@ class TestDetectTraverserType:
         """Test detection of obj-state traverser."""
 
         def obj_state(state, obj):
-            return obj, state
+            return obj, state  # pragma: no cover
 
         with pytest.warns(
             SignatureDetectionWarning,
@@ -133,7 +133,7 @@ class TestDetectTraverserType:
         """Test detection of obj-state traverser."""
 
         def obj_state(o, s):
-            return o, s
+            return o, s  # pragma: no cover
 
         mode, obj_name, state_name, traverse_name = _detect_traverser_type(
             obj_state,
@@ -148,7 +148,7 @@ class TestDetectTraverserType:
         """Test detection of obj-traverse traverser."""
 
         def obj_traverse(traverse, obj):
-            return obj
+            return obj  # pragma: no cover
 
         with pytest.warns(
             SignatureDetectionWarning,
@@ -166,7 +166,7 @@ class TestDetectTraverserType:
         """Test detection of obj-traverse traverser."""
 
         def obj_traverse(item, visit):
-            return item
+            return item  # pragma: no cover
 
         mode, obj_name, state_name, traverse_name = _detect_traverser_type(
             obj_traverse,
@@ -185,7 +185,7 @@ class TestDetectTraverserType:
             state,
             obj,
         ):  # Shuffled args
-            return obj, state
+            return obj, state  # pragma: no cover
 
         with pytest.warns(
             SignatureDetectionWarning,
@@ -203,7 +203,7 @@ class TestDetectTraverserType:
         """Test detection of full traverser."""
 
         def full_traverser(traverse, item, state):  # Shuffled args
-            return item, state
+            return item, state  # pragma: no cover
 
         with pytest.warns(
             SignatureDetectionWarning,
@@ -221,7 +221,7 @@ class TestDetectTraverserType:
         """Test detection of full positional traverser."""
 
         def full_positional(obj, state, traverse):
-            return obj, state
+            return obj, state  # pragma: no cover
 
         mode, obj_name, state_name, traverse_name = _detect_traverser_type(
             full_positional,
@@ -235,7 +235,7 @@ class TestDetectTraverserType:
         """Test detection with custom parameter names."""
 
         def custom_names(item, current_state, visitor):
-            return item, current_state
+            return item, current_state  # pragma: no cover
 
         mode, obj_name, state_name, traverse_name = _detect_traverser_type(custom_names)
         # Since only exact matches for "state" and "traverse" are recognized,
@@ -249,7 +249,7 @@ class TestDetectTraverserType:
         """Test detection of misleading function signature."""
 
         def unsupported(traverse):
-            return None
+            return None  # pragma: no cover
 
         mode, obj_name, state_name, traverse_name = _detect_traverser_type(
             unsupported,
@@ -264,7 +264,7 @@ class TestDetectTraverserType:
         """Test detection of misleading function signature."""
 
         def unsupported(state):
-            return None
+            return None  # pragma: no cover
 
         mode, obj_name, state_name, traverse_name = _detect_traverser_type(
             unsupported,
@@ -279,7 +279,7 @@ class TestDetectTraverserType:
         """Test detection of unsupported function signature."""
 
         def unsupported(traverse):
-            return None
+            return None  # pragma: no cover
 
         with pytest.raises(
             ValueError,
@@ -562,42 +562,46 @@ class TestTraverserDecorator:
     def test_error_vars_without_update_vars(self) -> None:
         """Test error when update_vars=True but no vars provided."""
         with pytest.raises(
-            ValueError, match="Cannot use `update_vars=True` without `vars`"
+            ValueError,
+            match="Cannot use `update_vars=True` without `vars`",
         ):
 
             @traverser(update_vars=True)
             def bad_traverser(obj):
-                return obj
+                return obj  # pragma: no cover
 
     def test_error_vars_with_full_mode(self) -> None:
         """Test error when using vars with full mode."""
         with pytest.raises(
-            ValueError, match="Cannot use both `vars` and `mode='full'`"
+            ValueError,
+            match="Cannot use both `vars` and `mode='full'`",
         ):
 
             @traverser(mode="full", vars={"test": TEST_GLOBAL_VAR})
             def bad_traverser(obj, state, traverse):
-                return obj, state
+                return obj, state  # pragma: no cover
 
     def test_error_vars_with_state_mode(self) -> None:
         """Test error when using vars with state mode."""
         with pytest.raises(
-            ValueError, match="Cannot use both `vars` and `mode='state'`"
+            ValueError,
+            match="Cannot use both `vars` and `mode='state'`",
         ):
 
             @traverser(mode="state", vars={"test": TEST_GLOBAL_VAR})
             def bad_traverser(state):
-                return state
+                return state  # pragma: no cover
 
     def test_error_vars_with_obj_state_mode(self) -> None:
         """Test error when using vars with obj_state mode."""
         with pytest.raises(
-            ValueError, match="Cannot use both `vars` and `mode='obj_state'`"
+            ValueError,
+            match="Cannot use both `vars` and `mode='obj_state'`",
         ):
 
             @traverser(mode="obj_state", vars={"test": TEST_GLOBAL_VAR})
             def bad_traverser(obj, state):
-                return obj, state
+                return obj, state  # pragma: no cover
 
     def test_error_invalid_mode(self) -> None:
         """Test error when using invalid mode."""
@@ -608,7 +612,7 @@ class TestTraverserDecorator:
 
             @traverser(mode="invalid")  # type: ignore  # noqa: PGH003
             def bad_traverser(obj):
-                return obj
+                return obj  # pragma: no cover
 
         with pytest.raises(
             ValueError,
@@ -617,7 +621,7 @@ class TestTraverserDecorator:
 
             @traverser(mode="invalid")  # type: ignore  # noqa: PGH003
             def bad_traverser(obj, state):
-                return obj
+                return obj  # pragma: no cover
 
         with pytest.raises(
             ValueError,
@@ -626,14 +630,14 @@ class TestTraverserDecorator:
 
             @traverser(mode="invalid")  # type: ignore  # noqa: PGH003
             def bad_traverser(obj, state, traverse):
-                return obj
+                return obj  # pragma: no cover
 
     def test_wrapper_preserves_function_metadata(self) -> None:
         """Test that the wrapper preserves original function metadata."""
 
         def original_function(obj, traverse):
             """Original docstring."""
-            return obj
+            return obj  # pragma: no cover
 
         wrapped = traverser(original_function)
 
@@ -670,7 +674,7 @@ class TestVarTraverserProtocol:
     def test_var_traverser_protocol_compliance(self) -> None:
         """Test that functions can implement VarTraverser protocol."""
 
-        def var_func(obj: str, traverse: TraverserCallback, **kwargs) -> str:
+        def var_func(obj: str, traverse: TraverserCallback, **kwargs: str) -> str:
             prefix = kwargs.get("prefix", "")
             return f"{prefix}{obj}"
 

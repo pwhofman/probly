@@ -50,7 +50,7 @@ class TestVariable:
         """Test ComputedVariable initialization."""
 
         def compute_func(_state: State) -> str:
-            return "computed"
+            return "computed"  # pragma: no cover
 
         var = ComputedVariable(compute_func, "computed_var", "A computed variable")
 
@@ -63,7 +63,7 @@ class TestVariable:
 
         def my_computation(_state: State) -> int:
             """Computes something."""
-            return 123
+            return 123  # pragma: no cover
 
         var = ComputedVariable(my_computation)
 
@@ -131,7 +131,11 @@ class TestState:
     def test_get_object_and_meta(self):
         """Test getting object and metadata from state."""
         root_state = State(traverser=identity_traverser)
-        child_state = root_state.push("test_object", {"key": "value"})
+        child_state = root_state.push(
+            "test_object",
+            {"key": "value"},
+            identity_traverser,
+        )
 
         assert child_state.get_object() == "test_object"
         assert child_state.get_meta() == {"key": "value"}
@@ -312,7 +316,7 @@ class TestComputedVariable:
         """Test that setting computed variable raises error."""
 
         def compute_func(_state: State) -> int:
-            return 42
+            return 42  # pragma: no cover
 
         computed_var = ComputedVariable(compute_func)
         state = State(traverser=identity_traverser)
@@ -350,7 +354,7 @@ class TestTraversal:
         """Test traverse with initial variable values."""
         counter_var = GlobalVariable[int]("counter", default=0)
 
-        def counting_traverser(obj, state, traverse) -> tuple:  # noqa: ARG001
+        def counting_traverser(obj, state, traverse) -> tuple:
             # traverse callback is not used in this simple test
             state[counter_var] = state[counter_var] + 1
             return obj, state

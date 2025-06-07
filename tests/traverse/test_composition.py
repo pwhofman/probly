@@ -19,16 +19,16 @@ from probly.traverse.core import State, TraverserCallback, TraverserResult
 def dummy_traverser(
     obj,
     state: State,
-    traverse: TraverserCallback,  # noqa: ARG001
+    traverse: TraverserCallback,
 ) -> TraverserResult:
-    return obj, state
+    return obj, state  # pragma: no cover
 
 
 def dummy_traverse(
     obj,
     state: State,
-    meta: Any = None,  # noqa: ANN401, ARG001
-    traverser=None,  # noqa: ARG001
+    meta: Any = None,  # noqa: ANN401
+    traverser=None,
 ) -> TraverserResult:
     return obj, state
 
@@ -39,14 +39,14 @@ def test_sequential_basic() -> None:
     def add_one(
         obj: int,
         state: State[int],
-        traverse: TraverserCallback[int],  # noqa: ARG001
+        traverse: TraverserCallback[int],
     ) -> TraverserResult[int]:
         return obj + 1, state
 
     def multiply_two(
         obj: int,
         state: State[int],
-        traverse: TraverserCallback[int],  # noqa: ARG001
+        traverse: TraverserCallback[int],
     ) -> TraverserResult[int]:
         return obj * 2, state
 
@@ -159,7 +159,7 @@ class TestSingledispatchTraverser:
     def test_init_with_default_traverser(self) -> None:
         """Test initialization with a default traverser function."""
 
-        def default_func(obj: int, traverse, **kwargs) -> int:  # noqa: ANN003, ARG001
+        def default_func(obj: int, traverse, **kwargs) -> int:  # noqa: ANN003
             return obj * 2
 
         traverser = SingledispatchTraverser[int](default_func)
@@ -183,7 +183,7 @@ class TestSingledispatchTraverser:
         def int_handler(
             obj: int,
             state: State[Any],
-            traverse: TraverserCallback[Any],  # noqa: ARG001
+            traverse: TraverserCallback[Any],
         ) -> TraverserResult[Any]:
             return obj * 2, state
 
@@ -205,7 +205,7 @@ class TestSingledispatchTraverser:
         def list_handler(
             obj: list,
             state: State[Any],
-            traverse: TraverserCallback[Any],  # noqa: ARG001
+            traverse: TraverserCallback[Any],
         ) -> TraverserResult[Any]:
             return [x * 2 for x in obj], state
 
@@ -213,7 +213,7 @@ class TestSingledispatchTraverser:
         def dict_handler(
             obj: dict,
             state: State[Any],
-            traverse: TraverserCallback[Any],  # noqa: ARG001
+            traverse: TraverserCallback[Any],
         ) -> TraverserResult[Any]:
             return {k: v * 2 for k, v in obj.items()}, state
 
@@ -234,7 +234,7 @@ class TestSingledispatchTraverser:
         def str_handler(
             obj: str,
             state: State[Any],
-            traverse: TraverserCallback[Any],  # noqa: ARG001
+            traverse: TraverserCallback[Any],
         ) -> TraverserResult[Any]:
             return obj.upper(), state
 
@@ -254,7 +254,7 @@ class TestSingledispatchTraverser:
         def custom_default(
             obj: object,
             state: State[Any],
-            traverse: TraverserCallback[Any],  # noqa: ARG001
+            traverse: TraverserCallback[Any],
         ) -> TraverserResult[Any]:
             return f"default_{obj}", state
 
@@ -264,7 +264,7 @@ class TestSingledispatchTraverser:
         def custom_str(
             obj: str,
             state: State[Any],
-            traverse: TraverserCallback[Any],  # noqa: ARG001
+            traverse: TraverserCallback[Any],
         ) -> TraverserResult[Any]:
             return f"str_{obj}", state
 
@@ -280,8 +280,8 @@ class TestSingledispatchTraverser:
         """Test that registering with invalid type raises TypeError."""
         traverser = SingledispatchTraverser[Any]()
 
-        def dummy_func(obj, traverse, **kwargs):  # noqa: ANN003, ANN202, ARG001
-            return obj
+        def dummy_func(obj, traverse, **kwargs):  # noqa: ANN003
+            return obj  # pragma: no cover
 
         # This should raise TypeError for invalid first argument
         with pytest.raises(TypeError, match="Invalid first argument"):
@@ -291,8 +291,8 @@ class TestSingledispatchTraverser:
         """Test error when calling register(None, traverser)."""
         traverser = SingledispatchTraverser[Any]()
 
-        def dummy_func(obj, traverse, **kwargs):  # noqa: ANN003, ANN202, ARG001
-            return obj
+        def dummy_func(obj, traverse, **kwargs):  # noqa: ANN003
+            return obj  # pragma: no cover
 
         with pytest.raises(TypeError, match="Invalid arguments"):
             traverser.register(None, dummy_func)
