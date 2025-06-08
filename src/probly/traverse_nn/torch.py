@@ -1,3 +1,5 @@
+"""Traversal implementation for PyTorch modules."""
+
 from __future__ import annotations
 
 from collections import OrderedDict
@@ -11,6 +13,8 @@ from probly.traverse.decorators import traverser
 
 from . import nn as tnn
 
+# Torch traversal variables
+
 ROOT = t.StackVariable[Module | None]("ROOT", "A reference to the outermost module.")
 CLONE = t.StackVariable[bool](
     "CLONE",
@@ -22,6 +26,8 @@ FLATTEN_SEQUENTIAL = t.StackVariable[bool](
     "Whether to flatten sequential modules after making changes.",
     default=True,
 )
+
+# Torch model cloning
 
 
 @traverser
@@ -39,6 +45,9 @@ def _clone_traverser(
     return obj, state
 
 
+# Torch model root tracking
+
+
 @traverser
 def _root_traverser(
     obj: Module,
@@ -50,22 +59,25 @@ def _root_traverser(
     return obj, state
 
 
-_torch_traverser = t.singledispatch_traverser(name="_torch_traverser")
-torch_traverser = t.sequential(
-    _clone_traverser, _root_traverser, _torch_traverser, name="torch_traverser"
-)
-tnn.nn_traverser.register(Module, torch_traverser)
+# Torch model layer counting
 
 
 @tnn.layer_count_traverser.register(vars={"count": tnn.LAYER_COUNT}, update_vars=True)
-def _(obj: Module, count: int):
-    return obj, {"count": count + 1}
+def _module_counter(obj: Module, count: int) -> tuple[Module, dict[str, int]]:
+    return obj, {
+        "count": count + 1,  # Increment LAYER_COUNT for each traversed module.
+    }
 
 
 @tnn.layer_count_traverser.register
 @t.traverser
-def _(obj: Sequential):
+def _sequential_counter(obj: Sequential) -> Sequential:
     return obj  # Don't count sequential modules as layers.
+
+
+# Torch model traverser
+
+_torch_traverser = t.singledispatch_traverser(name="_torch_traverser")
 
 
 @_torch_traverser.register
@@ -75,15 +87,17 @@ def _module_traverser(
     traverse: t.TraverserCallback[Module],
 ) -> t.TraverserResult[Module]:
     for name, module in obj.named_children():
-        module, state = traverse(module, state, name)
-        setattr(obj, name, module)
+        new_module, state = traverse(module, state, name)
+        setattr(obj, name, new_module)
 
     return obj, state
 
 
 @_torch_traverser.register
 def _sequential_traverser(
-    obj: Sequential, state: t.State[Module], traverse: t.TraverserCallback[Module]
+    obj: Sequential,
+    state: t.State[Module],
+    traverse: t.TraverserCallback[Module],
 ) -> t.TraverserResult[Module]:
     if not state[FLATTEN_SEQUENTIAL]:
         return _module_traverser(obj, state, traverse)
@@ -91,9 +105,9 @@ def _sequential_traverser(
     seq = []
 
     for name, module in obj.named_children():
-        module, state = traverse(module, state, name)
-        if isinstance(module, Sequential):
-            for sub_name, sub_module in module.named_children():
+        new_module, state = traverse(module, state, name)
+        if isinstance(new_module, Sequential):
+            for sub_name, sub_module in new_module.named_children():
                 seq.append((f"{name}_{sub_name}", sub_module))
         else:
             seq.append((name, module))
@@ -101,3 +115,14 @@ def _sequential_traverser(
     new_obj = Sequential(OrderedDict(seq))
 
     return new_obj, state
+
+
+# Public API combining cloning, root tracking, and module traversing
+
+torch_traverser = t.sequential(
+    _clone_traverser,
+    _root_traverser,
+    _torch_traverser,
+    name="torch_traverser",
+)
+tnn.nn_traverser.register(Module, torch_traverser)
