@@ -302,12 +302,6 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">scipy.optimize</span><span class="w"> </span><span class="kn">import</span> <span class="n">linprog</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">tqdm</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span>
 
-<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="s2">&quot;coverage&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;efficiency&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;expected_calibration_error&quot;</span><span class="p">,</span>
-<span class="p">]</span>
-
 <span class="n">ROUND_DECIMALS</span> <span class="o">=</span> <span class="mi">3</span>  <span class="c1"># Number of decimals to round probabilities to when computing coverage, efficiency, etc.</span>
 
 
@@ -401,6 +395,8 @@
 
 
 
+<div class="viewcode-block" id="coverage_convex_hull">
+<a class="viewcode-back" href="../../api/probly.metrics.html#probly.metrics.coverage_convex_hull">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">coverage_convex_hull</span><span class="p">(</span><span class="n">probs</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">targets</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute the coverage given the credal set defined by the convex hull of the predicted probabilities.</span>
 
@@ -425,9 +421,12 @@
         <span class="n">res</span> <span class="o">=</span> <span class="n">linprog</span><span class="p">(</span><span class="n">c</span><span class="o">=</span><span class="n">c</span><span class="p">,</span> <span class="n">A_eq</span><span class="o">=</span><span class="n">a_eq</span><span class="p">,</span> <span class="n">b_eq</span><span class="o">=</span><span class="n">b_eq</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="n">bounds</span><span class="p">)</span>
         <span class="n">covered</span> <span class="o">+=</span> <span class="n">res</span><span class="o">.</span><span class="n">success</span>
     <span class="n">cov</span> <span class="o">=</span> <span class="n">covered</span> <span class="o">/</span> <span class="n">probs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">cov</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">cov</span><span class="p">)</span></div>
 
 
+
+<div class="viewcode-block" id="covered_efficiency">
+<a class="viewcode-back" href="../../api/probly.metrics.html#probly.metrics.covered_efficiency">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">covered_efficiency</span><span class="p">(</span><span class="n">preds</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">targets</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute the efficiency of the set-valued predictions for which the ground truth is covered.</span>
 
@@ -455,9 +454,12 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Expected 2D or 3D array, got </span><span class="si">{</span><span class="n">preds</span><span class="o">.</span><span class="n">ndim</span><span class="si">}</span><span class="s2">D&quot;</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
-    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">ceff</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">ceff</span><span class="p">)</span></div>
 
 
+
+<div class="viewcode-block" id="log_loss">
+<a class="viewcode-back" href="../../api/probly.metrics.html#probly.metrics.log_loss">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">log_loss</span><span class="p">(</span><span class="n">probs</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">targets</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute the log loss of the predicted probabilities.</span>
 
@@ -474,9 +476,12 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="n">loss</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">probs</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">probs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">targets</span><span class="p">])</span>
         <span class="n">loss</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">loss</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">loss</span>
+    <span class="k">return</span> <span class="n">loss</span></div>
 
 
+
+<div class="viewcode-block" id="brier_score">
+<a class="viewcode-back" href="../../api/probly.metrics.html#probly.metrics.brier_score">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">brier_score</span><span class="p">(</span><span class="n">probs</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">targets</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute the Brier score of the predicted probabilities.</span>
 
@@ -495,9 +500,12 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="n">loss</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">probs</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">probs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">targets</span><span class="p">]</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">probs</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
         <span class="n">loss</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">loss</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">loss</span>
+    <span class="k">return</span> <span class="n">loss</span></div>
 
 
+
+<div class="viewcode-block" id="zero_one_loss">
+<a class="viewcode-back" href="../../api/probly.metrics.html#probly.metrics.zero_one_loss">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">zero_one_loss</span><span class="p">(</span><span class="n">probs</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">targets</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute the zero-one loss of the predicted probabilities.</span>
 
@@ -514,9 +522,12 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="n">loss</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">probs</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">!=</span> <span class="n">targets</span>
         <span class="n">loss</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">loss</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">loss</span>
+    <span class="k">return</span> <span class="n">loss</span></div>
 
 
+
+<div class="viewcode-block" id="spherical_score">
+<a class="viewcode-back" href="../../api/probly.metrics.html#probly.metrics.spherical_score">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">spherical_score</span><span class="p">(</span><span class="n">probs</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">targets</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute the spherical score of the predicted probabilities.</span>
 
@@ -535,7 +546,8 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="n">loss</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">probs</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">probs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">targets</span><span class="p">]</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">probs</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
         <span class="n">loss</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">loss</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">loss</span>
+    <span class="k">return</span> <span class="n">loss</span></div>
+
 </pre></div>
         </article>
       </div>

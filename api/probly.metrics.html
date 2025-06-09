@@ -303,16 +303,16 @@
 <div class="table-wrapper autosummary longtable docutils container">
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">brier_score</span></code>(probs, targets)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#probly.metrics.brier_score" title="probly.metrics.brier_score"><code class="xref py py-obj docutils literal notranslate"><span class="pre">brier_score</span></code></a>(probs, targets)</p></td>
 <td><p>Compute the Brier score of the predicted probabilities.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#probly.metrics.coverage" title="probly.metrics.coverage"><code class="xref py py-obj docutils literal notranslate"><span class="pre">coverage</span></code></a>(preds, targets)</p></td>
 <td><p>Compute the coverage of set-valued predictions.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">coverage_convex_hull</span></code>(probs, targets)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#probly.metrics.coverage_convex_hull" title="probly.metrics.coverage_convex_hull"><code class="xref py py-obj docutils literal notranslate"><span class="pre">coverage_convex_hull</span></code></a>(probs, targets)</p></td>
 <td><p>Compute the coverage given the credal set defined by the convex hull of the predicted probabilities.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">covered_efficiency</span></code>(preds, targets)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#probly.metrics.covered_efficiency" title="probly.metrics.covered_efficiency"><code class="xref py py-obj docutils literal notranslate"><span class="pre">covered_efficiency</span></code></a>(preds, targets)</p></td>
 <td><p>Compute the efficiency of the set-valued predictions for which the ground truth is covered.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#probly.metrics.efficiency" title="probly.metrics.efficiency"><code class="xref py py-obj docutils literal notranslate"><span class="pre">efficiency</span></code></a>(preds)</p></td>
@@ -321,18 +321,43 @@
 <tr class="row-even"><td><p><a class="reference internal" href="#probly.metrics.expected_calibration_error" title="probly.metrics.expected_calibration_error"><code class="xref py py-obj docutils literal notranslate"><span class="pre">expected_calibration_error</span></code></a>(probs, labels[, ...])</p></td>
 <td><p>Compute the expected calibration error (ECE) of the predicted probabilities.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">log_loss</span></code>(probs, targets)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#probly.metrics.log_loss" title="probly.metrics.log_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">log_loss</span></code></a>(probs, targets)</p></td>
 <td><p>Compute the log loss of the predicted probabilities.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">spherical_score</span></code>(probs, targets)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#probly.metrics.spherical_score" title="probly.metrics.spherical_score"><code class="xref py py-obj docutils literal notranslate"><span class="pre">spherical_score</span></code></a>(probs, targets)</p></td>
 <td><p>Compute the spherical score of the predicted probabilities.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">zero_one_loss</span></code>(probs, targets)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#probly.metrics.zero_one_loss" title="probly.metrics.zero_one_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">zero_one_loss</span></code></a>(probs, targets)</p></td>
 <td><p>Compute the zero-one loss of the predicted probabilities.</p></td>
 </tr>
 </tbody>
 </table>
 </div>
+<dl class="py function">
+<dt class="sig sig-object py" id="probly.metrics.brier_score">
+<span class="sig-prename descclassname"><span class="pre">probly.metrics.</span></span><span class="sig-name descname"><span class="pre">brier_score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">targets</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/metrics.html#brier_score"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.metrics.brier_score" title="Link to this definition">¶</a></dt>
+<dd><p>Compute the Brier score of the predicted probabilities.</p>
+<p>We assume the score to be negatively-oriented, i.e. lower is better.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a> | <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>probs</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><em>ndarray</em></a>) – The predicted probabilities as an array of shape (n_instances, n_classes).</p></li>
+<li><p><strong>targets</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><em>ndarray</em></a>) – The true labels as an array of shape (n_instances,). If None, the Brier score is
+computed for all classes. This can be used for uncertainty quantification.</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The Brier score.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>loss</p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.metrics.coverage">
 <span class="sig-prename descclassname"><span class="pre">probly.metrics.</span></span><span class="sig-name descname"><span class="pre">coverage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">preds</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">targets</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/metrics.html#coverage"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.metrics.coverage" title="Link to this definition">¶</a></dt>
@@ -353,6 +378,59 @@
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p>cov</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="probly.metrics.coverage_convex_hull">
+<span class="sig-prename descclassname"><span class="pre">probly.metrics.</span></span><span class="sig-name descname"><span class="pre">coverage_convex_hull</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">targets</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/metrics.html#coverage_convex_hull"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.metrics.coverage_convex_hull" title="Link to this definition">¶</a></dt>
+<dd><p>Compute the coverage given the credal set defined by the convex hull of the predicted probabilities.</p>
+<p>The coverage is defined as the proportion of instances whose true distribution is contained in the convex hull.
+This is computed using linear programming by checking whether the target distribution can be expressed as
+a convex combination of the predicted distributions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>probs</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><em>ndarray</em></a>) – The predicted probabilities as an array of shape (n_instances, n_samples, n_classes).</p></li>
+<li><p><strong>targets</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><em>ndarray</em></a>) – The true labels as an array of shape (n_instances, n_classes).</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The coverage.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>cov</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="probly.metrics.covered_efficiency">
+<span class="sig-prename descclassname"><span class="pre">probly.metrics.</span></span><span class="sig-name descname"><span class="pre">covered_efficiency</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">preds</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">targets</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/metrics.html#covered_efficiency"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.metrics.covered_efficiency" title="Link to this definition">¶</a></dt>
+<dd><p>Compute the efficiency of the set-valued predictions for which the ground truth is covered.</p>
+<p>In the case of a set over classes this is the mean of the number of classes in the set. In the
+case of a credal set, this is computed by the mean difference between the upper and lower
+probabilities.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>preds</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><em>ndarray</em></a>) – The predictions as an array of shape <cite>(n_instances, n_classes)</cite> or
+of shape <cite>(n_instances, n_samples, n_classes)</cite>.</p></li>
+<li><p><strong>targets</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><em>ndarray</em></a>) – The true labels as an array of shape (n_instances, n_classes).</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The efficiency of the set-valued predictions for which the ground truth is covered.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>ceff</p>
 </dd>
 </dl>
 </dd></dl>
@@ -401,6 +479,79 @@ of shape <cite>(n_instances, n_samples, n_classes)</cite>.</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p>ece</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="probly.metrics.log_loss">
+<span class="sig-prename descclassname"><span class="pre">probly.metrics.</span></span><span class="sig-name descname"><span class="pre">log_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">targets</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/metrics.html#log_loss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.metrics.log_loss" title="Link to this definition">¶</a></dt>
+<dd><p>Compute the log loss of the predicted probabilities.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a> | <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>probs</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><em>ndarray</em></a>) – The predicted probabilities as an array of shape (n_instances, n_classes).</p></li>
+<li><p><strong>targets</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><em>ndarray</em></a>) – The true labels as an array of shape (n_instances,). If None, the log loss is
+computed for all classes. This can be used for uncertainty quantification.</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The log loss.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>loss</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="probly.metrics.spherical_score">
+<span class="sig-prename descclassname"><span class="pre">probly.metrics.</span></span><span class="sig-name descname"><span class="pre">spherical_score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">targets</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/metrics.html#spherical_score"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.metrics.spherical_score" title="Link to this definition">¶</a></dt>
+<dd><p>Compute the spherical score of the predicted probabilities.</p>
+<p>We assume the score to be negatively-oriented, i.e. lower is better.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a> | <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>probs</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><em>ndarray</em></a>) – The predicted probabilities as an array of shape (n_instances, n_classes).</p></li>
+<li><p><strong>targets</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><em>ndarray</em></a>) – The true labels as an array of shape (n_instances,). If None, the spherical score is
+computed for all classes. This can be used for uncertainty quantification.</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The spherical score.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>loss</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="probly.metrics.zero_one_loss">
+<span class="sig-prename descclassname"><span class="pre">probly.metrics.</span></span><span class="sig-name descname"><span class="pre">zero_one_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">targets</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/metrics.html#zero_one_loss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.metrics.zero_one_loss" title="Link to this definition">¶</a></dt>
+<dd><p>Compute the zero-one loss of the predicted probabilities.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a> | <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>probs</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><em>ndarray</em></a>) – The predicted probabilities as an array of shape (n_instances, n_classes).</p></li>
+<li><p><strong>targets</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><em>ndarray</em></a>) – The true labels as an array of shape (n_instances,). If None, the zero-one loss is
+computed for all classes. This can be used for uncertainty quantification.</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The zero-one loss.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>loss</p>
 </dd>
 </dl>
 </dd></dl>
@@ -463,9 +614,15 @@ of shape <cite>(n_instances, n_samples, n_classes)</cite>.</p>
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">probly.metrics</a><ul>
+<li><a class="reference internal" href="#probly.metrics.brier_score"><code class="docutils literal notranslate"><span class="pre">brier_score()</span></code></a></li>
 <li><a class="reference internal" href="#probly.metrics.coverage"><code class="docutils literal notranslate"><span class="pre">coverage()</span></code></a></li>
+<li><a class="reference internal" href="#probly.metrics.coverage_convex_hull"><code class="docutils literal notranslate"><span class="pre">coverage_convex_hull()</span></code></a></li>
+<li><a class="reference internal" href="#probly.metrics.covered_efficiency"><code class="docutils literal notranslate"><span class="pre">covered_efficiency()</span></code></a></li>
 <li><a class="reference internal" href="#probly.metrics.efficiency"><code class="docutils literal notranslate"><span class="pre">efficiency()</span></code></a></li>
 <li><a class="reference internal" href="#probly.metrics.expected_calibration_error"><code class="docutils literal notranslate"><span class="pre">expected_calibration_error()</span></code></a></li>
+<li><a class="reference internal" href="#probly.metrics.log_loss"><code class="docutils literal notranslate"><span class="pre">log_loss()</span></code></a></li>
+<li><a class="reference internal" href="#probly.metrics.spherical_score"><code class="docutils literal notranslate"><span class="pre">spherical_score()</span></code></a></li>
+<li><a class="reference internal" href="#probly.metrics.zero_one_loss"><code class="docutils literal notranslate"><span class="pre">zero_one_loss()</span></code></a></li>
 </ul>
 </li>
 </ul>
