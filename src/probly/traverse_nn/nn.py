@@ -7,7 +7,9 @@ from typing import Any
 import probly.traverse as t
 
 LAYER_COUNT = t.GlobalVariable[int](
-    "LAYER_COUNT", "The DFS index of the current layer/module.", default=0
+    "LAYER_COUNT",
+    "The DFS index of the current layer/module.",
+    default=0,
 )
 
 

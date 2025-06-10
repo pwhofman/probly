@@ -29,15 +29,15 @@ TRAVERSE_KEYS = StackVariable[bool](
 )
 
 
-generic_traverser = SingledispatchTraverser(name="generic_traverser")
+generic_traverser = SingledispatchTraverser[object](name="generic_traverser")
 
 
 @generic_traverser.register
 def _tuple_traverser(
     obj: tuple,
-    state: State[tuple],
+    state: State[tuple[Any]],
     traverse: TraverserCallback[Any],
-) -> TraverserResult[tuple]:
+) -> TraverserResult[tuple[Any]]:
     """Traverse tuple elements and reconstruct the tuple.
 
     Always creates a new tuple since tuples are immutable.
@@ -60,9 +60,9 @@ def _tuple_traverser(
 @generic_traverser.register
 def _list_traverser(
     obj: list,
-    state: State[list],
+    state: State[list[Any]],
     traverse: TraverserCallback[Any],
-) -> TraverserResult[list]:
+) -> TraverserResult[list[Any]]:
     """Traverse list elements, optionally cloning the list.
 
     Behavior depends on the CLONE variable:
@@ -93,9 +93,9 @@ def _list_traverser(
 @generic_traverser.register
 def _dict_traverser(
     obj: dict,
-    state: State[dict],
+    state: State[dict[Any, Any]],
     traverse: TraverserCallback[Any],
-) -> TraverserResult[dict]:
+) -> TraverserResult[dict[Any, Any]]:
     """Traverse dictionary values and optionally keys.
 
     Behavior depends on CLONE and TRAVERSE_KEYS variables:
@@ -133,9 +133,9 @@ def _dict_traverser(
 @generic_traverser.register
 def _set_traverser(
     obj: set,
-    state: State[set],
+    state: State[set[Any]],
     traverse: TraverserCallback[Any],
-) -> TraverserResult[set]:
+) -> TraverserResult[set[Any]]:
     """Traverse set elements and reconstruct the set.
 
     Always creates a new set since sets are unordered and elements

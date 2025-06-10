@@ -91,7 +91,7 @@ class Variable[V](ABC):
         index: int,
         name: str | None = None,
         doc: str | None = None,
-        default: V | Variable[V] = None,
+        default: V | Variable[V] = None,  # type: ignore[assignment]
     ) -> None:
         """Initialize a Variable instance.
 
@@ -111,7 +111,7 @@ class Variable[V](ABC):
             self.__name__ = name
         self.doc = doc
         if isinstance(default, Variable):
-            self.default = None  # type: ignore  # noqa: PGH003
+            self.default = None  # type: ignore[assignment]
             self.fallback = default
         else:
             self.default = default
@@ -126,15 +126,15 @@ class Variable[V](ABC):
         """
         return f"<{self.__class__.__name__}#{self.index} {self.__name__} (default={self.default})>"
 
-    def _get(self, state: State, d: GlobalState | StackState) -> V:
+    def _get[T](self, state: State[T], d: GlobalState | StackState) -> V:
         if self.fallback is not None:
             if self.index in d:
-                return d[self.index]
+                return d[self.index]  # type: ignore[no-any-return]
             return self.fallback.get(state)
         return d.get(self.index, self.default)
 
     @abstractmethod
-    def get(self, state: State) -> V:
+    def get[T](self, state: State[T]) -> V:
         """Retrieve the value of the variable in the given state.
 
         Args:
@@ -161,7 +161,7 @@ class Variable[V](ABC):
         """
         ...
 
-    def __call__(self, state: State) -> V:
+    def __call__[T](self, state: State[T]) -> V:
         """Variables are callable. They delegate calls to the get method.
 
         Args:
@@ -193,7 +193,7 @@ class GlobalVariable[V](Variable[V]):
         self,
         name: str | None,
         doc: str | None = None,
-        default: V | Variable[V] = None,
+        default: V | Variable[V] = None,  # type: ignore[assignment]
     ) -> None:
         """Initialize a new State instance.
 
@@ -209,7 +209,7 @@ class GlobalVariable[V](Variable[V]):
         super().__init__(State._global_counter, name, doc, default)  # noqa: SLF001
         State._global_counter += 1  # noqa: SLF001
 
-    def get(self, state: State) -> V:
+    def get[T](self, state: State[T]) -> V:
         """Get the value associated with the given state.
 
         Args:
@@ -265,7 +265,7 @@ class StackVariable[V](Variable[V]):
         self,
         name: str | None,
         doc: str | None = None,
-        default: V | Variable[V] = None,
+        default: V | Variable[V] = None,  # type: ignore[assignment]
     ) -> None:
         """Initialize a new State instance.
 
@@ -281,7 +281,7 @@ class StackVariable[V](Variable[V]):
         super().__init__(State._stack_counter, name, doc, default)  # noqa: SLF001
         State._stack_counter += 1  # noqa: SLF001
 
-    def get(self, state: State) -> V:
+    def get[T](self, state: State[T]) -> V:
         """Retrieve the value associated with the given state.
 
         Args:
@@ -392,7 +392,7 @@ class ComputedVariable[T, V](Variable[V]):
         """
         return f"<ComputedVariable: {self.__doc__}>"
 
-    def get(self, state: State) -> V:
+    def get[Q](self, state: State[Q]) -> V:
         """Compute and return the value for the given state.
 
         Args:
@@ -401,7 +401,7 @@ class ComputedVariable[T, V](Variable[V]):
         Returns:
             V: The computed value for the given state.
         """
-        return self.compute_func(state)
+        return self.compute_func(state)  # type: ignore[arg-type]
 
     def set[Q](self, state: State[Q], value: V) -> State[Q]:  # noqa: ARG002
         """Set the value of a computed variable in the given state.
@@ -607,10 +607,10 @@ class State[T]:
         Returns:
             A list of (object, meta) pairs representing the path.
         """
-        path = []
-        current = self
+        path: Path[T] = []
+        current: State[T] | None = self
         while current is not None:
-            path.append((current.object, current.meta))
+            path.append((current.object, current.meta))  # type: ignore[arg-type]
             current = current.parent
         return list(reversed(path))
 

@@ -26,8 +26,8 @@ from probly.traverse.generic import (
 def double_traverse(
     obj: Any,  # noqa: ANN401
     state: State,
-    meta: Any = None,  # noqa: ANN401, ARG001
-    traverser: Any = None,  # noqa: ANN401, ARG001
+    meta: Any = None,  # noqa: ANN401
+    traverser: Any = None,  # noqa: ANN401
 ) -> TraverserResult:
     return obj * 2, state
 
@@ -35,8 +35,8 @@ def double_traverse(
 def identity_traverse(
     obj: Any,  # noqa: ANN401
     state: State,
-    meta: Any = None,  # noqa: ANN401, ARG001
-    traverser: Any = None,  # noqa: ANN401, ARG001
+    meta: Any = None,  # noqa: ANN401
+    traverser: Any = None,  # noqa: ANN401
 ) -> TraverserResult:
     return obj, state
 
@@ -47,7 +47,7 @@ class TestGenericTraverser:
     def test_tuple_dispatch(self) -> None:
         """Test that tuples are dispatched to the tuple traverser."""
         test_tuple = (1, 2, 3)
-        state = State()
+        state: State = State()
 
         result, new_state = generic_traverser(test_tuple, state, double_traverse)
         assert result == (2, 4, 6)
@@ -56,7 +56,7 @@ class TestGenericTraverser:
     def test_list_dispatch(self) -> None:
         """Test that lists are dispatched to the list traverser."""
         test_list = [1, 2, 3]
-        state = State()
+        state: State = State()
 
         result, new_state = generic_traverser(test_list, state, double_traverse)
         assert result == [2, 4, 6]
@@ -65,7 +65,7 @@ class TestGenericTraverser:
     def test_dict_dispatch(self) -> None:
         """Test that dicts are dispatched to the dict traverser."""
         test_dict = {"a": 1, "b": 2}
-        state = State()
+        state: State = State()
 
         result, new_state = generic_traverser(test_dict, state, double_traverse)
         assert result == {"a": 2, "b": 4}
@@ -74,7 +74,7 @@ class TestGenericTraverser:
     def test_set_dispatch(self) -> None:
         """Test that sets are dispatched to the set traverser."""
         test_set = {1, 2, 3}
-        state = State()
+        state: State = State()
 
         result, new_state = generic_traverser(test_set, state, double_traverse)
         assert result == {2, 4, 6}
@@ -88,7 +88,7 @@ class TestGenericTraverser:
                 self.value = value
 
         custom_obj = CustomClass(42)
-        state = State()
+        state: State = State()
 
         result, new_state = generic_traverser(custom_obj, state, identity_traverse)
         assert result == custom_obj
@@ -101,7 +101,7 @@ class TestTupleTraverser:
     def test_basic_tuple_traversal(self) -> None:
         """Test basic tuple element traversal."""
         test_tuple = (1, "hello", 3.14)
-        state = State()
+        state: State = State()
 
         result, new_state = _tuple_traverser(test_tuple, state, identity_traverse)
         assert result == (1, "hello", 3.14)
@@ -111,7 +111,7 @@ class TestTupleTraverser:
     def test_empty_tuple(self) -> None:
         """Test traversal of empty tuple."""
         test_tuple = ()
-        state = State()
+        state: State = State()
 
         result, new_state = _tuple_traverser(test_tuple, state, identity_traverse)
         assert result == ()
@@ -120,14 +120,14 @@ class TestTupleTraverser:
     def test_nested_tuple_traversal(self) -> None:
         """Test traversal with meta information (indices)."""
         test_tuple = ("a", "b", "c")
-        state = State()
+        state: State = State()
         captured_metas = []
 
         def capture_meta_traverse(
             obj: Any,  # noqa: ANN401
             state: State,
             meta: Any = None,  # noqa: ANN401
-            traverser: Any = None,  # noqa: ANN401, ARG001
+            traverser: Any = None,  # noqa: ANN401
         ) -> TraverserResult:
             captured_metas.append(meta)
             return obj.upper(), state
@@ -143,7 +143,7 @@ class TestListTraverser:
     def test_list_clone_enabled(self) -> None:
         """Test list traversal with cloning enabled (default)."""
         test_list = [1, 2, 3]
-        state = State()
+        state: State = State()
         state = CLONE.set(state, True)
 
         result, new_state = _list_traverser(test_list, state, double_traverse)
@@ -154,7 +154,7 @@ class TestListTraverser:
     def test_list_clone_disabled(self) -> None:
         """Test list traversal with cloning disabled."""
         test_list = [1, 2, 3]
-        state = State()
+        state: State = State()
         state = CLONE.set(state, False)
 
         result, new_state = _list_traverser(test_list, state, double_traverse)
@@ -164,8 +164,8 @@ class TestListTraverser:
 
     def test_empty_list(self) -> None:
         """Test traversal of empty list."""
-        test_list = []
-        state = State()
+        test_list: list = []
+        state: State = State()
 
         result, new_state = _list_traverser(test_list, state, identity_traverse)
         assert result == []
@@ -174,14 +174,14 @@ class TestListTraverser:
     def test_list_with_meta(self) -> None:
         """Test list traversal captures indices as meta."""
         test_list = [0, 1, 2]
-        state = State()
+        state: State = State()
         captured_metas = []
 
         def capture_meta_traverse(
             obj: Any,  # noqa: ANN401
             state: State,
             meta: Any = None,  # noqa: ANN401
-            traverser: Any = None,  # noqa: ANN401, ARG001
+            traverser: Any = None,  # noqa: ANN401
         ) -> TraverserResult:
             assert obj == meta
             captured_metas.append(meta)
@@ -199,7 +199,7 @@ class TestListTraverser:
                 super().__init__(*args)
 
         test_list = CustomList([1, 2, 3])
-        state = State()
+        state: State = State()
         state = CLONE.set(state, True)
 
         result, new_state = _list_traverser(test_list, state, identity_traverse)
@@ -214,7 +214,7 @@ class TestDictTraverser:
     def test_dict_values_only(self) -> None:
         """Test dictionary traversal of values only (default)."""
         test_dict = {"a": 1, "b": 2, "c": 3}
-        state = State()
+        state: State = State()
         state = TRAVERSE_KEYS.set(state, False)
         state = CLONE.set(state, True)
 
@@ -225,14 +225,14 @@ class TestDictTraverser:
     def test_dict_traverse_keys(self) -> None:
         """Test dictionary traversal including keys."""
         test_dict = {"first": 1, "second": 2}
-        state = State()
+        state: State = State()
         state = TRAVERSE_KEYS.set(state, True)
 
         def upper_traverse(
             obj: Any,  # noqa: ANN401
             state: State,
-            meta: Any = None,  # noqa: ANN401, ARG001
-            traverser: Any = None,  # noqa: ANN401, ARG001
+            meta: Any = None,  # noqa: ANN401
+            traverser: Any = None,  # noqa: ANN401
         ) -> TraverserResult:
             if isinstance(obj, str):
                 return obj.upper(), state
@@ -244,7 +244,7 @@ class TestDictTraverser:
     def test_dict_clone_disabled(self) -> None:
         """Test in-place dictionary modification."""
         test_dict = {"a": 1, "b": 2}
-        state = State()
+        state: State = State()
         state = TRAVERSE_KEYS.set(state, False)
         state = CLONE.set(state, False)
 
@@ -256,7 +256,7 @@ class TestDictTraverser:
     def test_dict_traverse_keys_forces_clone(self) -> None:
         """Test that traversing keys forces cloning even when CLONE=False."""
         test_dict = {"a": 1, "b": 2}
-        state = State()
+        state: State = State()
         state = TRAVERSE_KEYS.set(state, True)
         state = CLONE.set(state, False)
 
@@ -267,8 +267,8 @@ class TestDictTraverser:
 
     def test_empty_dict(self) -> None:
         """Test traversal of empty dictionary."""
-        test_dict = {}
-        state = State()
+        test_dict: dict = {}
+        state: State = State()
 
         result, new_state = _dict_traverser(test_dict, state, identity_traverse)
         assert result == {}
@@ -277,14 +277,14 @@ class TestDictTraverser:
     def test_dict_with_meta(self) -> None:
         """Test that dict values receive keys as meta."""
         test_dict = {"first": 1, "second": 2}
-        state = State()
+        state: State = State()
         state = TRAVERSE_KEYS.set(state, False)
 
         def capture_meta_traverse(
             obj: Any,  # noqa: ANN401
             state: State,
             meta: Any = None,  # noqa: ANN401
-            traverser: Any = None,  # noqa: ANN401, ARG001
+            traverser: Any = None,  # noqa: ANN401
         ) -> TraverserResult:
             return f"{meta}={obj}", state
 
@@ -299,7 +299,7 @@ class TestDictTraverser:
                 super().__init__(*args)
 
         test_dict = CustomDict({"a": 1, "b": 2})
-        state = State()
+        state: State = State()
         state = CLONE.set(state, True)
 
         result, new_state = _dict_traverser(test_dict, state, identity_traverse)
@@ -314,7 +314,7 @@ class TestSetTraverser:
     def test_basic_set_traversal(self) -> None:
         """Test basic set element traversal."""
         test_set = {1, 2, 3}
-        state = State()
+        state: State = State()
 
         result, new_state = _set_traverser(test_set, state, double_traverse)
         assert result == {2, 4, 6}
@@ -322,8 +322,8 @@ class TestSetTraverser:
 
     def test_empty_set(self) -> None:
         """Test traversal of empty set."""
-        test_set = set()
-        state = State()
+        test_set: set = set()
+        state: State = State()
 
         result, new_state = _set_traverser(test_set, state, identity_traverse)
         assert result == set()
@@ -332,13 +332,13 @@ class TestSetTraverser:
     def test_set_with_duplicates_after_traversal(self) -> None:
         """Test set behavior when traversal creates duplicates."""
         test_set = {1, 2, 3}
-        state = State()
+        state: State = State()
 
         def modulo_traverse(
             obj: Any,  # noqa: ANN401
             state: State,
-            meta: Any = None,  # noqa: ANN401, ARG001
-            traverser: Any = None,  # noqa: ANN401, ARG001
+            meta: Any = None,  # noqa: ANN401
+            traverser: Any = None,  # noqa: ANN401
         ) -> TraverserResult:
             return obj % 2, state  # Maps to 0 or 1
 
@@ -354,7 +354,7 @@ class TestSetTraverser:
                 super().__init__(*args)
 
         test_set = CustomSet({1, 2, 3})
-        state = State()
+        state: State = State()
 
         result, new_state = _set_traverser(test_set, state, identity_traverse)
         assert isinstance(result, CustomSet)
@@ -373,13 +373,13 @@ class TestIntegrationScenarios:
             "set": {9, 10},
         }
 
-        state = State()
+        state: State = State()
 
         def increment_traverse(
             obj: Any,  # noqa: ANN401
             state: State,
-            meta: Any = None,  # noqa: ANN401, ARG001
-            traverser: Any = None,  # noqa: ANN401, ARG001
+            meta: Any = None,  # noqa: ANN401
+            traverser: Any = None,  # noqa: ANN401
         ) -> Any:  # noqa: ANN401
             if isinstance(obj, int):
                 return obj + 1, state
@@ -401,14 +401,14 @@ class TestIntegrationScenarios:
 
         counter_var = GlobalVariable[int]("counter", default=0)
         test_list = [1, 2, 3]
-        state = State()
+        state: State = State()
         state = counter_var.set(state, 0)
 
         def counting_traverse(
             obj: Any,  # noqa: ANN401
             state: State,
-            meta: Any = None,  # noqa: ANN401, ARG001
-            traverser: Any = None,  # noqa: ANN401, ARG001
+            meta: Any = None,  # noqa: ANN401
+            traverser: Any = None,  # noqa: ANN401
         ) -> TraverserResult:
             current_count = state[counter_var]
             state[counter_var] += 1

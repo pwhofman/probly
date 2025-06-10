@@ -6,6 +6,7 @@ from typing import Any
 
 import pytest
 
+from probly.traverse import Traverser
 from probly.traverse.composition import (
     SingledispatchTraverser,
     _is_union_type,
@@ -17,18 +18,18 @@ from probly.traverse.core import State, TraverserCallback, TraverserResult
 
 
 def dummy_traverser(
-    obj,
-    state: State,
+    obj: Any,  # noqa: ANN401
+    state: State[Any],
     traverse: TraverserCallback,
 ) -> TraverserResult:
     return obj, state  # pragma: no cover
 
 
 def dummy_traverse(
-    obj,
-    state: State,
+    obj: Any,  # noqa: ANN401
+    state: State[Any],
     meta: Any = None,  # noqa: ANN401
-    traverser=None,
+    traverser: Any = None,  # noqa: ANN401
 ) -> TraverserResult:
     return obj, state
 
@@ -61,13 +62,13 @@ def test_sequential_basic() -> None:
 def test_sequential_with_name() -> None:
     """Test sequential composition with custom name."""
     composed = sequential(dummy_traverser, name="test_traverser")
-    assert composed.__name__ == "test_traverser"  # type: ignore  # noqa: PGH003
-    assert "test_traverser" in composed.__qualname__
+    assert composed.__name__ == "test_traverser"  # type: ignore[attr-defined]
+    assert "test_traverser" in composed.__qualname__  # type: ignore[attr-defined]
 
 
 def test_sequential_empty() -> None:
     """Test sequential with no traversers."""
-    composed = sequential()
+    composed: Traverser = sequential()
     state: State[int] = State()
 
     result, new_state = composed(42, state, dummy_traverse)
@@ -106,8 +107,8 @@ def test_top_sequential_basic() -> None:
 def test_top_sequential_with_name() -> None:
     """Test top_sequential with custom name."""
     composed = top_sequential(dummy_traverser, name="top_test")
-    assert composed.__name__ == "top_test"  # type: ignore  # noqa: PGH003
-    assert "top_test" in composed.__qualname__
+    assert composed.__name__ == "top_test"  # type: ignore[attr-defined]
+    assert "top_test" in composed.__qualname__  # type: ignore[attr-defined]
 
 
 def test_is_union_type() -> None:
@@ -138,7 +139,7 @@ def test_is_valid_dispatch_type() -> None:
     assert _is_valid_dispatch_type(int | str) is True
 
     # Test invalid types (not actual types)
-    assert _is_valid_dispatch_type("not_a_type") is False  # type: ignore  # noqa: PGH003
+    assert _is_valid_dispatch_type("not_a_type") is False
 
 
 class TestSingledispatchTraverser:
@@ -159,7 +160,7 @@ class TestSingledispatchTraverser:
     def test_init_with_default_traverser(self) -> None:
         """Test initialization with a default traverser function."""
 
-        def default_func(obj: int, traverse, **kwargs) -> int:  # noqa: ANN003
+        def default_func(obj: int, traverse: Any, **kwargs: Any) -> int:  # noqa: ANN401
             return obj * 2
 
         traverser = SingledispatchTraverser[int](default_func)
@@ -280,19 +281,27 @@ class TestSingledispatchTraverser:
         """Test that registering with invalid type raises TypeError."""
         traverser = SingledispatchTraverser[Any]()
 
-        def dummy_func(obj, traverse, **kwargs):  # noqa: ANN003
+        def dummy_func(
+            obj: Any,  # noqa: ANN401
+            traverse: Any,  # noqa: ANN401
+            **kwargs: Any,  # noqa: ANN401
+        ) -> Any:  # noqa: ANN401
             return obj  # pragma: no cover
 
         # This should raise TypeError for invalid first argument
         with pytest.raises(TypeError, match="Invalid first argument"):
-            traverser.register("invalid_type", dummy_func)  # type: ignore  # noqa: PGH003
+            traverser.register("invalid_type", dummy_func)  # type: ignore[call-overload]
 
     def test_register_invalid_none_with_traverser_error(self) -> None:
         """Test error when calling register(None, traverser)."""
         traverser = SingledispatchTraverser[Any]()
 
-        def dummy_func(obj, traverse, **kwargs):  # noqa: ANN003
+        def dummy_func(
+            obj: Any,  # noqa: ANN401
+            traverse: Any,  # noqa: ANN401
+            **kwargs: Any,  # noqa: ANN401
+        ) -> Any:  # noqa: ANN401
             return obj  # pragma: no cover
 
         with pytest.raises(TypeError, match="Invalid arguments"):
-            traverser.register(None, dummy_func)
+            traverser.register(None, dummy_func)  # type: ignore[call-overload]

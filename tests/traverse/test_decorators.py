@@ -63,7 +63,7 @@ class TestDetectTraverserType:
     def test_detect_obj_only_traverser(self) -> None:
         """Test detection of obj-only traverser."""
 
-        def obj_only(obj):
+        def obj_only(obj):  # type: ignore[no-untyped-def]
             return obj  # pragma: no cover
 
         mode, obj_name, state_name, traverse_name = _detect_traverser_type(obj_only)
@@ -75,7 +75,7 @@ class TestDetectTraverserType:
     def test_detect_obj_only_renamed_traverser(self) -> None:
         """Test detection of obj-only traverser."""
 
-        def obj_only(item):
+        def obj_only(item):  # type: ignore[no-untyped-def]
             return item  # pragma: no cover
 
         mode, obj_name, state_name, traverse_name = _detect_traverser_type(obj_only)
@@ -87,7 +87,7 @@ class TestDetectTraverserType:
     def test_detect_state_only_traverser(self) -> None:
         """Test detection of state-only traverser."""
 
-        def state_only(state):
+        def state_only(state):  # type: ignore[no-untyped-def]
             return state  # pragma: no cover
 
         mode, obj_name, state_name, traverse_name = _detect_traverser_type(state_only)
@@ -99,7 +99,7 @@ class TestDetectTraverserType:
     def test_detect_state_only_renamed_traverser(self) -> None:
         """Test detection of state-only traverser."""
 
-        def state_only(s):
+        def state_only(s):  # type: ignore[no-untyped-def]
             return s  # pragma: no cover
 
         mode, obj_name, state_name, traverse_name = _detect_traverser_type(
@@ -114,7 +114,7 @@ class TestDetectTraverserType:
     def test_detect_obj_state_traverser(self) -> None:
         """Test detection of obj-state traverser."""
 
-        def obj_state(state, obj):
+        def obj_state(state, obj):  # type: ignore[no-untyped-def]
             return obj, state  # pragma: no cover
 
         with pytest.warns(
@@ -132,7 +132,7 @@ class TestDetectTraverserType:
     def test_detect_obj_state_renamed_traverser(self) -> None:
         """Test detection of obj-state traverser."""
 
-        def obj_state(o, s):
+        def obj_state(o, s):  # type: ignore[no-untyped-def]
             return o, s  # pragma: no cover
 
         mode, obj_name, state_name, traverse_name = _detect_traverser_type(
@@ -147,7 +147,7 @@ class TestDetectTraverserType:
     def test_detect_obj_traverse_traverser(self) -> None:
         """Test detection of obj-traverse traverser."""
 
-        def obj_traverse(traverse, obj):
+        def obj_traverse(traverse, obj):  # type: ignore[no-untyped-def]
             return obj  # pragma: no cover
 
         with pytest.warns(
@@ -165,7 +165,7 @@ class TestDetectTraverserType:
     def test_detect_obj_traverse_renamed_traverser(self) -> None:
         """Test detection of obj-traverse traverser."""
 
-        def obj_traverse(item, visit):
+        def obj_traverse(item, visit):  # type: ignore[no-untyped-def]
             return item  # pragma: no cover
 
         mode, obj_name, state_name, traverse_name = _detect_traverser_type(
@@ -180,7 +180,7 @@ class TestDetectTraverserType:
     def test_detect_full_traverser(self) -> None:
         """Test detection of full traverser."""
 
-        def full_traverser(
+        def full_traverser(  # type: ignore[no-untyped-def]
             traverse,
             state,
             obj,
@@ -202,7 +202,7 @@ class TestDetectTraverserType:
     def test_detect_full_renamed_traverser(self) -> None:
         """Test detection of full traverser."""
 
-        def full_traverser(traverse, item, state):  # Shuffled args
+        def full_traverser(traverse, item, state):  # type: ignore[no-untyped-def] # Shuffled args
             return item, state  # pragma: no cover
 
         with pytest.warns(
@@ -220,7 +220,7 @@ class TestDetectTraverserType:
     def test_detect_full_positional_traverser(self) -> None:
         """Test detection of full positional traverser."""
 
-        def full_positional(obj, state, traverse):
+        def full_positional(obj, state, traverse):  # type: ignore[no-untyped-def]
             return obj, state  # pragma: no cover
 
         mode, obj_name, state_name, traverse_name = _detect_traverser_type(
@@ -234,7 +234,7 @@ class TestDetectTraverserType:
     def test_detect_custom_parameter_names(self) -> None:
         """Test detection with custom parameter names."""
 
-        def custom_names(item, current_state, visitor):
+        def custom_names(item, current_state, visitor):  # type: ignore[no-untyped-def]
             return item, current_state  # pragma: no cover
 
         mode, obj_name, state_name, traverse_name = _detect_traverser_type(custom_names)
@@ -248,7 +248,7 @@ class TestDetectTraverserType:
     def test_detect_misleading_traverse_signature(self) -> None:
         """Test detection of misleading function signature."""
 
-        def unsupported(traverse):
+        def unsupported(traverse):  # type: ignore[no-untyped-def]
             return None  # pragma: no cover
 
         mode, obj_name, state_name, traverse_name = _detect_traverser_type(
@@ -263,7 +263,7 @@ class TestDetectTraverserType:
     def test_detect_misleading_state_signature(self) -> None:
         """Test detection of misleading function signature."""
 
-        def unsupported(state):
+        def unsupported(state):  # type: ignore[no-untyped-def]
             return None  # pragma: no cover
 
         mode, obj_name, state_name, traverse_name = _detect_traverser_type(
@@ -278,7 +278,7 @@ class TestDetectTraverserType:
     def test_detect_unsupported_signature(self) -> None:
         """Test detection of unsupported function signature."""
 
-        def unsupported(traverse):
+        def unsupported(traverse):  # type: ignore[no-untyped-def]
             return None  # pragma: no cover
 
         with pytest.raises(
@@ -299,7 +299,7 @@ class TestSkipIf:
         conditional_traverser = _skip_if(mock_traverser, predicate)
 
         obj = "test"
-        state = State()
+        state: State = State()
         result, new_state = conditional_traverser(obj, state, dummy_traverse)
 
         # Should skip the traverser and return original obj
@@ -317,7 +317,7 @@ class TestSkipIf:
         conditional_traverser = _skip_if(mock_traverser, predicate)
 
         obj = "test"
-        state = State()
+        state: State = State()
         result, new_state = conditional_traverser(obj, state, dummy_traverse)
 
         # Should execute the traverser
@@ -333,7 +333,7 @@ class TestSkipIf:
         conditional_traverser = _skip_if(mock_traverser, var)
 
         obj = "test"
-        state = State()
+        state: State = State()
         result, new_state = conditional_traverser(obj, state, dummy_traverse)
 
         # Should skip the traverser since variable default is True
@@ -349,13 +349,13 @@ class TestTraverserDecorator:
         """Test using @traverser without arguments."""
 
         @traverser
-        def simple_traverser(obj, traverse):
+        def simple_traverser(obj, traverse):  # type: ignore[no-untyped-def]
             return obj * 2
 
         assert callable(simple_traverser)
 
         obj = 5
-        state = State()
+        state: State = State()
         result, new_state = simple_traverser(obj, state, dummy_traverse)
 
         assert result == 10
@@ -365,11 +365,11 @@ class TestTraverserDecorator:
         """Test using @traverser with arguments."""
 
         @traverser(mode="obj")
-        def obj_traverser(obj):
+        def obj_traverser(obj: int):  # type: ignore[no-untyped-def]
             return obj * 3
 
         obj = 4
-        state = State()
+        state: State = State()
         result, new_state = obj_traverser(obj, state, dummy_traverse)
 
         assert result == 12
@@ -378,13 +378,13 @@ class TestTraverserDecorator:
     def test_as_function_call(self) -> None:
         """Test using traverser as a direct function call."""
 
-        def raw_traverser(obj, traverse):
+        def raw_traverser(obj, traverse):  # type: ignore[no-untyped-def]
             return obj + 1
 
         wrapped = traverser(raw_traverser)
 
         obj = 10
-        state = State()
+        state: State = State()
         result, new_state = wrapped(obj, state, dummy_traverse)
 
         assert result == 11
@@ -394,11 +394,11 @@ class TestTraverserDecorator:
         """Test automatic mode detection."""
 
         @traverser(mode="auto")
-        def auto_traverser(obj, state, traverse):
+        def auto_traverser(obj, state, traverse):  # type: ignore[no-untyped-def]
             return obj, state
 
         obj = "test"
-        state = State()
+        state: State = State()
         result, new_state = auto_traverser(obj, state, dummy_traverse)
 
         assert result == obj
@@ -407,7 +407,7 @@ class TestTraverserDecorator:
     def test_mode_identity(self) -> None:
         """Test identity mode returns identity_traverser."""
 
-        def no_args():
+        def no_args():  # type: ignore[no-untyped-def]
             return None
 
         wrapped = traverser(no_args, mode="auto")
@@ -416,7 +416,7 @@ class TestTraverserDecorator:
     def test_mode_full_positional(self) -> None:
         """Test full positional mode returns original function."""
 
-        def full_pos(obj, state, traverse):
+        def full_pos(obj, state, traverse):  # type: ignore[no-untyped-def]
             return obj * 2, state
 
         wrapped = traverser(full_pos, mode="auto")
@@ -426,11 +426,11 @@ class TestTraverserDecorator:
         """Test obj mode."""
 
         @traverser(mode="obj")
-        def obj_traverser(item):
+        def obj_traverser(item):  # type: ignore[no-untyped-def]
             return item.upper()
 
         obj = "hello"
-        state = State()
+        state: State = State()
         result, new_state = obj_traverser(obj, state, dummy_traverse)
 
         assert result == "HELLO"
@@ -441,11 +441,11 @@ class TestTraverserDecorator:
         new_state_mock = Mock()
 
         @traverser(mode="state")
-        def state_traverser(state):
+        def state_traverser(state):  # type: ignore[no-untyped-def]
             return new_state_mock
 
         obj = "test"
-        state = State()
+        state: State = State()
         result, new_state = state_traverser(obj, state, dummy_traverse)
 
         assert result == obj  # Object unchanged
@@ -455,11 +455,11 @@ class TestTraverserDecorator:
         """Test obj_state mode."""
 
         @traverser(mode="obj_state")
-        def obj_state_traverser(obj, state):
+        def obj_state_traverser(obj, state):  # type: ignore[no-untyped-def]
             return obj * 2, state
 
         obj = 5
-        state = State()
+        state: State = State()
         result, new_state = obj_state_traverser(obj, state, dummy_traverse)
 
         assert result == 10
@@ -469,11 +469,11 @@ class TestTraverserDecorator:
         """Test obj_traverse mode."""
 
         @traverser(mode="obj_traverse")
-        def obj_traverse_traverser(obj, traverse):
+        def obj_traverse_traverser(obj, traverse):  # type: ignore[no-untyped-def]
             return obj.upper()
 
         obj = "hello"
-        state = State()
+        state: State = State()
         result, new_state = obj_traverse_traverser(obj, state, dummy_traverse)
 
         assert result == "HELLO"
@@ -483,11 +483,11 @@ class TestTraverserDecorator:
         """Test full mode with custom parameter names."""
 
         @traverser(mode="full")
-        def full_traverser(item, current_state, visitor):
+        def full_traverser(item, current_state, visitor):  # type: ignore[no-untyped-def]
             return item * 2, current_state
 
         obj = 3
-        state = State()
+        state: State = State()
         result, new_state = full_traverser(obj, state, dummy_traverse)
 
         assert result == 6
@@ -497,11 +497,11 @@ class TestTraverserDecorator:
         """Test variable injection from state."""
 
         @traverser(mode="obj", vars={"multiplier": TEST_GLOBAL_VAR})
-        def var_traverser(obj, multiplier):
+        def var_traverser(obj, multiplier):  # type: ignore[no-untyped-def]
             return obj * multiplier
 
         obj = 5
-        state = State().update({TEST_GLOBAL_VAR: 3})
+        state: State = State().update({TEST_GLOBAL_VAR: 3})
         result, new_state = var_traverser(obj, state, dummy_traverse)
 
         assert result == 15
@@ -511,11 +511,11 @@ class TestTraverserDecorator:
         """Test variable injection with update_vars=True."""
 
         @traverser(mode="obj", vars={"counter": TEST_GLOBAL_VAR}, update_vars=True)
-        def updating_traverser(obj, counter):
+        def updating_traverser(obj, counter):  # type: ignore[no-untyped-def]
             return obj, {"counter": counter + 1}
 
         obj = "test"
-        state = State().update({TEST_GLOBAL_VAR: 5})
+        state: State = State().update({TEST_GLOBAL_VAR: 5})
         result, new_state = updating_traverser(obj, state, dummy_traverse)
 
         assert result == obj
@@ -526,12 +526,12 @@ class TestTraverserDecorator:
         skip_var = StackVariable[bool]("skip", default=False)
 
         @traverser(mode="obj", skip_if=skip_var)
-        def skippable_traverser(obj):
+        def skippable_traverser(obj):  # type: ignore[no-untyped-def]
             return obj * 2
 
         # Test when skip is False
         obj = 5
-        state = State().update({skip_var: False})
+        state: State = State().update({skip_var: False})
         result, new_state = skippable_traverser(obj, state, dummy_traverse)
         assert result == 10
 
@@ -545,12 +545,12 @@ class TestTraverserDecorator:
         run_var = StackVariable[bool]("run", default=True)
 
         @traverser(mode="obj", traverse_if=run_var)
-        def conditional_traverser(obj):
+        def conditional_traverser(obj):  # type: ignore[no-untyped-def]
             return obj * 2
 
         # Test when run is True
         obj = 5
-        state = State().update({run_var: True})
+        state: State = State().update({run_var: True})
         result, new_state = conditional_traverser(obj, state, dummy_traverse)
         assert result == 10
 
@@ -567,7 +567,7 @@ class TestTraverserDecorator:
         ):
 
             @traverser(update_vars=True)
-            def bad_traverser(obj):
+            def bad_traverser(obj):  # type: ignore[no-untyped-def]
                 return obj  # pragma: no cover
 
     def test_error_vars_with_full_mode(self) -> None:
@@ -578,7 +578,7 @@ class TestTraverserDecorator:
         ):
 
             @traverser(mode="full", vars={"test": TEST_GLOBAL_VAR})
-            def bad_traverser(obj, state, traverse):
+            def bad_traverser(obj, state, traverse):  # type: ignore[no-untyped-def]
                 return obj, state  # pragma: no cover
 
     def test_error_vars_with_state_mode(self) -> None:
@@ -589,7 +589,7 @@ class TestTraverserDecorator:
         ):
 
             @traverser(mode="state", vars={"test": TEST_GLOBAL_VAR})
-            def bad_traverser(state):
+            def bad_traverser(state):  # type: ignore[no-untyped-def]
                 return state  # pragma: no cover
 
     def test_error_vars_with_obj_state_mode(self) -> None:
@@ -600,7 +600,7 @@ class TestTraverserDecorator:
         ):
 
             @traverser(mode="obj_state", vars={"test": TEST_GLOBAL_VAR})
-            def bad_traverser(obj, state):
+            def bad_traverser(obj, state):  # type: ignore[no-untyped-def]
                 return obj, state  # pragma: no cover
 
     def test_error_invalid_mode(self) -> None:
@@ -610,8 +610,8 @@ class TestTraverserDecorator:
             match="signature with params 'obj' irresolvable with mode 'invalid'",
         ):
 
-            @traverser(mode="invalid")  # type: ignore  # noqa: PGH003
-            def bad_traverser(obj):
+            @traverser(mode="invalid")
+            def bad_traverser(obj):  # type: ignore[no-untyped-def]
                 return obj  # pragma: no cover
 
         with pytest.raises(
@@ -619,8 +619,8 @@ class TestTraverserDecorator:
             match="signature with params 'obj', 'state' irresolvable with mode 'invalid'",
         ):
 
-            @traverser(mode="invalid")  # type: ignore  # noqa: PGH003
-            def bad_traverser(obj, state):
+            @traverser(mode="invalid")
+            def bad_traverser(obj, state):  # type: ignore[no-untyped-def]
                 return obj  # pragma: no cover
 
         with pytest.raises(
@@ -628,14 +628,14 @@ class TestTraverserDecorator:
             match="signature with params 'obj', 'state', 'traverse' irresolvable with mode 'invalid'",
         ):
 
-            @traverser(mode="invalid")  # type: ignore  # noqa: PGH003
-            def bad_traverser(obj, state, traverse):
+            @traverser(mode="invalid")
+            def bad_traverser(obj, state, traverse):  # type: ignore[no-untyped-def]
                 return obj  # pragma: no cover
 
     def test_wrapper_preserves_function_metadata(self) -> None:
         """Test that the wrapper preserves original function metadata."""
 
-        def original_function(obj, traverse):
+        def original_function(obj, traverse):  # type: ignore[no-untyped-def]
             """Original docstring."""
             return obj  # pragma: no cover
 
@@ -648,18 +648,18 @@ class TestTraverserDecorator:
         """Test obj_traverse mode with actual traverse callback usage."""
         calls = []
 
-        def mock_traverse(obj, state, meta=None, traverser=None):
+        def mock_traverse(obj, state, meta=None, traverser=None):  # type: ignore[no-untyped-def]
             calls.append((obj, meta))
             return obj * 2, state
 
         @traverser(mode="obj_traverse")
-        def traverse_using_traverser(obj, traverse):
+        def traverse_using_traverser(obj, traverse):  # type: ignore[no-untyped-def]
             result1, _ = traverse(obj)
             result2, _ = traverse(obj + 1, meta="child")
             return result1 + result2
 
         obj = 5
-        state = State()
+        state: State = State()
         result, new_state = traverse_using_traverser(obj, state, mock_traverse)
 
         assert result == 22  # (5*2) + (6*2)
@@ -729,7 +729,7 @@ class TestComplexScenarios:
             update_vars=True,
             traverse_if=active_var,
         )
-        def complex_traverser(obj, traverse, counter):
+        def complex_traverser(obj, traverse, counter):  # type: ignore[no-untyped-def]
             # Increment counter and process object
             new_counter = counter + 1
             processed_obj = f"item_{new_counter}_{obj}"
@@ -737,7 +737,7 @@ class TestComplexScenarios:
 
         # Test when active
         obj = "test"
-        state = State().update({counter_var: 5, active_var: True})
+        state: State = State().update({counter_var: 5, active_var: True})
         result, new_state = complex_traverser(obj, state, dummy_traverse)
 
         assert result == "item_6_test"
@@ -756,16 +756,16 @@ class TestComplexScenarios:
         flag2 = StackVariable[bool]("flag2", default=False)
 
         @traverser(mode="obj", skip_if=flag1)
-        def first_traverser(obj):
+        def first_traverser(obj):  # type: ignore[no-untyped-def]
             return obj * 2
 
         @traverser(mode="obj", skip_if=flag2)
-        def second_traverser(obj):
+        def second_traverser(obj):  # type: ignore[no-untyped-def]
             return obj + 10
 
         # Test both flags False
         obj = 5
-        state = State().update({flag1: False, flag2: False})
+        state: State = State().update({flag1: False, flag2: False})
 
         result1, state1 = first_traverser(obj, state, dummy_traverse)
         result2, state2 = second_traverser(result1, state1, dummy_traverse)
@@ -786,12 +786,12 @@ class TestComplexScenarios:
         composite_var = GlobalVariable[int]("composite", default=fallback_var)
 
         @traverser(mode="obj", vars={"value": composite_var})
-        def fallback_traverser(obj, value):
+        def fallback_traverser(obj, value):  # type: ignore[no-untyped-def]
             return obj * value
 
         # Test with only fallback set
         obj = 3
-        state = State().update({fallback_var: 50})
+        state: State = State().update({fallback_var: 50})
         result, new_state = fallback_traverser(obj, state, dummy_traverse)
 
         assert result == 150  # 3 * 50 (using fallback)

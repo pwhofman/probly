@@ -26,7 +26,10 @@ from probly.traverse.core import (
 logger = logging.getLogger(__name__)
 
 
-type LooseTraverser[T] = Callable
+type LooseTraverser[T] = Callable[..., T] | Callable[..., State[T]] | Callable[
+    ...,
+    TraverserResult[T],
+] | Callable[..., tuple[T, dict[str, Any]]]
 
 type Mode = Literal[
     "auto",  # automatically detect the mode based on function signature
@@ -38,7 +41,7 @@ type Mode = Literal[
     "full_positional",  # if LooseTraverser is a Traverser
     "identity",  # if LooseTraverser does not take any arguments
 ]
-type StatePredicate = Callable[[State], bool] | Variable[bool]
+type StatePredicate[T] = Callable[[State[T]], bool] | Variable[bool]
 
 
 class VarTraverser[T](Protocol):
@@ -52,7 +55,7 @@ class VarTraverser[T](Protocol):
         self,
         obj: T,
         traverse: TraverserCallback[T],
-        **kwargs,  # noqa: ANN003
+        **kwargs: Any,  # noqa: ANN401
     ) -> T:
         """Execute the traverser with variable injection.
 
@@ -67,7 +70,7 @@ class VarTraverser[T](Protocol):
         ...
 
 
-def _skip_if[T](traverser: Traverser[T], pred: StatePredicate) -> Traverser[T]:
+def _skip_if[T](traverser: Traverser[T], pred: StatePredicate[T]) -> Traverser[T]:
     """Create a conditional traverser that skips execution based on a predicate.
 
     Args:
@@ -142,7 +145,7 @@ def _detect_traverser_type[T](  # noqa: C901, PLR0912, PLR0915
     if ignored_args is not None:
         args = [(i, arg) for i, arg in enumerate(args) if arg not in ignored_args]
     else:
-        args = list(enumerate(args))
+        args = list(enumerate(args))  # type: ignore[arg-type]
 
     if not args or len(args) == 0:
         return (
@@ -151,6 +154,9 @@ def _detect_traverser_type[T](  # noqa: C901, PLR0912, PLR0915
             None,
             None,
         )
+
+    i: int
+    arg: str
 
     for i, arg in args:
         if (state_name is None and mode == "state") or (
@@ -190,7 +196,7 @@ def _detect_traverser_type[T](  # noqa: C901, PLR0912, PLR0915
             obj_pos, obj_name = arg0
             traverse_pos, traverse_name = arg1
         elif mode not in {"full", "full_positional"}:
-            arg_str = ", ".join([f"'{p}'" for _, p in args])
+            arg_str = ", ".join([f"'{p}'" for _, p in args])  # type: ignore[has-type]
             msg = f"Traverser signature with params {arg_str} irresolvable with mode '{mode}'."
             raise ValueError(msg)
         else:
@@ -209,45 +215,52 @@ def _detect_traverser_type[T](  # noqa: C901, PLR0912, PLR0915
     elif obj_name is not None and state_name is None and traverse_name is not None:
         mode = "obj_traverse"
     else:
-        arg_str = ", ".join([f"'{p}'" for _, p in args])
+        arg_str = ", ".join([f"'{p}'" for _, p in args])  # type: ignore[has-type]
         msg = f"Traverser signature with params {arg_str} irresolvable with mode '{mode}'."
         raise ValueError(msg)
 
     return mode, obj_name, state_name, traverse_name
 
 
-class TraverserDecoratorKwargs(TypedDict):
+class TraverserDecoratorKwargs[T](TypedDict):
     """Type definition for traverser decorator keyword arguments."""
 
     mode: NotRequired[Mode]
-    traverse_if: NotRequired[StatePredicate | None]
-    skip_if: NotRequired[StatePredicate | None]
+    traverse_if: NotRequired[StatePredicate[T] | None]
+    skip_if: NotRequired[StatePredicate[T] | None]
     vars: NotRequired[dict[str, Variable] | None]
     update_vars: NotRequired[bool]
 
 
 @overload
 def traverser[T](
-    **kwargs: Unpack[TraverserDecoratorKwargs],
+    **kwargs: Unpack[TraverserDecoratorKwargs[T]],
 ) -> Callable[[LooseTraverser[T]], Traverser[T]]: ...
 
 
 @overload
 def traverser[T](
     traverser_fn: LooseTraverser[T],
-    **kwargs: Unpack[TraverserDecoratorKwargs],
+    **kwargs: Unpack[TraverserDecoratorKwargs[T]],
 ) -> Traverser[T]: ...
 
 
-def traverser[T](  # noqa: C901, PGH003, PLR0912, PLR0915 # type: ignore
+@overload
+def traverser[T](
+    traverser_fn: LooseTraverser[T],
+    **kwargs: Unpack[TraverserDecoratorKwargs[T]],
+) -> Traverser[T]: ...
+
+
+def traverser[T](  # noqa: C901, PLR0912, PLR0915
     traverser_fn: LooseTraverser[T] | None = None,
     *,
     mode: Mode = "auto",
-    traverse_if: StatePredicate | None = None,
-    skip_if: StatePredicate | None = None,
+    traverse_if: StatePredicate[T] | None = None,
+    skip_if: StatePredicate[T] | None = None,
     vars: dict[str, Variable] | None = None,  # noqa: A002
     update_vars: bool = False,
-) -> Traverser[T]:
+) -> Traverser[T] | Callable[[LooseTraverser[T]], Traverser[T]]:
     """Decorator to convert functions into proper traverser functions.
 
     This decorator automatically detects the signature of the input function
@@ -301,7 +314,7 @@ def traverser[T](  # noqa: C901, PGH003, PLR0912, PLR0915 # type: ignore
                 update_vars=update_vars,
             )
 
-        return _decorator  # type: ignore  # noqa: PGH003
+        return _decorator
 
     if vars is None and update_vars:
         msg = "Cannot use `update_vars=True` without `vars`."
@@ -323,7 +336,7 @@ def traverser[T](  # noqa: C901, PGH003, PLR0912, PLR0915 # type: ignore
         return identity_traverser
 
     if mode == "full_positional":
-        return traverser_fn
+        return traverser_fn  # type: ignore[return-value]
 
     if mode != "full" and detected_mode != "full_positional":
         if obj_name is None and mode in {"obj", "obj_state", "obj_traverse", "full"}:
@@ -351,19 +364,19 @@ def traverser[T](  # noqa: C901, PGH003, PLR0912, PLR0915 # type: ignore
     if mode == "full":
         if detected_mode == "full_positional":
             # If the function is already a full positional traverser, return it directly
-            return traverser_fn
+            return traverser_fn  # type: ignore[return-value]
 
         def _traverser(
             obj: T,
             state: State[T],
             traverse: TraverserCallback[T],
         ) -> TraverserResult[T]:
-            return traverser_fn(
+            return traverser_fn(  # type: ignore[return-value]
                 **{
                     obj_name: obj,
                     state_name: state,
                     traverse_name: traverse,
-                },  # type: ignore  # noqa: PGH003
+                },
             )
 
     elif mode == "obj":
@@ -373,19 +386,19 @@ def traverser[T](  # noqa: C901, PGH003, PLR0912, PLR0915 # type: ignore
             state: State[T],
             traverse: TraverserCallback[T],  # noqa: ARG001
         ) -> TraverserResult[T]:
-            kwargs: dict[str, Any] = {obj_name: obj}  # type: ignore  # noqa: PGH003
+            kwargs: dict[str, Any] = {obj_name: obj}  # type: ignore[dict-item]
             if vars is not None:
                 for k, v in vars.items():
                     kwargs[k] = v.get(state)
-            res = traverser_fn(**kwargs)  # type: ignore  # noqa: PGH003
+            res = traverser_fn(**kwargs)
             if update_vars:
-                obj, updates = res  # type: ignore  # noqa: PGH003
-                for k, v in updates.items():  # type: ignore  # noqa: PGH003
-                    if k not in vars:
+                obj, updates = res
+                for k, v in updates.items():  # type: ignore[union-attr]
+                    if k not in vars:  # type: ignore[operator]
                         continue
-                    state = vars[k].set(state, v)  # type: ignore  # noqa: PGH003
+                    state = vars[k].set(state, v)  # type: ignore[index]
             else:
-                obj = res  # type: ignore  # noqa: PGH003
+                obj = res  # type: ignore[assignment]
             return obj, state
 
     elif mode == "state":
@@ -395,7 +408,7 @@ def traverser[T](  # noqa: C901, PGH003, PLR0912, PLR0915 # type: ignore
             state: State[T],
             traverse: TraverserCallback[T],  # noqa: ARG001
         ) -> TraverserResult[T]:
-            state = traverser_fn(**{state_name: state})  # type: ignore  # noqa: PGH003
+            state = traverser_fn(**{state_name: state})  # type: ignore[assignment]
             return obj, state
 
     elif mode == "obj_state":
@@ -405,7 +418,7 @@ def traverser[T](  # noqa: C901, PGH003, PLR0912, PLR0915 # type: ignore
             state: State[T],
             traverse: TraverserCallback[T],  # noqa: ARG001
         ) -> TraverserResult[T]:
-            return traverser_fn(**{obj_name: obj, state_name: state})  # type: ignore  # noqa: PGH003
+            return traverser_fn(**{obj_name: obj, state_name: state})  # type: ignore[return-value]
 
     elif mode == "obj_traverse":
 
@@ -421,20 +434,20 @@ def traverser[T](  # noqa: C901, PGH003, PLR0912, PLR0915 # type: ignore
             ) -> TraverserResult[T]:
                 return traverse(obj, state, meta, traverser)
 
-            kwargs: dict[str, Any] = {obj_name: obj, traverse_name: _traverse}  # type: ignore  # noqa: PGH003
+            kwargs: dict[str, Any] = {obj_name: obj, traverse_name: _traverse}  # type: ignore[dict-item]
             if vars is not None:
                 for k, v in vars.items():
                     kwargs[k] = v.get(state)
-            res = traverser_fn(**kwargs)  # type: ignore  # noqa: PGH003
+            res = traverser_fn(**kwargs)
             if update_vars:
-                obj, updates = res  # type: ignore  # noqa: PGH003
-                for k, v in updates.items():  # type: ignore  # noqa: PGH003
-                    if k not in vars:
+                obj, updates = res
+                for k, v in updates.items():  # type: ignore[union-attr]
+                    if k not in vars:  # type: ignore[operator]
                         continue
-                    state = vars[k].set(state, v)  # type: ignore  # noqa: PGH003
+                    state = vars[k].set(state, v)  # type: ignore[index]
             else:
-                obj = res  # type: ignore  # noqa: PGH003
-            return obj, state  # type: ignore  # noqa: PGH003
+                obj = res  # type: ignore[assignment]
+            return obj, state
 
     else:
         msg = f"Mode '{mode}' could not be applied to given traverser."

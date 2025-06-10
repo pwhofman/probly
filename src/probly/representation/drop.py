@@ -1,14 +1,19 @@
+"""Dropout/DropConnect representation for uncertainty quantification."""
+
+from __future__ import annotations
+
 import torch
 from torch import nn
 from torch.nn import functional as F
 
+from probly.representation.predictor import RepresentationPredictorWrapper
 from probly.traverse import CLONE, GlobalVariable, Traverser
 from probly.traverse_nn import nn_traverse
 
 P = GlobalVariable[float]("P", "The probability of dropout.", default=0.25)
 
 
-class Drop(nn.Module):
+class Drop(nn.Module, RepresentationPredictorWrapper):
     """This class implements a generic drop layer to be used for uncertainty quantification."""
 
     _convert_traverser: Traverser[nn.Module]
@@ -91,7 +96,7 @@ class Drop(nn.Module):
         """
         return nn_traverse(base, self._convert_traverser, init={P: self.p, CLONE: True})
 
-    def eval(self) -> "Drop":
+    def eval(self) -> Drop:
         """Sets the model to evaluation mode, but keeps the drop layers active."""
         super().eval()
 
