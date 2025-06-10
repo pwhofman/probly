@@ -18,6 +18,7 @@ dependencies = [
     "torchvision",
     "scikit-learn",
     "tqdm",
+    "joblib",
 ]
 authors = [
     {name = "Paul Hofman", email = "paul.hofman@ifi.lmu.de"},
