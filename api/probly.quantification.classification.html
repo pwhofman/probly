@@ -327,13 +327,13 @@
 <tr class="row-even"><td><p><a class="reference internal" href="#probly.quantification.classification.expected_loss" title="probly.quantification.classification.expected_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">expected_loss</span></code></a>(probs, loss_fn)</p></td>
 <td><p>Compute the expected loss of the second-order distribution.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#probly.quantification.classification.generalised_hartley" title="probly.quantification.classification.generalised_hartley"><code class="xref py py-obj docutils literal notranslate"><span class="pre">generalised_hartley</span></code></a>(probs[, base])</p></td>
-<td><p>Compute the generalised Hartley measure.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#probly.quantification.classification.generalized_hartley" title="probly.quantification.classification.generalized_hartley"><code class="xref py py-obj docutils literal notranslate"><span class="pre">generalized_hartley</span></code></a>(probs[, base])</p></td>
+<td><p>Compute the generalized Hartley measure.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#probly.quantification.classification.lower_entropy" title="probly.quantification.classification.lower_entropy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lower_entropy</span></code></a>(probs[, base])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#probly.quantification.classification.lower_entropy" title="probly.quantification.classification.lower_entropy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lower_entropy</span></code></a>(probs[, base, n_jobs])</p></td>
 <td><p>Compute the lower entropy of a credal set.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#probly.quantification.classification.lower_entropy_convex_hull" title="probly.quantification.classification.lower_entropy_convex_hull"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lower_entropy_convex_hull</span></code></a>(probs[, base])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#probly.quantification.classification.lower_entropy_convex_hull" title="probly.quantification.classification.lower_entropy_convex_hull"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lower_entropy_convex_hull</span></code></a>(probs[, base, n_jobs])</p></td>
 <td><p>Compute the lower entropy of a credal set.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#probly.quantification.classification.mutual_information" title="probly.quantification.classification.mutual_information"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mutual_information</span></code></a>(probs[, base])</p></td>
@@ -348,10 +348,10 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#probly.quantification.classification.total_variance" title="probly.quantification.classification.total_variance"><code class="xref py py-obj docutils literal notranslate"><span class="pre">total_variance</span></code></a>(probs)</p></td>
 <td><p>Compute the total uncertainty using variance-based measures.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#probly.quantification.classification.upper_entropy" title="probly.quantification.classification.upper_entropy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">upper_entropy</span></code></a>(probs[, base])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#probly.quantification.classification.upper_entropy" title="probly.quantification.classification.upper_entropy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">upper_entropy</span></code></a>(probs[, base, n_jobs])</p></td>
 <td><p>Compute the upper entropy of a credal set.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#probly.quantification.classification.upper_entropy_convex_hull" title="probly.quantification.classification.upper_entropy_convex_hull"><code class="xref py py-obj docutils literal notranslate"><span class="pre">upper_entropy_convex_hull</span></code></a>(probs[, base])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#probly.quantification.classification.upper_entropy_convex_hull" title="probly.quantification.classification.upper_entropy_convex_hull"><code class="xref py py-obj docutils literal notranslate"><span class="pre">upper_entropy_convex_hull</span></code></a>(probs[, base, n_jobs])</p></td>
 <td><p>Compute the upper entropy of a credal set.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#probly.quantification.classification.variance_conditional_expectation" title="probly.quantification.classification.variance_conditional_expectation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">variance_conditional_expectation</span></code></a>(probs)</p></td>
@@ -367,10 +367,10 @@
 <p>The measure of aleatoric uncertainty is from <span id="id1">[<a class="reference internal" href="../references.html#id9" title="Yusuf Sale, Viktor Bengs, Michele Caprio, and Eyke Hüllermeier. Second-order uncertainty quantification: A distance-based approach. In Forty-first International Conference on Machine Learning, ICML 2024, Vienna, Austria, July 21-27, 2024. OpenReview.net, 2024. URL: https://openreview.net/forum?id=VJjjNrUi8j.">SBCHullermeier24</a>]</span>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>probs</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><em>ndarray</em></a>) – numpy.ndarray of shape (n_instances, n_samples, n_classes)</p>
+<dd class="field-even"><p><strong>probs</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a>) – numpy.ndarray of shape (n_instances, n_samples, n_classes)</p>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>numpy.ndarray of shape (n_instances,)</p>
@@ -388,11 +388,11 @@
 <p>The computation is based on samples from a second-order distribution.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
-<li><p><strong>probs</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><em>ndarray</em></a>) – numpy.ndarray of shape (n_instances, n_samples, n_classes)</p></li>
+<li><p><strong>probs</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a>) – numpy.ndarray of shape (n_instances, n_samples, n_classes)</p></li>
 <li><p><strong>base</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – float, default=2</p></li>
 </ul>
 </dd>
@@ -412,10 +412,10 @@
 <p>The measure of epistemic uncertainty is from <span id="id2">[<a class="reference internal" href="../references.html#id9" title="Yusuf Sale, Viktor Bengs, Michele Caprio, and Eyke Hüllermeier. Second-order uncertainty quantification: A distance-based approach. In Forty-first International Conference on Machine Learning, ICML 2024, Vienna, Austria, July 21-27, 2024. OpenReview.net, 2024. URL: https://openreview.net/forum?id=VJjjNrUi8j.">SBCHullermeier24</a>]</span>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>probs</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><em>ndarray</em></a>) – numpy.ndarray of shape (n_instances, n_samples, n_classes)</p>
+<dd class="field-even"><p><strong>probs</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a>) – numpy.ndarray of shape (n_instances, n_samples, n_classes)</p>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>numpy.ndarray of shape (n_instances,)</p>
@@ -432,13 +432,13 @@
 <dd><p>Compute the evidential uncertainty given the evidences.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>evidences</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><em>ndarray</em></a>) – numpy.ndarray of shape (n_instances, n_classes)</p>
+<dd class="field-even"><p><strong>evidences</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a>) – Evidence values of shape (n_instances, n_classes).</p>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>numpy.ndarray of shape (n_instances,)</p>
+<dd class="field-odd"><p>Evidential uncertainty values of shape (n_instances,).</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p>eu</p>
@@ -449,20 +449,20 @@
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.quantification.classification.expected_conditional_variance">
 <span class="sig-prename descclassname"><span class="pre">probly.quantification.classification.</span></span><span class="sig-name descname"><span class="pre">expected_conditional_variance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/quantification/classification.html#expected_conditional_variance"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.quantification.classification.expected_conditional_variance" title="Link to this definition">¶</a></dt>
-<dd><p>Compute the aleatoric uncertainty using variance-based measures.
-:rtype: <span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
-<blockquote>
-<div><p>The computation is based on samples from a second-order distribution.</p>
-</div></blockquote>
+<dd><p>Compute the aleatoric uncertainty using variance-based measures.</p>
+<p>The computation is based on samples from a second-order distribution.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>probs</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><em>ndarray</em></a>) – numpy.ndarray of shape (n_instances, n_samples, n_classes)</p>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>numpy.ndarray, shape (n_instances,)</p>
-</dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>ecv</p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>probs</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a>) – numpy.ndarray of shape (n_instances, n_samples, n_classes)</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray, shape (n_instances,)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>ecv</p>
 </dd>
 </dl>
 </dd></dl>
@@ -470,23 +470,23 @@
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.quantification.classification.expected_divergence">
 <span class="sig-prename descclassname"><span class="pre">probly.quantification.classification.</span></span><span class="sig-name descname"><span class="pre">expected_divergence</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_fn</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/quantification/classification.html#expected_divergence"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.quantification.classification.expected_divergence" title="Link to this definition">¶</a></dt>
-<dd><p>Compute the expected divergence to the mean of the second-order distribution.
-:rtype: <span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
-<blockquote>
-<div><p>The computation is based on samples from a second-order distribution.</p>
-</div></blockquote>
+<dd><p>Compute the expected divergence to the mean of the second-order distribution.</p>
+<p>The computation is based on samples from a second-order distribution.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>probs</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><em>ndarray</em></a>) – numpy.ndarray of shape (n_instances, n_samples, n_classes)</p></li>
-<li><p><strong>loss_fn</strong> (<a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable" title="(in Python v3.13)"><em>Callable</em></a><em>[</em><em>[</em><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><em>ndarray</em></a><em>, </em><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><em>ndarray</em></a><em> | </em><em>None</em><em>]</em><em>, </em><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><em>ndarray</em></a><em>]</em>) – Callable[[numpy.ndarray, np.ndarray | None], numpy.ndarray]</p></li>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>probs</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a>) – numpy.ndarray of shape (n_instances, n_samples, n_classes)</p></li>
+<li><p><strong>loss_fn</strong> (<a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable" title="(in Python v3.13)"><em>Callable</em></a><em>[</em><em>[</em><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a><em>, </em><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a><em> | </em><em>None</em><em>]</em><em>, </em><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a><em>]</em>) – Callable[[numpy.ndarray, np.ndarray | None], numpy.ndarray]</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>numpy.ndarray, shape (n_instances,)</p>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray, shape (n_instances,)</p>
 </dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>ed</p>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>ed</p>
 </dd>
 </dl>
 </dd></dl>
@@ -498,12 +498,12 @@
 <p>The computation is based on samples from a second-order distribution.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
-<li><p><strong>probs</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><em>ndarray</em></a>) – numpy.ndarray of shape (n_instances, n_samples, n_classes)</p></li>
-<li><p><strong>loss_fn</strong> (<a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable" title="(in Python v3.13)"><em>Callable</em></a><em>[</em><em>[</em><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><em>ndarray</em></a><em>, </em><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><em>ndarray</em></a><em> | </em><em>None</em><em>]</em><em>, </em><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><em>ndarray</em></a><em>]</em>) – Callable[[numpy.ndarray, np.ndarray | None], numpy.ndarray]</p></li>
+<li><p><strong>probs</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a>) – numpy.ndarray of shape (n_instances, n_samples, n_classes)</p></li>
+<li><p><strong>loss_fn</strong> (<a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable" title="(in Python v3.13)"><em>Callable</em></a><em>[</em><em>[</em><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a><em>, </em><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a><em> | </em><em>None</em><em>]</em><em>, </em><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a><em>]</em>) – Callable[[numpy.ndarray, np.ndarray | None], numpy.ndarray]</p></li>
 </ul>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -522,12 +522,12 @@
 <p>The computation is based on samples from a second-order distribution.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
-<li><p><strong>probs</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><em>ndarray</em></a>) – numpy.ndarray of shape (n_instances, n_samples, n_classes)</p></li>
-<li><p><strong>loss_fn</strong> (<a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable" title="(in Python v3.13)"><em>Callable</em></a><em>[</em><em>[</em><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><em>ndarray</em></a><em>, </em><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><em>ndarray</em></a><em> | </em><em>None</em><em>]</em><em>, </em><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><em>ndarray</em></a><em>]</em>) – Callable[[numpy.ndarray, np.ndarray | None], numpy.ndarray]</p></li>
+<li><p><strong>probs</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a>) – numpy.ndarray of shape (n_instances, n_samples, n_classes)</p></li>
+<li><p><strong>loss_fn</strong> (<a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable" title="(in Python v3.13)"><em>Callable</em></a><em>[</em><em>[</em><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a><em>, </em><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a><em> | </em><em>None</em><em>]</em><em>, </em><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a><em>]</em>) – Callable[[numpy.ndarray, np.ndarray | None], numpy.ndarray]</p></li>
 </ul>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -540,48 +540,50 @@
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="probly.quantification.classification.generalised_hartley">
-<span class="sig-prename descclassname"><span class="pre">probly.quantification.classification.</span></span><span class="sig-name descname"><span class="pre">generalised_hartley</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/quantification/classification.html#generalised_hartley"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.quantification.classification.generalised_hartley" title="Link to this definition">¶</a></dt>
-<dd><p>Compute the generalised Hartley measure.
-:rtype: <span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
-<blockquote>
-<div><p>Based on the extreme points of a credal set the generalised Hartley measure is computed.</p>
-</div></blockquote>
+<dt class="sig sig-object py" id="probly.quantification.classification.generalized_hartley">
+<span class="sig-prename descclassname"><span class="pre">probly.quantification.classification.</span></span><span class="sig-name descname"><span class="pre">generalized_hartley</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/quantification/classification.html#generalized_hartley"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.quantification.classification.generalized_hartley" title="Link to this definition">¶</a></dt>
+<dd><p>Compute the generalized Hartley measure.</p>
+<p>Based on the extreme points of a credal set the generalized Hartley measure is computed.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>probs</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><em>ndarray</em></a>) – numpy.ndarray of shape (n_instances, n_samples, n_classes)</p></li>
-<li><p><strong>base</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – float, default=2</p></li>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>probs</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a>) – Probability distributions of shape (n_instances, n_samples, n_classes).</p></li>
+<li><p><strong>base</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – Base of the logarithm. Defaults to 2.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>numpy.ndarray of shape (n_instances,)</p>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Generalized Hartley measures values of shape (n_instances,).</p>
 </dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>gh</p>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>gh</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.quantification.classification.lower_entropy">
-<span class="sig-prename descclassname"><span class="pre">probly.quantification.classification.</span></span><span class="sig-name descname"><span class="pre">lower_entropy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/quantification/classification.html#lower_entropy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.quantification.classification.lower_entropy" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">probly.quantification.classification.</span></span><span class="sig-name descname"><span class="pre">lower_entropy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/quantification/classification.html#lower_entropy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.quantification.classification.lower_entropy" title="Link to this definition">¶</a></dt>
 <dd><p>Compute the lower entropy of a credal set.</p>
 <p>Given the probs array the lower and upper probabilities are computed and the credal set is
 assumed to be a convex set including all probability distributions in the interval [lower, upper]
 for all classes. The lower entropy of this set is computed.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
-<li><p><strong>probs</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><em>ndarray</em></a>) – numpy.ndarray of shape (n_instances, n_samples, n_classes)</p></li>
-<li><p><strong>base</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – float, default=2</p></li>
+<li><p><strong>probs</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a>) – Probability distributions of shape (n_instances, n_samples, n_classes).</p></li>
+<li><p><strong>base</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – Base of the logarithm. Defaults to 2.</p></li>
+<li><p><strong>n_jobs</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a><em> | </em><em>None</em>) – Number of jobs for joblib.Parallel. Defaults to None. If None, no parallelization is used.
+If set to -1, all available cores are used.</p></li>
 </ul>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>numpy.ndarray of shape (n_instances,)</p>
+<dd class="field-odd"><p>Lower entropy values of shape (n_instances,).</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p>le</p>
@@ -591,22 +593,24 @@ for all classes. The lower entropy of this set is computed.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.quantification.classification.lower_entropy_convex_hull">
-<span class="sig-prename descclassname"><span class="pre">probly.quantification.classification.</span></span><span class="sig-name descname"><span class="pre">lower_entropy_convex_hull</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/quantification/classification.html#lower_entropy_convex_hull"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.quantification.classification.lower_entropy_convex_hull" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">probly.quantification.classification.</span></span><span class="sig-name descname"><span class="pre">lower_entropy_convex_hull</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/quantification/classification.html#lower_entropy_convex_hull"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.quantification.classification.lower_entropy_convex_hull" title="Link to this definition">¶</a></dt>
 <dd><p>Compute the lower entropy of a credal set.</p>
 <p>Given the probs the convex hull defined by the extreme points in probs is considered.
 The lower entropy of this set is computed.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
-<li><p><strong>probs</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><em>ndarray</em></a>) – numpy.ndarray of shape (n_instances, n_samples, n_classes)</p></li>
-<li><p><strong>base</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – float, default=2</p></li>
+<li><p><strong>probs</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a>) – Probability distributions of shape (n_instances, n_samples, n_classes).</p></li>
+<li><p><strong>base</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – Base of the logarithm. Defaults to 2.</p></li>
+<li><p><strong>n_jobs</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a><em> | </em><em>None</em>) – Number of jobs for joblib.Parallel. Defaults to None. If None, no parallelization is used.
+If set to -1, all available cores are used.</p></li>
 </ul>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>numpy.ndarray of shape (n_instances,)</p>
+<dd class="field-odd"><p>Lower entropy values of shape (n_instances,).</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p>le</p>
@@ -621,11 +625,11 @@ The lower entropy of this set is computed.</p>
 <p>The computation is based on samples from a second-order distribution.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
-<li><p><strong>probs</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><em>ndarray</em></a>) – numpy.ndarray of shape (n_instances, n_samples, n_classes)</p></li>
+<li><p><strong>probs</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a>) – numpy.ndarray of shape (n_instances, n_samples, n_classes)</p></li>
 <li><p><strong>base</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – float, default=2</p></li>
 </ul>
 </dd>
@@ -645,11 +649,11 @@ The lower entropy of this set is computed.</p>
 <p>The computation is based on samples from a second-order distribution.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
-<li><p><strong>probs</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><em>ndarray</em></a>) – numpy.ndarray of shape (n_instances, n_samples, n_classes)</p></li>
+<li><p><strong>probs</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a>) – numpy.ndarray of shape (n_instances, n_samples, n_classes)</p></li>
 <li><p><strong>base</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – float, default=2</p></li>
 </ul>
 </dd>
@@ -669,10 +673,10 @@ The lower entropy of this set is computed.</p>
 <p>The measure of total uncertainty is from <span id="id3">[<a class="reference internal" href="../references.html#id9" title="Yusuf Sale, Viktor Bengs, Michele Caprio, and Eyke Hüllermeier. Second-order uncertainty quantification: A distance-based approach. In Forty-first International Conference on Machine Learning, ICML 2024, Vienna, Austria, July 21-27, 2024. OpenReview.net, 2024. URL: https://openreview.net/forum?id=VJjjNrUi8j.">SBCHullermeier24</a>]</span>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>probs</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><em>ndarray</em></a>) – numpy.ndarray of shape (n_instances, n_samples, n_classes)</p>
+<dd class="field-even"><p><strong>probs</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a>) – numpy.ndarray of shape (n_instances, n_samples, n_classes)</p>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>numpy.ndarray of shape (n_instances,)</p>
@@ -690,10 +694,10 @@ The lower entropy of this set is computed.</p>
 <p>The computation is based on samples from a second-order distribution.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>probs</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><em>ndarray</em></a>) – numpy.ndarray of shape (n_instances, n_samples, n_classes)</p>
+<dd class="field-even"><p><strong>probs</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a>) – numpy.ndarray of shape (n_instances, n_samples, n_classes)</p>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>numpy.ndarray, shape (n_instances,)</p>
@@ -706,23 +710,25 @@ The lower entropy of this set is computed.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.quantification.classification.upper_entropy">
-<span class="sig-prename descclassname"><span class="pre">probly.quantification.classification.</span></span><span class="sig-name descname"><span class="pre">upper_entropy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/quantification/classification.html#upper_entropy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.quantification.classification.upper_entropy" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">probly.quantification.classification.</span></span><span class="sig-name descname"><span class="pre">upper_entropy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/quantification/classification.html#upper_entropy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.quantification.classification.upper_entropy" title="Link to this definition">¶</a></dt>
 <dd><p>Compute the upper entropy of a credal set.</p>
 <p>Given the probs array the lower and upper probabilities are computed and the credal set is
 assumed to be a convex set including all probability distributions in the interval [lower, upper]
 for all classes. The upper entropy of this set is computed.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
-<li><p><strong>probs</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><em>ndarray</em></a>) – numpy.ndarray of shape (n_instances, n_samples, n_classes)</p></li>
-<li><p><strong>base</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – float, default=2</p></li>
+<li><p><strong>probs</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a>) – Probability distributions of shape (n_instances, n_samples, n_classes).</p></li>
+<li><p><strong>base</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – Base of the logarithm. Defaults to 2.</p></li>
+<li><p><strong>n_jobs</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a><em> | </em><em>None</em>) – Number of jobs for joblib.Parallel. Defaults to None. If None, no parallelization is used.
+If set to -1, all available cores are used.</p></li>
 </ul>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>numpy.ndarray of shape (n_instances,)</p>
+<dd class="field-odd"><p>Upper entropy values of shape (n_instances,).</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p>ue</p>
@@ -732,22 +738,24 @@ for all classes. The upper entropy of this set is computed.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.quantification.classification.upper_entropy_convex_hull">
-<span class="sig-prename descclassname"><span class="pre">probly.quantification.classification.</span></span><span class="sig-name descname"><span class="pre">upper_entropy_convex_hull</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/quantification/classification.html#upper_entropy_convex_hull"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.quantification.classification.upper_entropy_convex_hull" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">probly.quantification.classification.</span></span><span class="sig-name descname"><span class="pre">upper_entropy_convex_hull</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/quantification/classification.html#upper_entropy_convex_hull"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.quantification.classification.upper_entropy_convex_hull" title="Link to this definition">¶</a></dt>
 <dd><p>Compute the upper entropy of a credal set.</p>
 <p>Given the probs the convex hull defined by the extreme points in probs is considered.
 The upper entropy of this set is computed.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
-<li><p><strong>probs</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><em>ndarray</em></a>) – numpy.ndarray of shape (n_instances, n_samples, n_classes)</p></li>
-<li><p><strong>base</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – float, default=2</p></li>
+<li><p><strong>probs</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a>) – Probability distributions of shape (n_instances, n_samples, n_classes).</p></li>
+<li><p><strong>base</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – Base of the logarithm. Defaults to 2.</p></li>
+<li><p><strong>n_jobs</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a><em> | </em><em>None</em>) – Number of jobs for joblib.Parallel. Defaults to None. If None, no parallelization is used.
+If set to -1, all available cores are used.</p></li>
 </ul>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>numpy.ndarray of shape (n_instances,)</p>
+<dd class="field-odd"><p>Upper entropy values of shape (n_instances,).</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p>ue</p>
@@ -758,20 +766,20 @@ The upper entropy of this set is computed.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.quantification.classification.variance_conditional_expectation">
 <span class="sig-prename descclassname"><span class="pre">probly.quantification.classification.</span></span><span class="sig-name descname"><span class="pre">variance_conditional_expectation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/quantification/classification.html#variance_conditional_expectation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.quantification.classification.variance_conditional_expectation" title="Link to this definition">¶</a></dt>
-<dd><p>Compute the epistemic uncertainty using variance-based measures.
-:rtype: <span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
-<blockquote>
-<div><p>The computation is based on samples from a second-order distribution.</p>
-</div></blockquote>
+<dd><p>Compute the epistemic uncertainty using variance-based measures.</p>
+<p>The computation is based on samples from a second-order distribution.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>probs</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><em>ndarray</em></a>) – numpy.ndarray of shape (n_instances, n_samples, n_classes)</p>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>numpy.ndarray, shape (n_instances,)</p>
-</dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>ecv</p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>probs</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a>) – numpy.ndarray of shape (n_instances, n_samples, n_classes)</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray, shape (n_instances,)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>ecv</p>
 </dd>
 </dl>
 </dd></dl>
@@ -842,7 +850,7 @@ The upper entropy of this set is computed.</p>
 <li><a class="reference internal" href="#probly.quantification.classification.expected_divergence"><code class="docutils literal notranslate"><span class="pre">expected_divergence()</span></code></a></li>
 <li><a class="reference internal" href="#probly.quantification.classification.expected_entropy"><code class="docutils literal notranslate"><span class="pre">expected_entropy()</span></code></a></li>
 <li><a class="reference internal" href="#probly.quantification.classification.expected_loss"><code class="docutils literal notranslate"><span class="pre">expected_loss()</span></code></a></li>
-<li><a class="reference internal" href="#probly.quantification.classification.generalised_hartley"><code class="docutils literal notranslate"><span class="pre">generalised_hartley()</span></code></a></li>
+<li><a class="reference internal" href="#probly.quantification.classification.generalized_hartley"><code class="docutils literal notranslate"><span class="pre">generalized_hartley()</span></code></a></li>
 <li><a class="reference internal" href="#probly.quantification.classification.lower_entropy"><code class="docutils literal notranslate"><span class="pre">lower_entropy()</span></code></a></li>
 <li><a class="reference internal" href="#probly.quantification.classification.lower_entropy_convex_hull"><code class="docutils literal notranslate"><span class="pre">lower_entropy_convex_hull()</span></code></a></li>
 <li><a class="reference internal" href="#probly.quantification.classification.mutual_information"><code class="docutils literal notranslate"><span class="pre">mutual_information()</span></code></a></li>

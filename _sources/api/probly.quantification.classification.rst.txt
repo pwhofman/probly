@@ -16,7 +16,7 @@ probly.quantification.classification
       expected_divergence
       expected_entropy
       expected_loss
-      generalised_hartley
+      generalized_hartley
       lower_entropy
       lower_entropy_convex_hull
       mutual_information
