@@ -201,7 +201,7 @@ exclude_lines = [
 ]
 
 [tool.mypy]
-python_version = "3.12"
+python_version = "3.13"
 strict = true
 ignore_missing_imports = true # to avoid issues with torch, numpy, scipy, etc. stubs
 disallow_subclassing_any = false # to make sure we can subclass from e.g. torch.nn.Module

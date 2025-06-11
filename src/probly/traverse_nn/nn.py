@@ -19,14 +19,14 @@ def is_first_layer(state: t.State) -> bool:
     return state[LAYER_COUNT] == 0
 
 
-layer_count_traverser = t.singledispatch_traverser(name="layer_count_traverser")
+layer_count_traverser = t.singledispatch_traverser[object](name="layer_count_traverser")
 
-nn_traverser = t.singledispatch_traverser(name="nn_traverser")
+nn_traverser = t.singledispatch_traverser[object](name="nn_traverser")
 
 
 def compose[T](
     traverser: t.Traverser[T],
-    nn_traverser: t.Traverser[T] = nn_traverser,
+    nn_traverser: t.Traverser[object] = nn_traverser,
     name: str | None = None,
 ) -> t.Traverser[T]:
     """Compose a custom traverser with neural network traversal functionality.
@@ -50,7 +50,7 @@ def compose[T](
 def traverse[T](
     obj: T,
     traverser: t.Traverser[T],
-    nn_traverser: t.Traverser[T] = nn_traverser,
+    nn_traverser: t.Traverser[object] = nn_traverser,
     init: dict[t.Variable, Any] | None = None,
 ) -> T:
     """Traverse a neural network object using a combination of traversers.

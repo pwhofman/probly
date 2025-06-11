@@ -38,7 +38,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections import ChainMap
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import TYPE_CHECKING, Any, Protocol, TypeVar, overload
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
@@ -684,40 +684,15 @@ class TraverserCallback[T](Protocol):
     ) -> TraverserResult[T]: ...
 
 
-class Traverser[T](Protocol):
-    """Protocol for traversing objects in a stateful manner.
-
-    A Traverser defines the interface for functions that can traverse and potentially
-    modify objects of type T while maintaining state information. This is used for
-    tree-like data structures or nested objects where recursive traversal is needed.
-
-    Args:
-        obj: The object of type T to traverse.
-        state: Current state information during traversal.
-        traverse: Callback function for recursive traversal of child elements.
-
-    Returns:
-        TraverserResult[T]: The result of the traversal operation, which may
-        include the modified object and updated state.
-
-    Example:
-        >>> def my_traverser(obj, state, traverse):
-        ...     # Process current object
-        ...     # Recursively traverse children if needed
-        ...     return processed_obj, updated_state
-    """
-
-    def __call__(  # noqa: D102
-        self,
-        obj: T,
-        state: State[T],
-        traverse: TraverserCallback[T],
-    ) -> TraverserResult[T]: ...
+type Traverser[T] = Callable[
+    [T, State[T], TraverserCallback[T]],
+    TraverserResult[T],
+]
 
 
 def traverse_with_state[T](
     obj: T,
-    traverser: Traverser[T],
+    traverser: Traverser[Any],
     init: dict[Variable, Any] | None = None,
 ) -> TraverserResult[T]:
     """Traverse an object using a specified traverser function.
@@ -761,7 +736,7 @@ def traverse_with_state[T](
 
 def traverse[T](
     obj: T,
-    traverser: Traverser[T],
+    traverser: Traverser[Any],
     init: dict[Variable, Any] | None = None,
 ) -> T:
     """Traverse an object using a specified traverser function.

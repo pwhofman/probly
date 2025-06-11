@@ -30,7 +30,7 @@ FLATTEN_SEQUENTIAL = t.StackVariable[bool](
 # Torch model cloning
 
 
-@traverser
+@traverser(type=Module)
 def _clone_traverser(
     obj: Module,
     state: t.State[Module],
@@ -48,7 +48,7 @@ def _clone_traverser(
 # Torch model root tracking
 
 
-@traverser
+@traverser(type=Module)
 def _root_traverser(
     obj: Module,
     state: t.State[Module],
@@ -70,14 +70,13 @@ def _module_counter(obj: Module, count: int) -> tuple[Module, dict[str, int]]:
 
 
 @tnn.layer_count_traverser.register
-@t.traverser
 def _sequential_counter(obj: Sequential) -> Sequential:
     return obj  # Don't count sequential modules as layers.
 
 
 # Torch model traverser
 
-_torch_traverser = t.singledispatch_traverser(name="_torch_traverser")
+_torch_traverser = t.singledispatch_traverser[Module](name="_torch_traverser")
 
 
 @_torch_traverser.register
@@ -119,7 +118,7 @@ def _sequential_traverser(
 
 # Public API combining cloning, root tracking, and module traversing
 
-torch_traverser = t.sequential(
+torch_traverser: t.Traverser[Module] = t.sequential(
     _clone_traverser,
     _root_traverser,
     _torch_traverser,

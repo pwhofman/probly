@@ -12,6 +12,8 @@ import types
 from typing import (
     TYPE_CHECKING,
     Any,
+    Concatenate,
+    NotRequired,
     Protocol,
     Union,
     Unpack,
@@ -32,7 +34,10 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
 
-def sequential[T](*traversers: Traverser[T], name: str | None = None) -> Traverser[T]:
+def sequential[T](
+    *traversers: Traverser[Any],
+    name: str | None = None,
+) -> Traverser[T]:
     """Compose multiple traversers into a sequential execution chain.
 
     Creates a new traverser that applies the given traversers in sequence,
@@ -153,30 +158,15 @@ def _is_valid_dispatch_type(cls: Any) -> bool:  # noqa: ANN401
     return _is_union_type(cls) and all(isinstance(arg, type) for arg in get_args(cls))
 
 
-class RegisteredLooseTraverser[T](Protocol):
-    """Protocol for traverser functions that can be registered with singledispatch.
+type RegisteredLooseTraverser[T, R] = Callable[
+    Concatenate[R, ...],
+    TraverserResult[T] | T,
+]
 
-    This protocol defines the interface for traverser functions before they are
-    wrapped with the @traverser decorator.
-    """
 
-    def __call__(
-        self,
-        obj: Any,  # noqa: ANN401
-        *args: Any,  # noqa: ANN401
-        **kwargs: Any,  # noqa: ANN401
-    ) -> TraverserResult[T] | T:
-        """Call the traverser with flexible arguments.
-
-        Args:
-            obj: The object to traverse.
-            *args: Variable positional arguments.
-            **kwargs: Variable keyword arguments.
-
-        Returns:
-            The result of traversal processing.
-        """
-        ...
+class _TraverserDecoratorKwargs[T](d.TraverserDecoratorKwargs[T]):
+    mode: NotRequired[d.Mode] = "auto"
+    update_vars: NotRequired[bool] = False
 
 
 class SingledispatchTraverser[T]:
@@ -207,7 +197,7 @@ class SingledispatchTraverser[T]:
 
     def __init__(
         self,
-        traverser: RegisteredLooseTraverser[T] | None = None,
+        traverser: RegisteredLooseTraverser[T, Any] | None = None,
         *,
         name: str | None = None,
     ) -> None:
@@ -223,7 +213,7 @@ class SingledispatchTraverser[T]:
             if name is None:
                 if hasattr(traverser, "__name__"):
                     self.__name__ = traverser.__name__
-                self.__qualname__ = traverser.__qualname__  # type: ignore[attr-defined]
+                self.__qualname__ = traverser.__qualname__
             self.register(traverser)
 
         if name is not None:
@@ -251,43 +241,43 @@ class SingledispatchTraverser[T]:
     @overload
     def register(
         self,
-        **kwargs: Unpack[d.TraverserDecoratorKwargs[T]],
-    ) -> Callable[[RegisteredLooseTraverser[T]], Traverser[T]]: ...
+        **kwargs: Unpack[_TraverserDecoratorKwargs[T]],
+    ) -> Callable[[RegisteredLooseTraverser[T, Any]], Traverser[T]]: ...
 
     @overload
     def register(
         self,
         cls: type | types.UnionType,
-        **kwargs: Unpack[d.TraverserDecoratorKwargs[T]],
-    ) -> Callable[[RegisteredLooseTraverser[T]], Traverser[T]]: ...
+        **kwargs: Unpack[_TraverserDecoratorKwargs[T]],
+    ) -> Callable[[RegisteredLooseTraverser[T, Any]], Traverser[T]]: ...
 
     @overload
     def register(
         self,
-        cls: RegisteredLooseTraverser[T],
-        **kwargs: Unpack[d.TraverserDecoratorKwargs[T]],
+        cls: RegisteredLooseTraverser[T, Any],
+        **kwargs: Unpack[_TraverserDecoratorKwargs[T]],
     ) -> Traverser[T]: ...
 
     @overload
     def register(
         self,
-        cls: RegisteredLooseTraverser[T],
+        cls: RegisteredLooseTraverser[T, Any],
     ) -> Traverser[T]: ...
 
     @overload
     def register(
         self,
         cls: type | types.UnionType,
-        traverser: RegisteredLooseTraverser[T],
-        **kwargs: Unpack[d.TraverserDecoratorKwargs[T]],
+        traverser: RegisteredLooseTraverser[T, Any],
+        **kwargs: Unpack[_TraverserDecoratorKwargs[T]],
     ) -> Traverser[T]: ...
 
     def register(
         self,
-        cls: type | types.UnionType | RegisteredLooseTraverser[T] | None = None,
-        traverser: RegisteredLooseTraverser[T] | None = None,
-        **kwargs: Unpack[d.TraverserDecoratorKwargs[T]],
-    ) -> Callable[[RegisteredLooseTraverser[T]], Traverser[T]] | Traverser[T]:
+        cls: type | types.UnionType | RegisteredLooseTraverser[T, Any] | None = None,
+        traverser: RegisteredLooseTraverser[T, Any] | None = None,
+        **kwargs: Unpack[_TraverserDecoratorKwargs[T]],
+    ) -> Callable[[RegisteredLooseTraverser[T, Any]], Traverser[T]] | Traverser[T]:
         """Register a traverser for a specific type or as the default.
 
         This method supports multiple calling patterns:
@@ -311,7 +301,7 @@ class SingledispatchTraverser[T]:
                 if traverser is None:
 
                     def partial_register(
-                        traverser: RegisteredLooseTraverser[T],
+                        traverser: RegisteredLooseTraverser[T, Any],
                     ) -> Traverser[T]:
                         return self.register(cls, traverser, **kwargs)  # type: ignore[arg-type]
 
@@ -328,7 +318,7 @@ class SingledispatchTraverser[T]:
                 raise TypeError(msg)
 
             def partial_register(
-                traverser: RegisteredLooseTraverser[T],
+                traverser: RegisteredLooseTraverser[T, Any],
             ) -> Traverser[T]:
                 return self.register(traverser, **kwargs)
 
@@ -337,7 +327,7 @@ class SingledispatchTraverser[T]:
         if not callable(traverser):
             msg = f"Expected a callable traverser, got {traverser!r}."
             raise TypeError(msg)
-        traverser = d.traverser(traverser, **kwargs)
+        traverser = d.traverser(traverser, **kwargs)  # type: ignore[arg-type]
 
         if cls is not None:
             return self._dispatch.register(cls, traverser)  # type: ignore[arg-type]

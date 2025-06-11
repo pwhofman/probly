@@ -51,7 +51,7 @@ def test_sequential_basic() -> None:
     ) -> TraverserResult[int]:
         return obj * 2, state
 
-    composed = sequential(add_one, multiply_two)
+    composed: Traverser[int] = sequential(add_one, multiply_two)
     state: State[int] = State()
 
     result, new_state = composed(5, state, dummy_traverse)
@@ -61,9 +61,9 @@ def test_sequential_basic() -> None:
 
 def test_sequential_with_name() -> None:
     """Test sequential composition with custom name."""
-    composed = sequential(dummy_traverser, name="test_traverser")
-    assert composed.__name__ == "test_traverser"  # type: ignore[attr-defined]
-    assert "test_traverser" in composed.__qualname__  # type: ignore[attr-defined]
+    composed: Traverser[Any] = sequential(dummy_traverser, name="test_traverser")
+    assert composed.__name__ == "test_traverser"
+    assert "test_traverser" in composed.__qualname__
 
 
 def test_sequential_empty() -> None:
@@ -107,8 +107,8 @@ def test_top_sequential_basic() -> None:
 def test_top_sequential_with_name() -> None:
     """Test top_sequential with custom name."""
     composed = top_sequential(dummy_traverser, name="top_test")
-    assert composed.__name__ == "top_test"  # type: ignore[attr-defined]
-    assert "top_test" in composed.__qualname__  # type: ignore[attr-defined]
+    assert composed.__name__ == "top_test"
+    assert "top_test" in composed.__qualname__
 
 
 def test_is_union_type() -> None:

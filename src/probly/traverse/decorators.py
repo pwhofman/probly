@@ -11,7 +11,16 @@ from collections.abc import Callable
 from functools import update_wrapper
 import inspect
 import logging
-from typing import Any, Literal, NotRequired, Protocol, TypedDict, Unpack, overload
+from typing import (
+    Any,
+    Concatenate,
+    Literal,
+    NotRequired,
+    TypedDict,
+    Unpack,
+    cast,
+    overload,
+)
 import warnings
 
 from probly.traverse.core import (
@@ -25,12 +34,6 @@ from probly.traverse.core import (
 
 logger = logging.getLogger(__name__)
 
-
-type LooseTraverser[T] = Callable[..., T] | Callable[..., State[T]] | Callable[
-    ...,
-    TraverserResult[T],
-] | Callable[..., tuple[T, dict[str, Any]]]
-
 type Mode = Literal[
     "auto",  # automatically detect the mode based on function signature
     "obj",  # if LooseTraverser is a function with obj only
@@ -41,33 +44,46 @@ type Mode = Literal[
     "full_positional",  # if LooseTraverser is a Traverser
     "identity",  # if LooseTraverser does not take any arguments
 ]
+
+
+type ObjTraverser[T] = Callable[Concatenate[T, ...], T]
+type ObjTraverserWithVarUpdates[T] = Callable[
+    Concatenate[T, ...],
+    tuple[T, dict[str, Any]],
+]
+
+
+type StateTraverser[T] = Callable[[State[T]], State[T]]
+type ObjStateTraverser[T] = Callable[
+    Concatenate[T, State[T], ...],
+    TraverserResult[T],
+]
+
+type ObjTraverseTraverser[T] = Callable[
+    Concatenate[T, TraverserCallback[T], ...],
+    TraverserResult[T],
+]
+type ObjTraverseTraverserWithVarUpdates[T] = Callable[
+    Concatenate[T, TraverserCallback[T], ...],
+    tuple[T, dict[str, Any]],
+]
+
+type LooseTraverserWithoutVarUpdates[T] = (
+    ObjTraverser[T]
+    | StateTraverser[T]
+    | ObjStateTraverser[T]
+    | ObjTraverseTraverser[T]
+    | Traverser[T]
+    | Callable[[], Any]
+)
+type LooseTraverserWithVarUpdates[T] = (
+    ObjTraverserWithVarUpdates[T] | ObjTraverseTraverserWithVarUpdates[T]
+)
+type LooseTraverser[T] = (
+    LooseTraverserWithoutVarUpdates[T] | LooseTraverserWithVarUpdates[T]
+)
+
 type StatePredicate[T] = Callable[[State[T]], bool] | Variable[bool]
-
-
-class VarTraverser[T](Protocol):
-    """Protocol for variable-based traverser functions.
-
-    Defines the interface for traverser functions that work with variable
-    injection and state management.
-    """
-
-    def __call__(
-        self,
-        obj: T,
-        traverse: TraverserCallback[T],
-        **kwargs: Any,  # noqa: ANN401
-    ) -> T:
-        """Execute the traverser with variable injection.
-
-        Args:
-            obj: The object to traverse.
-            traverse: The traverser callback function.
-            **kwargs: Variable values injected from state.
-
-        Returns:
-            The transformed object.
-        """
-        ...
 
 
 def _skip_if[T](traverser: Traverser[T], pred: StatePredicate[T]) -> Traverser[T]:
@@ -98,7 +114,7 @@ class SignatureDetectionWarning(UserWarning):
 
 
 def _detect_traverser_type[T](  # noqa: C901, PLR0912, PLR0915
-    traverser_fn: LooseTraverser[T],
+    traverser_fn: Callable,
     mode: Mode = "auto",
     ignored_args: set[str] | None = None,
 ) -> tuple[Mode, str | None, str | None, str | None]:
@@ -225,41 +241,267 @@ def _detect_traverser_type[T](  # noqa: C901, PLR0912, PLR0915
 class TraverserDecoratorKwargs[T](TypedDict):
     """Type definition for traverser decorator keyword arguments."""
 
-    mode: NotRequired[Mode]
     traverse_if: NotRequired[StatePredicate[T] | None]
     skip_if: NotRequired[StatePredicate[T] | None]
     vars: NotRequired[dict[str, Variable] | None]
-    update_vars: NotRequired[bool]
+    type: NotRequired[type[T]] = object
 
 
 @overload
 def traverser[T](
+    # Since mypy does not fully support generic decorators,
+    # we specify the LooseTraverser without the generic type here (and below).
+    # This impedes the type checking accuracy, but is necessary for compatibility.
+    # See https://github.com/python/mypy/issues/17621
+    traverser_fn: LooseTraverserWithoutVarUpdates[T],
+    *,
+    mode: Literal["auto"] = "auto",
+    update_vars: Literal[False] = False,
+    **kwargs: Unpack[TraverserDecoratorKwargs[T]],
+) -> Traverser[T]: ...
+
+
+@overload
+def traverser[T](
+    traverser_fn: LooseTraverserWithVarUpdates[T],
+    *,
+    mode: Literal["auto"] = "auto",
+    update_vars: Literal[True],
+    **kwargs: Unpack[TraverserDecoratorKwargs[T]],
+) -> Traverser[T]: ...
+
+
+@overload
+def traverser[T](
+    traverser_fn: LooseTraverser[T],
+    *,
+    mode: Literal["auto"] = "auto",
+    update_vars: bool,
+    **kwargs: Unpack[TraverserDecoratorKwargs[T]],
+) -> Traverser[T]: ...
+
+
+@overload
+def traverser[T](
+    traverser_fn: LooseTraverser[T],
+    *,
+    mode: Literal["identity"],
+    **kwargs: Unpack[TraverserDecoratorKwargs[T]],
+) -> Traverser[T]: ...
+
+
+@overload
+def traverser[T](
+    traverser_fn: ObjTraverser[T],
+    *,
+    mode: Literal["obj"],
+    update_vars: Literal[False] = False,
+    **kwargs: Unpack[TraverserDecoratorKwargs[T]],
+) -> Traverser[T]: ...
+
+
+@overload
+def traverser[T](
+    traverser_fn: ObjTraverserWithVarUpdates[T],
+    *,
+    mode: Literal["obj"],
+    update_vars: Literal[True],
+    **kwargs: Unpack[TraverserDecoratorKwargs[T]],
+) -> Traverser[T]: ...
+
+
+@overload
+def traverser[T](
+    traverser_fn: ObjTraverser[T] | ObjTraverserWithVarUpdates[T],
+    *,
+    mode: Literal["obj"],
+    update_vars: bool,
+    **kwargs: Unpack[TraverserDecoratorKwargs[T]],
+) -> Traverser[T]: ...
+
+
+@overload
+def traverser[T](
+    traverser_fn: StateTraverser[T],
+    *,
+    mode: Literal["state"],
+    **kwargs: Unpack[TraverserDecoratorKwargs[T]],
+) -> Traverser[T]: ...
+
+
+@overload
+def traverser[T](
+    traverser_fn: ObjStateTraverser[T],
+    *,
+    mode: Literal["obj_state"],
+    **kwargs: Unpack[TraverserDecoratorKwargs[T]],
+) -> Traverser[T]: ...
+
+
+@overload
+def traverser[T](
+    traverser_fn: ObjTraverseTraverser[T],
+    *,
+    mode: Literal["obj_traverse"],
+    update_vars: Literal[False] = False,
+    **kwargs: Unpack[TraverserDecoratorKwargs[T]],
+) -> Traverser[T]: ...
+
+
+@overload
+def traverser[T](
+    traverser_fn: ObjTraverseTraverserWithVarUpdates[T],
+    *,
+    mode: Literal["obj_traverse"],
+    update_vars: Literal[True],
+    **kwargs: Unpack[TraverserDecoratorKwargs[T]],
+) -> Traverser[T]: ...
+
+
+@overload
+def traverser[T](
+    traverser_fn: ObjTraverseTraverser[T] | ObjTraverseTraverserWithVarUpdates[T],
+    *,
+    mode: Literal["obj_traverse"],
+    update_vars: bool,
+    **kwargs: Unpack[TraverserDecoratorKwargs[T]],
+) -> Traverser[T]: ...
+
+
+@overload
+def traverser[T](
+    traverser_fn: Traverser[T],
+    *,
+    mode: Literal["full", "full_positional"],
+    **kwargs: Unpack[TraverserDecoratorKwargs[T]],
+) -> Traverser[T]: ...
+
+
+@overload
+def traverser[T](
+    *,
+    mode: Literal["auto"] = "auto",
+    update_vars: Literal[False] = False,
+    **kwargs: Unpack[TraverserDecoratorKwargs[T]],
+) -> Callable[[LooseTraverserWithoutVarUpdates[T]], Traverser[T]]: ...
+
+
+@overload
+def traverser[T](
+    *,
+    mode: Literal["auto"] = "auto",
+    update_vars: Literal[True],
+    **kwargs: Unpack[TraverserDecoratorKwargs[T]],
+) -> Callable[[LooseTraverserWithVarUpdates[T]], Traverser[T]]: ...
+
+
+@overload
+def traverser[T](
+    *,
+    mode: Literal["auto"] = "auto",
+    update_vars: bool,
     **kwargs: Unpack[TraverserDecoratorKwargs[T]],
 ) -> Callable[[LooseTraverser[T]], Traverser[T]]: ...
 
 
 @overload
 def traverser[T](
-    traverser_fn: LooseTraverser[T],
+    *,
+    mode: Literal["identity"],
     **kwargs: Unpack[TraverserDecoratorKwargs[T]],
-) -> Traverser[T]: ...
+) -> Callable[[LooseTraverser[T]], Traverser[T]]: ...
 
 
 @overload
 def traverser[T](
-    traverser_fn: LooseTraverser[T],
+    *,
+    mode: Literal["obj"],
+    update_vars: Literal[False] = False,
     **kwargs: Unpack[TraverserDecoratorKwargs[T]],
-) -> Traverser[T]: ...
+) -> Callable[[ObjTraverser[T]], Traverser[T]]: ...
+
+
+@overload
+def traverser[T](
+    *,
+    mode: Literal["obj"],
+    update_vars: Literal[True],
+    **kwargs: Unpack[TraverserDecoratorKwargs[T]],
+) -> Callable[[ObjTraverserWithVarUpdates[T]], Traverser[T]]: ...
+
+
+@overload
+def traverser[T](
+    *,
+    mode: Literal["obj"],
+    update_vars: bool,
+    **kwargs: Unpack[TraverserDecoratorKwargs[T]],
+) -> Callable[[ObjTraverser[T] | ObjTraverserWithVarUpdates[T]], Traverser[T]]: ...
+
+
+@overload
+def traverser[T](
+    *,
+    mode: Literal["state"],
+    **kwargs: Unpack[TraverserDecoratorKwargs[T]],
+) -> Callable[[StateTraverser[T]], Traverser[T]]: ...
+
+
+@overload
+def traverser[T](
+    *,
+    mode: Literal["obj_state"],
+    **kwargs: Unpack[TraverserDecoratorKwargs[T]],
+) -> Callable[[ObjStateTraverser[T]], Traverser[T]]: ...
+
+
+@overload
+def traverser[T](
+    *,
+    mode: Literal["obj_traverse"],
+    update_vars: Literal[False] = False,
+    **kwargs: Unpack[TraverserDecoratorKwargs[T]],
+) -> Callable[[ObjTraverseTraverser[T]], Traverser[T]]: ...
+
+
+@overload
+def traverser[T](
+    *,
+    mode: Literal["obj_traverse"],
+    update_vars: Literal[True],
+    **kwargs: Unpack[TraverserDecoratorKwargs[T]],
+) -> Callable[[ObjTraverseTraverserWithVarUpdates[T]], Traverser[T]]: ...
+
+
+@overload
+def traverser[T](
+    *,
+    mode: Literal["obj_traverse"],
+    update_vars: bool,
+    **kwargs: Unpack[TraverserDecoratorKwargs[T]],
+) -> Callable[
+    [ObjTraverseTraverser[T] | ObjTraverseTraverserWithVarUpdates[T]],
+    Traverser[T],
+]: ...
+
+
+@overload
+def traverser[T](
+    *,
+    mode: Literal["full", "full_positional"],
+    **kwargs: Unpack[TraverserDecoratorKwargs[T]],
+) -> Callable[[Traverser[T]], Traverser[T]]: ...
 
 
 def traverser[T](  # noqa: C901, PLR0912, PLR0915
-    traverser_fn: LooseTraverser[T] | None = None,
+    traverser_fn: LooseTraverser | None = None,
     *,
     mode: Mode = "auto",
     traverse_if: StatePredicate[T] | None = None,
     skip_if: StatePredicate[T] | None = None,
     vars: dict[str, Variable] | None = None,  # noqa: A002
     update_vars: bool = False,
+    type: type[T] | None = object,  # type: ignore[assignment]  # noqa: A002, ARG001
 ) -> Traverser[T] | Callable[[LooseTraverser[T]], Traverser[T]]:
     """Decorator to convert functions into proper traverser functions.
 
@@ -283,6 +525,7 @@ def traverser[T](  # noqa: C901, PLR0912, PLR0915
         skip_if: Predicate to determine when traversal should be skipped.
         vars: Dictionary mapping parameter names to Variables for injection.
         update_vars: Whether the function returns updated variable values.
+        type: The type of the traverser function. Optional, used only for type checking.
 
     Returns:
         A proper Traverser function.
@@ -307,7 +550,7 @@ def traverser[T](  # noqa: C901, PLR0912, PLR0915
         def _decorator(fn: LooseTraverser[T]) -> Traverser[T]:
             return traverser(
                 fn,
-                mode=mode,
+                mode=mode,  # type: ignore[arg-type]
                 traverse_if=traverse_if,
                 skip_if=skip_if,
                 vars=vars,
@@ -336,7 +579,7 @@ def traverser[T](  # noqa: C901, PLR0912, PLR0915
         return identity_traverser
 
     if mode == "full_positional":
-        return traverser_fn  # type: ignore[return-value]
+        return cast("Traverser[T]", traverser_fn)
 
     if mode != "full" and detected_mode != "full_positional":
         if obj_name is None and mode in {"obj", "obj_state", "obj_traverse", "full"}:
@@ -361,17 +604,21 @@ def traverser[T](  # noqa: C901, PLR0912, PLR0915
             )
             traverse_name = "traverse"
 
+    _traverser: Traverser[T]
+
     if mode == "full":
+        traverser_fn = cast("Traverser[T]", traverser_fn)
+
         if detected_mode == "full_positional":
             # If the function is already a full positional traverser, return it directly
-            return traverser_fn  # type: ignore[return-value]
+            return traverser_fn
 
         def _traverser(
             obj: T,
             state: State[T],
             traverse: TraverserCallback[T],
         ) -> TraverserResult[T]:
-            return traverser_fn(  # type: ignore[return-value]
+            return traverser_fn(  # type: ignore[call-arg]
                 **{
                     obj_name: obj,
                     state_name: state,
@@ -390,7 +637,7 @@ def traverser[T](  # noqa: C901, PLR0912, PLR0915
             if vars is not None:
                 for k, v in vars.items():
                     kwargs[k] = v.get(state)
-            res = traverser_fn(**kwargs)
+            res = traverser_fn(**kwargs)  # type: ignore[call-arg]
             if update_vars:
                 obj, updates = res
                 for k, v in updates.items():  # type: ignore[union-attr]
@@ -408,7 +655,7 @@ def traverser[T](  # noqa: C901, PLR0912, PLR0915
             state: State[T],
             traverse: TraverserCallback[T],  # noqa: ARG001
         ) -> TraverserResult[T]:
-            state = traverser_fn(**{state_name: state})  # type: ignore[assignment]
+            state = traverser_fn(**{state_name: state})  # type: ignore[assignment, call-arg]
             return obj, state
 
     elif mode == "obj_state":
@@ -418,7 +665,7 @@ def traverser[T](  # noqa: C901, PLR0912, PLR0915
             state: State[T],
             traverse: TraverserCallback[T],  # noqa: ARG001
         ) -> TraverserResult[T]:
-            return traverser_fn(**{obj_name: obj, state_name: state})  # type: ignore[return-value]
+            return traverser_fn(**{obj_name: obj, state_name: state})  # type: ignore[call-arg, return-value]
 
     elif mode == "obj_traverse":
 
@@ -438,7 +685,7 @@ def traverser[T](  # noqa: C901, PLR0912, PLR0915
             if vars is not None:
                 for k, v in vars.items():
                     kwargs[k] = v.get(state)
-            res = traverser_fn(**kwargs)
+            res = traverser_fn(**kwargs)  # type: ignore[call-arg]
             if update_vars:
                 obj, updates = res
                 for k, v in updates.items():  # type: ignore[union-attr]
