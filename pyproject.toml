@@ -9,7 +9,6 @@ description = "Uncertainty Representation and Quantification for Machine Learnin
 license = "MIT"
 requires-python = ">=3.10"
 dependencies = [
-    # core
     "scipy",
     "matplotlib>=3.8.0",
     "mpltern",
@@ -100,7 +99,7 @@ ignore = [
     "PLR2004", # Magic value used in comparison, consider replacing {value} with a constant variable
     "FBT", # enforce keyword for bool
     "PLR0913", # too many arguments (>5)
-    "FIX002",  # TODOS are fine in code
+    "FIX002",  # TODOs are fine in code
 ]
 # Exclude a variety of commonly ignored directories.
 exclude = [
@@ -130,19 +129,13 @@ exclude = [
     "node_modules",
     "site-packages",
     "venv",
-    "docs/build",  # Exclude docs build directory
+    "docs/build",
 ]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 
-#[tool.ruff.lint]
-# Extend what ruff is allowed to fix, even it it may break
-# This is okay given we use it all the time and it ensures
-# better practices. Would be dangerous if using for first
-# time on established project.
 
-# Exclude a variety of commonly ignored directories.
 [tool.ruff.lint.per-file-ignores]
 "tests/*.py" = [
     "S101",
@@ -162,17 +155,20 @@ convention = "google"
     "C901",
 ]
 "__init__.py" = [
-    "I002",
-    "RUF022",  # to allow __all__ be not alphabetically ordered
+    "I002",    # to not need from __future__ import annotations
     "PLC0414", # to allow import module as module in inits, contradicts F401
 ]
 "*.ipynb" = [
     "T20",
     "NPY002",
     "I002",
-    "PERF401",  # its fine to have not performance optimized code in notebooks
+    "PERF401",  # it's fine to have non-optimized code in notebooks
 ]
-"docs/**/*.py" = ["INP001", "PTH", "I002"]
+"docs/**/*.py" = [
+    "INP001",
+    "PTH",
+    "I002"
+]
 
 # Use isort-compatible settings
 [tool.ruff.isort]
