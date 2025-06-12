@@ -16,6 +16,7 @@ from typing import (
     Concatenate,
     Literal,
     NotRequired,
+    Protocol,
     TypedDict,
     Unpack,
     cast,
@@ -46,6 +47,33 @@ type Mode = Literal[
 ]
 
 
+class StatelessTraverserCallback[T](Protocol):
+    """Protocol for callback functions used during object traversal.
+
+    A StatelessTraverserCallback defines the interface for functions that process
+    objects during traversal operations. The callback receives the current object.
+
+    Parameters:
+        obj: The current object being traversed of type T.
+        meta: Optional metadata that can be passed to provide additional context
+            or configuration for the callback processing.
+        traverser: Optional reference to the traverser instance performing the
+            traversal, allowing the callback to access traverser methods or state.
+
+    Returns:
+        T: The result of processing the current object, which
+            determines how the traversal should continue or what transformations
+            should be applied.
+    """
+
+    def __call__(  # noqa: D102
+        self,
+        obj: T,
+        meta: Any = None,  # noqa: ANN401
+        traverser: Traverser[T] | None = None,
+    ) -> T: ...
+
+
 type ObjTraverser[T] = Callable[Concatenate[T, ...], T]
 type ObjTraverserWithVarUpdates[T] = Callable[
     Concatenate[T, ...],
@@ -60,11 +88,11 @@ type ObjStateTraverser[T] = Callable[
 ]
 
 type ObjTraverseTraverser[T] = Callable[
-    Concatenate[T, TraverserCallback[T], ...],
+    Concatenate[T, StatelessTraverserCallback[T], ...],
     TraverserResult[T],
 ]
 type ObjTraverseTraverserWithVarUpdates[T] = Callable[
-    Concatenate[T, TraverserCallback[T], ...],
+    Concatenate[T, StatelessTraverserCallback[T], ...],
     tuple[T, dict[str, Any]],
 ]
 
@@ -155,13 +183,13 @@ def _detect_traverser_type[T](  # noqa: C901, PLR0912, PLR0915
     obj_pos = None
     state_pos = None
     traverse_pos = None
-    argspec = inspect.getfullargspec(traverser_fn)
-    args = argspec.args
+    signature = inspect.signature(traverser_fn)
+    arg_names = signature.parameters.keys()
 
     if ignored_args is not None:
-        args = [(i, arg) for i, arg in enumerate(args) if arg not in ignored_args]
+        args = [(i, arg) for i, arg in enumerate(arg_names) if arg not in ignored_args]
     else:
-        args = list(enumerate(args))  # type: ignore[arg-type]
+        args = list(enumerate(arg_names))
 
     if not args or len(args) == 0:
         return (
@@ -212,7 +240,7 @@ def _detect_traverser_type[T](  # noqa: C901, PLR0912, PLR0915
             obj_pos, obj_name = arg0
             traverse_pos, traverse_name = arg1
         elif mode not in {"full", "full_positional"}:
-            arg_str = ", ".join([f"'{p}'" for _, p in args])  # type: ignore[has-type]
+            arg_str = ", ".join([f"'{p}'" for _, p in args])
             msg = f"Traverser signature with params {arg_str} irresolvable with mode '{mode}'."
             raise ValueError(msg)
         else:
@@ -231,7 +259,7 @@ def _detect_traverser_type[T](  # noqa: C901, PLR0912, PLR0915
     elif obj_name is not None and state_name is None and traverse_name is not None:
         mode = "obj_traverse"
     else:
-        arg_str = ", ".join([f"'{p}'" for _, p in args])  # type: ignore[has-type]
+        arg_str = ", ".join([f"'{p}'" for _, p in args])
         msg = f"Traverser signature with params {arg_str} irresolvable with mode '{mode}'."
         raise ValueError(msg)
 
@@ -578,10 +606,7 @@ def traverser[T](  # noqa: C901, PLR0912, PLR0915
     if mode == "identity":
         return identity_traverser
 
-    if mode == "full_positional":
-        return cast("Traverser[T]", traverser_fn)
-
-    if mode != "full" and detected_mode != "full_positional":
+    if mode not in {"full", "mode_positional"} and detected_mode != "full_positional":
         if obj_name is None and mode in {"obj", "obj_state", "obj_traverse", "full"}:
             warnings.warn(
                 "No positional object argument found in traverser. Using 'obj' kwarg as default.",
@@ -606,7 +631,10 @@ def traverser[T](  # noqa: C901, PLR0912, PLR0915
 
     _traverser: Traverser[T]
 
-    if mode == "full":
+    if mode == "full_positional":
+        _traverser = traverser_fn  # type: ignore[assignment]
+
+    elif mode == "full":
         traverser_fn = cast("Traverser[T]", traverser_fn)
 
         if detected_mode == "full_positional":
@@ -678,8 +706,8 @@ def traverser[T](  # noqa: C901, PLR0912, PLR0915
                 obj: T,
                 meta: Any = None,  # noqa: ANN401
                 traverser: Traverser[T] | None = None,
-            ) -> TraverserResult[T]:
-                return traverse(obj, state, meta, traverser)
+            ) -> T:
+                return traverse(obj, state, meta, traverser)[0]
 
             kwargs: dict[str, Any] = {obj_name: obj, traverse_name: _traverse}  # type: ignore[dict-item]
             if vars is not None:
@@ -705,6 +733,7 @@ def traverser[T](  # noqa: C901, PLR0912, PLR0915
     if traverse_if is not None:
         _traverser = _skip_if(_traverser, lambda state: not traverse_if(state))
 
-    _traverser = update_wrapper(_traverser, traverser_fn)
+    if _traverser is not traverser_fn:
+        _traverser = update_wrapper(_traverser, traverser_fn)
 
     return _traverser

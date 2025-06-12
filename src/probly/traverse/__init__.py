@@ -15,6 +15,7 @@ type TraverserResult[T] = core.TraverserResult[T]
 type TraverserCallback[T] = core.TraverserCallback[T]
 type Traverser[T] = core.Traverser[T]
 
+traverse_with_state = core.traverse_with_state
 traverse = core.traverse
 
 ## Traverser Decorator

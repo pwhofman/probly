@@ -173,6 +173,7 @@ convention = "google"
     "NPY002",
     "I002",
     "PERF401",  # its fine to have not performance optimized code in notebooks
+    "D103",
 ]
 "docs/**/*.py" = ["INP001", "PTH", "I002"]
 

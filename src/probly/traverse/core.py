@@ -38,7 +38,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections import ChainMap
-from typing import TYPE_CHECKING, Any, Protocol, TypeVar, overload
+from typing import TYPE_CHECKING, Any, Protocol
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
