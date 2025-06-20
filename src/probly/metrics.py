@@ -6,12 +6,6 @@ import numpy as np
 from scipy.optimize import linprog
 from tqdm import tqdm
 
-__all__ = [
-    "coverage",
-    "efficiency",
-    "expected_calibration_error",
-]
-
 ROUND_DECIMALS = 3  # Number of decimals to round probabilities to when computing coverage, efficiency, etc.
 
 

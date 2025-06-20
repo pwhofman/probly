@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import joblib
 import numpy as np
 from scipy.optimize import minimize
 from scipy.stats import entropy
@@ -108,7 +109,7 @@ def expected_divergence(
 ) -> np.ndarray:
     """Compute the expected divergence to the mean of the second-order distribution.
 
-     The computation is based on samples from a second-order distribution.
+    The computation is based on samples from a second-order distribution.
 
     Args:
         probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
@@ -143,7 +144,7 @@ def total_variance(probs: np.ndarray) -> np.ndarray:
 def expected_conditional_variance(probs: np.ndarray) -> np.ndarray:
     """Compute the aleatoric uncertainty using variance-based measures.
 
-     The computation is based on samples from a second-order distribution.
+    The computation is based on samples from a second-order distribution.
 
     Args:
         probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
@@ -159,7 +160,7 @@ def expected_conditional_variance(probs: np.ndarray) -> np.ndarray:
 def variance_conditional_expectation(probs: np.ndarray) -> np.ndarray:
     """Compute the epistemic uncertainty using variance-based measures.
 
-     The computation is based on samples from a second-order distribution.
+    The computation is based on samples from a second-order distribution.
 
     Args:
         probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
@@ -232,7 +233,7 @@ def epistemic_uncertainty_distance(probs: np.ndarray) -> np.ndarray:
     return eu
 
 
-def upper_entropy(probs: np.ndarray, base: float = 2) -> np.ndarray:
+def upper_entropy(probs: np.ndarray, base: float = 2, n_jobs: int | None = None) -> np.ndarray:
     """Compute the upper entropy of a credal set.
 
     Given the probs array the lower and upper probabilities are computed and the credal set is
@@ -240,27 +241,38 @@ def upper_entropy(probs: np.ndarray, base: float = 2) -> np.ndarray:
     for all classes. The upper entropy of this set is computed.
 
     Args:
-        probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
-        base: float, default=2
+        probs: Probability distributions of shape (n_instances, n_samples, n_classes).
+        base: Base of the logarithm. Defaults to 2.
+        n_jobs: Number of jobs for joblib.Parallel. Defaults to None. If None, no parallelization is used.
+                If set to -1, all available cores are used.
+
     Returns:
-        ue: numpy.ndarray of shape (n_instances,)
-
+        ue: Upper entropy values of shape (n_instances,).
     """
-
-    def fun(x: np.ndarray) -> np.ndarray:
-        return -entropy(x, base=base)
-
     x0 = probs.mean(axis=1)
     constraints = {"type": "eq", "fun": lambda x: np.sum(x) - 1}
-    ue = np.empty(probs.shape[0])
-    for i in tqdm(range(probs.shape[0])):
+
+    def compute_upper_entropy(i: int) -> float:
+        def fun(x: np.ndarray) -> np.ndarray:
+            return -entropy(x, base=base)
+
         bounds = list(zip(np.min(probs[i], axis=0), np.max(probs[i], axis=0), strict=False))
         res = minimize(fun=fun, x0=x0[i], bounds=bounds, constraints=constraints)
-        ue[i] = -res.fun
+        return float(-res.fun)
+
+    if n_jobs:
+        ue = joblib.Parallel(n_jobs=n_jobs)(
+            joblib.delayed(compute_upper_entropy)(i) for i in tqdm(range(probs.shape[0]))
+        )
+        ue = np.array(ue)
+    else:
+        ue = np.empty(probs.shape[0])
+        for i in tqdm(range(probs.shape[0])):
+            ue[i] = compute_upper_entropy(i)
     return ue
 
 
-def lower_entropy(probs: np.ndarray, base: float = 2) -> np.ndarray:
+def lower_entropy(probs: np.ndarray, base: float = 2, n_jobs: int | None = None) -> np.ndarray:
     """Compute the lower entropy of a credal set.
 
     Given the probs array the lower and upper probabilities are computed and the credal set is
@@ -268,97 +280,130 @@ def lower_entropy(probs: np.ndarray, base: float = 2) -> np.ndarray:
     for all classes. The lower entropy of this set is computed.
 
     Args:
-        probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
-        base: float, default=2
+        probs: Probability distributions of shape (n_instances, n_samples, n_classes).
+        base: Base of the logarithm. Defaults to 2.
+        n_jobs: Number of jobs for joblib.Parallel. Defaults to None. If None, no parallelization is used.
+                If set to -1, all available cores are used.
+
     Returns:
-        le: numpy.ndarray of shape (n_instances,)
-
+        le: Lower entropy values of shape (n_instances,).
     """
-
-    def fun(x: np.ndarray) -> np.ndarray:
-        return entropy(x, base=base)
-
     x0 = probs.mean(axis=1)
     # If the initial solution is uniform, slightly perturb it, because minimize will fail otherwise
     uniform_idxs = np.all(np.isclose(x0, 1 / probs.shape[2]), axis=1)
     x0[uniform_idxs, 0] += MINIMIZE_EPS
     x0[uniform_idxs, 1] -= MINIMIZE_EPS
-
     constraints = {"type": "eq", "fun": lambda x: np.sum(x) - 1}
-    le = np.empty(probs.shape[0])
-    for i in tqdm(range(probs.shape[0])):
+
+    def compute_lower_entropy(i: int) -> float:
+        def fun(x: np.ndarray) -> np.ndarray:
+            return entropy(x, base=base)
+
         bounds = list(zip(np.min(probs[i], axis=0), np.max(probs[i], axis=0), strict=False))
         res = minimize(fun=fun, x0=x0[i], bounds=bounds, constraints=constraints)
-        le[i] = res.fun
+        return float(res.fun)
+
+    if n_jobs:
+        le = joblib.Parallel(n_jobs=n_jobs)(
+            joblib.delayed(compute_lower_entropy)(i) for i in tqdm(range(probs.shape[0]))
+        )
+        le = np.array(le)
+    else:
+        le = np.empty(probs.shape[0])
+        for i in tqdm(range(probs.shape[0])):
+            le[i] = compute_lower_entropy(i)
     return le
 
 
-def upper_entropy_convex_hull(probs: np.ndarray, base: float = 2) -> np.ndarray:
+def upper_entropy_convex_hull(probs: np.ndarray, base: float = 2, n_jobs: int | None = None) -> np.ndarray:
     """Compute the upper entropy of a credal set.
 
     Given the probs the convex hull defined by the extreme points in probs is considered.
     The upper entropy of this set is computed.
 
     Args:
-        probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
-        base: float, default=2
+        probs: Probability distributions of shape (n_instances, n_samples, n_classes).
+        base: Base of the logarithm. Defaults to 2.
+        n_jobs: Number of jobs for joblib.Parallel. Defaults to None. If None, no parallelization is used.
+                If set to -1, all available cores are used.
+
     Returns:
-        ue: numpy.ndarray of shape (n_instances,)
-
+        ue: Upper entropy values of shape (n_instances,).
     """
-
-    def fun(w: np.ndarray, extrema: np.ndarray) -> np.ndarray:
-        prob = w @ extrema
-        return -entropy(prob, base=base)
-
     w0 = np.ones(probs.shape[1]) / probs.shape[1]
-    constraints = {"type": "eq", "fun": lambda x: np.sum(x) - 1}
+    constraints = {"type": "eq", "fun": lambda w: np.sum(w) - 1}
     bounds = [(0, 1)] * probs.shape[1]
-    ue = np.empty(probs.shape[0])
-    for i in tqdm(range(probs.shape[0])):
+
+    def compute_upper_entropy_convex_hull(i: int) -> float:
+        def fun(w: np.ndarray, extrema: np.ndarray) -> np.ndarray:
+            prob = w @ extrema
+            return -entropy(prob, base=base)
+
         res = minimize(fun=fun, args=probs[i], x0=w0, bounds=bounds, constraints=constraints)
-        ue[i] = -res.fun
+        return float(-res.fun)
+
+    if n_jobs:
+        ue = joblib.Parallel(n_jobs=n_jobs)(
+            joblib.delayed(compute_upper_entropy_convex_hull)(i) for i in tqdm(range(probs.shape[0]))
+        )
+        ue = np.array(ue)
+    else:
+        ue = np.empty(probs.shape[0])
+        for i in tqdm(range(probs.shape[0])):
+            ue[i] = compute_upper_entropy_convex_hull(i)
     return ue
 
 
-def lower_entropy_convex_hull(probs: np.ndarray, base: float = 2) -> np.ndarray:
+def lower_entropy_convex_hull(probs: np.ndarray, base: float = 2, n_jobs: int | None = None) -> np.ndarray:
     """Compute the lower entropy of a credal set.
 
     Given the probs the convex hull defined by the extreme points in probs is considered.
     The lower entropy of this set is computed.
 
     Args:
-        probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
-        base: float, default=2
+        probs: Probability distributions of shape (n_instances, n_samples, n_classes).
+        base: Base of the logarithm. Defaults to 2.
+        n_jobs: Number of jobs for joblib.Parallel. Defaults to None. If None, no parallelization is used.
+                If set to -1, all available cores are used.
+
     Returns:
-        le: numpy.ndarray of shape (n_instances,)
-
+        le: Lower entropy values of shape (n_instances,).
     """
-
-    def fun(w: np.ndarray, extrema: np.ndarray) -> np.ndarray:
-        prob = w @ extrema
-        return entropy(prob, base=base)
-
     w0 = np.ones(probs.shape[1]) / probs.shape[1]
     constraints = {"type": "eq", "fun": lambda x: np.sum(x) - 1}
     bounds = [(0, 1)] * probs.shape[1]
-    le = np.empty(probs.shape[0])
-    for i in tqdm(range(probs.shape[0])):
+
+    def compute_lower_entropy_convex_hull(i: int) -> float:
+        def fun(w: np.ndarray, extrema: np.ndarray) -> np.ndarray:
+            prob = w @ extrema
+            return entropy(prob, base=base)
+
         res = minimize(fun=fun, args=probs[i], x0=w0, bounds=bounds, constraints=constraints)
-        le[i] = res.fun
+        return float(res.fun)
+
+    if n_jobs:
+        le = joblib.Parallel(n_jobs=n_jobs)(
+            joblib.delayed(compute_lower_entropy_convex_hull)(i) for i in tqdm(range(probs.shape[0]))
+        )
+        le = np.array(le)
+    else:
+        le = np.empty(probs.shape[0])
+        for i in tqdm(range(probs.shape[0])):
+            le[i] = compute_lower_entropy_convex_hull(i)
     return le
 
 
-def generalised_hartley(probs: np.ndarray, base: float = 2) -> np.ndarray:
-    """Compute the generalised Hartley measure.
+def generalized_hartley(probs: np.ndarray, base: float = 2) -> np.ndarray:
+    """Compute the generalized Hartley measure.
 
-     Based on the extreme points of a credal set the generalised Hartley measure is computed.
+    Based on the extreme points of a credal set the generalized Hartley measure is computed.
 
     Args:
-        probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
-        base: float, default=2
+        probs: Probability distributions of shape (n_instances, n_samples, n_classes).
+        base: Base of the logarithm. Defaults to 2.
+
     Returns:
-        gh: numpy.ndarray of shape (n_instances,)
+        gh: Generalized Hartley measures values of shape (n_instances,).
 
     """
     gh = np.zeros(probs.shape[0])
@@ -375,10 +420,10 @@ def evidential_uncertainty(evidences: np.ndarray) -> np.ndarray:
     """Compute the evidential uncertainty given the evidences.
 
     Args:
-        evidences: numpy.ndarray of shape (n_instances, n_classes)
+        evidences: Evidence values of shape (n_instances, n_classes).
 
     Returns:
-        eu: numpy.ndarray of shape (n_instances,)
+        eu: Evidential uncertainty values of shape (n_instances,).
 
     """
     strengths = np.sum(evidences + 1.0, axis=1)

@@ -22,7 +22,7 @@ from probly.quantification.classification import (
     expected_divergence,
     expected_entropy,
     expected_loss,
-    generalised_hartley,
+    generalized_hartley,
     lower_entropy,
     lower_entropy_convex_hull,
     mutual_information,
@@ -69,7 +69,7 @@ def simplex_vertices() -> np.ndarray:
         lower_entropy,
         upper_entropy_convex_hull,
         lower_entropy_convex_hull,
-        generalised_hartley,
+        generalized_hartley,
     ],
 )
 def test_uncertainty_function(

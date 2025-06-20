@@ -33,7 +33,8 @@ extensions = [
     "sphinx.ext.autodoc",  # generates API documentation from docstrings
     "sphinx.ext.autosummary",  # generates .rst files for each module
     "sphinx_autodoc_typehints",  # optional, nice for type hints in docs
-    "sphinx.ext.linkcode",  # adds [source] links to code that link to GitHub
+    # "sphinx.ext.linkcode",  # noqa: ERA001. adds [source] links to code that link to GitHub. Use when repo is public.
+    "sphinx.ext.viewcode",  # adds [source] links to code that link to the source code in the docs.
     "sphinx.ext.napoleon",  # for Google-style docstrings
     "sphinx.ext.duration",  # optional, show the duration of the build
     "myst_parser",  # for markdown support
