@@ -148,7 +148,7 @@ class EvidentialNIGNLLLoss(nn.Module):
 
 
 class EvidentialRegressionRegularization(nn.Module):
-    """Implementation of the evidential regression regularization."""
+    """Implementation of the evidential regression regularization :cite:`aminiDeepEvidential2020`."""
 
     def __init__(self) -> None:
         """Initialize an instance of the evidential regression regularization class."""
@@ -240,7 +240,7 @@ class ELBOLoss(nn.Module):
 
 
 class ExpectedCalibrationError(nn.Module):
-    """Expected Calibration Error (ECE).
+    """Expected Calibration Error (ECE) :cite:`guoOnCalibration2017`.
 
     Attributes:
         num_bins: int, number of bins to use for calibration

@@ -10,7 +10,7 @@ ROUND_DECIMALS = 3  # Number of decimals to round probabilities to when computin
 
 
 def expected_calibration_error(probs: np.ndarray, labels: np.ndarray, num_bins: int = 10) -> float:
-    """Compute the expected calibration error (ECE) of the predicted probabilities.
+    """Compute the expected calibration error (ECE) of the predicted probabilities :cite:`guoOnCalibration2017`.
 
     Args:
         probs: The predicted probabilities as an array of shape (n_instances, n_classes).

@@ -10,18 +10,18 @@ from probly.utils import temperature_softmax, torch_collect_outputs
 
 
 class Temperature(nn.Module):
-    """Implementation of temperature scaling.
+    """Implementation of temperature scaling :cite:`guoOnCalibration2017`.
 
     Attributes:
-        model: torch.nn.Module, the model to be calibrated
-        temperature: torch.nn.Parameter, the temperature parameter to be optimized
+        model: The model to be calibrated.
+        temperature: The temperature parameter to be optimized.
     """
 
     def __init__(self, base: nn.Module) -> None:
         """Initialize an instance of the Temperature class.
 
         Args:
-            base: torch.nn.Module, the base model to be calibrated
+            base: The base model to be calibrated.
         """
         super().__init__()
         self.model = base
@@ -31,9 +31,10 @@ class Temperature(nn.Module):
         """Forward pass of the model.
 
         Args:
-            x: torch.Tensor, input data
+            x: Input data.
+
         Returns:
-            torch.Tensor, model output
+            Model output.
         """
         return self.model(x)
 
@@ -41,9 +42,10 @@ class Temperature(nn.Module):
         """Forward pass of the model for point-wise prediction.
 
         Args:
-            x: torch.Tensor, input data
+            x: Input data.
+
         Returns:
-            torch.Tensor, model output
+            Model output.
         """
         x = self.model(x)
         return temperature_softmax(x, self.temperature)
@@ -54,9 +56,9 @@ class Temperature(nn.Module):
         This method optimizes the temperature parameter based on the Expected Calibration Error (ECE) loss.
 
         Args:
-            loader: torch.utils.data.DataLoader, data loader to use for optimizing
-            learning_rate: float, learning rate for the optimizer
-            max_iter: int, maximum number of iterations for the optimizer
+            loader: Data loader to use for optimizing.
+            learning_rate: Learning rate for the optimizer.
+            max_iter: Maximum number of iterations for the optimizer.
         """
         inputs, targets = torch_collect_outputs(self.model, loader, self.temperature.device)
         criterion = ExpectedCalibrationError()
@@ -68,7 +70,7 @@ class Temperature(nn.Module):
             This function computes the loss and gradients.
 
             Returns:
-                torch.Tensor, loss value
+                Loss value.
             """
             optimizer.zero_grad()
             outputs = temperature_softmax(inputs, self.temperature)
