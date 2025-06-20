@@ -28,7 +28,7 @@ jobs:
       - name: Copy content to docs/source folder
         run: |
           cp .github/CONTRIBUTING.md docs/source/contributing.md
-          cp -r notebooks/examples/ docs/source/
+          cp -r notebooks/examples/*.ipynb docs/source/tutorials/
 
       - name: Build Sphinx documentation
         working-directory: ./docs

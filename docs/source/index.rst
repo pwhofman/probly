@@ -25,7 +25,7 @@ or
 
 Quickstart
 ~~~~~~~~~~~~
-probly makes it very easy to make models uncertainty-aware and perform several downstream tasks:
+`probly` makes it very easy to make models uncertainty-aware and perform several downstream tasks:
 
 .. code-block:: python
 
@@ -60,14 +60,14 @@ probly makes it very easy to make models uncertainty-aware and perform several d
    :caption: Tutorials
    :hidden:
 
-   notebooks/examples/fashionmnist_ood_ensemble
-   notebooks/examples/label_relaxation_calibration
-   notebooks/examples/sklearn_selective_prediction
-   notebooks/examples/synthetic_regression_dropout
-   notebooks/examples/temperature_scaling_calibration
-   notebooks/examples/train_bnn_classification
-   notebooks/examples/train_evidential_classification
-   notebooks/examples/train_evidential_regression
+   tutorials/fashionmnist_ood_ensemble
+   tutorials/label_relaxation_calibration
+   tutorials/sklearn_selective_prediction
+   tutorials/synthetic_regression_dropout
+   tutorials/temperature_scaling_calibration
+   tutorials/train_bnn_classification
+   tutorials/train_evidential_classification
+   tutorials/train_evidential_regression
 
 .. toctree::
    :maxdepth: 2
