@@ -60,14 +60,14 @@ Quickstart
    :caption: Tutorials
    :hidden:
 
-   tutorials/fashionmnist_ood_ensemble
-   tutorials/label_relaxation_calibration
-   tutorials/sklearn_selective_prediction
-   tutorials/synthetic_regression_dropout
-   tutorials/temperature_scaling_calibration
-   tutorials/train_bnn_classification
-   tutorials/train_evidential_classification
-   tutorials/train_evidential_regression
+   examples/fashionmnist_ood_ensemble
+   examples/label_relaxation_calibration
+   examples/sklearn_selective_prediction
+   examples/synthetic_regression_dropout
+   examples/temperature_scaling_calibration
+   examples/train_bnn_classification
+   examples/train_evidential_classification
+   examples/train_evidential_regression
 
 .. toctree::
    :maxdepth: 2
