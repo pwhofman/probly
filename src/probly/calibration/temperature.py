@@ -10,7 +10,7 @@ from probly.utils import temperature_softmax, torch_collect_outputs
 
 
 class Temperature(nn.Module):
-    """Implementation of temperature scaling.
+    """Implementation of temperature scaling :cite:`guoOnCalibration2017`.
 
     Attributes:
         model: The model to be calibrated.
