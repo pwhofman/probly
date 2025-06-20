@@ -8,6 +8,7 @@
         <title>probly.losses - probly 0.3.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=354aac6f" />
+    <link rel="stylesheet" type="text/css" href="../../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?v=302659d7" />
     <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
@@ -476,7 +477,7 @@
 <div class="viewcode-block" id="EvidentialRegressionRegularization">
 <a class="viewcode-back" href="../../api/probly.losses.html#probly.losses.EvidentialRegressionRegularization">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">EvidentialRegressionRegularization</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Implementation of the evidential regression regularization.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Implementation of the evidential regression regularization :cite:`aminiDeepEvidential2020`.&quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize an instance of the evidential regression regularization class.&quot;&quot;&quot;</span>
@@ -586,7 +587,7 @@
 <div class="viewcode-block" id="ExpectedCalibrationError">
 <a class="viewcode-back" href="../../api/probly.losses.html#probly.losses.ExpectedCalibrationError">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">ExpectedCalibrationError</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Expected Calibration Error (ECE).</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Expected Calibration Error (ECE) :cite:`guoOnCalibration2017`.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        num_bins: int, number of bins to use for calibration</span>

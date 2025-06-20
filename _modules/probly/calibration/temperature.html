@@ -8,6 +8,7 @@
         <title>probly.calibration.temperature - probly 0.3.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo.css?v=354aac6f" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
     <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo-extensions.css?v=302659d7" />
     <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
@@ -308,18 +309,18 @@
 <div class="viewcode-block" id="Temperature">
 <a class="viewcode-back" href="../../../api/probly.calibration.temperature.html#probly.calibration.Temperature">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">Temperature</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Implementation of temperature scaling.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Implementation of temperature scaling :cite:`guoOnCalibration2017`.</span>
 
 <span class="sd">    Attributes:</span>
-<span class="sd">        model: torch.nn.Module, the model to be calibrated</span>
-<span class="sd">        temperature: torch.nn.Parameter, the temperature parameter to be optimized</span>
+<span class="sd">        model: The model to be calibrated.</span>
+<span class="sd">        temperature: The temperature parameter to be optimized.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">base</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize an instance of the Temperature class.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            base: torch.nn.Module, the base model to be calibrated</span>
+<span class="sd">            base: The base model to be calibrated.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">base</span>
@@ -331,9 +332,10 @@
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Forward pass of the model.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            x: torch.Tensor, input data</span>
+<span class="sd">            x: Input data.</span>
+
 <span class="sd">        Returns:</span>
-<span class="sd">            torch.Tensor, model output</span>
+<span class="sd">            Model output.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span></div>
 
@@ -344,9 +346,10 @@
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Forward pass of the model for point-wise prediction.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            x: torch.Tensor, input data</span>
+<span class="sd">            x: Input data.</span>
+
 <span class="sd">        Returns:</span>
-<span class="sd">            torch.Tensor, model output</span>
+<span class="sd">            Model output.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">temperature_softmax</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">temperature</span><span class="p">)</span></div>
@@ -360,9 +363,9 @@
 <span class="sd">        This method optimizes the temperature parameter based on the Expected Calibration Error (ECE) loss.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            loader: torch.utils.data.DataLoader, data loader to use for optimizing</span>
-<span class="sd">            learning_rate: float, learning rate for the optimizer</span>
-<span class="sd">            max_iter: int, maximum number of iterations for the optimizer</span>
+<span class="sd">            loader: Data loader to use for optimizing.</span>
+<span class="sd">            learning_rate: Learning rate for the optimizer.</span>
+<span class="sd">            max_iter: Maximum number of iterations for the optimizer.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">inputs</span><span class="p">,</span> <span class="n">targets</span> <span class="o">=</span> <span class="n">torch_collect_outputs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">loader</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">temperature</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
         <span class="n">criterion</span> <span class="o">=</span> <span class="n">ExpectedCalibrationError</span><span class="p">()</span>
@@ -374,7 +377,7 @@
 <span class="sd">            This function computes the loss and gradients.</span>
 
 <span class="sd">            Returns:</span>
-<span class="sd">                torch.Tensor, loss value</span>
+<span class="sd">                Loss value.</span>
 <span class="sd">            &quot;&quot;&quot;</span>
             <span class="n">optimizer</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>
             <span class="n">outputs</span> <span class="o">=</span> <span class="n">temperature_softmax</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">temperature</span><span class="p">)</span>

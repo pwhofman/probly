@@ -9,6 +9,7 @@
         <title>probly.metrics - probly 0.3.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=354aac6f" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=302659d7" />
     <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
@@ -319,7 +320,7 @@
 <td><p>Compute the efficiency of set-valued predictions.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#probly.metrics.expected_calibration_error" title="probly.metrics.expected_calibration_error"><code class="xref py py-obj docutils literal notranslate"><span class="pre">expected_calibration_error</span></code></a>(probs, labels[, ...])</p></td>
-<td><p>Compute the expected calibration error (ECE) of the predicted probabilities.</p></td>
+<td><p>Compute the expected calibration error (ECE) of the predicted probabilities <span id="id1">[<a class="reference internal" href="../references.html#id14" title="Chuan Guo, Geoff Pleiss, Yu Sun, and Kilian Q. Weinberger. On calibration of modern neural networks. In Doina Precup and Yee Whye Teh, editors, Proceedings of the 34th International Conference on Machine Learning, ICML 2017, Sydney, NSW, Australia, 6-11 August 2017, volume 70 of Proceedings of Machine Learning Research, 1321–1330. PMLR, 2017. URL: http://proceedings.mlr.press/v70/guo17a.html.">GPSW17</a>]</span>.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#probly.metrics.log_loss" title="probly.metrics.log_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">log_loss</span></code></a>(probs, targets)</p></td>
 <td><p>Compute the log loss of the predicted probabilities.</p></td>
@@ -462,7 +463,7 @@ of shape <cite>(n_instances, n_samples, n_classes)</cite>.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.metrics.expected_calibration_error">
 <span class="sig-prename descclassname"><span class="pre">probly.metrics.</span></span><span class="sig-name descname"><span class="pre">expected_calibration_error</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_bins</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/metrics.html#expected_calibration_error"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.metrics.expected_calibration_error" title="Link to this definition">¶</a></dt>
-<dd><p>Compute the expected calibration error (ECE) of the predicted probabilities.</p>
+<dd><p>Compute the expected calibration error (ECE) of the predicted probabilities <span id="id2">[<a class="reference internal" href="../references.html#id14" title="Chuan Guo, Geoff Pleiss, Yu Sun, and Kilian Q. Weinberger. On calibration of modern neural networks. In Doina Precup and Yee Whye Teh, editors, Proceedings of the 34th International Conference on Machine Learning, ICML 2017, Sydney, NSW, Australia, 6-11 August 2017, volume 70 of Proceedings of Machine Learning Research, 1321–1330. PMLR, 2017. URL: http://proceedings.mlr.press/v70/guo17a.html.">GPSW17</a>]</span>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span></p>
