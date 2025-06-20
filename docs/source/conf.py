@@ -37,7 +37,7 @@ extensions = [
     "sphinx.ext.viewcode",  # adds [source] links to code that link to the source code in the docs.
     "sphinx.ext.napoleon",  # for Google-style docstrings
     "sphinx.ext.duration",  # optional, show the duration of the build
-    "myst_parser",  # for markdown support
+    "myst_nb",  # for jupyter notebook support, also includes myst_parser
     "sphinx.ext.intersphinx",  # for linking to other projects' docs
     "sphinx.ext.mathjax",  # for math support
     "sphinx.ext.doctest",  # for testing code snippets in the docs
@@ -50,6 +50,7 @@ templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 bibtex_bibfiles = ["references.bib"]
 bibtex_default_style = "alpha"
+nb_execution_mode = "off"  # don't run notebooks when building the docs
 
 intersphinx_mapping = {
     "python3": ("https://docs.python.org/3", None),

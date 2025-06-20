@@ -71,7 +71,7 @@ lint = [
 docs = [
     "sphinx>=8.0.0",
     "furo",                     # Beautiful modern theme (or use sphinx-rtd-theme)
-    "myst-parser",              # Optional: Markdown support
+    "myst-nb",                  # Optional: Jupyter Notebook support
     "sphinx-copybutton",        # Optional: Adds copy buttons to code blocks
     "sphinx-autodoc-typehints", # Optional: Show type hints in your API docs
     "sphinxcontrib-bibtex",     # Optional: For bibliography support
