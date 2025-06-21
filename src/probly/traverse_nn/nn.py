@@ -24,11 +24,11 @@ layer_count_traverser = t.singledispatch_traverser[object](name="layer_count_tra
 nn_traverser = t.singledispatch_traverser[object](name="nn_traverser")
 
 
-def compose[T](
-    traverser: t.Traverser[T],
-    nn_traverser: t.Traverser[object] = nn_traverser,
+def compose(
+    traverser: t.Traverser,
+    nn_traverser: t.Traverser = nn_traverser,
     name: str | None = None,
-) -> t.Traverser[T]:
+) -> t.Traverser:
     """Compose a custom traverser with neural network traversal functionality.
 
     This function creates a sequential traverser that combines neural network traversal,
@@ -49,8 +49,8 @@ def compose[T](
 
 def traverse[T](
     obj: T,
-    traverser: t.Traverser[T],
-    nn_traverser: t.Traverser[object] = nn_traverser,
+    traverser: t.Traverser,
+    nn_traverser: t.Traverser = nn_traverser,
     init: dict[t.Variable, Any] | None = None,
 ) -> T:
     """Traverse a neural network object using a combination of traversers.

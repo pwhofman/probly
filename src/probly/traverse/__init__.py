@@ -1,3 +1,5 @@
+"""Generic functional datastructure traverser utilities."""
+
 from . import composition, core, decorators, generic
 
 ## Core

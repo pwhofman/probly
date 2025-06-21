@@ -1,3 +1,5 @@
+"""Traverser utilities for neural networks."""
+
 from . import nn, torch
 
 ## NN
@@ -16,4 +18,4 @@ nn_traverse = nn.traverse
 TORCH_CLONE = torch.CLONE
 TORCH_FLATTEN_SEQUENTIAL = torch.FLATTEN_SEQUENTIAL
 
-torch_traverser = torch._torch_traverser
+torch_traverser = torch._torch_traverser  # noqa: SLF001

@@ -2,88 +2,37 @@
 
 from __future__ import annotations
 
-import torch
-from torch import nn
-from torch.nn import functional as F
+from typing import TYPE_CHECKING
 
-from probly.representation.predictor import RepresentationPredictorWrapper
+from probly.representation.predictor_torch import TorchSamplingRepresentationPredictor
 from probly.traverse import CLONE, GlobalVariable, Traverser
 from probly.traverse_nn import nn_traverse
+
+if TYPE_CHECKING:
+    from torch import nn
 
 P = GlobalVariable[float]("P", "The probability of dropout.", default=0.25)
 
 
-class Drop(nn.Module, RepresentationPredictorWrapper):
+class Drop[In, KwIn](TorchSamplingRepresentationPredictor[In, KwIn]):
     """This class implements a generic drop layer to be used for uncertainty quantification."""
 
-    _convert_traverser: Traverser[nn.Module]
-    _eval_traverser: Traverser[nn.Module]
+    _convert_traverser: Traverser
+    _eval_traverser: Traverser
 
     def __init__(
         self,
         base: nn.Module,
         p: float = P.default,
     ) -> None:
-        super().__init__()
+        """Initialize an instance of the Drop class.
+
+        Args:
+            base: torch.nn.Module, The base model to be used for drop.
+            p: float, The probability of dropping out a neuron.
+        """
         self.p = p
-        self.model = self._convert(base)
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Forward pass of the dropout model.
-
-        Args:
-            x: torch.Tensor, input data
-        Returns:
-            torch.Tensor, ensemble output
-
-        """
-        return self.model(x)
-
-    def predict_pointwise(
-        self,
-        x: torch.Tensor,
-        n_samples: int,
-        logits: bool = False,
-    ) -> torch.Tensor:
-        """Forward pass that gives a point-wise prediction by taking the mean over the samples.
-
-        Args:
-            x: torch.Tensor, input data
-            n_samples: int, number of samples
-            logits: bool, whether to return logits or probabilities
-        Returns:
-            torch.Tensor, point-wise prediction
-        """
-        if logits:
-            return torch.stack([self.model(x) for _ in range(n_samples)], dim=1).mean(
-                dim=1,
-            )
-        return torch.stack(
-            [F.softmax(self.model(x), dim=1) for _ in range(n_samples)],
-            dim=1,
-        ).mean(dim=1)
-
-    def predict_representation(
-        self,
-        x: torch.Tensor,
-        n_samples: int,
-        logits: bool = False,
-    ) -> torch.Tensor:
-        """Forward pass that gives an uncertainty representation.
-
-        Args:
-            x: torch.Tensor, input data
-            n_samples: int, number of samples
-            logits: bool, whether to return logits or probabilities
-        Returns:
-            torch.Tensor, uncertainty representation
-        """
-        if logits:
-            return torch.stack([self.model(x) for _ in range(n_samples)], dim=1)
-        return torch.stack(
-            [F.softmax(self.model(x), dim=1) for _ in range(n_samples)],
-            dim=1,
-        )
+        super().__init__(base)
 
     def _convert(self, base: nn.Module) -> nn.Module:
         """Convert base model to a dropout model.

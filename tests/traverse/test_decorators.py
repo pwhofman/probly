@@ -685,8 +685,8 @@ class TestTraverserDecorator:
 
         @traverser(mode="obj_traverse")
         def traverse_using_traverser(obj, traverse):  # type: ignore[no-untyped-def]
-            result1, _ = traverse(obj)
-            result2, _ = traverse(obj + 1, meta="child")
+            result1 = traverse(obj)
+            result2 = traverse(obj + 1, meta="child")
             return result1 + result2
 
         obj: Any = 5

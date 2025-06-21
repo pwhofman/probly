@@ -3,12 +3,7 @@
 from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
-from typing import TYPE_CHECKING, Protocol, TypedDict, Unpack
-
-from numpy import int64
-
-if TYPE_CHECKING:
-    from collections.abc import Iterable
+from typing import Protocol, TypedDict, Unpack
 
 
 class Predictor[In, KwIn, Out](Protocol):
@@ -44,11 +39,11 @@ class SamplingRepresentationCreator[
 ](Protocol):
     """Protocol for representation predictors based on finite samples."""
 
-    def create_representation(self, y: Iterable[Out]) -> RepresentationOut:
+    def create_representation(self, y: list[Out]) -> RepresentationOut:
         """Create a representation from a collection of outputs."""
         ...
 
-    def create_pointwise(self, y: Iterable[Out]) -> PointwiseOut:
+    def create_pointwise(self, y: list[Out]) -> PointwiseOut:
         """Create a pointwise output from a collection of outputs."""
         ...
 
@@ -103,11 +98,11 @@ class SamplingRepresentationPredictor[
     @abstractmethod
     def create_representation(  # noqa: D102
         self,
-        y: Iterable[Out],
+        y: list[Out],
     ) -> RepresentationOut: ...
 
     @abstractmethod
-    def create_pointwise(self, y: Iterable[Out]) -> PointwiseOut: ...  # noqa: D102
+    def create_pointwise(self, y: list[Out]) -> PointwiseOut: ...  # noqa: D102
 
     def predict_pointwise(
         self,
@@ -152,25 +147,3 @@ class SamplingRepresentationPredictor[
         return self.create_representation(
             [self.__call__(*args, **kwargs) for _ in range(n_samples)],
         )
-
-
-class RepresentationPredictorWrapper[In, KwIn, Out, PointwiseOut, RepresentationOut](
-    RepresentationPredictor[In, KwIn, PointwiseOut, RepresentationOut],
-    metaclass=ABCMeta,
-):
-    """Protocol for representation predictor wrappers."""
-
-    def __init__(
-        self,
-        base: Predictor[In, KwIn, Out],
-    ) -> None:
-        """Initialize the wrapper with a predictor."""
-        self.model = self._convert(base)
-
-    @abstractmethod
-    def _convert(
-        self,
-        base: Predictor[In, KwIn, Out],
-    ) -> Predictor[In, KwIn, Out]:
-        """Convert the base predictor to a representation predictor."""
-        ...

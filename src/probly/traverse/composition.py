@@ -14,7 +14,6 @@ from typing import (
     Any,
     Concatenate,
     NotRequired,
-    Protocol,
     Union,
     Unpack,
     get_origin,
@@ -169,7 +168,7 @@ class _TraverserDecoratorKwargs[T](d.TraverserDecoratorKwargs[T]):
     update_vars: NotRequired[bool] = False
 
 
-class SingledispatchTraverser[T]:
+class SingledispatchTraverser[T: object]:
     """A wrapper around functools.singledispatch to create an extensible traverser.
 
     This class provides a type-based dispatch mechanism for traversers, allowing
