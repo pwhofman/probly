@@ -5,8 +5,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from probly.representation.predictor_torch import TorchSamplingRepresentationPredictor
-from probly.traverse import CLONE, GlobalVariable, Traverser
-from probly.traverse_nn import nn_traverse
+from probly.traverse import CLONE, GlobalVariable, Traverser, traverse
+from probly.traverse_nn import nn_compose
 
 if TYPE_CHECKING:
     from torch import nn
@@ -43,12 +43,16 @@ class Drop[In, KwIn](TorchSamplingRepresentationPredictor[In, KwIn]):
         Args:
             base: torch.nn.Module, The base model to be used for drop.
         """
-        return nn_traverse(base, self._convert_traverser, init={P: self.p, CLONE: True})
+        return traverse(
+            base,
+            nn_compose(self._convert_traverser),
+            init={P: self.p, CLONE: True},
+        )
 
     def eval(self) -> Drop:
         """Sets the model to evaluation mode, but keeps the drop layers active."""
         super().eval()
 
-        nn_traverse(self.model, self._eval_traverser, init={CLONE: False})
+        traverse(self.model, nn_compose(self._eval_traverser), init={CLONE: False})
 
         return self

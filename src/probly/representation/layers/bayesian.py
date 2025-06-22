@@ -35,7 +35,7 @@ class BayesLinear(nn.Module):
         posterior_std: float = 0.05,
         prior_mean: float = 0.0,
         prior_std: float = 1.0,
-        init_layer: nn.Module = None,
+        init_layer: nn.Module | None = None,
     ) -> None:
         """Initializes the Bayesian linear layer.
 
@@ -67,10 +67,14 @@ class BayesLinear(nn.Module):
 
         # prior weights
         if init_layer is None:
-            self.register_buffer("weight_prior_mu", torch.full((out_features, in_features), prior_mean))
+            self.register_buffer(
+                "weight_prior_mu", torch.full((out_features, in_features), prior_mean)
+            )
         else:
             self.register_buffer("weight_prior_mu", init_layer.weight.data)
-        self.register_buffer("weight_prior_sigma", torch.full((out_features, in_features), prior_std))
+        self.register_buffer(
+            "weight_prior_sigma", torch.full((out_features, in_features), prior_std)
+        )
 
         if self.bias:
             # posterior bias
@@ -82,10 +86,14 @@ class BayesLinear(nn.Module):
 
             # prior bias
             if init_layer is None:
-                self.register_buffer("bias_prior_mu", torch.full((out_features,), prior_mean))
+                self.register_buffer(
+                    "bias_prior_mu", torch.full((out_features,), prior_mean)
+                )
             else:
                 self.register_buffer("bias_prior_mu", init_layer.bias.data)
-            self.register_buffer("bias_prior_sigma", torch.full((out_features,), prior_std))
+            self.register_buffer(
+                "bias_prior_sigma", torch.full((out_features,), prior_std)
+            )
 
         if init_layer is None:
             self.reset_parameters()
@@ -117,7 +125,9 @@ class BayesLinear(nn.Module):
         """
         init.kaiming_uniform_(self.weight_mu, a=math.sqrt(5))
         if self.bias is not False:
-            fan_in, _ = init._calculate_fan_in_and_fan_out(self.weight_mu)  # noqa: SLF001
+            fan_in, _ = init._calculate_fan_in_and_fan_out(
+                self.weight_mu
+            )  # noqa: SLF001
             bound = 1 / math.sqrt(fan_in) if fan_in > 0 else 0
             init.uniform_(self.bias_mu, -bound, bound)
 
@@ -179,7 +189,7 @@ class BayesConv2d(nn.Module):
         posterior_std: float = 0.05,
         prior_mean: float = 0.0,
         prior_std: float = 1.0,
-        init_layer: nn.Module = None,
+        init_layer: nn.Module | None = None,
     ) -> None:
         """Initializes the Bayesian convolutional layer.
 
@@ -214,16 +224,22 @@ class BayesConv2d(nn.Module):
 
         # posterior weights
         if init_layer is None:
-            self.weight_mu = nn.Parameter(torch.empty((out_channels, in_channels // groups, *kernel_size)))
+            self.weight_mu = nn.Parameter(
+                torch.empty((out_channels, in_channels // groups, *kernel_size))
+            )
         else:
             self.weight_mu = nn.Parameter(init_layer.weight.data)
-        self.weight_rho = nn.Parameter(torch.full((out_channels, in_channels // groups, *kernel_size), rho))
+        self.weight_rho = nn.Parameter(
+            torch.full((out_channels, in_channels // groups, *kernel_size), rho)
+        )
 
         # prior weights
         if init_layer is None:
             self.register_buffer(
                 "weight_prior_mu",
-                torch.full((out_channels, in_channels // groups, *kernel_size), prior_mean),
+                torch.full(
+                    (out_channels, in_channels // groups, *kernel_size), prior_mean
+                ),
             )
         else:
             self.register_buffer("weight_prior_mu", init_layer.weight.data)
@@ -243,10 +259,14 @@ class BayesConv2d(nn.Module):
 
             # prior bias
             if init_layer is None:
-                self.register_buffer("bias_prior_mu", torch.full((out_channels,), prior_mean))
+                self.register_buffer(
+                    "bias_prior_mu", torch.full((out_channels,), prior_mean)
+                )
             else:
                 self.register_buffer("bias_prior_mu", init_layer.bias.data)
-            self.register_buffer("bias_prior_sigma", torch.full((out_channels,), prior_std))
+            self.register_buffer(
+                "bias_prior_sigma", torch.full((out_channels,), prior_std)
+            )
 
         if init_layer is None:
             self.reset_parameters()
@@ -264,7 +284,9 @@ class BayesConv2d(nn.Module):
         if self.bias:
             eps_bias = torch.randn_like(self.bias_mu)
             bias = self.bias_mu + torch.log1p(torch.exp(self.bias_rho)) * eps_bias
-            x = F.conv2d(x, weight, bias, self.stride, self.padding, self.dilation, self.groups)
+            x = F.conv2d(
+                x, weight, bias, self.stride, self.padding, self.dilation, self.groups
+            )
         else:
             x = F.conv2d(
                 x,
@@ -285,7 +307,9 @@ class BayesConv2d(nn.Module):
         """
         init.kaiming_uniform_(self.weight_mu, a=math.sqrt(5))
         if self.bias is not False:
-            fan_in, _ = init._calculate_fan_in_and_fan_out(self.weight_mu)  # noqa: SLF001
+            fan_in, _ = init._calculate_fan_in_and_fan_out(
+                self.weight_mu
+            )  # noqa: SLF001
             if fan_in != 0:
                 bound = 1 / math.sqrt(fan_in)
                 init.uniform_(self.bias_mu, -bound, bound)
@@ -330,5 +354,9 @@ def _kl_divergence_gaussian(
     Returns:
         kl_div: float or numpy.ndarray shape (n_instances,), KL-divergence between the two Gaussian distributions
     """
-    kl_div = 0.5 * torch.log(sigma22 / sigma21) + (sigma21 + (mu1 - mu2) ** 2) / (2 * sigma22) - 0.5
+    kl_div = (
+        0.5 * torch.log(sigma22 / sigma21)
+        + (sigma21 + (mu1 - mu2) ** 2) / (2 * sigma22)
+        - 0.5
+    )
     return kl_div

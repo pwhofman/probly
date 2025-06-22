@@ -11,7 +11,6 @@ layer_count_traverser = nn.layer_count_traverser
 nn_traverser = nn.nn_traverser
 
 nn_compose = nn.compose
-nn_traverse = nn.traverse
 
 ## Torch
 

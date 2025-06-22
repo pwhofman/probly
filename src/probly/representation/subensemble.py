@@ -11,8 +11,9 @@ from torch.nn import functional as F
 from probly.representation.predictor import Predictor, RepresentationPredictor
 from probly.traverse import (
     singledispatch_traverser,
+    traverse,
 )
-from probly.traverse_nn import TORCH_CLONE, nn_traverse
+from probly.traverse_nn import TORCH_CLONE, nn_compose
 
 reset_traverser = singledispatch_traverser[object](name="reset_traverser")
 
@@ -25,7 +26,7 @@ def _(obj: nn.Module) -> nn.Module:
 
 
 def _reset_copy(module: nn.Module) -> nn.Module:
-    return nn_traverse(module, reset_traverser, init={TORCH_CLONE: True})
+    return traverse(module, nn_compose(reset_traverser), init={TORCH_CLONE: True})
 
 
 def convert(base: nn.Module | None, n_heads: int, head: nn.Module) -> nn.ModuleList:

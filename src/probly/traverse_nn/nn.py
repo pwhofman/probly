@@ -45,35 +45,3 @@ def compose(
         and layer counting in sequence.
     """
     return t.sequential(nn_traverser, traverser, layer_count_traverser, name=name)
-
-
-def traverse[T](
-    obj: T,
-    traverser: t.Traverser,
-    nn_traverser: t.Traverser = nn_traverser,
-    init: dict[t.Variable, Any] | None = None,
-) -> T:
-    """Traverse a neural network object using a combination of traversers.
-
-    This function applies a composed traverser that combines a user-provided traverser
-    with a neural network-specific traverser to walk through and potentially transform
-    a neural network object structure.
-
-    Args:
-        obj (T): The object to traverse, typically a neural network or related structure.
-        traverser (t.Traverser[T]): User-defined traverser function that specifies
-            how to process or transform the object during traversal.
-        nn_traverser (t.Traverser[T], optional): Neural network-specific traverser.
-            Defaults to the module-level nn_traverser.
-        init (dict[t.Variable, Any] | None, optional): Initial variable bindings
-            or state to use during traversal. Defaults to None.
-
-    Returns:
-        T: The traversed (and potentially transformed) object of the same type as input.
-
-    Example:
-        >>> model = SomeNeuralNetwork()
-        >>> def my_traverser(x): return x * 2
-        >>> result = traverse(model, my_traverser)
-    """
-    return t.traverse(obj, compose(traverser, nn_traverser), init=init)
