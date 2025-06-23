@@ -21,7 +21,7 @@ reset_traverser = singledispatch_traverser[object](name="reset_traverser")
 @reset_traverser.register
 def _(obj: nn.Module) -> nn.Module:
     if hasattr(obj, "reset_parameters"):
-        obj.reset_parameters()  # type: ignore[operator]
+        obj.reset_parameters()
     return obj
 
 
@@ -42,14 +42,7 @@ def convert(base: nn.Module | None, n_heads: int, head: nn.Module) -> nn.ModuleL
             param.requires_grad = False
 
     return nn.ModuleList(
-        [
-            (
-                nn.Sequential(base, _reset_copy(head))
-                if base is not None
-                else _reset_copy(head)
-            )
-            for _ in range(n_heads)
-        ],
+        [(nn.Sequential(base, _reset_copy(head)) if base is not None else _reset_copy(head)) for _ in range(n_heads)],
     )
 
 

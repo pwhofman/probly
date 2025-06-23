@@ -16,6 +16,7 @@ from typing import (
     NotRequired,
     Union,
     Unpack,
+    get_args,
     get_origin,
     overload,
 )
@@ -63,7 +64,6 @@ def sequential[T](
         state: State[T],
         traverse: TraverserCallback[T],
     ) -> TraverserResult[T]:
-
         for traverser in traversers:
             obj, state = traverser(obj, state, traverse)
         return obj, state
@@ -152,7 +152,6 @@ def _is_valid_dispatch_type(cls: Any) -> bool:  # noqa: ANN401
     """
     if isinstance(cls, type):
         return True
-    from typing import get_args
 
     return _is_union_type(cls) and all(isinstance(arg, type) for arg in get_args(cls))
 

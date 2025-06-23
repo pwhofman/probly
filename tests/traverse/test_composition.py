@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Union
 
 import pytest
 
@@ -113,8 +113,6 @@ def test_top_sequential_with_name() -> None:
 
 def test_is_union_type() -> None:
     """Test _is_union_type helper function."""
-    from typing import Union
-
     # Test Union types
     assert _is_union_type(Union[int, str]) is True  # noqa: UP007
     assert _is_union_type(int | str) is True  # Python 3.10+ union syntax
@@ -127,8 +125,6 @@ def test_is_union_type() -> None:
 
 def test_is_valid_dispatch_type() -> None:
     """Test _is_valid_dispatch_type helper function."""
-    from typing import Union
-
     # Test regular types
     assert _is_valid_dispatch_type(int) is True
     assert _is_valid_dispatch_type(str) is True

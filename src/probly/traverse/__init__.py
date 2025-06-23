@@ -8,9 +8,7 @@ Variable = core.Variable
 GlobalVariable = core.GlobalVariable
 StackVariable = core.StackVariable
 ComputedVariable = core.ComputedVariable
-computed = (
-    ComputedVariable  # Alias for convenience (intended to be used as a decorator)
-)
+computed = ComputedVariable  # Alias for convenience (intended to be used as a decorator)
 
 type State[T] = core.State[T]
 type TraverserResult[T] = core.TraverserResult[T]

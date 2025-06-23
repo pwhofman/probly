@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 import probly.traverse as t
 
 LAYER_COUNT = t.GlobalVariable[int](

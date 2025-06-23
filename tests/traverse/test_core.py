@@ -412,9 +412,7 @@ class TestTraversal:
         # Check the depth and visit counts
         assert state1[depth_var] == 1  # Root object is a dict and thus has a depth of 1
         assert state2[depth_var] == 0  # "a" is not a dict, so depth is 0
-        assert (
-            state1[visit_count_var] == 3
-        )  # Visits: 3 dicts in total, non-dict values do not increment count
+        assert state1[visit_count_var] == 3  # Visits: 3 dicts in total, non-dict values do not increment count
         assert state2[visit_count_var] == 0  # Strings are not counted in visits
 
 

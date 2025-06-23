@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Tests for the generic traverser module.
 
 This module tests the generic traverser functionality for standard Python
@@ -9,9 +8,7 @@ from __future__ import annotations
 
 from typing import Any
 
-import pytest
-
-from probly.traverse.core import State, TraverserResult
+from probly.traverse.core import GlobalVariable, State, TraverserResult
 from probly.traverse.generic import (
     CLONE,
     TRAVERSE_KEYS,
@@ -397,8 +394,6 @@ class TestIntegrationScenarios:
 
     def test_state_threading(self) -> None:
         """Test that state is properly threaded through traversal."""
-        from probly.traverse.core import GlobalVariable
-
         counter_var = GlobalVariable[int]("counter", default=0)
         test_list = [1, 2, 3]
         state: State = State()
@@ -417,7 +412,3 @@ class TestIntegrationScenarios:
         result, final_state = _list_traverser(test_list, state, counting_traverse)
         assert result == [0, 2, 6]  # [1*0, 2*1, 3*2]
         assert counter_var.get(final_state) == 3
-
-
-if __name__ == "__main__":
-    pytest.main([__file__])

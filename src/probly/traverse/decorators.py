@@ -74,27 +74,45 @@ class StatelessTraverserCallback[T](Protocol):
     ) -> T: ...
 
 
-type ObjTraverser[T] = Callable[Concatenate[T, ...], T]
-type ObjTraverserWithVarUpdates[T] = Callable[
-    Concatenate[T, ...],
-    tuple[T, dict[str, Any]],
-]
+type ObjTraverser[T] = Callable[[T], T] | Callable[Concatenate[T, ...], T]
+type ObjTraverserWithVarUpdates[T] = (
+    Callable[
+        [T],
+        tuple[T, dict[str, Any]],
+    ]
+    | Callable[
+        Concatenate[T, ...],
+        tuple[T, dict[str, Any]],
+    ]
+)
 
 
 type StateTraverser[T] = Callable[[State[T]], State[T]]
 type ObjStateTraverser[T] = Callable[
-    Concatenate[T, State[T], ...],
+    [T, State[T]],
     TraverserResult[T],
 ]
 
-type ObjTraverseTraverser[T] = Callable[
-    Concatenate[T, StatelessTraverserCallback[T], ...],
-    TraverserResult[T],
-]
-type ObjTraverseTraverserWithVarUpdates[T] = Callable[
-    Concatenate[T, StatelessTraverserCallback[T], ...],
-    tuple[T, dict[str, Any]],
-]
+type ObjTraverseTraverser[T] = (
+    Callable[
+        [T, StatelessTraverserCallback[T]],
+        TraverserResult[T],
+    ]
+    | Callable[
+        Concatenate[T, StatelessTraverserCallback[T], ...],
+        TraverserResult[T],
+    ]
+)
+type ObjTraverseTraverserWithVarUpdates[T] = (
+    Callable[
+        [T, StatelessTraverserCallback[T]],
+        tuple[T, dict[str, Any]],
+    ]
+    | Callable[
+        Concatenate[T, StatelessTraverserCallback[T], ...],
+        tuple[T, dict[str, Any]],
+    ]
+)
 
 type LooseTraverserWithoutVarUpdates[T] = (
     ObjTraverser[T]
@@ -104,12 +122,8 @@ type LooseTraverserWithoutVarUpdates[T] = (
     | Traverser[T]
     | Callable[[], Any]
 )
-type LooseTraverserWithVarUpdates[T] = (
-    ObjTraverserWithVarUpdates[T] | ObjTraverseTraverserWithVarUpdates[T]
-)
-type LooseTraverser[T] = (
-    LooseTraverserWithoutVarUpdates[T] | LooseTraverserWithVarUpdates[T]
-)
+type LooseTraverserWithVarUpdates[T] = ObjTraverserWithVarUpdates[T] | ObjTraverseTraverserWithVarUpdates[T]
+type LooseTraverser[T] = LooseTraverserWithoutVarUpdates[T] | LooseTraverserWithVarUpdates[T]
 
 type StatePredicate[T] = Callable[[State[T]], bool] | Variable[bool]
 
@@ -203,9 +217,7 @@ def _detect_traverser_type[T](  # noqa: C901, PLR0912, PLR0915
     arg: str
 
     for i, arg in args:
-        if (state_name is None and mode == "state") or (
-            arg == "state" and mode == "auto"
-        ):
+        if (state_name is None and mode == "state") or (arg == "state" and mode == "auto"):
             state_name = arg
             state_pos = i
             continue
@@ -213,9 +225,7 @@ def _detect_traverser_type[T](  # noqa: C901, PLR0912, PLR0915
             traverse_name = arg
             traverse_pos = i
             continue
-        if (obj_name is None and mode in {"auto", "obj"}) or (
-            arg == "obj" and mode == "auto"
-        ):
+        if (obj_name is None and mode in {"auto", "obj"}) or (arg == "obj" and mode == "auto"):
             obj_name = arg
             obj_pos = i
 
@@ -226,12 +236,7 @@ def _detect_traverser_type[T](  # noqa: C901, PLR0912, PLR0915
             stacklevel=2,
         )
 
-    if (
-        obj_pos is None
-        and state_pos is None
-        and traverse_pos is None
-        and len(args) >= 2
-    ):
+    if obj_pos is None and state_pos is None and traverse_pos is None and len(args) >= 2:
         arg0, arg1 = args[:2]
         if mode == "obj_state":
             obj_pos, obj_name = arg0
@@ -529,7 +534,7 @@ def traverser[T](  # noqa: C901, PLR0912, PLR0915
     skip_if: StatePredicate[T] | None = None,
     vars: dict[str, Variable] | None = None,  # noqa: A002
     update_vars: bool = False,
-    type: type[T] | None = object,  # type: ignore[assignment]  # noqa: A002, ARG001
+    type: type[T] = object,  # type: ignore[assignment]  # noqa: A002, ARG001
 ) -> Traverser[T] | Callable[[LooseTraverser[T]], Traverser[T]]:
     """Decorator to convert functions into proper traverser functions.
 

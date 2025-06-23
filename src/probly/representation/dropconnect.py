@@ -20,10 +20,11 @@ def _(obj: nn.Linear, p: float) -> DropConnectLinear:
     return DropConnectLinear(obj, p)
 
 
-@singledispatch_traverser
+@singledispatch_traverser[object]
 def eval_traverser(obj: DropConnectLinear) -> DropConnectLinear:
     """Ensure that DropConnect layers are active during evaluation."""
-    return obj.train()
+    obj.train()
+    return obj
 
 
 class DropConnect(Drop):

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+from typing import cast
 
 import torch
 from torch import nn
@@ -48,7 +49,7 @@ class BayesLinear(nn.Module):
             posterior_std: float, initial standard deviation of the posterior
             prior_mean: float, mean of the prior
             prior_std: float, standard deviation of the prior
-            init_layer: nn.Module, layer to initialize the weights from
+            init_layer: nn.Module | None, layer to initialize the weights from
         """
         super().__init__()
         self.in_features = in_features
@@ -56,24 +57,29 @@ class BayesLinear(nn.Module):
         self.bias = bias
 
         # transform standard deviation for the re-parametrization trick
-        rho = torch.log(torch.exp(torch.tensor(posterior_std)) - 1)
+        rho = cast("float", torch.log(torch.exp(torch.tensor(posterior_std)) - 1))
 
         # posterior weights
         if init_layer is None:
             self.weight_mu = nn.Parameter(torch.empty((out_features, in_features)))
         else:
-            self.weight_mu = nn.Parameter(init_layer.weight.data)
+            self.weight_mu = nn.Parameter(cast("torch.Tensor", init_layer.weight.data))
         self.weight_rho = nn.Parameter(torch.full((out_features, in_features), rho))
 
         # prior weights
         if init_layer is None:
             self.register_buffer(
-                "weight_prior_mu", torch.full((out_features, in_features), prior_mean)
+                "weight_prior_mu",
+                torch.full((out_features, in_features), prior_mean),
             )
         else:
-            self.register_buffer("weight_prior_mu", init_layer.weight.data)
+            self.register_buffer(
+                "weight_prior_mu",
+                cast("torch.Tensor", init_layer.weight.data),
+            )
         self.register_buffer(
-            "weight_prior_sigma", torch.full((out_features, in_features), prior_std)
+            "weight_prior_sigma",
+            torch.full((out_features, in_features), prior_std),
         )
 
         if self.bias:
@@ -81,18 +87,25 @@ class BayesLinear(nn.Module):
             if init_layer is None:
                 self.bias_mu = nn.Parameter(torch.empty((out_features,)))
             else:
-                self.bias_mu = nn.Parameter(init_layer.bias.data)
-            self.bias_rho = nn.Parameter(torch.full((out_features,), rho))
+                self.bias_mu = nn.Parameter(cast("torch.Tensor", init_layer.bias.data))
+            self.bias_rho = nn.Parameter(
+                torch.full((out_features,), rho),
+            )
 
             # prior bias
             if init_layer is None:
                 self.register_buffer(
-                    "bias_prior_mu", torch.full((out_features,), prior_mean)
+                    "bias_prior_mu",
+                    torch.full((out_features,), prior_mean),
                 )
             else:
-                self.register_buffer("bias_prior_mu", init_layer.bias.data)
+                self.register_buffer(
+                    "bias_prior_mu",
+                    cast("torch.Tensor", init_layer.bias.data),
+                )
             self.register_buffer(
-                "bias_prior_sigma", torch.full((out_features,), prior_std)
+                "bias_prior_sigma",
+                torch.full((out_features,), prior_std),
             )
 
         if init_layer is None:
@@ -125,9 +138,10 @@ class BayesLinear(nn.Module):
         """
         init.kaiming_uniform_(self.weight_mu, a=math.sqrt(5))
         if self.bias is not False:
-            fan_in, _ = init._calculate_fan_in_and_fan_out(
-                self.weight_mu
-            )  # noqa: SLF001
+            fan_in: torch.Tensor
+            fan_in, _ = init._calculate_fan_in_and_fan_out(  # noqa: SLF001
+                self.weight_mu,
+            )
             bound = 1 / math.sqrt(fan_in) if fan_in > 0 else 0
             init.uniform_(self.bias_mu, -bound, bound)
 
@@ -138,8 +152,8 @@ class BayesLinear(nn.Module):
             _kl_divergence_gaussian(
                 self.weight_mu,
                 torch.log1p(torch.exp(self.weight_rho)) ** 2,
-                self.weight_prior_mu,
-                self.weight_prior_sigma**2,
+                cast("torch.Tensor", self.weight_prior_mu),
+                cast("torch.Tensor", self.weight_prior_sigma) ** 2,
             ),
         )
         if self.bias:
@@ -147,8 +161,8 @@ class BayesLinear(nn.Module):
                 _kl_divergence_gaussian(
                     self.bias_mu,
                     torch.log1p(torch.exp(self.bias_rho)) ** 2,
-                    self.bias_prior_mu,
-                    self.bias_prior_sigma**2,
+                    cast("torch.Tensor", self.bias_prior_mu),
+                    cast("torch.Tensor", self.bias_prior_sigma) ** 2,
                 ),
             )
         return kl
@@ -220,17 +234,17 @@ class BayesConv2d(nn.Module):
         self.bias = bias
 
         # transform standard deviation for the re-parametrization trick
-        rho = torch.log(torch.exp(torch.tensor(posterior_std)) - 1)
+        rho = cast("float", torch.log(torch.exp(torch.tensor(posterior_std)) - 1))
 
         # posterior weights
         if init_layer is None:
             self.weight_mu = nn.Parameter(
-                torch.empty((out_channels, in_channels // groups, *kernel_size))
+                torch.empty((out_channels, in_channels // groups, *kernel_size)),
             )
         else:
-            self.weight_mu = nn.Parameter(init_layer.weight.data)
+            self.weight_mu = nn.Parameter(cast("torch.Tensor", init_layer.weight.data))
         self.weight_rho = nn.Parameter(
-            torch.full((out_channels, in_channels // groups, *kernel_size), rho)
+            torch.full((out_channels, in_channels // groups, *kernel_size), rho),
         )
 
         # prior weights
@@ -238,11 +252,15 @@ class BayesConv2d(nn.Module):
             self.register_buffer(
                 "weight_prior_mu",
                 torch.full(
-                    (out_channels, in_channels // groups, *kernel_size), prior_mean
+                    (out_channels, in_channels // groups, *kernel_size),
+                    prior_mean,
                 ),
             )
         else:
-            self.register_buffer("weight_prior_mu", init_layer.weight.data)
+            self.register_buffer(
+                "weight_prior_mu",
+                cast("torch.Tensor", init_layer.weight.data),
+            )
 
         self.register_buffer(
             "weight_prior_sigma",
@@ -254,18 +272,23 @@ class BayesConv2d(nn.Module):
             if init_layer is None:
                 self.bias_mu = nn.Parameter(torch.empty((out_channels,)))
             else:
-                self.bias_mu = nn.Parameter(init_layer.bias.data)
+                self.bias_mu = nn.Parameter(cast("torch.Tensor", init_layer.bias.data))
             self.bias_rho = nn.Parameter(torch.full((out_channels,), rho))
 
             # prior bias
             if init_layer is None:
                 self.register_buffer(
-                    "bias_prior_mu", torch.full((out_channels,), prior_mean)
+                    "bias_prior_mu",
+                    torch.full((out_channels,), prior_mean),
                 )
             else:
-                self.register_buffer("bias_prior_mu", init_layer.bias.data)
+                self.register_buffer(
+                    "bias_prior_mu",
+                    cast("torch.Tensor", init_layer.bias.data),
+                )
             self.register_buffer(
-                "bias_prior_sigma", torch.full((out_channels,), prior_std)
+                "bias_prior_sigma",
+                torch.full((out_channels,), prior_std),
             )
 
         if init_layer is None:
@@ -285,7 +308,13 @@ class BayesConv2d(nn.Module):
             eps_bias = torch.randn_like(self.bias_mu)
             bias = self.bias_mu + torch.log1p(torch.exp(self.bias_rho)) * eps_bias
             x = F.conv2d(
-                x, weight, bias, self.stride, self.padding, self.dilation, self.groups
+                x,
+                weight,
+                bias,
+                self.stride,
+                self.padding,
+                self.dilation,
+                self.groups,
             )
         else:
             x = F.conv2d(
@@ -307,9 +336,9 @@ class BayesConv2d(nn.Module):
         """
         init.kaiming_uniform_(self.weight_mu, a=math.sqrt(5))
         if self.bias is not False:
-            fan_in, _ = init._calculate_fan_in_and_fan_out(
-                self.weight_mu
-            )  # noqa: SLF001
+            fan_in, _ = init._calculate_fan_in_and_fan_out(  # noqa: SLF001
+                self.weight_mu,
+            )
             if fan_in != 0:
                 bound = 1 / math.sqrt(fan_in)
                 init.uniform_(self.bias_mu, -bound, bound)
@@ -321,8 +350,8 @@ class BayesConv2d(nn.Module):
             _kl_divergence_gaussian(
                 self.weight_mu,
                 torch.log1p(torch.exp(self.weight_rho)) ** 2,
-                self.weight_prior_mu,
-                self.weight_prior_sigma**2,
+                cast("torch.Tensor", self.weight_prior_mu),
+                cast("torch.Tensor", self.weight_prior_sigma) ** 2,
             ),
         )
         if self.bias:
@@ -330,8 +359,8 @@ class BayesConv2d(nn.Module):
                 _kl_divergence_gaussian(
                     self.bias_mu,
                     torch.log1p(torch.exp(self.bias_rho)) ** 2,
-                    self.bias_prior_mu,
-                    self.bias_prior_sigma**2,
+                    cast("torch.Tensor", self.bias_prior_mu),
+                    cast("torch.Tensor", self.bias_prior_sigma) ** 2,
                 ),
             )
         return kl
@@ -354,9 +383,5 @@ def _kl_divergence_gaussian(
     Returns:
         kl_div: float or numpy.ndarray shape (n_instances,), KL-divergence between the two Gaussian distributions
     """
-    kl_div = (
-        0.5 * torch.log(sigma22 / sigma21)
-        + (sigma21 + (mu1 - mu2) ** 2) / (2 * sigma22)
-        - 0.5
-    )
+    kl_div: torch.Tensor = 0.5 * torch.log(sigma22 / sigma21) + (sigma21 + (mu1 - mu2) ** 2) / (2 * sigma22) - 0.5
     return kl_div

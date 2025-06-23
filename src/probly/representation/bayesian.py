@@ -74,10 +74,10 @@ def _(
     return BayesConv2d(
         obj.in_channels,
         obj.out_channels,
-        obj.kernel_size,  # type: ignore[arg-type]
-        obj.stride,  # type: ignore[arg-type]
-        obj.padding,  # type: ignore[arg-type]
-        obj.dilation,  # type: ignore[arg-type]
+        obj.kernel_size,
+        obj.stride,
+        obj.padding,
+        obj.dilation,
         obj.groups,
         obj.bias is not None,
         posterior_std,

@@ -193,10 +193,10 @@ class TestDetectTraverserType:
             mode, obj_name, state_name, traverse_name = _detect_traverser_type(
                 full_traverser,
             )
-            assert mode == "full"
-            assert obj_name == "obj"
-            assert state_name == "state"
-            assert traverse_name == "traverse"
+        assert mode == "full"
+        assert obj_name == "obj"
+        assert state_name == "state"
+        assert traverse_name == "traverse"
 
     def test_detect_full_renamed_traverser(self) -> None:
         """Test detection of full traverser."""
@@ -802,8 +802,8 @@ class TestComplexScenarios:
         fallback_var = GlobalVariable[int]("fallback", default=100)
         composite_var = GlobalVariable[int]("composite", default=fallback_var)
 
-        @traverser(mode="obj", vars={"value": composite_var})
-        def fallback_traverser(obj: int, value: int):  # type: ignore[no-untyped-def]
+        @traverser(mode="obj", vars={"value": composite_var}, type=int)
+        def fallback_traverser(obj: int, value: int) -> int:
             return obj * value
 
         # Test with only fallback set
@@ -814,7 +814,3 @@ class TestComplexScenarios:
         result, new_state = fallback_traverser(obj, state, dummy_traverse)
 
         assert result == 150  # 3 * 50 (using fallback)
-
-
-if __name__ == "__main__":
-    pytest.main([__file__])
