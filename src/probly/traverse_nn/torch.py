@@ -109,7 +109,7 @@ def _sequential_traverser(
             for sub_name, sub_module in new_module.named_children():
                 seq.append((f"{name}_{sub_name}", sub_module))
         else:
-            seq.append((name, module))
+            seq.append((name, new_module))
 
     new_obj = Sequential(OrderedDict(seq))
 
