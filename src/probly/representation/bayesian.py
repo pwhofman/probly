@@ -7,7 +7,8 @@ from torch import nn
 
 from probly.representation.layers import BayesConv2d, BayesLinear
 from probly.representation.predictor_torch import TorchSamplingRepresentationPredictor
-from probly.traverse import (
+from probly.traverse_nn import nn_compose
+from pytraverse import (
     CLONE,
     GlobalVariable,
     State,
@@ -16,7 +17,6 @@ from probly.traverse import (
     traverse,
     traverse_with_state,
 )
-from probly.traverse_nn import nn_compose
 
 USE_BASE_WEIGHTS = GlobalVariable[bool]("USE_BASE_WEIGHTS", default=False)
 POSTERIOR_STD = GlobalVariable[float]("POSTERIOR_STD", default=0.05)

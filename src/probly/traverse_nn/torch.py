@@ -7,9 +7,9 @@ import copy
 
 from torch.nn import Module, Sequential
 
-import probly.traverse as t
-from probly.traverse import generic
-from probly.traverse.decorators import traverser
+import pytraverse as t
+from pytraverse import generic
+from pytraverse.decorators import traverser
 
 from . import nn as tnn
 

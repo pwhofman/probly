@@ -9,8 +9,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from probly.traverse.composition import SingledispatchTraverser
-from probly.traverse.core import (
+from pytraverse.composition import SingledispatchTraverser
+from pytraverse.core import (
     StackVariable,
     State,
     TraverserCallback,

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import probly.traverse as t
+import pytraverse as t
 
 LAYER_COUNT = t.GlobalVariable[int](
     "LAYER_COUNT",

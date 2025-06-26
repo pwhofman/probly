@@ -45,7 +45,7 @@ classifiers = [
 
 [tool.setuptools.packages.find]
 where = ["./src"]
-include = ["probly*"]
+include = ["probly*", "pytraverse*"]
 
 [tool.setuptools.dynamic]
 version = {attr = "probly.__version__"}
@@ -176,7 +176,7 @@ convention = "google"
 
 # Use isort-compatible settings
 [tool.ruff.lint.isort]
-known-first-party = ["probly"]
+known-first-party = ["probly", "pytraverse"]
 force-sort-within-sections = true
 combine-as-imports = true
 force-single-line = false

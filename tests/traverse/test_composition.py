@@ -6,15 +6,15 @@ from typing import Any, Union
 
 import pytest
 
-from probly.traverse import Traverser
-from probly.traverse.composition import (
+from pytraverse import Traverser
+from pytraverse.composition import (
     SingledispatchTraverser,
     _is_union_type,
     _is_valid_dispatch_type,
     sequential,
     top_sequential,
 )
-from probly.traverse.core import State, TraverserCallback, TraverserResult
+from pytraverse.core import State, TraverserCallback, TraverserResult
 
 
 def dummy_traverser(

@@ -11,7 +11,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from probly.traverse.core import (
+from pytraverse.core import (
     GlobalVariable,
     StackVariable,
     State,
@@ -20,7 +20,7 @@ from probly.traverse.core import (
     Variable,
     identity_traverser,
 )
-from probly.traverse.decorators import (
+from pytraverse.decorators import (
     SignatureDetectionWarning,
     TraverserDecoratorKwargs,
     _detect_traverser_type,

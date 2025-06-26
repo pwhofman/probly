@@ -8,8 +8,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from probly.traverse.core import GlobalVariable, State, TraverserResult
-from probly.traverse.generic import (
+from pytraverse.core import GlobalVariable, State, TraverserResult
+from pytraverse.generic import (
     CLONE,
     TRAVERSE_KEYS,
     _dict_traverser,

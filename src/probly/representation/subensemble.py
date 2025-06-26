@@ -9,11 +9,11 @@ from torch import nn
 from torch.nn import functional as F
 
 from probly.representation.predictor import Predictor, RepresentationPredictor
-from probly.traverse import (
+from probly.traverse_nn import TORCH_CLONE, nn_compose
+from pytraverse import (
     singledispatch_traverser,
     traverse,
 )
-from probly.traverse_nn import TORCH_CLONE, nn_compose
 
 reset_traverser = singledispatch_traverser[object](name="reset_traverser")
 

@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from probly.traverse import TraverserCallback
-from probly.traverse.core import (
+from pytraverse import TraverserCallback
+from pytraverse.core import (
     ComputedVariable,
     GlobalVariable,
     OperationNotSupportedError,

@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from torch import nn
 
-from probly.traverse import (
+from probly.traverse_nn import is_first_layer
+from pytraverse import (
     singledispatch_traverser,
 )
-from probly.traverse_nn import is_first_layer
 
 from .drop import Drop, P
 

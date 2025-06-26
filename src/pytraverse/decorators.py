@@ -24,7 +24,7 @@ from typing import (
 )
 import warnings
 
-from probly.traverse.core import (
+from pytraverse.core import (
     State,
     Traverser,
     TraverserCallback,

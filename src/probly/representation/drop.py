@@ -5,8 +5,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from probly.representation.predictor_torch import TorchSamplingRepresentationPredictor
-from probly.traverse import CLONE, GlobalVariable, Traverser, traverse
 from probly.traverse_nn import nn_compose
+from pytraverse import CLONE, GlobalVariable, Traverser, traverse
 
 if TYPE_CHECKING:
     from torch import nn
