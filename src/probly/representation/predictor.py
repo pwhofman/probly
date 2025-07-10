@@ -14,29 +14,19 @@ class Predictor[In, KwIn, Out](Protocol):
         ...
 
 
-class RepresentationPredictor[In, KwIn, PointwiseOut, RepresentationOut](
-    Protocol,
-):
+class RepresentationPredictor[In, KwIn, PointwiseOut, RepresentationOut](Protocol):
     """Protocol for representation predictors."""
 
     def predict_pointwise(self, *args: In, **kwargs: Unpack[KwIn]) -> PointwiseOut:
         """Predict pointwise output from input data."""
         ...
 
-    def predict_representation(
-        self,
-        *args: In,
-        **kwargs: Unpack[KwIn],
-    ) -> RepresentationOut:
+    def predict_representation(self, *args: In, **kwargs: Unpack[KwIn]) -> RepresentationOut:
         """Predict representation output from input data."""
         ...
 
 
-class SamplingRepresentationCreator[
-    Out,
-    PointwiseOut,
-    RepresentationOut,
-](Protocol):
+class SamplingRepresentationCreator[Out, PointwiseOut, RepresentationOut](Protocol):
     """Protocol for representation predictors based on finite samples."""
 
     def create_representation(self, y: list[Out]) -> RepresentationOut:
@@ -54,10 +44,7 @@ class ClassifierKwargs(TypedDict):
     logits: bool
 
 
-class Classifier[In, KwIn, Out](
-    Predictor[In, KwIn | ClassifierKwargs, Out],
-    Protocol,
-):
+class Classifier[In, KwIn, Out](Predictor[In, KwIn | ClassifierKwargs, Out], Protocol):
     """Generic protocol for classifiers."""
 
     def __call__(
@@ -96,20 +83,12 @@ class SamplingRepresentationPredictor[
     """Abstract class for predictors that can create representations from finite samples."""
 
     @abstractmethod
-    def create_representation(  # noqa: D102
-        self,
-        y: list[Out],
-    ) -> RepresentationOut: ...
+    def _create_representation(self, y: list[Out]) -> RepresentationOut: ...
 
     @abstractmethod
-    def create_pointwise(self, y: list[Out]) -> PointwiseOut: ...  # noqa: D102
+    def _create_pointwise(self, y: list[Out]) -> PointwiseOut: ...
 
-    def predict_pointwise(
-        self,
-        *args: In,
-        n_samples: int = 0,
-        **kwargs: Unpack[KwIn],
-    ) -> PointwiseOut:
+    def predict_pointwise(self, *args: In, n_samples: int = 0, **kwargs: Unpack[KwIn]) -> PointwiseOut:
         """Produces a point-wise prediction.
 
         Args:

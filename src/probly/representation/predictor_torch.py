@@ -30,12 +30,7 @@ class TorchSamplingRepresentationPredictor[In, KwIn](
         super().__init__()
         self.model = self._convert(base)
 
-    def forward(
-        self,
-        *args: In,
-        logits: bool = False,
-        **kwargs: Unpack[KwIn],
-    ) -> torch.Tensor:
+    def forward(self, *args: In, logits: bool = False, **kwargs: Unpack[KwIn]) -> torch.Tensor:
         """Forward pass of the model."""
         res: torch.Tensor = self.model(*args, **kwargs)
 
@@ -44,11 +39,11 @@ class TorchSamplingRepresentationPredictor[In, KwIn](
 
         return res
 
-    def create_representation(self, y: list[torch.Tensor]) -> torch.Tensor:
+    def _create_representation(self, y: list[torch.Tensor]) -> torch.Tensor:
         """Create a representation from a collection of outputs."""
         return torch.stack(y, dim=1)
 
-    def create_pointwise(self, y: list[torch.Tensor]) -> torch.Tensor:
+    def _create_pointwise(self, y: list[torch.Tensor]) -> torch.Tensor:
         """Create a pointwise output from a collection of outputs."""
         return torch.stack(y, dim=1).mean(dim=1)
 
