@@ -55,9 +55,9 @@ class Evidential[In, KwIn](
         Returns:
             Model output.
 
-
         """
-        return self.model(*args, **kwargs)
+        alphas = self.model(*args, **kwargs) + 1.0
+        return alphas / alphas.sum(dim=1, keepdim=True)
 
     def predict_representation(self, *args: In, **kwargs: Unpack[KwIn]) -> torch.Tensor:
         """Forward pass of the model for uncertainty representation.
