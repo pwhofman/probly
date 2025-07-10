@@ -5,13 +5,11 @@ from __future__ import annotations
 from torch import nn  # noqa: TC002
 
 from probly.representation.layers import DropConnectLinear
-from probly.traverse_nn import is_first_layer
-from pytraverse import (
-    singledispatch_traverser,
-)
+from probly.representation.predictor_torch import TorchSamplingRepresentationPredictor
+from probly.traverse_nn import is_first_layer, nn_compose
+from pytraverse import CLONE, GlobalVariable, singledispatch_traverser, traverse
 
-from .drop import Drop, P
-
+P = GlobalVariable[float]("P", "The probability of dropconnect.")
 dropconnect_traverser = singledispatch_traverser[object](name="dropconnect_traverser")
 
 
@@ -27,7 +25,7 @@ def eval_traverser(obj: DropConnectLinear) -> DropConnectLinear:
     return obj
 
 
-class DropConnect(Drop):
+class DropConnect[In, KwIn](TorchSamplingRepresentationPredictor[In, KwIn]):
     """Implementation of a DropConnect model to be used for uncertainty quantification.
 
     Implementation is based on https://proceedings.mlr.press/v28/wan13.pdf.
@@ -40,3 +38,40 @@ class DropConnect(Drop):
 
     _convert_traverser = dropconnect_traverser
     _eval_traverser = eval_traverser
+
+    def __init__(
+        self,
+        base: nn.Module,
+        p: float = 0.25,
+    ) -> None:
+        """Initialize an instance of the DropConnect class.
+
+        Args:
+            base: torch.nn.Module, The base model to be used for dropconnect.
+            p: float, The probability of dropping out a neuron. Default is 0.25.
+        """
+        self.p = p
+        super().__init__(base)
+
+    def _convert(self, base: nn.Module) -> nn.Module:
+        """Convert the base model to a dropconnect model.
+
+        Convert the base model by looping through all the layers
+        and adding a dropconnect layer before each linear layer.
+
+        Args:
+            base: torch.nn.Module, The base model to be used for dropconnect.
+        """
+        return traverse(
+            base,
+            nn_compose(self._convert_traverser),
+            init={P: self.p, CLONE: True},
+        )
+
+    def eval(self) -> DropConnect:
+        """Sets the model to evaluation mode but keeps the dropconnect layers active."""
+        super().eval()
+
+        traverse(self.model, nn_compose(self._eval_traverser), init={CLONE: False})
+
+        return self
