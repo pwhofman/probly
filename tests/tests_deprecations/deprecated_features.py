@@ -26,7 +26,8 @@ def example_always_warn(requests: pytest.FixtureRequest) -> None:
     `DeprecatedFeature` instance in the `DEPRECATED_FEATURES` list.
 
     Note:
-        Do not delete this feature, as it is a good example of how to handle deprecations.
+        Do not delete this "feature", as it is a good example of how to handle deprecations and
+        write your own deprecation tests.
 
     """
     raise_deprecation_warning(
