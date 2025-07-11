@@ -8,7 +8,27 @@ from torch import nn
 from probly.representation.layers import NormalInverseGammaLinear
 from probly.representation.predictor import RepresentationPredictor
 from probly.traverse_nn import nn_compose
-from pytraverse import CLONE, GlobalVariable, State, TraverserResult, singledispatch_traverser, traverse_with_state
+from pytraverse import TRAVERSE_REVERSED, GlobalVariable, State, TraverserResult, singledispatch_traverser, traverse
+
+REPLACED_LAST_LINEAR = GlobalVariable[bool](
+    "REPLACED_LAST_LINEAR",
+    "Whether the last linear layer has been replaced with a NormalInverseGammaLinear layer.",
+    default=False,
+)
+
+
+evidential_traverser = singledispatch_traverser[object](name="evidential_traverser")
+
+
+@evidential_traverser.register(skip_if=lambda s: s[REPLACED_LAST_LINEAR])
+def _(layer: nn.Linear, state: State) -> TraverserResult:
+    state[REPLACED_LAST_LINEAR] = True
+    return NormalInverseGammaLinear(
+        layer.in_features,
+        layer.out_features,
+        device=layer.weight.device,
+        bias=layer.bias is not None,
+    ), state
 
 
 class Evidential[In, KwIn](nn.Module, RepresentationPredictor[In, KwIn, torch.Tensor, dict[str, torch.Tensor]]):
@@ -29,7 +49,7 @@ class Evidential[In, KwIn](nn.Module, RepresentationPredictor[In, KwIn, torch.Te
             base: torch.nn.Module, The base model to be used.
         """
         super().__init__()
-        self._convert(base)
+        self.model = self._convert(base)
 
     def forward(self, *args: In, **kwargs: KwIn) -> torch.Tensor:
         """Forward pass of the model.
@@ -68,7 +88,7 @@ class Evidential[In, KwIn](nn.Module, RepresentationPredictor[In, KwIn, torch.Te
         """
         return dict(self.model(*args, **kwargs))
 
-    def _convert(self, base: nn.Module) -> None:
+    def _convert(self, base: nn.Module) -> nn.Module:
         """Convert a model into an evidential deep learning regression model.
 
         Replace the last (linear) layer by a layer parameterizing a normal inverse gamma distribution.
@@ -77,26 +97,7 @@ class Evidential[In, KwIn](nn.Module, RepresentationPredictor[In, KwIn, torch.Te
             base: The base model to be used.
 
         """
-        last_linear_name = GlobalVariable[nn.Linear]("last_linear_name")
-
-        @singledispatch_traverser[object]
-        def evidential_traverser(obj: nn.Linear, state: State) -> TraverserResult:
-            state[last_linear_name] = state.meta
-            return obj, state
-
-        self.model, state = traverse_with_state(base, nn_compose(evidential_traverser), init={CLONE: True})
-        name = state[last_linear_name]
-        layer = getattr(self.model, name)
-        setattr(
-            self.model,
-            name,
-            NormalInverseGammaLinear(
-                layer.in_features,
-                layer.out_features,
-                device=layer.weight.device,
-                bias=layer.bias is not None,
-            ),
-        )
+        return traverse(base, nn_compose(evidential_traverser), init={TRAVERSE_REVERSED: True})
 
     def sample(self, *args: In, n_samples: int, **kwargs: KwIn) -> torch.Tensor:
         """Sample from the predicted distribution for a given input x.

@@ -35,3 +35,4 @@ singledispatch_traverser = composition.SingledispatchTraverser
 generic_traverser = generic.generic_traverser
 CLONE = generic.CLONE
 TRAVERSE_KEYS = generic.TRAVERSE_KEYS
+TRAVERSE_REVERSED = generic.TRAVERSE_REVERSED
