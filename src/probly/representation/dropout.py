@@ -40,9 +40,6 @@ class Dropout[In, KwIn](TorchSamplingRepresentationPredictor[In, KwIn]):
 
     """
 
-    _convert_traverser = dropout_traverser
-    _eval_traverser = _eval_dropout_traverser
-
     def __init__(
         self,
         base: nn.Module,
@@ -68,7 +65,7 @@ class Dropout[In, KwIn](TorchSamplingRepresentationPredictor[In, KwIn]):
         """
         return traverse(
             base,
-            nn_compose(self._convert_traverser),
+            nn_compose(dropout_traverser),
             init={P: self.p, CLONE: True},
         )
 
@@ -76,7 +73,7 @@ class Dropout[In, KwIn](TorchSamplingRepresentationPredictor[In, KwIn]):
         """Sets the model to evaluation mode but keeps the dropout layers active."""
         super().eval()
 
-        traverse(self.model, nn_compose(self._eval_traverser), init={CLONE: False})
+        traverse(self.model, nn_compose(_eval_dropout_traverser), init={CLONE: False})
 
         return self
 
