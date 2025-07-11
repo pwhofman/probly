@@ -30,11 +30,10 @@ class NormalInverseGammaLinear(nn.Module):
         """Initialize an instance of the NormalInverseGammaLinear layer.
 
         Args:
-            in_features: int, number of input features.
-            out_features: int, number of output features.
-            bias: bool, whether to include bias in the layer.
-            device: torch.device, device to initialize the parameters on.
-
+            in_features: Number of input features.
+            out_features: Number of output features.
+            device: Device to initialize the parameters on.
+            bias: Whether to include bias in the layer. Defaults to True
         """
         super().__init__()
         self.gamma = nn.Parameter(torch.empty((out_features, in_features), device=device))
