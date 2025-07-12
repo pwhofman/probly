@@ -14,7 +14,7 @@
 </div>
 
 ## 🛠️ Install
-`probly` is intended to work with **Python 3.10 and above**. Installation can be done via `pip` and
+`probly` is intended to work with **Python 3.12 and above**. Installation can be done via `pip` and
 or `uv`:
 
 ```sh

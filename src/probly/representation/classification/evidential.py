@@ -1,20 +1,25 @@
-"""Evidental deep learning model class implementation."""
+"""Evidential deep learning model class implementation."""
 
 from __future__ import annotations
 
 import copy
+from typing import Unpack
 
 import torch
 from torch import nn
 
+from probly.representation.predictor import RepresentationPredictor
 
-class Evidential(nn.Module):
+
+class Evidential[In, KwIn](
+    nn.Module,
+    RepresentationPredictor[In, KwIn, torch.Tensor, torch.Tensor],
+):
     """Implementation of an evidential deep learning model to be used for uncertainty quantification.
 
     Attributes:
         model: torch.nn.Module, the model with an activation function suitable
         for evidential classification.
-
     """
 
     def __init__(self, base: nn.Module, activation: nn.Module = nn.Softplus()) -> None:  # noqa: B008
@@ -27,38 +32,46 @@ class Evidential(nn.Module):
         super().__init__()
         self._convert(base, activation)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, *args: In, **kwargs: Unpack[KwIn]) -> torch.Tensor:
         """Forward pass of the model.
 
         Args:
-            x: torch.Tensor, input data
+            *args: Input data.
+            **kwargs: Additional keyword arguments.
+
         Returns:
-            torch.Tensor, model output
+            Model output.
 
         """
-        return self.model(x)
+        return self.model(*args, **kwargs)
 
-    def predict_pointwise(self, x: torch.Tensor) -> torch.Tensor:
+    def predict_pointwise(self, *args: In, **kwargs: Unpack[KwIn]) -> torch.Tensor:
         """Forward pass of the model for point-wise prediction.
 
         Args:
-            x: torch.Tensor, input data
+            *args: Input data.
+            **kwargs: Additional keyword arguments.
+
         Returns:
-            torch.Tensor, model output
+            Model output.
 
         """
-        return self.model(x)
+        alphas = self.model(*args, **kwargs) + 1.0
+        return alphas / alphas.sum(dim=1, keepdim=True)
 
-    def predict_representation(self, x: torch.Tensor) -> torch.Tensor:
+    def predict_representation(self, *args: In, **kwargs: Unpack[KwIn]) -> torch.Tensor:
         """Forward pass of the model for uncertainty representation.
 
         Args:
-            x: torch.Tensor, input data
+            *args: Input data.
+            **kwargs: Additional keyword arguments.
+
         Returns:
-            torch.Tensor, model output
+            Model output.
+
 
         """
-        return self.model(x)
+        return self.model(*args, **kwargs)
 
     def _convert(self, base: nn.Module, activation: nn.Module) -> None:
         """Convert a model into an evidential deep learning model.
@@ -70,15 +83,17 @@ class Evidential(nn.Module):
         """
         self.model = nn.Sequential(copy.deepcopy(base), activation)
 
-    def sample(self, x: torch.Tensor, n_samples: int) -> torch.Tensor:
+    def sample(self, *args: In, n_samples: int, **kwargs: Unpack[KwIn]) -> torch.Tensor:
         """Sample from the predicted distribution for a given input x.
 
         Args:
-            x: torch.Tensor, input data
-            n_samples: int, number of samples
+            *args: Input data.
+            n_samples: Number of samples.
+            **kwargs: Additional keyword arguments.
+
         Returns:
-            torch.Tensor, samples
+            Samples from the Dirichlet distribution.
 
         """
-        dirichlet = torch.distributions.Dirichlet(self.model(x) + 1.0)
+        dirichlet = torch.distributions.Dirichlet(self.model(*args, **kwargs) + 1.0)
         return torch.stack([dirichlet.sample() for _ in range(n_samples)]).swapaxes(0, 1)

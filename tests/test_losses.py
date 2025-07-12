@@ -28,7 +28,9 @@ def sample_classification_data() -> tuple[torch.Tensor, torch.Tensor]:
 
 
 @pytest.fixture
-def sample_outputs(conv_linear_model: torch.nn.Module) -> tuple[torch.Tensor, torch.Tensor]:
+def sample_outputs(
+    conv_linear_model: torch.nn.Module,
+) -> tuple[torch.Tensor, torch.Tensor]:
     outputs = conv_linear_model(torch.randn(2, 3, 5, 5))
     targets = torch.randint(0, 2, (2,))
     return outputs, targets
@@ -38,7 +40,7 @@ def sample_outputs(conv_linear_model: torch.nn.Module) -> tuple[torch.Tensor, to
 def evidential_classification_model(
     conv_linear_model: torch.nn.Module,
 ) -> classification.Evidential:
-    model = classification.Evidential(conv_linear_model)
+    model: classification.Evidential = classification.Evidential(conv_linear_model)
     return model
 
 
@@ -94,10 +96,13 @@ def test_evidential_kl_divergence(
     validate_loss(loss)
 
 
-def test_evidential_nig_nll_loss(regression_model_1d: torch.nn.Module, regression_model_2d: torch.nn.Module) -> None:
+def test_evidential_nig_nll_loss(
+    regression_model_1d: torch.nn.Module,
+    regression_model_2d: torch.nn.Module,
+) -> None:
     inputs = torch.randn(2, 2)
     targets = torch.randn(2, 1)
-    model = regression.Evidential(regression_model_1d)
+    model: regression.Evidential = regression.Evidential(regression_model_1d)
     outputs = model(inputs)
     criterion = EvidentialNIGNLLLoss()
     loss = criterion(outputs, targets)
@@ -118,7 +123,7 @@ def test_evidential_regression_regularization(
 ) -> None:
     inputs = torch.randn(2, 2)
     targets = torch.randn(2, 1)
-    model = regression.Evidential(regression_model_1d)
+    model: regression.Evidential = regression.Evidential(regression_model_1d)
     outputs = model(inputs)
     criterion = EvidentialRegressionRegularization()
     loss = criterion(outputs, targets)
@@ -147,7 +152,7 @@ def test_elbo_loss(
     conv_linear_model: torch.nn.Module,
 ) -> None:
     inputs, targets = sample_classification_data
-    model = Bayesian(conv_linear_model)
+    model: Bayesian = Bayesian(conv_linear_model)
     outputs = model(inputs)
 
     criterion = ELBOLoss()
@@ -159,7 +164,9 @@ def test_elbo_loss(
     validate_loss(loss)
 
 
-def test_expected_calibration_error(sample_outputs: tuple[torch.Tensor, torch.Tensor]) -> None:
+def test_expected_calibration_error(
+    sample_outputs: tuple[torch.Tensor, torch.Tensor],
+) -> None:
     outputs, targets = sample_outputs
     outputs = torch.softmax(outputs, dim=1)
     criterion = ExpectedCalibrationError()
@@ -171,7 +178,9 @@ def test_expected_calibration_error(sample_outputs: tuple[torch.Tensor, torch.Te
     validate_loss(loss)
 
 
-def test_label_relaxation_loss(sample_outputs: tuple[torch.Tensor, torch.Tensor]) -> None:
+def test_label_relaxation_loss(
+    sample_outputs: tuple[torch.Tensor, torch.Tensor],
+) -> None:
     outputs, targets = sample_outputs
     criterion = LabelRelaxationLoss()
     loss = criterion(outputs, targets)

@@ -7,10 +7,11 @@ name = "probly"
 dynamic = ["version", "readme"]
 description = "Uncertainty Representation and Quantification for Machine Learning"
 license = "MIT"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 dependencies = [
     "scipy",
     "matplotlib>=3.8.0",
+    "multimethod>=2.0",
     "mpltern",
     "numpy>=2.0.0",
     "torch>=2.0.0",
@@ -44,7 +45,7 @@ classifiers = [
 
 [tool.setuptools.packages.find]
 where = ["./src"]
-include = ["probly*"]
+include = ["probly*", "pytraverse*"]
 
 [tool.setuptools.dynamic]
 version = {attr = "probly.__version__"}
@@ -59,14 +60,17 @@ changelog = "https://github.com/pwhofman/probly/blob/main/CHANGELOG.md"
 
 [dependency-groups]
 test = [
-    "pytest>=8.3.5",  # for testing
-    "pytest-cov>=6.0.0",  # for coverage
-    "pytest-xdist>=3.6.1",  # for parallel testing
+    "pytest>=8.3.5",       # for testing
+    "pytest-cov>=6.0.0",   # for coverage
+    "pytest-xdist>=3.6.1", # for parallel testing
+    "pytest-randomly",     # for randomizing test order (helps catch order-dependent bugs)
+    "packaging",           # for version parsing
+
 ]
 lint = [
-    "ruff>=0.11.2",  # for linting
+    "ruff>=0.12.0",       # for linting
     "pre-commit>=4.2.0",  # for running the linters pre-commit hooks
-    "mypy>=1.15.0" # for static type checking
+    "mypy>=1.16.1"        # for static type checking
 ]
 docs = [
     "sphinx>=8.0.0",
@@ -88,16 +92,16 @@ dev = [
 
 [tool.ruff]
 line-length = 120
-target-version = "py310"
+target-version = "py312"
 output-format = "full"
 
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = [
-    "N812", # Checks for lowercase imports that are aliased to non-lowercase names (e.g. torch.nn.functional as F)
-    "RET504", # Unnecessary assignment to {name} before return statement
+    "N812",    # Checks for lowercase imports that are aliased to non-lowercase names (e.g. torch.nn.functional as F)
+    "RET504",  # Unnecessary assignment to {name} before return statement
     "PLR2004", # Magic value used in comparison, consider replacing {value} with a constant variable
-    "FBT", # enforce keyword for bool
+    "FBT",     # enforce keyword for bool
     "PLR0913", # too many arguments (>5)
     "FIX002",  # TODOs are fine in code
 ]
@@ -146,6 +150,7 @@ convention = "google"
     "D404",
     "ANN001",
     "ANN201",
+    "ANN202",
     "FBT001",
     "D100",
     "PLR2004",
@@ -154,6 +159,7 @@ convention = "google"
     "N803",
     "C901",
 ]
+"tests/traverse/**/*.py" = ["ARG001"]
 "__init__.py" = [
     "I002",    # to not need from __future__ import annotations
     "PLC0414", # to allow import module as module in inits, contradicts F401
@@ -162,6 +168,7 @@ convention = "google"
     "T20",
     "NPY002",
     "I002",
+    "D103",
     "PERF401",  # it's fine to have non-optimized code in notebooks
 ]
 "docs/**/*.py" = [
@@ -171,8 +178,8 @@ convention = "google"
 ]
 
 # Use isort-compatible settings
-[tool.ruff.isort]
-known-first-party = ["probly"]
+[tool.ruff.lint.isort]
+known-first-party = ["probly", "pytraverse"]
 force-sort-within-sections = true
 combine-as-imports = true
 force-single-line = false
@@ -185,14 +192,21 @@ testpaths = ["tests"]
 minversion = "8.0"
 
 [tool.coverage.report]
+exclude_also = [
+    "def __repr__",
+    "if __name__ == .__main__.:",
+    "\\s*\\.\\.\\.\\s*",
+]
 exclude_lines = [
     "if TYPE_CHECKING",
 ]
 
 [tool.mypy]
-python_version = "3.10"
+python_version = "3.13"
 strict = true
-ignore_missing_imports = true # to avoid issues with torch, numpy, scipy, etc. stubs
+ignore_missing_imports = true    # to avoid issues with torch, numpy, scipy, etc. stubs
 disallow_subclassing_any = false # to make sure we can subclass from e.g. torch.nn.Module
-disable_error_code = "misc" # disable errors caused by torch not typing decorators, wrapping would be overkill
+disallow_any_generics = false    # to avoid warnings for type-based singledispatch
+disallow_untyped_calls = false   # to avoid issues with using torch, numpy, scipy, etc. internals
+disable_error_code = "misc"      # disable errors caused by torch not typing decorators, wrapping would be overkill
 exclude = "docs"

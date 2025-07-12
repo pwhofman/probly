@@ -262,5 +262,4 @@ docs/source/api
 # add docs to gitignore
 docs/source/api
 
-# remove editorconfig
-.editorconfig
+.vscode/settings.json

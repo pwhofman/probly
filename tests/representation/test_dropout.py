@@ -20,7 +20,7 @@ def test_dropout(
         probability: The probability of dropping out a neuron.
 
     """
-    dropout_model = Dropout(model_small_2d_2d, p=probability)
+    dropout_model: Dropout = Dropout(model_small_2d_2d, p=probability)
     assert dropout_model.p == probability
     assert dropout_model.model is not None
     list_of_layers = list(dropout_model.model.children())
