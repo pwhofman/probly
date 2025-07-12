@@ -1,4 +1,4 @@
-"""A module containing all deprecated features / behaviors in the shapiq package.
+"""A module containing all deprecated features / behaviors in probly. Adapted from the shapiq package.
 
 Usage:
     To add a new deprecated feature or behavior, create an instance of the `DeprecatedFeature` and

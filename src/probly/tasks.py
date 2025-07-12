@@ -1,4 +1,4 @@
-"""Collection of downstream tasks to evaluate performance of uncertainty measures."""
+"""Collection of downstream tasks to evaluate the performance of uncertainty pipelines."""
 
 from __future__ import annotations
 
