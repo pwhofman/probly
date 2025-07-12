@@ -7,7 +7,7 @@ dictionary keys.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from pytraverse.composition import SingledispatchTraverser
 from pytraverse.core import (
@@ -17,6 +17,9 @@ from pytraverse.core import (
     TraverserResult,
 )
 
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
 CLONE = StackVariable[bool](
     "CLONE",
     "Whether to clone datastructures before making changes.",
@@ -25,6 +28,11 @@ CLONE = StackVariable[bool](
 TRAVERSE_KEYS = StackVariable[bool](
     "TRAVERSE_KEYS",
     "Whether to traverse the keys of dictionaries.",
+    default=False,
+)
+TRAVERSE_REVERSED = StackVariable[bool](
+    "TRAVERSE_REVERSED",
+    "Whether to traverse elements in reverse order.",
     default=False,
 )
 
@@ -51,9 +59,15 @@ def _tuple_traverser(
         A new tuple with traversed elements and updated state.
     """
     new_obj = []
-    for i, element in enumerate(obj):
+    items: Iterable[tuple[int, Any]] = enumerate(obj)
+    traverse_reversed = state[TRAVERSE_REVERSED]
+    if traverse_reversed:
+        items = reversed(list(items))
+    for i, element in items:
         new_element, state = traverse(element, state, i)
         new_obj.append(new_element)
+    if traverse_reversed:
+        return tuple(reversed(new_obj)), state
     return tuple(new_obj), state
 
 
@@ -77,14 +91,21 @@ def _list_traverser(
     Returns:
         The modified or new list and updated state.
     """
+    items: Iterable[tuple[int, Any]] = enumerate(obj)
+    traverse_reversed = state[TRAVERSE_REVERSED]
+    if traverse_reversed:
+        items = reversed(list(items))
+
     if state[CLONE]:
         new_obj = obj.__class__()
-        for i, element in enumerate(obj):
+        for i, element in items:
             new_element, state = traverse(element, state, i)
             new_obj.append(new_element)
+        if traverse_reversed:
+            new_obj.reverse()
         return new_obj, state
 
-    for i, element in enumerate(obj):
+    for i, element in items:
         new_element, state = traverse(element, state, i)
         obj[i] = new_element
     return obj, state
@@ -112,18 +133,30 @@ def _dict_traverser(
         The modified or new dictionary and updated state.
     """
     traverse_keys = state[TRAVERSE_KEYS]
+    items: Iterable[tuple[Any, Any]] = obj.items()
+    traverse_reversed = state[TRAVERSE_REVERSED]
+    if traverse_reversed:
+        items = reversed(list(items))
+
     if state[CLONE] or traverse_keys:
         new_obj = obj.__class__()
-        for key, value in obj.items():
+        if traverse_reversed:
+            additions = []
+        for key, value in items:
             if traverse_keys:
                 new_key, state = traverse(key, state)
             else:
                 new_key = key
             new_value, state = traverse(value, state, new_key)
-            new_obj[new_key] = new_value
+            if traverse_reversed:
+                additions.append((new_key, new_value))
+            else:
+                new_obj[new_key] = new_value
+        if traverse_reversed:
+            new_obj.update(reversed(additions))
         return new_obj, state
 
-    for key, value in obj.items():
+    for key, value in items:
         new_value, state = traverse(value, state, key)
         obj[key] = new_value
 
