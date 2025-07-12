@@ -17,6 +17,8 @@
    dropout
    ensemble
    layers
+   predictor
+   predictor_torch
    regression
    representation
    subensemble

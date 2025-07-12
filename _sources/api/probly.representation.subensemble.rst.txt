@@ -4,6 +4,12 @@ probly.representation.subensemble
 .. automodule:: probly.representation.subensemble
 
    
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      convert
+   
    .. rubric:: Classes
 
    .. autosummary::

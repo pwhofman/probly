@@ -3,9 +3,9 @@
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="Contributing to probly 🏔️" href="../contributing.html" /><link rel="prev" title="probly.data" href="probly.data.html" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="probly.utils.errors" href="probly.utils.errors.html" /><link rel="prev" title="probly.data" href="probly.data.html" />
 
-    <!-- Generated with Sphinx 8.1.3 and Furo 2024.08.06 -->
+    <!-- Generated with Sphinx 8.2.3 and Furo 2024.08.06 -->
         <title>probly.utils - probly 0.3.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=354aac6f" />
@@ -243,6 +243,8 @@
 <li class="toctree-l4"><a class="reference internal" href="probly.representation.layers.normalinversegamma.html">probly.representation.layers.normalinversegamma</a></li>
 </ul>
 </li>
+<li class="toctree-l3"><a class="reference internal" href="probly.representation.predictor.html">probly.representation.predictor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="probly.representation.predictor_torch.html">probly.representation.predictor_torch</a></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="probly.representation.regression.html">probly.representation.regression</a><input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><div class="visually-hidden">Toggle navigation of probly.representation.regression</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l4"><a class="reference internal" href="probly.representation.regression.evidential.html">probly.representation.regression.evidential</a></li>
 </ul>
@@ -261,7 +263,13 @@
 <li class="toctree-l2"><a class="reference internal" href="probly.plot.html">probly.plot</a></li>
 <li class="toctree-l2"><a class="reference internal" href="probly.tasks.html">probly.tasks</a></li>
 <li class="toctree-l2"><a class="reference internal" href="probly.data.html">probly.data</a></li>
-<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">probly.utils</a></li>
+<li class="toctree-l2 current has-children current-page"><a class="current reference internal" href="#">probly.utils</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of probly.utils</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="probly.utils.errors.html">probly.utils.errors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="probly.utils.probabilities.html">probly.utils.probabilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="probly.utils.sets.html">probly.utils.sets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="probly.utils.torch.html">probly.utils.torch</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -309,44 +317,10 @@
         <article role="main" id="furo-main-content">
           <section id="module-probly.utils">
 <span id="probly-utils"></span><h1>probly.utils<a class="headerlink" href="#module-probly.utils" title="Link to this heading">¶</a></h1>
-<p>General utility functions for all other modules.</p>
-<p class="rubric">Functions</p>
-<div class="table-wrapper autosummary longtable docutils container">
-<table class="autosummary longtable docutils align-default">
-<tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#probly.utils.capacity" title="probly.utils.capacity"><code class="xref py py-obj docutils literal notranslate"><span class="pre">capacity</span></code></a>(q, a)</p></td>
-<td><p>Compute the capacity of set q given set a.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#probly.utils.differential_entropy_gaussian" title="probly.utils.differential_entropy_gaussian"><code class="xref py py-obj docutils literal notranslate"><span class="pre">differential_entropy_gaussian</span></code></a>(sigma2[, base])</p></td>
-<td><p>Compute the differential entropy of a Gaussian distribution given the variance.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#probly.utils.intersection_probability" title="probly.utils.intersection_probability"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intersection_probability</span></code></a>(probs)</p></td>
-<td><p>Compute the intersection probability of a credal set based on intervals of lower and upper probabilities.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#probly.utils.kl_divergence_gaussian" title="probly.utils.kl_divergence_gaussian"><code class="xref py py-obj docutils literal notranslate"><span class="pre">kl_divergence_gaussian</span></code></a>(mu1, sigma21, mu2, ...)</p></td>
-<td><p>Compute the KL-divergence between two Gaussian distributions.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#probly.utils.moebius" title="probly.utils.moebius"><code class="xref py py-obj docutils literal notranslate"><span class="pre">moebius</span></code></a>(q, a)</p></td>
-<td><p>Compute the Moebius function of a set q given a set a.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#probly.utils.powerset" title="probly.utils.powerset"><code class="xref py py-obj docutils literal notranslate"><span class="pre">powerset</span></code></a>(iterable)</p></td>
-<td><p>Generate the power set of a given iterable.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#probly.utils.temperature_softmax" title="probly.utils.temperature_softmax"><code class="xref py py-obj docutils literal notranslate"><span class="pre">temperature_softmax</span></code></a>(logits, temperature)</p></td>
-<td><p>Compute the softmax of logits with temperature scaling applied.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#probly.utils.torch_collect_outputs" title="probly.utils.torch_collect_outputs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">torch_collect_outputs</span></code></a>(model, loader, device)</p></td>
-<td><p>Collect outputs and targets from a model for a given data loader.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#probly.utils.torch_reset_all_parameters" title="probly.utils.torch_reset_all_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">torch_reset_all_parameters</span></code></a>(module)</p></td>
-<td><p>Reset all parameters of a torch module.</p></td>
-</tr>
-</tbody>
-</table>
-</div>
+<p>Utils module for probly library.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.utils.capacity">
-<span class="sig-prename descclassname"><span class="pre">probly.utils.</span></span><span class="sig-name descname"><span class="pre">capacity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">q</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">a</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/utils.html#capacity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.utils.capacity" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">probly.utils.</span></span><span class="sig-name descname"><span class="pre">capacity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">q</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">a</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/utils/sets.html#capacity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.utils.capacity" title="Link to this definition">¶</a></dt>
 <dd><p>Compute the capacity of set q given set a.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -354,8 +328,8 @@
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
-<li><p><strong>q</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a>) – numpy.ndarray, shape (n_instances, n_samples, n_classes)</p></li>
-<li><p><strong>a</strong> (<a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable" title="(in Python v3.13)"><em>Iterable</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a><em>]</em>) – Iterable, shape (n_classes,), indices indicating subset of classes</p></li>
+<li><p><strong>q</strong> (<em>np.ndarray</em>) – numpy.ndarray, shape (n_instances, n_samples, n_classes)</p></li>
+<li><p><strong>a</strong> (<em>Iterable</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a><em>]</em>) – Iterable, shape (n_classes,), indices indicating subset of classes</p></li>
 </ul>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -369,7 +343,7 @@
 
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.utils.differential_entropy_gaussian">
-<span class="sig-prename descclassname"><span class="pre">probly.utils.</span></span><span class="sig-name descname"><span class="pre">differential_entropy_gaussian</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sigma2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/utils.html#differential_entropy_gaussian"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.utils.differential_entropy_gaussian" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">probly.utils.</span></span><span class="sig-name descname"><span class="pre">differential_entropy_gaussian</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sigma2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/utils/probabilities.html#differential_entropy_gaussian"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.utils.differential_entropy_gaussian" title="Link to this definition">¶</a></dt>
 <dd><p>Compute the differential entropy of a Gaussian distribution given the variance.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -403,7 +377,7 @@
 
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.utils.intersection_probability">
-<span class="sig-prename descclassname"><span class="pre">probly.utils.</span></span><span class="sig-name descname"><span class="pre">intersection_probability</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/utils.html#intersection_probability"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.utils.intersection_probability" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">probly.utils.</span></span><span class="sig-name descname"><span class="pre">intersection_probability</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/utils/probabilities.html#intersection_probability"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.utils.intersection_probability" title="Link to this definition">¶</a></dt>
 <dd><p>Compute the intersection probability of a credal set based on intervals of lower and upper probabilities.</p>
 <p>Computes the intersection probability from <span id="id1">[<a class="reference internal" href="../references.html#id20" title="Fabio Cuzzolin. The intersection probability: betting with probability intervals. CoRR, 2022. URL: https://arxiv.org/abs/2201.01729, arXiv:2201.01729.">Cuz22</a>]</span>.</p>
 <dl class="field-list simple">
@@ -424,7 +398,7 @@
 
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.utils.kl_divergence_gaussian">
-<span class="sig-prename descclassname"><span class="pre">probly.utils.</span></span><span class="sig-name descname"><span class="pre">kl_divergence_gaussian</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mu1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma21</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma22</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/utils.html#kl_divergence_gaussian"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.utils.kl_divergence_gaussian" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">probly.utils.</span></span><span class="sig-name descname"><span class="pre">kl_divergence_gaussian</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mu1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma21</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma22</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/utils/probabilities.html#kl_divergence_gaussian"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.utils.kl_divergence_gaussian" title="Link to this definition">¶</a></dt>
 <dd><p>Compute the KL-divergence between two Gaussian distributions.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -467,7 +441,7 @@
 
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.utils.moebius">
-<span class="sig-prename descclassname"><span class="pre">probly.utils.</span></span><span class="sig-name descname"><span class="pre">moebius</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">q</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">a</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/utils.html#moebius"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.utils.moebius" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">probly.utils.</span></span><span class="sig-name descname"><span class="pre">moebius</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">q</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">a</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/utils/sets.html#moebius"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.utils.moebius" title="Link to this definition">¶</a></dt>
 <dd><p>Compute the Moebius function of a set q given a set a.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -490,7 +464,7 @@
 
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.utils.powerset">
-<span class="sig-prename descclassname"><span class="pre">probly.utils.</span></span><span class="sig-name descname"><span class="pre">powerset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">iterable</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/utils.html#powerset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.utils.powerset" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">probly.utils.</span></span><span class="sig-name descname"><span class="pre">powerset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">iterable</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/utils/sets.html#powerset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.utils.powerset" title="Link to this definition">¶</a></dt>
 <dd><p>Generate the power set of a given iterable.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -507,7 +481,7 @@
 
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.utils.temperature_softmax">
-<span class="sig-prename descclassname"><span class="pre">probly.utils.</span></span><span class="sig-name descname"><span class="pre">temperature_softmax</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logits</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temperature</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/utils.html#temperature_softmax"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.utils.temperature_softmax" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">probly.utils.</span></span><span class="sig-name descname"><span class="pre">temperature_softmax</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logits</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temperature</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/utils/probabilities.html#temperature_softmax"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.utils.temperature_softmax" title="Link to this definition">¶</a></dt>
 <dd><p>Compute the softmax of logits with temperature scaling applied.</p>
 <p>Computes the softmax based on the logits divided by the temperature. Assumes that the last dimension
 of logits is the class dimension.</p>
@@ -532,7 +506,7 @@ of logits is the class dimension.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.utils.torch_collect_outputs">
-<span class="sig-prename descclassname"><span class="pre">probly.utils.</span></span><span class="sig-name descname"><span class="pre">torch_collect_outputs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loader</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/utils.html#torch_collect_outputs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.utils.torch_collect_outputs" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">probly.utils.</span></span><span class="sig-name descname"><span class="pre">torch_collect_outputs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loader</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/utils/torch.html#torch_collect_outputs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.utils.torch_collect_outputs" title="Link to this definition">¶</a></dt>
 <dd><p>Collect outputs and targets from a model for a given data loader.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -557,7 +531,7 @@ targets: torch.Tensor, shape (n_instances,), target labels</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.utils.torch_reset_all_parameters">
-<span class="sig-prename descclassname"><span class="pre">probly.utils.</span></span><span class="sig-name descname"><span class="pre">torch_reset_all_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">module</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/utils.html#torch_reset_all_parameters"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.utils.torch_reset_all_parameters" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">probly.utils.</span></span><span class="sig-name descname"><span class="pre">torch_reset_all_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">module</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/utils/torch.html#torch_reset_all_parameters"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.utils.torch_reset_all_parameters" title="Link to this definition">¶</a></dt>
 <dd><p>Reset all parameters of a torch module.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -569,6 +543,25 @@ targets: torch.Tensor, shape (n_instances,), target labels</p>
 </dl>
 </dd></dl>
 
+<p class="rubric">Modules</p>
+<div class="table-wrapper autosummary longtable docutils container">
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="probly.utils.errors.html#module-probly.utils.errors" title="probly.utils.errors"><code class="xref py py-obj docutils literal notranslate"><span class="pre">errors</span></code></a></p></td>
+<td><p>All errors and warnings used in the probly package.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="probly.utils.probabilities.html#module-probly.utils.probabilities" title="probly.utils.probabilities"><code class="xref py py-obj docutils literal notranslate"><span class="pre">probabilities</span></code></a></p></td>
+<td><p>General utility functions for all other modules.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="probly.utils.sets.html#module-probly.utils.sets" title="probly.utils.sets"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sets</span></code></a></p></td>
+<td><p>Utility functions regarding sets.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="probly.utils.torch.html#module-probly.utils.torch" title="probly.utils.torch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">torch</span></code></a></p></td>
+<td><p>Utility functions for PyTorch models.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
 </section>
 
         </article>
@@ -576,12 +569,12 @@ targets: torch.Tensor, shape (n_instances,), target labels</p>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="../contributing.html">
+          <a class="next-page" href="probly.utils.errors.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">Contributing to probly 🏔️</div>
+                <div class="title">probly.utils.errors</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>

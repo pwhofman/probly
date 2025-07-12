@@ -4,17 +4,13 @@
 .. automodule:: probly.utils
 
    
-   .. rubric:: Functions
+.. rubric:: Modules
 
-   .. autosummary::
-   
-      capacity
-      differential_entropy_gaussian
-      intersection_probability
-      kl_divergence_gaussian
-      moebius
-      powerset
-      temperature_softmax
-      torch_collect_outputs
-      torch_reset_all_parameters
-   
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   errors
+   probabilities
+   sets
+   torch

@@ -1,0 +1,13 @@
+probly.utils.torch
+==================
+
+.. automodule:: probly.utils.torch
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      torch_collect_outputs
+      torch_reset_all_parameters
+   

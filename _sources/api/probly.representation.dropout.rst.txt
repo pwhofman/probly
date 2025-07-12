@@ -4,6 +4,12 @@ probly.representation.dropout
 .. automodule:: probly.representation.dropout
 
    
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      register
+   
    .. rubric:: Classes
 
    .. autosummary::

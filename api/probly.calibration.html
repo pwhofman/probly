@@ -5,7 +5,7 @@
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="probly.calibration.temperature" href="probly.calibration.temperature.html" /><link rel="prev" title="API Reference" href="../api.html" />
 
-    <!-- Generated with Sphinx 8.1.3 and Furo 2024.08.06 -->
+    <!-- Generated with Sphinx 8.2.3 and Furo 2024.08.06 -->
         <title>probly.calibration - probly 0.3.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=354aac6f" />
@@ -243,6 +243,8 @@
 <li class="toctree-l4"><a class="reference internal" href="probly.representation.layers.normalinversegamma.html">probly.representation.layers.normalinversegamma</a></li>
 </ul>
 </li>
+<li class="toctree-l3"><a class="reference internal" href="probly.representation.predictor.html">probly.representation.predictor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="probly.representation.predictor_torch.html">probly.representation.predictor_torch</a></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="probly.representation.regression.html">probly.representation.regression</a><input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><div class="visually-hidden">Toggle navigation of probly.representation.regression</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l4"><a class="reference internal" href="probly.representation.regression.evidential.html">probly.representation.regression.evidential</a></li>
 </ul>
@@ -261,7 +263,13 @@
 <li class="toctree-l2"><a class="reference internal" href="probly.plot.html">probly.plot</a></li>
 <li class="toctree-l2"><a class="reference internal" href="probly.tasks.html">probly.tasks</a></li>
 <li class="toctree-l2"><a class="reference internal" href="probly.data.html">probly.data</a></li>
-<li class="toctree-l2"><a class="reference internal" href="probly.utils.html">probly.utils</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="probly.utils.html">probly.utils</a><input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of probly.utils</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="probly.utils.errors.html">probly.utils.errors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="probly.utils.probabilities.html">probly.utils.probabilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="probly.utils.sets.html">probly.utils.sets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="probly.utils.torch.html">probly.utils.torch</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -312,7 +320,7 @@
 <p>Init module for calibration methods.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="probly.calibration.Temperature">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.calibration.</span></span><span class="sig-name descname"><span class="pre">Temperature</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/calibration/temperature.html#Temperature"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.calibration.Temperature" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.calibration.</span></span><span class="sig-name descname"><span class="pre">Temperature</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/calibration/temperature.html#Temperature"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.calibration.Temperature" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></a></p>
 <p>Implementation of temperature scaling <span id="id1">[<a class="reference internal" href="../references.html#id14" title="Chuan Guo, Geoff Pleiss, Yu Sun, and Kilian Q. Weinberger. On calibration of modern neural networks. In Doina Precup and Yee Whye Teh, editors, Proceedings of the 34th International Conference on Machine Learning, ICML 2017, Sydney, NSW, Australia, 6-11 August 2017, volume 70 of Proceedings of Machine Learning Research, 1321–1330. PMLR, 2017. URL: http://proceedings.mlr.press/v70/guo17a.html.">GPSW17</a>]</span>.</p>
 <dl class="field-list simple">

@@ -4,7 +4,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../../../genindex.html" /><link rel="search" title="Search" href="../../../search.html" />
 
-    <!-- Generated with Sphinx 8.1.3 and Furo 2024.08.06 -->
+    <!-- Generated with Sphinx 8.2.3 and Furo 2024.08.06 -->
         <title>probly.representation.dropconnect - probly 0.3.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo.css?v=354aac6f" />
@@ -242,6 +242,8 @@
 <li class="toctree-l4"><a class="reference internal" href="../../../api/probly.representation.layers.normalinversegamma.html">probly.representation.layers.normalinversegamma</a></li>
 </ul>
 </li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/probly.representation.predictor.html">probly.representation.predictor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/probly.representation.predictor_torch.html">probly.representation.predictor_torch</a></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="../../../api/probly.representation.regression.html">probly.representation.regression</a><input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><div class="visually-hidden">Toggle navigation of probly.representation.regression</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l4"><a class="reference internal" href="../../../api/probly.representation.regression.evidential.html">probly.representation.regression.evidential</a></li>
 </ul>
@@ -260,7 +262,13 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../api/probly.plot.html">probly.plot</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../api/probly.tasks.html">probly.tasks</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../api/probly.data.html">probly.data</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../api/probly.utils.html">probly.utils</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../api/probly.utils.html">probly.utils</a><input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of probly.utils</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/probly.utils.errors.html">probly.utils.errors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/probly.utils.probabilities.html">probly.utils.probabilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/probly.utils.sets.html">probly.utils.sets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/probly.utils.torch.html">probly.utils.torch</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -305,25 +313,39 @@
         </div>
         <article role="main" id="furo-main-content">
           <h1>Source code for probly.representation.dropconnect</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;DropConnect class implementation.&quot;&quot;&quot;</span>
+<span></span><span class="sd">&quot;&quot;&quot;DropConnect traverser for converting DropConnect layers in a model.&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
-<span class="kn">import</span><span class="w"> </span><span class="nn">copy</span>
-
-<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">nn</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">torch.nn</span><span class="w"> </span><span class="kn">import</span> <span class="n">functional</span> <span class="k">as</span> <span class="n">F</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">nn</span>  <span class="c1"># noqa: TC002</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">probly.representation.layers</span><span class="w"> </span><span class="kn">import</span> <span class="n">DropConnectLinear</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">probly.representation.predictor_torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">TorchSamplingRepresentationPredictor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">probly.traverse_nn</span><span class="w"> </span><span class="kn">import</span> <span class="n">is_first_layer</span><span class="p">,</span> <span class="n">nn_compose</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pytraverse</span><span class="w"> </span><span class="kn">import</span> <span class="n">CLONE</span><span class="p">,</span> <span class="n">GlobalVariable</span><span class="p">,</span> <span class="n">singledispatch_traverser</span><span class="p">,</span> <span class="n">traverse</span>
+
+<span class="n">P</span> <span class="o">=</span> <span class="n">GlobalVariable</span><span class="p">[</span><span class="nb">float</span><span class="p">](</span><span class="s2">&quot;P&quot;</span><span class="p">,</span> <span class="s2">&quot;The probability of dropconnect.&quot;</span><span class="p">)</span>
+<span class="n">dropconnect_traverser</span> <span class="o">=</span> <span class="n">singledispatch_traverser</span><span class="p">[</span><span class="nb">object</span><span class="p">](</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;dropconnect_traverser&quot;</span><span class="p">)</span>
+
+
+<span class="nd">@dropconnect_traverser</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">skip_if</span><span class="o">=</span><span class="n">is_first_layer</span><span class="p">,</span> <span class="nb">vars</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;p&quot;</span><span class="p">:</span> <span class="n">P</span><span class="p">})</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">,</span> <span class="n">p</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DropConnectLinear</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">DropConnectLinear</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
+
+
+<span class="nd">@singledispatch_traverser</span><span class="p">[</span><span class="nb">object</span><span class="p">]</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">eval_traverser</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">DropConnectLinear</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DropConnectLinear</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Ensure that DropConnect layers are active during evaluation.&quot;&quot;&quot;</span>
+    <span class="n">obj</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">obj</span>
 
 
 <div class="viewcode-block" id="DropConnect">
 <a class="viewcode-back" href="../../../api/probly.representation.dropconnect.html#probly.representation.DropConnect">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">DropConnect</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">DropConnect</span><span class="p">[</span><span class="n">In</span><span class="p">,</span> <span class="n">KwIn</span><span class="p">](</span><span class="n">TorchSamplingRepresentationPredictor</span><span class="p">[</span><span class="n">In</span><span class="p">,</span> <span class="n">KwIn</span><span class="p">]):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Implementation of a DropConnect model to be used for uncertainty quantification.</span>
 
-<span class="sd">    Implementation is based on :cite:`mobinyDropConnectEffective2019`.</span>
+<span class="sd">    Implementation is based on https://proceedings.mlr.press/v28/wan13.pdf.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        p: float, the probability of dropping out individual weights.</span>
@@ -331,95 +353,44 @@
 
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">base</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span> <span class="n">p</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.25</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">base</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span>
+        <span class="n">p</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.25</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize an instance of the DropConnect class.</span>
 
-<span class="sd">        Convert the base model into a DropConnect model.</span>
-
 <span class="sd">        Args:</span>
-<span class="sd">            base: torch.nn.Module, The base model to be used.</span>
-<span class="sd">            p: float, the probability of dropping out individual weights.</span>
+<span class="sd">            base: torch.nn.Module, The base model to be used for dropconnect.</span>
+<span class="sd">            p: float, The probability of dropping out a neuron. Default is 0.25.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">p</span> <span class="o">=</span> <span class="n">p</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_convert</span><span class="p">(</span><span class="n">base</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">base</span><span class="p">)</span>
 
-<div class="viewcode-block" id="DropConnect.forward">
-<a class="viewcode-back" href="../../../api/probly.representation.dropconnect.html#probly.representation.DropConnect.forward">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Forward pass of the DropConnect ensemble.</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_convert</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">base</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert the base model to a dropconnect model.</span>
 
-<span class="sd">        Args:</span>
-<span class="sd">            x: torch.Tensor, input data</span>
-<span class="sd">        Returns:</span>
-<span class="sd">            torch.Tensor, ensemble output</span>
-
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span></div>
-
-
-<div class="viewcode-block" id="DropConnect.predict_pointwise">
-<a class="viewcode-back" href="../../../api/probly.representation.dropconnect.html#probly.representation.DropConnect.predict_pointwise">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">predict_pointwise</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">logits</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Forward pass that gives a point-wise prediction by taking the mean over the samples.</span>
+<span class="sd">        Convert the base model by looping through all the layers</span>
+<span class="sd">        and adding a dropconnect layer before each linear layer.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            x: torch.Tensor, input data</span>
-<span class="sd">            n_samples: int, number of samples</span>
-<span class="sd">            logits: bool, whether to return the logits or probabilities</span>
-<span class="sd">        Returns:</span>
-<span class="sd">            torch.Tensor, point-wise prediction</span>
+<span class="sd">            base: torch.nn.Module, The base model to be used for dropconnect.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">logits</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_samples</span><span class="p">)],</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">F</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_samples</span><span class="p">)],</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span></div>
-
-
-<div class="viewcode-block" id="DropConnect.predict_representation">
-<a class="viewcode-back" href="../../../api/probly.representation.dropconnect.html#probly.representation.DropConnect.predict_representation">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">predict_representation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">logits</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Forward pass that gives an uncertainty representation.</span>
-
-<span class="sd">        Args:</span>
-<span class="sd">            x: torch.Tensor, input data</span>
-<span class="sd">            n_samples: int, number of samples</span>
-<span class="sd">            logits: bool, whether to return the logits or probabilities</span>
-<span class="sd">        Returns:</span>
-<span class="sd">            torch.Tensor, uncertainty representation</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">logits</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_samples</span><span class="p">)],</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">F</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_samples</span><span class="p">)],</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span></div>
-
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">_convert</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">base</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Converts the base model to a DropConnect model by modifying all `nn.Linear` layers.</span>
-
-<span class="sd">        Args:</span>
-<span class="sd">            base: torch.nn.Module, The base model to be used for DropConnect.</span>
-
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">base</span><span class="p">)</span>
-
-        <span class="k">def</span><span class="w"> </span><span class="nf">apply_drop_connect</span><span class="p">(</span><span class="n">module</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">first_layer</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">module</span><span class="o">.</span><span class="n">named_children</span><span class="p">():</span>
-                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">child</span><span class="p">,</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">first_layer</span><span class="p">:</span>
-                    <span class="nb">setattr</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">DropConnectLinear</span><span class="p">(</span><span class="n">child</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="p">))</span>  <span class="c1"># add DropConnect</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="k">if</span> <span class="n">first_layer</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">child</span><span class="p">,</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">):</span>  <span class="c1"># ignore Sequential layers as first layers</span>
-                        <span class="n">first_layer</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># skip first layer</span>
-                    <span class="n">apply_drop_connect</span><span class="p">(</span><span class="n">child</span><span class="p">,</span> <span class="n">first_layer</span><span class="o">=</span><span class="n">first_layer</span><span class="p">)</span>  <span class="c1"># apply recursively to all layers</span>
-
-        <span class="n">apply_drop_connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">traverse</span><span class="p">(</span>
+            <span class="n">base</span><span class="p">,</span>
+            <span class="n">nn_compose</span><span class="p">(</span><span class="n">dropconnect_traverser</span><span class="p">),</span>
+            <span class="n">init</span><span class="o">=</span><span class="p">{</span><span class="n">P</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="p">,</span> <span class="n">CLONE</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
+        <span class="p">)</span>
 
 <div class="viewcode-block" id="DropConnect.eval">
 <a class="viewcode-back" href="../../../api/probly.representation.dropconnect.html#probly.representation.DropConnect.eval">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">eval</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sets the model to evaluation mode but keeps DropConnect layers active.&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">eval</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DropConnect</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sets the model to evaluation mode but keeps the dropconnect layers active.&quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
-        <span class="k">for</span> <span class="n">module</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">modules</span><span class="p">():</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">DropConnectLinear</span><span class="p">):</span>
-                <span class="n">module</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>  <span class="c1"># keep DropConnect active</span></div>
+
+        <span class="n">traverse</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">nn_compose</span><span class="p">(</span><span class="n">eval_traverser</span><span class="p">),</span> <span class="n">init</span><span class="o">=</span><span class="p">{</span><span class="n">CLONE</span><span class="p">:</span> <span class="kc">False</span><span class="p">})</span>
+
+        <span class="k">return</span> <span class="bp">self</span></div>
 </div>
 
 </pre></div>

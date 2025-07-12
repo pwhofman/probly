@@ -4,7 +4,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../../../genindex.html" /><link rel="search" title="Search" href="../../../search.html" />
 
-    <!-- Generated with Sphinx 8.1.3 and Furo 2024.08.06 -->
+    <!-- Generated with Sphinx 8.2.3 and Furo 2024.08.06 -->
         <title>probly.representation.conformalprediction - probly 0.3.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo.css?v=354aac6f" />
@@ -242,6 +242,8 @@
 <li class="toctree-l4"><a class="reference internal" href="../../../api/probly.representation.layers.normalinversegamma.html">probly.representation.layers.normalinversegamma</a></li>
 </ul>
 </li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/probly.representation.predictor.html">probly.representation.predictor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/probly.representation.predictor_torch.html">probly.representation.predictor_torch</a></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="../../../api/probly.representation.regression.html">probly.representation.regression</a><input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><div class="visually-hidden">Toggle navigation of probly.representation.regression</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l4"><a class="reference internal" href="../../../api/probly.representation.regression.evidential.html">probly.representation.regression.evidential</a></li>
 </ul>
@@ -260,7 +262,13 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../api/probly.plot.html">probly.plot</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../api/probly.tasks.html">probly.tasks</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../api/probly.data.html">probly.data</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../api/probly.utils.html">probly.utils</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../api/probly.utils.html">probly.utils</a><input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of probly.utils</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/probly.utils.errors.html">probly.utils.errors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/probly.utils.probabilities.html">probly.utils.probabilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/probly.utils.sets.html">probly.utils.sets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/probly.utils.torch.html">probly.utils.torch</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -313,23 +321,35 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn.functional</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">F</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">probly.representation.predictor</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Classifier</span><span class="p">,</span>
+    <span class="n">RepresentationPredictor</span><span class="p">,</span>
+<span class="p">)</span>
+
 
 <div class="viewcode-block" id="ConformalPrediction">
 <a class="viewcode-back" href="../../../api/probly.representation.conformalprediction.html#probly.representation.conformalprediction.ConformalPrediction">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">ConformalPrediction</span><span class="p">:</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ConformalPrediction</span><span class="p">[</span><span class="n">In</span><span class="p">,</span> <span class="n">KwIn</span><span class="p">](</span>
+    <span class="n">Classifier</span><span class="p">[</span><span class="n">In</span><span class="p">,</span> <span class="n">KwIn</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">],</span>
+    <span class="n">RepresentationPredictor</span><span class="p">[</span><span class="n">In</span><span class="p">,</span> <span class="n">KwIn</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">],</span>
+<span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Implementation of conformal prediction for a given model.</span>
 
 <span class="sd">    Attributes:</span>
-<span class="sd">        model: torch.nn.Module, the base model.</span>
+<span class="sd">        model: Classifier[In, KwIn, Out], the base model.</span>
 <span class="sd">        alpha: float, the error rate for conformal prediction.</span>
 <span class="sd">        q: float, the quantile value for conformal prediction.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">base</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span> <span class="n">alpha</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.05</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">base</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span>
+        <span class="n">alpha</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.05</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize an instance of the ConformalPrediction class.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            base: torch.nn.Module, the base model to be used for conformal prediction.</span>
+<span class="sd">            base: Predictor[In, KwIn, torch.Tensor], the base model to be used for conformal prediction.</span>
 <span class="sd">            alpha: float, the error rate for conformal prediction.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">base</span>
@@ -337,49 +357,48 @@
 
 <div class="viewcode-block" id="ConformalPrediction.__call__">
 <a class="viewcode-back" href="../../../api/probly.representation.conformalprediction.html#probly.representation.conformalprediction.ConformalPrediction.__call__">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Forward pass of the model without conformal prediction.</span>
-
-<span class="sd">        Args:</span>
-<span class="sd">            x: torch.Tensor, input data</span>
-<span class="sd">        Returns:</span>
-<span class="sd">            torch.Tensor, model output</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span></div>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">In</span><span class="p">,</span> <span class="n">logits</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">KwIn</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Forward pass of the model without conformal prediction.&quot;&quot;&quot;</span>
+        <span class="n">res</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">logits</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">res</span>
+        <span class="k">return</span> <span class="n">F</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="ConformalPrediction.predict_pointwise">
 <a class="viewcode-back" href="../../../api/probly.representation.conformalprediction.html#probly.representation.conformalprediction.ConformalPrediction.predict_pointwise">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">predict_pointwise</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">logits</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Forward pass of the model without conformal prediction.</span>
-
-<span class="sd">        Args:</span>
-<span class="sd">            x: torch.Tensor, input data</span>
-<span class="sd">            logits: bool, whether to return the logits.</span>
-
-<span class="sd">        Returns:</span>
-<span class="sd">            torch.Tensor, model output</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">logits</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">F</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span></div>
+    <span class="k">def</span><span class="w"> </span><span class="nf">predict_pointwise</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">In</span><span class="p">,</span>
+        <span class="n">logits</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">KwIn</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Forward pass of the model without conformal prediction.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__call__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">logits</span><span class="o">=</span><span class="n">logits</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="ConformalPrediction.predict_representation">
 <a class="viewcode-back" href="../../../api/probly.representation.conformalprediction.html#probly.representation.conformalprediction.ConformalPrediction.predict_representation">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">predict_representation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">predict_representation</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">In</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">KwIn</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Represent the uncertainty of the model by a conformal prediction set.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            x: torch.Tensor, input data</span>
+<span class="sd">            *args: In, the input data to the model.</span>
+
+<span class="sd">            logits: bool, whether to return logits instead of probabilities.</span>
+<span class="sd">            **kwargs: KwIn, additional keyword arguments for the model.</span>
+
 <span class="sd">        Returns:</span>
 <span class="sd">            torch.Tensor of shape (n_instances, n_classes), the conformal prediction set,</span>
 <span class="sd">            where each element is a boolean indicating whether the class is included in the set.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
-            <span class="n">outputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-            <span class="n">scores</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">outputs</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-        <span class="n">sets</span> <span class="o">=</span> <span class="n">scores</span> <span class="o">&gt;=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">q</span><span class="p">)</span>
+            <span class="n">scores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__call__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">logits</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">sets</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span> <span class="o">=</span> <span class="n">scores</span> <span class="o">&gt;=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">q</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">sets</span></div>
 
 
@@ -402,7 +421,11 @@
                 <span class="n">scores_</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">score</span><span class="p">)</span>
         <span class="n">scores</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">scores_</span><span class="p">)</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
         <span class="n">n</span> <span class="o">=</span> <span class="n">scores</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">q</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="n">scores</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">((</span><span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span><span class="p">))</span> <span class="o">/</span> <span class="n">n</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;inverted_cdf&quot;</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">q</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span>
+            <span class="n">scores</span><span class="p">,</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">((</span><span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span><span class="p">))</span> <span class="o">/</span> <span class="n">n</span><span class="p">,</span>
+            <span class="n">method</span><span class="o">=</span><span class="s2">&quot;inverted_cdf&quot;</span><span class="p">,</span>
+        <span class="p">)</span></div>
 </div>
 
 </pre></div>

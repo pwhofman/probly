@@ -4,7 +4,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../../../genindex.html" /><link rel="search" title="Search" href="../../../search.html" />
 
-    <!-- Generated with Sphinx 8.1.3 and Furo 2024.08.06 -->
+    <!-- Generated with Sphinx 8.2.3 and Furo 2024.08.06 -->
         <title>probly.representation.ensemble - probly 0.3.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo.css?v=354aac6f" />
@@ -242,6 +242,8 @@
 <li class="toctree-l4"><a class="reference internal" href="../../../api/probly.representation.layers.normalinversegamma.html">probly.representation.layers.normalinversegamma</a></li>
 </ul>
 </li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/probly.representation.predictor.html">probly.representation.predictor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/probly.representation.predictor_torch.html">probly.representation.predictor_torch</a></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="../../../api/probly.representation.regression.html">probly.representation.regression</a><input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><div class="visually-hidden">Toggle navigation of probly.representation.regression</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l4"><a class="reference internal" href="../../../api/probly.representation.regression.evidential.html">probly.representation.regression.evidential</a></li>
 </ul>
@@ -260,7 +262,13 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../api/probly.plot.html">probly.plot</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../api/probly.tasks.html">probly.tasks</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../api/probly.data.html">probly.data</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../api/probly.utils.html">probly.utils</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../api/probly.utils.html">probly.utils</a><input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of probly.utils</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/probly.utils.errors.html">probly.utils.errors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/probly.utils.probabilities.html">probly.utils.probabilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/probly.utils.sets.html">probly.utils.sets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/probly.utils.torch.html">probly.utils.torch</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -309,18 +317,19 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
-<span class="kn">import</span><span class="w"> </span><span class="nn">copy</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TYPE_CHECKING</span>
 
-<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">nn</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">torch.nn</span><span class="w"> </span><span class="kn">import</span> <span class="n">functional</span> <span class="k">as</span> <span class="n">F</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">probly.representation</span><span class="w"> </span><span class="kn">import</span> <span class="n">subensemble</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">probly.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">torch_reset_all_parameters</span>
+<span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">nn</span>
+
+<span class="n">reset_traverser</span> <span class="o">=</span> <span class="n">subensemble</span><span class="o">.</span><span class="n">reset_traverser</span>
 
 
 <div class="viewcode-block" id="Ensemble">
 <a class="viewcode-back" href="../../../api/probly.representation.ensemble.html#probly.representation.Ensemble">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">Ensemble</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Ensemble</span><span class="p">[</span><span class="n">In</span><span class="p">,</span> <span class="n">KwIn</span><span class="p">](</span><span class="n">subensemble</span><span class="o">.</span><span class="n">SubEnsemble</span><span class="p">[</span><span class="n">In</span><span class="p">,</span> <span class="n">KwIn</span><span class="p">]):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Implementation of an ensemble representation to be used for uncertainty quantification.</span>
 
 <span class="sd">    Attributes:</span>
@@ -337,68 +346,7 @@
 <span class="sd">            base: torch.nn.Module, the base model to be used.</span>
 <span class="sd">            n_members: int, the number of members in the ensemble.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_convert</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="n">n_members</span><span class="p">)</span>
-
-<div class="viewcode-block" id="Ensemble.forward">
-<a class="viewcode-back" href="../../../api/probly.representation.ensemble.html#probly.representation.Ensemble.forward">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Forward pass of the ensemble.</span>
-
-<span class="sd">        Args:</span>
-<span class="sd">            x: torch.Tensor, input data</span>
-<span class="sd">        Returns:</span>
-<span class="sd">            torch.Tensor, ensemble output</span>
-
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">],</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span></div>
-
-
-<div class="viewcode-block" id="Ensemble.predict_pointwise">
-<a class="viewcode-back" href="../../../api/probly.representation.ensemble.html#probly.representation.Ensemble.predict_pointwise">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">predict_pointwise</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">logits</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Forward pass that gives a point-wise prediction.</span>
-
-<span class="sd">        Args:</span>
-<span class="sd">            x: torch.Tensor, input data</span>
-<span class="sd">            logits: bool, whether to return logits or probabilities</span>
-<span class="sd">        Returns:</span>
-<span class="sd">            torch.Tensor, point-wise prediction</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">logits</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">],</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">F</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">],</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span></div>
-
-
-<div class="viewcode-block" id="Ensemble.predict_representation">
-<a class="viewcode-back" href="../../../api/probly.representation.ensemble.html#probly.representation.Ensemble.predict_representation">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">predict_representation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">logits</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Forward pass that gives an uncertainty representation.</span>
-
-<span class="sd">        Args:</span>
-<span class="sd">            x: torch.Tensor, input data</span>
-<span class="sd">            logits: bool, whether to return logits or probabilities</span>
-<span class="sd">        Returns:</span>
-<span class="sd">            torch.Tensor, uncertainty representation</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">logits</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">],</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">F</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">],</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span></div>
-
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">_convert</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">base</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span> <span class="n">n_members</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert the base model to an ensemble with n_members members.</span>
-
-<span class="sd">        Args:</span>
-<span class="sd">            base: torch.nn.Module, the base model to be converted.</span>
-<span class="sd">            n_members: int, the number of members in the ensemble.</span>
-
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">models</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">()</span>
-        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_members</span><span class="p">):</span>
-            <span class="n">model</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">base</span><span class="p">)</span>
-            <span class="n">torch_reset_all_parameters</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">model</span><span class="p">)</span></div>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">n_members</span><span class="p">,</span> <span class="n">base</span><span class="p">)</span></div>
 
 </pre></div>
         </article>

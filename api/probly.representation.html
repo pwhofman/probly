@@ -5,7 +5,7 @@
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="probly.representation.bayesian" href="probly.representation.bayesian.html" /><link rel="prev" title="probly.calibration.temperature" href="probly.calibration.temperature.html" />
 
-    <!-- Generated with Sphinx 8.1.3 and Furo 2024.08.06 -->
+    <!-- Generated with Sphinx 8.2.3 and Furo 2024.08.06 -->
         <title>probly.representation - probly 0.3.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=354aac6f" />
@@ -243,6 +243,8 @@
 <li class="toctree-l4"><a class="reference internal" href="probly.representation.layers.normalinversegamma.html">probly.representation.layers.normalinversegamma</a></li>
 </ul>
 </li>
+<li class="toctree-l3"><a class="reference internal" href="probly.representation.predictor.html">probly.representation.predictor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="probly.representation.predictor_torch.html">probly.representation.predictor_torch</a></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="probly.representation.regression.html">probly.representation.regression</a><input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><div class="visually-hidden">Toggle navigation of probly.representation.regression</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l4"><a class="reference internal" href="probly.representation.regression.evidential.html">probly.representation.regression.evidential</a></li>
 </ul>
@@ -261,7 +263,13 @@
 <li class="toctree-l2"><a class="reference internal" href="probly.plot.html">probly.plot</a></li>
 <li class="toctree-l2"><a class="reference internal" href="probly.tasks.html">probly.tasks</a></li>
 <li class="toctree-l2"><a class="reference internal" href="probly.data.html">probly.data</a></li>
-<li class="toctree-l2"><a class="reference internal" href="probly.utils.html">probly.utils</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="probly.utils.html">probly.utils</a><input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of probly.utils</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="probly.utils.errors.html">probly.utils.errors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="probly.utils.probabilities.html">probly.utils.probabilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="probly.utils.sets.html">probly.utils.sets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="probly.utils.torch.html">probly.utils.torch</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -312,8 +320,8 @@
 <p>Init module for representation implementations.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="probly.representation.Bayesian">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.</span></span><span class="sig-name descname"><span class="pre">Bayesian</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_base_weights</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">posterior_std</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_mean</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_std</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/bayesian.html#Bayesian"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.Bayesian" title="Link to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></a></p>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.</span></span><span class="sig-name descname"><span class="pre">Bayesian</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_base_weights</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">posterior_std</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_mean</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_std</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/bayesian.html#Bayesian"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.Bayesian" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="probly.representation.predictor_torch.html#probly.representation.predictor_torch.TorchSamplingRepresentationPredictor" title="probly.representation.predictor_torch.TorchSamplingRepresentationPredictor"><code class="xref py py-class docutils literal notranslate"><span class="pre">TorchSamplingRepresentationPredictor</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Generic" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Generic</span></code></a></p>
 <p>Implementation of a Bayesian neural network to be used for uncertainty quantification.</p>
 <p>Implementation is based on <span id="id1">[<a class="reference internal" href="../references.html#id2" title="Charles Blundell, Julien Cornebise, Koray Kavukcuoglu, and Daan Wierstra. Weight uncertainty in neural network. In Francis R. Bach and David M. Blei, editors, Proceedings of the 32nd International Conference on Machine Learning, ICML 2015, Lille, France, 6-11 July 2015, volume 37 of JMLR Workshop and Conference Proceedings, 1613–1622. JMLR.org, 2015. URL: http://proceedings.mlr.press/v37/blundell15.html.">BCKW15</a>]</span>.</p>
 <dl class="field-list simple">
@@ -333,68 +341,9 @@
 <dd><p>torch.nn.Module, The transformed model with Bayesian layers.</p>
 </dd></dl>
 
-<dl class="py method">
-<dt class="sig sig-object py" id="probly.representation.Bayesian.forward">
-<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/bayesian.html#Bayesian.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.Bayesian.forward" title="Link to this definition">¶</a></dt>
-<dd><p>Forward pass of the Bayesian model.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span></p>
-</dd>
-<dt class="field-even">Parameters<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>x</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.7)"><em>Tensor</em></a>) – torch.Tensor, input data</p>
-</dd>
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>torch.Tensor, model output</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="probly.representation.Bayesian.predict_pointwise">
-<span class="sig-name descname"><span class="pre">predict_pointwise</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logits</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/bayesian.html#Bayesian.predict_pointwise"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.Bayesian.predict_pointwise" title="Link to this definition">¶</a></dt>
-<dd><p>Forward pass that gives a point-wise prediction.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span></p>
-</dd>
-<dt class="field-even">Parameters<span class="colon">:</span></dt>
-<dd class="field-even"><ul class="simple">
-<li><p><strong>x</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.7)"><em>Tensor</em></a>) – torch.Tensor, input data</p></li>
-<li><p><strong>n_samples</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>) – int, number of samples to draw from posterior</p></li>
-<li><p><strong>logits</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>) – bool, whether to return logits or probabilities</p></li>
-</ul>
-</dd>
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>torch.Tensor, point-wise prediction</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="probly.representation.Bayesian.predict_representation">
-<span class="sig-name descname"><span class="pre">predict_representation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logits</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/bayesian.html#Bayesian.predict_representation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.Bayesian.predict_representation" title="Link to this definition">¶</a></dt>
-<dd><p>Forward pass that gives an uncertainty representation.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span></p>
-</dd>
-<dt class="field-even">Parameters<span class="colon">:</span></dt>
-<dd class="field-even"><ul class="simple">
-<li><p><strong>x</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.7)"><em>Tensor</em></a>) – torch.Tensor, input data</p></li>
-<li><p><strong>n_samples</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>) – int, number of samples to draw from posterior</p></li>
-<li><p><strong>logits</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>) – bool, whether to return logits or probabilities</p></li>
-</ul>
-</dd>
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>torch.Tensor, uncertainty representation, samples from the posterior</p>
-</dd>
-</dl>
-</dd></dl>
-
 <dl class="py property">
 <dt class="sig sig-object py" id="probly.representation.Bayesian.kl_divergence">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">kl_divergence</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.7)"><span class="pre">Tensor</span></a></em><a class="headerlink" href="#probly.representation.Bayesian.kl_divergence" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">kl_divergence</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.7)"><span class="pre">Tensor</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><span class="pre">float</span></a></em><a class="headerlink" href="#probly.representation.Bayesian.kl_divergence" title="Link to this definition">¶</a></dt>
 <dd><p>Collects the KL divergence of the model by summing the KL divergence of each layer.</p>
 </dd></dl>
 
@@ -402,10 +351,10 @@
 
 <dl class="py class">
 <dt class="sig sig-object py" id="probly.representation.DropConnect">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.</span></span><span class="sig-name descname"><span class="pre">DropConnect</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.25</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/dropconnect.html#DropConnect"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.DropConnect" title="Link to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></a></p>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.</span></span><span class="sig-name descname"><span class="pre">DropConnect</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.25</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/dropconnect.html#DropConnect"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.DropConnect" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="probly.representation.predictor_torch.html#probly.representation.predictor_torch.TorchSamplingRepresentationPredictor" title="probly.representation.predictor_torch.TorchSamplingRepresentationPredictor"><code class="xref py py-class docutils literal notranslate"><span class="pre">TorchSamplingRepresentationPredictor</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Generic" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Generic</span></code></a></p>
 <p>Implementation of a DropConnect model to be used for uncertainty quantification.</p>
-<p>Implementation is based on <span id="id2">[<a class="reference internal" href="../references.html#id15" title="Aryan Mobiny, Hien Van Nguyen, Supratik Moulik, Naveen Garg, and Carol C. Wu. Dropconnect is effective in modeling uncertainty of bayesian deep networks. CoRR, 2019. URL: http://arxiv.org/abs/1906.04569, arXiv:1906.04569.">MNM+19</a>]</span>.</p>
+<p>Implementation is based on <a class="reference external" href="https://proceedings.mlr.press/v28/wan13.pdf">https://proceedings.mlr.press/v28/wan13.pdf</a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -429,69 +378,10 @@
 <dl class="py method">
 <dt class="sig sig-object py" id="probly.representation.DropConnect.eval">
 <span class="sig-name descname"><span class="pre">eval</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/dropconnect.html#DropConnect.eval"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.DropConnect.eval" title="Link to this definition">¶</a></dt>
-<dd><p>Sets the model to evaluation mode but keeps DropConnect layers active.</p>
+<dd><p>Sets the model to evaluation mode but keeps the dropconnect layers active.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="probly.representation.DropConnect.forward">
-<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/dropconnect.html#DropConnect.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.DropConnect.forward" title="Link to this definition">¶</a></dt>
-<dd><p>Forward pass of the DropConnect ensemble.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span></p>
-</dd>
-<dt class="field-even">Parameters<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>x</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.7)"><em>Tensor</em></a>) – torch.Tensor, input data</p>
-</dd>
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>torch.Tensor, ensemble output</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="probly.representation.DropConnect.predict_pointwise">
-<span class="sig-name descname"><span class="pre">predict_pointwise</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logits</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/dropconnect.html#DropConnect.predict_pointwise"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.DropConnect.predict_pointwise" title="Link to this definition">¶</a></dt>
-<dd><p>Forward pass that gives a point-wise prediction by taking the mean over the samples.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span></p>
-</dd>
-<dt class="field-even">Parameters<span class="colon">:</span></dt>
-<dd class="field-even"><ul class="simple">
-<li><p><strong>x</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.7)"><em>Tensor</em></a>) – torch.Tensor, input data</p></li>
-<li><p><strong>n_samples</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>) – int, number of samples</p></li>
-<li><p><strong>logits</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>) – bool, whether to return the logits or probabilities</p></li>
-</ul>
-</dd>
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>torch.Tensor, point-wise prediction</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="probly.representation.DropConnect.predict_representation">
-<span class="sig-name descname"><span class="pre">predict_representation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logits</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/dropconnect.html#DropConnect.predict_representation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.DropConnect.predict_representation" title="Link to this definition">¶</a></dt>
-<dd><p>Forward pass that gives an uncertainty representation.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span></p>
-</dd>
-<dt class="field-even">Parameters<span class="colon">:</span></dt>
-<dd class="field-even"><ul class="simple">
-<li><p><strong>x</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.7)"><em>Tensor</em></a>) – torch.Tensor, input data</p></li>
-<li><p><strong>n_samples</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>) – int, number of samples</p></li>
-<li><p><strong>logits</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>) – bool, whether to return the logits or probabilities</p></li>
-</ul>
-</dd>
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>torch.Tensor, uncertainty representation</p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="probly.representation.dropconnect.html#probly.representation.dropconnect.DropConnect" title="probly.representation.dropconnect.DropConnect"><code class="xref py py-class docutils literal notranslate"><span class="pre">DropConnect</span></code></a></span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -500,8 +390,8 @@
 
 <dl class="py class">
 <dt class="sig sig-object py" id="probly.representation.Dropout">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.</span></span><span class="sig-name descname"><span class="pre">Dropout</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.25</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/dropout.html#Dropout"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.Dropout" title="Link to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></a></p>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.</span></span><span class="sig-name descname"><span class="pre">Dropout</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.25</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/dropout.html#Dropout"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.Dropout" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="probly.representation.predictor_torch.html#probly.representation.predictor_torch.TorchSamplingRepresentationPredictor" title="probly.representation.predictor_torch.TorchSamplingRepresentationPredictor"><code class="xref py py-class docutils literal notranslate"><span class="pre">TorchSamplingRepresentationPredictor</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Generic" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Generic</span></code></a></p>
 <p>Implementation of a Dropout ensemble class to be used for uncertainty quantification.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -526,69 +416,10 @@
 <dl class="py method">
 <dt class="sig sig-object py" id="probly.representation.Dropout.eval">
 <span class="sig-name descname"><span class="pre">eval</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/dropout.html#Dropout.eval"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.Dropout.eval" title="Link to this definition">¶</a></dt>
-<dd><p>Sets the model to evaluation mode, but keeps the dropout layers active.</p>
+<dd><p>Sets the model to evaluation mode but keeps the dropout layers active.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="probly.representation.Dropout.forward">
-<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/dropout.html#Dropout.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.Dropout.forward" title="Link to this definition">¶</a></dt>
-<dd><p>Forward pass of the dropout model.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span></p>
-</dd>
-<dt class="field-even">Parameters<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>x</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.7)"><em>Tensor</em></a>) – torch.Tensor, input data</p>
-</dd>
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>torch.Tensor, ensemble output</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="probly.representation.Dropout.predict_pointwise">
-<span class="sig-name descname"><span class="pre">predict_pointwise</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logits</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/dropout.html#Dropout.predict_pointwise"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.Dropout.predict_pointwise" title="Link to this definition">¶</a></dt>
-<dd><p>Forward pass that gives a point-wise prediction by taking the mean over the samples.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span></p>
-</dd>
-<dt class="field-even">Parameters<span class="colon">:</span></dt>
-<dd class="field-even"><ul class="simple">
-<li><p><strong>x</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.7)"><em>Tensor</em></a>) – torch.Tensor, input data</p></li>
-<li><p><strong>n_samples</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>) – int, number of samples</p></li>
-<li><p><strong>logits</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>) – bool, whether to return logits or probabilities</p></li>
-</ul>
-</dd>
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>torch.Tensor, point-wise prediction</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="probly.representation.Dropout.predict_representation">
-<span class="sig-name descname"><span class="pre">predict_representation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logits</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/dropout.html#Dropout.predict_representation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.Dropout.predict_representation" title="Link to this definition">¶</a></dt>
-<dd><p>Forward pass that gives an uncertainty representation.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span></p>
-</dd>
-<dt class="field-even">Parameters<span class="colon">:</span></dt>
-<dd class="field-even"><ul class="simple">
-<li><p><strong>x</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.7)"><em>Tensor</em></a>) – torch.Tensor, input data</p></li>
-<li><p><strong>n_samples</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>) – int, number of samples</p></li>
-<li><p><strong>logits</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>) – bool, whether to return logits or probabilities</p></li>
-</ul>
-</dd>
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>torch.Tensor, uncertainty representation</p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="probly.representation.dropout.html#probly.representation.dropout.Dropout" title="probly.representation.dropout.Dropout"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dropout</span></code></a></span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -597,8 +428,8 @@
 
 <dl class="py class">
 <dt class="sig sig-object py" id="probly.representation.Ensemble">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.</span></span><span class="sig-name descname"><span class="pre">Ensemble</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_members</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/ensemble.html#Ensemble"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.Ensemble" title="Link to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></a></p>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.</span></span><span class="sig-name descname"><span class="pre">Ensemble</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_members</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/ensemble.html#Ensemble"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.Ensemble" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="probly.representation.subensemble.html#probly.representation.subensemble.SubEnsemble" title="probly.representation.subensemble.SubEnsemble"><code class="xref py py-class docutils literal notranslate"><span class="pre">SubEnsemble</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Generic" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Generic</span></code></a></p>
 <p>Implementation of an ensemble representation to be used for uncertainty quantification.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -614,69 +445,12 @@
 <dd><p>torch.nn.ModuleList, the list of models in the ensemble based on the base model.</p>
 </dd></dl>
 
-<dl class="py method">
-<dt class="sig sig-object py" id="probly.representation.Ensemble.forward">
-<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/ensemble.html#Ensemble.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.Ensemble.forward" title="Link to this definition">¶</a></dt>
-<dd><p>Forward pass of the ensemble.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span></p>
-</dd>
-<dt class="field-even">Parameters<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>x</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.7)"><em>Tensor</em></a>) – torch.Tensor, input data</p>
-</dd>
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>torch.Tensor, ensemble output</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="probly.representation.Ensemble.predict_pointwise">
-<span class="sig-name descname"><span class="pre">predict_pointwise</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logits</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/ensemble.html#Ensemble.predict_pointwise"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.Ensemble.predict_pointwise" title="Link to this definition">¶</a></dt>
-<dd><p>Forward pass that gives a point-wise prediction.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span></p>
-</dd>
-<dt class="field-even">Parameters<span class="colon">:</span></dt>
-<dd class="field-even"><ul class="simple">
-<li><p><strong>x</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.7)"><em>Tensor</em></a>) – torch.Tensor, input data</p></li>
-<li><p><strong>logits</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>) – bool, whether to return logits or probabilities</p></li>
-</ul>
-</dd>
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>torch.Tensor, point-wise prediction</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="probly.representation.Ensemble.predict_representation">
-<span class="sig-name descname"><span class="pre">predict_representation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logits</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/ensemble.html#Ensemble.predict_representation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.Ensemble.predict_representation" title="Link to this definition">¶</a></dt>
-<dd><p>Forward pass that gives an uncertainty representation.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span></p>
-</dd>
-<dt class="field-even">Parameters<span class="colon">:</span></dt>
-<dd class="field-even"><ul class="simple">
-<li><p><strong>x</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.7)"><em>Tensor</em></a>) – torch.Tensor, input data</p></li>
-<li><p><strong>logits</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>) – bool, whether to return logits or probabilities</p></li>
-</ul>
-</dd>
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>torch.Tensor, uncertainty representation</p>
-</dd>
-</dl>
-</dd></dl>
-
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="probly.representation.SubEnsemble">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.</span></span><span class="sig-name descname"><span class="pre">SubEnsemble</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_members</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">head</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/subensemble.html#SubEnsemble"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.SubEnsemble" title="Link to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></a></p>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.</span></span><span class="sig-name descname"><span class="pre">SubEnsemble</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_heads</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">head</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/subensemble.html#SubEnsemble"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.SubEnsemble" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></a>, <a class="reference internal" href="probly.representation.predictor.html#probly.representation.predictor.Predictor" title="probly.representation.predictor.Predictor"><code class="xref py py-class docutils literal notranslate"><span class="pre">Predictor</span></code></a>[<code class="xref py py-obj docutils literal notranslate"><span class="pre">In</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">KwIn</span></code>, <a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>], <a class="reference internal" href="probly.representation.predictor.html#probly.representation.predictor.RepresentationPredictor" title="probly.representation.predictor.RepresentationPredictor"><code class="xref py py-class docutils literal notranslate"><span class="pre">RepresentationPredictor</span></code></a>[<code class="xref py py-obj docutils literal notranslate"><span class="pre">In</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">KwIn</span></code>, <a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>, <a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>], <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Generic" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Generic</span></code></a></p>
 <p>Ensemble class of members with shared, frozen backbone and trainable heads.</p>
 <p>This class implements an ensemble of models which share a backbone and use
 different heads that can be made up of multiple layers.
@@ -684,8 +458,8 @@ The backbone is frozen and only the head can be trained.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>base</strong> (<em>nn.Module</em>)</p></li>
-<li><p><strong>n_members</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>)</p></li>
+<li><p><strong>base</strong> (<em>nn.Module</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>n_heads</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>)</p></li>
 <li><p><strong>head</strong> (<em>nn.Module</em>)</p></li>
 </ul>
 </dd>
@@ -703,57 +477,54 @@ The backbone is frozen and only the head can be trained.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="probly.representation.SubEnsemble.forward">
-<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/subensemble.html#SubEnsemble.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.SubEnsemble.forward" title="Link to this definition">¶</a></dt>
-<dd><p>Forward pass of the sub-ensemble.</p>
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logits</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/subensemble.html#SubEnsemble.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.SubEnsemble.forward" title="Link to this definition">¶</a></dt>
+<dd><p>Forward pass of the ensemble.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type">torch.Tensor</span></p>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>x</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.7)"><em>Tensor</em></a>) – torch.Tensor, input data</p>
-</dd>
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>torch.Tensor, model output</p>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>args</strong> (<em>In</em>)</p></li>
+<li><p><strong>logits</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>)</p></li>
+<li><p><strong>kwargs</strong> (<em>Unpack</em><em>[</em><em>KwIn</em><em>]</em>)</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="probly.representation.SubEnsemble.predict_pointwise">
-<span class="sig-name descname"><span class="pre">predict_pointwise</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logits</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/subensemble.html#SubEnsemble.predict_pointwise"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.SubEnsemble.predict_pointwise" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">predict_pointwise</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logits</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/subensemble.html#SubEnsemble.predict_pointwise"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.SubEnsemble.predict_pointwise" title="Link to this definition">¶</a></dt>
 <dd><p>Forward pass that gives a point-wise prediction.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type">torch.Tensor</span></p>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
-<li><p><strong>x</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.7)"><em>Tensor</em></a>) – torch.Tensor, input data</p></li>
-<li><p><strong>logits</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>) – bool, whether to return logits or probabilities</p></li>
+<li><p><strong>args</strong> (<em>In</em>)</p></li>
+<li><p><strong>logits</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>)</p></li>
+<li><p><strong>kwargs</strong> (<em>Unpack</em><em>[</em><em>KwIn</em><em>]</em>)</p></li>
 </ul>
-</dd>
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>torch.Tensor, point-wise prediction</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="probly.representation.SubEnsemble.predict_representation">
-<span class="sig-name descname"><span class="pre">predict_representation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logits</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/subensemble.html#SubEnsemble.predict_representation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.SubEnsemble.predict_representation" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">predict_representation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logits</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/subensemble.html#SubEnsemble.predict_representation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.SubEnsemble.predict_representation" title="Link to this definition">¶</a></dt>
 <dd><p>Forward pass that gives an uncertainty representation.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type">torch.Tensor</span></p>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
-<li><p><strong>x</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.7)"><em>Tensor</em></a>) – torch.Tensor, input data</p></li>
-<li><p><strong>logits</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>) – bool, whether to return logits or probabilities</p></li>
+<li><p><strong>args</strong> (<em>In</em>)</p></li>
+<li><p><strong>logits</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>)</p></li>
+<li><p><strong>kwargs</strong> (<em>Unpack</em><em>[</em><em>KwIn</em><em>]</em>)</p></li>
 </ul>
-</dd>
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>torch.Tensor, uncertainty representation</p>
 </dd>
 </dl>
 </dd></dl>
@@ -774,16 +545,22 @@ The backbone is frozen and only the head can be trained.</p>
 <td><p>Conformal prediction implementation.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="probly.representation.dropconnect.html#module-probly.representation.dropconnect" title="probly.representation.dropconnect"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dropconnect</span></code></a></p></td>
-<td><p>DropConnect class implementation.</p></td>
+<td><p>DropConnect traverser for converting DropConnect layers in a model.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="probly.representation.dropout.html#module-probly.representation.dropout" title="probly.representation.dropout"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dropout</span></code></a></p></td>
-<td><p>Dropout class implementation.</p></td>
+<td><p>Dropout ensemble implementation for uncertainty quantification.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="probly.representation.ensemble.html#module-probly.representation.ensemble" title="probly.representation.ensemble"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ensemble</span></code></a></p></td>
 <td><p>Ensemble class implementation.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="probly.representation.layers.html#module-probly.representation.layers" title="probly.representation.layers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">layers</span></code></a></p></td>
 <td><p>Init module for layer implementations.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="probly.representation.predictor.html#module-probly.representation.predictor" title="probly.representation.predictor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predictor</span></code></a></p></td>
+<td><p>Protocols and ABCs for representation wrappers.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="probly.representation.predictor_torch.html#module-probly.representation.predictor_torch" title="probly.representation.predictor_torch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predictor_torch</span></code></a></p></td>
+<td><p>Protocols and ABCs for Torch representation wrappers.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="probly.representation.regression.html#module-probly.representation.regression" title="probly.representation.regression"><code class="xref py py-obj docutils literal notranslate"><span class="pre">regression</span></code></a></p></td>
 <td><p>Init module for regression specific representation methods.</p></td>
@@ -857,9 +634,6 @@ The backbone is frozen and only the head can be trained.</p>
 <li><a class="reference internal" href="#">probly.representation</a><ul>
 <li><a class="reference internal" href="#probly.representation.Bayesian"><code class="docutils literal notranslate"><span class="pre">Bayesian</span></code></a><ul>
 <li><a class="reference internal" href="#probly.representation.Bayesian.model"><code class="docutils literal notranslate"><span class="pre">Bayesian.model</span></code></a></li>
-<li><a class="reference internal" href="#probly.representation.Bayesian.forward"><code class="docutils literal notranslate"><span class="pre">Bayesian.forward()</span></code></a></li>
-<li><a class="reference internal" href="#probly.representation.Bayesian.predict_pointwise"><code class="docutils literal notranslate"><span class="pre">Bayesian.predict_pointwise()</span></code></a></li>
-<li><a class="reference internal" href="#probly.representation.Bayesian.predict_representation"><code class="docutils literal notranslate"><span class="pre">Bayesian.predict_representation()</span></code></a></li>
 <li><a class="reference internal" href="#probly.representation.Bayesian.kl_divergence"><code class="docutils literal notranslate"><span class="pre">Bayesian.kl_divergence</span></code></a></li>
 </ul>
 </li>
@@ -867,25 +641,16 @@ The backbone is frozen and only the head can be trained.</p>
 <li><a class="reference internal" href="#probly.representation.DropConnect.p"><code class="docutils literal notranslate"><span class="pre">DropConnect.p</span></code></a></li>
 <li><a class="reference internal" href="#probly.representation.DropConnect.model"><code class="docutils literal notranslate"><span class="pre">DropConnect.model</span></code></a></li>
 <li><a class="reference internal" href="#probly.representation.DropConnect.eval"><code class="docutils literal notranslate"><span class="pre">DropConnect.eval()</span></code></a></li>
-<li><a class="reference internal" href="#probly.representation.DropConnect.forward"><code class="docutils literal notranslate"><span class="pre">DropConnect.forward()</span></code></a></li>
-<li><a class="reference internal" href="#probly.representation.DropConnect.predict_pointwise"><code class="docutils literal notranslate"><span class="pre">DropConnect.predict_pointwise()</span></code></a></li>
-<li><a class="reference internal" href="#probly.representation.DropConnect.predict_representation"><code class="docutils literal notranslate"><span class="pre">DropConnect.predict_representation()</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#probly.representation.Dropout"><code class="docutils literal notranslate"><span class="pre">Dropout</span></code></a><ul>
 <li><a class="reference internal" href="#probly.representation.Dropout.p"><code class="docutils literal notranslate"><span class="pre">Dropout.p</span></code></a></li>
 <li><a class="reference internal" href="#probly.representation.Dropout.model"><code class="docutils literal notranslate"><span class="pre">Dropout.model</span></code></a></li>
 <li><a class="reference internal" href="#probly.representation.Dropout.eval"><code class="docutils literal notranslate"><span class="pre">Dropout.eval()</span></code></a></li>
-<li><a class="reference internal" href="#probly.representation.Dropout.forward"><code class="docutils literal notranslate"><span class="pre">Dropout.forward()</span></code></a></li>
-<li><a class="reference internal" href="#probly.representation.Dropout.predict_pointwise"><code class="docutils literal notranslate"><span class="pre">Dropout.predict_pointwise()</span></code></a></li>
-<li><a class="reference internal" href="#probly.representation.Dropout.predict_representation"><code class="docutils literal notranslate"><span class="pre">Dropout.predict_representation()</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#probly.representation.Ensemble"><code class="docutils literal notranslate"><span class="pre">Ensemble</span></code></a><ul>
 <li><a class="reference internal" href="#probly.representation.Ensemble.models"><code class="docutils literal notranslate"><span class="pre">Ensemble.models</span></code></a></li>
-<li><a class="reference internal" href="#probly.representation.Ensemble.forward"><code class="docutils literal notranslate"><span class="pre">Ensemble.forward()</span></code></a></li>
-<li><a class="reference internal" href="#probly.representation.Ensemble.predict_pointwise"><code class="docutils literal notranslate"><span class="pre">Ensemble.predict_pointwise()</span></code></a></li>
-<li><a class="reference internal" href="#probly.representation.Ensemble.predict_representation"><code class="docutils literal notranslate"><span class="pre">Ensemble.predict_representation()</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#probly.representation.SubEnsemble"><code class="docutils literal notranslate"><span class="pre">SubEnsemble</span></code></a><ul>

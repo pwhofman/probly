@@ -5,7 +5,7 @@
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="probly.representation.subensemble" href="probly.representation.subensemble.html" /><link rel="prev" title="probly.representation.regression.evidential" href="probly.representation.regression.evidential.html" />
 
-    <!-- Generated with Sphinx 8.1.3 and Furo 2024.08.06 -->
+    <!-- Generated with Sphinx 8.2.3 and Furo 2024.08.06 -->
         <title>probly.representation.representation - probly 0.3.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=354aac6f" />
@@ -243,6 +243,8 @@
 <li class="toctree-l4"><a class="reference internal" href="probly.representation.layers.normalinversegamma.html">probly.representation.layers.normalinversegamma</a></li>
 </ul>
 </li>
+<li class="toctree-l3"><a class="reference internal" href="probly.representation.predictor.html">probly.representation.predictor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="probly.representation.predictor_torch.html">probly.representation.predictor_torch</a></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="probly.representation.regression.html">probly.representation.regression</a><input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><div class="visually-hidden">Toggle navigation of probly.representation.regression</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l4"><a class="reference internal" href="probly.representation.regression.evidential.html">probly.representation.regression.evidential</a></li>
 </ul>
@@ -261,7 +263,13 @@
 <li class="toctree-l2"><a class="reference internal" href="probly.plot.html">probly.plot</a></li>
 <li class="toctree-l2"><a class="reference internal" href="probly.tasks.html">probly.tasks</a></li>
 <li class="toctree-l2"><a class="reference internal" href="probly.data.html">probly.data</a></li>
-<li class="toctree-l2"><a class="reference internal" href="probly.utils.html">probly.utils</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="probly.utils.html">probly.utils</a><input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of probly.utils</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="probly.utils.errors.html">probly.utils.errors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="probly.utils.probabilities.html">probly.utils.probabilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="probly.utils.sets.html">probly.utils.sets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="probly.utils.torch.html">probly.utils.torch</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -317,19 +325,19 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#probly.representation.representation.CredalRepresentation" title="probly.representation.representation.CredalRepresentation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CredalRepresentation</span></code></a>(data, problem, structure)</p></td>
 <td><p>Dataclass representing a credal set.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#probly.representation.representation.CredalStructure" title="probly.representation.representation.CredalStructure"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CredalStructure</span></code></a>(value)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#probly.representation.representation.CredalStructure" title="probly.representation.representation.CredalStructure"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CredalStructure</span></code></a>(*values)</p></td>
 <td><p>Enum representing the structure of the credal set.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#probly.representation.representation.DistributionFirstOrder" title="probly.representation.representation.DistributionFirstOrder"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DistributionFirstOrder</span></code></a>(value)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#probly.representation.representation.DistributionFirstOrder" title="probly.representation.representation.DistributionFirstOrder"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DistributionFirstOrder</span></code></a>(*values)</p></td>
 <td><p>Enum representing the first-order distribution.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#probly.representation.representation.DistributionRepresentation" title="probly.representation.representation.DistributionRepresentation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DistributionRepresentation</span></code></a>(data, problem, ...)</p></td>
 <td><p>Dataclass representing a second-order distribution.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#probly.representation.representation.DistributionSecondOrder" title="probly.representation.representation.DistributionSecondOrder"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DistributionSecondOrder</span></code></a>(value)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#probly.representation.representation.DistributionSecondOrder" title="probly.representation.representation.DistributionSecondOrder"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DistributionSecondOrder</span></code></a>(*values)</p></td>
 <td><p>Enum representing the second-order distribution.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#probly.representation.representation.Problem" title="probly.representation.representation.Problem"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Problem</span></code></a>(value)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#probly.representation.representation.Problem" title="probly.representation.representation.Problem"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Problem</span></code></a>(*values)</p></td>
 <td><p>Enum representing the type of problem.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#probly.representation.representation.Representation" title="probly.representation.representation.Representation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Representation</span></code></a>(data, problem)</p></td>
@@ -340,7 +348,7 @@
 </div>
 <dl class="py class">
 <dt class="sig sig-object py" id="probly.representation.representation.CredalRepresentation">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.representation.</span></span><span class="sig-name descname"><span class="pre">CredalRepresentation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">problem</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">structure</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/representation.html#CredalRepresentation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.representation.CredalRepresentation" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.representation.</span></span><span class="sig-name descname"><span class="pre">CredalRepresentation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">problem</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">structure</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/representation.html#CredalRepresentation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.representation.CredalRepresentation" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#probly.representation.representation.Representation" title="probly.representation.representation.Representation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Representation</span></code></a></p>
 <p>Dataclass representing a credal set.</p>
 <dl class="field-list simple">
@@ -397,7 +405,7 @@
 
 <dl class="py class">
 <dt class="sig sig-object py" id="probly.representation.representation.CredalStructure">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.representation.</span></span><span class="sig-name descname"><span class="pre">CredalStructure</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/representation.html#CredalStructure"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.representation.CredalStructure" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.representation.</span></span><span class="sig-name descname"><span class="pre">CredalStructure</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">values</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/representation.html#CredalStructure"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.representation.CredalStructure" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/enum.html#enum.Enum" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Enum</span></code></a></p>
 <p>Enum representing the structure of the credal set.</p>
 <dl class="py attribute">
@@ -419,7 +427,7 @@
 
 <dl class="py class">
 <dt class="sig sig-object py" id="probly.representation.representation.DistributionFirstOrder">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.representation.</span></span><span class="sig-name descname"><span class="pre">DistributionFirstOrder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/representation.html#DistributionFirstOrder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.representation.DistributionFirstOrder" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.representation.</span></span><span class="sig-name descname"><span class="pre">DistributionFirstOrder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">values</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/representation.html#DistributionFirstOrder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.representation.DistributionFirstOrder" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/enum.html#enum.Enum" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Enum</span></code></a></p>
 <p>Enum representing the first-order distribution.</p>
 <dl class="py attribute">
@@ -436,7 +444,7 @@
 
 <dl class="py class">
 <dt class="sig sig-object py" id="probly.representation.representation.DistributionRepresentation">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.representation.</span></span><span class="sig-name descname"><span class="pre">DistributionRepresentation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">problem</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">first_order_distribution</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">second_order_distribution</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/representation.html#DistributionRepresentation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.representation.DistributionRepresentation" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.representation.</span></span><span class="sig-name descname"><span class="pre">DistributionRepresentation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">problem</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">first_order_distribution</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">second_order_distribution</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/representation.html#DistributionRepresentation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.representation.DistributionRepresentation" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#probly.representation.representation.Representation" title="probly.representation.representation.Representation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Representation</span></code></a></p>
 <p>Dataclass representing a second-order distribution.</p>
 <dl class="field-list simple">
@@ -505,7 +513,7 @@
 
 <dl class="py class">
 <dt class="sig sig-object py" id="probly.representation.representation.DistributionSecondOrder">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.representation.</span></span><span class="sig-name descname"><span class="pre">DistributionSecondOrder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/representation.html#DistributionSecondOrder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.representation.DistributionSecondOrder" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.representation.</span></span><span class="sig-name descname"><span class="pre">DistributionSecondOrder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">values</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/representation.html#DistributionSecondOrder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.representation.DistributionSecondOrder" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/enum.html#enum.Enum" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Enum</span></code></a></p>
 <p>Enum representing the second-order distribution.</p>
 <dl class="py attribute">
@@ -522,7 +530,7 @@
 
 <dl class="py class">
 <dt class="sig sig-object py" id="probly.representation.representation.Problem">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.representation.</span></span><span class="sig-name descname"><span class="pre">Problem</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/representation.html#Problem"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.representation.Problem" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.representation.</span></span><span class="sig-name descname"><span class="pre">Problem</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">values</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/representation.html#Problem"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.representation.Problem" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/enum.html#enum.Enum" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Enum</span></code></a></p>
 <p>Enum representing the type of problem.</p>
 <dl class="py attribute">
@@ -539,7 +547,7 @@
 
 <dl class="py class">
 <dt class="sig sig-object py" id="probly.representation.representation.Representation">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.representation.</span></span><span class="sig-name descname"><span class="pre">Representation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">problem</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/representation.html#Representation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.representation.Representation" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.representation.</span></span><span class="sig-name descname"><span class="pre">Representation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">problem</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/representation.html#Representation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.representation.Representation" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></a></p>
 <p>Base dataclass for representations of uncertainty.</p>
 <dl class="field-list simple">

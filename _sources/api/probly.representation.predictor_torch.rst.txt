@@ -1,0 +1,12 @@
+probly.representation.predictor\_torch
+======================================
+
+.. automodule:: probly.representation.predictor_torch
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      TorchSamplingRepresentationPredictor
+   
