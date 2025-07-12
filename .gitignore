@@ -261,3 +261,5 @@ docs/source/api
 
 # add docs to gitignore
 docs/source/api
+
+.vscode/settings.json

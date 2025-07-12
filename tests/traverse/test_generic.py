@@ -12,6 +12,7 @@ from pytraverse.core import GlobalVariable, State, TraverserResult
 from pytraverse.generic import (
     CLONE,
     TRAVERSE_KEYS,
+    TRAVERSE_REVERSED,
     _dict_traverser,
     _list_traverser,
     _set_traverser,
@@ -133,6 +134,26 @@ class TestTupleTraverser:
         assert result == ("A", "B", "C")
         assert captured_metas == [0, 1, 2]
 
+    def test_reverse_tuple_traversal(self) -> None:
+        """Test tuple traversal with reversed order."""
+        test_tuple = (1, 2, 3)
+        state: State = State()
+        state = TRAVERSE_REVERSED.set(state, True)
+        captured_objs = []
+
+        def capture_traverse(
+            obj: Any,  # noqa: ANN401
+            state: State,
+            meta: Any = None,  # noqa: ANN401
+            traverser: Any = None,  # noqa: ANN401
+        ) -> TraverserResult:
+            captured_objs.append(obj)
+            return obj + 5, state
+
+        result, new_state = _tuple_traverser(test_tuple, state, capture_traverse)
+        assert result == (6, 7, 8)
+        assert captured_objs == [3, 2, 1]  # Should capture in reverse order
+
 
 class TestListTraverser:
     """Test list traversal functionality."""
@@ -203,6 +224,48 @@ class TestListTraverser:
         assert test_list is not result
         assert isinstance(result, CustomList)
         assert result == [1, 2, 3]
+
+    def test_reverse_list_traversal(self) -> None:
+        """Test list traversal with reversed order."""
+        test_list = [1, 2, 3]
+        state: State = State()
+        state = TRAVERSE_REVERSED.set(state, True)
+        captured_objs = []
+
+        def capture_traverse(
+            obj: Any,  # noqa: ANN401
+            state: State,
+            meta: Any = None,  # noqa: ANN401
+            traverser: Any = None,  # noqa: ANN401
+        ) -> TraverserResult:
+            captured_objs.append(obj)
+            return obj + 5, state
+
+        result, new_state = _list_traverser(test_list, state, capture_traverse)
+        assert result == [6, 7, 8]
+        assert captured_objs == [3, 2, 1]
+
+    def test_reverse_list_traversal_clone_disabled(self) -> None:
+        """Test reversed list traversal with cloning disabled."""
+        test_list = [1, 2, 3]
+        state: State = State()
+        state = TRAVERSE_REVERSED.set(state, True)
+        state = CLONE.set(state, False)
+        captured_objs = []
+
+        def capture_traverse(
+            obj: Any,  # noqa: ANN401
+            state: State,
+            meta: Any = None,  # noqa: ANN401
+            traverser: Any = None,  # noqa: ANN401
+        ) -> TraverserResult:
+            captured_objs.append(obj)
+            return obj + 5, state
+
+        result, new_state = _list_traverser(test_list, state, capture_traverse)
+        assert result == [6, 7, 8]
+        assert captured_objs == [3, 2, 1]
+        assert result is test_list
 
 
 class TestDictTraverser:
@@ -303,6 +366,51 @@ class TestDictTraverser:
         assert isinstance(result, CustomDict)
         assert result is not test_dict  # New dict created
         assert result == {"a": 1, "b": 2}
+
+    def test_reverse_dict_traversal(self) -> None:
+        """Test dictionary traversal with reversed order."""
+        test_dict = {"a": 1, "b": 2, "c": 3}
+        state: State = State()
+        state = TRAVERSE_REVERSED.set(state, True)
+        captured_objs = []
+
+        def capture_traverse(
+            obj: Any,  # noqa: ANN401
+            state: State,
+            meta: Any = None,  # noqa: ANN401
+            traverser: Any = None,  # noqa: ANN401
+        ) -> TraverserResult:
+            captured_objs.append(obj)
+            return obj + 5, state
+
+        result, new_state = _dict_traverser(test_dict, state, capture_traverse)
+        assert isinstance(result, dict)
+        assert result == {"a": 6, "b": 7, "c": 8}
+        assert list(result.keys()) == ["a", "b", "c"]  # Order preserved
+        assert captured_objs == [3, 2, 1]
+
+    def test_reverse_dict_traversal_clone_disabled(self) -> None:
+        """Test reversed dictionary traversal with cloning disabled."""
+        test_dict = {"a": 1, "b": 2, "c": 3}
+        state: State = State()
+        state = TRAVERSE_REVERSED.set(state, True)
+        state = CLONE.set(state, False)
+        captured_objs = []
+
+        def capture_traverse(
+            obj: Any,  # noqa: ANN401
+            state: State,
+            meta: Any = None,  # noqa: ANN401
+            traverser: Any = None,  # noqa: ANN401
+        ) -> TraverserResult:
+            captured_objs.append(obj)
+            return obj + 5, state
+
+        result, new_state = _dict_traverser(test_dict, state, capture_traverse)
+        assert isinstance(result, dict)
+        assert result == {"a": 6, "b": 7, "c": 8}
+        assert list(result.keys()) == ["a", "b", "c"]
+        assert result is test_dict  # Same dict modified
 
 
 class TestSetTraverser:

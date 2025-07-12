@@ -40,7 +40,7 @@ def sample_outputs(
 def evidential_classification_model(
     conv_linear_model: torch.nn.Module,
 ) -> classification.Evidential:
-    model = classification.Evidential(conv_linear_model)
+    model: classification.Evidential = classification.Evidential(conv_linear_model)
     return model
 
 
@@ -102,7 +102,7 @@ def test_evidential_nig_nll_loss(
 ) -> None:
     inputs = torch.randn(2, 2)
     targets = torch.randn(2, 1)
-    model = regression.Evidential(regression_model_1d)
+    model: regression.Evidential = regression.Evidential(regression_model_1d)
     outputs = model(inputs)
     criterion = EvidentialNIGNLLLoss()
     loss = criterion(outputs, targets)
@@ -123,7 +123,7 @@ def test_evidential_regression_regularization(
 ) -> None:
     inputs = torch.randn(2, 2)
     targets = torch.randn(2, 1)
-    model = regression.Evidential(regression_model_1d)
+    model: regression.Evidential = regression.Evidential(regression_model_1d)
     outputs = model(inputs)
     criterion = EvidentialRegressionRegularization()
     loss = criterion(outputs, targets)

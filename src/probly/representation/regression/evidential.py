@@ -2,15 +2,36 @@
 
 from __future__ import annotations
 
-import copy
-
 import torch
 from torch import nn
 
 from probly.representation.layers import NormalInverseGammaLinear
+from probly.representation.predictor import RepresentationPredictor
+from probly.traverse_nn import nn_compose
+from pytraverse import TRAVERSE_REVERSED, GlobalVariable, State, TraverserResult, singledispatch_traverser, traverse
+
+REPLACED_LAST_LINEAR = GlobalVariable[bool](
+    "REPLACED_LAST_LINEAR",
+    "Whether the last linear layer has been replaced with a NormalInverseGammaLinear layer.",
+    default=False,
+)
 
 
-class Evidential(nn.Module):
+evidential_traverser = singledispatch_traverser[object](name="evidential_traverser")
+
+
+@evidential_traverser.register(skip_if=lambda s: s[REPLACED_LAST_LINEAR])
+def _(layer: nn.Linear, state: State) -> TraverserResult:
+    state[REPLACED_LAST_LINEAR] = True
+    return NormalInverseGammaLinear(
+        layer.in_features,
+        layer.out_features,
+        device=layer.weight.device,
+        bias=layer.bias is not None,
+    ), state
+
+
+class Evidential[In, KwIn](nn.Module, RepresentationPredictor[In, KwIn, torch.Tensor, dict[str, torch.Tensor]]):
     """This class implements an evidential deep learning model for regression.
 
     Attributes:
@@ -28,60 +49,57 @@ class Evidential(nn.Module):
             base: torch.nn.Module, The base model to be used.
         """
         super().__init__()
-        self._convert(base)
+        self.model = self._convert(base)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, *args: In, **kwargs: KwIn) -> torch.Tensor:
         """Forward pass of the model.
 
         Args:
-            x: torch.Tensor, input data
+            *args: Input data.
+            **kwargs: Additional keyword arguments.
+
         Returns:
-            torch.Tensor, model output
+            Model output.
 
         """
-        return self.model(x)
+        return self.model(*args, **kwargs)
 
-    def predict_pointwise(self, x: torch.Tensor) -> torch.Tensor:
+    def predict_pointwise(self, *args: In, **kwargs: KwIn) -> torch.Tensor:
         """Forward pass of the model for point-wise prediction.
 
         Args:
-            x: torch.Tensor, input data
-        Returns:
-            torch.Tensor, model output
-        """
-        return self.model(x)
+            *args: Input data.
+            **kwargs: Additional keyword arguments.
 
-    def predict_representation(self, x: torch.Tensor) -> torch.Tensor:
+        Returns:
+            Model output.
+        """
+        return self.model(*args, **kwargs)["gamma"]
+
+    def predict_representation(self, *args: In, **kwargs: KwIn) -> dict[str, torch.Tensor]:
         """Forward pass of the model for uncertainty representation.
 
         Args:
-            x: torch.Tensor, input data
+            *args: Input data.
+            **kwargs: Additional keyword arguments.
+
         Returns:
-            torch.Tensor, model output
-
+            Model output.
         """
-        return self.model(x)
+        return dict(self.model(*args, **kwargs))
 
-    def _convert(self, base: nn.Module) -> None:
+    def _convert(self, base: nn.Module) -> nn.Module:
         """Convert a model into an evidential deep learning regression model.
 
-        Replace the last layer by a layer parameterizing a normal inverse gamma distribution.
+        Replace the last (linear) layer by a layer parameterizing a normal inverse gamma distribution.
 
         Args:
-            base: torch.nn.Module, The base model to be used.
+            base: The base model to be used.
 
         """
-        self.model = copy.deepcopy(base)
-        for name, child in reversed(list(self.model.named_children())):
-            if isinstance(child, nn.Linear):
-                setattr(
-                    self.model,
-                    name,
-                    NormalInverseGammaLinear(child.in_features, child.out_features),
-                )
-                break
+        return traverse(base, nn_compose(evidential_traverser), init={TRAVERSE_REVERSED: True})
 
-    def sample(self, x: torch.Tensor, n_samples: int) -> torch.Tensor:
+    def sample(self, *args: In, n_samples: int, **kwargs: KwIn) -> torch.Tensor:
         """Sample from the predicted distribution for a given input x.
 
         Returns a tensor of shape (n_instances, n_samples, 2) representing the parameters of the sampled normal
@@ -90,13 +108,14 @@ class Evidential(nn.Module):
         the second dimension is the variance.
 
         Args:
-            x: torch.Tensor, input data
-            n_samples: int, number of samples
-        Returns:
-            torch.Tensor, samples
+            *args: Input data.
+            n_samples: Number of samples.
+            **kwargs: Additional keyword arguments.
 
+        Returns:
+            Samples from the normal-inverse-gamma distribution.
         """
-        x = self.model(x)
+        x = self.model(*args, **kwargs)
         inverse_gamma = torch.distributions.InverseGamma(x["alpha"], x["beta"])
         sigma2 = torch.stack([inverse_gamma.sample() for _ in range(n_samples)]).swapaxes(0, 1)
         normal_mu = x["gamma"].unsqueeze(-1).expand(-1, n_samples, 1)

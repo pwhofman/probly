@@ -21,6 +21,11 @@ CLONE = t.StackVariable[bool](
     "Whether to clone torch modules before making changes.",
     default=generic.CLONE,
 )
+TRAVERSE_REVERSED = t.StackVariable[bool](
+    "TRAVERSE_REVERSED",
+    "Whether to traverse elements in reverse order.",
+    default=generic.TRAVERSE_REVERSED,
+)
 FLATTEN_SEQUENTIAL = t.StackVariable[bool](
     "FLATTEN_SEQUENTIAL",
     "Whether to flatten sequential modules after making changes.",
@@ -85,7 +90,10 @@ def _module_traverser(
     state: t.State[Module],
     traverse: t.TraverserCallback[Module],
 ) -> t.TraverserResult[Module]:
-    for name, module in obj.named_children():
+    children = obj.named_children()
+    if state[TRAVERSE_REVERSED]:
+        children = reversed(list(children))
+    for name, module in children:
         new_module, state = traverse(module, state, name)
         setattr(obj, name, new_module)
 
@@ -102,16 +110,23 @@ def _sequential_traverser(
         return _module_traverser(obj, state, traverse)
 
     seq = []
+    children = obj.named_children()
+    traverse_reversed = state[TRAVERSE_REVERSED]
+    if traverse_reversed:
+        children = reversed(list(children))
 
-    for name, module in obj.named_children():
+    for name, module in children:
         new_module, state = traverse(module, state, name)
         if isinstance(new_module, Sequential):
-            for sub_name, sub_module in new_module.named_children():
+            sub_children = new_module.named_children()
+            if traverse_reversed:
+                sub_children = reversed(list(sub_children))
+            for sub_name, sub_module in sub_children:
                 seq.append((f"{name}_{sub_name}", sub_module))
         else:
             seq.append((name, new_module))
 
-    new_obj = Sequential(OrderedDict(seq))
+    new_obj = Sequential(OrderedDict(reversed(seq) if traverse_reversed else seq))
 
     return new_obj, state
 
