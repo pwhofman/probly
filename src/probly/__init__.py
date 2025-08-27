@@ -1,6 +1,6 @@
 """probly: Uncertainty Representation and Quantification for Machine Learning."""
 
-__version__ = "0.3.0"
+__version__ = "0.3.1"
 
 from probly import (
     calibration as calibration,
