@@ -126,3 +126,17 @@ class SamplingRepresentationPredictor[
         return self.create_representation(
             [self.__call__(*args, **kwargs) for _ in range(n_samples)],
         )
+
+
+class PredictorConverter[In, KwIn, Out](metaclass=ABCMeta):
+    """Abstract class for converting a base model to a representation model."""
+
+    def __init__(self, base: Predictor[In, KwIn, Out]) -> None:
+        """Initialize the predictor with a base model."""
+        super().__init__()
+        self.model = self._convert(base)
+
+    @abstractmethod
+    def _convert(self, base: Predictor[In, KwIn, Out]) -> Predictor[In, KwIn, Out]:
+        """Convert the base model to a representation model."""
+        return base

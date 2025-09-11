@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta
 from typing import Unpack
 
 import torch
 from torch import nn
 from torch.nn import functional as F
 
-from probly.representation.predictor import SamplingRepresentationPredictor
+from probly.representation.predictor import PredictorConverter, SamplingRepresentationPredictor
 
 
 class TorchSamplingRepresentationPredictor[In, KwIn](
@@ -21,14 +21,10 @@ class TorchSamplingRepresentationPredictor[In, KwIn](
         torch.Tensor,
         torch.Tensor,
     ],
+    PredictorConverter[nn.Module],
     metaclass=ABCMeta,
 ):
     """Abstract class for PyTorch-based sampling representation predictors."""
-
-    def __init__(self, base: nn.Module) -> None:
-        """Initialize the predictor with a base model."""
-        super().__init__()
-        self.model = self._convert(base)
 
     def forward(self, *args: In, logits: bool = False, **kwargs: Unpack[KwIn]) -> torch.Tensor:
         """Forward pass of the model."""
@@ -46,8 +42,3 @@ class TorchSamplingRepresentationPredictor[In, KwIn](
     def _create_pointwise(self, y: list[torch.Tensor]) -> torch.Tensor:
         """Create a pointwise output from a collection of outputs."""
         return torch.stack(y, dim=1).mean(dim=1)
-
-    @abstractmethod
-    def _convert(self, base: nn.Module) -> nn.Module:
-        """Convert the base model to a representation model."""
-        return base

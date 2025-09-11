@@ -27,8 +27,10 @@ traverser = decorators.traverser
 sequential = composition.sequential
 top_sequential = composition.top_sequential
 SingledispatchTraverser = composition.SingledispatchTraverser
+LazySingledispatchTraverser = composition.LazySingledispatchTraverser
 
 singledispatch_traverser = composition.SingledispatchTraverser
+lazy_singledispatch_traverser = composition.LazySingledispatchTraverser
 
 ## Generic traverser
 

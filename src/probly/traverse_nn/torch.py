@@ -139,4 +139,4 @@ torch_traverser: t.Traverser[Module] = t.sequential(
     _torch_traverser,
     name="torch_traverser",
 )
-tnn.nn_traverser.register(Module, torch_traverser)
+torch_traverser.register = _torch_traverser.register  # type: ignore[assignment]

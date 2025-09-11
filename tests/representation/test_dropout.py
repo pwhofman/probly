@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 import torch
 
-from probly.representation.dropout import Dropout
+from probly.representation.dropout.torch import TorchDropout
 
 
 @pytest.mark.parametrize("probability", [0.1, 0.5])
@@ -20,7 +20,7 @@ def test_dropout(
         probability: The probability of dropping out a neuron.
 
     """
-    dropout_model: Dropout = Dropout(model_small_2d_2d, p=probability)
+    dropout_model: TorchDropout = TorchDropout(model_small_2d_2d, p=probability)
     assert dropout_model.p == probability
     assert dropout_model.model is not None
     list_of_layers = list(dropout_model.model.children())

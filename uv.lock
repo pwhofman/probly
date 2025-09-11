@@ -1,5 +1,4 @@
 version = 1
-revision = 1
 requires-python = ">=3.12"
 
 [[package]]
@@ -1025,6 +1024,15 @@ wheels = [
 ]
 
 [[package]]
+name = "lazy-imports"
+version = "1.0.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/e2/1c/6675601691fd6007021e8e95cfcb83e6d11067de3d7ecde0d0de970324c8/lazy_imports-1.0.1.tar.gz", hash = "sha256:7d3e4b1547cb574ec7ef3c47a074673e2612330b2b50bf7eec939f2c393fc261", size = 24484 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/88/37/c84d7fec58dec38564574dec8f94bb1db788598fe397f116a9d6a86d3055/lazy_imports-1.0.1-py3-none-any.whl", hash = "sha256:eb5accc33bf9987e5197e79476bbeb960b74a2c16619bdf41281b3240f730846", size = 18896 },
+]
+
+[[package]]
 name = "markdown-it-py"
 version = "3.0.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1654,6 +1662,7 @@ name = "probly"
 source = { editable = "." }
 dependencies = [
     { name = "joblib" },
+    { name = "lazy-imports" },
     { name = "matplotlib" },
     { name = "mpltern" },
     { name = "multimethod" },
@@ -1709,6 +1718,7 @@ test = [
 [package.metadata]
 requires-dist = [
     { name = "joblib" },
+    { name = "lazy-imports", specifier = ">=1.0.1" },
     { name = "matplotlib", specifier = ">=3.8.0" },
     { name = "mpltern" },
     { name = "multimethod", specifier = ">=2.0" },

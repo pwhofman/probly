@@ -19,6 +19,7 @@ dependencies = [
     "scikit-learn",
     "tqdm",
     "joblib",
+    "lazy-imports>=1.0.1",
 ]
 authors = [
     {name = "Paul Hofman", email = "paul.hofman@ifi.lmu.de"},
@@ -168,6 +169,7 @@ convention = "google"
     "T20",
     "NPY002",
     "I002",
+    "D101",
     "D103",
     "PERF401",  # it's fine to have non-optimized code in notebooks
 ]
@@ -179,7 +181,7 @@ convention = "google"
 
 # Use isort-compatible settings
 [tool.ruff.lint.isort]
-known-first-party = ["probly", "pytraverse"]
+known-first-party = ["probly", "pytraverse", "lazy_dispatch"]
 force-sort-within-sections = true
 combine-as-imports = true
 force-single-line = false
@@ -190,6 +192,9 @@ extra-standard-library = ["typing_extensions"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 minversion = "8.0"
+addopts = [
+    "--import-mode=importlib", # to avoid issues with lazy imports
+]
 
 [tool.coverage.report]
 exclude_also = [
