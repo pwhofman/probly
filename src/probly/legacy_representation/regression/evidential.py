@@ -5,8 +5,8 @@ from __future__ import annotations
 import torch
 from torch import nn
 
-from probly.representation.layers import NormalInverseGammaLinear
-from probly.representation.predictor import RepresentationPredictor
+from probly.legacy_representation.layers import NormalInverseGammaLinear
+from probly.predictor import RepresentationPredictor
 from probly.traverse_nn import nn_compose
 from pytraverse import TRAVERSE_REVERSED, GlobalVariable, State, TraverserResult, singledispatch_traverser, traverse
 

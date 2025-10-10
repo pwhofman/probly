@@ -6,7 +6,7 @@ import pytest
 import torch
 from torch import nn
 
-from probly.representation import SubEnsemble
+from probly.legacy_representation import SubEnsemble
 
 
 @pytest.fixture

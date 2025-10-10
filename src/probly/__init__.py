@@ -11,5 +11,6 @@ from probly import (
     quantification as quantification,
     representation as representation,
     tasks as tasks,
+    transformation as transformation,
     utils as utils,
 )

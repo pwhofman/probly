@@ -15,7 +15,7 @@ def _is_union_type(cls: Any) -> bool:  # noqa: ANN401
 def _split_lazy_type(lazy_type: LazyType) -> tuple[set[type], set[str]]:
     """Split classinfo into a set of types and a set of strings."""
     if isinstance(lazy_type, str):
-        return set(), {lazy_type}
+        return set(), {t.strip() for t in lazy_type.split("|")}
     if isinstance(lazy_type, type):
         return {lazy_type}, set()
     if isinstance(lazy_type, tuple):

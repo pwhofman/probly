@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 import torch
 
-from probly.representation.dropout.torch import TorchDropout
+from probly.legacy_representation.dropout.torch import TorchDropout
 
 
 @pytest.mark.parametrize("probability", [0.1, 0.5])

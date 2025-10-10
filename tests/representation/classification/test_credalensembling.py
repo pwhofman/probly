@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 import torch
 
-from probly.representation.classification.credalensembling import CredalEnsembling
+from probly.legacy_representation.classification.credalensembling import CredalEnsembling
 
 
 @pytest.fixture

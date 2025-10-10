@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from probly.representation import subensemble
+from probly.legacy_representation import subensemble
 
 if TYPE_CHECKING:
     from torch import nn

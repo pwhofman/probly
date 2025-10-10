@@ -3,18 +3,21 @@
 from __future__ import annotations
 
 from functools import singledispatch, update_wrapper
-import types
-from typing import TYPE_CHECKING, Any, Union, get_args
+from typing import TYPE_CHECKING, Any, Union, get_args, overload
 
 from lazy_dispatch.isinstance import (
     LazyType,
     _find_closest_string_type,
     _is_union_type,
     _split_lazy_type,
+    lazy_issubclass,
 )
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+    from types import UnionType
+
+type RegistrationFunction = Callable[[type], Any]
 
 
 def is_valid_dispatch_type(cls: LazyType) -> bool:
@@ -28,29 +31,81 @@ def is_valid_dispatch_type(cls: LazyType) -> bool:
     return False
 
 
-def lazy_singledispatch(func: Callable) -> Callable:  # noqa: C901
-    """A lazy version of functools.singledispatch that also works with string types."""
-    singledispatcher = singledispatch(func)
-    eager_dispath = singledispatcher.dispatch
-    eager_register: Callable = singledispatcher.register
-    funcname = getattr(func, "__name__", "singledispatch function")
-    string_registry: dict[str, Callable] = {}
+def first_argument[T](x: T, *args: Any, **kwargs: Any) -> T:  # noqa: ANN401, ARG001
+    """Return the first argument."""
+    return x
 
-    def lazy_dispatch(cls: type) -> Callable:
+
+class lazy_singledispatch[A: Callable, Out]:  # noqa: N801
+    """A lazy version of functools.singledispatch that also works with string types."""
+
+    def __new__(
+        cls,
+        func: A | None = None,
+        *,
+        dispatch_on: Callable = first_argument,
+    ) -> lazy_singledispatch[A, Out] | Callable[[A], lazy_singledispatch[A, Out]]:
+        """Create a new lazy_singledispatch or return a decorator."""
+        if func is None:
+
+            def decorator(func: A) -> lazy_singledispatch[A, Out]:
+                return cls(func, dispatch_on=dispatch_on)
+
+            return decorator
+
+        return super().__new__(cls)
+
+    def __init__(
+        self,
+        func: A | None = None,
+        *,
+        dispatch_on: Callable = first_argument,
+    ) -> None:
+        """Initialize the lazy_singledispatch instance."""
+        if func is None:
+            msg = "func must be provided"
+            raise ValueError(msg)
+        update_wrapper(self, func, updated=())
+
+        self._singledispatcher = singledispatch(func)
+        self.funcname = getattr(func, "__name__", "singledispatch function")
+        self.string_registry: dict[str, Callable] = {}
+        self.delayed_registration_registry: dict[str | type, RegistrationFunction] = {}
+        self.dispatch_on = dispatch_on
+
+    def dispatch(self, cls: type, *, delayed_register: bool = True) -> Callable[..., Out]:
+        """Find the best available function for the given type or string."""
+        delayed_registration_registry = self.delayed_registration_registry
+        string_registry = self.string_registry
+        if delayed_register and len(delayed_registration_registry) > 0:
+            active_registrations: dict[str | type, RegistrationFunction] = {
+                t: registration_func
+                for t, registration_func in delayed_registration_registry.items()
+                if lazy_issubclass(cls, t)
+            }
+
+            for t, registration_func in active_registrations.items():
+                registration_func(cls)
+                del delayed_registration_registry[t]
+
         if len(string_registry) > 0:
-            closest = _find_closest_string_type(cls, string_registry)
+            closest = _find_closest_string_type(cls, self.string_registry)
             if closest is not None:
                 real_type, string_type = closest
-                f = string_registry.pop(string_type)
-                eager_register(real_type, f)
+                registration_func = string_registry.pop(string_type)
+                self.eager_register(real_type, registration_func)
 
-        return eager_dispath(cls)
+        return self._singledispatcher.dispatch(cls)
 
-    def lazy_register(cls: LazyType | Callable, func: Callable | None = None) -> Callable:
-        nonlocal string_registry
+    def eager_register(self, cls: type | UnionType | Callable, func: Callable | None = None) -> Callable:
+        """Eagerly register a new implementation for the given type or union type."""
+        return self._singledispatcher.register(cls, func)  # type: ignore[arg-type]
+
+    def register(self, cls: LazyType | Callable, func: Callable | None = None) -> Callable:
+        """Register a new implementation for the given type or string."""
         if is_valid_dispatch_type(cls):  # type: ignore[arg-type]
             if func is None:
-                return lambda f: lazy_register(cls, f)
+                return lambda f: self.register(cls, f)
         else:
             if func is not None:
                 msg = f"Invalid first argument to `register()`. {cls!r} is not a class, string, tuple or union type."
@@ -76,23 +131,71 @@ def lazy_singledispatch(func: Callable) -> Callable:  # noqa: C901
         types, strings = _split_lazy_type(cls)  # type: ignore[arg-type]
 
         if len(types) > 0:
-            eager_register(Union.__getitem__(tuple(types)), func)
+            union_type: UnionType = Union.__getitem__(tuple(types))  # type: ignore[assignment]
+            self.eager_register(union_type, func)
 
         if len(strings) > 0:
             for s in strings:
-                string_registry[s] = func  # type: ignore[assignment]
+                self.string_registry[s] = func  # type: ignore[assignment]
 
         return func  # type: ignore[return-value]
 
-    def wrapper(*args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
+    @overload
+    def delayed_register(self, cls: LazyType) -> Callable[[RegistrationFunction], RegistrationFunction]: ...
+
+    @overload
+    def delayed_register(self, cls: RegistrationFunction) -> RegistrationFunction: ...
+
+    @overload
+    def delayed_register(self, cls: LazyType, func: RegistrationFunction) -> RegistrationFunction: ...
+
+    def delayed_register(
+        self,
+        cls: LazyType | RegistrationFunction,
+        func: RegistrationFunction | None = None,
+    ) -> RegistrationFunction | Callable[[RegistrationFunction], RegistrationFunction]:
+        """Register a delayed registration function."""
+        if is_valid_dispatch_type(cls):  # type: ignore[arg-type]
+            if func is None:
+                return lambda f: self.delayed_register(cls, f)  # type: ignore[arg-type]
+        else:
+            if func is not None:
+                msg = (
+                    f"Invalid first argument to `delayed_register()`. "
+                    f"{cls!r} is not a class, string, tuple or union type."
+                )
+                raise TypeError(msg)
+            ann = getattr(cls, "__annotations__", {})
+            if not ann:
+                msg = (
+                    f"Invalid first argument to `delayed_register()`: {cls!r}. "
+                    f"Use either `@delayed_register(some_class)` or plain `@delayed_register` "
+                    f"on an annotated function."
+                )
+                raise TypeError(msg)
+            func = cls  # type: ignore[assignment]
+
+            argname, cls = next(iter(func.__annotations__.items()))
+            if not is_valid_dispatch_type(cls):  # type: ignore[arg-type]
+                if _is_union_type(cls) or isinstance(cls, tuple):
+                    msg = f"Invalid annotation for {argname!r}. {cls!r} not all arguments are classes or strings."
+                    raise TypeError(msg)
+                msg = f"Invalid annotation for {argname!r}. {cls!r} is not a class or string."
+                raise TypeError(msg)
+
+        types, strings = _split_lazy_type(cls)  # type: ignore[arg-type]
+
+        for t in types:
+            self.delayed_registration_registry[t] = func  # type: ignore[assignment]
+
+        for s in strings:
+            self.delayed_registration_registry[s] = func  # type: ignore[assignment]
+
+        return func  # type: ignore[return-value]
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Out:  # noqa: ANN401
+        """Call the appropriate registered function based on the type of the first argument."""
         if not args:
-            msg = f"{funcname} requires at least 1 positional argument"
+            msg = f"{self.funcname} requires at least 1 positional argument"
             raise TypeError(msg)
-        return lazy_dispatch(args[0].__class__)(*args, **kwargs)
-
-    wrapper.register = lazy_register  # type: ignore[attr-defined]
-    wrapper.dispatch = lazy_dispatch  # type: ignore[attr-defined]
-    wrapper.string_registry = types.MappingProxyType(string_registry)  # type: ignore[attr-defined]
-    update_wrapper(wrapper, func)
-
-    return wrapper
+        return self.dispatch(self.dispatch_on(*args, **kwargs).__class__)(*args, **kwargs)

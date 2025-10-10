@@ -1,18 +1,21 @@
 """Traverser utilities for neural networks."""
 
-from . import nn
+from probly.lazy_types import TORCH_MODULE
+
+from . import common
 
 ## NN
 
-LAYER_COUNT = nn.LAYER_COUNT
-is_first_layer = nn.is_first_layer
+LAYER_COUNT = common.LAYER_COUNT
+is_first_layer = common.is_first_layer
 
-layer_count_traverser = nn.layer_count_traverser
-nn_traverser = nn.nn_traverser
+layer_count_traverser = common.layer_count_traverser
+nn_traverser = common.nn_traverser
 
-nn_compose = nn.compose
+nn_compose = common.compose
+
 
 ## Torch
-
-torch_traverser = lambda x: x  # noqa: E731
-nn_traverser.register("torch.nn.modules.module.Module", torch_traverser)
+@nn_traverser.delayed_register(TORCH_MODULE)
+def _(_: type) -> None:
+    from . import torch as torch  # noqa: PLC0415

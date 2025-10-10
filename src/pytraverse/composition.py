@@ -24,6 +24,7 @@ from typing import (
 )
 
 import lazy_dispatch
+from lazy_dispatch.singledispatch import RegistrationFunction
 
 from . import decorators as d
 from .core import (
@@ -35,7 +36,7 @@ from .core import (
 )
 
 
-class ExtensibleTraverser[T](Traverser[T], Protocol):
+class ExtensibleTraverser[T](Protocol):
     """A Traverser that supports dynamic registration of type-specific handlers."""
 
     def __call__(  # noqa: D102
@@ -287,7 +288,7 @@ class _AbstractSingledispatchTraverser[T: object, D](abc.ABC):
         """Register a traverser for a specific type or as the default.
 
         This method supports multiple calling patterns:
-        - @traverser.register: Register as default
+        - @traverser.register: Register as default or with type annotation
         - @traverser.register(type): Register for specific type
         - traverser.register(type, function): Register function for type
 
@@ -303,7 +304,7 @@ class _AbstractSingledispatchTraverser[T: object, D](abc.ABC):
             TypeError: If invalid arguments are provided.
         """
         if cls is not None:
-            if _is_valid_dispatch_type(cls):
+            if self._is_valid_dispatch_type(cls):
                 if traverser is None:
 
                     def partial_register(
@@ -388,3 +389,30 @@ class LazySingledispatchTraverser[T](_AbstractSingledispatchTraverser[T, lazy_di
 
     def _is_valid_dispatch_type(self, cls: Any) -> bool:  # noqa: ANN401
         return lazy_dispatch.is_valid_dispatch_type(cls)
+
+    @overload
+    def delayed_register(
+        self,
+        cls: RegistrationFunction,
+    ) -> RegistrationFunction: ...
+
+    @overload
+    def delayed_register(
+        self,
+        cls: lazy_dispatch.LazyType,
+    ) -> Callable[[RegistrationFunction], RegistrationFunction]: ...
+
+    @overload
+    def delayed_register(
+        self,
+        cls: lazy_dispatch.LazyType,
+        registration_fn: RegistrationFunction,
+    ) -> RegistrationFunction: ...
+
+    def delayed_register(
+        self,
+        cls: lazy_dispatch.LazyType | RegistrationFunction | None = None,
+        registration_fn: RegistrationFunction | None = None,
+    ) -> RegistrationFunction | Callable[[RegistrationFunction], RegistrationFunction]:
+        """Register a function that will be called when a matching type is encountered."""
+        return self._dispatch.delayed_register(cls, registration_fn)  # type: ignore[no-any-return]

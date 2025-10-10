@@ -9,7 +9,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
-from probly.representation.predictor import PredictorConverter, SamplingRepresentationPredictor
+from probly.predictor import PredictorConverter, SamplingRepresentationPredictor
 
 
 class TorchSamplingRepresentationPredictor[In, KwIn](

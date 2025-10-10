@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from probly.lazy_types import TORCH_MODULE
 
-from lazy_imports import LazyModule, as_package, load
+from . import common
 
-if TYPE_CHECKING:
-    pass
-else:
-    load(
-        LazyModule(
-            *as_package(__file__),
-        ),
-    )
+dropout = common.dropout
+register = common.register
+
+
+## Torch
+@common.dropout_traverser.delayed_register(TORCH_MODULE)
+def _(_: type) -> None:
+    from . import torch as torch  # noqa: PLC0415

@@ -5,8 +5,8 @@ from __future__ import annotations
 import torch
 from torch import nn
 
-from probly.representation.layers import BayesConv2d, BayesLinear
-from probly.representation.predictor_torch import TorchSamplingRepresentationPredictor
+from probly.legacy_representation.layers import BayesConv2d, BayesLinear
+from probly.legacy_representation.predictor_torch import TorchSamplingRepresentationPredictor
 from probly.traverse_nn import nn_compose
 from pytraverse import (
     CLONE,

@@ -6,7 +6,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-from probly.representation.predictor import (
+from probly.predictor import (
     Classifier,
     RepresentationPredictor,
 )

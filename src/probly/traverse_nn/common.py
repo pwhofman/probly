@@ -17,7 +17,7 @@ def is_first_layer(state: t.State) -> bool:
     return state[LAYER_COUNT] == 0
 
 
-layer_count_traverser = t.lazy_singledispatch_traverser[object](name="layer_count_traverser")
+layer_count_traverser = t.singledispatch_traverser[object](name="layer_count_traverser")
 
 nn_traverser = t.lazy_singledispatch_traverser[object](name="nn_traverser")
 

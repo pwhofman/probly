@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from torch import nn  # noqa: TC002
 
-from probly.representation.layers import DropConnectLinear
-from probly.representation.predictor_torch import TorchSamplingRepresentationPredictor
+from probly.legacy_representation.layers import DropConnectLinear
+from probly.legacy_representation.predictor_torch import TorchSamplingRepresentationPredictor
 from probly.traverse_nn import is_first_layer, nn_compose
 from pytraverse import CLONE, GlobalVariable, singledispatch_traverser, traverse
 

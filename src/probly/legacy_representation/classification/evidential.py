@@ -8,7 +8,7 @@ from typing import Unpack
 import torch
 from torch import nn
 
-from probly.representation.predictor import RepresentationPredictor
+from probly.predictor import RepresentationPredictor
 
 
 class Evidential[In, KwIn](

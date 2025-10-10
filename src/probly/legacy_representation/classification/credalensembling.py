@@ -5,7 +5,7 @@ from __future__ import annotations
 import torch
 from torch import nn
 
-from probly.representation import Ensemble
+from probly.legacy_representation import Ensemble
 
 
 class CredalEnsembling[In, KwIn](Ensemble[In, KwIn]):

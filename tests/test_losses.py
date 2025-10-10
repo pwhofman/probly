@@ -17,7 +17,7 @@ from probly.losses import (
     FocalLoss,
     LabelRelaxationLoss,
 )
-from probly.representation import Bayesian, classification, regression
+from probly.legacy_representation import Bayesian, classification, regression
 
 
 @pytest.fixture
