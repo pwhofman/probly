@@ -331,13 +331,13 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="probly.representation.conformalprediction.ConformalPrediction">
 <em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.conformalprediction.</span></span><span class="sig-name descname"><span class="pre">ConformalPrediction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/conformalprediction.html#ConformalPrediction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.conformalprediction.ConformalPrediction" title="Link to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="probly.representation.predictor.html#probly.representation.predictor.Classifier" title="probly.representation.predictor.Classifier"><code class="xref py py-class docutils literal notranslate"><span class="pre">Classifier</span></code></a>[<code class="xref py py-obj docutils literal notranslate"><span class="pre">In</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">KwIn</span></code>, <a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>], <a class="reference internal" href="probly.representation.predictor.html#probly.representation.predictor.RepresentationPredictor" title="probly.representation.predictor.RepresentationPredictor"><code class="xref py py-class docutils literal notranslate"><span class="pre">RepresentationPredictor</span></code></a>[<code class="xref py py-obj docutils literal notranslate"><span class="pre">In</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">KwIn</span></code>, <a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>, <a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>], <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Generic" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Generic</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="probly.representation.predictor.html#probly.representation.predictor.Classifier" title="probly.representation.predictor.Classifier"><code class="xref py py-class docutils literal notranslate"><span class="pre">Classifier</span></code></a>[<code class="xref py py-obj docutils literal notranslate"><span class="pre">In</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">KwIn</span></code>, <a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>], <a class="reference internal" href="probly.representation.predictor.html#probly.representation.predictor.RepresentationPredictor" title="probly.representation.predictor.RepresentationPredictor"><code class="xref py py-class docutils literal notranslate"><span class="pre">RepresentationPredictor</span></code></a>[<code class="xref py py-obj docutils literal notranslate"><span class="pre">In</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">KwIn</span></code>, <a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>, <a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>], <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Generic" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Generic</span></code></a></p>
 <p>Implementation of conformal prediction for a given model.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>base</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.8)"><em>torch.nn.Module</em></a>)</p></li>
-<li><p><strong>alpha</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>)</p></li>
+<li><p><strong>alpha</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>)</p></li>
 </ul>
 </dd>
 </dl>
@@ -370,7 +370,7 @@
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
 <li><p><strong>args</strong> (<em>In</em>)</p></li>
-<li><p><strong>logits</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>)</p></li>
+<li><p><strong>logits</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>)</p></li>
 <li><p><strong>kwargs</strong> (<em>KwIn</em>)</p></li>
 </ul>
 </dd>
@@ -383,7 +383,7 @@
 <dd><p>Perform the calibration step for conformal prediction.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
 <dd class="field-even"><p><strong>loader</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader" title="(in PyTorch v2.8)"><em>DataLoader</em></a>) – DataLoader, The data loader for the calibration set.</p>
@@ -402,7 +402,7 @@
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
 <li><p><strong>args</strong> (<em>In</em>)</p></li>
-<li><p><strong>logits</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>)</p></li>
+<li><p><strong>logits</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>)</p></li>
 <li><p><strong>kwargs</strong> (<em>KwIn</em>)</p></li>
 </ul>
 </dd>

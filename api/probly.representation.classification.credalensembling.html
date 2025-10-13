@@ -331,14 +331,14 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="probly.representation.classification.credalensembling.CredalEnsembling">
 <em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.classification.credalensembling.</span></span><span class="sig-name descname"><span class="pre">CredalEnsembling</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_members</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/classification/credalensembling.html#CredalEnsembling"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.classification.credalensembling.CredalEnsembling" title="Link to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="probly.representation.ensemble.html#probly.representation.ensemble.Ensemble" title="probly.representation.ensemble.Ensemble"><code class="xref py py-class docutils literal notranslate"><span class="pre">Ensemble</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Generic" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Generic</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="probly.representation.ensemble.html#probly.representation.ensemble.Ensemble" title="probly.representation.ensemble.Ensemble"><code class="xref py py-class docutils literal notranslate"><span class="pre">Ensemble</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Generic" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Generic</span></code></a></p>
 <p>Implementation of a credal ensembling representation to be used for uncertainty quantification.</p>
 <p>The Credal Ensembling representation was introduced in <span id="id1">[<a class="reference internal" href="../references.html#id7" title="Vu-Linh Nguyen, Haifei Zhang, and Sébastien Destercke. Credal ensembling in multi-class classification. Mach. Learn., 114(1):19, 2025. URL: https://doi.org/10.1007/s10994-024-06703-y, doi:10.1007/S10994-024-06703-Y.">NZD25</a>]</span>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>base</strong> (<em>nn.Module</em>)</p></li>
-<li><p><strong>n_members</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>)</p></li>
+<li><p><strong>n_members</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>)</p></li>
 </ul>
 </dd>
 </dl>
@@ -359,10 +359,10 @@
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
 <li><p><strong>*args</strong> (<em>In</em>) – In, input data to the model</p></li>
-<li><p><strong>alpha</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – float, the portion of farthest members in terms of distance to be removed</p></li>
-<li><p><strong>distance</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – str, the distance metric to be used for the representation
+<li><p><strong>alpha</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – float, the portion of farthest members in terms of distance to be removed</p></li>
+<li><p><strong>distance</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – str, the distance metric to be used for the representation
 (e.g., ‘euclidean’, ‘kl’)</p></li>
-<li><p><strong>logits</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>) – bool, whether to return logits or probabilities</p></li>
+<li><p><strong>logits</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>) – bool, whether to return logits or probabilities</p></li>
 <li><p><strong>**kwargs</strong> (<em>KwIn</em>) – KwIn, additional keyword arguments for the model</p></li>
 </ul>
 </dd>
