@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from pytraverse import State
 
 
-def _enfore_train_mode(obj: torch.nn.Module, state: State) -> tuple[torch.nn.Module, State]:
+def _enforce_train_mode(obj: torch.nn.Module, state: State) -> tuple[torch.nn.Module, State]:
     if not obj.training:
         obj.train()
         state[sampler.CLEANUP_FUNCS].add(lambda: obj.train(False))
@@ -25,7 +25,7 @@ def register_forced_train_mode(cls: LazyType) -> None:
     """Register a class to be forced into train mode during sampling."""
     sampler.sampling_preparation_traverser.register(
         cls,
-        _enfore_train_mode,
+        _enforce_train_mode,
     )
 
 

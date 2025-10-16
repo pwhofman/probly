@@ -47,7 +47,7 @@ Numeric = np.number | np.ndarray | float | int
 
 
 @create_sample.register(Numeric)
-class ArraySample[T: Numeric](Sample[T]):
+class ArraySample[T: Numeric](Sample[T]):  # type: ignore[valid-type]
     """A sample of predictions stored in a numpy array."""
 
     def __init__(self, samples: list[T]) -> None:

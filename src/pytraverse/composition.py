@@ -24,7 +24,7 @@ from typing import (
 )
 
 import lazy_dispatch
-from lazy_dispatch.singledispatch import RegistrationFunction
+from lazy_dispatch.singledispatch import RegistrationFunction  # noqa: TC001
 
 from . import decorators as d
 from .core import (
@@ -415,4 +415,4 @@ class LazySingledispatchTraverser[T](_AbstractSingledispatchTraverser[T, lazy_di
         registration_fn: RegistrationFunction | None = None,
     ) -> RegistrationFunction | Callable[[RegistrationFunction], RegistrationFunction]:
         """Register a function that will be called when a matching type is encountered."""
-        return self._dispatch.delayed_register(cls, registration_fn)  # type: ignore[no-any-return]
+        return self._dispatch.delayed_register(cls, registration_fn)  # type: ignore # noqa: PGH003
