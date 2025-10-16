@@ -23,13 +23,13 @@ def register(cls: LazyType, traverser: RegisteredLooseTraverser) -> None:
 
 
 def dropout[In, KwIn, Out](base: Predictor[In, KwIn, Out], p: float = 0.25) -> Predictor[In, KwIn, Out]:
-    """Create a Dropout ensemble predictor from a base predictor.
+    """Create a Dropout predictor from a base predictor.
 
     Args:
         base: Predictor, The base model to be used for dropout.
         p: float, The probability of dropping out a neuron.  Default is 0.25.
 
     Returns:
-        Predictor, The dropout ensemble predictor.
+        Predictor, The DropOut predictor.
     """
     return traverse(base, nn_compose(dropout_traverser), init={P: p, CLONE: True})
