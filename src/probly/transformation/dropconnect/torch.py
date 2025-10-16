@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from torch import nn
 
-from probly.transformation.layers import DropConnectLinear
+from probly.transformation.layers.torch import DropConnectLinear
 
 from .common import register
 
