@@ -53,7 +53,7 @@ class BayesLinear(nn.Module):
         self.bias = base_layer.bias is not None
 
         # transform standard deviation for the re-parametrization trick
-        rho = cast("float", torch.log(torch.exp(torch.tensor(posterior_std)) - 1))
+        rho = cast("float", _inverse_softplus(torch.tensor(posterior_std)))
 
         # posterior weights
         if not use_base_weights:
@@ -216,7 +216,7 @@ class BayesConv2d(nn.Module):
         self.bias = base_layer.bias is not None
 
         # transform standard deviation for the re-parametrization trick
-        rho = cast("float", torch.log(torch.exp(torch.tensor(posterior_std)) - 1))
+        rho = cast("float", _inverse_softplus(torch.tensor(posterior_std)))
 
         # posterior weights
         if not use_base_weights:
@@ -367,6 +367,18 @@ def _kl_divergence_gaussian(
     """
     kl_div: torch.Tensor = 0.5 * torch.log(sigma22 / sigma21) + (sigma21 + (mu1 - mu2) ** 2) / (2 * sigma22) - 0.5
     return kl_div
+
+
+def _inverse_softplus(x: torch.Tensor) -> torch.Tensor:
+    """Compute the inverse softplus function.
+
+    Args:
+        x: Input tensor.
+
+    Returns:
+        Output tensor after applying the inverse softplus function.
+    """
+    return torch.log(torch.exp(x) - 1)
 
 
 # ======================================================================================================================
