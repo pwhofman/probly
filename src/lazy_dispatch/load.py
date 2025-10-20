@@ -34,18 +34,27 @@ def lazy_import(name: str, package: str | None = None, register: bool = False) -
 
 @overload
 def lazy_callable(
-    module: ModuleType | str, attrs: str, package: str | None = None, register: bool = False
+    module: ModuleType | str,
+    attrs: str,
+    package: str | None = None,
+    register: bool = False,
 ) -> Callable: ...
 
 
 @overload
 def lazy_callable(
-    module: ModuleType | str, attrs: Iterable[str], package: str | None = None, register: bool = False
+    module: ModuleType | str,
+    attrs: Iterable[str],
+    package: str | None = None,
+    register: bool = False,
 ) -> list[Callable]: ...
 
 
 def lazy_callable(
-    module: ModuleType | str, attrs: str | Iterable[str], package: str | None = None, register: bool = False
+    module: ModuleType | str,
+    attrs: str | Iterable[str],
+    package: str | None = None,
+    register: bool = False,
 ) -> Callable | list[Callable]:
     """Lazily get a callable attribute from a module or module name."""
     if isinstance(module, str):
