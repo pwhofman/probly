@@ -5,7 +5,7 @@ from __future__ import annotations
 import torch
 from torch import nn, optim
 
-from probly.losses import ExpectedCalibrationError
+from probly.train.losses import ExpectedCalibrationError
 from probly.utils import temperature_softmax, torch_collect_outputs
 
 

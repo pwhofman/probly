@@ -5,7 +5,9 @@ from __future__ import annotations
 import pytest
 import torch
 
-from probly.losses import (
+from probly.predictor import Predictor
+from probly.train.bayesian import collect_kl_divergence
+from probly.train.losses import (
     ELBOLoss,
     EvidentialCELoss,
     EvidentialKLDivergence,
@@ -17,11 +19,7 @@ from probly.losses import (
     FocalLoss,
     LabelRelaxationLoss,
 )
-from probly.predictor import Predictor
-from probly.train.bayesian import collect_kl_divergence
-from probly.transformation import bayesian
-from probly.transformation.evidential.classification import evidential_classification
-from probly.transformation.evidential.regression import evidential_regression
+from probly.transformation import bayesian, evidential_classification, evidential_regression
 
 
 @pytest.fixture
