@@ -24,7 +24,7 @@ def torch_collect_outputs(
     """
     outputs = torch.empty(0, device=device)
     targets = torch.empty(0, device=device)
-    for inpt, target in tqdm(loader):
+    for inpt, target in tqdm(loader, desc="Batches"):
         outputs = torch.cat((outputs, model(inpt.to(device))), dim=0)
         targets = torch.cat((targets, target.to(device)), dim=0)
     return outputs, targets

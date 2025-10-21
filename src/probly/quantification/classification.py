@@ -227,7 +227,7 @@ def epistemic_uncertainty_distance(probs: np.ndarray) -> np.ndarray:
     constraints = {"type": "eq", "fun": lambda x: np.sum(x) - 1}
     bounds = [(0, 1)] * probs.shape[2]
     eu = np.empty(probs.shape[0])
-    for i in tqdm(range(probs.shape[0])):
+    for i in tqdm(range(probs.shape[0]), desc="Instances"):
         res = minimize(fun=fun, x0=x0[i], bounds=bounds, constraints=constraints, args=probs[i])
         eu[i] = 0.5 * res.fun
     return eu
@@ -262,12 +262,12 @@ def upper_entropy(probs: np.ndarray, base: float = 2, n_jobs: int | None = None)
 
     if n_jobs:
         ue = joblib.Parallel(n_jobs=n_jobs)(
-            joblib.delayed(compute_upper_entropy)(i) for i in tqdm(range(probs.shape[0]))
+            joblib.delayed(compute_upper_entropy)(i) for i in tqdm(range(probs.shape[0]), desc="Instances")
         )
         ue = np.array(ue)
     else:
         ue = np.empty(probs.shape[0])
-        for i in tqdm(range(probs.shape[0])):
+        for i in tqdm(range(probs.shape[0]), desc="Instances"):
             ue[i] = compute_upper_entropy(i)
     return ue
 
@@ -305,12 +305,12 @@ def lower_entropy(probs: np.ndarray, base: float = 2, n_jobs: int | None = None)
 
     if n_jobs:
         le = joblib.Parallel(n_jobs=n_jobs)(
-            joblib.delayed(compute_lower_entropy)(i) for i in tqdm(range(probs.shape[0]))
+            joblib.delayed(compute_lower_entropy)(i) for i in tqdm(range(probs.shape[0]), desc="Instances")
         )
         le = np.array(le)
     else:
         le = np.empty(probs.shape[0])
-        for i in tqdm(range(probs.shape[0])):
+        for i in tqdm(range(probs.shape[0]), desc="Instances"):
             le[i] = compute_lower_entropy(i)
     return le
 
@@ -344,12 +344,12 @@ def upper_entropy_convex_hull(probs: np.ndarray, base: float = 2, n_jobs: int | 
 
     if n_jobs:
         ue = joblib.Parallel(n_jobs=n_jobs)(
-            joblib.delayed(compute_upper_entropy_convex_hull)(i) for i in tqdm(range(probs.shape[0]))
+            joblib.delayed(compute_upper_entropy_convex_hull)(i) for i in tqdm(range(probs.shape[0]), desc="Instances")
         )
         ue = np.array(ue)
     else:
         ue = np.empty(probs.shape[0])
-        for i in tqdm(range(probs.shape[0])):
+        for i in tqdm(range(probs.shape[0]), desc="Instances"):
             ue[i] = compute_upper_entropy_convex_hull(i)
     return ue
 
@@ -383,12 +383,12 @@ def lower_entropy_convex_hull(probs: np.ndarray, base: float = 2, n_jobs: int | 
 
     if n_jobs:
         le = joblib.Parallel(n_jobs=n_jobs)(
-            joblib.delayed(compute_lower_entropy_convex_hull)(i) for i in tqdm(range(probs.shape[0]))
+            joblib.delayed(compute_lower_entropy_convex_hull)(i) for i in tqdm(range(probs.shape[0]), desc="Instances")
         )
         le = np.array(le)
     else:
         le = np.empty(probs.shape[0])
-        for i in tqdm(range(probs.shape[0])):
+        for i in tqdm(range(probs.shape[0]), desc="Instances"):
             le[i] = compute_lower_entropy_convex_hull(i)
     return le
 
@@ -410,7 +410,7 @@ def generalized_hartley(probs: np.ndarray, base: float = 2) -> np.ndarray:
     idxs = list(range(probs.shape[2]))  # list of class indices
     ps_a = powerset(idxs)  # powerset of all indices
     ps_a.pop(0)  # remove empty set
-    for a in tqdm(ps_a):
+    for a in tqdm(ps_a, desc="Subsets"):
         m_a = moebius(probs, a)
         gh += m_a * (np.log(len(a)) / np.log(base))
     return gh
