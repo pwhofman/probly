@@ -12,7 +12,7 @@ from tests.utils import validate_uncertainty
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-from probly.metrics import brier_score, log_loss, spherical_score, zero_one_loss
+from probly.evaluation.metrics import brier_score, log_loss, spherical_score, zero_one_loss
 from probly.quantification.classification import (
     aleatoric_uncertainty_distance,
     conditional_entropy,

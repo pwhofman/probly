@@ -7,7 +7,7 @@ import math
 import numpy as np
 import pytest
 
-from probly.metrics import (
+from probly.evaluation.metrics import (
     ROUND_DECIMALS,
     brier_score,
     coverage,
