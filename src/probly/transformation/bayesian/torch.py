@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from torch import nn
 
-from probly.transformation.layers.torch import BayesConv2d, BayesLinear
+from probly.layers.torch import BayesConv2d, BayesLinear
 
 from .common import register
 

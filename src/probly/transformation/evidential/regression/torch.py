@@ -6,14 +6,14 @@ from typing import TYPE_CHECKING
 
 from torch import nn
 
+from probly.layers.torch import NormalInverseGammaLinear
 from probly.transformation.evidential.regression.common import REPLACED_LAST_LINEAR, register
-from probly.transformation.layers.torch import NormalInverseGammaLinear
 
 if TYPE_CHECKING:
     from pytraverse import State, TraverserResult
 
 
-def replace_last_torch_nig(obj: nn.Module, state: State) -> TraverserResult:
+def replace_last_torch_nig(obj: nn.Linear, state: State) -> TraverserResult:
     """Register a class to be replaced by the NormalInverseGammaLinear layer."""
     state[REPLACED_LAST_LINEAR] = True
     return NormalInverseGammaLinear(

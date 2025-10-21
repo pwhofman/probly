@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 
 import torch
 
-from probly.transformation.layers.torch import BayesConv2d, BayesLinear  # noqa: TC001, required by traverser
+from probly.layers.torch import BayesConv2d, BayesLinear  # noqa: TC001, required by traverser
 from probly.traverse_nn import nn_compose
 from pytraverse import GlobalVariable, State, TraverserResult, singledispatch_traverser, traverse_with_state
 
