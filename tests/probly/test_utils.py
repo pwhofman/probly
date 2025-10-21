@@ -23,14 +23,6 @@ def test_powerset() -> None:
     assert powerset([1, 2]) == [(), (1,), (2,), (1, 2)]
 
 
-def test_capacity() -> None:
-    pass
-
-
-def test_moebius() -> None:
-    pass
-
-
 def test_differential_entropy_gaussian() -> None:
     assert np.isclose(differential_entropy_gaussian(0.5), 1.54709559)
     assert np.allclose(differential_entropy_gaussian(np.array([1, 2]), base=np.e), np.array([1.41893853, 1.76551212]))
