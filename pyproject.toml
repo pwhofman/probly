@@ -19,7 +19,6 @@ dependencies = [
     "scikit-learn",
     "tqdm",
     "joblib",
-    "lazy-imports>=1.0.1",
 ]
 authors = [
     {name = "Paul Hofman", email = "paul.hofman@ifi.lmu.de"},
@@ -160,7 +159,7 @@ convention = "google"
     "N803",
     "C901",
 ]
-"tests/traverse/**/*.py" = ["ARG001"]
+"tests/pytraverse/**/*.py" = ["ARG001"]
 "__init__.py" = [
     "I002",    # to not need from __future__ import annotations
     "PLC0414", # to allow import module as module in inits, contradicts F401
