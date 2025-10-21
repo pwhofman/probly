@@ -3,5 +3,5 @@
 from __future__ import annotations
 
 pytest_plugins = [
-    "tests.probly.fixtures.models",
+    "tests.probly.fixtures.torch_models",
 ]
