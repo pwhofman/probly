@@ -80,6 +80,7 @@ class Sampler[In, KwIn, Out](Representer[In, KwIn, Out]):
 
         Args:
             predictor (Predictor[In, KwIn, Out]): The predictor to be used for sampling.
+            num_samples: The number of samples to draw. Defaults to 1.
             sampling_strategy (SamplingStrategy, optional): How the samples should be computed.
             sampler_factory (Callable[[list[Out]], Sample[Out]], optional): Factory to create the sample representation.
         """
