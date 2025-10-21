@@ -22,7 +22,7 @@ def register(cls: LazyType, traverser: RegisteredLooseTraverser) -> None:
     dropout_traverser.register(cls=cls, traverser=traverser, skip_if=is_first_layer, vars={"p": P})
 
 
-def dropout[In, KwIn, Out](base: Predictor[In, KwIn, Out], p: float = 0.25) -> Predictor[In, KwIn, Out]:
+def dropout[T: Predictor](base: T, p: float = 0.25) -> T:
     """Create a Dropout predictor from a base predictor.
 
     Args:
