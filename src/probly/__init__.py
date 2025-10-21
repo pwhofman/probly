@@ -3,7 +3,6 @@
 __version__ = "0.3.1"
 
 from probly import (
-    calibration as calibration,
     datasets as datasets,
     evaluation as evaluation,
     plot as plot,
