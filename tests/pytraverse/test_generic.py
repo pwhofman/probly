@@ -47,7 +47,7 @@ class TestGenericTraverser:
         test_tuple = (1, 2, 3)
         state: State = State()
 
-        result, new_state = generic_traverser(test_tuple, state, double_traverse)
+        result, _ = generic_traverser(test_tuple, state, double_traverse)
         assert result == (2, 4, 6)
         assert isinstance(result, tuple)
 
@@ -56,7 +56,7 @@ class TestGenericTraverser:
         test_list = [1, 2, 3]
         state: State = State()
 
-        result, new_state = generic_traverser(test_list, state, double_traverse)
+        result, _ = generic_traverser(test_list, state, double_traverse)
         assert result == [2, 4, 6]
         assert isinstance(result, list)
 
@@ -65,7 +65,7 @@ class TestGenericTraverser:
         test_dict = {"a": 1, "b": 2}
         state: State = State()
 
-        result, new_state = generic_traverser(test_dict, state, double_traverse)
+        result, _ = generic_traverser(test_dict, state, double_traverse)
         assert result == {"a": 2, "b": 4}
         assert isinstance(result, dict)
 
@@ -74,7 +74,7 @@ class TestGenericTraverser:
         test_set = {1, 2, 3}
         state: State = State()
 
-        result, new_state = generic_traverser(test_set, state, double_traverse)
+        result, _ = generic_traverser(test_set, state, double_traverse)
         assert result == {2, 4, 6}
         assert isinstance(result, set)
 
@@ -88,7 +88,7 @@ class TestGenericTraverser:
         custom_obj = CustomClass(42)
         state: State = State()
 
-        result, new_state = generic_traverser(custom_obj, state, identity_traverse)
+        result, _ = generic_traverser(custom_obj, state, identity_traverse)
         assert result == custom_obj
         assert result is custom_obj  # Should be identity
 
@@ -101,7 +101,7 @@ class TestTupleTraverser:
         test_tuple = (1, "hello", 3.14)
         state: State = State()
 
-        result, new_state = _tuple_traverser(test_tuple, state, identity_traverse)
+        result, _ = _tuple_traverser(test_tuple, state, identity_traverse)
         assert result == (1, "hello", 3.14)
         assert isinstance(result, tuple)
         assert result is not test_tuple  # Always creates new tuple
@@ -111,7 +111,7 @@ class TestTupleTraverser:
         test_tuple = ()
         state: State = State()
 
-        result, new_state = _tuple_traverser(test_tuple, state, identity_traverse)
+        result, _ = _tuple_traverser(test_tuple, state, identity_traverse)
         assert result == ()
         assert isinstance(result, tuple)
 
@@ -130,7 +130,7 @@ class TestTupleTraverser:
             captured_metas.append(meta)
             return obj.upper(), state
 
-        result, new_state = _tuple_traverser(test_tuple, state, capture_meta_traverse)
+        result, _ = _tuple_traverser(test_tuple, state, capture_meta_traverse)
         assert result == ("A", "B", "C")
         assert captured_metas == [0, 1, 2]
 
@@ -150,7 +150,7 @@ class TestTupleTraverser:
             captured_objs.append(obj)
             return obj + 5, state
 
-        result, new_state = _tuple_traverser(test_tuple, state, capture_traverse)
+        result, _ = _tuple_traverser(test_tuple, state, capture_traverse)
         assert result == (6, 7, 8)
         assert captured_objs == [3, 2, 1]  # Should capture in reverse order
 
@@ -164,7 +164,7 @@ class TestListTraverser:
         state: State = State()
         state = CLONE.set(state, True)
 
-        result, new_state = _list_traverser(test_list, state, double_traverse)
+        result, _ = _list_traverser(test_list, state, double_traverse)
         assert result == [2, 4, 6]
         assert result is not test_list  # New list created
         assert test_list == [1, 2, 3]  # Original unchanged
@@ -175,7 +175,7 @@ class TestListTraverser:
         state: State = State()
         state = CLONE.set(state, False)
 
-        result, new_state = _list_traverser(test_list, state, double_traverse)
+        result, _ = _list_traverser(test_list, state, double_traverse)
         assert result == [2, 4, 6]
         assert result is test_list  # Same list modified
         assert test_list == [2, 4, 6]  # Original modified
@@ -185,7 +185,7 @@ class TestListTraverser:
         test_list: list = []
         state: State = State()
 
-        result, new_state = _list_traverser(test_list, state, identity_traverse)
+        result, _ = _list_traverser(test_list, state, identity_traverse)
         assert result == []
         assert isinstance(result, list)
 
@@ -205,7 +205,7 @@ class TestListTraverser:
             captured_metas.append(meta)
             return obj, state
 
-        result, new_state = _list_traverser(test_list, state, capture_meta_traverse)
+        result, _ = _list_traverser(test_list, state, capture_meta_traverse)
         assert result == test_list
         assert captured_metas == [0, 1, 2]
 
@@ -220,7 +220,7 @@ class TestListTraverser:
         state: State = State()
         state = CLONE.set(state, True)
 
-        result, new_state = _list_traverser(test_list, state, identity_traverse)
+        result, _ = _list_traverser(test_list, state, identity_traverse)
         assert test_list is not result
         assert isinstance(result, CustomList)
         assert result == [1, 2, 3]
@@ -241,7 +241,7 @@ class TestListTraverser:
             captured_objs.append(obj)
             return obj + 5, state
 
-        result, new_state = _list_traverser(test_list, state, capture_traverse)
+        result, _ = _list_traverser(test_list, state, capture_traverse)
         assert result == [6, 7, 8]
         assert captured_objs == [3, 2, 1]
 
@@ -262,7 +262,7 @@ class TestListTraverser:
             captured_objs.append(obj)
             return obj + 5, state
 
-        result, new_state = _list_traverser(test_list, state, capture_traverse)
+        result, _ = _list_traverser(test_list, state, capture_traverse)
         assert result == [6, 7, 8]
         assert captured_objs == [3, 2, 1]
         assert result is test_list
@@ -278,7 +278,7 @@ class TestDictTraverser:
         state = TRAVERSE_KEYS.set(state, False)
         state = CLONE.set(state, True)
 
-        result, new_state = _dict_traverser(test_dict, state, double_traverse)
+        result, _ = _dict_traverser(test_dict, state, double_traverse)
         assert result == {"a": 2, "b": 4, "c": 6}
         assert result is not test_dict
 
@@ -298,7 +298,7 @@ class TestDictTraverser:
                 return obj.upper(), state
             return obj * 2, state
 
-        result, new_state = _dict_traverser(test_dict, state, upper_traverse)
+        result, _ = _dict_traverser(test_dict, state, upper_traverse)
         assert result == {"FIRST": 2, "SECOND": 4}
 
     def test_dict_clone_disabled(self) -> None:
@@ -308,7 +308,7 @@ class TestDictTraverser:
         state = TRAVERSE_KEYS.set(state, False)
         state = CLONE.set(state, False)
 
-        result, new_state = _dict_traverser(test_dict, state, double_traverse)
+        result, _ = _dict_traverser(test_dict, state, double_traverse)
         assert result == {"a": 2, "b": 4}
         assert result is test_dict  # Same dict modified
         assert test_dict == {"a": 2, "b": 4}
@@ -320,7 +320,7 @@ class TestDictTraverser:
         state = TRAVERSE_KEYS.set(state, True)
         state = CLONE.set(state, False)
 
-        result, new_state = _dict_traverser(test_dict, state, identity_traverse)
+        result, _ = _dict_traverser(test_dict, state, identity_traverse)
         assert result == {"a": 1, "b": 2}
         assert result is not test_dict  # Forced to clone
         assert isinstance(result, dict)
@@ -330,7 +330,7 @@ class TestDictTraverser:
         test_dict: dict = {}
         state: State = State()
 
-        result, new_state = _dict_traverser(test_dict, state, identity_traverse)
+        result, _ = _dict_traverser(test_dict, state, identity_traverse)
         assert result == {}
         assert isinstance(result, dict)
 
@@ -348,7 +348,7 @@ class TestDictTraverser:
         ) -> TraverserResult:
             return f"{meta}={obj}", state
 
-        result, new_state = _dict_traverser(test_dict, state, capture_meta_traverse)
+        result, _ = _dict_traverser(test_dict, state, capture_meta_traverse)
         assert result == {"first": "first=1", "second": "second=2"}
 
     def test_dict_subclass_preserved(self) -> None:
@@ -362,7 +362,7 @@ class TestDictTraverser:
         state: State = State()
         state = CLONE.set(state, True)
 
-        result, new_state = _dict_traverser(test_dict, state, identity_traverse)
+        result, _ = _dict_traverser(test_dict, state, identity_traverse)
         assert isinstance(result, CustomDict)
         assert result is not test_dict  # New dict created
         assert result == {"a": 1, "b": 2}
@@ -383,7 +383,7 @@ class TestDictTraverser:
             captured_objs.append(obj)
             return obj + 5, state
 
-        result, new_state = _dict_traverser(test_dict, state, capture_traverse)
+        result, _ = _dict_traverser(test_dict, state, capture_traverse)
         assert isinstance(result, dict)
         assert result == {"a": 6, "b": 7, "c": 8}
         assert list(result.keys()) == ["a", "b", "c"]  # Order preserved
@@ -406,7 +406,7 @@ class TestDictTraverser:
             captured_objs.append(obj)
             return obj + 5, state
 
-        result, new_state = _dict_traverser(test_dict, state, capture_traverse)
+        result, _ = _dict_traverser(test_dict, state, capture_traverse)
         assert isinstance(result, dict)
         assert result == {"a": 6, "b": 7, "c": 8}
         assert list(result.keys()) == ["a", "b", "c"]
@@ -421,7 +421,7 @@ class TestSetTraverser:
         test_set = {1, 2, 3}
         state: State = State()
 
-        result, new_state = _set_traverser(test_set, state, double_traverse)
+        result, _ = _set_traverser(test_set, state, double_traverse)
         assert result == {2, 4, 6}
         assert isinstance(result, set)
 
@@ -430,7 +430,7 @@ class TestSetTraverser:
         test_set: set = set()
         state: State = State()
 
-        result, new_state = _set_traverser(test_set, state, identity_traverse)
+        result, _ = _set_traverser(test_set, state, identity_traverse)
         assert result == set()
         assert isinstance(result, set)
 
@@ -447,7 +447,7 @@ class TestSetTraverser:
         ) -> TraverserResult:
             return obj % 2, state  # Maps to 0 or 1
 
-        result, new_state = _set_traverser(test_set, state, modulo_traverse)
+        result, _ = _set_traverser(test_set, state, modulo_traverse)
         assert result == {0, 1}  # Duplicates removed
         assert isinstance(result, set)
 
@@ -461,7 +461,7 @@ class TestSetTraverser:
         test_set = CustomSet({1, 2, 3})
         state: State = State()
 
-        result, new_state = _set_traverser(test_set, state, identity_traverse)
+        result, _ = _set_traverser(test_set, state, identity_traverse)
         assert isinstance(result, CustomSet)
         assert result is not test_set  # New set created
         assert result == {1, 2, 3}
@@ -491,7 +491,7 @@ class TestIntegrationScenarios:
             # For non-int objects, delegate to the generic traverser
             return generic_traverser(obj, state, increment_traverse)
 
-        result, new_state = generic_traverser(nested_data, state, increment_traverse)
+        result, _ = generic_traverser(nested_data, state, increment_traverse)
 
         expected = {
             "list": [3, 4, {"inner": 5}],

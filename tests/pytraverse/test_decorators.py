@@ -558,13 +558,12 @@ class TestTraverserDecorator:
         obj: Any = 5
         state: State = State().update({skip_var: False})
         result: Any
-        new_state: State
-        result, new_state = skippable_traverser(obj, state, dummy_traverse)
+        result, _ = skippable_traverser(obj, state, dummy_traverse)
         assert result == 10
 
         # Test when skip is True
         state = State().update({skip_var: True})
-        result, new_state = skippable_traverser(obj, state, dummy_traverse)
+        result, _ = skippable_traverser(obj, state, dummy_traverse)
         assert result == obj  # Should be unchanged
 
     def test_traverse_if_predicate(self) -> None:
@@ -579,13 +578,12 @@ class TestTraverserDecorator:
         obj: Any = 5
         state: State = State().update({run_var: True})
         result: Any
-        new_state: State
-        result, new_state = conditional_traverser(obj, state, dummy_traverse)
+        result, _ = conditional_traverser(obj, state, dummy_traverse)
         assert result == 10
 
         # Test when run is False
         state = State().update({run_var: False})
-        result, new_state = conditional_traverser(obj, state, dummy_traverse)
+        result, _ = conditional_traverser(obj, state, dummy_traverse)
         assert result == obj  # Should be unchanged
 
     def test_error_vars_without_update_vars(self) -> None:
@@ -692,8 +690,7 @@ class TestTraverserDecorator:
         obj: Any = 5
         state: State = State()
         result: Any
-        new_state: State
-        result, new_state = traverse_using_traverser(obj, state, mock_traverse)
+        result, _ = traverse_using_traverser(obj, state, mock_traverse)
 
         assert result == 22  # (5*2) + (6*2)
         assert len(calls) == 2
@@ -785,7 +782,7 @@ class TestComplexScenarios:
         state: State = State().update({flag1: False, flag2: False})
 
         result1, state1 = first_traverser(obj, state, dummy_traverse)
-        result2, state2 = second_traverser(result1, state1, dummy_traverse)
+        result2, _ = second_traverser(result1, state1, dummy_traverse)
 
         assert result2 == 20  # (5 * 2) + 10
 
@@ -793,7 +790,7 @@ class TestComplexScenarios:
         state = State().update({flag1: True, flag2: False})
 
         result1, state1 = first_traverser(obj, state, dummy_traverse)
-        result2, state2 = second_traverser(result1, state1, dummy_traverse)
+        result2, _ = second_traverser(result1, state1, dummy_traverse)
 
         assert result2 == 15  # 5 + 10 (first traverser skipped)
 
@@ -810,7 +807,6 @@ class TestComplexScenarios:
         obj: Any = 3
         state: State = State().update({fallback_var: 50})
         result: Any
-        new_state: State
-        result, new_state = fallback_traverser(obj, state, dummy_traverse)
+        result, _ = fallback_traverser(obj, state, dummy_traverse)
 
         assert result == 150  # 3 * 50 (using fallback)

@@ -187,11 +187,11 @@ class TestSingledispatchTraverser:
         state: State[Any] = State()
 
         # Test with int
-        result, new_state = traverser(5, state, dummy_traverse)
+        result, _ = traverser(5, state, dummy_traverse)
         assert result == 10
 
         # Test with string (should use default)
-        result, new_state = traverser("hello", state, dummy_traverse)
+        result, _ = traverser("hello", state, dummy_traverse)
         assert result == "hello"
 
     def test_register_multiple_types(self) -> None:
@@ -217,11 +217,11 @@ class TestSingledispatchTraverser:
         state: State[Any] = State()
 
         # Test list
-        result, new_state = traverser([1, 2, 3], state, dummy_traverse)
+        result, _ = traverser([1, 2, 3], state, dummy_traverse)
         assert result == [2, 4, 6]
 
         # Test dict
-        result, new_state = traverser({"a": 1, "b": 2}, state, dummy_traverse)
+        result, _ = traverser({"a": 1, "b": 2}, state, dummy_traverse)
         assert result == {"a": 2, "b": 4}
 
     def test_register_direct_call(self) -> None:
