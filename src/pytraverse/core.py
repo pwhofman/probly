@@ -131,7 +131,7 @@ class Variable[V](ABC):
             if self.index in d:
                 return d[self.index]  # type: ignore[no-any-return]
             return self.fallback.get(state)
-        return d.get(self.index, self.default)
+        return d.get(self.index, self.default)  # type: ignore[no-any-return]
 
     @abstractmethod
     def get[T](self, state: State[T]) -> V:
