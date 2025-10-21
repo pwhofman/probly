@@ -31,18 +31,18 @@ def sample_classification_data() -> tuple[torch.Tensor, torch.Tensor]:
 
 @pytest.fixture
 def sample_outputs(
-    conv_linear_model: torch.nn.Module,
+    torch_conv_linear_model: torch.nn.Module,
 ) -> tuple[torch.Tensor, torch.Tensor]:
-    outputs = conv_linear_model(torch.randn(2, 3, 5, 5))
+    outputs = torch_conv_linear_model(torch.randn(2, 3, 5, 5))
     targets = torch.randint(0, 2, (2,))
     return outputs, targets
 
 
 @pytest.fixture
 def evidential_classification_model(
-    conv_linear_model: torch.nn.Module,
+    torch_conv_linear_model: torch.nn.Module,
 ) -> Predictor:
-    model: Predictor = evidential_classification(conv_linear_model)
+    model: Predictor = evidential_classification(torch_conv_linear_model)
     return model
 
 
@@ -99,12 +99,12 @@ def test_evidential_kl_divergence(
 
 
 def test_evidential_nig_nll_loss(
-    regression_model_1d: torch.nn.Module,
-    regression_model_2d: torch.nn.Module,
+    torch_regression_model_1d: torch.nn.Module,
+    torch_regression_model_2d: torch.nn.Module,
 ) -> None:
     inputs = torch.randn(2, 2)
     targets = torch.randn(2, 1)
-    model: Predictor = evidential_regression(regression_model_1d)
+    model: Predictor = evidential_regression(torch_regression_model_1d)
     outputs = model(inputs)
     criterion = EvidentialNIGNLLLoss()
     loss = criterion(outputs, targets)
@@ -112,7 +112,7 @@ def test_evidential_nig_nll_loss(
 
     inputs = torch.randn(2, 4)
     targets = torch.randn(2, 2)
-    model = evidential_regression(regression_model_2d)
+    model = evidential_regression(torch_regression_model_2d)
     outputs = model(inputs)
     criterion = EvidentialNIGNLLLoss()
     loss = criterion(outputs, targets)
@@ -120,12 +120,12 @@ def test_evidential_nig_nll_loss(
 
 
 def test_evidential_regression_regularization(
-    regression_model_1d: torch.nn.Module,
-    regression_model_2d: torch.nn.Module,
+    torch_regression_model_1d: torch.nn.Module,
+    torch_regression_model_2d: torch.nn.Module,
 ) -> None:
     inputs = torch.randn(2, 2)
     targets = torch.randn(2, 1)
-    model: Predictor = evidential_regression(regression_model_1d)
+    model: Predictor = evidential_regression(torch_regression_model_1d)
     outputs = model(inputs)
     criterion = EvidentialRegressionRegularization()
     loss = criterion(outputs, targets)
@@ -133,7 +133,7 @@ def test_evidential_regression_regularization(
 
     inputs = torch.randn(2, 4)
     targets = torch.randn(2, 2)
-    model = evidential_regression(regression_model_2d)
+    model = evidential_regression(torch_regression_model_2d)
     outputs = model(inputs)
     criterion = EvidentialRegressionRegularization()
     loss = criterion(outputs, targets)
@@ -151,10 +151,10 @@ def test_focal_loss(sample_outputs: tuple[torch.Tensor, torch.Tensor]) -> None:
 
 def test_elbo_loss(
     sample_classification_data: tuple[torch.Tensor, torch.Tensor],
-    conv_linear_model: torch.nn.Module,
+    torch_conv_linear_model: torch.nn.Module,
 ) -> None:
     inputs, targets = sample_classification_data
-    model: torch.nn.Module = bayesian(conv_linear_model)
+    model: torch.nn.Module = bayesian(torch_conv_linear_model)
     outputs = model(inputs)
 
     criterion = ELBOLoss()

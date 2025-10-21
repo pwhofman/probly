@@ -9,7 +9,7 @@ from torch import nn  # noqa: E402
 
 
 @pytest.fixture
-def model_small_2d_2d() -> nn.Module:
+def torch_model_small_2d_2d() -> nn.Module:
     """Return a small linear model with 2 input and 2 output neurons."""
     model = nn.Sequential(
         nn.Linear(2, 2),
@@ -20,7 +20,7 @@ def model_small_2d_2d() -> nn.Module:
 
 
 @pytest.fixture
-def conv_linear_model() -> nn.Module:
+def torch_conv_linear_model() -> nn.Module:
     """Return a small convolutional model with 3 input channels and 2 output neurons."""
     model = nn.Sequential(
         nn.Conv2d(3, 5, 5),
@@ -32,7 +32,7 @@ def conv_linear_model() -> nn.Module:
 
 
 @pytest.fixture
-def regression_model_1d() -> nn.Module:
+def torch_regression_model_1d() -> nn.Module:
     """Return a small regression model with 2 input and 1 output neurons."""
     model = nn.Sequential(
         nn.Linear(2, 2),
@@ -43,7 +43,7 @@ def regression_model_1d() -> nn.Module:
 
 
 @pytest.fixture
-def regression_model_2d() -> nn.Module:
+def torch_regression_model_2d() -> nn.Module:
     """Return a small regression model with 4 input and 2 output neurons."""
     model = nn.Sequential(
         nn.Linear(4, 4),

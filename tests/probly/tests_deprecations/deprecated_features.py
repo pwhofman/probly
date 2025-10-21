@@ -35,4 +35,4 @@ def example_always_warn(requests: pytest.FixtureRequest) -> None:
         deprecated_in="1.0.0",
         removed_in="9.9.9",
     )
-    _ = requests.getfixturevalue("conv_linear_model")  # gets a fixture as an example of usage
+    _ = requests.getfixturevalue("torch_conv_linear_model")  # gets a fixture as an example of usage

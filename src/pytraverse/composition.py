@@ -371,7 +371,7 @@ class SingledispatchTraverser[T](_AbstractSingledispatchTraverser[T, type | type
         return _is_valid_dispatch_type(cls)
 
 
-class LazySingledispatchTraverser[T](_AbstractSingledispatchTraverser[T, lazy_dispatch.LazyType]):
+class LazydispatchTraverser[T](_AbstractSingledispatchTraverser[T, lazy_dispatch.LazyType]):
     """A wrapper around lazy_dispath.singledispatch to create an extensible traverser with lazy type matching.
 
     This class provides a type-based dispatch mechanism for traversers, allowing
@@ -385,7 +385,7 @@ class LazySingledispatchTraverser[T](_AbstractSingledispatchTraverser[T, lazy_di
     def _create_dispatcher(
         self,
     ) -> ExtensibleTraverser[T]:
-        return lazy_dispatch.lazy_singledispatch(identity_traverser)  # type: ignore[return-value]
+        return lazy_dispatch.lazydispatch(identity_traverser)  # type: ignore[return-value]
 
     def _is_valid_dispatch_type(self, cls: Any) -> bool:  # noqa: ANN401
         return lazy_dispatch.is_valid_dispatch_type(cls)

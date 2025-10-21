@@ -9,6 +9,11 @@ LAYER_COUNT = t.GlobalVariable[int](
     "The DFS index of the current layer/module.",
     default=0,
 )
+FLATTEN_SEQUENTIAL = t.StackVariable[bool](
+    "FLATTEN_SEQUENTIAL",
+    "Whether to flatten sequential modules after making changes.",
+    default=True,
+)
 
 
 @t.computed
@@ -19,7 +24,7 @@ def is_first_layer(state: t.State) -> bool:
 
 layer_count_traverser = t.singledispatch_traverser[object](name="layer_count_traverser")
 
-nn_traverser = t.lazy_singledispatch_traverser[object](name="nn_traverser")
+nn_traverser = t.lazydispatch_traverser[object](name="nn_traverser")
 
 
 def compose(

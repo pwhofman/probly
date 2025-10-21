@@ -22,3 +22,9 @@ repos:
     hooks:
       - id: mypy
         exclude: docs
+        args:
+            - "--ignore-missing-imports"
+            - "--scripts-are-modules"
+            # Since pre-commit env does not have all dependencies installed,
+            # we ignore unused ignores to avoid false positives:
+            - "--no-warn-unused-ignores"

@@ -1,17 +1,21 @@
-"""Traversal implementation for PyTorch modules."""
+"""Traversal implementation for flax modules."""
 
 from __future__ import annotations
 
-from collections import OrderedDict
 import copy
+from typing import TYPE_CHECKING
 
-from torch.nn import Module, Sequential
+from flax.nnx.helpers import Sequential
+from flax.nnx.module import Module
 
 import pytraverse as t
 from pytraverse import generic
 from pytraverse.decorators import traverser
 
 from . import common as tnn
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable, Iterator
 
 # Torch traversal variables
 
@@ -28,7 +32,7 @@ TRAVERSE_REVERSED = t.StackVariable[bool](
 )
 FLATTEN_SEQUENTIAL = t.StackVariable[bool](
     "FLATTEN_SEQUENTIAL",
-    "Whether to flatten sequential torch modules after making changes.",
+    "Whether to flatten sequential flax modules after making changes.",
     default=tnn.FLATTEN_SEQUENTIAL,
 )
 
@@ -50,7 +54,7 @@ def _clone_traverser(
     return obj, state
 
 
-# Torch model root tracking
+# Flax model root tracking
 
 
 @traverser(type=Module)
@@ -64,7 +68,7 @@ def _root_traverser(
     return obj, state
 
 
-# Torch model layer counting
+# Flax model layer counting
 
 
 @tnn.layer_count_traverser.register(vars={"count": tnn.LAYER_COUNT}, update_vars=True)
@@ -79,7 +83,7 @@ def _sequential_counter(obj: Sequential) -> Sequential:
     return obj  # Don't count sequential modules as layers.
 
 
-# Torch model traverser
+# Flax model traverser
 
 _torch_traverser = t.singledispatch_traverser[Module](name="_torch_traverser")
 
@@ -90,7 +94,7 @@ def _module_traverser(
     state: t.State[Module],
     traverse: t.TraverserCallback[Module],
 ) -> t.TraverserResult[Module]:
-    children = obj.named_children()
+    children: Iterator[tuple[str, Module]] = obj.iter_children()  # type: ignore[assignment]
     if state[TRAVERSE_REVERSED]:
         children = reversed(list(children))
     for name, module in children:
@@ -109,24 +113,23 @@ def _sequential_traverser(
     if not state[FLATTEN_SEQUENTIAL]:
         return _module_traverser(obj, state, traverse)
 
-    seq = []
-    children = obj.named_children()
+    seq: list[Module] = []
+    children: Iterable[Module] = obj.layers  # type: ignore[assignment]
     traverse_reversed = state[TRAVERSE_REVERSED]
     if traverse_reversed:
         children = reversed(list(children))
 
-    for name, module in children:
-        new_module, state = traverse(module, state, name)
+    for module in children:
+        new_module, state = traverse(module, state)
         if isinstance(new_module, Sequential):
-            sub_children = new_module.named_children()
+            sub_children: Iterable[Module] = new_module.layers  # type: ignore[assignment]
             if traverse_reversed:
                 sub_children = reversed(list(sub_children))
-            for sub_name, sub_module in sub_children:
-                seq.append((f"{name}_{sub_name}", sub_module))
+            seq += sub_children
         else:
-            seq.append((name, new_module))
+            seq.append(new_module)
 
-    new_obj = Sequential(OrderedDict(reversed(seq) if traverse_reversed else seq))
+    new_obj = Sequential(*(reversed(seq) if traverse_reversed else seq))
 
     return new_obj, state
 

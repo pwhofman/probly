@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from probly.traverse_nn import nn_compose
-from pytraverse import CLONE, GlobalVariable, lazy_singledispatch_traverser, traverse
+from pytraverse import CLONE, GlobalVariable, lazydispatch_traverser, traverse
 
 if TYPE_CHECKING:
     from lazy_dispatch.isinstance import LazyType
@@ -17,7 +17,7 @@ POSTERIOR_STD = GlobalVariable[float]("POSTERIOR_STD", default=0.05)
 PRIOR_MEAN = GlobalVariable[float]("PRIOR_MEAN", default=0.0)
 PRIOR_STD = GlobalVariable[float]("PRIOR_STD", default=1.0)
 
-bayesian_traverser = lazy_singledispatch_traverser[object](name="bayesian_traverser")
+bayesian_traverser = lazydispatch_traverser[object](name="bayesian_traverser")
 
 
 def register(cls: LazyType, traverser: RegisteredLooseTraverser) -> None:

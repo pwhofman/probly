@@ -5,17 +5,17 @@ from __future__ import annotations
 from torch import nn
 
 from probly.traverse_nn import nn_compose
-from pytraverse import CLONE, lazy_singledispatch_traverser, traverse
+from pytraverse import CLONE, lazydispatch_traverser, traverse
 
 from .common import register
 
-reset_traverser = lazy_singledispatch_traverser[object](name="reset_traverser")
+reset_traverser = lazydispatch_traverser[object](name="reset_traverser")
 
 
 @reset_traverser.register
 def _(obj: nn.Module) -> nn.Module:
     if hasattr(obj, "reset_parameters"):
-        obj.reset_parameters()
+        obj.reset_parameters()  # type: ignore[operator]
     return obj
 
 

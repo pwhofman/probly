@@ -13,8 +13,6 @@ dependencies = [
     "matplotlib>=3.8.0",
     "mpltern",
     "numpy>=2.0.0",
-    "torch>=2.0.0",
-    "torchvision",
     "scikit-learn",
     "tqdm",
     "joblib",
@@ -56,6 +54,17 @@ changelog = "https://github.com/pwhofman/probly/blob/main/CHANGELOG.md"
 
 
 [dependency-groups]
+torch = [
+    "torch>=2.0.0",
+    "torchvision",
+]
+jax = [
+    "jax>=0.8.0",
+    "flax>=0.12.0",
+]
+jax-cuda12 = [
+    "jax[cuda12]",
+]
 test = [
     "pytest>=8.3.5",       # for testing
     "pytest-cov>=6.0.0",   # for coverage
@@ -84,6 +93,8 @@ dev = [
     {include-group = "test"},
     {include-group = "lint"},
     {include-group = "docs"},
+    {include-group = "torch"},
+    {include-group = "jax"},
 ]
 
 

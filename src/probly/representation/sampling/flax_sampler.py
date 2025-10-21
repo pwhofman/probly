@@ -1,12 +1,10 @@
-"""Sampling preparation for torch."""
+"""Sampling preparation for flax."""
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import torch.nn
-
-from probly.layers.torch import DropConnectLinear
+from flax import nnx
 
 from . import sampler
 
@@ -15,10 +13,10 @@ if TYPE_CHECKING:
     from pytraverse import State
 
 
-def _enforce_train_mode(obj: torch.nn.Module, state: State) -> tuple[torch.nn.Module, State]:
-    if not obj.training:
-        obj.train()
-        state[sampler.CLEANUP_FUNCS].add(lambda: obj.train(False))
+def _enforce_train_mode(obj: nnx.Module, state: State) -> tuple[nnx.Module, State]:
+    if getattr(obj, "deterministic", False):
+        obj.deterministic = False  # type: ignore[attr-defined]
+        state[sampler.CLEANUP_FUNCS].add(lambda: setattr(obj, "deterministic", True))
         return obj, state
     return obj, state
 
@@ -32,11 +30,5 @@ def register_forced_train_mode(cls: LazyType) -> None:
 
 
 register_forced_train_mode(
-    torch.nn.Dropout
-    | torch.nn.Dropout1d
-    | torch.nn.Dropout2d
-    | torch.nn.Dropout3d
-    | torch.nn.AlphaDropout
-    | torch.nn.FeatureAlphaDropout
-    | DropConnectLinear,
+    nnx.Dropout,
 )

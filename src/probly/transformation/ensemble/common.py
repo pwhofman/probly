@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from lazy_dispatch import lazy_singledispatch
+from lazy_dispatch import lazydispatch
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from probly.predictor import Predictor
 
 
-@lazy_singledispatch
+@lazydispatch
 def ensemble_generator[In, KwIn, Out](base: Predictor[In, KwIn, Out]) -> Predictor[In, KwIn, Out]:
     """Generate an ensemble from a base model."""
     msg = f"No ensemble generator is registered for type {type(base)}"

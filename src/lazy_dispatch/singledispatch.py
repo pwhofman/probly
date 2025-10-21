@@ -36,7 +36,7 @@ def first_argument[T](x: T, *args: Any, **kwargs: Any) -> T:  # noqa: ANN401, AR
     return x
 
 
-class lazy_singledispatch[A: Callable, Out]:  # noqa: N801
+class lazydispatch[A: Callable, Out]:  # noqa: N801
     """A lazy version of functools.singledispatch that also works with string types."""
 
     def __new__(
@@ -44,11 +44,11 @@ class lazy_singledispatch[A: Callable, Out]:  # noqa: N801
         func: A | None = None,
         *,
         dispatch_on: Callable = first_argument,
-    ) -> lazy_singledispatch[A, Out] | Callable[[A], lazy_singledispatch[A, Out]]:
+    ) -> lazydispatch[A, Out] | Callable[[A], lazydispatch[A, Out]]:
         """Create a new lazy_singledispatch or return a decorator."""
         if func is None:
 
-            def decorator(func: A) -> lazy_singledispatch[A, Out]:
+            def decorator(func: A) -> lazydispatch[A, Out]:
                 return cls(func, dispatch_on=dispatch_on)
 
             return decorator

@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from probly.traverse_nn import nn_compose
-from pytraverse import CLONE, TRAVERSE_REVERSED, GlobalVariable, lazy_singledispatch_traverser, traverse
+from pytraverse import CLONE, TRAVERSE_REVERSED, GlobalVariable, lazydispatch_traverser, traverse
 
 if TYPE_CHECKING:
     from lazy_dispatch.isinstance import LazyType
@@ -18,7 +18,7 @@ REPLACED_LAST_LINEAR = GlobalVariable[bool](
     default=False,
 )
 
-evidential_regression_traverser = lazy_singledispatch_traverser[object](name="evidential_regression_traverser")
+evidential_regression_traverser = lazydispatch_traverser[object](name="evidential_regression_traverser")
 
 
 def register(cls: LazyType, traverser: RegisteredLooseTraverser) -> None:

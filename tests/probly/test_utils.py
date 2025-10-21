@@ -38,17 +38,17 @@ def test_kl_divergence_gaussian() -> None:
     assert np.allclose(kl_divergence_gaussian(mu1, sigma21, mu2, sigma22, base=np.e), np.array([5.0, 5.0]))
 
 
-def test_torch_reset_all_parameters(conv_linear_model: torch.nn.Module) -> None:
+def test_torch_reset_all_parameters(torch_conv_linear_model: torch.nn.Module) -> None:
     def flatten_params(model: torch.nn.Module) -> torch.Tensor:
         return torch.cat([param.flatten() for param in model.parameters()])
 
-    before = flatten_params(conv_linear_model)
-    torch_reset_all_parameters(conv_linear_model)
-    after = flatten_params(conv_linear_model)
+    before = flatten_params(torch_conv_linear_model)
+    torch_reset_all_parameters(torch_conv_linear_model)
+    after = flatten_params(torch_conv_linear_model)
     assert not torch.equal(before, after)
 
 
-def test_torch_collect_outputs(conv_linear_model: torch.nn.Module) -> None:
+def test_torch_collect_outputs(torch_conv_linear_model: torch.nn.Module) -> None:
     loader = DataLoader(
         TensorDataset(
             torch.randn(2, 3, 5, 5),
@@ -57,7 +57,7 @@ def test_torch_collect_outputs(conv_linear_model: torch.nn.Module) -> None:
             ),
         ),
     )
-    outputs, targets = torch_collect_outputs(conv_linear_model, loader, torch.device("cpu"))
+    outputs, targets = torch_collect_outputs(torch_conv_linear_model, loader, torch.device("cpu"))
     assert outputs.shape == (2, 2)
     assert targets.shape == (2,)
 
