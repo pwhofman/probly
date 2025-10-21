@@ -26,7 +26,7 @@ def register(cls: LazyType, traverser: RegisteredLooseTraverser) -> None:
     evidential_regression_traverser.register(cls=cls, traverser=traverser, skip_if=lambda s: s[REPLACED_LAST_LINEAR])
 
 
-def evidential_regression[In, KwIn, Out](base: Predictor[In, KwIn, Out]) -> Predictor[In, KwIn, Out]:
+def evidential_regression[T: Predictor](base: T) -> T:
     """Create an evidential regression predictor from a base predictor.
 
     Args:

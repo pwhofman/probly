@@ -25,7 +25,7 @@ def register(cls: LazyType, appender: Callable) -> None:
     evidential_classification_appender.register(cls=cls, func=appender)
 
 
-def evidential_classification[In, KwIn, Out](base: Predictor[In, KwIn, Out]) -> Predictor[In, KwIn, Out]:
+def evidential_classification[T: Predictor](base: T) -> T:
     """Create an evidential classification predictor from a base predictor.
 
     Args:

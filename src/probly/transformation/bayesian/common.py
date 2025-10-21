@@ -34,13 +34,13 @@ def register(cls: LazyType, traverser: RegisteredLooseTraverser) -> None:
     )
 
 
-def bayesian[In, KwIn, Out](
-    base: Predictor[In, KwIn, Out],
+def bayesian[T: Predictor](
+    base: T,
     use_base_weights: bool = USE_BASE_WEIGHTS.default,
     posterior_std: float = POSTERIOR_STD.default,
     prior_mean: float = PRIOR_MEAN.default,
     prior_std: float = PRIOR_STD.default,
-) -> Predictor[In, KwIn, Out]:
+) -> T:
     """Create a Bayesian predictor from a base predictor.
 
     Args:
