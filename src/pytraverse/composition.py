@@ -24,7 +24,7 @@ from typing import (
 )
 
 import lazy_dispatch
-from lazy_dispatch.singledispatch import RegistrationFunction
+from lazy_dispatch.singledispatch import RegistrationFunction  # noqa: TC001
 
 from . import decorators as d
 from .core import (
@@ -371,7 +371,7 @@ class SingledispatchTraverser[T](_AbstractSingledispatchTraverser[T, type | type
         return _is_valid_dispatch_type(cls)
 
 
-class LazySingledispatchTraverser[T](_AbstractSingledispatchTraverser[T, lazy_dispatch.LazyType]):
+class LazydispatchTraverser[T](_AbstractSingledispatchTraverser[T, lazy_dispatch.LazyType]):
     """A wrapper around lazy_dispath.singledispatch to create an extensible traverser with lazy type matching.
 
     This class provides a type-based dispatch mechanism for traversers, allowing
@@ -385,7 +385,7 @@ class LazySingledispatchTraverser[T](_AbstractSingledispatchTraverser[T, lazy_di
     def _create_dispatcher(
         self,
     ) -> ExtensibleTraverser[T]:
-        return lazy_dispatch.lazy_singledispatch(identity_traverser)  # type: ignore[return-value]
+        return lazy_dispatch.lazydispatch(identity_traverser)  # type: ignore[return-value]
 
     def _is_valid_dispatch_type(self, cls: Any) -> bool:  # noqa: ANN401
         return lazy_dispatch.is_valid_dispatch_type(cls)
@@ -415,4 +415,4 @@ class LazySingledispatchTraverser[T](_AbstractSingledispatchTraverser[T, lazy_di
         registration_fn: RegistrationFunction | None = None,
     ) -> RegistrationFunction | Callable[[RegistrationFunction], RegistrationFunction]:
         """Register a function that will be called when a matching type is encountered."""
-        return self._dispatch.delayed_register(cls, registration_fn)  # type: ignore[no-any-return]
+        return self._dispatch.delayed_register(cls, registration_fn)  # type: ignore # noqa: PGH003

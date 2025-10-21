@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Protocol, Unpack, runtime_checkable
 
-from lazy_dispatch.singledispatch import lazy_singledispatch
+from lazy_dispatch.singledispatch import lazydispatch
 
 
 @runtime_checkable
@@ -16,7 +16,7 @@ class Predictor[In, KwIn, Out](Protocol):
         ...
 
 
-@lazy_singledispatch
+@lazydispatch
 def predict[In, KwIn, Out](predictor: Predictor[In, KwIn, Out], *args: In, **kwargs: Unpack[KwIn]) -> Out:
     """Generic predict function."""
     return predictor(*args, **kwargs)

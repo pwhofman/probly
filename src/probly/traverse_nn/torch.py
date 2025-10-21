@@ -28,8 +28,8 @@ TRAVERSE_REVERSED = t.StackVariable[bool](
 )
 FLATTEN_SEQUENTIAL = t.StackVariable[bool](
     "FLATTEN_SEQUENTIAL",
-    "Whether to flatten sequential modules after making changes.",
-    default=True,
+    "Whether to flatten sequential torch modules after making changes.",
+    default=tnn.FLATTEN_SEQUENTIAL,
 )
 
 # Torch model cloning

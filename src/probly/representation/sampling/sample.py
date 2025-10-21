@@ -6,8 +6,8 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 
-from lazy_dispatch.singledispatch import lazy_singledispatch
-from probly.lazy_types import TORCH_TENSOR
+from lazy_dispatch.singledispatch import lazydispatch
+from probly.lazy_types import JAX_ARRAY, TORCH_TENSOR
 
 
 class Sample[T](ABC):
@@ -42,17 +42,16 @@ class ListSample[T](list[T], Sample[T]):
         return type(self)(super().__add__(other))  # type: ignore[operator]
 
 
-create_sample = lazy_singledispatch[type[Sample], Sample](ListSample, dispatch_on=lambda s: s[0])
-Numeric = np.number | np.ndarray | float | int
+create_sample = lazydispatch[type[Sample], Sample](ListSample, dispatch_on=lambda s: s[0])
 
 
-@create_sample.register(Numeric)
-class ArraySample[T: Numeric](Sample[T]):
+@create_sample.register(np.number | np.ndarray | float | int)
+class ArraySample[T](Sample[T]):
     """A sample of predictions stored in a numpy array."""
 
     def __init__(self, samples: list[T]) -> None:
         """Initialize the array sample."""
-        self.array = np.array(samples)
+        self.array: np.ndarray = np.array(samples)
 
     def mean(self) -> T:
         """Compute the mean of the sample."""
@@ -70,3 +69,8 @@ class ArraySample[T: Numeric](Sample[T]):
 @create_sample.delayed_register(TORCH_TENSOR)
 def _(_: type) -> None:
     from . import torch_sample as torch_sample  # noqa: PLC0414, PLC0415
+
+
+@create_sample.delayed_register(JAX_ARRAY)
+def _(_: type) -> None:
+    from . import jax_sample as jax_sample  # noqa: PLC0414, PLC0415

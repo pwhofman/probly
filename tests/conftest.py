@@ -1,7 +1,8 @@
-"""Test fixtures for the package."""
+"""Test fixtures for probly."""
 
 from __future__ import annotations
 
 pytest_plugins = [
-    "tests.fixtures.models",
+    "tests.probly.fixtures.torch_models",
+    "tests.probly.fixtures.flax_models",
 ]
