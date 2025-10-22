@@ -9,7 +9,7 @@ torch = pytest.importorskip("torch")
 from torch import nn  # noqa: E402
 
 
-def count_layers(model: nn.Module, layer_type: nn.Module) -> int:
+def count_layers(model: nn.Module, layer_type: type[nn.Module]) -> int:
     """Counts the number of layers of a specific type in a neural network model.
 
     This function iterates through all the modules in the given model and counts

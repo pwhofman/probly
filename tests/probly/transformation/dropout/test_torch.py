@@ -51,7 +51,7 @@ class TestNetworkArchitectures:
 
         # check that the model is not modified except for the dropout layer
         assert model is not None
-        assert isinstance(model, nn.Module)
+        assert isinstance(model, type(torch_model_small_2d_2d))
         assert (count_linear_original - 1) == count_dropout_modified
         assert count_linear_modified == count_linear_original
         assert count_dropout_original == 0
@@ -94,14 +94,23 @@ class TestNetworkArchitectures:
 
         # check that the model is not modified except for the dropout layer
         assert model is not None
-        assert isinstance(model, nn.Module)
+        assert isinstance(model, type(torch_conv_linear_model))
         assert count_linear_original == count_dropout_modified
         assert count_linear_original == count_linear_modified
         assert count_dropout_original == 0
         assert count_sequential_original == count_sequential_modified
         assert count_conv_original == count_conv_modified
 
-    @pytest.mark.skip(reason="Not yet implemented")
+    def test_custom_network(self, torch_custom_model: nn.Module) -> None:
+        """Tests the custom model modification with added dropout layers."""
+        p = 0.5
+        model = dropout(torch_custom_model, p)
+
+        # check if model type is correct
+        assert isinstance(model, type(torch_custom_model))
+        assert not isinstance(model, nn.Sequential)
+
+    @pytest.mark.skip(reason="Not yet implemented in probly")
     def test_dropout_model(self, torch_dropout_model: nn.Sequential) -> None:
         """Tests the dropout model modification if dropout already exists."""
         p = 0.2

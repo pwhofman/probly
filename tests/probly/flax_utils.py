@@ -9,7 +9,7 @@ flax = pytest.importorskip("flax")
 from flax import nnx  # noqa: E402
 
 
-def count_layers(model: nnx.Module, layer_type: nnx.Module) -> int:
+def count_layers(model: nnx.Module, layer_type: type[nnx.Module]) -> int:
     """Counts the number of layers of a specific type in a neural network model.
 
     This function iterates through all the modules in the given model and counts
@@ -24,4 +24,4 @@ def count_layers(model: nnx.Module, layer_type: nnx.Module) -> int:
     Returns:
         The number of layers of the specified type found in the model.
     """
-    return sum(1 for m in model.layers if isinstance(m, layer_type))
+    return sum(1 for _, m in model.iter_modules() if isinstance(m, layer_type))
