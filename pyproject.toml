@@ -65,13 +65,15 @@ jax = [
 jax-cuda12 = [
     "jax[cuda12]",
 ]
+all_ml = [
+    {include-group = "torch"},
+    {include-group = "jax"},
+]
 test = [
     "pytest>=8.3.5",       # for testing
     "pytest-cov>=6.0.0",   # for coverage
     "pytest-xdist>=3.6.1", # for parallel testing
-    "pytest-randomly",     # for randomizing test order (helps catch order-dependent bugs)
     "packaging",           # for version parsing
-
 ]
 lint = [
     "ruff>=0.14.1",       # for linting
@@ -93,8 +95,7 @@ dev = [
     {include-group = "test"},
     {include-group = "lint"},
     {include-group = "docs"},
-    {include-group = "torch"},
-    {include-group = "jax"},
+    {include-group = "all_ml"},
 ]
 
 
