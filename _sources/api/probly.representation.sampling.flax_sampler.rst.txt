@@ -1,0 +1,12 @@
+probly.representation.sampling.flax\_sampler
+============================================
+
+.. automodule:: probly.representation.sampling.flax_sampler
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      register_forced_train_mode
+   

@@ -10,15 +10,5 @@
    :toctree:
    :recursive:
 
-   bayesian
-   classification
-   conformalprediction
-   dropconnect
-   dropout
-   ensemble
-   layers
-   predictor
-   predictor_torch
-   regression
-   representation
-   subensemble
+   representer
+   sampling

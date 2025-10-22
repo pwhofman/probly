@@ -3,7 +3,7 @@
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="probly.data" href="probly.data.html" /><link rel="prev" title="probly.plot" href="probly.plot.html" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="probly.utils" href="probly.utils.html" /><link rel="prev" title="probly.plot" href="probly.plot.html" />
 
     <!-- Generated with Sphinx 8.2.3 and Furo 2024.08.06 -->
         <title>probly.tasks - probly 0.3.1 documentation</title>
@@ -181,7 +181,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
         <div class="visually-hidden">Toggle table of contents sidebar</div>
         <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
       </label>
@@ -222,38 +222,20 @@
 <p class="caption" role="heading"><span class="caption-text">API</span></p>
 <ul class="current">
 <li class="toctree-l1 current has-children"><a class="reference internal" href="../api.html">API Reference</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of API Reference</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
-<li class="toctree-l2 has-children"><a class="reference internal" href="probly.calibration.html">probly.calibration</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of probly.calibration</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
-<li class="toctree-l3"><a class="reference internal" href="probly.calibration.temperature.html">probly.calibration.temperature</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="probly.representation.html">probly.representation</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of probly.representation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="probly.representation.representer.html">probly.representation.representer</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="probly.representation.sampling.html">probly.representation.sampling</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of probly.representation.sampling</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.flax_sampler.html">probly.representation.sampling.flax_sampler</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.jax_sample.html">probly.representation.sampling.jax_sample</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.sample.html">probly.representation.sampling.sample</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.sampler.html">probly.representation.sampling.sampler</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.torch_sample.html">probly.representation.sampling.torch_sample</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.torch_sampler.html">probly.representation.sampling.torch_sampler</a></li>
 </ul>
 </li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="probly.representation.html">probly.representation</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of probly.representation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
-<li class="toctree-l3"><a class="reference internal" href="probly.representation.bayesian.html">probly.representation.bayesian</a></li>
-<li class="toctree-l3 has-children"><a class="reference internal" href="probly.representation.classification.html">probly.representation.classification</a><input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><div class="visually-hidden">Toggle navigation of probly.representation.classification</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
-<li class="toctree-l4"><a class="reference internal" href="probly.representation.classification.credalensembling.html">probly.representation.classification.credalensembling</a></li>
-<li class="toctree-l4"><a class="reference internal" href="probly.representation.classification.evidential.html">probly.representation.classification.evidential</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="probly.representation.conformalprediction.html">probly.representation.conformalprediction</a></li>
-<li class="toctree-l3"><a class="reference internal" href="probly.representation.dropconnect.html">probly.representation.dropconnect</a></li>
-<li class="toctree-l3"><a class="reference internal" href="probly.representation.dropout.html">probly.representation.dropout</a></li>
-<li class="toctree-l3"><a class="reference internal" href="probly.representation.ensemble.html">probly.representation.ensemble</a></li>
-<li class="toctree-l3 has-children"><a class="reference internal" href="probly.representation.layers.html">probly.representation.layers</a><input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><div class="visually-hidden">Toggle navigation of probly.representation.layers</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
-<li class="toctree-l4"><a class="reference internal" href="probly.representation.layers.bayesian.html">probly.representation.layers.bayesian</a></li>
-<li class="toctree-l4"><a class="reference internal" href="probly.representation.layers.dropconnect.html">probly.representation.layers.dropconnect</a></li>
-<li class="toctree-l4"><a class="reference internal" href="probly.representation.layers.normalinversegamma.html">probly.representation.layers.normalinversegamma</a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="probly.representation.predictor.html">probly.representation.predictor</a></li>
-<li class="toctree-l3"><a class="reference internal" href="probly.representation.predictor_torch.html">probly.representation.predictor_torch</a></li>
-<li class="toctree-l3 has-children"><a class="reference internal" href="probly.representation.regression.html">probly.representation.regression</a><input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><div class="visually-hidden">Toggle navigation of probly.representation.regression</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
-<li class="toctree-l4"><a class="reference internal" href="probly.representation.regression.evidential.html">probly.representation.regression.evidential</a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="probly.representation.representation.html">probly.representation.representation</a></li>
-<li class="toctree-l3"><a class="reference internal" href="probly.representation.subensemble.html">probly.representation.subensemble</a></li>
-</ul>
-</li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="probly.quantification.html">probly.quantification</a><input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle navigation of probly.quantification</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="probly.quantification.html">probly.quantification</a><input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><div class="visually-hidden">Toggle navigation of probly.quantification</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="probly.quantification.classification.html">probly.quantification.classification</a></li>
 <li class="toctree-l3"><a class="reference internal" href="probly.quantification.regression.html">probly.quantification.regression</a></li>
 </ul>
@@ -262,8 +244,7 @@
 <li class="toctree-l2"><a class="reference internal" href="probly.losses.html">probly.losses</a></li>
 <li class="toctree-l2"><a class="reference internal" href="probly.plot.html">probly.plot</a></li>
 <li class="toctree-l2 current current-page"><a class="current reference internal" href="#">probly.tasks</a></li>
-<li class="toctree-l2"><a class="reference internal" href="probly.data.html">probly.data</a></li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="probly.utils.html">probly.utils</a><input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of probly.utils</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="probly.utils.html">probly.utils</a><input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><div class="visually-hidden">Toggle navigation of probly.utils</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="probly.utils.errors.html">probly.utils.errors</a></li>
 <li class="toctree-l3"><a class="reference internal" href="probly.utils.probabilities.html">probly.utils.probabilities</a></li>
 <li class="toctree-l3"><a class="reference internal" href="probly.utils.sets.html">probly.utils.sets</a></li>
@@ -309,7 +290,7 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
             <div class="visually-hidden">Toggle table of contents sidebar</div>
             <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
           </label>
@@ -322,68 +303,15 @@
 <div class="table-wrapper autosummary longtable docutils container">
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#probly.tasks.out_of_distribution_detection" title="probly.tasks.out_of_distribution_detection"><code class="xref py py-obj docutils literal notranslate"><span class="pre">out_of_distribution_detection</span></code></a>(...)</p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">out_of_distribution_detection</span></code>(...)</p></td>
 <td><p>Perform out-of-distribution detection using prediction functionals from id and ood data.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#probly.tasks.selective_prediction" title="probly.tasks.selective_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">selective_prediction</span></code></a>(criterion, losses[, n_bins])</p></td>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">selective_prediction</span></code>(criterion, losses[, n_bins])</p></td>
 <td><p>Selective prediction downstream task for evaluation.</p></td>
 </tr>
 </tbody>
 </table>
 </div>
-<dl class="py function">
-<dt class="sig sig-object py" id="probly.tasks.out_of_distribution_detection">
-<span class="sig-prename descclassname"><span class="pre">probly.tasks.</span></span><span class="sig-name descname"><span class="pre">out_of_distribution_detection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_distribution</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_distribution</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/tasks.html#out_of_distribution_detection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.tasks.out_of_distribution_detection" title="Link to this definition">¶</a></dt>
-<dd><p>Perform out-of-distribution detection using prediction functionals from id and ood data.</p>
-<p>This can be epistemic uncertainty, as is common, but also e.g. softmax confidence.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span></p>
-</dd>
-<dt class="field-even">Parameters<span class="colon">:</span></dt>
-<dd class="field-even"><ul class="simple">
-<li><p><strong>in_distribution</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a>) – in-distribution prediction functionals</p></li>
-<li><p><strong>out_distribution</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a>) – out-of-distribution prediction functionals</p></li>
-</ul>
-</dd>
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>float, area under the roc curve</p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>auroc</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="probly.tasks.selective_prediction">
-<span class="sig-prename descclassname"><span class="pre">probly.tasks.</span></span><span class="sig-name descname"><span class="pre">selective_prediction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">criterion</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">losses</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_bins</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/tasks.html#selective_prediction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.tasks.selective_prediction" title="Link to this definition">¶</a></dt>
-<dd><p>Selective prediction downstream task for evaluation.</p>
-<p>Perform selective prediction based on criterion and losses.
-The criterion is used the sort the losses. In line with uncertainty
-literature the sorting is done in descending order, i.e.
-the losses with the largest criterion are rejected first.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a>]</span></p>
-</dd>
-<dt class="field-even">Parameters<span class="colon">:</span></dt>
-<dd class="field-even"><ul class="simple">
-<li><p><strong>criterion</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a>) – numpy.ndarray shape (n_instances,), criterion values</p></li>
-<li><p><strong>losses</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a>) – numpy.ndarray shape (n_instances,), loss values</p></li>
-<li><p><strong>n_bins</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – int, number of bins</p></li>
-</ul>
-</dd>
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>float, area under the loss curve
-bin_losses: numpy.ndarray shape (n_bins,), loss per bin</p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>auroc</p>
-</dd>
-</dl>
-</dd></dl>
-
 </section>
 
         </article>
@@ -391,12 +319,12 @@ bin_losses: numpy.ndarray shape (n_bins,), loss per bin</p>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="probly.data.html">
+          <a class="next-page" href="probly.utils.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">probly.data</div>
+                <div class="title">probly.utils</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
@@ -429,28 +357,8 @@ bin_losses: numpy.ndarray shape (n_bins,), loss per bin</p>
         
       </footer>
     </div>
-    <aside class="toc-drawer">
+    <aside class="toc-drawer no-toc">
       
-      
-      <div class="toc-sticky toc-scroll">
-        <div class="toc-title-container">
-          <span class="toc-title">
-            On this page
-          </span>
-        </div>
-        <div class="toc-tree-container">
-          <div class="toc-tree">
-            <ul>
-<li><a class="reference internal" href="#">probly.tasks</a><ul>
-<li><a class="reference internal" href="#probly.tasks.out_of_distribution_detection"><code class="docutils literal notranslate"><span class="pre">out_of_distribution_detection()</span></code></a></li>
-<li><a class="reference internal" href="#probly.tasks.selective_prediction"><code class="docutils literal notranslate"><span class="pre">selective_prediction()</span></code></a></li>
-</ul>
-</li>
-</ul>
-
-          </div>
-        </div>
-      </div>
       
       
     </aside>

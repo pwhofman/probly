@@ -1,0 +1,14 @@
+probly.representation.sampling.sample
+=====================================
+
+.. automodule:: probly.representation.sampling.sample
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      ArraySample
+      ListSample
+      Sample
+   
