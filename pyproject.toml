@@ -13,7 +13,7 @@ dependencies = [
     "matplotlib>=3.8.0",
     "mpltern",
     "numpy>=2.0.0",
-    "sklearn",
+    "scikit-learn",
     "tqdm",
     "joblib",
 ]
