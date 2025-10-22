@@ -13,7 +13,6 @@ dependencies = [
     "matplotlib>=3.8.0",
     "mpltern",
     "numpy>=2.0.0",
-    "scikit-learn",
     "tqdm",
     "joblib",
 ]
@@ -65,13 +64,19 @@ jax = [
 jax-cuda12 = [
     "jax[cuda12]",
 ]
+sklearn = [
+    "scikit-learn>=1.6.0",
+]
+all_ml = [
+    {include-group = "torch"},
+    {include-group = "jax"},
+    {include-group = "sklearn"},
+]
 test = [
     "pytest>=8.3.5",       # for testing
     "pytest-cov>=6.0.0",   # for coverage
     "pytest-xdist>=3.6.1", # for parallel testing
-    "pytest-randomly",     # for randomizing test order (helps catch order-dependent bugs)
     "packaging",           # for version parsing
-
 ]
 lint = [
     "ruff>=0.14.1",       # for linting
@@ -93,8 +98,7 @@ dev = [
     {include-group = "test"},
     {include-group = "lint"},
     {include-group = "docs"},
-    {include-group = "torch"},
-    {include-group = "jax"},
+    {include-group = "all_ml"},
 ]
 
 
