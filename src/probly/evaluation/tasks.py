@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import numpy as np
 
+# TODO(mmshlk): remove sklearn dependency - https://github.com/pwhofman/probly/issues/132
+import sklearn.metrics as sm
+
 
 def selective_prediction(criterion: np.ndarray, losses: np.ndarray, n_bins: int = 50) -> tuple[float, np.ndarray]:
     """Selective prediction downstream task for evaluation.
@@ -22,9 +25,6 @@ def selective_prediction(criterion: np.ndarray, losses: np.ndarray, n_bins: int 
         bin_losses: numpy.ndarray shape (n_bins,), loss per bin
 
     """
-    # TODO(mmshlk): remove sklearn dependency - https://github.com/pwhofman/probly/issues/132
-    import sklearn.metrics as sm  # noqa: PLC0415
-
     if n_bins > len(losses):
         msg = "The number of bins can not be larger than the number of elements criterion"
         raise ValueError(msg)
@@ -52,9 +52,6 @@ def out_of_distribution_detection(in_distribution: np.ndarray, out_distribution:
         auroc: float, area under the roc curve
 
     """
-    # TODO(mmshlk): remove sklearn dependency - https://github.com/pwhofman/probly/issues/132
-    import sklearn.metrics as sm  # noqa: PLC0415
-
     preds = np.concatenate((in_distribution, out_distribution))
     labels = np.concatenate((np.zeros(len(in_distribution)), np.ones(len(out_distribution))))
     auroc = sm.roc_auc_score(labels, preds)
