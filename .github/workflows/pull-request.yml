@@ -42,7 +42,7 @@ jobs:
             -   name: Create uv virtual environment
                 run: uv venv
             -   name: Install probly package
-                run: uv run --no-sync python -m pip install .
+                run: uv run --no-sync pip install .
             -   name: Test import
                 run: uv run --no-sync python -c "import probly; print('✅ probly imported successfully')"
     # ----------------------------------------------------------------------------------------------
