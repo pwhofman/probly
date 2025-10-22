@@ -1,9 +1,6 @@
-"""Init module for representation implementations."""
+"""Uncertainty representations for models."""
 
-from probly.representation.bayesian import Bayesian
-from probly.representation.dropconnect import DropConnect
-from probly.representation.dropout import Dropout
-from probly.representation.ensemble import Ensemble
-from probly.representation.subensemble import SubEnsemble
+from . import sampling
+from .representer import Representer
 
-__all__ = ["Bayesian", "DropConnect", "Dropout", "Ensemble", "SubEnsemble"]
+__all__ = ["Representer", "sampling"]

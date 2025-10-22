@@ -7,19 +7,24 @@ and single-dispatch traverser creation.
 
 from __future__ import annotations
 
+import abc
+from collections.abc import Callable
 from functools import singledispatch
 import types
 from typing import (
-    TYPE_CHECKING,
     Any,
     Concatenate,
     NotRequired,
+    Protocol,
     Union,
     Unpack,
     get_args,
     get_origin,
     overload,
 )
+
+import lazy_dispatch
+from lazy_dispatch.singledispatch import RegistrationFunction  # noqa: TC001
 
 from . import decorators as d
 from .core import (
@@ -30,8 +35,23 @@ from .core import (
     identity_traverser,
 )
 
-if TYPE_CHECKING:
-    from collections.abc import Callable
+
+class ExtensibleTraverser[T](Protocol):
+    """A Traverser that supports dynamic registration of type-specific handlers."""
+
+    def __call__(  # noqa: D102
+        self,
+        obj: T,
+        state: State[T],
+        traverse: TraverserCallback[T],
+    ) -> TraverserResult[T]: ...
+
+    @overload
+    def register(self, traverser: Traverser[T] | None) -> Traverser[T]: ...
+
+    @overload
+    def register(self, cls: Any, traverser: Traverser[T] | None) -> Traverser[T]:  # noqa: ANN401
+        ...
 
 
 def sequential[T](
@@ -167,26 +187,7 @@ class _TraverserDecoratorKwargs[T](d.TraverserDecoratorKwargs[T]):
     update_vars: NotRequired[bool] = False
 
 
-class SingledispatchTraverser[T: object]:
-    """A wrapper around functools.singledispatch to create an extensible traverser.
-
-    This class provides a type-based dispatch mechanism for traversers, allowing
-    different traversal logic to be registered for different object types. All
-    registered traversers are automatically wrapped with the @traverser decorator.
-
-    Type Parameters:
-        T: The base type of objects that this traverser can handle.
-
-    Example:
-        >>> traverser = SingledispatchTraverser()
-        >>> @traverser.register
-        ... def _(obj: list, state, traverse):
-        ...     return [traverse(item, state)[0] for item in obj], state
-        >>> @traverser.register
-        ... def _(obj: dict, state, traverse):
-        ...     return {k: traverse(v, state)[0] for k, v in obj.items()}, state
-    """
-
+class _AbstractSingledispatchTraverser[T: object, D](abc.ABC):
     __slots__ = (
         "__name__",
         "__qualname__",
@@ -205,7 +206,7 @@ class SingledispatchTraverser[T: object]:
             traverser: Optional default traverser function to register.
             name: Optional name for the traverser.
         """
-        self._dispatch = singledispatch(identity_traverser)
+        self._dispatch: ExtensibleTraverser[T] = self._create_dispatcher()
 
         if traverser is not None:
             if name is None:
@@ -217,6 +218,14 @@ class SingledispatchTraverser[T: object]:
         if name is not None:
             self.__name__ = name
             self.__qualname__ = f"{__name__}.{name}"
+
+    @abc.abstractmethod
+    def _create_dispatcher(
+        self,
+    ) -> ExtensibleTraverser[T]: ...
+
+    @abc.abstractmethod
+    def _is_valid_dispatch_type(self, cls: Any) -> bool: ...  # noqa: ANN401
 
     def __call__(
         self,
@@ -245,7 +254,7 @@ class SingledispatchTraverser[T: object]:
     @overload
     def register(
         self,
-        cls: type | types.UnionType,
+        cls: D,
         **kwargs: Unpack[_TraverserDecoratorKwargs[T]],
     ) -> Callable[[RegisteredLooseTraverser[T, Any]], Traverser[T]]: ...
 
@@ -265,21 +274,21 @@ class SingledispatchTraverser[T: object]:
     @overload
     def register(
         self,
-        cls: type | types.UnionType,
+        cls: D,
         traverser: RegisteredLooseTraverser[T, Any],
         **kwargs: Unpack[_TraverserDecoratorKwargs[T]],
     ) -> Traverser[T]: ...
 
     def register(
         self,
-        cls: type | types.UnionType | RegisteredLooseTraverser[T, Any] | None = None,
+        cls: D | RegisteredLooseTraverser[T, Any] | None = None,
         traverser: RegisteredLooseTraverser[T, Any] | None = None,
         **kwargs: Unpack[_TraverserDecoratorKwargs[T]],
     ) -> Callable[[RegisteredLooseTraverser[T, Any]], Traverser[T]] | Traverser[T]:
         """Register a traverser for a specific type or as the default.
 
         This method supports multiple calling patterns:
-        - @traverser.register: Register as default
+        - @traverser.register: Register as default or with type annotation
         - @traverser.register(type): Register for specific type
         - traverser.register(type, function): Register function for type
 
@@ -295,7 +304,7 @@ class SingledispatchTraverser[T: object]:
             TypeError: If invalid arguments are provided.
         """
         if cls is not None:
-            if _is_valid_dispatch_type(cls):
+            if self._is_valid_dispatch_type(cls):
                 if traverser is None:
 
                     def partial_register(
@@ -328,6 +337,82 @@ class SingledispatchTraverser[T: object]:
         traverser = d.traverser(traverser, **kwargs)  # type: ignore[arg-type]
 
         if cls is not None:
-            return self._dispatch.register(cls, traverser)  # type: ignore[arg-type]
+            return self._dispatch.register(cls, traverser)
 
         return self._dispatch.register(traverser)
+
+
+class SingledispatchTraverser[T](_AbstractSingledispatchTraverser[T, type | types.UnionType]):
+    """A wrapper around functools.singledispatch to create an extensible traverser.
+
+    This class provides a type-based dispatch mechanism for traversers, allowing
+    different traversal logic to be registered for different object types. All
+    registered traversers are automatically wrapped with the @traverser decorator.
+
+    Type Parameters:
+        T: The base type of objects that this traverser can handle.
+
+    Example:
+        >>> traverser = SingledispatchTraverser()
+        >>> @traverser.register
+        ... def _(obj: list, state, traverse):
+        ...     return [traverse(item, state)[0] for item in obj], state
+        >>> @traverser.register
+        ... def _(obj: dict, state, traverse):
+        ...     return {k: traverse(v, state)[0] for k, v in obj.items()}, state
+    """
+
+    def _create_dispatcher(
+        self,
+    ) -> ExtensibleTraverser[T]:
+        return singledispatch(identity_traverser)  # type: ignore[return-value]
+
+    def _is_valid_dispatch_type(self, cls: Any) -> bool:  # noqa: ANN401
+        return _is_valid_dispatch_type(cls)
+
+
+class LazydispatchTraverser[T](_AbstractSingledispatchTraverser[T, lazy_dispatch.LazyType]):
+    """A wrapper around lazy_dispath.singledispatch to create an extensible traverser with lazy type matching.
+
+    This class provides a type-based dispatch mechanism for traversers, allowing
+    different traversal logic to be registered for different object types. All
+    registered traversers are automatically wrapped with the @traverser decorator.
+
+    Type Parameters:
+        T: The base type of objects that this traverser can handle.
+    """
+
+    def _create_dispatcher(
+        self,
+    ) -> ExtensibleTraverser[T]:
+        return lazy_dispatch.lazydispatch(identity_traverser)  # type: ignore[return-value]
+
+    def _is_valid_dispatch_type(self, cls: Any) -> bool:  # noqa: ANN401
+        return lazy_dispatch.is_valid_dispatch_type(cls)
+
+    @overload
+    def delayed_register(
+        self,
+        cls: RegistrationFunction,
+    ) -> RegistrationFunction: ...
+
+    @overload
+    def delayed_register(
+        self,
+        cls: lazy_dispatch.LazyType,
+    ) -> Callable[[RegistrationFunction], RegistrationFunction]: ...
+
+    @overload
+    def delayed_register(
+        self,
+        cls: lazy_dispatch.LazyType,
+        registration_fn: RegistrationFunction,
+    ) -> RegistrationFunction: ...
+
+    def delayed_register(
+        self,
+        cls: lazy_dispatch.LazyType | RegistrationFunction | None = None,
+        registration_fn: RegistrationFunction | None = None,
+    ) -> RegistrationFunction | Callable[[RegistrationFunction], RegistrationFunction]:
+        """Register a function that will be called when a matching type is encountered."""
+        return self._dispatch.delayed_register(cls, registration_fn)  # type: ignore # noqa: PGH003

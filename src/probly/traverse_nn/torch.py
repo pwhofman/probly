@@ -11,7 +11,7 @@ import pytraverse as t
 from pytraverse import generic
 from pytraverse.decorators import traverser
 
-from . import nn as tnn
+from . import common as tnn
 
 # Torch traversal variables
 
@@ -28,8 +28,8 @@ TRAVERSE_REVERSED = t.StackVariable[bool](
 )
 FLATTEN_SEQUENTIAL = t.StackVariable[bool](
     "FLATTEN_SEQUENTIAL",
-    "Whether to flatten sequential modules after making changes.",
-    default=True,
+    "Whether to flatten sequential torch modules after making changes.",
+    default=tnn.FLATTEN_SEQUENTIAL,
 )
 
 # Torch model cloning
@@ -139,4 +139,6 @@ torch_traverser: t.Traverser[Module] = t.sequential(
     _torch_traverser,
     name="torch_traverser",
 )
+torch_traverser.register = _torch_traverser.register  # type: ignore[attr-defined]
+
 tnn.nn_traverser.register(Module, torch_traverser)

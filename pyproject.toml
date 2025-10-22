@@ -11,11 +11,8 @@ requires-python = ">=3.12,<3.14"
 dependencies = [
     "scipy",
     "matplotlib>=3.8.0",
-    "multimethod>=2.0",
     "mpltern",
     "numpy>=2.0.0",
-    "torch>=2.0.0",
-    "torchvision",
     "scikit-learn",
     "tqdm",
     "joblib",
@@ -37,15 +34,13 @@ classifiers = [
     'Operating System :: Unix',
     'Operating System :: MacOS',
     'Programming Language :: Python :: 3',
-    'Programming Language :: Python :: 3.10',
-    'Programming Language :: Python :: 3.11',
     'Programming Language :: Python :: 3.12',
     'Programming Language :: Python :: 3.13',
 ]
 
 [tool.setuptools.packages.find]
 where = ["./src"]
-include = ["probly*", "pytraverse*"]
+include = ["probly*", "pytraverse*", "lazy_dispatch*"]
 
 [tool.setuptools.dynamic]
 version = {attr = "probly.__version__"}
@@ -59,6 +54,17 @@ changelog = "https://github.com/pwhofman/probly/blob/main/CHANGELOG.md"
 
 
 [dependency-groups]
+torch = [
+    "torch>=2.0.0",
+    "torchvision",
+]
+jax = [
+    "jax>=0.8.0",
+    "flax>=0.12.0",
+]
+jax-cuda12 = [
+    "jax[cuda12]",
+]
 test = [
     "pytest>=8.3.5",       # for testing
     "pytest-cov>=6.0.0",   # for coverage
@@ -68,9 +74,9 @@ test = [
 
 ]
 lint = [
-    "ruff>=0.12.0",       # for linting
-    "pre-commit>=4.2.0",  # for running the linters pre-commit hooks
-    "mypy>=1.16.1"        # for static type checking
+    "ruff>=0.14.1",       # for linting
+    "pre-commit>=4.3.0",  # for running the linters pre-commit hooks
+    "mypy>=1.18.2"        # for static type checking
 ]
 docs = [
     "sphinx>=8.0.0",
@@ -87,6 +93,8 @@ dev = [
     {include-group = "test"},
     {include-group = "lint"},
     {include-group = "docs"},
+    {include-group = "torch"},
+    {include-group = "jax"},
 ]
 
 
@@ -159,7 +167,7 @@ convention = "google"
     "N803",
     "C901",
 ]
-"tests/traverse/**/*.py" = ["ARG001"]
+"tests/pytraverse/**/*.py" = ["ARG001"]
 "__init__.py" = [
     "I002",    # to not need from __future__ import annotations
     "PLC0414", # to allow import module as module in inits, contradicts F401
@@ -168,6 +176,7 @@ convention = "google"
     "T20",
     "NPY002",
     "I002",
+    "D101",
     "D103",
     "PERF401",  # it's fine to have non-optimized code in notebooks
 ]
@@ -179,7 +188,7 @@ convention = "google"
 
 # Use isort-compatible settings
 [tool.ruff.lint.isort]
-known-first-party = ["probly", "pytraverse"]
+known-first-party = ["probly", "pytraverse", "lazy_dispatch"]
 force-sort-within-sections = true
 combine-as-imports = true
 force-single-line = false
@@ -190,6 +199,9 @@ extra-standard-library = ["typing_extensions"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 minversion = "8.0"
+addopts = [
+    "--import-mode=importlib", # to avoid issues with lazy imports
+]
 
 [tool.coverage.report]
 exclude_also = [
