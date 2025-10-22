@@ -51,9 +51,7 @@ def test_linear_network_with_first_linear(torch_model_small_2d_2d: nn.Sequential
     assert (count_linear_original - 1) == count_dropout_modified
     assert count_linear_modified == count_linear_original
     assert count_dropout_original == 0
-    assert (
-        count_sequential_original == count_sequential_modified
-    )  # todos: Is that useful with our nn_traverser cleaning models?
+    assert count_sequential_original == count_sequential_modified
 
 
 def test_linear_network_p_value(torch_model_small_2d_2d: nn.Sequential) -> None:
@@ -119,9 +117,7 @@ def test_convolutional_network(torch_conv_linear_model: nn.Sequential) -> None:
     assert count_linear_original == count_dropout_modified
     assert count_linear_original == count_linear_modified
     assert count_dropout_original == 0
-    assert (
-        count_sequential_original == count_sequential_modified
-    )  # todos: Is that useful with our nn_traverser cleaning models?
+    assert count_sequential_original == count_sequential_modified
     assert count_conv_original == count_conv_modified
 
 
@@ -144,6 +140,5 @@ def test_conv_network_p_value(torch_conv_linear_model: nn.Sequential) -> None:
 
 
 # todos: possible other scenarios:
-# - models which already have Dropouts
-# - models with multiple Sequentials
-# - p value not between 0 and 1 -> currently possible but not intended
+# - models which already have Dropouts : Dropout function use dropout variable
+# - p value not between 0 and 1 -> currently possible but not intended : IMPLEMENT IN DROPOUT FUNCTION
