@@ -39,6 +39,8 @@ jobs:
                 with:
                     python-version: "3.12"
                     enable-cache: true
+            -   name: Create uv virtual environment
+                run: uv venv
             -   name: Install probly package
                 run: uv run --no-sync python -m pip install .
             -   name: Test import
