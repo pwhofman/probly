@@ -40,7 +40,7 @@ jobs:
                     python-version: "3.12"
                     enable-cache: true
             -   name: Install probly package
-                run: uv pip install . --system
+                run: uv run --no-sync python -m pip install .
             -   name: Test import
                 run: uv run --no-sync python -c "import probly; print('✅ probly imported successfully')"
     # ----------------------------------------------------------------------------------------------
