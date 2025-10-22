@@ -13,6 +13,7 @@ dependencies = [
     "matplotlib>=3.8.0",
     "mpltern",
     "numpy>=2.0.0",
+    "sklearn>=1.6.0",
     "tqdm",
     "joblib",
 ]
@@ -70,7 +71,6 @@ sklearn = [
 all_ml = [
     {include-group = "torch"},
     {include-group = "jax"},
-    {include-group = "sklearn"},
 ]
 test = [
     "pytest>=8.3.5",       # for testing
