@@ -51,3 +51,15 @@ def torch_regression_model_2d() -> nn.Module:
         nn.Linear(4, 2),
     )
     return model
+
+
+@pytest.fixture
+def torch_dropout_model() -> nn.Module:
+    """Return a small dropout model with 2 input and 2 output neurons."""
+    model = nn.Sequential(
+        nn.Linear(2, 2),
+        nn.ReLU(),
+        nn.Dropout(0.5),
+        nn.Linear(2, 2),
+    )
+    return model
