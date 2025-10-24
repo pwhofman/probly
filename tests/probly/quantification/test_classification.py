@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pytest
 
-from tests.probly.utils import validate_uncertainty
+from tests.probly.general_utils import validate_uncertainty
 
 if TYPE_CHECKING:
     from collections.abc import Callable
