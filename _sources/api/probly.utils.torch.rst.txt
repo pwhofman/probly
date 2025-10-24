@@ -8,6 +8,7 @@ probly.utils.torch
 
    .. autosummary::
    
+      temperature_softmax
       torch_collect_outputs
       torch_reset_all_parameters
    

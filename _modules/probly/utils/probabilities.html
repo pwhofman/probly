@@ -239,10 +239,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../../../api/probly.quantification.regression.html">probly.quantification.regression</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="../../../api/probly.metrics.html">probly.metrics</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../api/probly.losses.html">probly.losses</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../api/probly.plot.html">probly.plot</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../api/probly.tasks.html">probly.tasks</a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../../../api/probly.utils.html">probly.utils</a><input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><div class="visually-hidden">Toggle navigation of probly.utils</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../../api/probly.utils.errors.html">probly.utils.errors</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../api/probly.utils.probabilities.html">probly.utils.probabilities</a></li>
@@ -299,8 +296,6 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn.functional</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">F</span>
 
 
 <div class="viewcode-block" id="differential_entropy_gaussian">
@@ -342,25 +337,6 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">kl_div</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">sigma22</span> <span class="o">/</span> <span class="n">sigma21</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">base</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">sigma21</span> <span class="o">+</span> <span class="p">(</span><span class="n">mu1</span> <span class="o">-</span> <span class="n">mu2</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">sigma22</span><span class="p">)</span> <span class="o">-</span> <span class="mf">0.5</span>
     <span class="k">return</span> <span class="n">kl_div</span></div>
-
-
-
-<div class="viewcode-block" id="temperature_softmax">
-<a class="viewcode-back" href="../../../api/probly.utils.probabilities.html#probly.utils.temperature_softmax">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">temperature_softmax</span><span class="p">(</span><span class="n">logits</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">temperature</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute the softmax of logits with temperature scaling applied.</span>
-
-<span class="sd">    Computes the softmax based on the logits divided by the temperature. Assumes that the last dimension</span>
-<span class="sd">    of logits is the class dimension.</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        logits: torch.Tensor, shape (n_instances, n_classes), logits to apply softmax on</span>
-<span class="sd">        temperature: float, temperature scaling factor</span>
-<span class="sd">    Returns:</span>
-<span class="sd">        ts: torch.Tensor, shape (n_instances, n_classes), softmax of logits with temperature scaling applied</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">ts</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">logits</span> <span class="o">/</span> <span class="n">temperature</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">ts</span></div>
 
 
 

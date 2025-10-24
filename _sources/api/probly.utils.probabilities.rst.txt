@@ -11,5 +11,4 @@ probly.utils.probabilities
       differential_entropy_gaussian
       intersection_probability
       kl_divergence_gaussian
-      temperature_softmax
    

@@ -240,10 +240,7 @@
 <li class="toctree-l3"><a class="reference internal" href="probly.quantification.regression.html">probly.quantification.regression</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="probly.metrics.html">probly.metrics</a></li>
-<li class="toctree-l2"><a class="reference internal" href="probly.losses.html">probly.losses</a></li>
 <li class="toctree-l2"><a class="reference internal" href="probly.plot.html">probly.plot</a></li>
-<li class="toctree-l2"><a class="reference internal" href="probly.tasks.html">probly.tasks</a></li>
 <li class="toctree-l2 current has-children"><a class="reference internal" href="probly.utils.html">probly.utils</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><div class="visually-hidden">Toggle navigation of probly.utils</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
 <li class="toctree-l3"><a class="reference internal" href="probly.utils.errors.html">probly.utils.errors</a></li>
 <li class="toctree-l3"><a class="reference internal" href="probly.utils.probabilities.html">probly.utils.probabilities</a></li>
@@ -303,15 +300,43 @@
 <div class="table-wrapper autosummary longtable docutils container">
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#probly.utils.torch.torch_collect_outputs" title="probly.utils.torch.torch_collect_outputs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">torch_collect_outputs</span></code></a>(model, loader, device)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#probly.utils.torch.temperature_softmax" title="probly.utils.torch.temperature_softmax"><code class="xref py py-obj docutils literal notranslate"><span class="pre">temperature_softmax</span></code></a>(logits, temperature)</p></td>
+<td><p>Compute the softmax of logits with temperature scaling applied.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#probly.utils.torch.torch_collect_outputs" title="probly.utils.torch.torch_collect_outputs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">torch_collect_outputs</span></code></a>(model, loader, device)</p></td>
 <td><p>Collect outputs and targets from a model for a given data loader.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#probly.utils.torch.torch_reset_all_parameters" title="probly.utils.torch.torch_reset_all_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">torch_reset_all_parameters</span></code></a>(module)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#probly.utils.torch.torch_reset_all_parameters" title="probly.utils.torch.torch_reset_all_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">torch_reset_all_parameters</span></code></a>(module)</p></td>
 <td><p>Reset all parameters of a torch module.</p></td>
 </tr>
 </tbody>
 </table>
 </div>
+<dl class="py function">
+<dt class="sig sig-object py" id="probly.utils.torch.temperature_softmax">
+<span class="sig-prename descclassname"><span class="pre">probly.utils.torch.</span></span><span class="sig-name descname"><span class="pre">temperature_softmax</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logits</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temperature</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/utils/torch.html#temperature_softmax"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.utils.torch.temperature_softmax" title="Link to this definition">¶</a></dt>
+<dd><p>Compute the softmax of logits with temperature scaling applied.</p>
+<p>Computes the softmax based on the logits divided by the temperature. Assumes that the last dimension
+of logits is the class dimension.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>logits</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.9)"><em>Tensor</em></a>) – torch.Tensor, shape (n_instances, n_classes), logits to apply softmax on</p></li>
+<li><p><strong>temperature</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em> | </em><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.9)"><em>Tensor</em></a>) – float, temperature scaling factor</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>torch.Tensor, shape (n_instances, n_classes), softmax of logits with temperature scaling applied</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>ts</p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.utils.torch.torch_collect_outputs">
 <span class="sig-prename descclassname"><span class="pre">probly.utils.torch.</span></span><span class="sig-name descname"><span class="pre">torch_collect_outputs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loader</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/utils/torch.html#torch_collect_outputs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.utils.torch.torch_collect_outputs" title="Link to this definition">¶</a></dt>
@@ -409,6 +434,7 @@ targets: torch.Tensor, shape (n_instances,), target labels</p>
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">probly.utils.torch</a><ul>
+<li><a class="reference internal" href="#probly.utils.torch.temperature_softmax"><code class="docutils literal notranslate"><span class="pre">temperature_softmax()</span></code></a></li>
 <li><a class="reference internal" href="#probly.utils.torch.torch_collect_outputs"><code class="docutils literal notranslate"><span class="pre">torch_collect_outputs()</span></code></a></li>
 <li><a class="reference internal" href="#probly.utils.torch.torch_reset_all_parameters"><code class="docutils literal notranslate"><span class="pre">torch_reset_all_parameters()</span></code></a></li>
 </ul>
