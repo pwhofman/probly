@@ -19,7 +19,7 @@ from probly.evaluation.metrics import (
     spherical_score,
     zero_one_loss,
 )
-from tests.probly.utils import validate_uncertainty
+from tests.probly.general_utils import validate_uncertainty
 
 
 @pytest.fixture
