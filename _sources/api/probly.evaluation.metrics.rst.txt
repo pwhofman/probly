@@ -1,0 +1,20 @@
+probly.evaluation.metrics
+=========================
+
+.. automodule:: probly.evaluation.metrics
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      brier_score
+      coverage
+      coverage_convex_hull
+      covered_efficiency
+      efficiency
+      expected_calibration_error
+      log_loss
+      spherical_score
+      zero_one_loss
+   

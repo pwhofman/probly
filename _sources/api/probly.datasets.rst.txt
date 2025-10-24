@@ -1,0 +1,13 @@
+﻿probly.datasets
+===============
+
+.. automodule:: probly.datasets
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   torch

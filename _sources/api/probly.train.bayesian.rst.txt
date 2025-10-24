@@ -1,0 +1,12 @@
+probly.train.bayesian
+=====================
+
+.. automodule:: probly.train.bayesian
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      collect_kl_divergence
+   

@@ -1,0 +1,6 @@
+probly.transformation.bayesian
+==============================
+
+.. currentmodule:: probly.transformation
+
+.. autofunction:: bayesian

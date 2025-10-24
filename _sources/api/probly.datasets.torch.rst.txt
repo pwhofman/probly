@@ -1,0 +1,19 @@
+probly.datasets.torch
+=====================
+
+.. automodule:: probly.datasets.torch
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Benthic
+      CIFAR10H
+      DCICDataset
+      ImageNetReaL
+      Plankton
+      QualityMRI
+      Treeversity1
+      Treeversity6
+   

@@ -1,0 +1,6 @@
+probly.transformation.ensemble
+==============================
+
+.. currentmodule:: probly.transformation
+
+.. autofunction:: ensemble

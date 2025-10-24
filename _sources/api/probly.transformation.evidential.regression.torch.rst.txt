@@ -1,0 +1,12 @@
+probly.transformation.evidential.regression.torch
+=================================================
+
+.. automodule:: probly.transformation.evidential.regression.torch
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      replace_last_torch_nig
+   

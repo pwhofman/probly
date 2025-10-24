@@ -1,0 +1,21 @@
+probly.train.losses
+===================
+
+.. automodule:: probly.train.losses
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      ELBOLoss
+      EvidentialCELoss
+      EvidentialKLDivergence
+      EvidentialLogLoss
+      EvidentialMSELoss
+      EvidentialNIGNLLLoss
+      EvidentialRegressionRegularization
+      ExpectedCalibrationError
+      FocalLoss
+      LabelRelaxationLoss
+   
