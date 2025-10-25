@@ -51,6 +51,7 @@ jobs:
     run_unit_tests:
         name: Run Unit Tests
         strategy:
+            fail-fast: false
             matrix:
                 include:
                     - os: ubuntu-latest

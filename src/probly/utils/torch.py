@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import torch
+import torch.nn.functional as F
 from tqdm import tqdm
 
 
@@ -42,3 +43,19 @@ def torch_reset_all_parameters(module: torch.nn.Module) -> None:
     for child in module.children():
         if hasattr(child, "reset_parameters"):
             child.reset_parameters()
+
+
+def temperature_softmax(logits: torch.Tensor, temperature: float | torch.Tensor) -> torch.Tensor:
+    """Compute the softmax of logits with temperature scaling applied.
+
+    Computes the softmax based on the logits divided by the temperature. Assumes that the last dimension
+    of logits is the class dimension.
+
+    Args:
+        logits: torch.Tensor, shape (n_instances, n_classes), logits to apply softmax on
+        temperature: float, temperature scaling factor
+    Returns:
+        ts: torch.Tensor, shape (n_instances, n_classes), softmax of logits with temperature scaling applied
+    """
+    ts = F.softmax(logits / temperature, dim=-1)
+    return ts
