@@ -1,55 +1,5 @@
-from __future__ import annotations
+pytest -q tests/probly/transformation/evidential/regression/test_common.py
 
-import dataclasses
-
-from probly.transformation.evidential.regression.common import (
-    register,
-    evidential_regression,
-    REPLACED_LAST_LINEAR,
-)
-
-
-# ---- Dummy-Implementierungen  ----
-
-@dataclasses.dataclass
-class DummyLinear:
-    """Einfache 'Linear'-Schicht als Platzhalter."""
-    in_features: int
-    out_features: int
-
-    def __call__(self, batch):
-        return [[0.0] * self.out_features for _ in range(len(batch))]
-
-
-@dataclasses.dataclass
-class NormalInverseGammaLinearStub:
-    in_features: int
-    out_features: int
-
-    def __call__(self, batch):
-        return [[0.0] * self.out_features for _ in range(len(batch))]
-
-
-class TinyPredictor:
-    def __init__(self):
-        self.lin1 = DummyLinear(8, 16)
-        self.lin2 = DummyLinear(16, 1)
-
-    def predict(self, batch):
-        h = self.lin1(batch)
-        return self.lin2(h)
-
-
-# ---- Traverser: ersetzt einmal DummyLinear ----
-
-def replace_linear_with_nig(node, state):
-    if not state[REPLACED_LAST_LINEAR]:
-        state[REPLACED_LAST_LINEAR] = True
-        return NormalInverseGammaLinearStub(
-            in_features=node.in_features,
-            out_features=node.out_features,
-        )
-    return node
 
 
 # Registrierung 
