@@ -3,10 +3,10 @@
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="probly.utils.sets" href="probly.utils.sets.html" /><link rel="prev" title="probly.utils.errors" href="probly.utils.errors.html" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="probly.predictor" href="probly.predictor.html" /><link rel="prev" title="probly.plot" href="probly.plot.html" />
 
     <!-- Generated with Sphinx 8.2.3 and Furo 2024.08.06 -->
-        <title>probly.utils.probabilities - probly 0.3.1 documentation</title>
+        <title>probly.plot.credal - probly 0.3.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=354aac6f" />
     <link rel="stylesheet" type="text/css" href="../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
@@ -235,8 +235,8 @@
 <li class="toctree-l3"><a class="reference internal" href="probly.layers.torch.html">probly.layers.torch</a></li>
 </ul>
 </li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="probly.plot.html">probly.plot</a><input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><div class="visually-hidden">Toggle navigation of probly.plot</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
-<li class="toctree-l3"><a class="reference internal" href="probly.plot.credal.html">probly.plot.credal</a></li>
+<li class="toctree-l2 current has-children"><a class="reference internal" href="probly.plot.html">probly.plot</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><div class="visually-hidden">Toggle navigation of probly.plot</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l3 current current-page"><a class="current reference internal" href="#">probly.plot.credal</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="probly.predictor.html">probly.predictor</a></li>
@@ -289,9 +289,9 @@
 <li class="toctree-l3"><a class="reference internal" href="probly.traverse_nn.torch.html">probly.traverse_nn.torch</a></li>
 </ul>
 </li>
-<li class="toctree-l2 current has-children"><a class="reference internal" href="probly.utils.html">probly.utils</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-15" name="toctree-checkbox-15" role="switch" type="checkbox"/><label for="toctree-checkbox-15"><div class="visually-hidden">Toggle navigation of probly.utils</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l2 has-children"><a class="reference internal" href="probly.utils.html">probly.utils</a><input class="toctree-checkbox" id="toctree-checkbox-15" name="toctree-checkbox-15" role="switch" type="checkbox"/><label for="toctree-checkbox-15"><div class="visually-hidden">Toggle navigation of probly.utils</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="probly.utils.errors.html">probly.utils.errors</a></li>
-<li class="toctree-l3 current current-page"><a class="current reference internal" href="#">probly.utils.probabilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="probly.utils.probabilities.html">probly.utils.probabilities</a></li>
 <li class="toctree-l3"><a class="reference internal" href="probly.utils.sets.html">probly.utils.sets</a></li>
 <li class="toctree-l3"><a class="reference internal" href="probly.utils.torch.html">probly.utils.torch</a></li>
 </ul>
@@ -341,119 +341,60 @@
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="module-probly.utils.probabilities">
-<span id="probly-utils-probabilities"></span><h1>probly.utils.probabilities<a class="headerlink" href="#module-probly.utils.probabilities" title="Link to this heading">¶</a></h1>
-<p>General utility functions for all other modules.</p>
+          <section id="module-probly.plot.credal">
+<span id="probly-plot-credal"></span><h1>probly.plot.credal<a class="headerlink" href="#module-probly.plot.credal" title="Link to this heading">¶</a></h1>
+<p>Collection of credal plotting functions.</p>
 <p class="rubric">Functions</p>
 <div class="table-wrapper autosummary longtable docutils container">
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#probly.utils.probabilities.differential_entropy_gaussian" title="probly.utils.probabilities.differential_entropy_gaussian"><code class="xref py py-obj docutils literal notranslate"><span class="pre">differential_entropy_gaussian</span></code></a>(sigma2[, base])</p></td>
-<td><p>Compute the differential entropy of a Gaussian distribution given the variance.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#probly.plot.credal.credal_set_plot" title="probly.plot.credal.credal_set_plot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">credal_set_plot</span></code></a>(probs)</p></td>
+<td><p>Plot credal sets based on intervals of lower and upper probabilities.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#probly.utils.probabilities.intersection_probability" title="probly.utils.probabilities.intersection_probability"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intersection_probability</span></code></a>(probs)</p></td>
-<td><p>Compute the intersection probability of a credal set based on intervals of lower and upper probabilities.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#probly.utils.probabilities.kl_divergence_gaussian" title="probly.utils.probabilities.kl_divergence_gaussian"><code class="xref py py-obj docutils literal notranslate"><span class="pre">kl_divergence_gaussian</span></code></a>(mu1, sigma21, mu2, ...)</p></td>
-<td><p>Compute the KL-divergence between two Gaussian distributions.</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#probly.plot.credal.simplex_plot" title="probly.plot.credal.simplex_plot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">simplex_plot</span></code></a>(probs)</p></td>
+<td><p>Plot probability distributions on the simplex.</p></td>
 </tr>
 </tbody>
 </table>
 </div>
 <dl class="py function">
-<dt class="sig sig-object py" id="probly.utils.probabilities.differential_entropy_gaussian">
-<span class="sig-prename descclassname"><span class="pre">probly.utils.probabilities.</span></span><span class="sig-name descname"><span class="pre">differential_entropy_gaussian</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sigma2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/utils/probabilities.html#differential_entropy_gaussian"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.utils.probabilities.differential_entropy_gaussian" title="Link to this definition">¶</a></dt>
-<dd><p>Compute the differential entropy of a Gaussian distribution given the variance.</p>
+<dt class="sig sig-object py" id="probly.plot.credal.credal_set_plot">
+<span class="sig-prename descclassname"><span class="pre">probly.plot.credal.</span></span><span class="sig-name descname"><span class="pre">credal_set_plot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/plot/credal.html#credal_set_plot"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.plot.credal.credal_set_plot" title="Link to this definition">¶</a></dt>
+<dd><p>Plot credal sets based on intervals of lower and upper probabilities.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a> | <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.figure.Figure.html#matplotlib.figure.Figure" title="(in Matplotlib v3.10.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Figure</span></code></a>, <a class="reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.html#matplotlib.axes.Axes" title="(in Matplotlib v3.10.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Axes</span></code></a>]</span></p>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
-<dd class="field-even"><ul class="simple">
-<li><p><strong>sigma2</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em> | </em><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a>)</p></li>
-<li><p><strong>base</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>)</p></li>
-</ul>
+<dd class="field-even"><p><strong>probs</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a>) – numpy.ndarray of shape (n_samples, n_classes)</p>
 </dd>
-</dl>
-<p><a class="reference external" href="https://en.wikipedia.org/wiki/Differential_entropy">https://en.wikipedia.org/wiki/Differential_entropy</a>
-:param sigma2: float or numpy.ndarray shape (n_instances,), variance of the Gaussian distribution
-:param base: float, base of the logarithm</p>
-<dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>float or numpy.ndarray shape (n_instances,), differential entropy of the Gaussian distribution</p>
+<dd class="field-odd"><p>matplotlib figure
+ax: matplotlib axes</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>diff_ent</p>
-</dd>
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>sigma2</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em> | </em><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a>)</p></li>
-<li><p><strong>base</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>)</p></li>
-</ul>
+<dd class="field-even"><p>fig</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="probly.utils.probabilities.intersection_probability">
-<span class="sig-prename descclassname"><span class="pre">probly.utils.probabilities.</span></span><span class="sig-name descname"><span class="pre">intersection_probability</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/utils/probabilities.html#intersection_probability"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.utils.probabilities.intersection_probability" title="Link to this definition">¶</a></dt>
-<dd><p>Compute the intersection probability of a credal set based on intervals of lower and upper probabilities.</p>
-<p>Computes the intersection probability from <span id="id1">[<a class="reference internal" href="../references.html#id20" title="Fabio Cuzzolin. The intersection probability: betting with probability intervals. CoRR, 2022. URL: https://arxiv.org/abs/2201.01729, arXiv:2201.01729.">Cuz22</a>]</span>.</p>
+<dt class="sig sig-object py" id="probly.plot.credal.simplex_plot">
+<span class="sig-prename descclassname"><span class="pre">probly.plot.credal.</span></span><span class="sig-name descname"><span class="pre">simplex_plot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/plot/credal.html#simplex_plot"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.plot.credal.simplex_plot" title="Link to this definition">¶</a></dt>
+<dd><p>Plot probability distributions on the simplex.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.figure.Figure.html#matplotlib.figure.Figure" title="(in Matplotlib v3.10.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Figure</span></code></a>, <a class="reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.html#matplotlib.axes.Axes" title="(in Matplotlib v3.10.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Axes</span></code></a>]</span></p>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>probs</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a>) – numpy.ndarray, shape (n_instances, n_samples, n_classes), credal sets</p>
+<dd class="field-even"><p><strong>probs</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a>) – numpy.ndarray of shape (n_instances, n_classes)</p>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>numpy.ndarray, shape (n_instances, n_classes), intersection probability of the credal sets</p>
+<dd class="field-odd"><p>matplotlib figure
+ax: matplotlib axes</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>int_probs</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="probly.utils.probabilities.kl_divergence_gaussian">
-<span class="sig-prename descclassname"><span class="pre">probly.utils.probabilities.</span></span><span class="sig-name descname"><span class="pre">kl_divergence_gaussian</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mu1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma21</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma22</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/utils/probabilities.html#kl_divergence_gaussian"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.utils.probabilities.kl_divergence_gaussian" title="Link to this definition">¶</a></dt>
-<dd><p>Compute the KL-divergence between two Gaussian distributions.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a> | <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
-</dd>
-<dt class="field-even">Parameters<span class="colon">:</span></dt>
-<dd class="field-even"><ul class="simple">
-<li><p><strong>mu1</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em> | </em><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a>)</p></li>
-<li><p><strong>sigma21</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em> | </em><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a>)</p></li>
-<li><p><strong>mu2</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em> | </em><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a>)</p></li>
-<li><p><strong>sigma22</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em> | </em><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a>)</p></li>
-<li><p><strong>base</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>)</p></li>
-</ul>
-</dd>
-</dl>
-<p><a class="reference external" href="https://en.wikipedia.org/wiki/Kullback-Leibler_divergence#Examples">https://en.wikipedia.org/wiki/Kullback-Leibler_divergence#Examples</a>
-:param mu1: float or numpy.ndarray shape (n_instances,), mean of the first Gaussian distribution
-:param sigma21: float or numpy.ndarray shape (n_instances,), variance of the first Gaussian distribution
-:param mu2: float or numpy.ndarray shape (n_instances,), mean of the second Gaussian distribution
-:param sigma22: float or numpy.ndarray shape (n_instances,), variance of the second Gaussian distribution
-:param base: float, base of the logarithm</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>float or numpy.ndarray shape (n_instances,), KL-divergence between the two Gaussian distributions</p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>kl_div</p>
-</dd>
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>mu1</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em> | </em><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a>)</p></li>
-<li><p><strong>sigma21</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em> | </em><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a>)</p></li>
-<li><p><strong>mu2</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em> | </em><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a>)</p></li>
-<li><p><strong>sigma22</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em> | </em><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a>)</p></li>
-<li><p><strong>base</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>)</p></li>
-</ul>
+<dd class="field-even"><p>fig</p>
 </dd>
 </dl>
 </dd></dl>
@@ -465,23 +406,23 @@
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="probly.utils.sets.html">
+          <a class="next-page" href="probly.predictor.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">probly.utils.sets</div>
+                <div class="title">probly.predictor</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="probly.utils.errors.html">
+          <a class="prev-page" href="probly.plot.html">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">probly.utils.errors</div>
+                <div class="title">probly.plot</div>
                 
               </div>
             </a>
@@ -515,10 +456,9 @@
         <div class="toc-tree-container">
           <div class="toc-tree">
             <ul>
-<li><a class="reference internal" href="#">probly.utils.probabilities</a><ul>
-<li><a class="reference internal" href="#probly.utils.probabilities.differential_entropy_gaussian"><code class="docutils literal notranslate"><span class="pre">differential_entropy_gaussian()</span></code></a></li>
-<li><a class="reference internal" href="#probly.utils.probabilities.intersection_probability"><code class="docutils literal notranslate"><span class="pre">intersection_probability()</span></code></a></li>
-<li><a class="reference internal" href="#probly.utils.probabilities.kl_divergence_gaussian"><code class="docutils literal notranslate"><span class="pre">kl_divergence_gaussian()</span></code></a></li>
+<li><a class="reference internal" href="#">probly.plot.credal</a><ul>
+<li><a class="reference internal" href="#probly.plot.credal.credal_set_plot"><code class="docutils literal notranslate"><span class="pre">credal_set_plot()</span></code></a></li>
+<li><a class="reference internal" href="#probly.plot.credal.simplex_plot"><code class="docutils literal notranslate"><span class="pre">simplex_plot()</span></code></a></li>
 </ul>
 </li>
 </ul>
