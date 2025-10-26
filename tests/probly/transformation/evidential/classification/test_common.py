@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 import pytest
 
 from probly.predictor import Predictor
@@ -36,4 +38,4 @@ class TestBasicFunctionality:
             AssertionError: If the function does not raise an error with None input.
         """
         with pytest.raises(NotImplementedError):
-            evidential_classification(None) # type: ignore[arg-type]
+            evidential_classification(cast(Predictor[Any, Any, Any], None))
