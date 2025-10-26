@@ -1,6 +1,7 @@
 import sys
 import types
 import importlib
+from pathlib import Path
 import pytest
 
 class FakeGlobalVariable:
@@ -27,8 +28,12 @@ class FakeNormalInverseGammaLinear:
 
 @pytest.fixture(autouse=True)
 def clean_imports():
-    victims = [k for k in list(sys.modules) if k.startswith("probly.transformation.evidential.regression")]
-    victims += ["torch", "torch.nn", "probly.layers.torch"]
+    victims = [
+        "torch", "torch.nn",
+        "probly.layers", "probly.layers.torch",
+        "probly.transformation.evidential.regression.common",
+        "probly.transformation.evidential.regression.torch",
+    ]
     for k in victims:
         sys.modules.pop(k, None)
     yield
@@ -43,20 +48,25 @@ def install_fakes():
     sys.modules["torch"] = torch
     sys.modules["torch.nn"] = nn
 
+    layers_pkg = types.ModuleType("probly.layers")
+    layers_pkg.__path__ = []
+    sys.modules["probly.layers"] = layers_pkg
     layers_torch = types.ModuleType("probly.layers.torch")
     layers_torch.NormalInverseGammaLinear = FakeNormalInverseGammaLinear
     sys.modules["probly.layers.torch"] = layers_torch
 
     common = types.ModuleType("probly.transformation.evidential.regression.common")
-    common.REPLACED_LAST_LINEAR = FakeGlobalVariable[bool]("X", "", default=False)
+    class _GV(FakeGlobalVariable): pass
+    common.REPLACED_LAST_LINEAR = _GV[bool]("REPLACED_LAST_LINEAR", "", default=False)
     common.register_calls = []
     def register(cls, traverser):
         common.register_calls.append((cls, traverser))
     common.register = register
     sys.modules["probly.transformation.evidential.regression.common"] = common
 
-    pkg = types.ModuleType("probly.transformation.evidential.regression")
-    sys.modules["probly.transformation.evidential.regression"] = pkg
+    probly_pkg = types.ModuleType("probly")
+    probly_pkg.__path__ = [str(Path.cwd() / "src" / "probly")]
+    sys.modules["probly"] = probly_pkg
 
     return common
 
@@ -71,12 +81,13 @@ def test_register_called_on_import():
     assert cls is sys.modules["torch.nn"].Linear
     assert traverser is mod.replace_last_torch_nig
 
-def test_replace_last_torch_nig_sets_state_and_builds_layer():
+def test_replace_last_torch_nig_sets_state_and_builds_layer_bias_true():
     install_fakes()
     mod = import_target()
     state = {}
     lin = sys.modules["torch.nn"].Linear(4, 1, bias=True, device="cuda")
     layer, new_state = mod.replace_last_torch_nig(lin, state)
+    assert new_state is state
     assert state[sys.modules["probly.transformation.evidential.regression.common"].REPLACED_LAST_LINEAR] is True
     assert isinstance(layer, FakeNormalInverseGammaLinear)
     assert layer.in_features == 4
@@ -84,3 +95,14 @@ def test_replace_last_torch_nig_sets_state_and_builds_layer():
     assert layer.device == "cuda"
     assert layer.bias is True
 
+def test_replace_last_torch_nig_builds_layer_bias_false():
+    install_fakes()
+    mod = import_target()
+    state = {}
+    lin = sys.modules["torch.nn"].Linear(5, 2, bias=False, device="cpu")
+    layer, _ = mod.replace_last_torch_nig(lin, state)
+    assert isinstance(layer, FakeNormalInverseGammaLinear)
+    assert layer.in_features == 5
+    assert layer.out_features == 2
+    assert layer.device == "cpu"
+    assert layer.bias is False
