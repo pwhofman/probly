@@ -110,3 +110,59 @@ class TestNetworkArchitectures:
         children = list(model.children())
         assert len(children) == 2
         assert isinstance(children[1], nn.Softplus)
+
+
+class TestActivationFunction:
+    """Test class for activation function tests."""
+
+    def test_softplus_appended(self, torch_model_small_2d_2d: nn.Sequential) -> None:
+        """Tests that a Softplus activation is appended to the model.
+
+        This function verifies that after applying evidential_classification,
+        the model contains exactly one more Softplus layer than the original.
+
+        Parameters:
+            torch_model_small_2d_2d: The torch model to be tested.
+
+        Raises:
+            AssertionError: If the Softplus layer is not appended correctly.
+        """
+        model = evidential_classification(torch_model_small_2d_2d)
+
+        # count Softplus layers before and after
+        count_softplus_original = count_layers(torch_model_small_2d_2d, nn.Softplus)
+        count_softplus_modified = count_layers(model, nn.Softplus)
+
+        assert count_softplus_modified == count_softplus_original + 1
+
+    def test_last_layer_is_softplus(self, torch_model_small_2d_2d: nn.Sequential) -> None:
+        """Tests that the last layer of the modified model is Softplus.
+
+        Parameters:
+            torch_model_small_2d_2d: The torch model to be tested.
+
+        Raises:
+            AssertionError: If the last layer is not Softplus.
+        """
+        model = evidential_classification(torch_model_small_2d_2d)
+
+        # The model should be a Sequential with the last layer being Softplus
+        assert isinstance(model, nn.Sequential)
+        # Get the last layer
+        last_layer = list(model.children())[-1]
+        assert isinstance(last_layer, nn.Softplus), f"Last layer should be Softplus, but got {type(last_layer)}"
+
+    def test_softplus_is_present(self, torch_conv_linear_model: nn.Sequential) -> None:
+        """Tests that Softplus activation is present in various network types.
+
+        Parameters:
+            torch_conv_linear_model: A convolutional neural network model.
+
+        Raises:
+            AssertionError: If Softplus is not found in the model.
+        """
+        model = evidential_classification(torch_conv_linear_model)
+
+        # check that Softplus is in the model
+        has_softplus = any(isinstance(m, nn.Softplus) for m in model.modules())
+        assert has_softplus, "Softplus activation should be present in the model"
