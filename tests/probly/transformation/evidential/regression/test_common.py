@@ -38,4 +38,3 @@ def _transform(node: Any, state: Dict[str, Any]) -> Any:
 
 __all__ = ["register", "evidential_regression", "REPLACED_LAST_LINEAR"]
 
-
