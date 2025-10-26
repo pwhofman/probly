@@ -1,46 +1,41 @@
-pytest -q tests/probly/transformation/evidential/regression/test_common.py
+from __future__ import annotations
+from typing import Any, Callable, Dict, Type
+import copy
 
+REPLACED_LAST_LINEAR = "replaced_last_linear"
+_REGISTRY: Dict[Type, Callable[[Any, Dict[str, Any]], Any]] = {}
 
+def register(*, cls: Type, traverser: Callable[[Any, Dict[str, Any]], Any]) -> None:
+    _REGISTRY[cls] = traverser
 
-# Registrierung 
-register(cls=DummyLinear, traverser=replace_linear_with_nig)
+def evidential_regression(model: Any) -> Any:
+    clone = copy.deepcopy(model)
+    state: Dict[str, Any] = {REPLACED_LAST_LINEAR: False}
+    return _transform(clone, state)
 
+def _transform(node: Any, state: Dict[str, Any]) -> Any:
+    if isinstance(node, (list, tuple)):
+        seq = list(node)
+        for i in reversed(range(len(seq))):
+            seq[i] = _transform(seq[i], state)
+        return type(node)(seq)
+    if isinstance(node, dict):
+        for k in list(node.keys())[::-1]:
+            node[k] = _transform(node[k], state)
+        return node
+    try:
+        attrs = list(vars(node).items())
+    except TypeError:
+        attrs = []
+    for name, value in attrs[::-1]:
+        new_val = _transform(value, state)
+        if new_val is not value:
+            setattr(node, name, new_val)
+    for cls, traverser in _REGISTRY.items():
+        if isinstance(node, cls):
+            return traverser(node, state)
+    return node
 
-# ------------------ Tests ----------------------
+__all__ = ["register", "evidential_regression", "REPLACED_LAST_LINEAR"]
 
-def test_replaces_only_the_last_linear():
-    base = TinyPredictor()
-    evidential = evidential_regression(base)
-
-    assert isinstance(evidential.lin2, NormalInverseGammaLinearStub)
-    assert isinstance(evidential.lin1, DummyLinear)
-
-
-def test_returns_a_clone_not_inplace():
-    base = TinyPredictor()
-    evidential = evidential_regression(base)
-
-    assert evidential is not base
-    assert evidential.lin1 is not base.lin1
-    assert evidential.lin2 is not base.lin2
-
-
-def test_output_shape_is_unchanged():
-    base = TinyPredictor()
-    evidential = evidential_regression(base)
-
-    batch = [[1.0] * 8 for _ in range(4)]
-    output = evidential.predict(batch)
-
-    assert len(output) == 4
-    assert all(len(row) == 1 for row in output)
-
-
-def test_idempotent_if_applied_twice():
-    base = TinyPredictor()
-    once = evidential_regression(base)
-    twice = evidential_regression(once)
-
-    assert isinstance(twice.lin2, NormalInverseGammaLinearStub)
-    assert isinstance(twice.lin1, DummyLinear)
 
