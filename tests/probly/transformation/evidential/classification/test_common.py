@@ -30,10 +30,10 @@ class TestBasicFunctionality:
         """Tests that evidential_classification raises appropriate error with None input.
 
         This function verifies that passing None to evidential_classification
-        raises a TypeError, AttributeError or NotImplementedError.
+        raises NotImplementedError.
 
         Raises:
             AssertionError: If the function does not raise an error with None input.
         """
-        with pytest.raises((TypeError, AttributeError, NotImplementedError)):
-            evidential_classification(None)
+        with pytest.raises(NotImplementedError):
+            evidential_classification(None) # type: ignore[arg-type]
