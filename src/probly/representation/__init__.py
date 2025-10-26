@@ -1,6 +1,7 @@
 """Uncertainty representations for models."""
 
-from . import sampling
-from .representer import Representer
+from probly.representation import sampling
+from probly.representation.representer import Representer
+from probly.representation.sampling import Distribution
 
-__all__ = ["Representer", "sampling"]
+__all__ = ["Distribution", "Representer", "sampling"]
