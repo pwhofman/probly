@@ -1,4 +1,8 @@
 """Tests for torch DropConnect transformation."""
+# Additional clarification:
+# This test ensures that the DropConnect transformation correctly replaces
+# Linear layers with DropConnectLinear layers while keeping all other
+# network structures unchanged.
 
 from __future__ import annotations
 
@@ -76,6 +80,8 @@ class TestNetworkArchitectures:
         """Sanity: transformation preserves the top-level model type."""
         p = 0.5
         model = dropconnect(torch_custom_model, p)
+
+        # Check that after applying DropConnect, the top-level model type is unchanged
         assert isinstance(model, type(torch_custom_model))
 
 
