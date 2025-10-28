@@ -9,8 +9,7 @@ from probly.transformation import bayesian
 
 
 def test_invalid_prior_std_value(dummy_predictor: Predictor) -> None:
-    """Tests the behavior of the bayesian function when provided with an invalid
-    prior standard deviation value.
+    """Tests the behavior of the bayesian function when provided with an invalid prior standard deviation value.
 
     This function validates that the bayesian function raises a ValueError when
     the prior standard deviation parameter is not positive.
@@ -28,8 +27,7 @@ def test_invalid_prior_std_value(dummy_predictor: Predictor) -> None:
 
 
 def test_invalid_posterior_std_value(dummy_predictor: Predictor) -> None:
-    """Tests the behavior of the bayesian function when provided with an invalid
-    posterior standard deviation value.
+    """Tests the behavior of the bayesian function when provided with an invalid posterior standard deviation value.
 
     This function validates that the bayesian function raises a ValueError when
     the posterior standard deviation parameter is not positive.
