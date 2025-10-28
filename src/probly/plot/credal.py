@@ -1,4 +1,4 @@
-"""Collection of plotting functions."""
+"""Collection of credal plotting functions."""
 
 from __future__ import annotations
 
