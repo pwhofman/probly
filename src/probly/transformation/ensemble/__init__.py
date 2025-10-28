@@ -14,8 +14,3 @@ register = common.register
 @common.ensemble_generator.delayed_register(TORCH_MODULE)
 def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415
-
-## Flax
-@common.ensemble_generator.delayed_register(FLAX_MODULE)
-def _(_: type) -> None:
-    from . import flax as flax  # noqa: PLC0415
