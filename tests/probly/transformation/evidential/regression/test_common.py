@@ -2,58 +2,78 @@ import importlib
 import pytest
 
 
-def test_register_attaches_skip_if_and_uses_global_flag(mocker):
+def _state_with(flag, value):
+    class _S:
+        def __getitem__(self, k):
+            if k is flag:
+                return value
+            raise KeyError
+    return _S()
+
+
+def test_register_attaches_skip_if_and_uses_global_flag():
     import probly.transformation.evidential.regression.common as common
     importlib.reload(common)
 
-    spy = mocker.spy(common.evidential_regression_traverser, "register")
+    captured = {}
 
-    class DummyCls: ...
-    dummy_traverser = object()
+    def _capture_register(**kwargs):
+        captured["kwargs"] = kwargs
 
-    common.register(DummyCls, dummy_traverser)
+    original_register = common.evidential_regression_traverser.register
+    try:
+        common.evidential_regression_traverser.register = _capture_register  # type: ignore[attr-defined]
+        class DummyCls: ...
+        dummy_traverser = object()
+        common.register(DummyCls, dummy_traverser)
+    finally:
+        common.evidential_regression_traverser.register = original_register  # type: ignore[attr-defined]
 
-    spy.assert_called_once()
-    kwargs = spy.call_args.kwargs
+    kwargs = captured["kwargs"]
     assert kwargs["cls"] is DummyCls
     assert kwargs["traverser"] is dummy_traverser
 
     skip_if = kwargs["skip_if"]
     flag = common.REPLACED_LAST_LINEAR
-    assert skip_if({flag: True}) is True
-    assert skip_if({flag: False}) is False
-    try:
-        res = skip_if({})
-    except KeyError:
-        res = None
-    assert res in (None, False)
+    assert skip_if(_state_with(flag, True)) is True
+    assert skip_if(_state_with(flag, False)) is False
+    with pytest.raises(KeyError):
+        skip_if(_state_with(object(), True))
 
 
-def test_evidential_regression_calls_traverse_with_expected_init_and_compose(mocker):
+def test_evidential_regression_calls_traverse_with_expected_init_and_compose():
     import probly.transformation.evidential.regression.common as common
-    import pytraverse
     importlib.reload(common)
-    importlib.reload(pytraverse)
 
-    spy = mocker.spy(pytraverse, "traverse")
+    calls = {}
 
-    class BasePredictor:
-        pass
+    def fake_nn_compose(arg):
+        calls["nn_compose_arg"] = arg
+        return "COMPOSED"
 
-    base = BasePredictor()
+    def fake_traverse(base, composed, init):
+        calls["traverse_args"] = (base, composed, init)
+        return "RESULT"
 
-    result = common.evidential_regression(base)
+    orig_nn_compose = common.nn_compose
+    orig_traverse = common.traverse
+    try:
+        common.nn_compose = fake_nn_compose
+        common.traverse = fake_traverse
+        class BasePredictor: ...
+        base = BasePredictor()
+        result = common.evidential_regression(base)
+    finally:
+        common.nn_compose = orig_nn_compose
+        common.traverse = orig_traverse
 
-    assert spy.call_count >= 1
-    call_args, call_kwargs = spy.call_args
-    base_arg, composed_arg, init_arg = call_args[:3]
-
+    assert calls["nn_compose_arg"] is common.evidential_regression_traverser
+    base_arg, composed_arg, init_arg = calls["traverse_args"]
     assert base_arg is base
-    expected_composed = common.nn_compose(common.evidential_regression_traverser)
-    assert composed_arg == expected_composed
-    assert init_arg.get(pytraverse.TRAVERSE_REVERSED) is True
-    assert init_arg.get(pytraverse.CLONE) is True
-    assert result is not None or result is None
+    assert composed_arg == "COMPOSED"
+    assert init_arg.get(common.TRAVERSE_REVERSED) is True
+    assert init_arg.get(common.CLONE) is True
+    assert result == "RESULT"
 
 
 @pytest.mark.parametrize("flag_value", [True, False])
@@ -68,11 +88,11 @@ def test_skip_logic_via_flag_end_to_end(flag_value):
 
     original_register = common.evidential_regression_traverser.register
     try:
-        common.evidential_regression_traverser.register = _capture_register
+        common.evidential_regression_traverser.register = _capture_register  # type: ignore[attr-defined]
         common.register(object, object())
     finally:
-        common.evidential_regression_traverser.register = original_register
+        common.evidential_regression_traverser.register = original_register  # type: ignore[attr-defined]
 
     skip_if = captured["skip_if"]
     flag = common.REPLACED_LAST_LINEAR
-    assert skip_if({flag: flag_value}) is flag_value
+    assert skip_if(_state_with(flag, flag_value)) is flag_value
