@@ -19,13 +19,15 @@ jobs:
                 uses: astral-sh/setup-uv@v7
                 with:
                     python-version: "3.12"
+                    version: "0.4.26"
                     enable-cache: true
             -   name: Install pre-commit
                 run: |
-                    uv sync --only-group lint
+                    uv sync --only-group lint   # ✅ kein frozen -> kein Lock-Check
                     uv run --no-sync pre-commit install
             -   name: Run code-quality checks
                 run: uv run --no-sync pre-commit run --all-files --show-diff-on-failure
+
     # ----------------------------------------------------------------------------------------------
     # Install and Import Check
     # ----------------------------------------------------------------------------------------------
@@ -38,6 +40,7 @@ jobs:
                 uses: astral-sh/setup-uv@v7
                 with:
                     python-version: "3.12"
+                    version: "0.4.26"
                     enable-cache: true
             -   name: Create uv virtual environment
                 run: uv venv
@@ -45,6 +48,7 @@ jobs:
                 run: uv run --no-sync uv pip install .
             -   name: Test import
                 run: uv run --no-sync python -c "import probly; print('✅ probly imported successfully')"
+
     # ----------------------------------------------------------------------------------------------
     # Unit Tests with Matrix
     # ----------------------------------------------------------------------------------------------
@@ -73,11 +77,13 @@ jobs:
                 uses: astral-sh/setup-uv@v7
                 with:
                     python-version: ${{ matrix.python-version }}
+                    version: "0.4.26"
                     enable-cache: true
             -   name: Install test dependencies
                 run: uv sync --no-dev --group test --group ${{ matrix.dependency-group }}
             -   name: Run unit tests
                 run: uv run --no-sync pytest "tests/probly" -m "not integration"
+
     # ----------------------------------------------------------------------------------------------
     # Test Documentation Build
     # ----------------------------------------------------------------------------------------------
@@ -90,6 +96,7 @@ jobs:
                 uses: astral-sh/setup-uv@v7
                 with:
                     python-version: "3.12"
+                    version: "0.4.26"
                     enable-cache: true
             -   name: Install pandoc
                 run: |
@@ -97,7 +104,6 @@ jobs:
                     sudo apt-get install -y pandoc
             -   name: Install dependencies
                 run: uv sync
-                # TODO(mmshlk) Turn this step to fail on warnings in the future. https://github.com/pwhofman/probly/issues/131
             -   name: Build documentation
                 run: |
                     uv run sphinx-build -b html docs/source docs/build/html
@@ -118,6 +124,7 @@ jobs:
                 uses: astral-sh/setup-uv@v7
                 with:
                     python-version: "3.12"
+                    version: "0.4.26"
                     enable-cache: true
             -   name: Install test dependencies
                 run: uv sync --no-dev --group test --group all_ml
