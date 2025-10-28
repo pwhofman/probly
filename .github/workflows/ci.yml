@@ -1,4 +1,3 @@
-# A GitHub Actions workflow file to run on pull request events.
 name: Pull Request Checks
 on:
   pull_request:
@@ -6,30 +5,53 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# nötig, damit der Lint-Job Auto-Fixes committen darf
+permissions:
+  contents: write
+
 jobs:
   # ----------------------------------------------------------------------------------------------
-  # Code Quality Checks and Linting
+  # Code Quality Checks and Linting (mit Auto-Fix + Commit)
   # ----------------------------------------------------------------------------------------------
   check_code_quality:
     name: Code Quality Checks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - name: Set up Python and uv
         uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.12"
-          version: "0.4.26"   # ✅ uv-Version gepinnt
+          version: "0.4.26"
           enable-cache: true
 
-      - name: Install pre-commit
-        run: |
-          uv sync --only-group lint    # absichtlich nicht frozen
-          uv run --no-sync pre-commit install
+      - name: Install pre-commit deps
+        run: uv sync --only-group lint   # absichtlich nicht --frozen
 
-      - name: Run code-quality checks
-        run: uv run --no-sync pre-commit run --all-files --show-diff-on-failure
+      # 1) Auto-Fixes ausführen (Hook darf Dateien ändern)
+      - name: Run pre-commit (autofix)
+        run: uv run --no-sync pre-commit run -a --show-diff-on-failure || true
+
+      # 2) Falls Änderungen entstanden sind: commit & push (nur wenn Branch im selben Repo ist)
+      - name: Commit pre-commit fixes (if any)
+        if: ${{ github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository }}
+        run: |
+          if git diff --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "chore: apply pre-commit auto-fixes"
+          git push
+
+      # 3) Strenge Prüfung (sollte grün sein; echte Fehler lassen den Job fehlschlagen)
+      - name: Run pre-commit (strict)
+        run: uv run --no-sync pre-commit run -a --show-diff-on-failure
 
   # ----------------------------------------------------------------------------------------------
   # Install and Import Check
@@ -39,20 +61,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-
       - name: Set up Python and uv
         uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.12"
           version: "0.4.26"
           enable-cache: true
-
       - name: Create uv virtual environment
         run: uv venv
-
       - name: Install probly package
         run: uv run --no-sync uv pip install .
-
       - name: Test import
         run: uv run --no-sync python -c "import probly; print('✅ probly imported successfully')"
 
@@ -80,17 +98,14 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v5
-
       - name: Set up Python and uv
         uses: astral-sh/setup-uv@v7
         with:
           python-version: ${{ matrix.python-version }}
           version: "0.4.26"
           enable-cache: true
-
       - name: Install test dependencies
         run: uv sync --no-dev --group test --group ${{ matrix.dependency-group }}
-
       - name: Run unit tests
         run: uv run --no-sync pytest "tests/probly" -m "not integration"
 
@@ -102,20 +117,45 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-
       - name: Set up Python and uv
         uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.12"
           version: "0.4.26"
           enable-cache: true
-
       - name: Install pandoc
         run: |
           sudo apt-get update
           sudo apt-get install -y pandoc
-
       - name: Install dependencies
         run: uv sync
+      - name: Build documentation
+        run: uv run sphinx-build -b html docs/source docs/build/html
 
-      - name: Bu
+  # ----------------------------------------------------------------------------------------------
+  # Code Coverage
+  # ----------------------------------------------------------------------------------------------
+  run_coverage:
+    name: Run Test Coverage
+    runs-on: ubuntu-latest
+    needs:
+      - run_unit_tests
+      - check_code_quality
+      - install_and_import
+    steps:
+      - uses: actions/checkout@v5
+      - name: Set up Python and uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.12"
+          version: "0.4.26"
+          enable-cache: true
+      - name: Install test dependencies
+        run: uv sync --no-dev --group test --group all_ml
+      - name: Measure coverage
+        run: uv run --no-sync pytest "tests/probly" --cov=probly --cov-report=xml
+      - name: Upload coverage to codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: true
