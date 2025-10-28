@@ -1,32 +1,23 @@
+# tests/probly/transformation/evidential/classification/test_torch.py
 import importlib
-import sys
 import torch
 
-def test_append_activation_torch_exists_and_works(monkeypatch):
-    # 1) common laden und defekten register() durch funktionierende Variante ersetzen
-    common = importlib.import_module("probly.transformation.evidential.classification.common")
+def test_append_activation_torch_exists_and_works():
+    # torch-Implementierung importieren (registriert beim Import)
+    mod = importlib.import_module(
+        "probly.transformation.evidential.classification.torch"
+    )
 
-    def fixed_register(cls, appender):
-        # Korrigiert den Keyword-Parameter-Name auf func_
-        common.evidential_classification_appender.register(cls=cls, func_=appender)
+    # Existenz der Funktion prüfen (einsteigerfreundlich)
+    assert hasattr(mod, "append_activation_torch")
+    assert callable(mod.append_activation_torch)
 
-    monkeypatch.setattr(common, "register", fixed_register, raising=True)
+    # Jetzt die öffentliche API nutzen -> beweist, dass die Registrierung funktioniert
+    from probly.transformation.evidential.classification import common
 
-    # 2) Sicherstellen, dass das Torch-Modul frisch importiert (mit gepatchtem register) wird
-    sys.modules.pop("probly.transformation.evidential.classification.torch", None)
+    base = torch.nn.Linear(4, 2)
+    wrapped = common.evidential_classification(base)
 
-    # 3) Torch-Modul importieren – dessen register(...) benutzt nun unseren Patch
-    module = importlib.import_module("probly.transformation.evidential.classification.torch")
-
-    # 4) Vorhandensein & Aufrufbarkeit prüfen
-    assert hasattr(module, "append_activation_torch")
-    func = module.append_activation_torch
-    assert callable(func)
-
-    # 5) einfache Schicht definieren und prüfen
-    linear = torch.nn.Linear(4, 2)
-    result = func(linear)
-
-    assert isinstance(result, torch.nn.Sequential)
-    assert len(result) == 2
-    assert isinstance(result[1], torch.nn.Softplus)
+    assert isinstance(wrapped, torch.nn.Sequential)
+    assert len(wrapped) == 2
+    assert isinstance(wrapped[1], torch.nn.Softplus)
