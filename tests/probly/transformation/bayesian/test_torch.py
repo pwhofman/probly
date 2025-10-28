@@ -154,6 +154,8 @@ class TestNetworkArchitectures:
         # check values in bayesian layers
         for m in model.modules():
             if isinstance(m, BayesLinear):
-                raise NotImplementedError("possible value checks for BayesianLinear")
+                msg = "Possible value checks for BayesianLinear"
+                raise NotImplementedError(msg)
             if isinstance(m, BayesConv2d):
-                raise NotImplementedError("possible value checks for BayesianConv2d")
+                msg = "Possible value checks for BayesianConv2d"
+                raise NotImplementedError(msg)
