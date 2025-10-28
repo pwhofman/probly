@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from probly.lazy_types import FLAX_MODULE, TORCH_MODULE
+from probly.lazy_types import TORCH_MODULE
 
 from . import common
 
