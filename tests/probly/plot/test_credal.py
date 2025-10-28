@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
-from probly.plot import credal_set_plot, simplex_plot
+from probly.plot.credal import credal_set_plot, simplex_plot
 
 
 def test_simplex_plot_outputs() -> None:
