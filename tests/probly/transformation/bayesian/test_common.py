@@ -19,7 +19,8 @@ def test_invalid_prior_std_value(dummy_predictor: Predictor) -> None:
     """
 
     prior_std = -1.0
-    with pytest.raises(ValueError, match=f"The prior standard deviation must be positive and non-zero, but got {prior_std} instead."):
+    msg = f"The prior standard deviation must be positive and non-zero, but got {prior_std} instead."
+    with pytest.raises(ValueError, match=msg):
         bayesian(dummy_predictor, prior_std=prior_std)
 
 
@@ -34,5 +35,6 @@ def test_invalid_posterior_std_value(dummy_predictor: Predictor) -> None:
     """
 
     posterior_std = -1.0
-    with pytest.raises(ValueError, match=f"The posterior standard deviation must be positive and non-zero, but got {posterior_std} instead."):
+    msg = f"The posterior standard deviation must be positive and non-zero, but got {posterior_std} instead."
+    with pytest.raises(ValueError, match=msg):
         bayesian(dummy_predictor, posterior_std=posterior_std)
