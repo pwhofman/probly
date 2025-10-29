@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import pytest
 
+from probly.layers.torch import BayesLinear, BayesConv2d
 from probly.transformation import bayesian
 from tests.probly.torch_utils import count_layers
-from probly.layers.torch import BayesLinear, BayesConv2d
 
 torch = pytest.importorskip("torch")
 
@@ -51,9 +51,7 @@ class TestNetworkArchitectures:
         # check that the model is not modified except for the bayesian layer
         assert model is not None
         assert isinstance(model, type(torch_model_small_2d_2d))
-        assert (
-            count_bayesian_modified == count_bayesian_original + count_linear_original
-        )
+        assert count_bayesian_modified == count_bayesian_original + count_linear_original
         assert count_linear_modified == 0
         assert count_sequential_original == count_sequential_modified
 
@@ -79,17 +77,13 @@ class TestNetworkArchitectures:
         # count number of nn.Linear layers in original model
         count_linear_original = count_layers(torch_conv_linear_model, nn.Linear)
         # count number of BayesConv2d layers in original model
-        count_bayesian_conv_original = count_layers(
-            torch_conv_linear_model, BayesConv2d
-        )
+        count_bayesian_conv_original = count_layers(torch_conv_linear_model, BayesConv2d)
         # count number of nn.Sequential layers in original model
         count_sequential_original = count_layers(torch_conv_linear_model, nn.Sequential)
         # count number of nn.Conv2d layers in original model
         count_conv_original = count_layers(torch_conv_linear_model, nn.Conv2d)
         # count number of BayesLinear layers in original model
-        count_bayesian_linear_original = count_layers(
-            torch_conv_linear_model, BayesLinear
-        )
+        count_bayesian_linear_original = count_layers(torch_conv_linear_model, BayesLinear)
 
         # count number of nn.Linear layers in modified model
         count_linear_modified = count_layers(model, nn.Linear)
@@ -107,13 +101,8 @@ class TestNetworkArchitectures:
         assert isinstance(model, type(torch_conv_linear_model))
         assert count_linear_modified == 0
         assert count_conv_modified == 0
-        assert (
-            count_bayesian_conv_modified
-            == count_bayesian_conv_original + count_conv_original
-        )
-        assert count_bayesian_linear_modified == (
-            count_bayesian_linear_original + count_linear_original
-        )
+        assert count_bayesian_conv_modified == count_bayesian_conv_original + count_conv_original
+        assert count_bayesian_linear_modified == count_bayesian_linear_original + count_linear_original
         assert count_sequential_original == count_sequential_modified
 
     def test_custom_network(self, torch_custom_model: nn.Module) -> None:
