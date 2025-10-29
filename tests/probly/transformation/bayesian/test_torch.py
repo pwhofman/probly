@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from probly.layers.torch import BayesLinear, BayesConv2d
+from probly.layers.torch import  BayesConv2d, BayesLinear
 from probly.transformation import bayesian
 from tests.probly.torch_utils import count_layers
 
@@ -17,7 +17,8 @@ class TestNetworkArchitectures:
     """Test class for different network architectures."""
 
     def test_linear_network_replacement(
-        self, torch_model_small_2d_2d: nn.Sequential
+        self, 
+        torch_model_small_2d_2d: nn.Sequential
     ) -> None:
         """Tests if a model incorporates a bayesian layer correctly when a linear layer is present.
 
@@ -31,7 +32,6 @@ class TestNetworkArchitectures:
             AssertionError: If the modified model deviates in structure other than
             the replacement of bayesian layers or does not meet the expected constraints.
         """
-
         model = bayesian(torch_model_small_2d_2d)
 
         # count number of nn.Linear layers in original model
@@ -71,7 +71,6 @@ class TestNetworkArchitectures:
             AssertionError: If the modified model deviates in structure other than
             the addition of bayesian layers or does not meet the expected constraints.
         """
-
         model = bayesian(torch_conv_linear_model)
 
         # count number of nn.Linear layers in original model
@@ -107,7 +106,6 @@ class TestNetworkArchitectures:
 
     def test_custom_network(self, torch_custom_model: nn.Module) -> None:
         """Tests the custom model modification with added bayesian layers."""
-
         model = bayesian(torch_custom_model)
 
         # check if model type is correct
@@ -117,7 +115,6 @@ class TestNetworkArchitectures:
     @pytest.mark.skip(reason="Not yet implemented in probly")
     def test_bayesian_model(self, torch_bayesian_model: nn.Module) -> None:
         """Tests the bayesian model modification if bayesian already exists."""
-
         model = bayesian(torch_bayesian_model)
 
         # count number of nn.Linear layers in original model
