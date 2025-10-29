@@ -102,10 +102,7 @@ class TestNetworkArchitectures:
         assert count_bayesian_linear_modified == count_bayesian_linear_original + count_linear_original
         assert count_sequential_original == count_sequential_modified
 
-    def test_custom_network(
-            self,
-            torch_custom_model: nn.Module,
-    ) -> None:
+    def test_custom_network(self, torch_custom_model: nn.Module) -> None:
         """Tests the custom model modification with added bayesian layers."""
         model = bayesian(torch_custom_model)
 
