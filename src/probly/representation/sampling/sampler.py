@@ -70,17 +70,17 @@ def sampler_factory[In, KwIn, Out](
     return sampler
 
 
-class Sampler[In, KwIn, Out, R](Representer[In, KwIn, Out]):
+class Sampler[In, KwIn, Out](Representer[In, KwIn, Out]):
     """A representation predictor that creates representations from finite samples."""
 
     sampling_strategy: SamplingStrategy
-    sample_factory: Callable[[Iterable[Out]], R]
+    sample_factory: Callable[[Iterable[Out]], Sample[Out]]
 
     def __init__(
         self,
         predictor: Predictor[In, KwIn, Out],
-        sample_factory: Callable[[Iterable[Out]], R],
         sampling_strategy: SamplingStrategy = "sequential",
+        sample_factory: Callable[[Iterable[Out]], Sample[Out]] = create_sample,
     ) -> None:
         """Initialize the sampler.
 
@@ -90,10 +90,10 @@ class Sampler[In, KwIn, Out, R](Representer[In, KwIn, Out]):
             sample_factory (Callable[[Iterable[Out]], Sample[Out]], optional): Factory to create the sample.
         """
         super().__init__(predictor)
-        self.sample_factory = sample_factory
         self.sampling_strategy = sampling_strategy
+        self.sample_factory = sample_factory
 
-    def predict(self, *args: In, num_samples: int, **kwargs: Unpack[KwIn]) -> R:
+    def predict(self, *args: In, num_samples: int, **kwargs: Unpack[KwIn]) -> Sample[Out]:
         """Sample from the predictor for a given input."""
         return self.sample_factory(
             sampler_factory(
