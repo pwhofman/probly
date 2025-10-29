@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from probly.layers.torch import  BayesConv2d, BayesLinear
+from probly.layers.torch import BayesConv2d, BayesLinear
 from probly.transformation import bayesian
 from tests.probly.torch_utils import count_layers
 
@@ -17,7 +17,7 @@ class TestNetworkArchitectures:
     """Test class for different network architectures."""
 
     def test_linear_network_replacement(
-        self, 
+        self,
         torch_model_small_2d_2d: nn.Sequential,
     ) -> None:
         """Tests if a model incorporates a bayesian layer correctly when a linear layer is present.
@@ -55,10 +55,7 @@ class TestNetworkArchitectures:
         assert count_linear_modified == 0
         assert count_sequential_original == count_sequential_modified
 
-    def test_convolutional_network(
-        self, 
-        torch_conv_linear_model: nn.Sequential,
-    ) -> None:
+    def test_convolutional_network(self, torch_conv_linear_model: nn.Sequential) -> None:
         """Tests the convolutional neural network modification with added bayesian layers.
 
         This function evaluates whether the given convolutional neural network model
@@ -105,7 +102,10 @@ class TestNetworkArchitectures:
         assert count_bayesian_linear_modified == count_bayesian_linear_original + count_linear_original
         assert count_sequential_original == count_sequential_modified
 
-    def test_custom_network(self, torch_custom_model: nn.Module) -> None:
+    def test_custom_network(
+            self,
+            torch_custom_model: nn.Module,
+    ) -> None:
         """Tests the custom model modification with added bayesian layers."""
         model = bayesian(torch_custom_model)
 
