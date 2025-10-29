@@ -1,1 +1,1 @@
-"""Tests for the classification module."""
+"""Tests for the evidential classification module."""

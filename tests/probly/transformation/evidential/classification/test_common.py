@@ -1,4 +1,4 @@
-"""Test for classification models."""
+"""Test for evidential classification models."""
 
 from __future__ import annotations
 
