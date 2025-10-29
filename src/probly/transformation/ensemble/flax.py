@@ -16,10 +16,9 @@ def _reset_clone(obj: nnx.Module, input_shape: tuple, key: jax.random.PRNGKey) -
     params = obj.init(key, x)
     return obj, params
 
-def generate_flax_ensemble(obj: nnx.Module, n_members: int, input_shape: tuple) -> List[Tuple[nnx.Module, dict]]:
+def generate_flax_ensemble(obj: nnx.Module, n_members: int, input_shape: tuple, key: jax.random.PRNGKey) -> List[Tuple[nnx.Module, dict]]:
     """Build a flax ensemble by initializing n_members times."""
-    rng = jax.random.PRNGKey(0)
-    subkeys = jax.random.split(jax.random.PRNGKey(0), n_members)
+    subkeys = jax.random.split(key, n_members)
     return [_reset_clone(obj, input_shape, k) for k in subkeys]
    
 register(nnx.Module, generate_flax_ensemble)
