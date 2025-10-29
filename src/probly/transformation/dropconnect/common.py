@@ -32,4 +32,7 @@ def dropconnect[T: Predictor](base: T, p: float = 0.25) -> T:
     Returns:
         The DropConnect predictor.
     """
+    if p < 0 or p > 1:
+        msg = f"The probability p must be between 0 and 1, but got {p} instead."
+        raise ValueError(msg)
     return traverse(base, nn_compose(dropconnect_traverser), init={P: p, CLONE: True})
