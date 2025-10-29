@@ -20,7 +20,7 @@ class DummyModel(nnx.Module):
 class TestGenerateFlaxEnsemble:
     """Tests for the low-level Flax ensemble generator."""
 
-    def test_generate_ensemble_shapes_and_count(self):
+    def test_generate_ensemble_shapes_and_count(self) -> None:
         """Checks that correct number of ensemble members are created."""
         model = DummyModel(features=4)
         input_shape = (1, 3)
@@ -36,7 +36,7 @@ class TestGenerateFlaxEnsemble:
             # verify params contain dense layer weights
             assert "dense" in params
 
-    def test_different_initializations(self):
+    def test_different_initializations(self) -> None:
         """Ensures each ensemble member is initialized independently."""
         model = DummyModel(features=2)
         input_shape = (1, 2)
@@ -48,7 +48,7 @@ class TestGenerateFlaxEnsemble:
         diffs = [not jnp.allclose(weights[i], weights[j]) for i in range(n) for j in range(i + 1, n)]
         assert any(diffs), "All ensemble members were initialized identically!"
 
-    def test_zero_members_raises(self):
+    def test_zero_members_raises(self) -> None:
         """Ensure invalid ensemble sizes raise an error."""
         model = DummyModel(features=2)
         with pytest.raises(ValueError):
