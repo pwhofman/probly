@@ -106,3 +106,4 @@ class TestPValues:
         for m in model.modules():
             if isinstance(m, DropConnectLinear):
                 assert getattr(m, "p", None) == pytest.approx(p)
+                

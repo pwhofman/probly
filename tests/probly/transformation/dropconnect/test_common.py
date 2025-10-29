@@ -1,4 +1,5 @@
 """Lightweight API sanity tests for probly.transformation.dropconnect.common."""
+# Rewritten DropConnect common test structure
 
 from __future__ import annotations
 
