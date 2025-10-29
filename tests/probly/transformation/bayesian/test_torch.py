@@ -18,7 +18,7 @@ class TestNetworkArchitectures:
 
     def test_linear_network_replacement(
         self, 
-        torch_model_small_2d_2d: nn.Sequential
+        torch_model_small_2d_2d: nn.Sequential,
     ) -> None:
         """Tests if a model incorporates a bayesian layer correctly when a linear layer is present.
 
@@ -56,7 +56,8 @@ class TestNetworkArchitectures:
         assert count_sequential_original == count_sequential_modified
 
     def test_convolutional_network(
-        self, torch_conv_linear_model: nn.Sequential
+        self, 
+        torch_conv_linear_model: nn.Sequential,
     ) -> None:
         """Tests the convolutional neural network modification with added bayesian layers.
 
