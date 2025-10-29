@@ -1,7 +1,6 @@
 """Tests for shared evidential classification dispatcher (common.py)."""
 
 from __future__ import annotations
-
 import pytest
 
 from probly.transformation.evidential.classification.common import (
@@ -9,7 +8,6 @@ from probly.transformation.evidential.classification.common import (
     evidential_classification_appender,
     register,
 )
-
 
 class DummyPredictor:
     pass
