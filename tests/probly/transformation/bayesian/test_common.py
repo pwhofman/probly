@@ -26,4 +26,3 @@ def test_invalid_prior_likelihood(dummy_predictor: Predictor) -> None:
     likelihood = [0.8, -0.2]  # Invalid likelihood (negative value)
     with pytest.raises(ValueError, match="The likelihood must be non-negative."):
         bayesian(dummy_predictor, prior=prior, likelihood=likelihood)
-

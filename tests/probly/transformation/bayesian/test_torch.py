@@ -9,6 +9,7 @@ from probly.transformation import bayesian
 
 torch = pytest.importorskip("torch")
 
+
 def test_invalid_prior_likelihood(torch_model_small_2d_2d: nn.Module) -> None:
     """Tests the behavior of the bayesian function when provided with invalid prior or likelihood."""
     prior = [0.5, 0.6]  # Invalid prior (sums to more than 1)
