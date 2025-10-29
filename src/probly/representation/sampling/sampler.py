@@ -11,7 +11,6 @@ from probly.representation.representer import Representer
 from probly.traverse_nn import nn_compose
 from pytraverse import CLONE, GlobalVariable, lazydispatch_traverser, traverse_with_state
 
-from .credal_set import CredalSet, create_credal_set
 from .sample import Sample, create_sample
 
 type SamplingStrategy = Literal["sequential"]
@@ -103,60 +102,6 @@ class Sampler[In, KwIn, Out, R](Representer[In, KwIn, Out]):
                 strategy=self.sampling_strategy,
             )(*args, **kwargs),
         )
-
-
-class Distribution[In, KwIn, Out](Sampler[In, KwIn, Out, Sample[Out]]):
-    """A distribution representer that creates samples from finite samples."""
-
-    def __init__(
-        self,
-        predictor: Predictor[In, KwIn, Out],
-        sample_factory: Callable[[Iterable[Out]], Sample[Out]] = create_sample,
-        sampling_strategy: SamplingStrategy = "sequential",
-    ) -> None:
-        """Initialize the distribution representer.
-
-        Args:
-            predictor (Predictor[In, KwIn, Out]): The predictor to be used for sampling.
-            sample_factory (Callable[[Iterable[Out]], Sample[Out]], optional): Factory to create the sample.
-            sampling_strategy (SamplingStrategy, optional): How the samples should be computed.
-        """
-        super().__init__(
-            predictor,
-            sample_factory=sample_factory,
-            sampling_strategy=sampling_strategy,
-        )
-
-    def predict(self, *args: In, num_samples: int, **kwargs: Unpack[KwIn]) -> Sample[Out]:
-        """Sample from the predictor for a given input to create a sample."""
-        return super().predict(*args, num_samples=num_samples, **kwargs)
-
-
-class Set[In, KwIn, Out](Sampler[In, KwIn, Out, CredalSet[Out]]):
-    """A set representer that creates samples from finite samples."""
-
-    def __init__(
-        self,
-        predictor: Predictor[In, KwIn, Out],
-        sample_factory: Callable[[Iterable[Out]], CredalSet[Out]] = create_credal_set,
-        sampling_strategy: SamplingStrategy = "sequential",
-    ) -> None:
-        """Initialize the set representer.
-
-        Args:
-            predictor (Predictor[In, KwIn, Out]): The predictor to be used for sampling.
-            sample_factory (Callable[[Iterable[Out]], CredalSet[Out]], optional): Factory to create the sample.
-            sampling_strategy (SamplingStrategy, optional): How the samples should be computed.
-        """
-        super().__init__(
-            predictor,
-            sample_factory=sample_factory,
-            sampling_strategy=sampling_strategy,
-        )
-
-    def predict(self, *args: In, num_samples: int, **kwargs: Unpack[KwIn]) -> CredalSet[Out]:
-        """Sample from the predictor for a given input to create a sample."""
-        return super().predict(*args, num_samples=num_samples, **kwargs)
 
 
 class EnsembleSampler[In, KwIn, Out](Representer[In, KwIn, Iterable[Out]]):
