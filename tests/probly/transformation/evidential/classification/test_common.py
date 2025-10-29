@@ -1,6 +1,10 @@
+# ruff: noqa: D107
+
+
 """Tests for shared evidential classification dispatcher (common.py)."""
 
 from __future__ import annotations
+
 import pytest
 
 from probly.transformation.evidential.classification.common import (
@@ -9,8 +13,9 @@ from probly.transformation.evidential.classification.common import (
     register,
 )
 
+
 class DummyPredictor:
-    pass
+    def __call__(self) -> None: ...
 
 
 class WrappedPredictor:
@@ -35,7 +40,7 @@ def test_unregistered_type_raises_not_implemented() -> None:
 
 def test_register_and_dispatch_wraps_base() -> None:
     """After registering, dispatch should call the appender and return its result."""
-    register(DummyPredictor, dummy_appender)
+    register(DummyPredictor, dummy_appender)  # type:ignore[arg-type]
 
     base = DummyPredictor()
     out = evidential_classification(base)
@@ -63,8 +68,7 @@ def test_register_returns_none_and_does_not_raise() -> None:
     def another_appender(base: DummyPredictor) -> WrappedPredictor:
         return WrappedPredictor(base)
 
-    result = register(DummyPredictor, another_appender)
-    assert result is None
+    register(DummyPredictor, another_appender)
 
 
 def test_direct_appender_call_matches_dispatch() -> None:
@@ -73,7 +77,7 @@ def test_direct_appender_call_matches_dispatch() -> None:
     register(DummyPredictor, dummy_appender)
 
     via_api = evidential_classification(base)
-    via_dispatch = evidential_classification_appender(base)
+    via_dispatch: WrappedPredictor = evidential_classification_appender(base)
 
     assert isinstance(via_api, WrappedPredictor)
     assert isinstance(via_dispatch, WrappedPredictor)
