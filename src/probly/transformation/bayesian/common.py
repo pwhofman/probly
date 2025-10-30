@@ -53,6 +53,12 @@ def bayesian[T: Predictor](
     Returns:
         The Bayesian predictor.
     """
+    if posterior_std <= 0:
+        msg = f"The posterior standard deviation must be positive and non-zero, but got {posterior_std} instead."
+        raise ValueError(msg)
+    if prior_std <= 0:
+        msg = f"The prior standard deviation must be positive and non-zero, but got {prior_std} instead."
+        raise ValueError(msg)
     return traverse(
         base,
         nn_compose(bayesian_traverser),
