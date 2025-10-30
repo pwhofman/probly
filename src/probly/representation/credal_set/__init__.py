@@ -1,4 +1,4 @@
-"""Representation predictors that create representations from finite samples."""
+"""Second-order distribution representations."""
 
 from __future__ import annotations
 
