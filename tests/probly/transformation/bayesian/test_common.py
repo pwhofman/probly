@@ -9,7 +9,7 @@ from probly.transformation.bayesian import common as c
 
 def test_global_variables() -> None:
     """Check defaults and registration of global variables."""
-    assert c.USE_BASE_WEIGHTS.default is False
+    assert bool(c.USE_BASE_WEIGHTS.default) is False
     assert c.POSTERIOR_STD.default == 0.05
     assert c.PRIOR_MEAN.default == 0.0
     assert c.PRIOR_STD.default == 1.0
@@ -82,12 +82,12 @@ def test_bayesian_uses_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
 
     init = called2["init"]
     assert isinstance(init, dict)
-    assert init[c.USE_BASE_WEIGHTS] is False
+    assert bool(init[c.USE_BASE_WEIGHTS]) is False
     assert init[c.POSTERIOR_STD] == 0.05
     assert init[c.PRIOR_MEAN] == 0.0
     assert init[c.PRIOR_STD] == 1.0
     # CLONE evtl. nicht im __all__, Mypy fix:
-    assert c.CLONE is True  # type: ignore[attr-defined]
+    assert bool(c.CLONE) is True  # type: ignore[attr-defined]
 
 
 def test_bayesian_override(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -112,9 +112,9 @@ def test_bayesian_override(monkeypatch: pytest.MonkeyPatch) -> None:
 
     init = called3["init"]
     assert isinstance(init, dict)
-    assert init[c.USE_BASE_WEIGHTS] is True
+    assert bool(init[c.USE_BASE_WEIGHTS]) is True
     assert init[c.POSTERIOR_STD] == 0.4
     assert init[c.PRIOR_MEAN] == 0.5
     assert init[c.PRIOR_STD] == 1.9
     # CLONE maybe noz in __all__, Mypy fix:
-    assert c.CLONE is True  # type: ignore[attr-defined]
+    assert bool(c.CLONE) is True  # type: ignore[attr-defined]
