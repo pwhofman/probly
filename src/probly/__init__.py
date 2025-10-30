@@ -12,5 +12,3 @@ from probly import (
     transformation as transformation,
     utils as utils,
 )
-from probly.evaluation import metrics as metrics, tasks as tasks
-from probly.train import losses as losses
