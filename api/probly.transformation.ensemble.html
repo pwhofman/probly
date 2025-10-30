@@ -352,7 +352,7 @@
 <h1>probly.transformation.ensemble<a class="headerlink" href="#probly-transformation-ensemble" title="Link to this heading">¶</a></h1>
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.transformation.ensemble">
-<span class="sig-prename descclassname"><span class="pre">probly.transformation.</span></span><span class="sig-name descname"><span class="pre">ensemble</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_members</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/transformation/ensemble/common.html#ensemble"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.transformation.ensemble" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">probly.transformation.</span></span><span class="sig-name descname"><span class="pre">ensemble</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_members</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reset_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/transformation/ensemble/common.html#ensemble"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.transformation.ensemble" title="Link to this definition">¶</a></dt>
 <dd><p>Create an ensemble predictor from a base predictor.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -361,7 +361,8 @@
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
 <li><p><strong>base</strong> (<em>T</em>) – Predictor, The base model to be used for the ensemble.</p></li>
-<li><p><strong>n_members</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – The number of members in the ensemble.</p></li>
+<li><p><strong>num_members</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – The number of members in the ensemble.</p></li>
+<li><p><strong>reset_params</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>) – Whether to reset the parameters of each member.</p></li>
 </ul>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>

@@ -375,17 +375,18 @@
 
 <div class="viewcode-block" id="ensemble">
 <a class="viewcode-back" href="../../../../api/probly.transformation.ensemble.html#probly.transformation.ensemble">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">ensemble</span><span class="p">[</span><span class="n">T</span><span class="p">:</span> <span class="n">Predictor</span><span class="p">](</span><span class="n">base</span><span class="p">:</span> <span class="n">T</span><span class="p">,</span> <span class="n">n_members</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">ensemble</span><span class="p">[</span><span class="n">T</span><span class="p">:</span> <span class="n">Predictor</span><span class="p">](</span><span class="n">base</span><span class="p">:</span> <span class="n">T</span><span class="p">,</span> <span class="n">num_members</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">reset_params</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Create an ensemble predictor from a base predictor.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        base: Predictor, The base model to be used for the ensemble.</span>
-<span class="sd">        n_members: The number of members in the ensemble.</span>
+<span class="sd">        num_members: The number of members in the ensemble.</span>
+<span class="sd">        reset_params: Whether to reset the parameters of each member.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Predictor, The ensemble predictor.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">ensemble_generator</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="n">n_members</span><span class="o">=</span><span class="n">n_members</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">ensemble_generator</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="n">n_members</span><span class="o">=</span><span class="n">num_members</span><span class="p">,</span> <span class="n">reset_params</span><span class="o">=</span><span class="n">reset_params</span><span class="p">)</span></div>
 
 </pre></div>
         </article>
