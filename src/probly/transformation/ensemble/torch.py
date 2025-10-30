@@ -32,7 +32,7 @@ def generate_torch_ensemble(
     n_members: int,
     reset_params: bool = True,
 ) -> nn.ModuleList:
-    """Build a torch ensemble by copying the base model n_members times."""
+    """Build a torch ensemble by copying the base model n_members times, resetting the parameters of each member."""
     if reset_params:
         return nn.ModuleList([_reset_copy(obj) for _ in range(n_members)])
     return nn.ModuleList([_copy(obj) for _ in range(n_members)])
