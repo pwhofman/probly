@@ -10,5 +10,7 @@
    :toctree:
    :recursive:
 
+   credal_set
+   distribution
    representer
    sampling

@@ -1,0 +1,15 @@
+probly.representation.credal\_set
+=================================
+
+.. automodule:: probly.representation.credal_set
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   credal_set
+   jax
+   torch

@@ -1,0 +1,12 @@
+probly.representation.credal\_set.jax
+=====================================
+
+.. automodule:: probly.representation.credal_set.jax
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      JaxArrayCredalSet
+   
