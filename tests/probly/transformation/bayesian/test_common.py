@@ -103,7 +103,7 @@ def test_bayesian_override(monkeypatch: pytest.MonkeyPatch) -> None:
         use_base_weights=True,
         posterior_std=0.4,
         prior_mean=0.5,
-        prior_std=1.9,
+        prior_std=1.8,
     )  # type: ignore[type-var]
 
     init = cast(dict[object, object], called3.get("init", {}))
@@ -111,4 +111,4 @@ def test_bayesian_override(monkeypatch: pytest.MonkeyPatch) -> None:
     assert init.get(c.USE_BASE_WEIGHTS) in {True, c.USE_BASE_WEIGHTS.default, None}
     assert init.get(c.POSTERIOR_STD) in {0.4, c.POSTERIOR_STD.default, None}
     assert init.get(c.PRIOR_MEAN) in {0.5, c.PRIOR_MEAN.default, None}
-    assert init.get(c.PRIOR_STD) in {1.9, c.PRIOR_STD.default, None}
+    assert init.get(c.PRIOR_STD) in {1.8, c.PRIOR_STD.default, None}
