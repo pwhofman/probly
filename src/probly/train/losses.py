@@ -272,7 +272,7 @@ class ExpectedCalibrationError(nn.Module):
         confs, preds = torch.max(inputs, dim=1)
         bin_indices = torch.bucketize(confs, self.bins.to(inputs.device), right=True) - 1
         num_instances = inputs.shape[0]
-        loss = 0
+        loss: torch.Tensor = torch.tensor(0, dtype=torch.float32, device=inputs.device)
         for i in range(self.num_bins):
             _bin = torch.where(bin_indices == i)[0]
             # check if bin is empty
