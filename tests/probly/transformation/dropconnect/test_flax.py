@@ -69,5 +69,3 @@ class TestNetworkArchitectures:
         assert conv_mod == conv_orig
         assert seq_mod == seq_orig
 
-class TestPValues:
-    """Verify that the probability p is propagated into DropConnect layers."""
