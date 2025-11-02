@@ -6,7 +6,7 @@ from probly.predictor import Predictor
 from probly.transformation import bayesian
 
 
-def test_bayesian_no_params(dummy_predictor: Predictor) -> None:
+def test_bayesian_no_param(dummy_predictor: Predictor) -> None:
     """Test that bayesian can be called without prior or likelihood."""
     result = bayesian(dummy_predictor)
 
