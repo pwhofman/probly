@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from flax.nnx import Linear, DropConnectLinear
+from flax.nnx import Linear
+
+from probly.layers.flax import DropConnectLinear
 
 from .common import register
 
