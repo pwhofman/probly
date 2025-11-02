@@ -7,7 +7,7 @@ from flax.nnx import rnglib
 
 class DropConnectDense(nnx.Module):
  
- def __init__(self, base_layer: nnx.Dense, rngs: rnglib.Rngs, p: float = 0.25):
+ def __init__(self, base_layer: nnx.Linear, rngs: rnglib.Rngs, p: float = 0.25):
     """Custom Linear layer with DropConnect applied to weights during training.
 
     Attributes:
