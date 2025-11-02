@@ -6,18 +6,15 @@ import pytest
 import torch
 
 from probly.predictor import Predictor
-from probly.train.bayesian import collect_kl_divergence
-from probly.train.losses import (
-    ELBOLoss,
+from probly.train.bayesian.torch import ELBOLoss, collect_kl_divergence
+from probly.train.calibration.torch import ExpectedCalibrationError, FocalLoss, LabelRelaxationLoss
+from probly.train.evidential.torch import (
     EvidentialCELoss,
     EvidentialKLDivergence,
     EvidentialLogLoss,
     EvidentialMSELoss,
     EvidentialNIGNLLLoss,
     EvidentialRegressionRegularization,
-    ExpectedCalibrationError,
-    FocalLoss,
-    LabelRelaxationLoss,
 )
 from probly.transformation import bayesian, evidential_classification, evidential_regression
 
