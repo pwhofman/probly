@@ -1,1 +1,1 @@
-# keeps pytest package discovery happy 
+# keeps pytest package discovery happy

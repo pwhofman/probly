@@ -1,18 +1,23 @@
-"""Lightweight API sanity tests for probly.transformation.dropconnect.common."""
-# Rewritten DropConnect common test structure
+"""Lightweight API sanity tests for probly.transformation.dropconnect.common.
+
+Rewritten DropConnect common test structure.
+"""
 
 from __future__ import annotations
 
 import pytest
+import torch
+from torch import nn
+
+from probly.layers.torch import DropConnectLinear
+from probly.transformation.dropconnect import dropconnect
 
 torch = pytest.importorskip("torch")
-from torch import nn  # noqa: E402
-
-from probly.transformation.dropconnect import dropconnect  # noqa: E402
-from probly.layers.torch import DropConnectLinear  # noqa: E402
 
 
-def test_dropconnect_preserves_forward_shape(torch_model_small_2d_2d: nn.Sequential) -> None:
+def test_dropconnect_preserves_forward_shape(
+    torch_model_small_2d_2d: nn.Sequential,
+) -> None:
     """Applying the transformation should not change the model's I/O shape."""
     model = dropconnect(torch_model_small_2d_2d, p=0.4)
     x = torch.randn(3, 2)  # matches the small 2d->2d fixture input size
@@ -23,9 +28,10 @@ def test_dropconnect_preserves_forward_shape(torch_model_small_2d_2d: nn.Sequent
 def test_at_least_one_replacement_happens_when_possible(
     torch_model_small_2d_2d: nn.Sequential,
 ) -> None:
-    """
+    """Ensure at least one replacement happens when possible.
+
     If a model contains ≥2 Linear layers and starts with Linear,
-    at least one Linear should be replaced by DropConnectLinear.
+    at least one Linear layer should be replaced by DropConnectLinear.
     """
     model = dropconnect(torch_model_small_2d_2d, p=0.5)
     assert any(isinstance(m, DropConnectLinear) for m in model.modules())
