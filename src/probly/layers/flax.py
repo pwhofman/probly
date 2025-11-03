@@ -1,3 +1,5 @@
+"""Flax DropConnect and Conv2d implementations."""
+
 from __future__ import annotations
 
 import jax
@@ -9,8 +11,8 @@ from typing import Union, Tuple, Literal, Optional
 
 class DropConnectLinear(nnx.Module):
     """
-    Linear mit DropConnect auf die Gewichte während des Trainings.
-    Wrappt eine bestehende nnx.Linear-Schicht.
+    Linear layer with DropConnect on weights during training.
+    Wraps an existing nnx.Linear layer.
     """
     def __init__(self, base_layer: nnx.Linear, p: float = 0.25) -> None:
         if not (0.0 <= p < 1.0):
@@ -18,25 +20,25 @@ class DropConnectLinear(nnx.Module):
         self.base_layer = base_layer
         self.p = float(p)
 
-        # Reproduzierbarer RNG-State (einfach gehalten)
+        # Reproducible RNG state
         self._key = jax.random.PRNGKey(0)
 
-        # Metadaten aus der Basisschicht – robust auf weight/kernel
+        # Metadata from base layer
         self.in_features = getattr(base_layer, "in_features", None)
         self.out_features = getattr(base_layer, "out_features", None)
 
     def __call__(self, x: jnp.ndarray, *, training: bool | None = None) -> jnp.ndarray:
         """
-        Forward-Pass mit DropConnect.
+        Forward pass with DropConnect.
         Args:
             x: [batch, in_features]
-            training: Wenn True → DropConnect aktiv; wenn False → Inference-Skalierung;
-                      wenn None → fallback auf getattr(self, 'training', False)
+            training: If True → DropConnect active; if False → Inference scaling;
+                      if None → fallback to getattr(self, 'training', False)
         """
-        # Gewicht/Bias robust auslesen (NNX vs linen)
+        # Robust weight/bias access
         weight = getattr(self.base_layer, "weight", None)
         if weight is None:
-            weight = getattr(self.base_layer, "kernel")  # linen-Kompatibilität
+            weight = getattr(self.base_layer, "kernel")
         bias = getattr(self.base_layer, "bias", None)
 
         if training is None:
@@ -46,15 +48,13 @@ class DropConnectLinear(nnx.Module):
             self._key, subkey = jax.random.split(self._key)
             keep_prob = 1.0 - self.p
             mask = jax.random.bernoulli(subkey, p=keep_prob, shape=weight.shape)
-            # dtype an Gewicht anpassen (wichtig bei float16/bfloat16)
             mask = mask.astype(weight.dtype)
             eff_weight = weight * mask
         else:
-            # Erwartungswert-Korrektur bei Inference
+            # Expectation correction during inference
             eff_weight = weight * (1.0 - self.p)
 
-        # Linearer Vorwärtslauf
-        # (bewusst eigene MatMul statt base_layer(x), da wir eff_weight verwenden)
+        # Linear forward pass
         y = jnp.matmul(x, eff_weight)
         if bias is not None:
             y = y + bias
@@ -67,8 +67,8 @@ class DropConnectLinear(nnx.Module):
             f"bias={getattr(self.base_layer, 'bias', None) is not None}, "
             f"p={self.p}"
         )
-        
-        
+
+
 _Size2 = Union[int, Tuple[int, int]]
 
 
@@ -83,7 +83,6 @@ def _pair(v: _Size2) -> Tuple[int, int]:
 class Conv2d(nnx.Module):
     """
     PyTorch-like Conv2d implemented on top of flax.nnx.Conv.
-
     Expects input in NCHW (N, C_in, H, W), returns NCHW (N, C_out, H_out, W_out).
     """
 
@@ -104,8 +103,6 @@ class Conv2d(nnx.Module):
         param_dtype=jnp.float32,
     ) -> None:
         if padding_mode != "zeros":
-            # you *can* extend this later, but nnx.Conv already supports CIRCULAR, etc.
-            # To stay close to your original pytorch semantics we keep it simple.
             raise NotImplementedError(
                 f"padding_mode='{padding_mode}' is not implemented; use 'zeros'."
             )
@@ -125,7 +122,7 @@ class Conv2d(nnx.Module):
         self.dtype = dtype
         self.param_dtype = param_dtype
 
-        # Handle padding argument similar to PyTorch
+        # Handle padding argument
         self._explicit_padding: Optional[Tuple[Tuple[int, int], ...]]
         if isinstance(padding, str):
             pad_str = padding.lower()
@@ -136,15 +133,9 @@ class Conv2d(nnx.Module):
                 flax_padding = "VALID"
                 self._explicit_padding = None
             else:
-                raise ValueError(
-                    f"Unsupported padding string '{padding}'. "
-                    "Use 'same', 'valid', or integer/tuple."
-                )
+                raise ValueError(f"Unsupported padding string '{padding}'. Use 'same', 'valid', or integer/tuple.")
         else:
-            # numeric padding → we do explicit jnp.pad + VALID conv
             p_h, p_w = _pair(padding)
-            # NCHW -> pad on H and W
-            # dims: (N, C, H, W)
             self._explicit_padding = (
                 (0, 0),        # N
                 (0, 0),        # C
@@ -153,7 +144,7 @@ class Conv2d(nnx.Module):
             )
             flax_padding = "VALID"
 
-        # Underlying nnx.Conv works on NHWC, so we’ll transpose in __call__
+        # Underlying nnx.Conv works on NHWC
         self.conv = nnx.Conv(
             in_features=in_channels,
             out_features=out_channels,
@@ -175,9 +166,7 @@ class Conv2d(nnx.Module):
         if x.ndim != 4:
             raise ValueError(f"Conv2d expects 4D input (N, C, H, W), got shape {x.shape}")
         if x.shape[1] != self.in_channels:
-            raise ValueError(
-                f"Input has {x.shape[1]} channels, but Conv2d.in_channels={self.in_channels}"
-            )
+            raise ValueError(f"Input has {x.shape[1]} channels, but Conv2d.in_channels={self.in_channels}")
 
         # Apply explicit padding in NCHW if configured
         if self._explicit_padding is not None:
@@ -185,14 +174,13 @@ class Conv2d(nnx.Module):
 
         # nnx.Conv expects NHWC
         x_nhwc = jnp.transpose(x, (0, 2, 3, 1))  # (N, H, W, C)
-
         y_nhwc = self.conv(x_nhwc)
 
-        # back to NCHW
+        # Back to NCHW
         y = jnp.transpose(y_nhwc, (0, 3, 1, 2))
         return y
 
 
-# Make it visible as nnx.Conv2d for your tests & utilities
+# Make available as nnx.Conv2d and nnx.DropConnectLinear
 setattr(nnx, "Conv2d", Conv2d)
-setattr(nnx, "DropConnectLinear", DropConnectLinear) 
+setattr(nnx, "DropConnectLinear", DropConnectLinear)
