@@ -6,9 +6,11 @@ import pytest
 
 from probly.transformation import dropconnect
 from tests.probly.flax_utils import count_layers
+from probly.layers.flax import DropConnectLinear, Conv2d
+from typing import Any, cast
 
 flax = pytest.importorskip("flax")
-from flax import nnx  # noqa: E402
+from flax import nnx # noqa: E402
 
 
 class TestNetworkArchitectures:
@@ -36,14 +38,14 @@ class TestNetworkArchitectures:
         # count number of nnx.Linear layers in original model
         count_linear_original = count_layers(flax_model_small_2d_2d, nnx.Linear)
         # count number of nnx.DropConnect layers in original model
-        count_dropconnect_original = count_layers(flax_model_small_2d_2d, nnx.DropConnect)
+        count_dropconnect_original = count_layers(flax_model_small_2d_2d, DropConnectLinear)
         # count number of nnx.Sequential layers in original model
         count_sequential_original = count_layers(flax_model_small_2d_2d, nnx.Sequential)
 
         # count number of nnx.Linear layers in modified model
         count_linear_modified = count_layers(model, nnx.Linear)
         # count number of nnx.DropConnect layers in modified model
-        count_dropconnect_modified = count_layers(model, nnx.DropConnect)
+        count_dropconnect_modified = count_layers(model, DropConnectLinear)
         # count number of nnx.Sequential layers in modified model
         count_sequential_modified = count_layers(model, nnx.Sequential)
         
@@ -77,18 +79,18 @@ class TestNetworkArchitectures:
         # count number of nnx.Sequential layers in original model
         count_sequential_original = count_layers(flax_conv_linear_model, nnx.Sequential)
         # count number of nnx.Conv2d layers in original model
-        count_conv_original = count_layers(flax_conv_linear_model, nnx.Conv2d)
+        count_conv_original = count_layers(flax_conv_linear_model, Conv2d)
         # count number of nnx.DropConnect layers in original model
-        count_dropconnect_original = count_layers(flax_conv_linear_model, nnx.DropConnect)
+        count_dropconnect_original = count_layers(flax_conv_linear_model, DropConnectLinear)
 
         # count number of nnx.DropConnect layers in modified model
-        count_dropconnect_modified = count_layers(model, nnx.DropConnect)
+        count_dropconnect_modified = count_layers(model, DropConnectLinear)
         # count number of nnx.Linear layers in modified model
         count_linear_modified = count_layers(model, nnx.Linear)
         # count number of nnx.Sequential layers in modified model
         count_sequential_modified = count_layers(model, nnx.Sequential)
         # count number of nnx.Conv2d layers in modified model
-        count_conv_modified = count_layers(model, nnx.Conv2d)
+        count_conv_modified = count_layers(model, Conv2d)
 
         # check that the model is not modified except for the dropout layer
         assert model is not None
@@ -100,12 +102,12 @@ class TestNetworkArchitectures:
         assert count_conv_original == count_conv_modified
             
         # Additional verification: the linear layer should be replaced with DropConnectLinear
-        assert isinstance(model[3], nnx.DropConnect), "Linear layer should be replaced with DropConnectLinear"
+        assert isinstance(model.layers[3], DropConnectLinear), "Linear layer should be replaced with DropConnectLinear"
         
     def test_custom_network(self, flax_custom_model: nnx.Module) -> None:
         """Tests the custom model modification with DropConnect layers."""
         p = 0.5
-        model = dropconnect(flax_custom_model, p)
+        model = dropconnect(cast(Any, flax_custom_model), p)
 
         # check if model type is correct
         assert isinstance(model, type(flax_custom_model))
@@ -117,13 +119,13 @@ class TestNetworkArchitectures:
         model = dropconnect(flax_model_small_2d_2d, p)
         
         # First layer should stay unchanged
-        assert isinstance(model[0], nnx.Linear), "First layer should remain nn.Linear"
-        assert not isinstance(model[0], nnx.DropConnect), "First layer should not be DropConnectLinear"
+        assert isinstance(model.layers[0], nnx.Linear), "First layer should remain nn.Linear"
+        assert not isinstance(model.layers[0], DropConnectLinear), "First layer should not be DropConnectLinear"
         
         # Linear layers should be replaced
-        for i in range(1, len(model)):
-            if isinstance(flax_model_small_2d_2d[i], nnx.Linear):
-                assert isinstance(model[i], nnx.DropConnect), \
+        for i in range(1, len(model.layers)):
+            if isinstance(flax_model_small_2d_2d.layers[i], nnx.Linear):
+                assert isinstance(model.layers[i], DropConnectLinear), \
                     f"Layer {i} should be DropConnectLinear"
                     
     def test_dropconnect_duplicates_behavior(self, flax_model_small_2d_2d: nnx.Sequential) -> None:
@@ -135,10 +137,10 @@ class TestNetworkArchitectures:
         second_p = 0.5
         model_after_second = dropconnect(model_after_first, second_p)
         
-        count_dropconnect_first = count_layers(model_after_first, nnx.DropConnect)
+        count_dropconnect_first = count_layers(model_after_first, DropConnectLinear)
         count_linear_first = count_layers(model_after_first, nnx.Linear)
         
-        count_dropconnect_second = count_layers(model_after_second, nnx.DropConnect)
+        count_dropconnect_second = count_layers(model_after_second, DropConnectLinear)
         count_linear_second = count_layers(model_after_second, nnx.Linear)
         
         # Layers are replaced, reapplying should not change layer counts
@@ -164,8 +166,8 @@ class TestPValues:
         model = dropconnect(flax_model_small_2d_2d, p)
 
         # check p value in DropConnect layers (skip first layer)
-        for m in model.modules():
-            if isinstance(m, nnx.DropConnect):
+        for m in model.iter_modules():
+            if isinstance(m, DropConnectLinear):
                 assert m.p == p
 
     def test_conv_network_p_value(self, flax_conv_linear_model: nnx.Sequential) -> None:
@@ -181,8 +183,8 @@ class TestPValues:
         model = dropconnect(flax_conv_linear_model, p)
 
         # check p value in DropConnect layers (skip first layer)
-        for m in model.modules():
-            if isinstance(m, nnx.DropConnect):
+        for m in model.iter_modules():
+            if isinstance(m, DropConnectLinear):
                 assert m.p == p
         
         

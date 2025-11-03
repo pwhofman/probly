@@ -2055,7 +2055,7 @@ dev = [
     { name = "notebook", specifier = ">=7.3.3" },
     { name = "packaging" },
     { name = "pre-commit", specifier = ">=4.3.0" },
-    { name = "pytest", specifier = ">=8.3.5" },
+    { name = "pytest", specifier = ">=7.0.0" },
     { name = "pytest-cov", specifier = ">=6.0.0" },
     { name = "pytest-xdist", specifier = ">=3.6.1" },
     { name = "ruff", specifier = ">=0.14.1" },
@@ -2086,7 +2086,7 @@ lint = [
 ]
 test = [
     { name = "packaging" },
-    { name = "pytest", specifier = ">=8.3.5" },
+    { name = "pytest", specifier = ">=7.0.0" },
     { name = "pytest-cov", specifier = ">=6.0.0" },
     { name = "pytest-xdist", specifier = ">=3.6.1" },
 ]
