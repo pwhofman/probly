@@ -65,30 +65,3 @@ def generate_flax_ensemble(model: nnx.Module, n_members: int):
     """
     return [_reset_and_copy(model) for _ in range(n_members)]
 
-
-# In[142]:
-
-if __name__ == "__main__":
-    class MLP(nnx.Module): 
-        def __init__(self, din: int, dmid: int, dout: int, *, rngs: nnx.Rngs): 
-            self.linear1 = Linear(din, dmid, rngs=rngs)
-            self.dropout = nnx.Dropout(rate=0.1, rngs=rngs)
-            self.bn = nnx.BatchNorm(dmid, rngs=rngs)
-            self.linear2 = Linear(dmid, dout, rngs=rngs)
-
-        def __call__(self, x: jax.array): 
-            x = nnx.gelu(self.dropout(self.bn(self.linear1(x))))
-            return self.linear2(x)
-
-
-    # In[139]:
-
-
-    model = MLP(2, 16, 5, rngs=nnx.Rngs(0))
-    y = model(x=jnp.ones((3, 2)))
-    nnx.display(model)
-
-    #Creating 3 copies with re-initialized parameters
-    ensemble = generate_flax_ensemble(model, 3)
-
-

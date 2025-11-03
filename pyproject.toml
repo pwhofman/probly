@@ -199,6 +199,7 @@ extra-standard-library = ["typing_extensions"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["src"]
 minversion = "8.0"
 addopts = [
     "--import-mode=importlib", # to avoid issues with lazy imports
