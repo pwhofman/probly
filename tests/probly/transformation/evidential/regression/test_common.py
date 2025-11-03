@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 from probly.transformation.evidential.regression import evidential_regression
 
 
@@ -16,6 +18,6 @@ def test_unknown_base_returns_self() -> None:
 
     base = DummyPredictor()
 
-    transformed = evidential_regression(base)
+    transformed = evidential_regression(cast(Any, base))
 
     assert transformed is base
