@@ -7,6 +7,7 @@ import pytest
 from probly.transformation.bayesian import common as c
 
 
+# check if the global variable defaults are correct
 def test_global_variables() -> None:
     assert c.USE_BASE_WEIGHTS.default is False
     assert c.POSTERIOR_STD.default == 0.05
@@ -14,6 +15,7 @@ def test_global_variables() -> None:
     assert c.PRIOR_STD.default == 1.0
 
 
+# fake traverser
 class DummyTraverser:
     """Simple placeholder for traverser tests."""
 
@@ -28,15 +30,22 @@ def test_register_calls_bayesian_traverser_register(monkeypatch: pytest.MonkeyPa
         called["traverser"] = traverser
         called["vars"] = kwargs.get("variables") or kwargs.get("vars") or {}
 
+    # everytime the register method of our bayesian_traverser is called, we monkeypatch
+    # it to replace it with our fake_register
     monkeypatch.setattr(c.bayesian_traverser, "register", fake_register, raising=True)
 
+    # fake layer
     class DummyLayer:
         pass
 
+    # fake traverser
     dummy = DummyTraverser()
     c.register(DummyLayer, cast(Any, dummy))
 
+    # dict to save all attributes of our "register method"
     vars_dict = called["vars"] if isinstance(called["vars"], dict) else {}
+
+    # checks if register call called the right values
     assert called["cls"] is DummyLayer
     assert called["traverser"] is dummy
     assert set(vars_dict.keys()) == {"use_base_weights", "posterior_std", "prior_mean", "prior_std"}
@@ -58,8 +67,10 @@ def test_bayesian_uses_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
         assert arg is c.bayesian_traverser
         return composed_dummy
 
+    # everytime nn_compose is called, we call our fake_compose instead
     monkeypatch.setattr("probly.traverse_nn.nn_compose", fake_compose, raising=True)
 
+    # function needs return, so we create a dumy for return_value, but saving all values of the method in "called2"
     called2: dict[str, object] = {}
     return_traverse = object()
 
@@ -69,6 +80,7 @@ def test_bayesian_uses_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
         called2["init"] = kwargs.get("init") or (args[2] if len(args) > 2 else {})
         return return_traverse
 
+    # everytime the travers-method is called, we waant to call our fake_traverse instead
     monkeypatch.setattr("pytraverse.traverse", fake_traverse, raising=True)
 
     base = FakePredictor()
