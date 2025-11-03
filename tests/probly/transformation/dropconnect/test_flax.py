@@ -10,8 +10,6 @@ from tests.probly.flax_utils import count_layers
 flax = pytest.importorskip("flax")
 from flax import nnx  # noqa: E402
 
-# iwas
-
 
 class TestNetworkArchitectures:
     """Test class for different network architectures."""
