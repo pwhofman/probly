@@ -11,6 +11,7 @@ flax = pytest.importorskip("flax")
 from flax import nnx  # noqa: E402
 
 
+
 class TestNetworkArchitectures:
     """Test class for different network architectures."""
 
