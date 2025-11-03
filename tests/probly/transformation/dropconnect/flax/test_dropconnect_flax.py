@@ -1,38 +1,39 @@
-"""Test dropconnect transformation with Flax models"""
+"""Simple test for dropconnect with Flax models."""
 
 from __future__ import annotations
-import jax
-import jax.numpy as jnp
+
 from flax import linen as nn
+import jax.numpy as jnp
 
 from probly.transformation.dropconnect import dropconnect
 
 
 class SimpleFlaxModel(nn.Module):
-    """Simple Flax model"""
+    """A simple Flax model for testing."""
 
     @nn.compact
-    def __call__(self, x):
-        x = nn.Dense(features=5)(x)
-        x = nn.relu(x)
-        x = nn.Dense(features=2)(x)
-        return x
+    def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
+        return nn.Dense(features=2)(x)
 
 
+def test_dropconnect_flax_basic() -> None:
+    """Simple test that dropconnect works with Flax models."""
+    # Test that the function exists and can be called
+    assert callable(dropconnect)
 
-def test_dropconnect_with_flax_model() -> None:
-    """Test that dropconnect transformation works correctly"""
     # Create a simple Flax model
     model = SimpleFlaxModel()
 
-    # Initialize model parameters
-    key = jax.random.PRNGKey(0)
-    dummy_input = jnp.ones((5, 5))
-    variables = model.init(key, dummy_input)
+    # Apply dropconnect
+    result = dropconnect(model, p=0.3)
+    assert result is not None
 
-    # Apply dropconnect transformation
-    transformed_model = dropconnect(model, p = 0.3)
 
-    # Test that transformation doesnot crash
-    assert transformed_model is not None
+def test_dropconnect_flax_different_probabilities() -> None:
+    """Test dropconnect with Flax models using different probabilities."""
+    model = SimpleFlaxModel()
 
+    # Test with different probability values
+    for p in [0.0, 0.25, 0.5, 0.75]:
+        result = dropconnect(model, p=p)
+        assert result is not None
