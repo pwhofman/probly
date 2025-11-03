@@ -29,4 +29,3 @@ def test_registered_generator_called(dummy_predictor: Predictor) -> None:
 
     mock_generator.assert_called_once_with(dummy_predictor, n_members=4)
     assert result is expected_result
-
