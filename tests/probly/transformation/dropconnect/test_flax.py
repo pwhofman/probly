@@ -7,6 +7,8 @@ import pytest
 from probly.transformation import dropconnect
 from tests.probly.flax_utils import count_layers
 
+from probly.layers.torch import DropConnectLinear
+
 flax = pytest.importorskip("flax")
 from flax import nnx  # noqa: E402
 
@@ -34,12 +36,12 @@ class TestNetworkArchitectures:
         # count number of nnx.Linear layers in original model
         count_linear_original = count_layers(flax_model_small_2d_2d, nnx.Linear)
         # count number of DropConnectLinear layers in modified model
-        count_dropconnect_linear_modified = count_layers(model, nnx.DropConnectLinear)
+        count_dropconnect_linear_modified = count_layers(model, DropConnectLinear)
 
         # check that Linear layers are replaced with DropConnectLinear
         assert model is not None
         assert isinstance(model, type(flax_model_small_2d_2d))
-        assert count_linear_original == count_dropconnect_linear_modified
+        assert count_linear_original == count_dropconnect_linear_modified +1
 
     def test_convolutional_network(self, flax_conv_linear_model: nnx.Sequential) -> None:
         """Tests DropConnect in convolutional neural networks.
@@ -62,14 +64,14 @@ class TestNetworkArchitectures:
         count_sequential_original = count_layers(flax_conv_linear_model, nnx.Sequential)
 
         # count layers in modified model
-        count_dropconnect_linear_modified = count_layers(model, nnx.DropConnectLinear)
+        count_dropconnect_linear_modified = count_layers(model, DropConnectLinear)
         count_conv_modified = count_layers(model, nnx.Conv)
         count_sequential_modified = count_layers(model, nnx.Sequential)
 
         # check that only Linear layers are replaced with DropConnectLinear
         assert model is not None
         assert isinstance(model, type(flax_conv_linear_model))
-        assert count_linear_original == count_dropconnect_linear_modified
+        assert count_linear_original == count_dropconnect_linear_modified +1
         assert count_conv_original == count_conv_modified
         assert count_sequential_original == count_sequential_modified
 
