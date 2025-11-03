@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from probly.transformation import dropconnect
+from probly.transformation.dropconnect.flax import replace_flax_dropconnect
 from tests.probly.flax_utils import count_layers
 
 flax = pytest.importorskip("flax")

@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from probly.transformation import dropconnect
+from probly.layers.torch import DropConnectLinear
 from tests.probly.torch_utils import count_layers
 
 torch = pytest.importorskip("torch")
