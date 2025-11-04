@@ -10,10 +10,10 @@ from pytraverse import CLONE, lazydispatch_traverser, traverse
 
 from .common import register
 
-reset_traverser_nnx = lazydispatch_traverser[object](name="reset_traverser_nnx")
+reset_traverser = lazydispatch_traverser[object](name="reset_traverser")
 
 
-@reset_traverser_nnx.register
+@reset_traverser.register
 def _(obj: Linear, rngs: Rngs) -> Module:
     """Register for a Linear Layer."""
     # Pulling the rngs.
@@ -28,7 +28,7 @@ def _(obj: Linear, rngs: Rngs) -> Module:
     return obj
 
 
-@reset_traverser_nnx.register
+@reset_traverser.register
 def _(obj: Conv, rngs: Rngs) -> Module:
     """Register for a Conv Layer."""
     # Pulling the rngs.
@@ -42,13 +42,13 @@ def _(obj: Conv, rngs: Rngs) -> Module:
     return obj
 
 
-def _reset_copy_nnx(module: Module) -> Module:
-    return traverse(module, nn_compose(reset_traverser_nnx), init={CLONE: True})
+def _reset_copy(module: Module) -> Module:
+    return traverse(module, nn_compose(reset_traverser), init={CLONE: True})
 
 
-def generate_flax_nnx_ensemble(obj: Module, n_members: int) -> list[Module]:
+def generate_flax_ensemble(obj: Module, n_members: int) -> list[Module]:
     """Build a flax ensemble by copying the base model n_members times."""
-    return [_reset_copy_nnx(obj) for _ in range(n_members)]
+    return [_reset_copy(obj) for _ in range(n_members)]
 
 
-register(Module, generate_flax_nnx_ensemble)
+register(Module, generate_flax_ensemble)
