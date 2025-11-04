@@ -18,15 +18,27 @@ generate_flax_ensemble = _mod.generate_flax_ensemble
 from tests.probly.fixtures.flax_models import flax_model_small_2d_2d
 
 
-# 统一前向，兼容 nnx / linen 两派
+# 统一前向：先按 nnx 直接调，无参数；不行再走 linen 的 apply
 def _fwd(model, x, train: bool = False):
+    # 1) nnx 路径：Linear/Sequential 这样的层不接受 train 关键字
     try:
-        return model(x, train=train)
+        return model(x)
     except TypeError:
+        pass
+
+    # 2) linen 路径：才会有 .apply；有的实现吃 train，有的不吃
+    if hasattr(model, "apply"):
         try:
             return model.apply(x, train=train)
         except TypeError:
-            return model.apply(x)  # 有些实现不吃 train 这个 kw
+            return model.apply(x)
+
+    # 3) 实在不行，最后再试一次把 train 传进去（极少数自定义 nnx 会这样）
+    try:
+        return model(x, train=train)
+    except TypeError as e:
+        raise AssertionError(f"前向调用方式无法匹配（既不是 nnx 也不是 linen）：{e}")
+
 
 
 def _to_array(out):
