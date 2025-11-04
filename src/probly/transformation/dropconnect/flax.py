@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from flax import nnx
 
-from probly.layers.flax import DropConnectLinear
+from probly.layers.my_flax import DropConnectLinear
 
 from .common import register
 
