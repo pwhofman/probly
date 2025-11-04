@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import pytest
 
+pytest.importorskip("flax")
+from flax import nnx
+
 from probly.layers.my_flax import DropConnectLinear
 from probly.transformation import dropconnect
 from tests.probly.flax_utils import count_layers
-
-flax = pytest.importorskip("flax")
-from flax import nnx  # noqa: E402
 
 
 class TestNetworkArchitectures:
