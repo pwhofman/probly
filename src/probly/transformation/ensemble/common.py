@@ -36,4 +36,4 @@ def ensemble[T: Predictor](base: T, num_members: int, reset_params: bool = True)
     Returns:
         Predictor, The ensemble predictor.
     """
-    return ensemble_generator(base, n_members=num_members, reset_params=reset_params)
+    return ensemble_generator(base, num_members=num_members, reset_params=reset_params)
