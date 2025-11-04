@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import importlib
 from typing import Any, Callable, Optional, Tuple
-
+import inspect
 import numpy as np
 import jax
 import jax.numpy as jnp
@@ -55,57 +55,92 @@ def _build_ensemble(
     aggregator: str = "mean",
 ) -> Tuple[Any, Callable[[Any, jnp.ndarray, bool], Any]]:
     """
-    返回 (model, forward)。
-    - model: 你们的 Ensemble 对象/模块
-    - forward(m, x, train): 统一的前向调用接口
-    尽量兼容不同 API 命名。
+    返回 (model, forward)。能自动匹配 90% 项目里的奇葩命名。
     """
+    # 先试常见命名
     ctors: list[Callable[[], Any]] = []
-
-    # 类常见名
     if hasattr(_mod, "Ensemble"):
         ctors.append(lambda: _mod.Ensemble(base=base_model, num_members=num_members, aggregator=aggregator))
     if hasattr(_mod, "FlaxEnsemble"):
         ctors.append(lambda: _mod.FlaxEnsemble(base=base_model, num_members=num_members, aggregator=aggregator))
-
-    # 工厂函数常见名
     for fname in ("build_ensemble", "make_ensemble", "wrap", "make", "ensemble"):
         if hasattr(_mod, fname):
             f = getattr(_mod, fname)
-            ctors.append(lambda f=f: f(base=base_model, num_members=num_members, aggregator=aggregator))
+            def _ctor(f=f):
+                sig = inspect.signature(f)
+                kwargs = {}
+                # 基模型参数
+                for k in ("base", "model", "module", "backbone", "fn"):
+                    if k in sig.parameters:
+                        kwargs[k] = base_model
+                        break
+                # 成员数参数
+                for k in ("num_members", "members", "n", "k", "ensemble_size"):
+                    if k in sig.parameters:
+                        kwargs[k] = num_members
+                        break
+                # 聚合器参数
+                for k in ("aggregator", "agg", "reduction"):
+                    if k in sig.parameters:
+                        kwargs[k] = aggregator
+                        break
+                return f(**kwargs)
+            ctors.append(_ctor)
+
+    # 自动遍历模块里的可调用，按签名匹配
+    for name, obj in vars(_mod).items():
+        if not callable(obj):
+            continue
+        try:
+            sig = inspect.signature(obj)
+        except Exception:
+            continue
+        params = sig.parameters
+        has_base = any(k in params for k in ("base", "model", "module", "backbone", "fn"))
+        has_nm = any(k in params for k in ("num_members", "members", "n", "k", "ensemble_size"))
+        if not (has_base and has_nm):
+            continue
+        def _ctor_generic(obj=obj, params=params):
+            kwargs = {}
+            for k in ("base", "model", "module", "backbone", "fn"):
+                if k in params:
+                    kwargs[k] = base_model
+                    break
+            for k in ("num_members", "members", "n", "k", "ensemble_size"):
+                if k in params:
+                    kwargs[k] = num_members
+                    break
+            for k in ("aggregator", "agg", "reduction"):
+                if k in params:
+                    kwargs[k] = aggregator
+                    break
+            return obj(**kwargs)
+        ctors.append(_ctor_generic)
 
     last_error: Optional[BaseException] = None
     for ctor in ctors:
         try:
             model = ctor()
-            # 大多数 nnx/linen 风格：直接可调用或有 apply
+
             def _fwd(m: Any, x: jnp.ndarray, train: bool = False):
+                # 常见三种前向
                 if callable(m):
                     return m(x, train=train)
                 if hasattr(m, "apply"):
-                    # 有些 linen 需要 {"params": ...}，但实现一般把参数封装在对象里；先尝试无 params
-                    return m.apply(x, train=train)
-                # 兜底直接调用
-                return m(x)
-
-            # 烟雾测试，不要求成功形状，只要不会抛错
-            x_smoke = jnp.ones((2, 5))
-            try:
-                _ = _fwd(model, x_smoke, train=False)
-            except TypeError:
-                # 有些实现需要 rng，尽量给个空 rngs 兼容；给不进去就放过
-                def _fwd_rng(m: Any, x: jnp.ndarray, train: bool = False):
-                    if hasattr(m, "apply"):
+                    try:
+                        return m.apply(x, train=train)
+                    except TypeError:
                         return m.apply(x, train=train, rngs=None)
-                    return m(x, train=train)
-                return model, _fwd_rng
+                # nnx 风格：__call__ 封装在实例上
+                return m(x, train=train)
 
+            # 烟雾测试
+            _ = _fwd(model, jnp.ones((2, 5)), train=False)
             return model, _fwd
         except Exception as e:
             last_error = e
 
-    pytest.skip(f"无法构造 ensemble/flax 模型。请检查构造器命名与参数。最后一次错误：{last_error}")
-
+    pytest.skip(f"无法构造 ensemble/flax 模型。检查命名/参数。最后一次错误：{last_error}")
 
 def _extract_members_and_mean(forward_out: Any) -> Tuple[Optional[jnp.ndarray], Optional[jnp.ndarray]]:
     """
