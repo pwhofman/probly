@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING
 
 from lazy_dispatch import lazydispatch
 
+from typing import Any, TypeVar
+
 if TYPE_CHECKING:
     from collections.abc import Callable
 
@@ -14,7 +16,7 @@ if TYPE_CHECKING:
 
 
 @lazydispatch
-def ensemble_generator[In, KwIn, Out](base: Predictor[In, KwIn, Out], **kwargs) -> Predictor[In, KwIn, Out]:
+def ensemble_generator[In, KwIn, Out](base: Predictor[In, KwIn, Out],  **kwargs : Any) -> Predictor[In, KwIn, Out]:
     """Generate an ensemble from a base model."""
     msg = f"No ensemble generator is registered for type {type(base)}"
     raise NotImplementedError(msg)
