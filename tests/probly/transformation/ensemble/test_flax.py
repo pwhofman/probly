@@ -93,7 +93,7 @@ def test_with_regression_model_2d(
 
 
 def test_with_custom_model(flax_custom_model: nnx.Module) -> None:
-    """Test for custom model using sample input."""
+    """Test for custom model with sample input."""
     x = jnp.ones((1, 10))
     ensemble = flx.generate_flax_ensemble(flax_custom_model, n_members=2)
     assert len(ensemble) == 2
