@@ -12,6 +12,9 @@ if TYPE_CHECKING:
     
 def replace_flax_dropconnect(obj: nnx.Linear, p: float) -> DropConnectLinear:
     """Replace a Flax Linear layer with DropConnectLinear."""
+    if isinstance(obj, nnx.DropConnectLinear):
+        return obj
+    
     return DropConnectLinear(obj, p=p)
 
 
