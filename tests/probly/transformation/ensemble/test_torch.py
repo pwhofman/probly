@@ -46,10 +46,23 @@ class TestEnsembleModule:
         assert count_layers(ens, nn.Sequential) == k * count_layers(base, nn.Sequential)
 
     def test_deep_copy(self, torch_model_small_2d_2d: nn.Sequential) -> None:
+        """tests if ensemble() creates real copies"""
         k = 2
         ens = ensemble(torch_model_small_2d_2d, n_members=k)
+
+        assert isinstance(ens, nn.ModuleList)
+        assert len(ens) == k
+
         p0 = next(ens[0].parameters())
         p1 = next(ens[1].parameters())
+        
         #data_ptr returns address 
         assert p0.data_ptr() != p1.data_ptr()
+        
+        #Parameterlists comparison
+        params0 = list(ens[0].parameters())
+        params1 = list(ens[1].parameters())
+        assert len(params0) == len(params1)
+
+
    
