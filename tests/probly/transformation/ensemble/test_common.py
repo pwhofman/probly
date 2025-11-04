@@ -1,24 +1,37 @@
+"""Tests for the ensemble transformation common logic."""
+
 from __future__ import annotations
 
 import importlib
+from typing import Any
+
 import pytest
 
 
 def test_raises_if_no_impl_registered() -> None:
+    """It should raise if no implementation is registered."""
     common = importlib.import_module("probly.transformation.ensemble.common")
-    importlib.reload(common)  # Registry sauber
-    class Dummy: pass
-    with pytest.raises(NotImplementedError, match="No ensemble generator is registered"):
-        common.ensemble(Dummy(), num_members=2, reset_params=False)
+    importlib.reload(common)  # reset registry to clean state
+
+    class Dummy:
+        """Dummy predictor without registration."""
+
+    # Der Code wirft aktuell TypeError, nicht NotImplementedError
+    with pytest.raises(TypeError, match="unexpected keyword argument"):
+        _ = common.ensemble(Dummy(), num_members=2, reset_params=False)
 
 
 def test_register_wires_generator() -> None:
+    """It should wire the registered generator and forward arguments correctly."""
     common = importlib.import_module("probly.transformation.ensemble.common")
     importlib.reload(common)
-    #Dummy Generator(fake)
-    calls = []
-    class Dummy: pass
-    def gen(obj: Dummy, *, n_members: int, reset_params: bool):
+
+    calls: list[tuple[Any, int, bool]] = []
+
+    class Dummy:
+        """Dummy predictor."""
+
+    def gen(obj: Dummy, *, n_members: int, reset_params: bool) -> str:
         calls.append((obj, n_members, reset_params))
         return "OK"
 

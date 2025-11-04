@@ -13,15 +13,13 @@ def _w_b(layer: nn.Linear) -> tuple[torch.Tensor, torch.Tensor]:
 
 
 def test_torch_ensemble_without_reset_passes() -> None:
-    """
-    reset_params=False:
+    """reset_params=False:
     - gibt eine nn.ModuleList zurück
     - Anzahl der Mitglieder stimmt
     - Mitglieder sind echte Kopien (andere Objekte)
-    - Parameterwerte sind identisch zum Basismodell
-    """
+    - Parameterwerte sind identisch zum Basismodell.
+    """  # noqa: D205
     base = nn.Linear(4, 2)
-
 
     members = generate_torch_ensemble(base, num_members=3, reset_params=False)
 
@@ -33,19 +31,17 @@ def test_torch_ensemble_without_reset_passes() -> None:
     w0, b0 = _w_b(base)
     w1, b1 = _w_b(members[0])
 
-
     assert torch.allclose(w0, w1)
     assert torch.allclose(b0, b1)
 
 
 def test_torch_ensemble_with_reset_passes() -> None:
-    """
-    reset_params=True:
+    """reset_params=True:
     - gibt eine nn.ModuleList zurück
     - Anzahl der Mitglieder stimmt
     - Parameter der Kopien sind (typischerweise) ungleich zum Basismodell,
       da reset_parameters() neu initialisiert.
-    """
+    """  # noqa: D205
     base = nn.Linear(4, 2)
     w0, b0 = _w_b(base)
 

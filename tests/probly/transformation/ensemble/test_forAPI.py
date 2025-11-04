@@ -13,4 +13,3 @@ def test_ensemble_has_public_api() -> None:
 
     # Ensure 'ensemble' is callable
     assert callable(ens_mod.ensemble)
-
