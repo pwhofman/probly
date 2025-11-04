@@ -1,18 +1,14 @@
-"Ensemble flax implementation"
+"""Ensemble flax implementation."""
 
 from __future__ import annotations
-
-from typing import TYPE_CHECKING
 
 from flax import nnx
 
 from .common import register
 
-if TYPE_CHECKING:
-    from collections.abc import Callable
 
-def generate_flax_ensemble(obj: nnx.Module, n_members: int) -> list[nnx.Module]:
-    base_model = obj.__class__ 
+def generate_flax_ensemble(obj: nnx.Module, n_members: int) -> list[nnx.Module]:  # noqa: D103
+    base_model = obj.__class__
     models = []
 
     for x in range(n_members):
@@ -21,5 +17,6 @@ def generate_flax_ensemble(obj: nnx.Module, n_members: int) -> list[nnx.Module]:
         models.append(new_model)
 
     return models
+
 
 register(nnx.Module, generate_flax_ensemble)
