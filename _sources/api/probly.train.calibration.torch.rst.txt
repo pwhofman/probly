@@ -1,0 +1,14 @@
+probly.train.calibration.torch
+==============================
+
+.. automodule:: probly.train.calibration.torch
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      ExpectedCalibrationError
+      FocalLoss
+      LabelRelaxationLoss
+   
