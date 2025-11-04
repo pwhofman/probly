@@ -285,3 +285,4 @@ def test_jit_consistency(flax_model_small_2d_2d, _x_batch):
 def test_one_train_step_decreases_mse(flax_model_small_2d_2d, _x_batch):
     """
     用一个超小学习率在 MSE 上走两步，检查 loss 不发散且不升高
+    """
