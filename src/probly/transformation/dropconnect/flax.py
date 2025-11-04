@@ -1,4 +1,4 @@
-"""Torch dropout implementation."""
+"""Flax DropConnect implementation."""
 
 from __future__ import annotations
 
