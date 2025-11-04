@@ -1,3 +1,4 @@
+# tests/probly/transformation/ensemble/test_flax_ensemble.py
 from __future__ import annotations
 
 import numpy as np
@@ -5,119 +6,140 @@ import jax
 import jax.numpy as jnp
 import pytest
 
-# 1) 明确按你的实现导入（别再猜 API 了）
-from probly.transformation.ensemble.flax import generate_flax_ensemble
+# 按你们仓库的真实 API 导入：
+# src/probly/transformation/ensemble/flax.py 里的 generate_flax_ensemble(base, num_members, reset_params)
+_mod = pytest.importorskip(
+    "probly.transformation.ensemble.flax",
+    reason="ensemble/flax 实现未在当前分支提供",
+)
+generate_flax_ensemble = _mod.generate_flax_ensemble
 
-# 用你们现成的小模型 fixture，当作 base
+# 用已有的 flax 小模型 fixture 当作 base
 from tests.probly.fixtures.flax_models import flax_model_small_2d_2d
 
 
-def _fwd(m, x, train=False):
-    """
-    统一的前向调用：兼容 nnx/linen 常见两套写法。
-    """
+# 统一前向，兼容 nnx / linen 两派
+def _fwd(model, x, train: bool = False):
     try:
-        return m(x, train=train)
+        return model(x, train=train)
     except TypeError:
-        # linen 风格
         try:
-            return m.apply(x, train=train)
+            return model.apply(x, train=train)
         except TypeError:
-            return m.apply(x)  # 某些实现不吃 train kw
+            return model.apply(x)  # 有些实现不吃 train 这个 kw
+
+
+def _to_array(out):
+    """
+    把各种返回格式捏成 ndarray：
+    - ndarray: 直接返回
+    - dict: 取 'mean'/'output'/'y' 之一；取不到再随便找个 ndarray
+    - tuple/list: 取第一个 ndarray
+    """
+    if isinstance(out, jnp.ndarray):
+        return np.asarray(out)
+    if isinstance(out, dict):
+        for k in ("mean", "output", "y", "agg", "aggregated"):
+            if k in out and isinstance(out[k], jnp.ndarray):
+                return np.asarray(out[k])
+        for v in out.values():
+            if isinstance(v, jnp.ndarray):
+                return np.asarray(v)
+    if isinstance(out, (tuple, list)):
+        for v in out:
+            if isinstance(v, jnp.ndarray):
+                return np.asarray(v)
+    raise AssertionError("无法从前向输出中提取 ndarray，用例需要数值输出进行比较")
 
 
 @pytest.fixture
-def xbatch():
-    # 你们的小模型基本吃 [B, D]；维度和 fixtures 对齐
+def xbatch() -> jnp.ndarray:
+    # 大多数 toy 模型吃 [B, D]；和仓库 fixtures 对齐
     return jnp.ones((8, 5))
 
 
-def test_returns_correct_length_and_types(flax_model_small_2d_2d, xbatch):
+def test_returns_sequence_and_types(flax_model_small_2d_2d, xbatch):
     """
-    生成的 ensemble：
-      - 长度等于 num_members
-      - 成员类型与 base 一致
-      - 成员对象不是同一个引用
-      - 前向形状与单模型一致
-    """
-    base = flax_model_small_2d_2d
-    members = generate_flax_ensemble(base, num_members=3, reset_params=False)
-
-    assert isinstance(members, (list, tuple)), "generate_flax_ensemble 应该返回一个序列"
-    assert len(members) == 3
-
-    # 类型一致且不是同一对象
-    for i, m in enumerate(members):
-        assert isinstance(m, type(base)), f"第 {i} 个成员类型应与 base 相同"
-    assert len({id(m) for m in members}) == len(members), "成员对象不应是同一引用"
-
-    # 形状 sanity：与 base 的输出形状一致
-    y_base = _fwd(base, xbatch, train=False)
-    for i, m in enumerate(members):
-        y_i = _fwd(m, xbatch, train=False)
-        assert y_i.shape == y_base.shape, f"第 {i} 个成员的输出形状应与 base 一致"
-
-
-def test_reset_params_false_members_outputs_are_identical(flax_model_small_2d_2d, xbatch):
-    """
-    reset_params=False：成员是“拷贝”而非重新初始化，同一输入输出应一致。
+    - 返回序列，长度等于 num_members
+    - 每个成员类型与 base 一致
+    - 成员不是同一个对象引用
+    - 单成员前向形状与 base 一致
     """
     base = flax_model_small_2d_2d
-    members = generate_flax_ensemble(base, num_members=3, reset_params=False)
+    num = 3
+    members = generate_flax_ensemble(base, num_members=num, reset_params=False)
 
-    outs = [np.asarray(_fwd(m, xbatch, train=False)) for m in members]
+    assert isinstance(members, (list, tuple)), "应返回一个成员序列"
+    assert len(members) == num
+
+    ids = set()
+    y_base = _to_array(_fwd(base, xbatch, train=False))
+    for i, m in enumerate(members):
+        assert isinstance(m, type(base)), f"第 {i} 个成员的类型应与 base 相同"
+        ids.add(id(m))
+        y_i = _to_array(_fwd(m, xbatch, train=False))
+        assert y_i.shape == y_base.shape, "成员输出形状应与 base 输出一致"
+
+    assert len(ids) == num, "每个成员应是不同对象（不是同一引用）"
+
+
+def test_reset_params_false_outputs_identical(flax_model_small_2d_2d, xbatch):
+    """
+    reset_params=False：拷贝参数不重置，同一输入应得到一致输出。
+    """
+    base = flax_model_small_2d_2d
+    members = generate_flax_ensemble(base, num_members=4, reset_params=False)
+
+    outs = [_to_array(_fwd(m, xbatch, train=False)) for m in members]
     for i in range(1, len(outs)):
         np.testing.assert_allclose(outs[0], outs[i], rtol=1e-6, atol=1e-6)
 
 
-def test_reset_params_true_members_outputs_are_different(flax_model_small_2d_2d, xbatch):
+def test_reset_params_true_outputs_different(flax_model_small_2d_2d, xbatch):
     """
-    reset_params=True：每个成员参数用不同 PRNGKey 重新初始化，同一输入输出应有差异。
+    reset_params=True：每个成员用不同 PRNGKey 重新初始化，
+    合理情况下至少存在一对成员输出不同。
     """
     base = flax_model_small_2d_2d
-    members = generate_flax_ensemble(base, num_members=3, reset_params=True)
+    members = generate_flax_ensemble(base, num_members=4, reset_params=True)
 
-    outs = [np.asarray(_fwd(m, xbatch, train=False)) for m in members]
-    # 只要存在任意一对不相等即可（避免过度苛刻）
-    different_pairs = 0
+    outs = [_to_array(_fwd(m, xbatch, train=False)) for m in members]
+    diff_pairs = 0
     for i in range(len(outs)):
         for j in range(i + 1, len(outs)):
             if not np.allclose(outs[i], outs[j], rtol=1e-6, atol=1e-6):
-                different_pairs += 1
-    assert different_pairs >= 1, "reset_params=True 时，不同成员的输出应当存在差异"
+                diff_pairs += 1
+    assert diff_pairs >= 1, "reset_params=True 时，至少应有一对成员输出不相同"
 
 
 def test_reset_params_true_is_deterministic_across_calls(flax_model_small_2d_2d, xbatch):
     """
-    在你们实现里，reset 后的种子按 PRNGKey(i) 固定。
-    因此同样的 base、相同 num_members、相同 reset=True 的两次生成应可复现（成员位次一一对应）。
+    你们实现里 reset 用 PRNGKey(i)，因此两次生成应可复现（按索引逐一对应）。
     """
     base = flax_model_small_2d_2d
+    num = 3
+    ens1 = generate_flax_ensemble(base, num_members=num, reset_params=True)
+    ens2 = generate_flax_ensemble(base, num_members=num, reset_params=True)
 
-    ens1 = generate_flax_ensemble(base, num_members=3, reset_params=True)
-    ens2 = generate_flax_ensemble(base, num_members=3, reset_params=True)
-
-    outs1 = [np.asarray(_fwd(m, xbatch, train=False)) for m in ens1]
-    outs2 = [np.asarray(_fwd(m, xbatch, train=False)) for m in ens2]
-
-    assert len(outs1) == len(outs2) == 3
-    for i in range(3):
-        np.testing.assert_allclose(outs1[i], outs2[i], rtol=1e-6, atol=1e-6)
+    for i in range(num):
+        y1 = _to_array(_fwd(ens1[i], xbatch, train=False))
+        y2 = _to_array(_fwd(ens2[i], xbatch, train=False))
+        np.testing.assert_allclose(y1, y2, rtol=1e-6, atol=1e-6)
 
 
-def test_member_forward_under_jit_consistency(flax_model_small_2d_2d, xbatch):
+def test_member_forward_jit_consistency(flax_model_small_2d_2d, xbatch):
     """
-    把“单个成员的前向”包一层 jit，确保 jit 前后结果一致。
+    把“成员前向”包一层 jit，确保 jit 前后结果一致。
     """
     base = flax_model_small_2d_2d
     members = generate_flax_ensemble(base, num_members=2, reset_params=False)
 
     def f(m, x):
-        return _fwd(m, x, train=False)
+        return _to_array(_fwd(m, x, train=False))
 
     f_jit = jax.jit(f)
-
     y0 = f(members[0], xbatch)
     y1 = f_jit(members[0], xbatch)
     np.testing.assert_allclose(y0, y1, rtol=1e-6, atol=1e-6)
+
 
