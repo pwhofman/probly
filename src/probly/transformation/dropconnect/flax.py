@@ -1,10 +1,10 @@
-"""Torch dropconnect implementation."""
+"""Torch dropout implementation."""
 
 from __future__ import annotations
 
 from flax import nnx
 
-from probly.layers.torch import DropConnectLinear
+from probly.layers.flax import DropConnectLinear
 
 from .common import register
 
