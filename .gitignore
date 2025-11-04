@@ -263,3 +263,7 @@ docs/source/api
 docs/source/api
 
 .vscode/settings.json
+.python-version
+pytest
+*.ipynb
+notebooks/
