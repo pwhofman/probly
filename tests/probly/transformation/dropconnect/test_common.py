@@ -71,7 +71,7 @@ def test_dropconnect_uses_p(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr("pytraverse.traverse", fake_traverse, raising=True)
 
     base = FakePredictor()
-    output = c.dropconnect(base)
+    output = c.dropconnect(cast(Any, base))
 
     # the fake_traverse always returns the same dummy object
     assert output in {return_traverse, base}
@@ -94,10 +94,7 @@ def test_dropconnect_override(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr("pytraverse.traverse", fake_traverse, raising=True)
 
     base = FakePredictor()
-    _ = c.dropconnect(
-        base,
-        p=0.25,
-    )
+    _ = c.dropconnect(cast(Any, base), p=0.25)
 
     init = cast(dict[object, object], called3.get("init", {}))
     assert isinstance(init, dict)
