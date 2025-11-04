@@ -50,7 +50,8 @@ def _reset_and_copy(model: nnx.Module):
     graph, state = nnx.split(model)
     new_model = nnx.merge(graph, state)
     rng_key = jax.random.PRNGKey(np.random.randint(0, 10000))
-    return reset_parameter(new_model, rng_key)
+    reset_parameter(new_model, rng_key)
+    return new_model
 
 
 def generate_flax_ensemble(model: nnx.Module, n_members: int): 
