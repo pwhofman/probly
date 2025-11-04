@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import pytest
+
+pytest.importorskip("flax")
 from flax import nnx
 import numpy as np
 
