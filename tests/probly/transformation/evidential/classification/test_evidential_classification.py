@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import torch
 from torch import nn
-
 from probly.transformation.evidential.classification.torch import append_activation_torch
 
 

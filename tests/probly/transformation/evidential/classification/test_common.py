@@ -1,5 +1,4 @@
-# ruff: noqa: D107
-
+# ruff: noqa: D107 
 
 """Tests for shared evidential classification dispatcher (common.py)."""
 
@@ -14,15 +13,16 @@ from probly.transformation.evidential.classification.common import (
 )
 
 
-class DummyPredictor:
+class DummyPredictor: # base model
     def __call__(self) -> None: ...
 
 
-class WrappedPredictor:
+class WrappedPredictor: 
     """Simple wrapper to verify the appender was applied."""
 
     def __init__(self, base: DummyPredictor) -> None:
         self.base = base
+
 
 
 def dummy_appender(base: DummyPredictor) -> WrappedPredictor:
@@ -52,7 +52,8 @@ def test_register_and_dispatch_wraps_base() -> None:
 def test_registration_on_base_type_works_for_subclasses() -> None:
     """Registering for a base class must also handle subclass instances."""
 
-    class ChildPredictor(DummyPredictor):
+
+    class ChildPredictor(DummyPredictor):  
         pass
 
     child = ChildPredictor()
@@ -69,6 +70,7 @@ def test_register_returns_none_and_does_not_raise() -> None:
         return WrappedPredictor(base)
 
     register(DummyPredictor, another_appender)
+
 
 
 def test_direct_appender_call_matches_dispatch() -> None:
