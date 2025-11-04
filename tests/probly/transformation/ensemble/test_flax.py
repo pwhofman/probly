@@ -34,7 +34,19 @@ class MLP(nnx.Module):
 
 def test_generate_flax_ensemble():
     model = MLP(2, 16, 5, rngs=nnx.Rngs(0))
-    y = model(x=jnp.ones((3, 2)))
-    nnx.display(model)
 
-    generate_flax_ensemble(model, 3)
+    #Generate 3 models with re-initialized parameters
+    ensemble_models = generate_flax_ensemble(model, 3)
+
+    #check the number of models
+    assert len(ensemble_models) == 3
+
+    #Check output shapes
+    x = jnp.ones((1, 2))
+    for p in ensemble_models:
+        y = p(x)
+        #because x has shape (1, 2) : 1 sample 2 features
+        #And MLP has Shape (2, 16, 5) : input has 2 features, hidden layer has 16 Neurons and output layer has 5 neurons
+        #That's why we should check the output whether it's (1, 5) shaped
+        assert y.shape == (1, 5) 
+        nnx.display(p)
