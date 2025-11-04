@@ -7,6 +7,7 @@ import jax.numpy as jnp
 
 from probly.transformation import dropconnect
 from tests.probly.flax_utils import count_layers
+from probly.layers.flax import DropConnectLinear, Conv2d
 
 flax = pytest.importorskip("flax")
 from flax import nnx  # noqa: E402

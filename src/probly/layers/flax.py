@@ -2,44 +2,52 @@
 
 from __future__ import annotations
 
+from typing import Literal, Optional, Tuple, Union
+
 import jax
 import jax.numpy as jnp
 from flax import nnx
-
-from typing import Union, Tuple, Literal, Optional
 
 
 class DropConnectLinear(nnx.Module):
     """
     Linear layer with DropConnect on weights during training.
-    Wraps an existing nnx.Linear layer.
+
+    Wichtig: Wir WRAPPEN keinen nnx.Linear mehr,
+    sondern übernehmen nur dessen Parameter (kernel, bias).
+    So tauchen keine nnx.Linear-Instanzen mehr im Modulbaum auf.
     """
+
     def __init__(self, base_layer: nnx.Linear, p: float = 0.25) -> None:
         if not (0.0 <= p < 1.0):
             raise ValueError(f"p must be in [0, 1); got {p}")
-        self.base_layer = base_layer
-        self.p = float(p)
 
-        # Reproducible RNG state
+        # DropConnect-Parameter
+        self.p = float(p)
         self._key = jax.random.PRNGKey(0)
 
-        # Metadata from base layer
+        # Parameter direkt übernehmen (keinen nnx.Linear mehr speichern!)
+        # base_layer.kernel und base_layer.bias sind nnx.Param
+        self.kernel = base_layer.kernel
+        self.bias = getattr(base_layer, "bias", None)
+
+        # Metadaten (optional, nur für repr / Debug)
         self.in_features = getattr(base_layer, "in_features", None)
         self.out_features = getattr(base_layer, "out_features", None)
 
     def __call__(self, x: jnp.ndarray, *, training: bool | None = None) -> jnp.ndarray:
         """
         Forward pass with DropConnect.
+
         Args:
             x: [batch, in_features]
-            training: If True → DropConnect active; if False → Inference scaling;
-                      if None → fallback to getattr(self, 'training', False)
+            training:
+                - True  → DropConnect aktiv
+                - False → Inference mit Erwartungs-Skalierung
+                - None  → fallback auf getattr(self, "training", False)
         """
-        # Robust weight/bias access
-        weight = getattr(self.base_layer, "weight", None)
-        if weight is None:
-            weight = getattr(self.base_layer, "kernel")
-        bias = getattr(self.base_layer, "bias", None)
+        weight = self.kernel
+        bias = self.bias
 
         if training is None:
             training = getattr(self, "training", False)
@@ -47,24 +55,24 @@ class DropConnectLinear(nnx.Module):
         if training:
             self._key, subkey = jax.random.split(self._key)
             keep_prob = 1.0 - self.p
-            mask = jax.random.bernoulli(subkey, p=keep_prob, shape=weight.shape)
-            mask = mask.astype(weight.dtype)
-            eff_weight = weight * mask
+            mask = jax.random.bernoulli(subkey, p=keep_prob, shape=weight.value.shape)
+            mask = mask.astype(weight.value.dtype)
+            eff_weight = weight.value * mask
         else:
-            # Expectation correction during inference
-            eff_weight = weight * (1.0 - self.p)
+            # Erwartungswert-Korrektur im Inference-Modus
+            eff_weight = weight.value * (1.0 - self.p)
 
         # Linear forward pass
         y = jnp.matmul(x, eff_weight)
         if bias is not None:
-            y = y + bias
+            y = y + bias.value
         return y
 
     def extra_repr(self) -> str:
         return (
             f"in_features={self.in_features}, "
             f"out_features={self.out_features}, "
-            f"bias={getattr(self.base_layer, 'bias', None) is not None}, "
+            f"bias={self.bias is not None}, "
             f"p={self.p}"
         )
 
@@ -133,7 +141,10 @@ class Conv2d(nnx.Module):
                 flax_padding = "VALID"
                 self._explicit_padding = None
             else:
-                raise ValueError(f"Unsupported padding string '{padding}'. Use 'same', 'valid', or integer/tuple.")
+                raise ValueError(
+                    f"Unsupported padding string '{padding}'. "
+                    f"Use 'same', 'valid', or integer/tuple."
+                )
         else:
             p_h, p_w = _pair(padding)
             self._explicit_padding = (
@@ -166,7 +177,9 @@ class Conv2d(nnx.Module):
         if x.ndim != 4:
             raise ValueError(f"Conv2d expects 4D input (N, C, H, W), got shape {x.shape}")
         if x.shape[1] != self.in_channels:
-            raise ValueError(f"Input has {x.shape[1]} channels, but Conv2d.in_channels={self.in_channels}")
+            raise ValueError(
+                f"Input has {x.shape[1]} channels, but Conv2d.in_channels={self.in_channels}"
+            )
 
         # Apply explicit padding in NCHW if configured
         if self._explicit_padding is not None:
