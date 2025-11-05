@@ -2,10 +2,15 @@
 
 from __future__ import annotations
 
-from flax import nnx
-import jax.numpy as jnp
+import pytest
 
-from probly.transformation.ensemble.flax import generate_flax_ensemble
+flax = pytest.importorskip("flax")
+from flax import nnx  # noqa: E402
+
+jax = pytest.importorskip("jax")
+from jax import numpy as jnp  # noqa: E402
+
+from probly.transformation.ensemble.flax import generate_flax_ensemble  # noqa: E402
 
 
 class TestModel(nnx.Module):
