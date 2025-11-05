@@ -12,8 +12,8 @@ from flax import nnx  # noqa: E402
 def count_layers(model: nnx.Module, layer_type: type[nnx.Module]) -> int:
     """Counts the number of layers of a specific type in a neural network model.
 
-    This function iterates through all the modules in the given model and counts
-    how many of them match the specified layer type. It's particularly useful
+    This function iterates through all the modules in the given mosel and counts
+    hot many of them match the specified layer type. It's particularly useful
     for analyzing the architecture of a neural network or verifying its
     composition.
 
@@ -24,4 +24,8 @@ def count_layers(model: nnx.Module, layer_type: type[nnx.Module]) -> int:
     Returns:
         The number of layers of the specified type found in the model.
     """
-    return sum(1 for _, m in model.iter_modules() if isinstance(m, layer_type))
+    count = 0
+    for path, m in model.iter_modules():
+        if isinstance(m, layer_type) and 'base_layer' not in path:
+            count += 1
+    return count
