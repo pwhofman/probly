@@ -16,19 +16,38 @@ from tests.probly.fixtures.flax_models import flax_model_small_2d_2d
 
 
 def _fwd(model, x):
+    """Unified forward: try nnx (callable), then linen (.apply)."""
+    nnx_err = None
     try:
-        return model(x)
-    except Exception:
-        pass
+        return model(x)  # nnx path
+    except TypeError as e:
+        nnx_err = e  # record, don't swallow
+
     if hasattr(model, "apply"):
         try:
-            return model.apply(x)
-        except Exception:
-            pass
-    raise AssertionError("Forward call not recognized (neither nnx nor linen).")
+            return model.apply(x)  # linen path
+        except (TypeError, AttributeError) as e2:
+            linen_err = e2
+            msg = (
+                "Forward call not recognized (neither nnx nor linen). "
+                f"nnx TypeError: {nnx_err!r}; linen error: {linen_err!r}"
+            )
+            raise AssertionError(msg)  # message assigned above
+    else:
+        msg = (
+            "Forward call not recognized (neither nnx nor linen). "
+            f"nnx TypeError: {nnx_err!r}; no `.apply` on model."
+        )
+        raise AssertionError(msg)
 
 
 def _to_array_host(out):
+    """
+    Normalize various forward outputs to a host-side ndarray (only outside jit):
+    - ndarray: return as numpy
+    - dict: try 'mean'/'output'/'y'/'agg'/'aggregated', else first ndarray value
+    - tuple/list: first ndarray element
+    """
     if isinstance(out, jnp.ndarray):
         return np.asarray(out)
     if isinstance(out, dict):
@@ -43,7 +62,10 @@ def _to_array_host(out):
         for v in out:
             if isinstance(v, jnp.ndarray):
                 return np.asarray(v)
-    raise AssertionError("Could not extract ndarray from model output.")
+
+    msg = "Could not extract ndarray from model output."
+    raise AssertionError(msg)
+
 
 
 @pytest.fixture
