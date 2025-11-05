@@ -4,15 +4,18 @@
 from __future__ import annotations
 
 import pytest
+import torch
+from torch import nn
+
+from probly.layers.torch import DropConnectLinear
+from probly.transformation.dropconnect import dropconnect
 
 torch = pytest.importorskip("torch")
-from torch import nn  # noqa: E402
-
-from probly.transformation.dropconnect import dropconnect  # noqa: E402
-from probly.layers.torch import DropConnectLinear  # noqa: E402
 
 
-def test_dropconnect_preserves_forward_shape(torch_model_small_2d_2d: nn.Sequential) -> None:
+def test_dropconnect_preserves_forward_shape(
+    torch_model_small_2d_2d: nn.Sequential,
+) -> None:
     """Applying the transformation should not change the model's I/O shape."""
     model = dropconnect(torch_model_small_2d_2d, p=0.4)
     x = torch.randn(3, 2)  # matches the small 2d->2d fixture input size
