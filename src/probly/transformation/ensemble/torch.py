@@ -7,7 +7,6 @@ from torch import nn
 from probly.traverse_nn import nn_compose
 from pytraverse import CLONE, lazydispatch_traverser, traverse
 
-
 from .common import register
 
 reset_traverser = lazydispatch_traverser[object](name="reset_traverser")
