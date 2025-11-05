@@ -8,8 +8,7 @@ import jax
 from .common import register
 
 
-def generate_flax_ensemble(obj: nnx.Module, n_members: int) -> list[nnx.Module]:
-    base_model = obj.__class__ 
+def generate_flax_ensemble(obj: nnx.Module, n_members: int) -> list[nnx.Module]:  # noqa: D103
     models = []
     # Creates a base random key
     rng = jax.random.key(0)
@@ -21,6 +20,5 @@ def generate_flax_ensemble(obj: nnx.Module, n_members: int) -> list[nnx.Module]:
         new_model = type(obj)(rngs=rngs)
         models.append(new_model)
     return models
-
 
 register(nnx.Module, generate_flax_ensemble)
