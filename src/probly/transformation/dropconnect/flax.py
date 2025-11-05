@@ -13,4 +13,5 @@ def replace_flax_dropconnect(obj: nnx.Linear, p: float) -> DropConnectLinear:
     """Replace a given layer by a DropConnectLinear layer."""
     return DropConnectLinear(obj, p=p)
 
+
 register(nnx.Linear, replace_flax_dropconnect)

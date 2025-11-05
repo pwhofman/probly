@@ -18,6 +18,7 @@ class DropConnectLinear(nnx.Module):
         bias: jax.array, bias of the layer.
 
     """
+
     def __init__(self, base_layer: nnx.Linear, p: float = 0.25) -> None:
         """Initialize a DropConnectLinear layer based on a given linear base layer.
 
@@ -48,10 +49,10 @@ class DropConnectLinear(nnx.Module):
 
         if training:
             self.rng_key, subkey = jax.random.split(self.rng_key)
-            mask = jax.random.bernoulli(subkey, p=1.0 - self.p, shape = weight.shape)
-            weight = weight * mask # Apply DropConnect
+            mask = jax.random.bernoulli(subkey, p=1.0 - self.p, shape=weight.shape)
+            weight = weight * mask  # Apply DropConnect
         else:
-            weight = weight * (1 - self.p) # Scale weights at interference time
+            weight = weight * (1 - self.p)  # Scale weights at interference time
 
         """layer output after applying DropConnect."""
         lin_out = jnp.dot(x, weight)
@@ -62,7 +63,5 @@ class DropConnectLinear(nnx.Module):
     def extra_repr(self) -> str:
         """Expose description of in- and out-features of this layer."""
         return (
-            f"in_features={self.in_features}, "
-            f"out_features={self.out_features}, "
-            f"bias={self.base_layer.bias is not None}"
+            f"in_features={self.in_features}, out_features={self.out_features}, bias={self.base_layer.bias is not None}"
         )
