@@ -174,4 +174,5 @@ class TestPValues:
         for m in model.modules():
             if isinstance(m, DropConnectLinear):
                 assert m.p == p
-                
+
+
