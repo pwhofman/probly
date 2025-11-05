@@ -263,3 +263,4 @@ docs/source/api
 docs/source/api
 
 .vscode/settings.json
+.DS_Store
