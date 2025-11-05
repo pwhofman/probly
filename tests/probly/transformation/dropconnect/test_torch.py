@@ -159,7 +159,8 @@ class TestPValues:
                 assert m.p == p
 
     def test_conv_network_p_value(self, torch_conv_linear_model: nn.Sequential) -> None:
-        """This function tests whether the DropConnectLinear layer in the convolutional model has the correct probability value.
+        """This function tests whether the DropConnectLinear layer in the 
+           convolutional model has the correct probability value.
 
         Arguments:
             torch_conv_linear_model: A sequential model containing convolutional and linear layers.
