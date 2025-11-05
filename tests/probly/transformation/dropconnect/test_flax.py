@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pytest
+from flax import nnx
 
 from probly.layers.flax import DropConnectLinear
 from probly.transformation import dropconnect
@@ -10,14 +11,13 @@ from tests.probly.flax_utils import count_layers
 
 flax = pytest.importorskip("flax")
 
-from flax import nnx
-
 
 class TestNetworkArchitectures:
     """Test class for different network architectures."""
 
     def test_linear_network_with_first_linear(self, flax_model_small_2d_2d: nnx.Sequential) -> None:
         """Tests if a model replaces linear layers correctly with DropConnectLinear layers.
+
         This function verifies that:
         - Linear layers are replaced by DropConnectLinear layers, except for the first layer.
         - The structure of the model remains unchanged except for the replaced layers.
@@ -25,6 +25,7 @@ class TestNetworkArchitectures:
         It performs counts and asserts to ensure the modified model adheres to expectations.
         Parameters:
             flax_model_small_2d_2d: The flax model to be tested, specified as a sequential model.
+
         Raises:
             AssertionError If the structure of the model differs in an unexpected manner or if the layers are not
             replaced correctly.
@@ -56,11 +57,13 @@ class TestNetworkArchitectures:
 
     def test_convolutional_network(self, flax_conv_linear_model: nnx.Sequential) -> None:
         """Tests the convolutional neural network modification with DropConnectLinear layers.
+
         This function evaluates whether the given convolutional neural network model
         has been correctly modified to replace linear layers with DropConnectLinear layers
         without altering the number of other components such as sequential or convolutional layers.
         Parameters:
             flax_conv_linear_model: The original convolutional neural network model to be tested.
+
         Raises:
             AssertionError: If the modified model deviates in structure other than
             the replacement of linear layers or does not meet the expected constraints.
@@ -81,12 +84,12 @@ class TestNetworkArchitectures:
         count_linear_modified = count_layers(model, nnx.Linear)
         # count number of DropConnectLinear layers in modified model
         count_dropconnect_modified = count_layers(model, DropConnectLinear)
-        #count number of nnx.Sequential layers in modified model
+        # count number of nnx.Sequential layers in modified model
         count_sequential_modified = count_layers(model, nnx.Sequential)
-        #count number of nnx.Conv layers in modified model
+        # count number of nnx.Conv layers in modified model
         count_conv_modified = count_layers(model, nnx.Conv)
 
-        #check that the model is modified by replacing Linear layers with DropConnectLinear
+        # check that the model is modified by replacing Linear layers with DropConnectLinear
         assert model is not None
         assert isinstance(model, type(flax_conv_linear_model))
         assert count_linear_original == count_dropconnect_modified
@@ -100,7 +103,7 @@ class TestNetworkArchitectures:
         p = 0.5
         model = dropconnect(flax_custom_model, p)
 
-        #check if model type is correct
+        # check if model type is correct
         assert isinstance(model, type(flax_custom_model))
         assert not isinstance(model, nnx.Sequential)
 
@@ -127,11 +130,13 @@ class TestNetworkArchitectures:
             if isinstance(m, DropConnectLinear):
                 assert m.p == p
 
+
 class TestPValues:
     """Test class for p-value tests."""
 
     def test_linear_network_p_value(self, flax_model_small_2d_2d: nnx.Sequential) -> None:
         """Tests the DropConnectLinear layer's p-value in a given neural network model.
+
         This function verifies that a DropConnectLinear layer inside the provided neural network
         model has the expected p-value after applying the dropconnect transformation. The
         p-value represents the probability of a connection being dropped during training.
@@ -149,9 +154,12 @@ class TestPValues:
                 assert m.p == p
 
     def test_conv_network_p_value(self, flax_conv_linear_model: nnx.Sequential) -> None:
-        """This function tests whether the DropConnectLinear layer in the convolutional model has the correct probability value.
+        """Tests whether the DropConnectLinear layer in the convolutional model has the correct
+        probability value.
+
         Arguments:
             flax_conv_linear_model: A sequential model containing convolutional and linear layers.
+
         Raises:
             AssertionError: If the probability value in any DropConnectLinear layer does not match the expected value.
         """
