@@ -5,12 +5,14 @@ from __future__ import annotations
 import importlib
 from typing import Any, cast
 
-from flax import linen as nn
 import jax.numpy as jnp
 import pytest
 
 from probly.layers.flax import DropConnectDense
 from probly.transformation.dropconnect import common as c, flax as flax_mod
+
+flax = pytest.importorskip("flax")
+from flax import linen as nn  # noqa: E402
 
 
 def test_flax_register_calls_dropconnect_traverser_on_import(
