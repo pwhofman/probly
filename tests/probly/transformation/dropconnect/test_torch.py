@@ -134,6 +134,7 @@ class TestNetworkArchitectures:
             if isinstance(m, DropConnectLinear):
                 assert m.p == p
 
+
 class TestPValues:
     """Test class for p-value tests."""
 
