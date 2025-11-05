@@ -1,3 +1,5 @@
+"""flax layer implementation"""
+
 from __future__ import annotations
 
 import jax
