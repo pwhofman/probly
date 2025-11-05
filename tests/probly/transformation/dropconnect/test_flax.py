@@ -7,9 +7,9 @@ import pytest
 flax = pytest.importorskip("flax")
 from flax import nnx  # noqa: E402
 
-from probly.layers.flax import DropConnectLinear  # noqa: E402
-from probly.transformation import dropconnect  # noqa: E402
-from tests.probly.flax_utils import count_layers  # noqa: E402
+from probly.layers.flax import DropConnectLinear
+from probly.transformation import dropconnect
+from tests.probly.flax_utils import count_layers
 
 
 class TestNetworkArchitectures:
