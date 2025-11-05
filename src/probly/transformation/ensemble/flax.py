@@ -21,4 +21,5 @@ def generate_flax_ensemble(obj: nnx.Module, n_members: int) -> list[nnx.Module]:
         models.append(new_model)
     return models
 
+
 register(nnx.Module, generate_flax_ensemble)
