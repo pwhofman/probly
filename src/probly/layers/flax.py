@@ -1,10 +1,11 @@
-"""flax layer implementation"""
+"""flax layer implementation."""
 
 from __future__ import annotations
 
+from flax import nnx
 import jax
 import jax.numpy as jnp
-from flax import nnx
+
 
 class DropConnectLinear(nnx.Module):
     """Custom Linear layer with DropConnect applied to weights during training.
@@ -43,7 +44,7 @@ class DropConnectLinear(nnx.Module):
         weight = self.base_layer.kernel
         bias = self.base_layer.bias
 
-        training = getattr(self, 'training', False)
+        training = getattr(self, "training", False)
 
         if training:
             self.rng_key, subkey = jax.random.split(self.rng_key)

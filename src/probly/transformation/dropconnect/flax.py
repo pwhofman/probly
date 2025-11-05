@@ -8,6 +8,7 @@ from probly.layers.flax import DropConnectLinear
 
 from .common import register
 
+
 def replace_flax_dropconnect(obj: nnx.Linear, p: float) -> DropConnectLinear:
     """Replace a given layer by a DropConnectLinear layer."""
     return DropConnectLinear(obj, p=p)
