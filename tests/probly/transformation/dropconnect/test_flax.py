@@ -5,11 +5,13 @@ from __future__ import annotations
 import importlib
 from typing import Any, cast
 
-import jax.numpy as jnp
 import pytest
 
-from probly.layers.flax import DropConnectDense
-from probly.transformation.dropconnect import common as c, flax as flax_mod
+jax = pytest.importorskip("jax")
+from jax import numpy as jnp  # noqa: E402
+
+from probly.layers.flax import DropConnectDense  # noqa: E402
+from probly.transformation.dropconnect import common as c, flax as flax_mod  # noqa: E402
 
 flax = pytest.importorskip("flax")
 from flax import linen as nn  # noqa: E402
