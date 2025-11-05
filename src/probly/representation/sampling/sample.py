@@ -51,19 +51,19 @@ class ArraySample[T](Sample[T]):
 
     def __init__(self, samples: list[T]) -> None:
         """Initialize the array sample."""
-        self.array: np.ndarray = np.array(samples)
+        self.array: np.ndarray = np.array(samples).transpose(1, 0, 2)  # we use [instances, samples, classes]
 
     def mean(self) -> T:
         """Compute the mean of the sample."""
-        return self.array.mean(axis=0)  # type: ignore[no-any-return]
+        return self.array.mean(axis=1)  # type: ignore[no-any-return]
 
     def std(self, ddof: int = 1) -> T:
         """Compute the standard deviation of the sample."""
-        return self.array.std(axis=0, ddof=ddof)  # type: ignore[no-any-return]
+        return self.array.std(axis=1, ddof=ddof)  # type: ignore[no-any-return]
 
     def var(self, ddof: int = 1) -> T:
         """Compute the variance of the sample."""
-        return self.array.var(axis=0, ddof=ddof)  # type: ignore[no-any-return]
+        return self.array.var(axis=1, ddof=ddof)  # type: ignore[no-any-return]
 
 
 @create_sample.delayed_register(TORCH_TENSOR)

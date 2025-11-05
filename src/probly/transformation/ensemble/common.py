@@ -25,14 +25,15 @@ def register(cls: LazyType, generator: Callable) -> None:
     ensemble_generator.register(cls=cls, func=generator)
 
 
-def ensemble[T: Predictor](base: T, n_members: int) -> T:
+def ensemble[T: Predictor](base: T, num_members: int, reset_params: bool = True) -> T:
     """Create an ensemble predictor from a base predictor.
 
     Args:
         base: Predictor, The base model to be used for the ensemble.
-        n_members: The number of members in the ensemble.
+        num_members: The number of members in the ensemble.
+        reset_params: Whether to reset the parameters of each member.
 
     Returns:
         Predictor, The ensemble predictor.
     """
-    return ensemble_generator(base, n_members=n_members)
+    return ensemble_generator(base, n_members=num_members, reset_params=reset_params)
