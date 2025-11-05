@@ -7,9 +7,9 @@ import pytest
 flax = pytest.importorskip("flax")
 from flax import nnx  # noqa: E402
 
-from probly.layers.flax import DropConnectLinear
-from probly.transformation import dropconnect
-from tests.probly.flax_utils import count_layers
+from probly.layers.flax import DropConnectLinear  # noqa: E402
+from probly.transformation import dropconnect  # noqa: E402
+from tests.probly.flax_utils import count_layers  # noqa: E402
 
 
 class TestNetworkArchitectures:
@@ -154,8 +154,7 @@ class TestPValues:
                 assert m.p == p
 
     def test_conv_network_p_value(self, flax_conv_linear_model: nnx.Sequential) -> None:
-        """Tests whether the DropConnectLinear layer in the convolutional model has the correct
-        probability value.
+        """Tests whether the DropConnectLinear layer in the convolutional model has the correct probability value.
 
         Arguments:
             flax_conv_linear_model: A sequential model containing convolutional and linear layers.
