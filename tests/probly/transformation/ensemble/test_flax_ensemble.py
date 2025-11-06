@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Set
+from typing import Protocol, Set, cast
 
 import jax
 import jax.numpy as jnp
@@ -17,6 +17,14 @@ _mod = pytest.importorskip(
 generate_flax_ensemble = _mod.generate_flax_ensemble
 
 
+class CallableModel(Protocol):
+    def __call__(self, x: jnp.ndarray, /) -> object: ...
+
+
+class ApplyModel(Protocol):
+    def apply(self, x: jnp.ndarray, /) -> object: ...
+
+
 def _fwd(model: object, x: jnp.ndarray) -> object:
     """Unified forward: try nnx (callable), then linen (.apply)."""
     nnx_err: Exception | None = None
@@ -24,14 +32,14 @@ def _fwd(model: object, x: jnp.ndarray) -> object:
 
     # Try nnx-style callable
     try:
-        return model(x)  # type: ignore[misc]
+        return cast(CallableModel, model)(x)
     except (TypeError, AttributeError) as e:
         nnx_err = e
 
     # Try linen-style .apply
     if hasattr(model, "apply"):
         try:
-            return model.apply(x)  # type: ignore[attr-defined]
+            return cast(ApplyModel, model).apply(x)
         except TypeError as e:
             linen_err = e
 
@@ -40,7 +48,7 @@ def _fwd(model: object, x: jnp.ndarray) -> object:
 
 
 def _to_array_host(out: object) -> np.ndarray:
-    """Normalize forward outputs to host ndarray.
+    """Normalize forward outputs to a host-side ndarray.
 
     Outside jit only:
     - jnp.ndarray: convert to numpy
@@ -50,7 +58,7 @@ def _to_array_host(out: object) -> np.ndarray:
     if isinstance(out, jnp.ndarray):
         return np.asarray(out)
 
-    if isinstance(out, dict):  # type: ignore[reportGeneralTypeIssues]
+    if isinstance(out, dict):
         for k in ("mean", "output", "y", "agg", "aggregated"):
             v = out.get(k, None)  # type: ignore[call-arg]
             if isinstance(v, jnp.ndarray):
@@ -146,8 +154,7 @@ def test_reset_params_true_is_deterministic_across_calls(
 def test_member_forward_jit_consistency(
     flax_model_small_2d_2d: object, xbatch: jnp.ndarray,
 ) -> None:
-    base = flax_model_small_2d_2d
-    members = generate_flax_ensemble(base, num_members=2, reset_params=False)
+    members = generate_flax_ensemble(flax_model_small_2d_2d, num_members=2, reset_params=False)
     m0 = members[0]
 
     def f(x: jnp.ndarray) -> jnp.ndarray:
@@ -162,5 +169,6 @@ def test_member_forward_jit_consistency(
 
     # Compare on host
     np.testing.assert_allclose(np.asarray(y0), np.asarray(y1), rtol=1e-6, atol=1e-6)
+
 
 
