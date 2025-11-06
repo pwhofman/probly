@@ -9,9 +9,9 @@ from probly.lazy_types import FLAX_MODULE, TORCH_MODULE
 from probly.predictor import Predictor, predict
 from probly.representation.representer import Representer
 from probly.traverse_nn import nn_compose
-from pytraverse import CLONE, GlobalVariable, lazydispatch_traverser, traverse_with_state
+from pytraverse import CLONE, GlobalVariable, function_traverser, lazydispatch_traverser, traverse_with_state
 
-from .sample import Sample, create_sample
+from .sample import Sample, SampleFactory, create_sample
 
 type SamplingStrategy = Literal["sequential"]
 
@@ -37,7 +37,7 @@ def get_sampling_predictor[In, KwIn, Out](
     """Get the predictor to be used for sampling."""
     predictor, state = traverse_with_state(
         predictor,
-        nn_compose(sampling_preparation_traverser),
+        nn_compose(sampling_preparation_traverser, function_traverser),
         init={CLONE: False, CLEANUP_FUNCS: set()},
     )
     cleanup_funcs = state[CLEANUP_FUNCS]
@@ -70,30 +70,32 @@ def sampler_factory[In, KwIn, Out](
     return sampler
 
 
-class Sampler[In, KwIn, Out](Representer[In, KwIn, Out]):
+class Sampler[In, KwIn, Out, S: Sample](Representer[In, KwIn, Out]):
     """A representation predictor that creates representations from finite samples."""
 
     sampling_strategy: SamplingStrategy
-    sample_factory: Callable[[Iterable[Out]], Sample[Out]]
+    sample_factory: Callable[[Iterable[Out]], S]
 
     def __init__(
         self,
         predictor: Predictor[In, KwIn, Out],
         sampling_strategy: SamplingStrategy = "sequential",
-        sample_factory: Callable[[Iterable[Out]], Sample[Out]] = create_sample,
+        sample_factory: SampleFactory[Out, S] = create_sample,  # type: ignore[assignment]
+        sample_dim: int = 1,
     ) -> None:
         """Initialize the sampler.
 
         Args:
             predictor (Predictor[In, KwIn, Out]): The predictor to be used for sampling.
             sampling_strategy (SamplingStrategy, optional): How the samples should be computed.
-            sample_factory (Callable[[Iterable[Out]], Sample[Out]], optional): Factory to create the sample.
+            sample_factory (Callable[[Iterable[Out]], S], optional): Factory to create the sample.
         """
         super().__init__(predictor)
         self.sampling_strategy = sampling_strategy
         self.sample_factory = sample_factory
+        self.sample_dim = sample_dim
 
-    def predict(self, *args: In, num_samples: int, **kwargs: Unpack[KwIn]) -> Sample[Out]:
+    def predict(self, *args: In, num_samples: int, **kwargs: Unpack[KwIn]) -> S:
         """Sample from the predictor for a given input."""
         return self.sample_factory(
             sampler_factory(
@@ -104,15 +106,16 @@ class Sampler[In, KwIn, Out](Representer[In, KwIn, Out]):
         )
 
 
-class EnsembleSampler[In, KwIn, Out](Representer[In, KwIn, Iterable[Out]]):
+class EnsembleSampler[In, KwIn, Out, S: Sample](Representer[In, KwIn, Iterable[Out]]):
     """A sampler that creates representations from ensemble predictions."""
 
-    sample_factory: Callable[[Iterable[Out]], Sample[Out]]
+    sample_factory: Callable[[Iterable[Out]], S]
 
     def __init__(
         self,
         predictor: Predictor[In, KwIn, Iterable[Out]],
-        sample_factory: Callable[[Iterable[Out]], Sample[Out]] = create_sample,
+        sample_factory: SampleFactory[Out, S] = create_sample,  # type: ignore[assignment]
+        sample_dim: int = 1,
     ) -> None:
         """Initialize the ensemble sampler.
 
@@ -122,8 +125,9 @@ class EnsembleSampler[In, KwIn, Out](Representer[In, KwIn, Iterable[Out]]):
         """
         super().__init__(predictor)
         self.sample_factory = sample_factory
+        self.sample_dim = sample_dim
 
-    def sample(self, *args: In, **kwargs: Unpack[KwIn]) -> Sample[Out]:
+    def sample(self, *args: In, **kwargs: Unpack[KwIn]) -> S:
         """Sample from the ensemble predictor for a given input."""
         return self.sample_factory(
             self.predictor(*args, **kwargs),
