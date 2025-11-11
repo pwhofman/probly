@@ -6,7 +6,7 @@ from flax import nnx
 import jax
 
 from probly.traverse_nn import nn_compose, nn_traverser
-from pytraverse import CLONE, TRAVERSE_KEYS, singledispatch_traverser, traverse
+from pytraverse import CLONE, singledispatch_traverser, traverse
 
 from .common import register
 
@@ -14,18 +14,21 @@ reset_traverser = singledispatch_traverser[nnx.Module](name="reset_traverser")
 
 
 @reset_traverser.register
-def _(obj: nnx.Linear) -> nnx.Module:
+def _(obj: nnx.Module) -> nnx.Module:
     """Re-initialize parameters of a flax module."""
     rng = nnx.Rngs(params=jax.random.key(42))
-    obj.__init__(obj.in_features, obj.out_features, rngs=rng)
-    return obj
-
-
-@reset_traverser.register
-def _(obj: nnx.Conv) -> nnx.Module:
-    """Re-initialize parameters of a flax module."""
-    rng = nnx.Rngs(params=jax.random.key(42))
-    obj.__init__(obj.in_features, obj.in_features, obj.kernel_size, obj.padding, rngs=rng)
+    if isinstance(obj, (nnx.Conv, nnx.ConvTranspose)):
+        obj.__init__(obj.in_features, obj.out_features, obj.kernel_size, rngs=rng)
+    elif isinstance(obj, nnx.Linear):
+        obj.__init__(obj.in_features, obj.out_features, rngs=rng)
+    elif isinstance(obj, nnx.BatchNorm):
+        obj.__init__(obj.axis, obj.momentum, obj.epsilon, use_running_average=False, rngs=rng)
+    elif isinstance(obj, nnx.LayerNorm):
+        obj.__init__(obj.num_features, obj.epsilon, rngs=rng)
+    elif isinstance(obj, nnx.Embed):
+        obj.__init__(obj.num_embeddings, obj.features, rngs=rng)
+    elif isinstance(obj, nnx.Dropout):
+        pass
     return obj
 
 
@@ -36,7 +39,7 @@ def _clone(obj: nnx.Module) -> nnx.Module:
 
 def _clone_reset(obj: nnx.Module) -> nnx.Module:
     """Deep copy of params for flax module with re-initialization."""
-    return traverse(obj, nn_compose(reset_traverser), init={CLONE: True, TRAVERSE_KEYS: True})
+    return traverse(obj, nn_compose(reset_traverser), init={CLONE: True})
 
 
 def generate_flax_ensemble(
