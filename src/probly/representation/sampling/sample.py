@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Literal, Protocol, Self, TypedDict, Unpack
 
 import numpy as np
@@ -18,8 +19,6 @@ if TYPE_CHECKING:
 
 type SampleDim = int | Literal["auto"]
 
-type SampleInput[T] = Iterable[T] | Sample[T]
-
 
 class SampleParams(TypedDict, total=False):
     """Default parameters for sample creation."""
@@ -30,7 +29,7 @@ class SampleParams(TypedDict, total=False):
 class SampleFactory[T, S: Sample](Protocol):
     """Protocol for the creation of samples."""
 
-    def __call__(self, samples: SampleInput[T], **kwargs: Unpack[SampleParams]) -> S:
+    def __call__(self, samples: Iterable[T], **kwargs: Unpack[SampleParams]) -> S:
         """Create a sample from the given predictions.
 
         Args:
@@ -45,9 +44,47 @@ class SampleFactory[T, S: Sample](Protocol):
 class Sample[T](ABC):
     """Abstract base class for samples."""
 
+    @classmethod
     @abstractmethod
-    def __init__(self, samples: SampleInput[T], **kwargs: Unpack[SampleParams]) -> None:
-        """Initialize the sample."""
+    def from_iterable(cls, samples: Iterable[T], **kwargs: Unpack[SampleParams]) -> Self:
+        """Create an Sample from an iterable of samples.
+
+        Args:
+            samples: The predictions to create the sample from.
+            kwargs: Parameters for sample creation.
+
+        Returns:
+            The created ArraySample.
+        """
+        ...
+
+    @classmethod
+    def from_sample(cls, sample: Sample[T], **kwargs: Unpack[SampleParams]) -> Self:
+        """Create a new Sample from an existing Sample.
+
+        Args:
+            sample: The sample to create the new sample from.
+            kwargs: Parameters for sample creation.
+
+        Returns:
+            The created Sample.
+        """
+        return cls.from_iterable(list(sample.samples), **kwargs)
+
+    @property
+    @abstractmethod
+    def samples(self) -> Iterable[T]:
+        """Return an iterator over the samples."""
+        ...
+
+    @property
+    def sample_size(self) -> int:
+        """Return the number of samples."""
+        return sum(1 for _ in self.samples)
+
+    @abstractmethod
+    def concat(self, other: Self) -> Self:
+        """Append another sample to this sample."""
         ...
 
     def sample_mean(self) -> T:
@@ -65,45 +102,40 @@ class Sample[T](ABC):
         msg = "var method not implemented."
         raise NotImplementedError(msg)
 
-    @property
-    @abstractmethod
-    def samples(self) -> Iterable[T]:
-        """Return an iterator over the samples."""
-        ...
-
-    @abstractmethod
-    def concat(self, other: Self) -> Self:
-        """Append another sample to this sample."""
-        ...
-
 
 class ListSample[T](list[T], Sample[T]):
     """A sample of predictions stored in a list."""
 
-    def __init__(self, samples: SampleInput[T], sample_dim: SampleDim = "auto") -> None:
-        """Initialize the list sample.
+    @classmethod
+    def from_iterable(cls, samples: Iterable[T], sample_dim: SampleDim = "auto") -> Self:
+        """Create a ListSample from a sequence of samples.
 
         Args:
             samples: The predictions to create the sample from.
             sample_dim: The dimension along which samples are organized.
+
+        Returns:
+            The created ListSample.
         """
         if sample_dim != "auto":
             msg = "List-based samples do not support a user-defined sample_dim."
             raise ValueError(msg)
 
-        if isinstance(samples, Sample):
-            samples = samples.samples
-
-        super().__init__(samples)
+        return cls(samples)
 
     @property
     def samples(self) -> Sequence[T]:
         """Return an iterator over the samples."""
         return self
 
+    @property
+    def sample_size(self) -> int:
+        """Return the number of samples."""
+        return len(self)
+
     def concat(self, other: Sample[T]) -> Self:
         """Creates a new sample by concatenating another sample to this sample."""
-        return type(self)(self + list(other.samples))  # type: ignore[return-value]
+        return type(self)(self + list(other.samples))
 
 
 create_sample = lazydispatch[type[Sample], Sample](ListSample, dispatch_on=lambda s: s[0])
@@ -112,17 +144,25 @@ Numeric = np.number | np.ndarray | float | int
 
 
 @create_sample.register(Numeric)
+@dataclass(frozen=True, slots=True, weakref_slot=True)
 class ArraySample[T: Numeric](Sample[T], np.lib.mixins.NDArrayOperatorsMixin):
     """A sample of predictions stored in a numpy array."""
 
     array: np.ndarray
     sample_dim: int
 
-    def __init__(self, samples: SampleInput[T], sample_dim: SampleDim = "auto", dtype: DTypeLike = None) -> None:
-        """Initialize the array sample."""
-        if isinstance(samples, Sample):
-            samples = samples.samples
+    @classmethod
+    def from_iterable(cls, samples: Iterable[T], sample_dim: SampleDim = "auto", dtype: DTypeLike = None) -> Self:
+        """Create an ArraySample from a sequence of samples.
 
+        Args:
+            samples: The predictions to create the sample from.
+            sample_dim: The dimension along which samples are organized.
+            dtype: Desired data type of the array.
+
+        Returns:
+            The created ArraySample.
+        """
         if isinstance(samples, np.ndarray):
             if sample_dim == "auto":
                 if samples.ndim == 0:
@@ -130,9 +170,9 @@ class ArraySample[T: Numeric](Sample[T], np.lib.mixins.NDArrayOperatorsMixin):
                     raise ValueError(msg)
                 sample_dim = 0 if samples.ndim == 1 else 1
             if sample_dim != 0:
-                self.array = np.moveaxis(samples, 0, sample_dim)
+                samples = np.moveaxis(samples, 0, sample_dim)
             if dtype is not None:
-                self.array = self.array.astype(dtype)
+                samples = samples.astype(dtype)
         else:
             if not isinstance(samples, Sequence):
                 samples = list(samples)
@@ -142,9 +182,9 @@ class ArraySample[T: Numeric](Sample[T], np.lib.mixins.NDArrayOperatorsMixin):
                     raise ValueError(msg)
                 first_sample = samples[0]
                 sample_dim = (0 if first_sample.ndim == 0 else 1) if isinstance(first_sample, np.ndarray) else 0
-            self.array = np.stack(samples, axis=sample_dim)
+            samples = np.stack(samples, axis=sample_dim)
 
-        self.sample_dim = sample_dim
+        return cls(array=samples, sample_dim=sample_dim)
 
     def sample_mean(self) -> T:
         """Compute the mean of the sample."""
@@ -166,6 +206,11 @@ class ArraySample[T: Numeric](Sample[T], np.lib.mixins.NDArrayOperatorsMixin):
         return np.moveaxis(self.array, self.sample_dim, 0)
 
     def __len__(self) -> int:
+        """Return the len of the array."""
+        return len(self.array)
+
+    @property
+    def sample_size(self) -> int:
         """Return the number of samples."""
         return self.array.shape[self.sample_dim]  # type: ignore[no-any-return]
 
