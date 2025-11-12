@@ -30,6 +30,7 @@ def _(obj: nnx.Module) -> nnx.Module:
     elif isinstance(obj, nnx.Dropout):
         pass
     elif isinstance(obj, nnx.DropConnectLinear):
+        # implementation missing
         pass
     return obj
 
