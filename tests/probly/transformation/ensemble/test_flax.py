@@ -2,22 +2,19 @@
 
 from __future__ import annotations
 
-import pytest
-import numpy as np
-import jax.numpy as jnp
+from typing import Protocol, cast
 
-from typing import Protocol, Set, cast
+import numpy as np
+import pytest
 
 from probly.transformation import ensemble
 from tests.probly.flax_utils import count_layers
 
+jax = pytest.importorskip("jax")
+from jax import numpy as jnp  # noqa: E402
+
 flax = pytest.importorskip("flax")
 from flax import nnx  # noqa: E402
-
-jax = pytest.importorskip("jax")
-import jax
-
-
 
 
 class TestNetworkStructure:
@@ -170,7 +167,7 @@ class TestParameters:
         for i in range(num_members - 1):
             # get all params
             memb_model1_params = jax.tree_util.tree_leaves(model[i])
-        
+
             # compare only weights, not biases
             assert jnp.array_equal(memb_model1_params[1], original_params[1])
             # compare only biases, not weights
@@ -188,7 +185,7 @@ class TestParameters:
         for i in range(num_members - 1):
             # get all params
             memb_model1_params = jax.tree_util.tree_leaves(model1[i])
-            memb_model2_params= jax.tree_util.tree_leaves(model2[i])
+            memb_model2_params = jax.tree_util.tree_leaves(model2[i])
 
             # compare only weights, not biases
             assert jnp.array_equal(memb_model1_params[1], memb_model2_params[1])
@@ -197,23 +194,22 @@ class TestParameters:
             # compare weights with original model weights to ensure they are different
             assert not jnp.array_equal(memb_model1_params[1], original_params[1])
 
-
     def test_parameters_conv_linear_network_no_reset(self, flax_conv_linear_model: nnx.Sequential) -> None:
         """Tests that parameters are the same when reset_params is False."""
         num_members = 3
         model = ensemble(flax_conv_linear_model, num_members=num_members, reset_params=False)
 
-       # get original parameters
+        # get original parameters
         original_params = jax.tree_util.tree_leaves(flax_conv_linear_model)
 
         for i in range(num_members - 1):
             # get all params
             memb_model1_params = jax.tree_util.tree_leaves(model[i])
-        
+
             # compare only weights, not biases
             assert jnp.array_equal(memb_model1_params[1], original_params[1])
             # compare only biases, not weights
-            assert jnp.array_equal( memb_model1_params[0], original_params[0])
+            assert jnp.array_equal(memb_model1_params[0], original_params[0])
 
     def test_parameters_conv_linear_network_with_reset(self, flax_conv_linear_model: nnx.Sequential) -> None:
         """Tests that parameters are the same."""
@@ -227,7 +223,7 @@ class TestParameters:
         for i in range(num_members - 1):
             # get all params
             memb_model1_params = jax.tree_util.tree_leaves(model1[i])
-            memb_model2_params= jax.tree_util.tree_leaves(model2[i])
+            memb_model2_params = jax.tree_util.tree_leaves(model2[i])
 
             # compare only weights, not biases
             assert jnp.array_equal(memb_model1_params[1], memb_model2_params[1])
@@ -247,12 +243,11 @@ class TestParameters:
         for i in range(num_members - 1):
             # get all params
             memb_model1_params = jax.tree_util.tree_leaves(model[i])
-        
+
             # compare only weights, not biases
             assert jnp.array_equal(memb_model1_params[1], original_params[1])
             # compare only biases, not weights
             assert jnp.array_equal(memb_model1_params[0], original_params[0])
-            
 
     def test_parameters_custom_network_with_reset(self, flax_custom_model: nnx.Module) -> None:
         """Tests that parameters are the the same."""
@@ -266,7 +261,7 @@ class TestParameters:
         for i in range(num_members - 1):
             # get all params
             memb_model1_params = jax.tree_util.tree_leaves(model1[i])
-            memb_model2_params= jax.tree_util.tree_leaves(model2[i])
+            memb_model2_params = jax.tree_util.tree_leaves(model2[i])
 
             # compare only weights, not biases
             assert jnp.array_equal(memb_model1_params[1], memb_model2_params[1])
@@ -275,15 +270,16 @@ class TestParameters:
             # compare weights with original model weights to ensure they are different
             assert not jnp.array_equal(memb_model1_params[1], original_params[1])
 
+
 class CallableModel(Protocol):
-    def __call__(self, x: jnp.ndarray, /) -> object: ...
+    def __call__(self, x: jnp.ndarray, /) -> nnx.Module: ...
 
 
 class ApplyModel(Protocol):
-    def apply(self, x: jnp.ndarray, /) -> object: ...
+    def apply(self, x: jnp.ndarray, /) -> nnx.Module: ...
 
 
-def _fwd(model: object, x: jnp.ndarray) -> object:
+def _fwd(model: nnx.Module, x: jnp.ndarray) -> nnx.Module:
     """Unified forward: try nnx (callable), then linen (.apply)."""
     nnx_err: Exception | None = None
     linen_err: Exception | None = None
@@ -305,7 +301,7 @@ def _fwd(model: object, x: jnp.ndarray) -> object:
     raise AssertionError(msg) from (linen_err or nnx_err or None)
 
 
-def _to_array_host(out: object) -> np.ndarray:
+def _to_array_host(out: nnx.Module) -> np.ndarray:
     """Normalize forward outputs to a host-side ndarray.
 
     Outside jit only:
@@ -340,7 +336,8 @@ def xbatch() -> jnp.ndarray:
 
 
 def test_returns_sequence_and_types(
-    flax_model_small_2d_2d: object, xbatch: jnp.ndarray,
+    flax_model_small_2d_2d: nnx.Module,
+    xbatch: jnp.ndarray,
 ) -> None:
     base = flax_model_small_2d_2d
     num = 3
@@ -349,7 +346,7 @@ def test_returns_sequence_and_types(
     assert isinstance(members, (list, tuple)), "Should return a sequence of members"
     assert len(members) == num
 
-    ids: Set[int] = set()
+    ids: set[int] = set()
     y_base = _to_array_host(_fwd(base, xbatch))  # type: ignore[arg-type]
     for i, m in enumerate(members):
         assert isinstance(m, type(base)), f"Member {i} has a different type from base"
@@ -357,11 +354,12 @@ def test_returns_sequence_and_types(
         y_i = _to_array_host(_fwd(m, xbatch))  # type: ignore[arg-type]
         assert y_i.shape == y_base.shape, "Output shape mismatch with base model"
 
-    assert len(ids) == num, "Members should be distinct objects (not same reference)"
+    assert len(ids) == num, "Members should be distinct nnx.Modules (not same reference)"
 
 
 def test_reset_params_false_outputs_identical(
-    flax_model_small_2d_2d: object, xbatch: jnp.ndarray,
+    flax_model_small_2d_2d: nnx.Module,
+    xbatch: jnp.ndarray,
 ) -> None:
     base = flax_model_small_2d_2d
     members = ensemble(base, num_members=4, reset_params=False)
@@ -372,7 +370,8 @@ def test_reset_params_false_outputs_identical(
 
 
 def test_reset_params_true_outputs_prefer_difference(
-    flax_model_small_2d_2d: object, xbatch: jnp.ndarray,
+    flax_model_small_2d_2d: nnx.Module,
+    xbatch: jnp.ndarray,
 ) -> None:
     base = flax_model_small_2d_2d
     members = ensemble(base, num_members=4, reset_params=True)
@@ -396,7 +395,8 @@ def test_reset_params_true_outputs_prefer_difference(
 
 
 def test_reset_params_true_is_deterministic_across_calls(
-    flax_model_small_2d_2d: object, xbatch: jnp.ndarray,
+    flax_model_small_2d_2d: nnx.Module,
+    xbatch: jnp.ndarray,
 ) -> None:
     base = flax_model_small_2d_2d
     num = 3
@@ -410,7 +410,8 @@ def test_reset_params_true_is_deterministic_across_calls(
 
 
 def test_member_forward_jit_consistency(
-    flax_model_small_2d_2d: object, xbatch: jnp.ndarray,
+    flax_model_small_2d_2d: nnx.Module,
+    xbatch: jnp.ndarray,
 ) -> None:
     members = ensemble(flax_model_small_2d_2d, num_members=2, reset_params=False)
     m0 = members[0]
