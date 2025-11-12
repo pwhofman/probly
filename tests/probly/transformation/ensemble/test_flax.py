@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-import jax
-import jax.numpy as jnp
 import pytest
 import numpy as np
+import jax.numpy as jnp
 
 from typing import Protocol, Set, cast
 
@@ -14,6 +13,11 @@ from tests.probly.flax_utils import count_layers
 
 flax = pytest.importorskip("flax")
 from flax import nnx  # noqa: E402
+
+jax = pytest.importorskip("jax")
+import jax
+
+
 
 
 class TestNetworkStructure:
