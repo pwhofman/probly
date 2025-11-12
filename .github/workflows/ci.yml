@@ -125,7 +125,7 @@ jobs:
                 run: uv run --no-sync pytest "tests/probly" --cov=probly --cov-report=xml
             -   name: Upload coverage to codecov
                 # Only upload coverage reports from the main repo and not from forks
-                if: ${{ github.repository == 'pwhofman/probly' && secrets.CODECOV_TOKEN != '' }}
+#                if: ${{ github.repository == 'pwhofman/probly' && secrets.CODECOV_TOKEN != '' }}
                 uses: codecov/codecov-action@v5
                 with:
                     token: ${{ secrets.CODECOV_TOKEN }}
