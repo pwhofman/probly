@@ -74,14 +74,14 @@ class TestNetworkArchitectures:
         assert count_conv_original == count_conv_modified
         assert count_sequential_original == count_sequential_modified
 
-        def test_custom_network_dropconnect(flax_custom_model: nnx.Module) -> None:
-            """Tests DropConnect in a custom flax neural network."""
-            p = 0.5
-            model = dropconnect(flax_custom_model, p)
+    def test_custom_network_dropconnect(flax_custom_model: nnx.Module) -> None:
+        """Tests DropConnect in a custom flax neural network."""
+        p = 0.5
+        model = dropconnect(flax_custom_model, p)
 
-            # check if model type is preserved
-            assert isinstance(model, type(flax_custom_model))
-            assert not isinstance(model, nnx.Sequential)
+        # check if model type is preserved
+        assert isinstance(model, type(flax_custom_model))
+        assert not isinstance(model, nnx.Sequential)
 
 
 class TestPValues:
