@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import pytest
 
+from probly.predictor import Predictor
+from probly.transformation import evidential_classification
+
 torch = pytest.importorskip("torch")
 from torch import Tensor, nn  # noqa: E402
 
@@ -104,3 +107,11 @@ def torch_custom_model() -> nn.Module:
             return x
 
     return TinyModel()
+
+
+@pytest.fixture
+def evidential_classification_model(
+    torch_conv_linear_model: nn.Module,
+) -> Predictor:
+    model: Predictor = evidential_classification(torch_conv_linear_model)
+    return model
