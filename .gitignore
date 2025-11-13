@@ -263,3 +263,6 @@ docs/source/api
 docs/source/api
 
 .vscode/settings.json
+
+# macOS
+.DS_Store
