@@ -83,7 +83,7 @@ def linkcode_resolve(domain: str, info: dict[str, str]) -> str | None:
         for part in info["fullname"].split("."):
             obj = getattr(obj, part)
         fn = inspect.getsourcefile(obj)
-        source, lineno = inspect.getsourcelines(obj)
+        _source, lineno = inspect.getsourcelines(obj)
         root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
         relpath = os.path.relpath(fn, start=root)
     except (ModuleNotFoundError, AttributeError, TypeError, OSError):
