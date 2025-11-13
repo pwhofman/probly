@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from probly.evaluation.tasks import out_of_distribution_detection, out_of_distribution_detection_aupr, selective_prediction
+from probly.evaluation.tasks import out_of_distribution_detection, selective_prediction
 
 
 def test_selective_prediction_shapes() -> None:
@@ -40,17 +40,3 @@ def test_out_of_distribution_detection_order() -> None:
     out_distribution = np.linspace(0, 1, 10) + 1
     auroc = out_of_distribution_detection(in_distribution, out_distribution)
     assert auroc == 0.995
-
-def test_out_of_distribution_detection_aupr_shape() -> None:
-    """Test that AUPR OOD detection returns a float."""
-    rng = np.random.default_rng()
-    aupr = out_of_distribution_detection_aupr(rng.random(10), rng.random(10))
-    assert isinstance(aupr, float)
-
-
-def test_out_of_distribution_detection_aupr_order() -> None:
-    """Test that AUPR OOD detection gives high score when OOD clearly differs from ID."""
-    in_distribution = np.linspace(0, 1, 10)
-    out_distribution = np.linspace(0, 1, 10) + 1  # clearly separated distributions
-    aupr = out_of_distribution_detection_aupr(in_distribution, out_distribution)
-    assert aupr > 0.99
