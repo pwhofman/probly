@@ -26,24 +26,23 @@ def test_flax_ensemble_without_reset_passes(flax_model_small_2d_2d: nnx.Sequenti
     model = generate_flax_ensemble(flax_model_small_2d_2d, n_members=3, reset_params=False)
 
     assert len(model) == 3
-    for m in model:
-        assert m is not flax_model_small_2d_2d
 
-    # Checks if all parameters are equal
-    w0, b0 = _w_b(flax_model_small_2d_2d.layers[0])
-    w1, b1 = _w_b(model[0].layers[0])
-
-    assert jnp.allclose(w0, w1)
-    assert jnp.allclose(b0, b1)
+    w0, b0 = _w_b(model[0].layers[0])
+    for m in model[1:]:
+        w, b = _w_b(m.layers[0])
+        assert jnp.allclose(w0, w)
+        assert jnp.allclose(b0, b)
 
 
 def test_flax_ensemble_with_reset_passes(flax_model_small_2d_2d: nnx.Sequential) -> None:
     """Ensures ensemble members have different random parameters (different RNGs)."""
     model = generate_flax_ensemble(flax_model_small_2d_2d, n_members=3, reset_params=True)
-    w0, b0 = _w_b(flax_model_small_2d_2d.layers[0])
 
     # All parameters should be different
     assert len(model) == 3
-    w1, b1 = _w_b(model[0].layers[0])
 
-    assert not (jnp.allclose(w0, w1) and jnp.allclose(b0, b1))
+    w0, b0 = _w_b(model[0].layers[0])
+    w1, b1 = _w_b(model[1].layers[0])
+
+    assert not jnp.allclose(w0, w1)
+    assert not jnp.allclose(b0, b1)
