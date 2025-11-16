@@ -190,3 +190,41 @@ The idea behind uncertainty transformations is simple.
 They modify the prediction behavior of a model so that uncertainty becomes visible.  
 probly then provides all tools needed to work with this uncertainty in a reliable and practical way.
 
+2.3 Uncertainty Quantification
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Once a model has an uncertainty representation, the next step is to measure  
+how uncertain the model actually is.  
+This step is called uncertainty quantification.
+
+Quantification turns the raw uncertainty information into numerical values  
+that describe how confident or uncertain the model is about each prediction.  
+These values make uncertainty easy to interpret and compare across different models  
+and different uncertainty methods.
+
+probly provides a unified set of tools for quantifying uncertainty.  
+This means users can switch between different uncertainty methods  
+without changing the way they compute uncertainty scores.
+
+Common examples of uncertainty quantities include:
+
+* epistemic uncertainty, which reflects what the model does not know  
+  for example because it has not seen similar data during training  
+* aleatoric uncertainty, which reflects noise or ambiguity in the data itself  
+* predictive entropy, which measures how spread out the predictions are  
+* mutual information, which separates model uncertainty from data uncertainty  
+
+These quantities help answer practical questions such as:
+
+* How confident is the model in this prediction  
+* Is this input outside the model’s training distribution  
+* Should the system rely on the model or ask for human input  
+
+probly makes uncertainty quantification simple and consistent.  
+Regardless of whether the model uses dropout, ensembles, evidential methods,  
+or any other transformation, the uncertainty representation produced by probly  
+can be passed directly into its quantification tools.
+
+The key idea is that quantification turns uncertainty into meaningful numbers  
+that can be used in evaluation, decision making, or downstream tasks.
+
