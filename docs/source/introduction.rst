@@ -114,5 +114,23 @@ without rewriting their entire code.
 Overall, probly gives users the building blocks needed to make machine learning models more  
 transparent, reliable, and informative by exposing how confident the model is in its predictions.
 
+2. Key Ideas Behind Probly
+------------------------------------------------------
 
+probly is built around a few central ideas that make uncertainty aware machine learning easier to use.  
+Instead of treating uncertainty as something separate or difficult, probly organizes the process into  
+clear steps that work together and build on one another.
+
+These ideas form the foundation of the entire library.  
+They help users understand how uncertainty is represented, how it is created,  
+and how it can be used to solve practical machine learning problems.
+
+The main ideas are:
+
+* Representations that describe uncertainty information  
+* Transformations that create uncertainty aware models  
+* Quantification tools that measure uncertainty  
+* Tasks that make use of uncertainty in real applications  
+
+The following sections explain each of these ideas in more detail.
 
