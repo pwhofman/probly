@@ -66,3 +66,25 @@ such as PyTorch, Flax JAX, and scikit learn.
 
 In short, machine learning models are often overconfident and probly is designed to make  
 their uncertainty explicit, comparable, and usable.
+
+1.2 Why Uncertainty Matters
+------------------------------------------------------
+
+In many real world situations, the correctness of a prediction is not the only thing that matters.  
+We also want to understand how confident the model is in its output.  
+A prediction with low confidence should be treated very differently from the same prediction made with high confidence.
+
+Uncertainty awareness is important for several reasons:
+
+* It helps detect inputs that are very different from the training data, which is useful for out of distribution detection.  
+* It allows systems to decide when a model should answer and when it should ask for human help.  
+* It supports safer and more transparent decision making in fields such as medicine, finance, and autonomous systems.  
+* It makes model behavior easier to interpret and debug by showing where the model is unsure.  
+
+When a model communicates its uncertainty, users and downstream systems can make more careful choices.  
+A low confidence prediction might trigger a safety mechanism, a manual review, or a fallback strategy.  
+A high confidence prediction might allow the system to act automatically.
+
+Without uncertainty information, a model can appear confident even when it is wrong.  
+With uncertainty awareness, the model becomes more reliable, more transparent, and more useful in real world applications.
+
