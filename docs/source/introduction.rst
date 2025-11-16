@@ -67,7 +67,7 @@ such as PyTorch, Flax JAX, and scikit learn.
 In short, machine learning models are often overconfident and probly is designed to make  
 their uncertainty explicit, comparable, and usable.
 
-1.2 Why Uncertainty Matters
+1.2 Why Uncertainty Matters?
 ------------------------------------------------------
 
 In many real world situations, the correctness of a prediction is not the only thing that matters.  
@@ -87,4 +87,32 @@ A high confidence prediction might allow the system to act automatically.
 
 Without uncertainty information, a model can appear confident even when it is wrong.  
 With uncertainty awareness, the model becomes more reliable, more transparent, and more useful in real world applications.
+
+1.3 What Probly Provides?
+------------------------------------------------------
+
+probly is designed to make uncertainty aware machine learning simple, practical, and consistent.  
+It provides a unified way to work with uncertainty so that users do not need to implement  
+multiple methods from scratch or worry about incompatible output formats.
+
+probly offers several core components:
+
+* Representations that describe uncertainty information in a clear and structured way  
+* Transformations that can turn standard models into uncertainty aware models with minimal changes  
+* Quantification tools that compute numerical measures of uncertainty  
+* Tasks that use uncertainty information for practical purposes such as out of distribution detection or selective prediction  
+
+A key idea behind probly is that users should not be forced to adopt one specific uncertainty method.  
+Different models and different applications may require different approaches.  
+probly provides a common interface so that these methods can be used and compared in a consistent manner.
+
+Another important advantage is that probly integrates with modern machine learning frameworks  
+such as PyTorch, Flax JAX, and scikit learn.  
+This means that users can keep their existing training pipelines and add uncertainty awareness on top of them  
+without rewriting their entire code.
+
+Overall, probly gives users the building blocks needed to make machine learning models more  
+transparent, reliable, and informative by exposing how confident the model is in its predictions.
+
+
 
