@@ -36,7 +36,7 @@ of it with a thin `probly` wrapper.
 ------------------------------------------------------
 
 Most machine–learning models today are **overconfident**.  
-They output a single prediction — a class label, a score, or a regression value —
+They output a single prediction. A class label, a score, or a regression value
 but they do **not** tell us *how uncertain* they are about that prediction.
 
 This becomes a problem in practical applications:
