@@ -162,3 +162,31 @@ and build systems that use uncertainty consistently.
 The key idea behind uncertainty representations is simple.  
 They capture how the model behaves when it is unsure,  
 and probly uses this representation as the base for all later steps.
+
+2.2 Uncertainty Transformations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+An uncertainty transformation changes how a model makes predictions so that it can express uncertainty.  
+Instead of building a new model from the beginning, the transformation wraps the existing model  
+and makes it produce uncertainty information in addition to normal outputs.
+
+Transformations are one of the core ideas in probly.  
+They let users add uncertainty to their models without rewriting the training process.  
+The model can be trained exactly as usual.  
+The transformation then controls how the model behaves during prediction.
+
+Common examples of uncertainty transformations include:
+
+* Using dropout during prediction to generate multiple different outputs  
+* Combining predictions from several independently trained models in an ensemble  
+* Adding evidential layers that output distribution parameters instead of single values  
+* Sampling from probabilistic or stochastic layers to produce a range of predictions  
+
+Even though each transformation works differently, probly treats all of them in a unified way.  
+The result of any transformation becomes a consistent uncertainty representation  
+that probly can analyze, quantify, and use for downstream tasks.
+
+The idea behind uncertainty transformations is simple.  
+They modify the prediction behavior of a model so that uncertainty becomes visible.  
+probly then provides all tools needed to work with this uncertainty in a reliable and practical way.
+
