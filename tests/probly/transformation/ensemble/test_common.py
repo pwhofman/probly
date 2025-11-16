@@ -24,7 +24,7 @@ def test_invalid_type() -> None:
         
 def test_invalid_members() -> None:
     """Test n_members is a valid type."""
-    n_members = 3.5
+    n_members = 3.6
     
     with pytest.raises(AssertionError):
         assert isinstance(int, type(n_members))
