@@ -4,10 +4,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from flax import nnx
-import jax
-from jax import Array
-import jax.numpy as jnp
+import pytest
+
+flax = pytest.importorskip("flax")
+from flax import nnx  # noqa: E402
+
+jax = pytest.importorskip("jax")
+from jax import Array  # noqa: E402
+import jax.numpy as jnp  # noqa: E402
 
 if TYPE_CHECKING:
     from collections.abc import Callable
