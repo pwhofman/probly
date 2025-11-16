@@ -5,12 +5,16 @@ from __future__ import annotations
 import importlib
 from typing import Any, cast
 
-from flax import nnx
-from jax import numpy as jnp
 import pytest
 
 from probly.layers.flax import Dense, DropConnectDense
 from probly.transformation.dropconnect import common as c, flax as flax_mod
+
+flax = pytest.importorskip("flax")
+from flax import nnx  # noqa: E402
+
+jax = pytest.importorskip("jax")
+from jax import numpy as jnp  # noqa: E402
 
 
 def test_nnx_register_calls_dropconnect_traverser_on_import(
