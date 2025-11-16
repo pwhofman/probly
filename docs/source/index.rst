@@ -52,6 +52,7 @@ Quickstart
    :caption: Content
    :hidden:
 
+   introduction
    methods
    references
 
