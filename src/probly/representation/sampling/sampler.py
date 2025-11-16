@@ -79,7 +79,6 @@ class Sampler[In, KwIn, Out](Representer[In, KwIn, Out]):
     def __init__(
         self,
         predictor: Predictor[In, KwIn, Out],
-        num_samples: int = 1,
         sampling_strategy: SamplingStrategy = "sequential",
         sample_factory: Callable[[Iterable[Out]], Sample[Out]] = create_sample,
     ) -> None:
@@ -87,21 +86,19 @@ class Sampler[In, KwIn, Out](Representer[In, KwIn, Out]):
 
         Args:
             predictor (Predictor[In, KwIn, Out]): The predictor to be used for sampling.
-            num_samples (int, optional): The number of samples to draw.
             sampling_strategy (SamplingStrategy, optional): How the samples should be computed.
             sample_factory (Callable[[Iterable[Out]], Sample[Out]], optional): Factory to create the sample.
         """
         super().__init__(predictor)
-        self.num_samples = num_samples
         self.sampling_strategy = sampling_strategy
         self.sample_factory = sample_factory
 
-    def sample(self, *args: In, **kwargs: Unpack[KwIn]) -> Sample[Out]:
+    def predict(self, *args: In, num_samples: int, **kwargs: Unpack[KwIn]) -> Sample[Out]:
         """Sample from the predictor for a given input."""
         return self.sample_factory(
             sampler_factory(
                 self.predictor,
-                num_samples=self.num_samples,
+                num_samples=num_samples,
                 strategy=self.sampling_strategy,
             )(*args, **kwargs),
         )
