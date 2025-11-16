@@ -28,4 +28,4 @@ def test_invalid_members() -> None:
     
     with pytest.raises(AssertionError):
         assert isinstance(int, type(n_members))
-        
+
