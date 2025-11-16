@@ -1,47 +1,87 @@
-"""flax layer implementations."""
+"""Flax layer implementations."""
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import jax
 from flax import nnx
+import jax
 
 if TYPE_CHECKING:
     from flax.nnx import rnglib
 
 
 class DropConnectDense(nnx.Module):
-    def __init__(self, base_layer: nnx.Linear, rngs: rnglib.Rngs, p: float = 0.25):
-        """Custom Linear layer with DropConnect applied to weights during training.
+    """Custom Linear layer with DropConnect applied to weights during training.
 
-        Attributes:
-            rngs:           flax.nnx.Rngs, The JAX RNG state abstraction.
-            in_features:    int, The number of input features for the layer.
-            out_features:   int, The number of output features for the layer.
-            p:              float, The probability of dropping an individual weight connection.
-            weight:         flax.nnx.Param, The weight matrix of the layer with shape `(out_features, in_features)`.
-            bias:           flax.nnx.Param | None, The bias vector of the layer, or None if it is not used.
+    This implementation follows the Flax nnx.Dropconnect design pattern.
+    """
+
+    def __init__(
+        self,
+        base_layer: nnx.Linear,
+        rate: float = 0.25,
+        *,
+        rng_collection: str = "dropout",
+        rngs: rnglib.Rngs | rnglib.RngStream | jax.Array | None = None,
+    ) -> None:
+        """Initialize DropConnectDense layer.
+
+        Args:
+            base_layer: The base Linear layer to apply DropConnect to.
+            rate: The probability of dropping an individual weight connection.
+            rng_collection: The RNG collection name for sampling randomness.
+            rngs: Optional RNG state. Can be Rngs, RngStream, or None.
         """
         self.rngs = rngs
+        self.rng_collection = rng_collection
         self.in_features = base_layer.kernel.shape[0]
         self.out_features = base_layer.kernel.shape[1]
-        self.p = p
-        self.weight = nnx.Param(base_layer.kernel.T)
-        if base_layer.use_bias:
-            self.bias = nnx.Param(base_layer.bias)
-        else:
-            self.bias = None
+        self.rate = rate
 
-    def __call__(self, x: jax.Array, *, deterministic: bool = False) -> jax.Array:
+        self.weight = base_layer.kernel.T
+        self.bias = base_layer.bias if base_layer.use_bias else None
+
+    def __call__(
+        self,
+        x: jax.Array,
+        *,
+        deterministic: bool = False,
+        rngs: rnglib.Rngs | rnglib.RngStream | jax.Array | None = None,
+    ) -> jax.Array:
+        """Apply DropConnect to the forward pass.
+
+        Args:
+            x: Input array.
+            deterministic: If True, disable dropout (use expected value).
+            rngs: Optional RNG state for this call. Overrides constructor rngs.
+
+        Returns:
+            Output array after applying DropConnect.
+        """
         if not deterministic:
-            key = self.rngs.dropout()
-            mask = jax.random.uniform(key, shape=self.weight.value.shape) > self.p
+            # Use call-time rngs if provided, otherwise fall back to constructor rngs
+            rng_source = rngs if rngs is not None else self.rngs
+
+            if rng_source is None:
+                msg = "RNGs must be provided either at construction or call time"
+                raise ValueError(msg)
+
+            # Get the appropriate key based on rng_source type
+            key = getattr(rng_source, self.rng_collection)() if isinstance(rng_source, nnx.Rngs) else rng_source
+
+            mask = jax.random.uniform(key, shape=self.weight.value.shape) > self.rate
             weight = self.weight.value * mask
         else:
-            weight = self.weight.value * (1.0 - self.p)
+            weight = self.weight.value * (1.0 - self.rate)
+
         y = x @ weight.T
         if self.bias is not None:
             y = y + self.bias.value
 
         return y
+
+    @property
+    def p(self) -> float:
+        """Backward compatibility."""
+        return self.rate
