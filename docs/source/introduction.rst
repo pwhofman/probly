@@ -134,3 +134,31 @@ The main ideas are:
 
 The following sections explain each of these ideas in more detail.
 
+2.1 Uncertainty Representations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+An uncertainty representation describes the information a model returns when it predicts with uncertainty.  
+Instead of giving a single output, the model provides additional information that shows how unsure it is.  
+This information can look different depending on the method, but probly provides one consistent way  
+to work with all of them.
+
+A representation is the structure that stores the uncertainty information.  
+It is the foundation that probly uses for everything that follows,  
+including quantification and downstream tasks.
+
+Different uncertainty methods create different types of representations.  
+Some examples include:
+
+* Multiple stochastic forward passes, which appear when using dropout  
+* Predictions from several independently trained models, which form an ensemble  
+* Parameters of a predictive distribution that come from evidential models  
+* Collections of outputs that describe a distribution of possible predictions  
+
+Each method creates uncertainty in its own way, but probly unifies them  
+so they can all be handled through a single interface.  
+This makes it easier to compare methods, switch between them,  
+and build systems that use uncertainty consistently.
+
+The key idea behind uncertainty representations is simple.  
+They capture how the model behaves when it is unsure,  
+and probly uses this representation as the base for all later steps.
