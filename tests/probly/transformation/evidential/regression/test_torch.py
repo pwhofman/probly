@@ -1,7 +1,8 @@
+from __future__ import annotations
+
 import importlib
 import sys
-import pytest
-import torch
+
 from torch import nn
 
 
@@ -10,16 +11,19 @@ def _fresh_import():
         "probly.transformation.evidential.regression.torch",
     ]:
         sys.modules.pop(k, None)
-    import probly.transformation.evidential.regression.common as common
+    from probly.transformation.evidential.regression import common
     import probly.transformation.evidential.regression.torch as mod
+
     importlib.reload(common)
     importlib.reload(mod)
     return common, mod
 
 
 def test_register_called_on_import():
-    import probly.transformation.evidential.regression.common as common
+    from probly.transformation.evidential.regression import common
+
     captured = {}
+
     def _capture(*args, **kwargs):
         if kwargs:
             captured["cls"] = kwargs.get("cls")
@@ -27,6 +31,7 @@ def test_register_called_on_import():
         else:
             captured["cls"] = args[0]
             captured["traverser"] = args[1]
+
     original = common.register
     try:
         common.register = _capture  # type: ignore[attr-defined]
@@ -40,6 +45,7 @@ def test_register_called_on_import():
 def test_replace_last_torch_nig_sets_flag_and_builds_layer_cpu():
     common, mod = _fresh_import()
     import probly.layers.torch as layers
+
     state = {}
     lin = nn.Linear(4, 1, bias=True).to("cpu")
     layer, new_state = mod.replace_last_torch_nig(lin, state)

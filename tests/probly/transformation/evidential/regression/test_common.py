@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import importlib
+
 import pytest
 
 
@@ -8,11 +11,13 @@ def _state_with(flag, value):
             if k is flag:
                 return value
             raise KeyError
+
     return _S()
 
 
 def test_register_attaches_skip_if_and_uses_global_flag():
-    import probly.transformation.evidential.regression.common as common
+    from probly.transformation.evidential.regression import common
+
     importlib.reload(common)
 
     captured = {}
@@ -23,7 +28,9 @@ def test_register_attaches_skip_if_and_uses_global_flag():
     original_register = common.evidential_regression_traverser.register
     try:
         common.evidential_regression_traverser.register = _capture_register  # type: ignore[attr-defined]
+
         class DummyCls: ...
+
         dummy_traverser = object()
         common.register(DummyCls, dummy_traverser)
     finally:
@@ -42,7 +49,8 @@ def test_register_attaches_skip_if_and_uses_global_flag():
 
 
 def test_evidential_regression_calls_traverse_with_expected_init_and_compose():
-    import probly.transformation.evidential.regression.common as common
+    from probly.transformation.evidential.regression import common
+
     importlib.reload(common)
 
     calls = {}
@@ -60,7 +68,9 @@ def test_evidential_regression_calls_traverse_with_expected_init_and_compose():
     try:
         common.nn_compose = fake_nn_compose
         common.traverse = fake_traverse
+
         class BasePredictor: ...
+
         base = BasePredictor()
         result = common.evidential_regression(base)
     finally:
@@ -78,7 +88,8 @@ def test_evidential_regression_calls_traverse_with_expected_init_and_compose():
 
 @pytest.mark.parametrize("flag_value", [True, False])
 def test_skip_logic_via_flag_end_to_end(flag_value):
-    import probly.transformation.evidential.regression.common as common
+    from probly.transformation.evidential.regression import common
+
     importlib.reload(common)
 
     captured = {}

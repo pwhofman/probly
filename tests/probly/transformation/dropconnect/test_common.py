@@ -26,8 +26,7 @@ def test_dropconnect_preserves_forward_shape(
 def test_at_least_one_replacement_happens_when_possible(
     torch_model_small_2d_2d: nn.Sequential,
 ) -> None:
-    """
-    If a model contains ≥2 Linear layers and starts with Linear,
+    """If a model contains ≥2 Linear layers and starts with Linear,
     at least one Linear should be replaced by DropConnectLinear.
     """
     model = dropconnect(torch_model_small_2d_2d, p=0.5)

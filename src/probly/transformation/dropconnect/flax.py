@@ -11,8 +11,7 @@ from .common import register
 
 def replace_flax_dropconnect(obj: nnx.Linear, p: float) -> DropConnectDense:
     """Replace a given layer by a DropConnectDense layer."""
-    rngs = nnx.Rngs(0)
-    return DropConnectDense(obj, rate=p, rngs=rngs)
+    return DropConnectDense(obj, rate=p)
 
 
 register(nnx.Linear, replace_flax_dropconnect)

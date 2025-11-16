@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import pytest
+
 from tests.probly.torch_utils import count_layers
 
 # lazily skip if torch isn't available in the environment
@@ -21,10 +22,10 @@ class TestNetworkArchitectures:
     """Structure tests for different network architectures with DropConnect."""
 
     def test_linear_network_starts_with_linear(
-        self, torch_model_small_2d_2d: nn.Sequential
+        self,
+        torch_model_small_2d_2d: nn.Sequential,
     ) -> None:
-        """
-        If the network's first layer is Linear, DropConnect should *skip the first layer*
+        """If the network's first layer is Linear, DropConnect should *skip the first layer*
         and replace all subsequent Linear layers with DropConnectLinear.
         """
         p = 0.5
@@ -49,10 +50,10 @@ class TestNetworkArchitectures:
         assert seq_orig == seq_mod
 
     def test_conv_then_linear_network(
-        self, torch_conv_linear_model: nn.Sequential
+        self,
+        torch_conv_linear_model: nn.Sequential,
     ) -> None:
-        """
-        If the first layer is NOT Linear (e.g., Conv2d), *all* Linear layers
+        """If the first layer is NOT Linear (e.g., Conv2d), *all* Linear layers
         should be replaced by DropConnectLinear.
         """
         p = 0.5
@@ -89,7 +90,8 @@ class TestPValues:
     """Verify that the probability p is propagated into DropConnect layers."""
 
     def test_p_value_in_linear_first_model(
-        self, torch_model_small_2d_2d: nn.Sequential
+        self,
+        torch_model_small_2d_2d: nn.Sequential,
     ) -> None:
         p = 0.3
         model = dropconnect(torch_model_small_2d_2d, p)
