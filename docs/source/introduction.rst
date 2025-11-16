@@ -33,7 +33,7 @@ scikit-learn. You can keep your usual training code and add uncertainty on top
 of it with a thin `probly` wrapper.
 
 1.1 The Problem: Overconfident Machine Learning Models
-------------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Most machine learning models today are overconfident.  
 They output a single prediction such as a class label, a score, or a regression value,  
@@ -68,7 +68,7 @@ In short, machine learning models are often overconfident and probly is designed
 their uncertainty explicit, comparable, and usable.
 
 1.2 Why Uncertainty Matters?
-------------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In many real world situations, the correctness of a prediction is not the only thing that matters.  
 We also want to understand how confident the model is in its output.  
@@ -89,7 +89,7 @@ Without uncertainty information, a model can appear confident even when it is wr
 With uncertainty awareness, the model becomes more reliable, more transparent, and more useful in real world applications.
 
 1.3 What Probly Provides?
-------------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 probly is designed to make uncertainty aware machine learning simple, practical, and consistent.  
 It provides a unified way to work with uncertainty so that users do not need to implement  
