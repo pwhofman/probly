@@ -228,3 +228,42 @@ can be passed directly into its quantification tools.
 The key idea is that quantification turns uncertainty into meaningful numbers  
 that can be used in evaluation, decision making, or downstream tasks.
 
+2.4 Downstream Tasks
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Once a model has an uncertainty representation and the uncertainty  
+has been quantified, this information can be used to perform  
+important downstream tasks.  
+These tasks help make machine learning systems safer, more reliable,  
+and more interpretable in real applications.
+
+probly provides built in tools for several common downstream tasks.  
+Because all uncertainty methods in probly share the same unified  
+representation, these tasks work the same way no matter which  
+uncertainty method is used.
+
+Examples of downstream tasks include:
+
+* out of distribution detection, where uncertainty is used to decide  
+  whether an input is very different from the training data  
+* selective prediction, where the model abstains from a prediction  
+  if uncertainty is too high  
+* calibration evaluation, which measures how well predicted  
+  probabilities match reality  
+* risk based decision making, where predictions are combined  
+  with uncertainty to take safer actions  
+
+These tasks are essential for deploying machine learning models  
+in environments where mistakes are costly or where the system should  
+recognize when it does not know enough.
+
+probly makes it easy to apply these tasks by providing simple functions  
+that operate directly on the uncertainty representations and  
+quantification results.  
+This allows users to evaluate and improve model reliability  
+without rewriting their training or inference pipelines.
+
+In summary, downstream tasks use the uncertainty information  
+provided by probly to make models not only accurate but also safe,  
+transparent, and reliable.
+
