@@ -32,7 +32,12 @@ def test_register_calls_bayesian_traverser_register(monkeypatch: pytest.MonkeyPa
 
     # everytime the register method of our bayesian_traverser is called, we monkeypatch
     # it to replace it with our fake_register
-    monkeypatch.setattr(c.bayesian_traverser, "register", fake_register, raising=True)
+    monkeypatch.setattr(
+        c.bayesian_traverser,
+        "register",
+        fake_register,
+        raising=True,
+    )
 
     # fake layer
     class DummyLayer:
@@ -43,12 +48,17 @@ def test_register_calls_bayesian_traverser_register(monkeypatch: pytest.MonkeyPa
     c.register(DummyLayer, cast(Any, dummy))
 
     # dict to save all attributes of our "register method"
-    vars_dict = called["vars"] if isinstance(called["vars"], dict) else {}
+    vars_dict = cast(dict[str, object], called["vars"])
 
     # checks if register call called the right values
     assert called["cls"] is DummyLayer
     assert called["traverser"] is dummy
-    assert set(vars_dict.keys()) == {"use_base_weights", "posterior_std", "prior_mean", "prior_std"}
+    assert set(vars_dict.keys()) == {
+        "use_base_weights",
+        "posterior_std",
+        "prior_mean",
+        "prior_std",
+    }
     assert vars_dict["use_base_weights"] is c.USE_BASE_WEIGHTS
     assert vars_dict["posterior_std"] is c.POSTERIOR_STD
     assert vars_dict["prior_mean"] is c.PRIOR_MEAN
@@ -61,53 +71,78 @@ class FakePredictor:
 
 def test_bayesian_uses_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
     """Patch traverse call so output always matches expected dummy."""
-    composed_dummy = object()
 
-    def fake_compose(arg: object) -> object:
-        assert arg is c.bayesian_traverser
-        return composed_dummy
+    class AlwaysMatchTraverser:
+        def match(self, *args: object, **kwargs: object) -> bool:  # noqa: ARG002
+            return True
 
+    dummy_traverser = AlwaysMatchTraverser()
     # everytime nn_compose is called, we call our fake_compose instead
-    monkeypatch.setattr("probly.traverse_nn.nn_compose", fake_compose, raising=True)
+    monkeypatch.setattr(
+        c,
+        "nn_compose",
+        lambda _: dummy_traverser,
+        raising=True,
+    )
 
     # function needs return, so we create a dumy for return_value, but saving all values of the method in "called2"
-    called2: dict[str, object] = {}
+    called: dict[str, object] = {}
     return_traverse = object()
 
-    def fake_traverse(base: object, composed: object, *args: object, **kwargs: object) -> object:
-        called2["base"] = base
-        called2["nn_compose"] = composed
-        called2["init"] = kwargs.get("init") or (args[2] if len(args) > 2 else {})
+    def fake_traverse(base: object, composed: object, *args: object, **kwargs: object) -> object:  # noqa: ARG001
+        assert "init" in kwargs, "init dic must always be passed"
+        called["base"] = base
+        called["nn_compose"] = composed
+        called["init"] = kwargs["init"]
         return return_traverse
 
     # everytime the travers-method is called, we waant to call our fake_traverse instead
-    monkeypatch.setattr("pytraverse.traverse", fake_traverse, raising=True)
+    monkeypatch.setattr(
+        c,
+        "traverse",
+        fake_traverse,
+        raising=True,
+    )
 
     base = FakePredictor()
     output = c.bayesian(base)  # type: ignore[type-var]
 
     # the fake_traverse always returns the same dummy object
-    assert output in {return_traverse, base}
-    assert called2.get("base", base) is base
-    assert called2.get("nn_compose", composed_dummy) is composed_dummy
+    assert output is return_traverse
+    assert called["base"] is base
+    assert called["nn_compose"] is dummy_traverser
 
-    init = cast(dict[object, object], called2.get("init", {}))
-    assert init.get(c.USE_BASE_WEIGHTS) in {False, c.USE_BASE_WEIGHTS.default, None}
-    assert init.get(c.POSTERIOR_STD) in {0.05, c.POSTERIOR_STD.default, None}
-    assert init.get(c.PRIOR_MEAN) in {0.0, c.PRIOR_MEAN.default, None}
-    assert init.get(c.PRIOR_STD) in {1.0, c.PRIOR_STD.default, None}
+    init = cast(dict[object, object], called["init"])
+    assert init[c.USE_BASE_WEIGHTS] == c.USE_BASE_WEIGHTS.default
+    assert init[c.POSTERIOR_STD] == c.POSTERIOR_STD.default
+    assert init[c.PRIOR_MEAN] == c.PRIOR_MEAN.default
+    assert init[c.PRIOR_STD] == c.PRIOR_STD.default
 
 
 def test_bayesian_override(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Adapt to code not returning init dict."""
-    monkeypatch.setattr("probly.traverse_nn.nn_compose", lambda x: x, raising=True)
-    called3: dict[str, object] = {}
+    """Check override values are forwarded exactly."""
+    # nn_compose soll einfach den Traverser zurückgeben
+    monkeypatch.setattr(
+        c,
+        "nn_compose",
+        lambda t: t,
+        raising=True,
+    )
 
-    def fake_traverse(_: object, __: object, *args: object, **kwargs: object) -> object:
-        called3["init"] = kwargs.get("init") or (args[2] if len(args) > 2 else {})
+    called: dict[str, object] = {}
+
+    # Fake traverse, fängt init-Dict ab
+    def fake_traverse(base: object, composed: object, *args: object, **kwargs: object) -> object:  # noqa: ARG001
+        assert "init" in kwargs, "init dict must always exist"
+        called["init"] = kwargs["init"]
         return object()
 
-    monkeypatch.setattr("pytraverse.traverse", fake_traverse, raising=True)
+    monkeypatch.setattr(
+        c,
+        "traverse",
+        fake_traverse,
+        raising=True,
+    )
 
     base = FakePredictor()
     _ = c.bayesian(
@@ -118,9 +153,12 @@ def test_bayesian_override(monkeypatch: pytest.MonkeyPatch) -> None:
         prior_std=1.8,
     )  # type: ignore[type-var]
 
-    init = cast(dict[object, object], called3.get("init", {}))
-    assert isinstance(init, dict)
-    assert init.get(c.USE_BASE_WEIGHTS) in {True, c.USE_BASE_WEIGHTS.default, None}
-    assert init.get(c.POSTERIOR_STD) in {0.4, c.POSTERIOR_STD.default, None}
-    assert init.get(c.PRIOR_MEAN) in {0.5, c.PRIOR_MEAN.default, None}
-    assert init.get(c.PRIOR_STD) in {1.8, c.PRIOR_STD.default, None}
+    # init dict muss existieren
+    assert "init" in called
+    init = cast(dict[object, object], called["init"])
+
+    # EXAKT erwartete Werte
+    assert init[c.USE_BASE_WEIGHTS] is True
+    assert init[c.POSTERIOR_STD] == 0.4
+    assert init[c.PRIOR_MEAN] == 0.5
+    assert init[c.PRIOR_STD] == 1.8
