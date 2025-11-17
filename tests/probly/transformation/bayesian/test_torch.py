@@ -7,6 +7,7 @@ from typing import Any
 import pytest
 from torch import nn
 
+from probly.layers.torch import BayesConv2d, BayesLinear
 from probly.transformation.bayesian import common, torch as t
 
 
@@ -33,59 +34,43 @@ def test_if_register_is_called_on_import(monkeypatch: pytest.MonkeyPatch) -> Non
     assert nn.Conv2d in called2
 
 
-def test_if_replace_torch_bayesian_linear_works(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_if_replace_torch_bayesian_linear_works(torch_model_small_2d_2d: nn.Sequential) -> None:
     """Ensure replace_torch_bayesian_linear correctly wraps nn.Linear."""
-    called: dict[str, Any] = {}
+    # switch the layers from linear to bayesian within our model and save the bayesian ones in bayesmodel_arr
+    bayesmodel_arr = nn.Sequential()
+    for i in range(len(torch_model_small_2d_2d)):
+        if isinstance(torch_model_small_2d_2d[i], nn.Linear):
+            bayesmodel_arr.append(
+                t.replace_torch_bayesian_linear(
+                    torch_model_small_2d_2d[i],
+                    True,
+                    0.5,
+                    1.3,
+                    0.4,
+                ),
+            )
 
-    class FakeBayesLinear:
-        def __init__(
-            self,
-            obj: nn.Linear,
-            use_base_weights: bool,
-            posterior_std: float,
-            prior_mean: float,
-            prior_std: float,
-        ) -> None:
-            called.update(locals())
-
-    # Replace BayesLinear with fake version
-    monkeypatch.setattr(t, "BayesLinear", FakeBayesLinear)
-
-    base = nn.Linear(5, 3)
-    result = t.replace_torch_bayesian_linear(base, True, 0.3, 0.1, 0.2)
-
-    assert isinstance(result, FakeBayesLinear)
-    assert called["obj"] is base
-    assert called["use_base_weights"] is True
-    assert called["posterior_std"] == 0.3
-    assert called["prior_mean"] == 0.1
-    assert called["prior_std"] == 0.2
+    for module in range(len(torch_model_small_2d_2d)):
+        if isinstance(module, nn.Linear):
+            assert isinstance(bayesmodel_arr[i], BayesLinear)
 
 
-def test_if_replace_torch_bayesian_conv2d_works(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_if_replace_torch_bayesian_conv2d_works(torch_conv_linear_model: nn.Sequential) -> None:
     """Ensure replace_torch_bayesian_conv2d correctly wraps nn.Conv2d."""
-    called: dict[str, Any] = {}
+    # switch the layers from conv2d to bayesian within our model and save the bayesian ones in bayesmodel_arr
+    bayesmodel_arr = nn.Sequential()
+    for i in range(len(torch_conv_linear_model)):
+        if isinstance(torch_conv_linear_model[i], nn.Conv2d):
+            bayesmodel_arr.append(
+                t.replace_torch_bayesian_conv2d(
+                    torch_conv_linear_model[i],
+                    True,
+                    0.5,
+                    1.3,
+                    0.4,
+                ),
+            )
 
-    class FakeBayesConv2d:
-        def __init__(
-            self,
-            obj: nn.Conv2d,
-            use_base_weights: bool,
-            posterior_std: float,
-            prior_mean: float,
-            prior_std: float,
-        ) -> None:
-            called.update(locals())
-
-    # Replace BayesConv2d with fake version
-    monkeypatch.setattr(t, "BayesConv2d", FakeBayesConv2d)
-
-    base = nn.Conv2d(5, 3, 3)
-    result = t.replace_torch_bayesian_conv2d(base, True, 0.3, 0.1, 0.2)
-
-    assert isinstance(result, FakeBayesConv2d)
-    assert called["obj"] is base
-    assert called["use_base_weights"] is True
-    assert called["posterior_std"] == 0.3
-    assert called["prior_mean"] == 0.1
-    assert called["prior_std"] == 0.2
+    for module in range(len(torch_conv_linear_model)):
+        if isinstance(module, nn.Conv2d):
+            assert isinstance(bayesmodel_arr[i], BayesConv2d)
