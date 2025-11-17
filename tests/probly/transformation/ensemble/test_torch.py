@@ -6,8 +6,9 @@ import pytest
 
 from probly.transformation import ensemble
 
-torch = pytest.importorskip("torch")
-from torch import nn  # noqa: E402
+pytest.importorskip("torch")
+import torch
+from torch import nn
 
 
 class TestGenerateTorchEnsemble:
@@ -17,7 +18,7 @@ class TestGenerateTorchEnsemble:
         original_model = torch_model_small_2d_2d
         n = 3
 
-        new_models = ensemble(original_model, n_members=n)
+        new_models = ensemble(original_model, num_members=n)
 
         # checks if it is a modulelist
         assert isinstance(new_models, nn.ModuleList)
@@ -28,7 +29,7 @@ class TestGenerateTorchEnsemble:
     def test_generate_torch_ensemble_creates_zero_models(self, torch_model_small_2d_2d: nn.Sequential) -> None:
         """n_members=0 should return an empty ModuleList."""
         original_model = torch_model_small_2d_2d
-        new_models = ensemble(original_model, n_members=0)
+        new_models = ensemble(original_model, num_members=0)
 
         assert isinstance(new_models, nn.ModuleList)
         assert len(new_models) == 0  # should be empty
@@ -37,7 +38,7 @@ class TestGenerateTorchEnsemble:
         """Ensure ensemble members are different objects."""
         original_model = torch_model_small_2d_2d
 
-        new_models = ensemble(original_model, n_members=2)
+        new_models = ensemble(original_model, num_members=2)
         a, b = new_models
 
         # different objects
@@ -49,7 +50,7 @@ class TestGenerateTorchEnsemble:
         """Parameter tensors must not share storage."""
         original_model = torch_model_small_2d_2d
 
-        new_models = ensemble(original_model, n_members=2)
+        new_models = ensemble(original_model, num_members=2)
         a, b = new_models
 
         # between members
@@ -63,7 +64,7 @@ class TestGenerateTorchEnsemble:
     def test_mutating_one_member_does_not_affect_the_other(self, torch_model_small_2d_2d: nn.Sequential) -> None:
         """Changing parameters in one member must not change parameters in another member."""
         original_model = torch_model_small_2d_2d
-        new_models = ensemble(original_model, n_members=2)
+        new_models = ensemble(original_model, num_members=2)
         a, b = new_models
         b_first_before = next(b.parameters()).detach().clone()
 
@@ -71,3 +72,94 @@ class TestGenerateTorchEnsemble:
             next(a.parameters()).add_(1.2345)
 
         assert torch.allclose(b_first_before, next(b.parameters()).detach())
+
+    def test_forward_passes_shape(self, torch_model_small_2d_2d: nn.Sequential) -> None:
+        """Ensure that the ensemble forward pass produces outputs of expected shape."""
+        original_model = torch_model_small_2d_2d
+        n_members = 4
+        batch_size = 5
+        input_dim = 2
+
+        new_models = ensemble(original_model, num_members=n_members)
+
+        # Create a dummy input
+        dummy_input = torch.randn(batch_size, input_dim)
+
+        # Collect outputs from each ensemble member
+        outputs = [model(dummy_input) for model in new_models]
+
+        # Check that each output has the correct shape
+        for output in outputs:
+            assert output.shape == (batch_size, 2)  # Assuming original model output dim is 2
+
+    def test_output_types(self, torch_model_small_2d_2d: nn.Sequential) -> None:
+        """Ensure that the outputs of ensemble members are tensors."""
+        original_model = torch_model_small_2d_2d
+        n_members = 3
+        batch_size = 4
+        input_dim = 2
+
+        new_models = ensemble(original_model, num_members=n_members)
+
+        # Create a dummy input
+        dummy_input = torch.randn(batch_size, input_dim)
+
+        # Collect outputs from each ensemble member
+        outputs = [model(dummy_input) for model in new_models]
+
+        # Check that each output is a tensor
+        for output in outputs:
+            assert isinstance(output, torch.Tensor)
+
+    def test_no_params_uses_original_params(self) -> None:
+        """If the model has no parameters, ensure the ensemble members are still created correctly."""
+
+        class NoParamModel(nn.Module):
+            def forward(self, x: torch.Tensor) -> torch.Tensor:
+                return x * 2
+
+        original_model = NoParamModel()
+        n_members = 3
+        batch_size = 4
+        input_dim = 2
+
+        new_models = ensemble(original_model, num_members=n_members)
+
+        # Create a dummy input
+        dummy_input = torch.randn(batch_size, input_dim)
+
+        # Collect outputs from each ensemble member
+        outputs = [model(dummy_input) for model in new_models]
+
+        # Check that each output is correct
+        for output in outputs:
+            assert torch.allclose(output, dummy_input * 2)
+
+    def test_no_reset_params_preserves_values(self, torch_model_small_2d_2d: nn.Sequential) -> None:
+        """Ensure that with reset_params=False.
+
+        The parameter values of the original are preserved and outputs are identical
+        .
+        """
+        original_model = torch_model_small_2d_2d
+
+        # 1. Speichere den Wert des ersten Parameters des Originals.
+        original_param_value = next(original_model.parameters()).detach().clone()
+
+        # Ensemble erstellen mit reset_params=False
+        new_models = ensemble(original_model, num_members=2, reset_params=False)
+        a, b = new_models
+
+        # 2. Parameterwerte prüfen: Müssen mit dem Original übereinstimmen.
+        param_a = next(a.parameters()).detach()
+        assert torch.allclose(
+            original_param_value,
+            param_a,
+        ), "Parameter should have the same values as the original with reset_params=False."
+
+        # 3. Output prüfen: Outputs müssen identisch sein.
+        dummy_input = torch.randn(4, 2)
+        output_a = a(dummy_input)
+        output_b = b(dummy_input)
+
+        assert torch.allclose(output_a, output_b), "Outputs must be identical, when parameters are not reset."

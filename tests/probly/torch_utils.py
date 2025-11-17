@@ -6,7 +6,15 @@ import pytest
 
 torch = pytest.importorskip("torch")
 
-from torch import nn  # noqa: E402
+from torch import Tensor, nn  # noqa: E402
+
+
+def validate_loss(loss: Tensor) -> None:
+    assert isinstance(loss, Tensor)
+    assert loss.dim() == 0
+    assert not torch.isnan(loss)
+    assert not torch.isinf(loss)
+    assert loss.item() >= 0
 
 
 def count_layers(model: nn.Module, layer_type: type[nn.Module]) -> int:
