@@ -52,6 +52,7 @@ Quickstart
    :caption: Content
    :hidden:
 
+   user_guide
    methods
    references
 
