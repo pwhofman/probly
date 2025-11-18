@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Literal, Protocol, Self, TypedDict, Unpack
+from typing import TYPE_CHECKING, Any, Literal, Protocol, Self, TypedDict, Unpack, override
 
 import numpy as np
 
@@ -82,10 +82,9 @@ class Sample[T](ABC):
         """Return the number of samples."""
         return sum(1 for _ in self.samples)
 
-    @abstractmethod
-    def concat(self, other: Self) -> Self:
+    def concat(self, other: Sample[T]) -> Self:
         """Append another sample to this sample."""
-        ...
+        return type(self).from_iterable(samples=(sample for s in (self, other) for sample in s.samples))
 
     def sample_mean(self) -> T:
         """Compute the mean of the sample."""
@@ -138,18 +137,31 @@ class ListSample[T](list[T], Sample[T]):
         return type(self)(self + list(other.samples))
 
 
-create_sample = lazydispatch[type[Sample], Sample](ListSample, dispatch_on=lambda s: s[0])
+create_sample = lazydispatch[SampleFactory, Sample](ListSample.from_iterable, dispatch_on=lambda s: s[0])
 
-Numeric = np.number | np.ndarray | float | int
+type Numeric = np.number | np.ndarray | float | int
+
+STRUCTURE_PRESERVING_NP_FUNCTIONS = {
+    np.argmax,
+    np.argmin,
+    np.argsort,
+}
 
 
-@create_sample.register(Numeric)
 @dataclass(frozen=True, slots=True, weakref_slot=True)
 class ArraySample[T: Numeric](Sample[T], np.lib.mixins.NDArrayOperatorsMixin):
     """A sample of predictions stored in a numpy array."""
 
     array: np.ndarray
     sample_dim: int
+
+    def __post_init__(self) -> None:
+        """Validate the sample_dim."""
+        if self.sample_dim >= self.array.ndim:
+            msg = f"sample_dim {self.sample_dim} out of bounds for array with ndim {self.array.ndim}."
+            raise ValueError(msg)
+        if self.sample_dim < 0:
+            super().__setattr__("sample_dim", self.array.ndim + self.sample_dim)
 
     @classmethod
     def from_iterable(cls, samples: Iterable[T], sample_dim: SampleDim = "auto", dtype: DTypeLike = None) -> Self:
@@ -182,7 +194,7 @@ class ArraySample[T: Numeric](Sample[T], np.lib.mixins.NDArrayOperatorsMixin):
                     raise ValueError(msg)
                 first_sample = samples[0]
                 sample_dim = (0 if first_sample.ndim == 0 else 1) if isinstance(first_sample, np.ndarray) else 0
-            samples = np.stack(samples, axis=sample_dim)
+            samples = np.stack(samples, axis=sample_dim, dtype=dtype)
 
         return cls(array=samples, sample_dim=sample_dim)
 
@@ -198,6 +210,23 @@ class ArraySample[T: Numeric](Sample[T], np.lib.mixins.NDArrayOperatorsMixin):
         """Compute the variance of the sample."""
         return self.array.var(axis=self.sample_dim, ddof=ddof)  # type: ignore[no-any-return]
 
+    @override
+    @classmethod
+    def from_sample(cls, sample: Sample[T], sample_dim: SampleDim = "auto", dtype: DTypeLike = None) -> Self:
+        if isinstance(sample, ArraySample):
+            sample_array = sample.array
+
+            if dtype is not None:
+                sample_array = sample_array.astype(dtype)
+
+            in_sample_dim = sample.sample_dim
+            if sample_dim not in ("auto", in_sample_dim):
+                sample_array = np.moveaxis(sample_array, in_sample_dim, sample_dim)  # type: ignore[arg-type]
+                in_sample_dim = sample_dim  # type: ignore[assignment]
+            return cls(array=sample_array, sample_dim=in_sample_dim)
+
+        return cls.from_iterable(sample.samples, sample_dim=sample_dim, dtype=dtype)
+
     @property
     def samples(self) -> np.ndarray:
         """Return an iterator over the samples."""
@@ -205,9 +234,32 @@ class ArraySample[T: Numeric](Sample[T], np.lib.mixins.NDArrayOperatorsMixin):
             return self.array
         return np.moveaxis(self.array, self.sample_dim, 0)
 
+    @override
+    def concat(self, other: Sample[T]) -> Self:
+        if isinstance(other, ArraySample):
+            other_array = np.moveaxis(other.array, other.sample_dim, self.sample_dim)
+        else:
+            other_array = np.stack(list(other.samples), axis=self.sample_dim, dtype=self.array.dtype)
+
+        concatenated = np.concatenate((self.array, other_array), axis=self.sample_dim)
+
+        return type(self)(array=concatenated, sample_dim=self.sample_dim)
+
     def __len__(self) -> int:
         """Return the len of the array."""
         return len(self.array)
+
+    def move_sample_dim(self, new_sample_dim: int) -> ArraySample[T]:
+        """Return a new ArraySample with the sample dimension moved to new_sample_dim.
+
+        Args:
+            new_sample_dim: The new sample dimension.
+
+        Returns:
+            A new ArraySample with the sample dimension moved.
+        """
+        moved_array = np.moveaxis(self.array, self.sample_dim, new_sample_dim)
+        return type(self)(array=moved_array, sample_dim=new_sample_dim)
 
     @property
     def sample_size(self) -> int:
@@ -229,11 +281,7 @@ class ArraySample[T: Numeric](Sample[T], np.lib.mixins.NDArrayOperatorsMixin):
 
         return np.asarray(self.array, dtype=dtype, copy=copy)
 
-    def __repr__(self) -> str:
-        """Return the string representation of the sample."""
-        return f"ArraySample(size={len(self)}, {self.array!r})"
-
-    def __array_ufunc__(self, ufunc: np.ufunc, method: str, *inputs: Any, **kwargs: Any) -> ArraySample:  # noqa: ANN401
+    def __array_ufunc__(self, ufunc: np.ufunc, method: str, *inputs: Any, **kwargs: Any) -> Any:  # noqa: ANN401
         """Handle numpy ufuncs.
 
         Args:
@@ -246,10 +294,68 @@ class ArraySample[T: Numeric](Sample[T], np.lib.mixins.NDArrayOperatorsMixin):
             The result of applying the ufunc.
         """
         arrays = [x.array if isinstance(x, ArraySample) else x for x in inputs]
+
+        if method in ("__call__", "reduce", "reduceat", "accumulate") and "out" in kwargs:
+            outs = kwargs["out"]
+            if outs is not None:
+                if not isinstance(outs, tuple):
+                    outs = (outs,)
+                cast_outs = tuple(o.array if isinstance(o, ArraySample) else o for o in outs)
+                kwargs["out"] = cast_outs
+        else:
+            outs = None
+
         result = getattr(ufunc, method)(*arrays, **kwargs)
+
+        if method in {"reduce", "reduceat", "accumulate"}:
+            axis: int | tuple[int] = kwargs.get("axis", 0)
+            keepdims: bool = kwargs.get("keepdims", False)
+            if (method != "reduce" or not keepdims) and (
+                axis == self.sample_dim or (isinstance(axis, tuple) and self.sample_dim in axis)
+            ):
+                return result
+        elif method in ("at", "outer"):
+            return result
+
+        if outs is not None:
+            if len(outs) == 1:
+                return outs[0]
+            return outs
+
         if isinstance(result, np.ndarray):
-            return type(self)(list(result), sample_dim=self.sample_dim)
+            return type(self)(result, sample_dim=self.sample_dim)
         return result
+
+    def __array_function__(
+        self,
+        func: Callable,
+        types: tuple[type[Any], ...],
+        args: tuple[Any, ...],
+        kwargs: dict[str, Any],
+    ) -> Any:  # noqa: ANN401
+        """Handle numpy array functions.
+
+        Args:
+            func: The numpy function to apply.
+            types: The types of the input arguments.
+            args: The input arguments.
+            kwargs: Additional keyword arguments.
+
+        Returns:
+            The result of applying the numpy function.
+        """
+        return func._implementation(*args, **kwargs)  # type: ignore[attr-defined]  # noqa: SLF001
+
+    def copy(self) -> ArraySample[T]:
+        """Create a copy of the ArraySample.
+
+        Returns:
+            A copy of the ArraySample.
+        """
+        return type(self)(array=self.array.copy(), sample_dim=self.sample_dim)
+
+
+create_sample.register(np.number | np.ndarray | float | int, ArraySample.from_iterable)
 
 
 @create_sample.delayed_register(TORCH_TENSOR)
