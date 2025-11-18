@@ -208,7 +208,7 @@ The Tasks section visually demonstrates how uncertainty is used to make more ris
 Without quantification, there is no basis for these decisions.
 
 
-3.3 Downstream Tasks (Theory, based on the presentation) 
+3.3 Downstream Tasks 
 ^^^^^^^^^^^^^^^^^^^^^^^^
 Following the quantification section, the presentation presents various practical tasks:
 
