@@ -193,7 +193,7 @@ Quantification = generating one or more meaningful numbers per example from an u
 What is the purpose of uncertainty quantification?
 
 It is the foundation for making models comparable, testable, and usable.
-\\
+
 Why this is important:
 
 **Comparing model behavior**
