@@ -29,9 +29,6 @@ def _(obj: nnx.Module) -> nnx.Module:
         obj.__init__(obj.num_embeddings, obj.features, rngs=rng)
     elif isinstance(obj, nnx.Dropout):
         pass
-    elif isinstance(obj, nnx.DropConnectLinear):
-        # implementation missing
-        pass
     return obj
 
 
