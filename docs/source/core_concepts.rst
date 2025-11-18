@@ -101,17 +101,17 @@ probly directly addresses these challenges by offering consistent tools to
 express, compare, and act on model uncertainty, helping prevent dangerous
 overconfidence.
 
-2. 🔎 Representing Uncertainty
+2. Representing Uncertainty 🔎 
 ---------------------------------------------
 
-2.1 🤔 What Is an Uncertainty Representation?
+2.1 What Is an Uncertainty Representation? 🤔
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 An uncertainty representation describes the form in which a machine-learning model expresses not only its prediction but also its confidence in that prediction. Instead of returning a single label such as “cat,” an uncertainty-aware model produces additional information that reflects how sure or unsure it is about its output.
 
 Such representations can take many forms, including probability distributions, repeated stochastic samples, raw logits, or evidence values for higher-level distributions. In practice, they may appear as sets of sampled outputs, vectors of class probabilities, parameters of a distribution, or structured intervals. All of these formats serve the same purpose: they quantify how uncertain the model is about its own prediction.
 
-2.2 📘 Common Representation Types
+2.2 Common Representation Types 📘
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 **Dropout-based representations**
@@ -134,14 +134,14 @@ Bayesian sampling representations describe uncertainty by drawing samples from d
 
 Predictive distribution representations output parameters of a probability distribution or predictive intervals directly, allowing uncertainty to be expressed in a compact parametric form.
 
-2.3 🔧 Why Representations Must Be Unified
+2.3 Why Representations Must Be Unified 🔧
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 Different uncertainty methods produce outputs that vary widely in dimensionality, structure, and meaning. Some provide many samples, others return explicit distribution parameters, and others supply intervals or evidence values. Without a unifying framework, these heterogeneous outputs cannot be compared or processed consistently.
 
 Differences in shape, scale, interpretability, and semantics would make quantitative evaluation and benchmarking extremely difficult. A unified representation ensures that uncertainty estimates from different methods become compatible and can be analyzed within the same workflow.
 
-2.4 🧲 How probly Standardizes Representations
+2.4 How probly Standardizes Representations 🧲 
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 Probly standardizes uncertainty by wrapping all forms of outputs into a single, unified representation object. This object provides a consistent interface for accessing samples, distribution parameters, evidence, or interval information, regardless of the underlying method that produced them.
@@ -151,3 +151,106 @@ Through this standardization, all uncertainty-quantification procedures, such as
 ✨ Result
 
 As a result, different uncertainty methods integrate seamlessly into one workflow, enabling fair comparison, reproducibility, and coherent processing across an entire pipeline.
+
+3. Quantifying and Using Uncertainty
+---------------------------------------------
+
+Here is your text with **fitting emojis added to the headings**, without changing any of the original wording:
+
+---
+
+3.1 What is Uncertainty Quantification? 🔍
+^^^^^^^^^^^^^^^^^^^^^^^^
+Models—after being made uncertainty-aware can generate various forms of uncertainty representations (e.g., samples, credal sets, distributions over distributions).
+Uncertainty quantification means converting these pipe representations into numerical measures of uncertainty.
+
+Typical measures:
+
+**Entropy-based measures**
+– Total entropy
+– Decompositions (e.g., upper/lower entropy)
+
+**Variance-based measures**
+– Variance of model predictions, e.g., B. in ensembles or MC dropout
+
+**Scoring-Rule-Based Quantification**
+– Uncertainty measures via "Proper Scoring Rules"
+
+**Wasserstein-Based Quantification**
+– Distance between probability distributions as an indicator of uncertainty
+
+At the same time, the presentation always connects these measures with the two types of uncertainty:
+
+Aleatory uncertainty – inherent randomness of the data
+Epistemic uncertainty – the model's lack of knowledge (e.g., insufficient or poor-quality training data)
+
+Thus:
+
+Quantification = generating one or more meaningful numbers per example from an uncertainty representation.
+
+---
+
+3.2 Why Quantification is Important 🎯
+^^^^^^^^^^^^^^^^^^^^^^^^
+What is the purpose of uncertainty quantification:
+
+It is the foundation for making models comparable, testable, and usable.
+
+Why this is important:
+
+**Comparing model behavior**
+Different uncertainty-aware models (MC Dropout, Bayesian NN, Ensembles, Evidential, Conformal Prediction, etc.) can only be meaningfully compared if their uncertainties are made measurable.
+
+**Detecting invalid predictions**
+Quantified uncertainty allows the detection of cases where the model "doesn't know that it doesn't know"—for example, in the OOD (Out-of-Distribution Detection) examples in the presentation.
+
+**Better decisions**
+The Tasks section visually demonstrates how uncertainty is used to make more risk- or security-conscious decisions (e.g., Accuracy-Rejection Curves).
+
+Without quantification, there is no basis for these decisions.
+
+---
+
+3.3 Downstream Tasks (Theory, based on the presentation) 📉📊
+^^^^^^^^^^^^^^^^^^^^^^^^
+Following the quantification section, the presentation presents various practical tasks:
+
+**Out-of-Distribution (OOD) Detection**
+Models should detect whether an input does not originate from the training distribution.
+For excample: OOD detection as one of the central downstream modules in "Tasks & Visualization"
+
+**Selective Prediction / Confidence-Based Rejection**
+The model is allowed to say "I don't know."
+Represented in the form of the accuracy-rejection curves
+[Platzhalter]
+
+**Calibration**
+Goal: Prediction probabilities should correspond to the actual frequency.
+
+**Risk-Aware Decision Making**
+The visualization shows how quantification is used to make risk-adjusted decisions.
+For excample corresponding grid plots and derivations from credal sets and entropies:
+[Platzhalter]
+
+---
+
+3.4 How everything is connected 🔗
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+The presentation describes a continuous pipeline:
+
+**1. Model Transformation**
+First, an existing machine learning model is transformed into an uncertainty-aware model using a PyTraverse rule (e.g., MC Dropout, Bayesian Layers).
+
+**2. Uncertainty Representation**
+The model outputs specific structures:
+Samples, credal sets, interval predictions, distributions of distributions
+
+**3. Uncertainty Quantification**
+From these representations, entropies, variances, scores, etc., are calculated (several methods are available).
+
+**4. Downstream Tasks & Visualization**
+OOD detection, accuracy-rejection curves, uncertainty visualization, etc., build directly upon this.
+
+
+
