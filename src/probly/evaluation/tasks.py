@@ -71,10 +71,16 @@ def out_of_distribution_detection_fpr_at_95_tpr(in_distribution: np.ndarray, out
     """
     preds = np.concatenate((in_distribution, out_distribution))
     labels = np.concatenate((np.zeros(len(in_distribution)), np.ones(len(out_distribution))))
-    fpr, tpr, thresholds = sm.roc_curve(labels, preds)
+    fpr, tpr, _ = sm.roc_curve(labels, preds)
 
-    idx_tpr = np.where(tpr == 0.95)[0][0]
+    target_tpr = 0.95
 
-    fpr_at_95_tpr = fpr[idx_tpr]
+    if target_tpr in tpr:
+        idx = np.where(tpr == target_tpr)[0][0]
+        return float(fpr[idx])
 
-    return float(fpr_at_95_tpr)
+    if target_tpr < tpr[0]:
+        "tpr > 0.95"
+        return float(fpr[0])
+    "Interpolate fpr because tpr=0.95 usually does not occur exactly"
+    return float(np.interp(target_tpr, tpr, fpr))
