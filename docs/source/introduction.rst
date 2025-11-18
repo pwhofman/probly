@@ -388,7 +388,7 @@ Future plans include expanding support to additional frameworks and libraries ba
 6. Summary
 ------------------------------------------------------
 
-`probly` makes it straightforward to bring uncertainty-awareness into machine learning models without
+``probly`` makes it straightforward to bring uncertainty-awareness into machine learning models without
 rewriting your entire workflow. It offers a clear and consistent way to represent uncertainty, apply
 different methods, and turn raw outputs into meaningful scores. With built-in support for downstream
 tasks like out-of-distribution detection, selective prediction, and calibration, `probly` helps you
