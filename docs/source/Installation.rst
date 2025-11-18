@@ -4,16 +4,18 @@ probly is a Python package for **uncertainty representation** and **quantificati
 
 Installation 
 ~~~~~~~~~~~~ 
-probly is intended to work with **Python 3.10 and above**. Installation can be done via pip and or uv: 
+`probly` is intended to work with **Python 3.10 and above**. Installation can be done via `pip` and
+or `uv`:
 
-.. code-block:: python
+.. code-block:: sh
 
-sh pip install probly 
+   pip install probly
 
-or 
+or
 
-.. code-block:: python
-sh uv add probly
+.. code-block:: sh
+
+   uv add probly
 
 Quickstart
 ~~~~~~~~~~
