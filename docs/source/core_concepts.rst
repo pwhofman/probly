@@ -177,7 +177,7 @@ Typical measures:
 **Wasserstein-Based Quantification**
 – Distance between probability distributions as an indicator of uncertainty
 
-At the same time, the presentation always connects these measures with the two types of uncertainty:
+At the same time, these measures are connected  with the two types of uncertainty:
 
 Aleatory uncertainty – inherent randomness of the data
 Epistemic uncertainty – the model's lack of knowledge (e.g., insufficient or poor-quality training data)
