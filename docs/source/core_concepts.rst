@@ -68,3 +68,35 @@ will always output a single best guess regardless of how unsure it is.
 
 probly provides mechanisms to model all these uncertainty sources explicitly
 instead of ignoring them.
+
+1.3 Why Overconfidence Is a Problem
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Modern ML models are often **overconfident**. They produce strong, high-probability
+predictions even when they should be unsure. This causes serious issues in
+real-world systems:
+
+**Safety-Critical Failures**
+
+- A diagnostic model reporting 0.99 confidence despite being unsure.
+- An autonomous vehicle misreading a rare obstacle but still reacting as if it were certain.
+
+**Miscalibration**
+
+The model’s predicted probabilities do not match reality,
+for example predictions marked as “90 percent confident” are correct only 60 percent of the time.
+
+**Poor Decision-Making**
+
+Downstream systems — such as doctors, financial engines, or controllers —
+may rely on predictions that look certain but are actually unstable.
+
+**Erosion of Trust**
+
+Professionals and regulators increasingly require models not only to
+provide predictions but also to communicate **how reliable** those
+predictions are.
+
+probly directly addresses these challenges by offering consistent tools to
+express, compare, and act on model uncertainty — helping prevent dangerous
+overconfidence.
