@@ -178,6 +178,7 @@ Typical measures:
 At the same time, these measures are connected  with the two types of uncertainty:
 
 Aleatory uncertainty – inherent randomness of the data
+
 Epistemic uncertainty – the model's lack of knowledge (e.g., insufficient or poor-quality training data)
 
 Thus:
