@@ -44,7 +44,7 @@ This becomes a problem in practical applications:
 * An autonomous vehicle might misinterpret a rare object because it has never seen anything similar before.  
 * A financial model may make predictions far outside the training distribution without realizing it.
 
-Standard ML tools such as PyTorch, TensorFlow, and scikit learn do not provide a unified way  
+Standard ML tools such as PyTorch do not provide a unified way 
 to represent uncertainty. Each uncertainty method such as dropout, ensembles, Bayesian networks,  
 and evidential models uses different outputs, shapes, and conventions.  
 This makes it difficult to compare or combine uncertainty methods.
@@ -61,7 +61,7 @@ probly provides:
 
 Instead of requiring users to pick one uncertainty method and redesign their entire training code,  
 probly offers a consistent way to apply uncertainty methods across modern ML frameworks  
-such as PyTorch, Flax JAX, and scikit learn.
+such as PyTorch, and Flax/JAX.
 
 In short, machine learning models are often overconfident and probly is designed to make  
 their uncertainty explicit, comparable, and usable.
@@ -106,7 +106,7 @@ Different models and different applications may require different approaches.
 probly provides a common interface so that these methods can be used and compared in a consistent manner.
 
 Another important advantage is that probly integrates with modern machine learning frameworks  
-such as PyTorch, Flax JAX, and scikit learn.  
+such as PyTorch, and Flax/JAX. 
 This means that users can keep their existing training pipelines and add uncertainty awareness on top of them  
 without rewriting their entire code.
 
