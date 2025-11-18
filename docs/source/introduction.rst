@@ -308,12 +308,12 @@ Representation object. This object acts as a container for the raw results. The 
 holds is the collection of probability outputs from each forward pass.
 .. code-block:: python
 
-  # This single call runs multiple forward passes
-  representation = mc_dropout_model(input_data)
+   # This single call runs multiple forward passes
+   representation = mc_dropout_model(input_data)
 
-  # The representation object contains the raw probability samples
-  # (e.g., in a .probs attribute)
-  probs_array = representation.probs 
+   # The representation object contains the raw probability samples
+   # (e.g., in a .probs attribute)
+   probs_array = representation.probs 
    
 This array has shape (num_samples, batch_size, num_classes) and contains all the stochastic outputs needed for quantification.
 
