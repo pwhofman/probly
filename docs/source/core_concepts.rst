@@ -38,3 +38,33 @@ leading to overconfident predictions.
 
 probly addresses this by offering unified tools to represent and quantify both
 epistemic and aleatoric uncertainty across different methods.
+
+1.2 Sources of Uncertainty
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Uncertainty appears naturally throughout the ML pipeline. Common sources include:
+
+**Limited or Biased Training Data**
+
+Small, imbalanced, or unrepresentative datasets cause poor generalization.
+When the model encounters unfamiliar examples, predictions become unreliable.
+
+**Out of Distribution Inputs**
+
+Inputs that differ significantly from the training data, such as new environments,
+novel objects, or corrupted images. Models often give confident but wrong
+predictions for such samples.
+
+**Label Noise and Ambiguity**
+
+Human annotators may disagree or produce inconsistent labels.
+Some domains, for example medicine or law, inherently contain subjective judgments.
+
+**Model Architecture Limitations**
+
+Certain architectures cannot express uncertainty well.
+A deterministic network without any probabilistic layers, for example,
+will always output a single best guess regardless of how unsure it is.
+
+probly provides mechanisms to model all these uncertainty sources explicitly
+instead of ignoring them.
