@@ -28,8 +28,7 @@ model is about this prediction.
   or selective prediction.
 
 Instead of forcing you to use a completely new framework, `probly` is designed
-to work together with existing libraries such as PyTorch, Flax/JAX and
-scikit-learn. You can keep your usual training code and add uncertainty on top
+to work together with existing libraries such as PyTorch, and Flax/JAX. You can keep your usual training code and add uncertainty on top
 of it with a thin `probly` wrapper.
 
 1.1 The Problem: Overconfident Machine Learning Models
