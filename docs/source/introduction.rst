@@ -388,10 +388,12 @@ Future plans include expanding support to additional frameworks and libraries ba
 6. Summary
 ------------------------------------------------------
 
-``probly`` makes it straightforward to bring uncertainty-awareness into machine learning models without
-rewriting your entire workflow. It offers a clear and consistent way to represent uncertainty, apply
-different methods, and turn raw outputs into meaningful scores. With built-in support for downstream
-tasks like out-of-distribution detection, selective prediction, and calibration, `probly` helps you
-understand not just what your model predicts, but how confident it is. By working smoothly with
-PyTorch and Flax/JAX, it lets you keep your existing setup while making your models more reliable,
-transparent, and easier to trust.
+``probly`` provides a practical, non-invasive way to make machine learning models uncertainty-aware. 
+It addresses the problem of overconfident models by offering a unified interface to represent, transform, and quantify uncertainty, and 
+by supporting downstream tasks such as out-of-distribution detection, selective prediction, calibration, and risk-aware decision making.
+Instead of replacing existing workflows, ``probly`` builds on top of them: you train your model as usual, apply an uncertainty
+transformation, obtain an uncertainty representation, and then compute meaningful uncertainty scores that can be used directly 
+in applications. The before/after example illustrates how a standard overconfident model can be turned into one that not only predicts
+labels but also communicates how unsure it is. With support for popular frameworks like PyTorch and Flax/JAX,
+``probly`` helps users build models that are not just accurate, but also safer, more transparent, and easier to trust in real-world
+settings.
