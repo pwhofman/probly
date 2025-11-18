@@ -16,7 +16,6 @@ dependencies = [
     "scikit-learn",
     "tqdm",
     "joblib",
-    "pre-commit>=4.3.0",
 ]
 authors = [
     {name = "Paul Hofman", email = "paul.hofman@ifi.lmu.de"},
@@ -71,7 +70,7 @@ all_ml = [
     {include-group = "jax"},
 ]
 test = [
-    "pytest>=7.0.0",       # for testing
+    "pytest>=8.3.5",       # for testing
     "pytest-cov>=6.0.0",   # for coverage
     "pytest-xdist>=3.6.1", # for parallel testing
     "packaging",           # for version parsing
@@ -224,7 +223,3 @@ disallow_any_generics = false    # to avoid warnings for type-based singledispat
 disallow_untyped_calls = false   # to avoid issues with using torch, numpy, scipy, etc. internals
 disable_error_code = "misc"      # disable errors caused by torch not typing decorators, wrapping would be overkill
 exclude = "docs"
-
-
-
-
