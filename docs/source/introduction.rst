@@ -385,3 +385,13 @@ into your existing workflows without significant changes. The library currently 
 
 Future plans include expanding support to additional frameworks and libraries based on user demand and community contributions.
 
+6. Summary
+------------------------------------------------------
+
+`probly` makes it straightforward to bring uncertainty-awareness into machine learning models without
+rewriting your entire workflow. It offers a clear and consistent way to represent uncertainty, apply
+different methods, and turn raw outputs into meaningful scores. With built-in support for downstream
+tasks like out-of-distribution detection, selective prediction, and calibration, `probly` helps you
+understand not just what your model predicts, but how confident it is. By working smoothly with
+PyTorch and Flax/JAX, it lets you keep your existing setup while making your models more reliable,
+transparent, and easier to trust.
