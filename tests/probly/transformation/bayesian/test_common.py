@@ -34,8 +34,8 @@ def test_invalid_posterior_std_value(dummy_predictor: Predictor) -> None:
     """
     posterior_std = -1.0
     msg = (
-            "The initial posterior standard deviation posterior_std must be greater than 0, "
-            f"but got {posterior_std} instead."
-        )
+        "The initial posterior standard deviation posterior_std must be greater than 0, "
+        f"but got {posterior_std} instead."
+    )
     with pytest.raises(ValueError, match=msg):
         bayesian(dummy_predictor, posterior_std=posterior_std)
