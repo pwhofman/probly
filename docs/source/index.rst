@@ -81,5 +81,3 @@ Quickstart
    :maxdepth: 1
    :caption: Development
    :hidden:
-
-   ..contributing
