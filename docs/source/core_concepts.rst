@@ -1,7 +1,7 @@
 Core Concepts
 =============
 
-1. Understanding Uncertainty in Machine Learning 
+1. Understanding Uncertainty in Machine Learning
 ---------------------------------------------
 
 This section explains what uncertainty means in machine learning, why it naturally 
