@@ -155,8 +155,6 @@ As a result, different uncertainty methods integrate seamlessly into one workflo
 3. Quantifying and Using Uncertainty
 ---------------------------------------------
 
-Here is your text with **fitting emojis added to the headings**, without changing any of the original wording:
-
 3.1 What is Uncertainty Quantification? 🔍
 ^^^^^^^^^^^^^^^^^^^^^^^^
 Models—after being made uncertainty-aware can generate various forms of uncertainty representations (e.g., samples, credal sets, distributions over distributions).
