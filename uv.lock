@@ -1961,7 +1961,6 @@ dependencies = [
     { name = "matplotlib" },
     { name = "mpltern" },
     { name = "numpy" },
-    { name = "pre-commit" },
     { name = "scikit-learn" },
     { name = "scipy" },
     { name = "tqdm" },
@@ -2033,7 +2032,6 @@ requires-dist = [
     { name = "matplotlib", specifier = ">=3.8.0" },
     { name = "mpltern" },
     { name = "numpy", specifier = ">=2.0.0" },
-    { name = "pre-commit", specifier = ">=4.3.0" },
     { name = "scikit-learn" },
     { name = "scipy" },
     { name = "tqdm" },
@@ -2057,7 +2055,7 @@ dev = [
     { name = "notebook", specifier = ">=7.3.3" },
     { name = "packaging" },
     { name = "pre-commit", specifier = ">=4.3.0" },
-    { name = "pytest", specifier = ">=7.0.0" },
+    { name = "pytest", specifier = ">=8.3.5" },
     { name = "pytest-cov", specifier = ">=6.0.0" },
     { name = "pytest-xdist", specifier = ">=3.6.1" },
     { name = "ruff", specifier = ">=0.14.1" },
@@ -2088,7 +2086,7 @@ lint = [
 ]
 test = [
     { name = "packaging" },
-    { name = "pytest", specifier = ">=7.0.0" },
+    { name = "pytest", specifier = ">=8.3.5" },
     { name = "pytest-cov", specifier = ">=6.0.0" },
     { name = "pytest-xdist", specifier = ">=3.6.1" },
 ]
