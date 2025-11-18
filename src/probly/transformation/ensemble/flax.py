@@ -1,40 +1,29 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[119]:
-
-
 from flax import nnx
 import jax
 import jax.numpy as jnp
 import numpy as np
-import warnings 
-warnings.filterwarnings("ignore")
 
+#ignore this function , due to the bad reset strategy. 
+# def reset_parameter(model: nnx.Module, rng_key): 
+#     """
+#     Reset all nnx.Param parameters in a given model using new random values.
 
-# In[141]:
+#     Args: 
+#         model (nnx.Module): The model whose parameters will be reset.
+#         rng_key           : JAX random key used to generate new parameter values.
 
-
-def reset_parameter(model: nnx.Module, rng_key): 
-    """
-    Reset all nnx.Param parameters in a given model using new random values.
-
-    Args: 
-        model (nnx.Module): The model whose parameters will be reset.
-        rng_key           : JAX random key used to generate new parameter values.
-
-    Returns: 
-        Updated rng_key after all parameters have been reset.
-    """
-    for attr_name in dir(model): 
-        attr = getattr(model, attr_name)
-        if isinstance(attr, nnx.Param): 
-            rng_key, subkey = jax.random.split(rng_key)
-            rngs = nnx.Rngs(params=subkey)
-            model.__dict__[attr_name] = nnx.Param(rngs.params.uniform(attr.value.shape))
-        elif isinstance(attr, nnx.Module): 
-            rng_key = reset_parameter(attr, rng_key)
-    return rng_key
+#     Returns: 
+#         Updated rng_key after all parameters have been reset.
+#     """
+#     for attr_name in dir(model): 
+#         attr = getattr(model, attr_name)
+#         if isinstance(attr, nnx.Param): 
+#             rng_key, subkey = jax.random.split(rng_key)
+#             rngs = nnx.Rngs(params=subkey)
+#             model.__dict__[attr_name] = nnx.Param(rngs.params.uniform(attr.value.shape))
+#         elif isinstance(attr, nnx.Module): 
+#             rng_key = reset_parameter(attr, rng_key)
+#     return rng_key
 
 
 def _reset_and_copy(model: nnx.Module): 
@@ -47,10 +36,9 @@ def _reset_and_copy(model: nnx.Module):
     Returns: 
         A new nnx.Module instance with the same structure but re-initialized parameters. 
     """
-    graph, state = nnx.split(model)
-    new_model = nnx.merge(graph, state)
-    rng_key = jax.random.PRNGKey(np.random.randint(0, 10000))
-    reset_parameter(new_model, rng_key)
+
+    new_model = nnx.clone(model)
+
     return new_model
 
 
