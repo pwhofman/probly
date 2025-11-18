@@ -53,6 +53,7 @@ Quickstart
    :hidden:
 
    introduction
+   core_concepts
    methods
    references
 
