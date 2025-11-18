@@ -10,7 +10,6 @@ building trustworthy models. Probly provides tools to work with uncertainty in a
 structured and unified way.
 
 1.1 What Is Uncertainty?
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In standard machine learning pipelines a model outputs a **single prediction**
 a class label, a probability, or a regression value. However this number does
@@ -40,7 +39,6 @@ probly addresses this by offering unified tools to represent and quantify both
 epistemic and aleatoric uncertainty across different methods.
 
 1.2 Sources of Uncertainty
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Uncertainty appears naturally throughout the ML pipeline. Common sources include:
 
@@ -70,7 +68,6 @@ probly provides mechanisms to model all these uncertainty sources explicitly
 instead of ignoring them.
 
 1.3 Why Overconfidence Is a Problem
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Modern ML models are often overconfident. They produce strong high probability
 predictions even when they should be unsure. This causes serious issues in
