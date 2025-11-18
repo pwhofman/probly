@@ -102,35 +102,48 @@ express, compare, and act on model uncertainty, helping prevent dangerous
 overconfidence.
 
 2. Representing Uncertainty 
+---------------------------------------------
+
 2.1 What Is an Uncertainty Representation?
+^^^^^^^^^^^^^^^^^^^^^^^^
 
 An uncertainty representation describes the form in which a machine-learning model expresses not only its prediction but also its confidence in that prediction. Instead of returning a single label such as “cat,” an uncertainty-aware model produces additional information that reflects how sure or unsure it is about its output.
 
 Such representations can take many forms, including probability distributions, repeated stochastic samples, raw logits, or evidence values for higher-level distributions. In practice, they may appear as sets of sampled outputs, vectors of class probabilities, parameters of a distribution, or structured intervals. All of these formats serve the same purpose: they quantify how uncertain the model is about its own prediction.
 
 2.2 Common Representation Types
+^^^^^^^^^^^^^^^^^^^^^^^^
+
 **Dropout-based representations**
+
 Dropout-based representations arise when a model is evaluated multiple times with stochastic dropout activated. Each pass yields a slightly different output, and the collection of these outputs represents the model’s uncertainty. 
 
 **Ensemble-based representations**
+
 Ensemble-based representations rely on several independently trained models whose predictions are combined; the variability across models expresses the epistemic uncertainty.
 
 **Evidential representations**
+
 Evidential representations work by predicting the parameters of a higher-order distribution rather than explicit samples. This allows the model to express both a belief and uncertainty about that belief through a single forward pass. 
 
 **Bayesian sampling representations**
+
 Bayesian sampling representations describe uncertainty by drawing samples from distributions placed over the model’s weights, leading to sampled predictions that approximate the full predictive distribution.
 
 **Predictive distribution representations**
+
 Predictive distribution representations output parameters of a probability distribution or predictive intervals directly, allowing uncertainty to be expressed in a compact parametric form.
 
 2.3 Why Representations Must Be Unified
+^^^^^^^^^^^^^^^^^^^^^^^^
 
 Different uncertainty methods produce outputs that vary widely in dimensionality, structure, and meaning. Some provide many samples, others return explicit distribution parameters, and others supply intervals or evidence values. Without a unifying framework, these heterogeneous outputs cannot be compared or processed consistently. Differences in shape, scale, interpretability, and semantics would make quantitative evaluation and benchmarking extremely difficult. A unified representation ensures that uncertainty estimates from different methods become compatible and can be analyzed within the same workflow.
 
 2.4 How probly Standardizes Representations
+^^^^^^^^^^^^^^^^^^^^^^^^
 
 Probly standardizes uncertainty by wrapping all forms of outputs into a single, unified representation object. This object provides a consistent interface for accessing samples, distribution parameters, evidence, or interval information, regardless of the underlying method that produced them. Through this standardization, all uncertainty-quantification procedures, such as entropy calculations, variance-based metrics, scoring rules, or distance measures can operate on the same structure. 
 
 **Result**
+
 As a result, different uncertainty methods integrate seamlessly into one workflow, enabling fair comparison, reproducibility, and coherent processing across an entire pipeline.
