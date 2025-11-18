@@ -33,7 +33,9 @@ class MLP(nnx.Module):
         return self.linear2(x)
 
 def test_generate_flax_ensemble():
+    #The original model
     model = MLP(2, 16, 5, rngs=nnx.Rngs(0))
+    original_linear1_weight_values = model.linear1.w.value
 
     #Generate 3 models with re-initialized parameters
     ensemble_models = generate_flax_ensemble(model, 3)
@@ -43,10 +45,24 @@ def test_generate_flax_ensemble():
 
     #Check output shapes
     x = jnp.ones((1, 2))
+
+    linear1_weight_values = []
     for p in ensemble_models:
         y = p(x)
         #because x has shape (1, 2) : 1 sample 2 features
         #And MLP has Shape (2, 16, 5) : input has 2 features, hidden layer has 16 Neurons and output layer has 5 neurons
         #That's why we should check the output whether it's (1, 5) shaped
         assert y.shape == (1, 5) 
-        nnx.display(p)
+
+        #make sure the new model is not the original object
+        assert p is not model
+        
+        #Save the current linear1 weights of this model for later comparison
+        weight_value = p.linear1.w.value
+        linear1_weight_values.append(weight_value)
+
+    #Ensure that each model in the ensemble has weights different from the original model
+    #Verify that all ensemble models have independently initialized linear1 weights
+    assert not np.array_equal(linear1_weight_values[0], original_linear1_weight_values)
+    assert not np.array_equal(linear1_weight_values[1], original_linear1_weight_values)
+    assert not np.array_equal(linear1_weight_values[2], original_linear1_weight_values)
