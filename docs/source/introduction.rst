@@ -342,12 +342,11 @@ model_uncertainty score is too high.
 
 4. A Simple Before/After Example
 ------------------------------------------------------
-To understand the practical impact of probly, let's contrast a standard model with one enhanced by the library.
+To understand the practical impact of ``probly``, let's contrast a standard model with one enhanced by the library.
 
-4.1 Before probly: The Overconfident Prediction
+4.1 Before ``probly``: The Overconfident Prediction
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 A standard, trained classifier produces a single, deterministic output. It has no way to communicate how confident it is.
-
 
 .. code-block:: python
 
@@ -362,9 +361,10 @@ In this case, the model outputs a single probability distribution per input.
 However, it provides no information about its uncertainty.
 Even when the model is wrong, it may still output high confidence scores, leading to overconfident and potentially dangerous predictions.
 
-4.2 After probly: Uncertainty-Aware Prediction
+4.2 After ``probly``: Uncertainty-Aware Prediction
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 By applying probly, we transform the model to produce uncertainty-aware predictions.    
+
 .. code-block:: python
 
    # Apply an uncertainty transformation (e.g., MC Dropout)
@@ -381,6 +381,8 @@ By applying probly, we transform the model to produce uncertainty-aware predicti
 
    # Example output
    # pe_scores: tensor([0.05, 0.80])  # Low uncertainty for first input, high for second
+
+
 Now, the model produces a collection of stochastic outputs, which probly uses to compute uncertainty scores.
 The predictive entropy scores indicate how uncertain the model is about each prediction.
 This additional information allows us to identify inputs where the model is unsure, enabling safer decision-making.
