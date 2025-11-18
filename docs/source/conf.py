@@ -11,11 +11,11 @@ import inspect
 import os
 import sys
 
-import probly
-
 # -- Path setup --------------------------------------------------------------
 sys.path.insert(0, os.path.abspath("../../src"))
 sys.path.insert(0, os.path.abspath("../../examples"))
+
+import probly
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
