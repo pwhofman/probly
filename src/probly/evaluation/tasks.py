@@ -71,7 +71,7 @@ def out_of_distribution_detection_fpr_at_95_tpr(in_distribution: np.ndarray, out
     """
     preds = np.concatenate((in_distribution, out_distribution))
     labels = np.concatenate((np.zeros(len(in_distribution)), np.ones(len(out_distribution))))
-    fpr, tpr, _ = sm.roc_curve(labels, preds)
+    fpr, tpr, _ = sm.roc_curve(labels, preds, pos_label=0)
 
     target_tpr = 0.95
 
