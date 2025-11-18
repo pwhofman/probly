@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from probly.tasks import out_of_distribution_detection, out_of_distribution_detection_fpr_at_95_tpr, selective_prediction
+from probly.tasks import out_of_distribution_detection_fpr_at_95_tpr, selective_prediction
 
 
 def test_selective_prediction_shapes() -> None:
