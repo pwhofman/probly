@@ -327,10 +327,9 @@ many Quantification functions. This distills the complex set of samples into a s
 
 .. code-block:: python
 
-   # Compute epistemic uncertainty using mutual information
+   
    eu_scores = probly.quantification.classification.mutual_information(probs_array)
 
-   # Alternatively, compute predictive entropy
    pe_scores = probly.quantification.classification.predictive_entropy(probs_array)
 
 These functions return concrete numerical scores that summarize the model's uncertainty for each input.
