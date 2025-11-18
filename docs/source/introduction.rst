@@ -342,11 +342,56 @@ model_uncertainty score is too high.
 
 4. A Simple Before/After Example
 ------------------------------------------------------
+To understand the practical impact of probly, let's contrast a standard model with one enhanced by the library.
+
+4.1 Before probly: The Overconfident Prediction
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+A standard, trained classifier produces a single, deterministic output. It has no way to communicate how confident it is.
+
+
+.. code-block:: python
+
+   # Standard model prediction
+   predicted_probs = trained_model(input_data)  # Shape: (batch_size, num_classes)
+   predicted_labels = torch.argmax(predicted_probs, dim=1)
+
+   # Example output
+   # predicted_probs: tensor([[0.98, 0.01, 0.01],  # Very confident prediction
+   #                          [0.60, 0.20, 0.20]]) # Less confident but no uncertainty info
+In this case, the model outputs a single probability distribution per input.
+However, it provides no information about its uncertainty.
+Even when the model is wrong, it may still output high confidence scores, leading to overconfident and potentially dangerous predictions.
+
+4.2 After probly: Uncertainty-Aware Prediction
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+By applying probly, we transform the model to produce uncertainty-aware predictions.    
+.. code-block:: python
+
+   # Apply an uncertainty transformation (e.g., MC Dropout)
+   mc_dropout_model = probly.transformation.dropout(trained_model, p=0.5)
+
+   # Generate an uncertainty representation
+   representation = mc_dropout_model(input_data)
+
+   # Extract raw probability samples
+   probs_array = representation.probs  # Shape: (num_samples, batch_size, num_classes)
+
+   # Quantify uncertainty (e.g., predictive entropy)
+   pe_scores = probly.quantification.classification.predictive_entropy(probs_array)
+
+   # Example output
+   # pe_scores: tensor([0.05, 0.80])  # Low uncertainty for first input, high for second
+Now, the model produces a collection of stochastic outputs, which probly uses to compute uncertainty scores.
+The predictive entropy scores indicate how uncertain the model is about each prediction.
+This additional information allows us to identify inputs where the model is unsure, enabling safer decision-making.
+
 5. Supported Frameworks and Integrations
 ------------------------------------------------------
 ``probly`` is designed to work seamlessly with popular machine learning frameworks, allowing you to integrate uncertainty awareness 
 into your existing workflows without significant changes. The library currently supports the following frameworks:
+
 * PyTorch: Full support for wrapping PyTorch models and utilizing its layers for uncertainty transformations.
 * Flax/JAX: Integration with Flax models, enabling uncertainty-aware predictions in JAX-based workflows.
+
 Future plans include expanding support to additional frameworks and libraries based on user demand and community contributions.
 
