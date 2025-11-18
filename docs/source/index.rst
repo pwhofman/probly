@@ -81,4 +81,4 @@ Quickstart
    :caption: Development
    :hidden:
 
-   contributing
+   ..contributing
