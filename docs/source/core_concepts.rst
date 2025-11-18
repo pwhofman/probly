@@ -175,6 +175,8 @@ Typical measures:
 **Wasserstein-Based Quantification**
 – Distance between probability distributions as an indicator of uncertainty
 
+
+
 At the same time, these measures are connected  with the two types of uncertainty:
 
 Aleatory uncertainty – inherent randomness of the data
