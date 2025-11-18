@@ -1,7 +1,7 @@
 Core Concepts
 =============
 
-1. Understanding Uncertainty in Machine Learning 📘
+1. Understanding Uncertainty in Machine Learning 
 ---------------------------------------------
 
 This section explains what uncertainty means in machine learning, why it naturally 
@@ -9,7 +9,7 @@ arises in real-world problems, and why handling it correctly is essential for
 building trustworthy models. Probly provides tools to work with uncertainty in a 
 structured and unified way.
 
-1.1 What Is Uncertainty?🔍
+1.1 What Is Uncertainty?
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 In standard machine learning pipelines a model outputs a **single prediction**
@@ -39,7 +39,7 @@ leading to overconfident predictions.
 probly addresses this by offering unified tools to represent and quantify both
 epistemic and aleatoric uncertainty across different methods.
 
-1.2 Sources of Uncertainty 📝
+1.2 Sources of Uncertainty 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Uncertainty appears naturally throughout the ML pipeline. Common sources include:
@@ -69,7 +69,7 @@ will always output a single best guess regardless of how unsure it is.
 probly provides mechanisms to model all these uncertainty sources explicitly
 instead of ignoring them.
 
-1.3 Why Overconfidence Is a Problem ⚠️
+1.3 Why Overconfidence Is a Problem 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Modern ML models are often overconfident. They produce strong high probability
@@ -101,17 +101,17 @@ probly directly addresses these challenges by offering consistent tools to
 express, compare, and act on model uncertainty, helping prevent dangerous
 overconfidence.
 
-2. Representing Uncertainty 🔎 
+2. Representing Uncertainty 
 ---------------------------------------------
 
-2.1 What Is an Uncertainty Representation? 🤔
+2.1 What Is an Uncertainty Representation? 
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 An uncertainty representation describes the form in which a machine-learning model expresses not only its prediction but also its confidence in that prediction. Instead of returning a single label such as “cat,” an uncertainty-aware model produces additional information that reflects how sure or unsure it is about its output.
 
 Such representations can take many forms, including probability distributions, repeated stochastic samples, raw logits, or evidence values for higher-level distributions. In practice, they may appear as sets of sampled outputs, vectors of class probabilities, parameters of a distribution, or structured intervals. All of these formats serve the same purpose: they quantify how uncertain the model is about its own prediction.
 
-2.2 Common Representation Types 📘
+2.2 Common Representation Types 
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 **Dropout-based representations**
@@ -134,28 +134,28 @@ Bayesian sampling representations describe uncertainty by drawing samples from d
 
 Predictive distribution representations output parameters of a probability distribution or predictive intervals directly, allowing uncertainty to be expressed in a compact parametric form.
 
-2.3 Why Representations Must Be Unified 🔧
+2.3 Why Representations Must Be Unified 
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 Different uncertainty methods produce outputs that vary widely in dimensionality, structure, and meaning. Some provide many samples, others return explicit distribution parameters, and others supply intervals or evidence values. Without a unifying framework, these heterogeneous outputs cannot be compared or processed consistently.
 
 Differences in shape, scale, interpretability, and semantics would make quantitative evaluation and benchmarking extremely difficult. A unified representation ensures that uncertainty estimates from different methods become compatible and can be analyzed within the same workflow.
 
-2.4 How probly Standardizes Representations 🧲 
+2.4 How probly Standardizes Representations 
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 Probly standardizes uncertainty by wrapping all forms of outputs into a single, unified representation object. This object provides a consistent interface for accessing samples, distribution parameters, evidence, or interval information, regardless of the underlying method that produced them.
 
 Through this standardization, all uncertainty-quantification procedures, such as entropy calculations, variance-based metrics, scoring rules, or distance measures can operate on the same structure.
 
-✨ Result
+Result
 
 As a result, different uncertainty methods integrate seamlessly into one workflow, enabling fair comparison, reproducibility, and coherent processing across an entire pipeline.
 
 3. Quantifying and Using Uncertainty
 ---------------------------------------------
 
-3.1 What is Uncertainty Quantification? 🔍
+3.1 What is Uncertainty Quantification? 
 ^^^^^^^^^^^^^^^^^^^^^^^^
 Models after being made uncertainty-aware can generate various forms of uncertainty representations (e.g., samples, credal sets, distributions over distributions).
 Uncertainty quantification means converting these pipe representations into numerical measures of uncertainty.
@@ -188,7 +188,7 @@ Thus:
 Quantification = generating one or more meaningful numbers per example from an uncertainty representation.
 
 
-3.2 Why Quantification is Important 🎯
+3.2 Why Quantification is Important 
 ^^^^^^^^^^^^^^^^^^^^^^^^
 What is the purpose of uncertainty quantification?
 
@@ -208,7 +208,7 @@ The Tasks section visually demonstrates how uncertainty is used to make more ris
 Without quantification, there is no basis for these decisions.
 
 
-3.3 Downstream Tasks (Theory, based on the presentation) 📉📊
+3.3 Downstream Tasks (Theory, based on the presentation) 
 ^^^^^^^^^^^^^^^^^^^^^^^^
 Following the quantification section, the presentation presents various practical tasks:
 
@@ -230,7 +230,7 @@ For excample corresponding grid plots and derivations from credal sets and entro
 [Platzhalter]
 
 
-3.4 How everything is connected 🔗
+3.4 How everything is connected 
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 The presentation describes a continuous pipeline:
