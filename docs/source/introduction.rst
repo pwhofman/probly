@@ -308,7 +308,6 @@ Representation object. This object acts as a container for the raw results. The 
 holds is the collection of probability outputs from each forward pass.
 .. code-block:: python
 
-   # This single call runs multiple forward passes
    representation = mc_dropout_model(input_data)
 
    # The representation object contains the raw probability samples
@@ -327,9 +326,10 @@ many Quantification functions. This distills the complex set of samples into a s
 
 .. code-block:: python
 
-   
+   # Compute epistemic uncertainty using mutual information
    eu_scores = probly.quantification.classification.mutual_information(probs_array)
 
+   # Alternatively, compute predictive entropy
    pe_scores = probly.quantification.classification.predictive_entropy(probs_array)
 
 These functions return concrete numerical scores that summarize the model's uncertainty for each input.
