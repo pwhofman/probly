@@ -56,3 +56,25 @@ def out_of_distribution_detection(in_distribution: np.ndarray, out_distribution:
     labels = np.concatenate((np.zeros(len(in_distribution)), np.ones(len(out_distribution))))
     auroc = sm.roc_auc_score(labels, preds)
     return float(auroc)
+
+
+def out_of_distribution_detection_fpr_at_95_tpr(in_distribution: np.ndarray, out_distribution: np.ndarray) -> float:
+    """Perform out-of-distribution detection using prediction functionals from id and ood data.
+
+    This can be epistemic uncertainty, as is common, but also e.g. softmax confidence.
+
+    Args:
+        in_distribution: in-distribution prediction functionals
+        out_distribution: out-of-distribution prediction functionals
+    Returns:
+        fpr@95tpr: float, false positive rate at 95% true positive rate
+    """
+    preds = np.concatenate((in_distribution, out_distribution))
+    labels = np.concatenate((np.zeros(len(in_distribution)), np.ones(len(out_distribution))))
+    fpr, tpr, thresholds = sm.roc_curve(labels, preds)
+
+    idx_tpr = np.where(tpr == 0.95)[0][0]
+
+    fpr_at_95_tpr = fpr[idx_tpr]
+
+    return float(fpr_at_95_tpr)
