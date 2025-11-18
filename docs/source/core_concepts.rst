@@ -69,7 +69,7 @@ will always output a single best guess regardless of how unsure it is.
 probly provides mechanisms to model all these uncertainty sources explicitly
 instead of ignoring them.
 
-1.3 Why Overconfidence Is a Problem 
+1.3 Why Overconfidence Is a Problem?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Modern ML models are often overconfident. They produce strong high probability
