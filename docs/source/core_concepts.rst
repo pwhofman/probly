@@ -102,8 +102,9 @@ express, compare, and act on model uncertainty, helping prevent dangerous
 overconfidence.
 
 2. 🔎 Representing Uncertainty
-2.1 🤔 What Is an Uncertainty Representation?
+---------------------------------------------
 
+2.1 🤔 What Is an Uncertainty Representation?
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 An uncertainty representation describes the form in which a machine-learning model expresses not only its prediction but also its confidence in that prediction. Instead of returning a single label such as “cat,” an uncertainty-aware model produces additional information that reflects how sure or unsure it is about its output.
@@ -111,7 +112,6 @@ An uncertainty representation describes the form in which a machine-learning mod
 Such representations can take many forms, including probability distributions, repeated stochastic samples, raw logits, or evidence values for higher-level distributions. In practice, they may appear as sets of sampled outputs, vectors of class probabilities, parameters of a distribution, or structured intervals. All of these formats serve the same purpose: they quantify how uncertain the model is about its own prediction.
 
 2.2 📘 Common Representation Types
-
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 **Dropout-based representations**
@@ -135,7 +135,6 @@ Bayesian sampling representations describe uncertainty by drawing samples from d
 Predictive distribution representations output parameters of a probability distribution or predictive intervals directly, allowing uncertainty to be expressed in a compact parametric form.
 
 2.3 🔧 Why Representations Must Be Unified
-
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 Different uncertainty methods produce outputs that vary widely in dimensionality, structure, and meaning. Some provide many samples, others return explicit distribution parameters, and others supply intervals or evidence values. Without a unifying framework, these heterogeneous outputs cannot be compared or processed consistently.
@@ -143,7 +142,6 @@ Different uncertainty methods produce outputs that vary widely in dimensionality
 Differences in shape, scale, interpretability, and semantics would make quantitative evaluation and benchmarking extremely difficult. A unified representation ensures that uncertainty estimates from different methods become compatible and can be analyzed within the same workflow.
 
 2.4 🧲 How probly Standardizes Representations
-
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 Probly standardizes uncertainty by wrapping all forms of outputs into a single, unified representation object. This object provides a consistent interface for accessing samples, distribution parameters, evidence, or interval information, regardless of the underlying method that produced them.
