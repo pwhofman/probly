@@ -233,8 +233,6 @@ For excample corresponding grid plots and derivations from credal sets and entro
 3.4 How everything is connected 
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-The presentation describes a continuous pipeline:
-
 **1. Model Transformation**
 First, an existing machine learning model is transformed into an uncertainty-aware model using a PyTraverse rule (e.g., MC Dropout, Bayesian Layers).
 
