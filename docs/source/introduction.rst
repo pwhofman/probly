@@ -286,6 +286,7 @@ This part of your workflow remains completely unchanged.
 Once your model is trained, you can apply any desired transformation from the ``probly.tansformation`` folder.
 You apply a transformation by passing your trained model to a high-level function. 
 For example, to use Monte Carlo Dropout, you would call:
+
 .. code-block:: python
 
    # trained_model is your trained torch.nn.Module or flax.nnx.Module
@@ -306,6 +307,7 @@ You now call this new, transformed model.
 ``probly`` runs inference multiple times behind the scenes (stochastic forward passes) and returns a 
 Representation object. This object acts as a container for the raw results. The most important data it
 holds is the collection of probability outputs from each forward pass.
+
 .. code-block:: python
 
    representation = mc_dropout_model(input_data)
