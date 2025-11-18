@@ -11,7 +11,7 @@ from probly.transformation.evidential.classification.common import (
 
 def test_append_activation_torch_returns_sequential():
     """Testet, ob append_activation_torch ein nn.Sequential zurückgibt mit Softplus."""
-    module = nn.Linear(10, 5)
+    module = nn.Linear(10, 5)   
     seq = torch_module.append_activation_torch(module)
     
     # Prüfe Typ
