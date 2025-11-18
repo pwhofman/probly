@@ -1,7 +1,7 @@
 Core Concepts
 =============
 
-1. Understanding Uncertainty in Machine Learning
+1. Understanding Uncertainty in Machine Learning 📘
 ---------------------------------------------
 
 This section explains what uncertainty means in machine learning, why it naturally 
@@ -9,7 +9,7 @@ arises in real-world problems, and why handling it correctly is essential for
 building trustworthy models. Probly provides tools to work with uncertainty in a 
 structured and unified way.
 
-1.1 What Is Uncertainty?
+1.1 What Is Uncertainty?🔍
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 In standard machine learning pipelines a model outputs a **single prediction**
@@ -39,7 +39,7 @@ leading to overconfident predictions.
 probly addresses this by offering unified tools to represent and quantify both
 epistemic and aleatoric uncertainty across different methods.
 
-1.2 Sources of Uncertainty
+1.2 Sources of Uncertainty 📝
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Uncertainty appears naturally throughout the ML pipeline. Common sources include:
@@ -69,7 +69,7 @@ will always output a single best guess regardless of how unsure it is.
 probly provides mechanisms to model all these uncertainty sources explicitly
 instead of ignoring them.
 
-1.3 Why Overconfidence Is a Problem
+1.3 Why Overconfidence Is a Problem ⚠️
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Modern ML models are often overconfident. They produce strong high probability
@@ -157,8 +157,6 @@ As a result, different uncertainty methods integrate seamlessly into one workflo
 
 Here is your text with **fitting emojis added to the headings**, without changing any of the original wording:
 
----
-
 3.1 What is Uncertainty Quantification? 🔍
 ^^^^^^^^^^^^^^^^^^^^^^^^
 Models—after being made uncertainty-aware can generate various forms of uncertainty representations (e.g., samples, credal sets, distributions over distributions).
@@ -188,7 +186,6 @@ Thus:
 
 Quantification = generating one or more meaningful numbers per example from an uncertainty representation.
 
----
 
 3.2 Why Quantification is Important 🎯
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -209,7 +206,6 @@ The Tasks section visually demonstrates how uncertainty is used to make more ris
 
 Without quantification, there is no basis for these decisions.
 
----
 
 3.3 Downstream Tasks (Theory, based on the presentation) 📉📊
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -232,7 +228,6 @@ The visualization shows how quantification is used to make risk-adjusted decisio
 For excample corresponding grid plots and derivations from credal sets and entropies:
 [Platzhalter]
 
----
 
 3.4 How everything is connected 🔗
 ^^^^^^^^^^^^^^^^^^^^^^^^
