@@ -33,7 +33,7 @@ credal_set_from_sample = lazydispatch[type[CredalSet], CredalSet](CredalSet)
 class ArrayCredalSet[T](CredalSet[T]):
     """A credal set of predictions stored in a numpy array."""
 
-    def __init__(self, sample: ArraySample) -> None:
+    def __init__(self, sample: "probly.representation.sampling.sample.ArraySample") -> None:
         """Initialize the array credal set."""
         self.array: np.ndarray = sample.array
 
