@@ -145,3 +145,10 @@ autodoc_typehints = "both"  # to show type hints in the docstring
 # Ignore >>> when copying code
 copybutton_prompt_text = r">>> |\.\.\. "
 copybutton_prompt_is_regexp = True
+
+linkcheck_ignore = [
+    r"https://doi.org/10.1142/S0218488500000253",
+    r"https://www.worldscientific.com/.*",
+    r"https://doi.org/10.1080/03081070500473490",
+    r"https://www.tandfonline.com/.*",
+]
