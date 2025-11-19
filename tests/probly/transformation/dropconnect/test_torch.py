@@ -1,55 +1,76 @@
+"""Test for torch classification models."""
+
 from __future__ import annotations
 
-import importlib
-import sys
-from typing import Any
-
-import pytest
 from torch import nn
 
-from probly.transformation.dropconnect import common, torch as t
+from probly.layers.torch import DropConnectLinear
+from probly.transformation.dropconnect.common import (
+    dropconnect,
+)
+from tests.probly.torch_utils import count_layers
 
 
-def test_if_register_is_called_on_import(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Check if register() is called automatically when torch module is imported."""
-    called: list[tuple[type[Any], Any]] = []
+def test_evidential_classification_appends_softplus_on_linear(torch_model_small_2d_2d: nn.Sequential) -> None:
+    model = dropconnect(torch_model_small_2d_2d)
 
-    def fake_register(cls: type[Any], trv: object) -> None:
-        called.append((cls, trv))
+    # count number of nn.Linear layers in original model
+    count_linear_original = count_layers(torch_model_small_2d_2d, nn.Linear)
+    # count number of dropconnect layers in original model
+    count_dropconnect_original = count_layers(torch_model_small_2d_2d, DropConnectLinear)
+    # count number of nn.Sequential layers in original model
+    count_sequential_original = count_layers(torch_model_small_2d_2d, nn.Sequential)
 
-    # Patch common.register with our fake function
-    monkeypatch.setattr(common, "register", fake_register, raising=True)
+    # count number of nn.Linear layers in modified model
+    count_linear_modified = count_layers(model, nn.Linear)
+    # count number of dropconnect layers in modified model
+    count_dropconnect_modified = count_layers(model, DropConnectLinear)
+    # count number of nn.Sequential layers in modified model
+    count_sequential_modified = count_layers(model, nn.Sequential)
 
-    # Reimport module to trigger register() calls
-    modname = "probly.transformation.dropconnect.torch"
-    sys.modules.pop(modname, None)
-    importlib.import_module(modname)
-
-    # Convert list of tuples to dict for easier lookup
-    called2 = dict(called)
-
-    # nn.Linear should have been registered
-    assert nn.Linear in called2
+    linear_diff = count_linear_original - count_linear_modified
+    dropconnect_diff = count_dropconnect_modified - count_dropconnect_original
+    # check that the model is not modified except for the softplus layer at the end of the new sequence layer
+    assert model is not None
+    assert isinstance(model, type(torch_model_small_2d_2d))
+    assert linear_diff == dropconnect_diff
+    assert count_sequential_original == count_sequential_modified
 
 
-def test_if_replace_torch_dropconnect_works(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Ensure replace_torch_dropconnect correctly wraps nn.Linear."""
-    called: dict[str, Any] = {}
+def test_evidential_classification_appends_softplus_on_conv(torch_conv_linear_model: nn.Sequential) -> None:
+    model = dropconnect(torch_conv_linear_model)
 
-    class FakeDropConnectLinear:
-        def __init__(
-            self,
-            obj: nn.Linear,
-            p: float,
-        ) -> None:
-            called.update(locals())
+    # count number of nn.Linear layers in original model
+    count_linear_original = count_layers(torch_conv_linear_model, nn.Linear)
+    # count number of dropconnect layers in original model
+    count_dropconnect_original = count_layers(torch_conv_linear_model, DropConnectLinear)
+    # count number of nn.Sequential layers in original model
+    count_sequential_original = count_layers(torch_conv_linear_model, nn.Sequential)
+    # count number of nn.Conv2d layers in original model
+    count_conv_original = count_layers(torch_conv_linear_model, nn.Conv2d)
 
-    # Replace BayesLinear with fake version
-    monkeypatch.setattr(t, "DropConnectLinear", FakeDropConnectLinear)
+    # count number of nn.Linear layers in modified model
+    count_linear_modified = count_layers(model, nn.Linear)
+    # count number of dropconnect layers in modified model
+    count_dropconnect_modified = count_layers(model, DropConnectLinear)
+    # count number of nn.Sequential layers in modified model
+    count_sequential_modified = count_layers(model, nn.Sequential)
+    # count number of nn.Conv2d layers in modified model
+    count_conv_modified = count_layers(model, nn.Conv2d)
 
-    base = nn.Linear(5, 3)
-    result = t.replace_torch_dropconnect(base, 0.3)
+    linear_diff = count_linear_original - count_linear_modified
+    dropconnect_diff = count_dropconnect_modified - count_dropconnect_original
+    # check that the model is not modified except for the softplus layer at the end of the new sequence layer
+    assert model is not None
+    assert isinstance(model, type(torch_conv_linear_model))
+    assert linear_diff == dropconnect_diff
+    assert count_sequential_original == count_sequential_modified
+    assert count_conv_original == count_conv_modified
 
-    assert isinstance(result, FakeDropConnectLinear)
-    assert called["obj"] is base
-    assert called["p"] == 0.3
+
+def test_custom_network(torch_custom_model: nn.Module) -> None:
+    """Tests the custom model modification with added dropconnect layers."""
+    model = dropconnect(torch_custom_model)
+
+    # check if model type is correct
+    assert type(model) is type(torch_custom_model)
