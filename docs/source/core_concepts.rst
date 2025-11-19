@@ -28,7 +28,7 @@ This uncertainty can be reduced with more or better data.
 
 .. figure:: Epistemische.png
    :alt: Epistemic uncertainty illustration
-   :width: 45%
+   :width: 35%
    :align: center
 
   
@@ -44,7 +44,7 @@ leading to overconfident predictions.
 
 .. figure:: Aleatorische.png
    :alt: Aleatoric uncertainty illustration
-   :width: 45%
+   :width: 35%
    :align: center
 
 probly addresses this by offering unified tools to represent and quantify both
