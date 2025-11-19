@@ -1,40 +1,73 @@
-"""Tests for the Torch evidential classification integration."""
+"""Test for torch classification models."""
 
 from __future__ import annotations
 
-from typing import Any
-
 from torch import nn
 
-from probly.transformation.evidential.classification import torch as torch_impl
 from probly.transformation.evidential.classification.common import (
-    evidential_classification_appender,
+    evidential_classification,
 )
+from tests.probly.torch_utils import count_layers
 
 
-def test_append_activation_torch_returns_sequential() -> None:
-    """Ensure append_activation_torch wraps a model in Sequential + Softplus."""
-    # Dummy-Modell: einfacher Linear-Layer
-    model = nn.Linear(4, 2)
-    result = torch_impl.append_activation_torch(model)
+def test_evidential_classification_appends_softplus_on_linear(torch_model_small_2d_2d: nn.Sequential) -> None:
+    model = evidential_classification(torch_model_small_2d_2d)
 
-    # Der Rückgabewert sollte nn.Sequential sein
-    assert isinstance(result, nn.Sequential), "Result must be nn.Sequential"
-    # Es sollten genau zwei Module enthalten sein
-    assert len(result) == 2, f"Expected 2 layers, got {len(result)}"
-    # Erstes Modul: dein Linear-Modell
-    assert isinstance(result[0], nn.Linear)
-    # Zweites Modul: Softplus-Aktivierung
-    assert isinstance(result[1], nn.Softplus)
+    # count number of nn.Linear layers in original model
+    count_linear_original = count_layers(torch_model_small_2d_2d, nn.Linear)
+    # count number of nn.Dropout layers in original model
+    count_softplus_original = count_layers(torch_model_small_2d_2d, nn.Softplus)
+    # count number of nn.Sequential layers in original model
+    count_sequential_original = count_layers(torch_model_small_2d_2d, nn.Sequential)
+
+    # count number of nn.Linear layers in modified model
+    count_linear_modified = count_layers(model, nn.Linear)
+    # count number of nn.Dropout layers in modified model
+    count_softplus_modified = count_layers(model, nn.Softplus)
+    # count number of nn.Sequential layers in modified model
+    count_sequential_modified = count_layers(model, nn.Sequential)
+
+    # check that the model is not modified except for the softplus layer at the end of the new sequence layer
+    assert model is not None
+    assert isinstance(model, type(torch_model_small_2d_2d))
+    assert count_linear_original == count_linear_modified
+    assert count_softplus_original == (count_softplus_modified - 1)
+    assert count_sequential_original == (count_sequential_modified - 1)
 
 
-def test_torch_appender_is_registered() -> None:
-    """Ensure the torch appender is correctly registered via common.register."""
-    model = nn.Linear(3, 3)
+def test_evidential_classification_appends_softplus_on_conv(torch_conv_linear_model: nn.Sequential) -> None:
+    model = evidential_classification(torch_conv_linear_model)
 
-    # Sollte automatisch den Torch-Appender verwenden
-    result: Any = evidential_classification_appender(model)
+    # count number of nn.Linear layers in original model
+    count_linear_original = count_layers(torch_conv_linear_model, nn.Linear)
+    # count number of nn.Dropout layers in original model
+    count_softplus_original = count_layers(torch_conv_linear_model, nn.Softplus)
+    # count number of nn.Sequential layers in original model
+    count_sequential_original = count_layers(torch_conv_linear_model, nn.Sequential)
+    # count number of nn.Conv2d layers in original model
+    count_conv_original = count_layers(torch_conv_linear_model, nn.Conv2d)
 
-    # Der Rückgabewert sollte ein Sequential mit Softplus sein
-    assert isinstance(result, nn.Sequential)
-    assert isinstance(result[1], nn.Softplus)
+    # count number of nn.Linear layers in modified model
+    count_linear_modified = count_layers(model, nn.Linear)
+    # count number of nn.Dropout layers in modified model
+    count_softplus_modified = count_layers(model, nn.Softplus)
+    # count number of nn.Sequential layers in modified model
+    count_sequential_modified = count_layers(model, nn.Sequential)
+    # count number of nn.Conv2d layers in modified model
+    count_conv_modified = count_layers(model, nn.Conv2d)
+
+    # check that the model is not modified except for the softplus layer at the end of the new sequence layer
+    assert model is not None
+    assert isinstance(model, type(torch_conv_linear_model))
+    assert count_linear_original == count_linear_modified
+    assert count_softplus_original == (count_softplus_modified - 1)
+    assert count_sequential_original == (count_sequential_modified - 1)
+    assert count_conv_original == count_conv_modified
+
+
+def test_custom_network(torch_custom_model: nn.Module) -> None:
+    """Tests the custom model modification with added dropout layers."""
+    model = evidential_classification(torch_custom_model)
+
+    # check if model type is correct
+    assert isinstance(model, nn.Sequential)
