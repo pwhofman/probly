@@ -1,82 +1,94 @@
-"""Tests for the torch evidential regression transformation (patched for test isolation)."""
+"""Test for torch classification models."""
 
 from __future__ import annotations
 
-from collections.abc import Callable
-import importlib
-from typing import Any, cast
-
-import pytest
-import torch
 from torch import nn
-from torch.nn import Parameter
 
 from probly.layers.torch import NormalInverseGammaLinear
-from probly.transformation.evidential.regression.common import REPLACED_LAST_LINEAR
-import probly.transformation.evidential.regression.torch as reg_torch
-from pytraverse import State
+from probly.transformation.evidential.regression.common import (
+    evidential_regression,
+)
+from tests.probly.torch_utils import count_layers
 
 
-def test_replace_last_torch_nig_replaces_with_correct_layer(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """It should return a NormalInverseGammaLinear with matching attributes and set the state flag."""
-    original_init = NormalInverseGammaLinear.__init__
+def test_evidential_classification_nig_linear(torch_model_small_2d_2d: nn.Sequential) -> None:
+    model = evidential_regression(torch_model_small_2d_2d)
 
-    def patched_init(self: NormalInverseGammaLinear, *args: Any, **kwargs: Any) -> None:  # noqa: ANN401
-        # let mypy know this is intentionally dynamic
-        original_init(self, *args, **kwargs)  # type: ignore[arg-type]
+    # count number of nn.Linear layers in original model
+    count_linear_original = count_layers(torch_model_small_2d_2d, nn.Linear)
+    # count number of nig layers in original model
+    count_nig_original = count_layers(torch_model_small_2d_2d, NormalInverseGammaLinear)
+    # count number of nn.Sequential layers in original model
+    count_sequential_original = count_layers(torch_model_small_2d_2d, nn.Sequential)
 
-        self.in_features = args[0] if args else kwargs.get("in_features")
-        self.out_features = args[1] if len(args) > 1 else kwargs.get("out_features")
+    # count number of nn.Linear layers in modified model
+    count_linear_modified = count_layers(model, nn.Linear)
+    # count number of nig layers in modified model
+    count_nig_modified = count_layers(model, NormalInverseGammaLinear)
+    # count number of nn.Sequential layers in modified model
+    count_sequential_modified = count_layers(model, nn.Sequential)
 
-        self.weight = Parameter(torch.zeros(self.out_features, self.in_features))
-        bias_flag = kwargs.get("bias", True)
-        if bias_flag:
-            self.bias = Parameter(torch.zeros(self.out_features))
-        else:
-            self.bias = None
+    assert model is not None
+    assert isinstance(model, type(torch_model_small_2d_2d))
+    assert count_nig_original == (count_nig_modified - 1)
+    assert count_linear_original == (count_linear_modified + 1)
+    assert count_nig_original == (count_nig_modified - 1)
+    assert count_sequential_original == count_sequential_modified
 
-    monkeypatch.setattr(NormalInverseGammaLinear, "__init__", patched_init, raising=True)
+    for i in range(len(torch_model_small_2d_2d)):
+        if isinstance(torch_model_small_2d_2d[i], nn.Linear):
+            last_linear = model[i]
+    if last_linear is not None:
+        assert isinstance(model[i], NormalInverseGammaLinear)
 
-    layer = nn.Linear(10, 5, bias=True)
-    layer.to(torch.device("cpu"))
-
-    state = cast(State[object], {REPLACED_LAST_LINEAR: False})
-
-    new_layer, new_state = reg_torch.replace_last_torch_nig(layer, state)
-
-    assert isinstance(new_layer, NormalInverseGammaLinear)
-    assert new_layer.in_features == layer.in_features
-    assert new_layer.out_features == layer.out_features
-    assert new_layer.bias is not None
-    assert new_layer.weight.device == layer.weight.device
-    assert new_state[REPLACED_LAST_LINEAR] is True
+    for i in range(len(model)):
+        if not isinstance(model[i], NormalInverseGammaLinear):
+            assert type(model[i]) is type(torch_model_small_2d_2d[i])
 
 
-def test_register_called_on_import(monkeypatch: pytest.MonkeyPatch) -> None:
-    """At import time, the module should register its traverser for nn.Linear."""
-    called: dict[str, object] = {}
+def test_evidential_classification_nig_conv(torch_conv_linear_model: nn.Sequential) -> None:
+    model = evidential_regression(torch_conv_linear_model)
 
-    def fake_register(cls: type[object], traverser: Callable[..., object]) -> None:
-        called["cls"] = cls
-        called["traverser"] = traverser
+    # count number of nn.Conv2d layers in original model
+    count_linear_original = count_layers(torch_conv_linear_model, nn.Linear)
+    # count number of nig layers in original model
+    count_nig_original = count_layers(torch_conv_linear_model, NormalInverseGammaLinear)
+    # count number of nn.Sequential layers in original model
+    count_sequential_original = count_layers(torch_conv_linear_model, nn.Sequential)
+    # count number of nn.Conv2d layers in original model
+    count_conv_original = count_layers(torch_conv_linear_model, nn.Conv2d)
 
-    monkeypatch.setattr(
-        "probly.transformation.evidential.regression.torch.register",
-        fake_register,
-        raising=True,
-    )
+    # count number of nn.Conv2d layers in modified model
+    count_linear_modified = count_layers(model, nn.Linear)
+    # count number of nig layers in modified model
+    count_nig_modified = count_layers(model, NormalInverseGammaLinear)
+    # count number of nn.Sequential layers in modified model
+    count_sequential_modified = count_layers(model, nn.Sequential)
+    # count number of nn.Conv2d layers in modified model
+    count_conv_modified = count_layers(model, nn.Conv2d)
 
-    # reimport to trigger function
-    import probly.transformation.evidential.regression.torch as mod  # noqa: PLC0415
+    assert model is not None
+    assert isinstance(model, type(torch_conv_linear_model))
+    assert count_nig_original == (count_nig_modified - 1)
+    assert count_linear_original == (count_linear_modified + 1)
+    assert count_nig_original == (count_nig_modified - 1)
+    assert count_sequential_original == count_sequential_modified
+    assert count_conv_original == count_conv_modified
 
-    importlib.reload(mod)
+    for i in range(len(model)):
+        if not isinstance(model[i], NormalInverseGammaLinear):
+            assert type(model[i]) is type(torch_conv_linear_model[i])
 
-    if "cls" not in called:
-        called["cls"] = nn.Linear
-        called["traverser"] = getattr(mod, "replace_last_torch_nig", None)
+    for i in range(len(torch_conv_linear_model)):
+        if isinstance(torch_conv_linear_model[i], nn.Linear):
+            last_linear = model[i]
+    if last_linear is not None:
+        assert isinstance(model[i], NormalInverseGammaLinear)
 
-    assert called["cls"] is nn.Linear
-    assert callable(called["traverser"])
-    assert getattr(called["traverser"], "__name__", None) == "replace_last_torch_nig"
+
+def test_custom_network(torch_custom_model: nn.Module) -> None:
+    """Tests the custom model modification with added dropout layers."""
+    model = evidential_regression(torch_custom_model)
+
+    # check if model type is correct
+    assert type(torch_custom_model) is type(model)
