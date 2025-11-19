@@ -12,15 +12,17 @@ if TYPE_CHECKING:
     from probly.predictor import Predictor
     from pytraverse.composition import RegisteredLooseTraverser
 
-P = GlobalVariable[float]("P", "The probability of dropconnect.")
+P = GlobalVariable[float](
+    "P",
+    "The probability of dropconnect.",
+    0.25
+)
 
 dropconnect_traverser = lazydispatch_traverser[object](name="dropconnect_traverser")
-
 
 def register(cls: LazyType, traverser: RegisteredLooseTraverser) -> None:
     """Register a class to be replaced by DropConnect layers."""
     dropconnect_traverser.register(cls=cls, traverser=traverser, skip_if=is_first_layer, vars={"p": P})
-
 
 def dropconnect[T: Predictor](base: T, p: float = 0.25) -> T:
     """Create a DropConnect predictor from a base predictor.
@@ -32,4 +34,7 @@ def dropconnect[T: Predictor](base: T, p: float = 0.25) -> T:
     Returns:
         The DropConnect predictor.
     """
+    if p < 0 or p > 1:
+        msg = f"The probability p must be between 0 and 1, but got {p} instead."
+        raise ValueError(msg)
     return traverse(base, nn_compose(dropconnect_traverser), init={P: p, CLONE: True})
