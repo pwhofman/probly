@@ -216,8 +216,15 @@ For excample: OOD detection as one of the central downstream modules in "Tasks &
 
 **Selective Prediction / Confidence-Based Rejection**
 The model is allowed to say "I don't know."
-Represented in the form of the accuracy-rejection curves
-[Platzhalter]
+Represented in the form of the accuracy-rejection curves: 
+
+.. figure:: Accuracy-Rejection-Curve.png
+   :alt: Accuracy-Rejection Curve
+   :width: 70%
+   :align: center
+
+   Accuracy–Rejection Curve illustrating how model accuracy improves as uncertain samples are rejected.
+
 
 **Calibration**
 Goal: Prediction probabilities should correspond to the actual frequency.
