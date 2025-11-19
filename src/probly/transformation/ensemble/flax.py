@@ -1,31 +1,27 @@
-"""from flax to ensemble."""
+"""Flax to Ensemble transformation."""
 
 from __future__ import annotations
 
-from flax.nnx import Module, Sequential
+from flax.nnx import Module
 
-from probly.traverse_nn import nn_compose
-from pytraverse import CLONE, lazydispatch_traverser, traverse
+from probly.traverse_nn import nn_traverser
+from pytraverse import CLONE, traverse
 
 from .common import register
 
-# traverser for flax copy
-copy_traverser = lazydispatch_traverser[object](name="copy_traverser")
+
+def _copy_flax(model: Module) -> Module:
+    """Cloned copy of the model."""
+    return traverse(
+        model,
+        nn_traverser,
+        init={CLONE: True},
+    )
 
 
-@copy_traverser.register
-def _(obj: Module) -> Module:
-    # reset_parameter: gewichte zurücksetzt
-    return obj
-
-
-def _copy(module: Module) -> Module:
-    return traverse(module, nn_compose(copy_traverser), init={CLONE: True})
-
-
-def generate_flax_ensemble(obj: Module, members: int) -> Sequential:
-    """Flax ensemble with copied model (members times)."""
-    return Sequential([_copy(obj) for _ in range(members)])
+def generate_flax_ensemble(obj: Module, n_members: int) -> list[Module]:
+    """Generate ensemble members by cloning."""
+    return [_copy_flax(obj) for _ in range(n_members)]
 
 
 register(Module, generate_flax_ensemble)
