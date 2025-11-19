@@ -220,7 +220,7 @@ Represented in the form of the accuracy-rejection curves:
 
 .. figure:: Accuracy-Rejection-Curve.png
    :alt: Accuracy-Rejection Curve
-   :width: 70%
+   :width: 50%
    :align: center
 
    Accuracy–Rejection Curve illustrating how model accuracy improves as uncertain samples are rejected.
