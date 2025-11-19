@@ -32,8 +32,6 @@ This uncertainty can be reduced with more or better data.
    :align: center
 
   .
-
-
 **Aleatoric Uncertainty**
 
 Uncertainty caused by noise in the data itself.
