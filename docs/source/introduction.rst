@@ -214,6 +214,16 @@ Common examples of uncertainty quantities include:
 * predictive entropy, which measures how spread out the predictions are  
 * mutual information, which separates model uncertainty from data uncertainty  
 
+.. figure:: Epistemische.png
+   :alt: Epistemic uncertainty illustration
+   :width: 35%
+   :align: center
+
+.. figure:: Aleatorische.png
+   :alt: Aleatoric uncertainty illustration
+   :width: 35%
+   :align: center
+
 These quantities help answer practical questions such as:
 
 * How confident is the model in this prediction  
