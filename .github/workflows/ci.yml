@@ -127,6 +127,5 @@ jobs:
                 if: ${{ github.repository == 'pwhofman/probly' }} # Only upload reports for main repo and not forks
                 uses: codecov/codecov-action@v5
                 with:
-                    #token: ${{ secrets.CODECOV_TOKEN }}
-                    token: ${{ secrets.CODECOV_TOKEN || '' }}
+                    token: ${{ secrets.CODECOV_TOKEN }}
                     fail_ci_if_error: true
