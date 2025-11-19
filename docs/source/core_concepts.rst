@@ -26,6 +26,14 @@ The model may never have seen anything similar before, for example
 a rare medical anomaly or an unusual object in autonomous driving.
 This uncertainty can be reduced with more or better data.
 
+.. figure:: Epistemische.png
+   :alt: Epistemic uncertainty illustration
+   :width: 45%
+   :align: center
+
+  .
+
+
 **Aleatoric Uncertainty**
 
 Uncertainty caused by noise in the data itself.
@@ -35,6 +43,11 @@ This uncertainty cannot be eliminated simply by collecting more data.
 Most classical ML models such as neural networks or random forests
 ignore both forms of uncertainty and return only a single output, often
 leading to overconfident predictions.
+
+.. figure:: Aleatorische.png
+   :alt: Aleatoric uncertainty illustration
+   :width: 45%
+   :align: center
 
 probly addresses this by offering unified tools to represent and quantify both
 epistemic and aleatoric uncertainty across different methods.
