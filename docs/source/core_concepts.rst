@@ -234,6 +234,26 @@ The visualization shows how quantification is used to make risk-adjusted decisio
 For excample corresponding grid plots and derivations from credal sets and entropies:
 [Platzhalter]
 
+.. raw:: html
+
+   <table style="width:100%; border:0px;">
+     <tr>
+       <td style="width:40%; vertical-align:top; padding-right:20px;">
+         <img src="Credal_Set.png" style="width:100%;"/>
+       </td>
+       <td style="vertical-align:top;">
+         <p>
+         The figure shows three complementary ways to represent uncertainty within the probability simplex:<br><br>
+         <b>top:</b> a credal set capturing all admissible distributions,<br>
+         <b>middle:</b> discrete samples describing a distribution over distributions,<br>
+         <b>bottom:</b> a continuous density reflecting epistemic uncertainty through entropy.<br><br>
+         Such representations are essential for risk-aware decision making, as they allow decisions
+         to be adjusted based on distributional ambiguity, entropy-based decompositions,
+         or worst-case reasoning.
+         </p>
+       </td>
+     </tr>
+   </table>
 
 3.4 How everything is connected 
 ^^^^^^^^^^^^^^^^^^^^^^^^
