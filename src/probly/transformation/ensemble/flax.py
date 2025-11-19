@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-import contextlib
 import copy
 
 from flax import nnx
 import jax
-import jax.numpy as jnp
+import numpy as np
 
 from .common import register
 
@@ -25,37 +24,57 @@ def _reinit_nnx_module(module: nnx.Module, rng: jax.random.KeyArray) -> nnx.Modu
             layer.kernel.value = jax.random.normal(subkey, shape)
         # Bias reset to zeros
         if hasattr(layer, "bias"):
-            layer.bias.value = jnp.zeros_like(layer.bias.value)
+            rng, subkey = jax.random.split(rng)
+            shape = layer.bias.value.shape
+            layer.bias.value = jax.random.normal(subkey, shape)
     return module
 
 
-def ensemble(module: nnx.Module, n_members: int) -> list[nnx.Module]:
-    """Create an ensemble of n_members independent clones of the given nnx.Module.
+def ensemble(
+    module: nnx.Module,
+    num_members: int,
+    reset_params: bool = True,
+    seed: int | None = None,
+) -> list[nnx.Module]:
+    """Create an ensemble of num_members independent clones of the given nnx.Module.
 
-    Each clone has freshly initialized weights.
+       Each clone has freshly initialized weights.
 
     Args:
         module: nnx.Module instance to clone
-        n_members: number of ensemble members
+        num_members: number of ensemble members
+        reset_params: Whether to reinitialize parameters (default: True).
+        seed: Random seed. If None, a random seed from numpy is generated.
 
     Returns:
         List of nnx.Module instances with independent parameters
     """
-    if not isinstance(n_members, int):
-        msg = "n_members must be an int"
+    if not isinstance(num_members, int):
+        msg = "num_members must be an int"
         raise TypeError(msg)
 
-    base_rng = jax.random.PRNGKey(0)
-    rngs = jax.random.split(base_rng, n_members)
+    if num_members < 0:
+        msg = "num_members must be non-negative"
+        raise ValueError(msg)
+
+    if seed is None:
+        max_seed = 2**31 - 1
+
+        # create local generator to avoid side-effects
+        rng = np.random.default_rng()
+        seed = rng.integers(0, max_seed)
+
+    base_rng = jax.random.PRNGKey(seed)
+    rngs = jax.random.split(base_rng, num_members)
 
     clones = []
     for rng in rngs:
         new_mod = copy.deepcopy(module)
-        new_mod = _reinit_nnx_module(new_mod, rng)
+        if reset_params:
+            new_mod = _reinit_nnx_module(new_mod, rng)
         clones.append(new_mod)
 
     return clones
 
 
-with contextlib.suppress(Exception):
-    register(nnx.Module, ensemble)
+register(nnx.Module, ensemble)
