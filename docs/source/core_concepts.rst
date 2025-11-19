@@ -148,8 +148,6 @@ Probly standardizes uncertainty by wrapping all forms of outputs into a single, 
 
 Through this standardization, all uncertainty-quantification procedures, such as entropy calculations, variance-based metrics, scoring rules, or distance measures can operate on the same structure.
 
-Result
-
 As a result, different uncertainty methods integrate seamlessly into one workflow, enabling fair comparison, reproducibility, and coherent processing across an entire pipeline.
 
 3. Quantifying and Using Uncertainty
