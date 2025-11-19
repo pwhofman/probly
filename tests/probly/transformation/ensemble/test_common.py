@@ -22,7 +22,7 @@ def test_unregistered_type_raises(dummy_predictor: Predictor) -> None:
 
 
 def test_registered_generator_called(dummy_predictor: Predictor) -> None:
-    """If the type is registered, the appropriate generator is called and its result ist returned."""
+    """If the type is registered, the appropriate generator is called and its result is returned."""
     mock_generator = Mock()
     expected_result = object()
     mock_generator.return_value = expected_result

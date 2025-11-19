@@ -73,6 +73,22 @@ class TestGenerateTorchEnsemble:
 
         assert torch.allclose(b_first_before, next(b.parameters()).detach())
 
+    def test_two_ensembles_are_different(self, torch_model_small_2d_2d: nn.Sequential) -> None:
+        """Tests if two ensembles created from the same base are different (due to RNG)."""
+        original_model = torch_model_small_2d_2d
+
+        # Create ensemble 1
+        ensemble_1 = ensemble(original_model, num_members=1)
+        # Get parameter of the only member
+        param_e1 = next(ensemble_1[0].parameters()).detach().clone()
+
+        # Create ensemble 2
+        ensemble_2 = ensemble(original_model, num_members=1)
+        param_e2 = next(ensemble_2[0].parameters()).detach().clone()
+
+        # parameters should be different because of random initialization
+        assert not torch.equal(param_e1, param_e2), "Ensembles should differ due to RNG, but parameters are identical."
+
     def test_forward_passes_shape(self, torch_model_small_2d_2d: nn.Sequential) -> None:
         """Ensure that the ensemble forward pass produces outputs of expected shape."""
         original_model = torch_model_small_2d_2d
@@ -136,30 +152,26 @@ class TestGenerateTorchEnsemble:
             assert torch.allclose(output, dummy_input * 2)
 
     def test_no_reset_params_preserves_values(self, torch_model_small_2d_2d: nn.Sequential) -> None:
-        """Ensure that with reset_params=False.
-
-        The parameter values of the original are preserved and outputs are identical
-        .
-        """
+        """Ensure that with reset_params=False, parameters and outputs are preserved."""
         original_model = torch_model_small_2d_2d
 
-        # 1. Speichere den Wert des ersten Parameters des Originals.
+        # save original parameter values
         original_param_value = next(original_model.parameters()).detach().clone()
 
-        # Ensemble erstellen mit reset_params=False
+        # create ensemble with reset_params=False
         new_models = ensemble(original_model, num_members=2, reset_params=False)
         a, b = new_models
 
-        # 2. Parameterwerte prüfen: Müssen mit dem Original übereinstimmen.
+        # parameter values must be the same as original
         param_a = next(a.parameters()).detach()
         assert torch.allclose(
             original_param_value,
             param_a,
         ), "Parameter should have the same values as the original with reset_params=False."
 
-        # 3. Output prüfen: Outputs müssen identisch sein.
+        # outputs must be identical
         dummy_input = torch.randn(4, 2)
         output_a = a(dummy_input)
         output_b = b(dummy_input)
 
-        assert torch.allclose(output_a, output_b), "Outputs must be identical, when parameters are not reset."
+        assert torch.allclose(output_a, output_b), "Outputs must be identical when parameters are not reset."
