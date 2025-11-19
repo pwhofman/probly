@@ -17,16 +17,16 @@ class ValidPredictor(Predictor):
 
 def test_invalid_type() -> None:
     """Test that an invalid type raises NotImplementedError."""
-    n_members = 3
+    num_members = 3
     base = InvalidPredictor()
 
     with pytest.raises(NotImplementedError):
-        ensemble_generator(base, num_members=n_members)
+        ensemble_generator(base, num_members=num_members)
 
 
 def test_invalid_members() -> None:
     """Test n_members is a valid type."""
-    n_members = 2.5
+    num_members = 2.5
 
     with pytest.raises(AssertionError):
-        assert isinstance(int, type(n_members))
+        assert isinstance(int, type(num_members))
