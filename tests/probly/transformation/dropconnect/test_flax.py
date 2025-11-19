@@ -3,14 +3,12 @@
 from __future__ import annotations
 
 import pytest
+from probly.layers.flax import DropConnectLinear 
+from probly.transformation import dropconnect  
+from tests.probly.flax_utils import count_layers 
 
 flax = pytest.importorskip("flax")
 from flax import nnx  # noqa: E402
-
-from probly.layers.flax import DropConnectLinear 
-from probly.transformation import dropconnect  
-from tests.probly.flax_utils import count_layers  
-
 
 class TestNetworkArchitectures:
     """Test class for different network architectures."""
