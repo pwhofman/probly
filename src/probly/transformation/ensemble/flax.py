@@ -28,7 +28,7 @@ def _(obj: nnx.Module) -> nnx.Module:
     elif isinstance(obj, nnx.Embed):
         obj.__init__(obj.num_embeddings, obj.features, rngs=rng)
     elif isinstance(obj, nnx.Dropout):
-        pass
+        obj.__init__(obj.rate, obj.broadcast_dims, obj.deterministic, rngs=rng)
     return obj
 
 
