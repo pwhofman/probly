@@ -1,4 +1,4 @@
-probly.representation.credal\_set.credal\_set
+﻿probly.representation.credal\_set.credal\_set
 =============================================
 
 .. automodule:: probly.representation.credal_set.credal_set
