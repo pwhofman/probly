@@ -30,27 +30,18 @@ class FlaxEnsemble(nn.Module):
         return averaged
 
 
-def generate_flax_ensemble(model: Any, n_members: int):
-    if isinstance(model, type) and issubclass(model, nn.Module):
-        base_module = model
-        base_kwargs: Dict[str, Any] | None = None
-    elif isinstance(model, nn.Module):
-        base_module = model.__class__
-        base_kwargs = {}
-        if is_dataclass(model):
-            try:
-                # Take only public dataclass fields get rid of internal ones(the _ starting)
-                all_fields = asdict(model)
-                base_kwargs = {k: v for k, v in all_fields.items() if not k.startswith("_") and k not in ("name", "parent")}
-                # If no kwargs remain sets to None
-                if not base_kwargs:
-                    base_kwargs = None
-            # If Error occurs during extraction fall back to set to None
-            except Exception:
-                base_kwargs = None
-    else:
-        raise TypeError("generate_flax_ensemble expects a Flax Module class or instance")
-
+def generate_flax_ensemble(model: nn.Module, n_members: int):
+    base_module = model.__class__
+    base_kwargs: Dict[str, Any] | None = None
+    if is_dataclass(model):
+        try:
+            all_fields = asdict(model)
+            # Filter out internal and framework-managed fields
+            filtered = {k: v for k, v in all_fields.items() if not k.startswith("_") and k not in ("name", "parent")}
+            if filtered:
+                base_kwargs = filtered
+        except Exception:
+            base_kwargs = None
     return FlaxEnsemble(base_module=base_module, base_kwargs=base_kwargs, n_members=n_members)
 
 
