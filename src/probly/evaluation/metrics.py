@@ -77,7 +77,7 @@ def efficiency(preds: np.ndarray) -> float:
                of shape `(n_instances, n_samples, n_classes)`.
 
     Returns:
-        eff: The efficiency of the set-valued predictions.
+               eff: The efficiency of the set-valued predictions.
 
     """
     if preds.ndim == 2:
