@@ -9,6 +9,7 @@ import pytest
 import torch
 from torch import nn
 
+from probly.layers.torch import NormalInverseGammaLinear
 from probly.transformation.evidential.regression import evidential_regression
 
 
@@ -78,8 +79,6 @@ def test_last_linear_layer_replaced_with_nig(simple_model):
     This is the core functionality of evidential regression.
     Verify that the type of the last layer is correct.
     """
-    from probly.layers.torch import NormalInverseGammaLinear
-    
     transformed_model = evidential_regression(simple_model)
     layers = list(transformed_model.children())
     
@@ -97,8 +96,6 @@ def test_only_one_layer_is_replaced(mlp_model):
     Verify that the transformation does not over-replace.
     In a multi-layer network, only the last Linear layer should be replaced.
     """
-    from probly.layers.torch import NormalInverseGammaLinear
-    
     transformed_model = evidential_regression(mlp_model)
     
     nig_count = sum(
@@ -185,7 +182,9 @@ def test_output_produces_valid_data(simple_model, sample_input):
                 break
         assert output_tensor is not None, "Dict should contain at least one tensor"
     else:
-        raise AssertionError(f"Unexpected output type: {type(output)}")
+        output_type = type(output)
+        msg = f"Unexpected output type: {output_type}"
+        raise TypeError(msg)
     
     # Check basic properties
     assert output_tensor.shape[0] == 5, "Batch dimension should be 5"
@@ -243,8 +242,6 @@ def test_single_layer_model_edge_case(single_layer_model):
     
     Verify that even a single Linear layer can be correctly transformed.
     """
-    from probly.layers.torch import NormalInverseGammaLinear
-    
     transformed_model = evidential_regression(single_layer_model)
     
     assert isinstance(transformed_model, NormalInverseGammaLinear), \
@@ -278,8 +275,6 @@ def test_transformation_works_with_different_architectures():
     Verify that the transformation is robust and works with
     different types of neural network architectures.
     """
-    from probly.layers.torch import NormalInverseGammaLinear
-    
     # Test with very simple model (2 layers)
     simple = nn.Sequential(nn.Linear(5, 10), nn.Linear(10, 1))
     transformed_simple = evidential_regression(simple)
