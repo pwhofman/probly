@@ -1,0 +1,15 @@
+﻿probly.train
+============
+
+.. automodule:: probly.train
+
+
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   bayesian
+   calibration
+   evidential

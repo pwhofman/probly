@@ -1,0 +1,6 @@
+probly.transformation.dropout
+=============================
+
+.. currentmodule:: probly.transformation
+
+.. autofunction:: dropout

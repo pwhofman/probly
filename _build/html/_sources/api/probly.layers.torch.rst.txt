@@ -1,0 +1,14 @@
+probly.layers.torch
+===================
+
+.. automodule:: probly.layers.torch
+
+
+   .. rubric:: Classes
+
+   .. autosummary::
+
+      BayesConv2d
+      BayesLinear
+      DropConnectLinear
+      NormalInverseGammaLinear

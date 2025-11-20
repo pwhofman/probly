@@ -1,0 +1,11 @@
+probly.representation.sampling.torch\_sample
+============================================
+
+.. automodule:: probly.representation.sampling.torch_sample
+
+
+   .. rubric:: Classes
+
+   .. autosummary::
+
+      TorchTensorSample
