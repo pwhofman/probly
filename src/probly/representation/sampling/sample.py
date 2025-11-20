@@ -287,9 +287,13 @@ class ArraySample[T: Numeric](Sample[T], np.lib.mixins.NDArrayOperatorsMixin):
             The sample at the specified index.
         """
         new_array = self.array[index]
+
+        if not isinstance(new_array, np.ndarray):
+            return new_array
+
         new_sample_dim = track_axis(index, self.sample_dim, self.array.ndim)
 
-        if not isinstance(new_array, np.ndarray) or new_sample_dim is None:
+        if new_sample_dim is None:
             return new_array
 
         return type(self)(array=new_array, sample_dim=new_sample_dim)

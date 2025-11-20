@@ -9,9 +9,12 @@ from typing import Any
 import numpy as np
 import numpy.typing as npt
 
+type IntSeq = Sequence[int | IntSeq]
+type BoolSeq = Sequence[bool | BoolSeq]
+
 type BasicIndexElement = slice | int | np.integer | None
 type AdvancedIndexElement = int | np.integer | slice | npt.NDArray[Any]
-type IndexElement = BasicIndexElement | AdvancedIndexElement | EllipsisType | Sequence[int]
+type IndexElement = BasicIndexElement | AdvancedIndexElement | EllipsisType | IntSeq | BoolSeq
 
 type Index = IndexElement | tuple[IndexElement, ...]
 
@@ -81,7 +84,7 @@ def _split_index(  # noqa: C901, PLR0912
                 advanced_index.append(slice(None))
             else:
                 basic_index.append(slice(None))
-                advanced_index.append(converted_idx)  # type: ignore[arg-type]
+                advanced_index.append(converted_idx)
                 has_advanced = True
 
     if len(int_index) > 0:
