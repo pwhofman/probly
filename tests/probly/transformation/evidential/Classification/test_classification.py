@@ -119,7 +119,10 @@ def test_single_layer_model_edge_case(single_layer_model):
 
     transformed_model = evidential_classification(single_layer_model)
 
-    assert isinstance(transformed_model, nn.Softplus), \
+    # Check that the final layer is Softplus after transformation
+    last_layer = list(transformed_model.children())[-1]
+
+    assert isinstance(last_layer, nn.Softplus), \
         "Single Linear layer should be replaced with nn.Softplus"
 
 
@@ -172,3 +175,4 @@ def test_output_has_softplus_activation(simple_model, sample_input):
     # Check that all values are positive (due to softplus)
     assert torch.all(output_tensor >= 0), \
         "All output values should be non-negative due to softplus activation"
+
