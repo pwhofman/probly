@@ -11,6 +11,7 @@ import numpy as np
 
 from lazy_dispatch.singledispatch import lazydispatch
 from probly.lazy_types import JAX_ARRAY, TORCH_TENSOR
+from probly.representation.sampling.sample_axis_tracking import Index, track_axis
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -227,6 +228,25 @@ class ArraySample[T: Numeric](Sample[T], np.lib.mixins.NDArrayOperatorsMixin):
 
         return cls.from_iterable(sample.samples, sample_dim=sample_dim, dtype=dtype)
 
+    def __len__(self) -> int:
+        """Return the len of the array."""
+        return len(self.array)
+
+    @property
+    def ndim(self) -> int:
+        """The number of dimensions of the underlying array."""
+        return self.array.ndim
+
+    @property
+    def shape(self) -> tuple[int, ...]:
+        """The shape of the underlying array."""
+        return self.array.shape  # type: ignore[no-any-return]
+
+    @property
+    def sample_size(self) -> int:
+        """Return the number of samples."""
+        return self.array.shape[self.sample_dim]  # type: ignore[no-any-return]
+
     @property
     def samples(self) -> np.ndarray:
         """Return an iterator over the samples."""
@@ -245,10 +265,6 @@ class ArraySample[T: Numeric](Sample[T], np.lib.mixins.NDArrayOperatorsMixin):
 
         return type(self)(array=concatenated, sample_dim=self.sample_dim)
 
-    def __len__(self) -> int:
-        """Return the len of the array."""
-        return len(self.array)
-
     def move_sample_dim(self, new_sample_dim: int) -> ArraySample[T]:
         """Return a new ArraySample with the sample dimension moved to new_sample_dim.
 
@@ -261,10 +277,31 @@ class ArraySample[T: Numeric](Sample[T], np.lib.mixins.NDArrayOperatorsMixin):
         moved_array = np.moveaxis(self.array, self.sample_dim, new_sample_dim)
         return type(self)(array=moved_array, sample_dim=new_sample_dim)
 
-    @property
-    def sample_size(self) -> int:
-        """Return the number of samples."""
-        return self.array.shape[self.sample_dim]  # type: ignore[no-any-return]
+    def __getitem__(self, index: Index) -> Self | T | np.ndarray:
+        """Get a sample by index.
+
+        Args:
+            index: The index of the sample to retrieve.
+
+        Returns:
+            The sample at the specified index.
+        """
+        new_array = self.array[index]
+        new_sample_dim = track_axis(index, self.sample_dim, self.array.ndim)
+
+        if not isinstance(new_array, np.ndarray) or new_sample_dim is None:
+            return new_array
+
+        return type(self)(array=new_array, sample_dim=new_sample_dim)
+
+    def __setitem__(self, index: int | slice | np.ndarray, value: T | np.ndarray) -> None:
+        """Set a sample by index.
+
+        Args:
+            index: The index of the sample to set.
+            value: The value to set at the specified index.
+        """
+        self.array[index] = value
 
     def __array__(self, dtype: DTypeLike = None, copy: bool | None = None) -> np.ndarray:
         """Get the underlying numpy array.
@@ -281,7 +318,7 @@ class ArraySample[T: Numeric](Sample[T], np.lib.mixins.NDArrayOperatorsMixin):
 
         return np.asarray(self.array, dtype=dtype, copy=copy)
 
-    def __array_ufunc__(self, ufunc: np.ufunc, method: str, *inputs: Any, **kwargs: Any) -> Any:  # noqa: ANN401
+    def __array_ufunc__(self, ufunc: np.ufunc, method: str, *inputs: Any, **kwargs: Any) -> Any:  # noqa: ANN401, C901, PLR0912
         """Handle numpy ufuncs.
 
         Args:
@@ -293,6 +330,7 @@ class ArraySample[T: Numeric](Sample[T], np.lib.mixins.NDArrayOperatorsMixin):
         Returns:
             The result of applying the ufunc.
         """
+        new_sample_dim = self.sample_dim
         arrays = [x.array if isinstance(x, ArraySample) else x for x in inputs]
 
         if method in ("__call__", "reduce", "reduceat", "accumulate") and "out" in kwargs:
@@ -309,11 +347,14 @@ class ArraySample[T: Numeric](Sample[T], np.lib.mixins.NDArrayOperatorsMixin):
 
         if method in {"reduce", "reduceat", "accumulate"}:
             axis: int | tuple[int] = kwargs.get("axis", 0)
+            axes: tuple[int] = axis if isinstance(axis, tuple) else (axis,)
             keepdims: bool = kwargs.get("keepdims", False)
-            if (method != "reduce" or not keepdims) and (
-                axis == self.sample_dim or (isinstance(axis, tuple) and self.sample_dim in axis)
-            ):
+            if (method != "reduce" or not keepdims) and self.sample_dim in axes:
                 return result
+            if not keepdims:
+                for a in axes:
+                    if a < self.sample_dim:
+                        new_sample_dim -= 1
         elif method in ("at", "outer"):
             return result
 
@@ -323,7 +364,7 @@ class ArraySample[T: Numeric](Sample[T], np.lib.mixins.NDArrayOperatorsMixin):
             return outs
 
         if isinstance(result, np.ndarray):
-            return type(self)(result, sample_dim=self.sample_dim)
+            return type(self)(result, sample_dim=new_sample_dim)
         return result
 
     def __array_function__(
