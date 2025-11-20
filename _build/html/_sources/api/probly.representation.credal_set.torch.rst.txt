@@ -1,0 +1,11 @@
+probly.representation.credal\_set.torch
+=======================================
+
+.. automodule:: probly.representation.credal_set.torch
+
+
+   .. rubric:: Classes
+
+   .. autosummary::
+
+      TorchTensorCredalSet

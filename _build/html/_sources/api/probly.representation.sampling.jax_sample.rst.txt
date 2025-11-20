@@ -1,0 +1,11 @@
+probly.representation.sampling.jax\_sample
+==========================================
+
+.. automodule:: probly.representation.sampling.jax_sample
+
+
+   .. rubric:: Classes
+
+   .. autosummary::
+
+      JaxArraySample

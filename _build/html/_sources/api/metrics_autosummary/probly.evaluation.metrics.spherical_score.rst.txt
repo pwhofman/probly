@@ -1,0 +1,6 @@
+﻿probly.evaluation.metrics.spherical\_score
+==========================================
+
+.. currentmodule:: probly.evaluation.metrics
+
+.. autofunction:: spherical_score

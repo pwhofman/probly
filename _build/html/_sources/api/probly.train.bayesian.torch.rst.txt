@@ -1,0 +1,17 @@
+probly.train.bayesian.torch
+===========================
+
+.. automodule:: probly.train.bayesian.torch
+
+
+   .. rubric:: Functions
+
+   .. autosummary::
+
+      collect_kl_divergence
+
+   .. rubric:: Classes
+
+   .. autosummary::
+
+      ELBOLoss

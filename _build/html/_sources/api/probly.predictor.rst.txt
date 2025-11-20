@@ -1,0 +1,11 @@
+﻿probly.predictor
+================
+
+.. automodule:: probly.predictor
+
+
+   .. rubric:: Classes
+
+   .. autosummary::
+
+      Predictor

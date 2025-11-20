@@ -1,0 +1,6 @@
+﻿probly.evaluation.metrics.brier\_score
+======================================
+
+.. currentmodule:: probly.evaluation.metrics
+
+.. autofunction:: brier_score

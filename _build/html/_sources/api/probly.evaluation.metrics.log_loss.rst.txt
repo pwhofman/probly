@@ -1,0 +1,6 @@
+﻿probly.evaluation.metrics.log\_loss
+===================================
+
+.. currentmodule:: probly.evaluation.metrics
+
+.. autofunction:: log_loss

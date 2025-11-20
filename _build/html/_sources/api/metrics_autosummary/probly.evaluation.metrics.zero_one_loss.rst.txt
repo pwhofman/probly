@@ -1,0 +1,6 @@
+﻿probly.evaluation.metrics.zero\_one\_loss
+=========================================
+
+.. currentmodule:: probly.evaluation.metrics
+
+.. autofunction:: zero_one_loss

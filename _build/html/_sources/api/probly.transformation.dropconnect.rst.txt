@@ -1,0 +1,6 @@
+probly.transformation.dropconnect
+=================================
+
+.. currentmodule:: probly.transformation
+
+.. autofunction:: dropconnect
