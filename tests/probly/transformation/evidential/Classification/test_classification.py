@@ -1,3 +1,4 @@
+# ruff: noqa: ANN201, ANN001, S101
 """Tests for evidential classification transformation.
 
 This module tests the probly.transformation.evidential.classification package,
@@ -175,4 +176,5 @@ def test_output_has_softplus_activation(simple_model, sample_input):
     # Check that all values are positive (due to softplus)
     assert torch.all(output_tensor >= 0), \
         "All output values should be non-negative due to softplus activation"
+
 
