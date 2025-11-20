@@ -303,3 +303,4 @@ def test_transformation_works_with_different_architectures():
     )
     transformed_dropout = evidential_regression(with_dropout)
     assert isinstance(list(transformed_dropout.children())[-1], NormalInverseGammaLinear)
+    
