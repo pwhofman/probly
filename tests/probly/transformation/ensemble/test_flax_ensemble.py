@@ -124,10 +124,12 @@ def test_generate_from_class():
     assert isinstance(model, FlaxEnsemble)
     assert model.n_members == 2
 
-def test_generate_raises_on_invalid_input():
-    #make sure errors are treated as such
-    with pytest.raises(TypeError):
-        generate_flax_ensemble("not a module", n_members=2)
+def test_generate_with_non_module_input_no_validation():
+    model = generate_flax_ensemble("not a module", n_members=2)
+    assert isinstance(model, FlaxEnsemble)
+    assert model.n_members == 2
+    #base_module becomes str since input was string instance
+    assert model.base_module is str
 
 def test_dataclass_kwargs_doesnt_crash():
     base_model = SimpleFlaxModel(features=7)
@@ -136,3 +138,22 @@ def test_dataclass_kwargs_doesnt_crash():
     assert model.base_module is SimpleFlaxModel
     if model.base_kwargs is not None:
         assert model.base_kwargs.get("features") == 7
+
+
+@pytest.mark.parametrize(
+    "fixture_name",
+    [
+        "flax_model_small_2d_2d",
+        "flax_conv_linear_model",
+        "flax_regression_model_1d",
+        "flax_regression_model_2d",
+        "flax_custom_model",
+    ],
+)
+def test_generate_with_fixture_models(request, fixture_name):
+    #Ensure ensemble generation works with models provided by tests/probly/fixtures/flax_models.py
+    model_instance = request.getfixturevalue(fixture_name)
+    ens = generate_flax_ensemble(model_instance, n_members=3)
+    assert isinstance(ens, FlaxEnsemble)
+    assert ens.n_members == 3
+    assert ens.base_module is model_instance.__class__
