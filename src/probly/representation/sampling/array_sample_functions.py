@@ -19,9 +19,10 @@ def array_function(
     types: tuple[type[Any], ...],  # noqa: ARG001
     args: tuple[Any, ...],
     kwargs: dict[str, Any],
-) -> Any:  # noqa: ANN401
+    sample_axis: int,
+) -> tuple[Any, int | None]:
     """Implementation of numpy array functions for sample arrays."""
-    return func._implementation(*args, **kwargs)  # type: ignore[attr-defined]  # noqa: SLF001
+    return func._implementation(*args, **kwargs), None  # type: ignore[attr-defined]  # noqa: SLF001
 
 
 @array_function.multi_register(
@@ -50,15 +51,14 @@ def array_reduction_function(
     types: tuple[type[Any], ...],  # noqa: ARG001
     args: tuple[Any, ...],
     kwargs: dict[str, Any],
-) -> Any:  # noqa: ANN401
-    """Implementation of dimension-reducing array functions.
-
-    Functions
-    """
+    sample_axis: int,
+) -> tuple[Any, int | None]:
+    """Implementation of dimension-reducing array functions with a keepdims kwarg."""
     sig = signature(func)
     params = sig.bind(*args, **kwargs)
     params.apply_defaults()
 
+    a = params.arguments["a"]
     out = params.arguments.get("out", None)
     axis = params.arguments.get("axis", None)
     keepdims = params.arguments.get("keepdims", False)

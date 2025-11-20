@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from probly.representation.sampling.sample_axis_tracking import track_axis
+from probly.representation.sampling.array_sample_axis_tracking import track_axis
 
 
 class TestBasicIndexing:
@@ -87,11 +87,11 @@ class TestAdvancedIndexing:
 
     def test_advanced_higher_dim_boolean_indexing_keeps_special_axis(self) -> None:
         idx = ([[True], [False]], slice(None))
-        assert track_axis(idx, 1, 3) == 0  # type: ignore[arg-type]
+        assert track_axis(idx, 1, 3) == 0
 
     def test_advanced_higher_dim_boolean_indexing_consumes_axes(self) -> None:
         idx = ([[True], [False]], 7)
-        assert track_axis(idx, 2, 3) is None  # type: ignore[arg-type]
+        assert track_axis(idx, 2, 3) is None
 
 
 class TestMixedIndexing:
@@ -105,3 +105,17 @@ class TestMixedIndexing:
         assert track_axis(idx, 0, 3) == 1
         assert track_axis(idx, 1, 3) == 2
         assert track_axis(idx, 2, 3) is None
+
+    def test_insert_with_noncontiguous_subset(self) -> None:
+        idx = (
+            None,  # new axis at front
+            slice(None),
+            np.array([[1, 2]]),  # advanced
+            None,  # new axis after axis 0
+            np.array([[3], [4]]),  # advanced
+            slice(None),
+        )
+        assert track_axis(idx, 0, 4) == 3
+        assert track_axis(idx, 1, 4) is None
+        assert track_axis(idx, 2, 4) is None
+        assert track_axis(idx, 3, 4) == 5

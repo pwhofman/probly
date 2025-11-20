@@ -74,26 +74,27 @@ class Sampler[In, KwIn, Out, S: Sample](Representer[In, KwIn, Out]):
     """A representation predictor that creates representations from finite samples."""
 
     sampling_strategy: SamplingStrategy
-    sample_factory: Callable[[Iterable[Out]], S]
+    sample_factory: SampleFactory[Out, S]
 
     def __init__(
         self,
         predictor: Predictor[In, KwIn, Out],
         sampling_strategy: SamplingStrategy = "sequential",
         sample_factory: SampleFactory[Out, S] = create_sample,  # type: ignore[assignment]
-        sample_dim: int = 1,
+        sample_axis: int = 1,
     ) -> None:
         """Initialize the sampler.
 
         Args:
-            predictor (Predictor[In, KwIn, Out]): The predictor to be used for sampling.
-            sampling_strategy (SamplingStrategy, optional): How the samples should be computed.
-            sample_factory (Callable[[Iterable[Out]], S], optional): Factory to create the sample.
+            predictor: The predictor to be used for sampling.
+            sampling_strategy: How the samples should be computed.
+            sample_factory: Factory to create the sample.
+            sample_axis: The axis along which samples are organized.
         """
         super().__init__(predictor)
         self.sampling_strategy = sampling_strategy
         self.sample_factory = sample_factory
-        self.sample_dim = sample_dim
+        self.sample_axis = sample_axis
 
     def predict(self, *args: In, num_samples: int, **kwargs: Unpack[KwIn]) -> S:
         """Sample from the predictor for a given input."""
@@ -103,32 +104,35 @@ class Sampler[In, KwIn, Out, S: Sample](Representer[In, KwIn, Out]):
                 num_samples=num_samples,
                 strategy=self.sampling_strategy,
             )(*args, **kwargs),
+            sample_axis=self.sample_axis,
         )
 
 
 class EnsembleSampler[In, KwIn, Out, S: Sample](Representer[In, KwIn, Iterable[Out]]):
     """A sampler that creates representations from ensemble predictions."""
 
-    sample_factory: Callable[[Iterable[Out]], S]
+    sample_factory: SampleFactory[Out, S]
 
     def __init__(
         self,
         predictor: Predictor[In, KwIn, Iterable[Out]],
         sample_factory: SampleFactory[Out, S] = create_sample,  # type: ignore[assignment]
-        sample_dim: int = 1,
+        sample_axis: int = 1,
     ) -> None:
         """Initialize the ensemble sampler.
 
         Args:
-            predictor (Predictor[In, KwIn, Out]): The ensemble predictor.
-            sample_factory (Callable[[Iterable[Out]], Sample[Out]], optional): Factory to create the sample.
+            predictor: The ensemble predictor.
+            sample_factory: Factory to create the sample.
+            sample_axis: The axis along which samples are organized.
         """
         super().__init__(predictor)
         self.sample_factory = sample_factory
-        self.sample_dim = sample_dim
+        self.sample_axis = sample_axis
 
     def sample(self, *args: In, **kwargs: Unpack[KwIn]) -> S:
         """Sample from the ensemble predictor for a given input."""
         return self.sample_factory(
             self.predictor(*args, **kwargs),
+            sample_axis=self.sample_axis,
         )

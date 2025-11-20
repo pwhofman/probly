@@ -11,6 +11,6 @@ from probly.representation.sampling.sample import ArraySample
 @pytest.fixture
 def array_sample_2d() -> ArraySample[int]:
     sample_array = np.arange(12).reshape((3, 4))
-    sample = ArraySample[int](sample_array, sample_dim=1)
+    sample = ArraySample[int](sample_array, sample_axis=1)
 
     return sample
