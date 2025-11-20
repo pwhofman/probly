@@ -398,8 +398,8 @@
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>predictor</strong> (<a class="reference internal" href="probly.predictor.html#probly.predictor.Predictor" title="probly.predictor.Predictor"><em>Predictor</em></a>)</p></li>
-<li><p><strong>sample_factory</strong> (<a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable" title="(in Python v3.14)"><em>Callable</em></a><em>[</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable" title="(in Python v3.14)"><em>Iterable</em></a><em>]</em><em>, </em><a class="reference internal" href="probly.representation.sampling.sample.html#probly.representation.sampling.sample.Sample" title="probly.representation.sampling.sample.Sample"><em>Sample</em></a><em>]</em>)</p></li>
+<li><p><strong>predictor</strong> (<a class="reference internal" href="probly.predictor.html#probly.predictor.Predictor" title="probly.predictor.Predictor"><em>Predictor</em></a><em>[</em><em>In</em><em>, </em><em>KwIn</em><em>, </em><em>Out</em><em>]</em>)</p></li>
+<li><p><strong>sample_factory</strong> (<a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable" title="(in Python v3.14)"><em>Callable</em></a><em>[</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable" title="(in Python v3.14)"><em>Iterable</em></a><em>[</em><em>Out</em><em>]</em><em>]</em><em>, </em><a class="reference internal" href="probly.representation.sampling.sample.html#probly.representation.sampling.sample.Sample" title="probly.representation.sampling.sample.Sample"><em>Sample</em></a><em>[</em><em>Out</em><em>]</em><em>]</em>)</p></li>
 </ul>
 </dd>
 </dl>
@@ -409,12 +409,12 @@
 <dd><p>Sample from the ensemble predictor for a given input.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type">Sample[Out]</span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="probly.representation.sampling.sample.html#probly.representation.sampling.sample.Sample" title="probly.representation.sampling.sample.Sample"><code class="xref py py-class docutils literal notranslate"><span class="pre">Sample</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.TypeVar" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeVar</span></code></a>(<code class="docutils literal notranslate"><span class="pre">Out</span></code>)]</span></p>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
 <li><p><strong>args</strong> (<em>In</em>)</p></li>
-<li><p><strong>kwargs</strong> (<em>Unpack</em><em>[</em><em>KwIn</em><em>]</em>)</p></li>
+<li><p><strong>kwargs</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Unpack" title="(in Python v3.14)"><em>Unpack</em></a><em>[</em><em>KwIn</em><em>]</em>)</p></li>
 </ul>
 </dd>
 </dl>
@@ -435,9 +435,9 @@
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>predictor</strong> (<a class="reference internal" href="probly.predictor.html#probly.predictor.Predictor" title="probly.predictor.Predictor"><em>Predictor</em></a>)</p></li>
+<li><p><strong>predictor</strong> (<a class="reference internal" href="probly.predictor.html#probly.predictor.Predictor" title="probly.predictor.Predictor"><em>Predictor</em></a><em>[</em><em>In</em><em>, </em><em>KwIn</em><em>, </em><em>Out</em><em>]</em>)</p></li>
 <li><p><strong>sampling_strategy</strong> (<em>SamplingStrategy</em>)</p></li>
-<li><p><strong>sample_factory</strong> (<a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable" title="(in Python v3.14)"><em>Callable</em></a><em>[</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable" title="(in Python v3.14)"><em>Iterable</em></a><em>]</em><em>, </em><a class="reference internal" href="probly.representation.sampling.sample.html#probly.representation.sampling.sample.Sample" title="probly.representation.sampling.sample.Sample"><em>Sample</em></a><em>]</em>)</p></li>
+<li><p><strong>sample_factory</strong> (<a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable" title="(in Python v3.14)"><em>Callable</em></a><em>[</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable" title="(in Python v3.14)"><em>Iterable</em></a><em>[</em><em>Out</em><em>]</em><em>]</em><em>, </em><a class="reference internal" href="probly.representation.sampling.sample.html#probly.representation.sampling.sample.Sample" title="probly.representation.sampling.sample.Sample"><em>Sample</em></a><em>[</em><em>Out</em><em>]</em><em>]</em>)</p></li>
 </ul>
 </dd>
 </dl>
@@ -447,13 +447,13 @@
 <dd><p>Sample from the predictor for a given input.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type">Sample[Out]</span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="probly.representation.sampling.sample.html#probly.representation.sampling.sample.Sample" title="probly.representation.sampling.sample.Sample"><code class="xref py py-class docutils literal notranslate"><span class="pre">Sample</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.TypeVar" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeVar</span></code></a>(<code class="docutils literal notranslate"><span class="pre">Out</span></code>)]</span></p>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
 <li><p><strong>args</strong> (<em>In</em>)</p></li>
 <li><p><strong>num_samples</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>)</p></li>
-<li><p><strong>kwargs</strong> (<em>Unpack</em><em>[</em><em>KwIn</em><em>]</em>)</p></li>
+<li><p><strong>kwargs</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Unpack" title="(in Python v3.14)"><em>Unpack</em></a><em>[</em><em>KwIn</em><em>]</em>)</p></li>
 </ul>
 </dd>
 </dl>
