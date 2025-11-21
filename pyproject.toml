@@ -92,6 +92,7 @@ dev = [
     "ipykernel>=6.29.5",
     "notebook>=7.3.3",
     "ipywidgets",
+    "probly",
     {include-group = "test"},
     {include-group = "lint"},
     {include-group = "docs"},
@@ -223,3 +224,6 @@ disallow_any_generics = false    # to avoid warnings for type-based singledispat
 disallow_untyped_calls = false   # to avoid issues with using torch, numpy, scipy, etc. internals
 disable_error_code = "misc"      # disable errors caused by torch not typing decorators, wrapping would be overkill
 exclude = "docs"
+
+[tool.uv.sources]
+probly = { workspace = true }
