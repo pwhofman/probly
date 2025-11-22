@@ -1,6 +1,0 @@
-﻿probly.evaluation.metrics.efficiency
-====================================
-
-.. currentmodule:: probly.evaluation.metrics
-
-.. autofunction:: efficiency

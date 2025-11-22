@@ -1,6 +1,0 @@
-﻿probly.evaluation.metrics.coverage\_convex\_hull
-================================================
-
-.. currentmodule:: probly.evaluation.metrics
-
-.. autofunction:: coverage_convex_hull

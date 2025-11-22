@@ -1,6 +1,0 @@
-﻿probly.evaluation.metrics.coverage
-==================================
-
-.. currentmodule:: probly.evaluation.metrics
-
-.. autofunction:: coverage
