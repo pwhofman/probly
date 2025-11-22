@@ -8,7 +8,7 @@
         <title>probly.evaluation.metrics - probly 0.3.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo.css?v=354aac6f" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css?v=be8a1c11" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
     <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo-extensions.css?v=302659d7" />
     <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
@@ -371,7 +371,7 @@
 
 
 <div class="viewcode-block" id="expected_calibration_error">
-<a class="viewcode-back" href="../../../api/probly.evaluation.metrics.expected_calibration_error.html#probly.evaluation.metrics.expected_calibration_error">[docs]</a>
+<a class="viewcode-back" href="../../../api/probly.evaluation.metrics.html#probly.evaluation.metrics.expected_calibration_error">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">expected_calibration_error</span><span class="p">(</span><span class="n">probs</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">labels</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">num_bins</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute the expected calibration error (ECE) of the predicted probabilities :cite:`guoOnCalibration2017`.</span>
 
@@ -404,7 +404,7 @@
 
 
 <div class="viewcode-block" id="coverage">
-<a class="viewcode-back" href="../../../api/probly.evaluation.metrics.coverage.html#probly.evaluation.metrics.coverage">[docs]</a>
+<a class="viewcode-back" href="../../../api/probly.evaluation.metrics.html#probly.evaluation.metrics.coverage">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">coverage</span><span class="p">(</span><span class="n">preds</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">targets</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute the coverage of set-valued predictions.</span>
 
@@ -433,7 +433,7 @@
 
 
 <div class="viewcode-block" id="efficiency">
-<a class="viewcode-back" href="../../../api/probly.evaluation.metrics.efficiency.html#probly.evaluation.metrics.efficiency">[docs]</a>
+<a class="viewcode-back" href="../../../api/probly.evaluation.metrics.html#probly.evaluation.metrics.efficiency">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">efficiency</span><span class="p">(</span><span class="n">preds</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute the efficiency of set-valued predictions.</span>
 
@@ -445,11 +445,7 @@
 <span class="sd">        preds: The predictions as an array of shape `(n_instances, n_classes)` or</span>
 <span class="sd">               of shape `(n_instances, n_samples, n_classes)`.</span>
 
-<<<<<<< HEAD
 <span class="sd">    Returns:</span>
-=======
-<span class="sd">        Returns:</span>
->>>>>>> 55eb69be8a15d6686187e89c69e3587e2b19ed37
 <span class="sd">               eff: The efficiency of the set-valued predictions.</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -467,7 +463,7 @@
 
 
 <div class="viewcode-block" id="coverage_convex_hull">
-<a class="viewcode-back" href="../../../api/probly.evaluation.metrics.coverage_convex_hull.html#probly.evaluation.metrics.coverage_convex_hull">[docs]</a>
+<a class="viewcode-back" href="../../../api/probly.evaluation.metrics.html#probly.evaluation.metrics.coverage_convex_hull">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">coverage_convex_hull</span><span class="p">(</span><span class="n">probs</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">targets</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute the coverage given the credal set defined by the convex hull of the predicted probabilities.</span>
 
@@ -498,7 +494,7 @@
 
 
 <div class="viewcode-block" id="covered_efficiency">
-<a class="viewcode-back" href="../../../api/probly.evaluation.metrics.covered_efficiency.html#probly.evaluation.metrics.covered_efficiency">[docs]</a>
+<a class="viewcode-back" href="../../../api/probly.evaluation.metrics.html#probly.evaluation.metrics.covered_efficiency">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">covered_efficiency</span><span class="p">(</span><span class="n">preds</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">targets</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute the efficiency of the set-valued predictions for which the ground truth is covered.</span>
 
@@ -531,7 +527,7 @@
 
 
 <div class="viewcode-block" id="log_loss">
-<a class="viewcode-back" href="../../../api/probly.evaluation.metrics.log_loss.html#probly.evaluation.metrics.log_loss">[docs]</a>
+<a class="viewcode-back" href="../../../api/probly.evaluation.metrics.html#probly.evaluation.metrics.log_loss">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">log_loss</span><span class="p">(</span><span class="n">probs</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">targets</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute the log loss of the predicted probabilities.</span>
 
@@ -554,7 +550,7 @@
 
 
 <div class="viewcode-block" id="brier_score">
-<a class="viewcode-back" href="../../../api/probly.evaluation.metrics.brier_score.html#probly.evaluation.metrics.brier_score">[docs]</a>
+<a class="viewcode-back" href="../../../api/probly.evaluation.metrics.html#probly.evaluation.metrics.brier_score">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">brier_score</span><span class="p">(</span><span class="n">probs</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">targets</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute the Brier score of the predicted probabilities.</span>
 
@@ -579,7 +575,7 @@
 
 
 <div class="viewcode-block" id="zero_one_loss">
-<a class="viewcode-back" href="../../../api/probly.evaluation.metrics.zero_one_loss.html#probly.evaluation.metrics.zero_one_loss">[docs]</a>
+<a class="viewcode-back" href="../../../api/probly.evaluation.metrics.html#probly.evaluation.metrics.zero_one_loss">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">zero_one_loss</span><span class="p">(</span><span class="n">probs</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">targets</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute the zero-one loss of the predicted probabilities.</span>
 
@@ -602,7 +598,7 @@
 
 
 <div class="viewcode-block" id="spherical_score">
-<a class="viewcode-back" href="../../../api/probly.evaluation.metrics.spherical_score.html#probly.evaluation.metrics.spherical_score">[docs]</a>
+<a class="viewcode-back" href="../../../api/probly.evaluation.metrics.html#probly.evaluation.metrics.spherical_score">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">spherical_score</span><span class="p">(</span><span class="n">probs</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">targets</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute the spherical score of the predicted probabilities.</span>
 

@@ -1,6 +1,0 @@
-﻿probly.evaluation.metrics.expected\_calibration\_error
-======================================================
-
-.. currentmodule:: probly.evaluation.metrics
-
-.. autofunction:: expected_calibration_error

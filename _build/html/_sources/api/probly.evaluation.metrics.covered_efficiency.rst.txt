@@ -1,6 +1,0 @@
-﻿probly.evaluation.metrics.covered\_efficiency
-=============================================
-
-.. currentmodule:: probly.evaluation.metrics
-
-.. autofunction:: covered_efficiency
