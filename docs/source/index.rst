@@ -52,6 +52,7 @@ Quickstart
    :caption: Content
    :hidden:
 
+   advanced_topics
    methods
    references
 
