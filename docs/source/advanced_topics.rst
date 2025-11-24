@@ -13,8 +13,8 @@ This chapter explains:
 1.2 Prerequisites & notation
 Before reading this chapter, the reader should already be familiar with:
 
-- the concepts introduced in **Core Concepts**,  
-- the basic workflows described in **Main Components**,  
+- the concepts introduced in Core Concepts,  
+- the basic workflows described in Main Components,  
 - foundational ideas such as uncertainty representations, transformations, and inference.
 
 For clarity, this chapter follows the same notation conventions used throughout the Probly documentation.
@@ -22,9 +22,9 @@ For clarity, this chapter follows the same notation conventions used throughout 
 1.3 Typical advanced use cases
 This chapter is intended for scenarios where users go beyond simple toy examples, such as:
 
-- training or evaluating **large or real-world models**,  
-- dealing with **tight performance or memory constraints**,  
-- integrating Probly into **existing machine-learning pipelines**.
+- training or evaluating large or real-world models,  
+- dealing with tight performance or memory constraints,  
+- integrating Probly into existing machine-learning pipelines.
 
 These use cases often require a deeper understanding of transformations, scalability, and framework interoperability, which this chapter provides.
 
