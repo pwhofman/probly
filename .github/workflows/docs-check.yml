@@ -1,0 +1,68 @@
+name: Documentation Checks
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'docs/**'
+      - 'src/**'
+      - '.github/workflows/docs-check.yml'
+
+jobs:
+  docs-build-check:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python and uv
+        id: setup-uv-python
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+      
+      - name: Install dependencies
+        run: uv sync --dev
+      
+      - name: Install pandoc
+        run: sudo apt-get install -y pandoc
+      
+      - name: Copy content to docs/source folder
+        run: |
+          cp .github/CONTRIBUTING.md docs/source/contributing.md
+          cp -r notebooks/examples/ docs/source/
+      
+      - name: Build documentation with warnings as errors
+        working-directory: ./docs
+        run: |
+          uv run sphinx-build -W --keep-going -b html source build/html
+        continue-on-error: false
+      
+      - name: Run doctests
+        working-directory: ./docs
+        run: |
+          uv run sphinx-build -b doctest source build/doctest
+        continue-on-error: false
+      
+      - name: Upload build artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-build-output
+          path: docs/build/
+          retention-days: 7
+      
+      - name: Check for common documentation issues
+        if: success()
+        working-directory: ./docs
+        run: |
+          echo "Documentation built successfully without warnings!"
+          echo "All doctests passed!"
+          echo ""
+          echo "Build summary:"
+          uv run sphinx-build -b html source build/html 2>&1 | tail -n 10
