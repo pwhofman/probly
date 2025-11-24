@@ -1,4 +1,4 @@
-"""Torch ensemble implementation."""
+"""Torch dropout implementation."""
 
 from __future__ import annotations
 
