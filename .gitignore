@@ -265,4 +265,4 @@ docs/source/api
 .vscode/settings.json
 
 # macOS
-.DS_Store
+**/.DS_Store
