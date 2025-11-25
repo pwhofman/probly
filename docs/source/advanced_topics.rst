@@ -38,6 +38,7 @@ These use cases often require a deeper understanding of transformations, scalabi
 -------------------------
 
 2.1 Recall: What is a transformation?
+
 In *probly*, a **transformation** is a small building block that maps values between two spaces:
 
 - an **unconstrained space**, where optimisation and inference algorithms can work freely, and  
