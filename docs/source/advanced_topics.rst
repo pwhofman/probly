@@ -34,27 +34,25 @@ These use cases often require a deeper understanding of transformations, scalabi
 
     For the main bulding blocks of `probly`, like the main transofrmations, utilities & layers, and evaluation tools, see :doc:`Main Components <main_components>`.
 
-
 2. Custom Transformations
 -------------------------
 
 2.1 Recall: What is a transformation?
-In *probly*, a **transformation** is a function that maps values between two spaces:
+In *probly*, a **transformation** is a small building block that maps values between two spaces:
 
 - an **unconstrained space**, where optimisation and inference algorithms can work freely, and  
 - a **constrained space**, which matches the natural domain of your parameters or predictions
   (for example positive scales, probabilities on a simplex, or bounded intervals).
 
-Instead of forcing you to design models directly in a tricky constrained space, you write them in
-terms of meaningful parameters, and the transformation takes care of the underlying math. This is
-useful because it allows `probly` to:
+Instead of forcing you to design models directly in a complicated constrained space, you write
+your model in terms of meaningful parameters. The transformation then takes care of the math that
+keeps everything inside the valid domain.
 
-- perform **reparameterisation**, which can make optimisation easier and gradients better behaved,
-- enforce **constraints** such as positivity, bounds, or simplex structure automatically,
-- keep the numerical behaviour of sampling and inference stable, even for complicated models.
+In practice this means that transformations:
 
-You can think of a transformation as a small, reusable building block that tells `probly` how to
-move back and forth between “nice for the model” coordinates and “nice for the user” coordinates.
+- provide a *short, reusable recipe* for how to turn raw latent variables into valid parameters,
+- enable **reparameterisation**, which can make optimisation easier and gradients better behaved,
+- automatically enforce **constraints** such as positivity, bounds, or simplex structure.
 
-
-
+You can think of a transformation as an adapter between “nice for the optimiser” coordinates and
+“nice for the human” coordinates.
