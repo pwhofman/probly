@@ -9,16 +9,6 @@ The library is built around three core pillars that mirror the uncertainty
 estimation pipeline: **Transformation**, **Representation**, 
 and **Quantification**.
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Transformations
-
-   transformations/dropout
-   transformations/dropconnect
-   transformations/bayesian
-   transformations/ensemble
-   transformations/evidential
-
 1.Transformations
 ----------------------------
 The core of ``probly`` lies in its **Transformations**. These functions take a standard, deterministic PyTorch 
@@ -27,8 +17,10 @@ The core of ``probly`` lies in its **Transformations**. These functions take a s
 
 Below are the primary transformations available in the library.
 
-1.1- Dropout
+1.1 Dropout
 ~~~~~~~~~~~~~~~~~~~~~~~
+.. TODO: Add a link to the corresponding python notebook
+
 1.2. DropConnect 
 ~~~~~~~~~~~~~~~~~~~~~~~
 1.3. Ensemble
