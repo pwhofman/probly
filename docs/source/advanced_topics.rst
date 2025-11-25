@@ -7,7 +7,7 @@ Advanced Topics
 1.1 Purpose of this chapter
 This chapter explains:
 
-- what “advanced” means in the context of `probly`,
+- what “advanced” means in the context of ``probly``,
 - when you should read this chapter (recommended after Core Concepts and Main Components).
 
 1.2 Prerequisites & notatin
@@ -17,14 +17,14 @@ Before reading this chapter, the reader should already be familiar with:
 - the basic workflows described in Main Components,  
 - foundational ideas such as uncertainty representations, transformations, and inference.
 
-For clarity, this chapter follows the same notation conventions used throughout the Probly documentation.
+For clarity, this chapter follows the same notation conventions used throughout the ``probly`` documentation.
 
 1.3 Typical advanced use cases
 This chapter is intended for scenarios where users go beyond simple toy examples, such as:
 
 - training or evaluating large or real-world models,  
 - dealing with tight performance or memory constraints,  
-- integrating Probly into existing machine-learning pipelines.
+- integrating ``probly`` into existing machine-learning pipelines.
 
 These use cases often require a deeper understanding of transformations, scalability, and framework interoperability, which this chapter provides.
 
@@ -32,7 +32,7 @@ These use cases often require a deeper understanding of transformations, scalabi
 
     For background material, see :doc:`Core Concepts <core_concepts>`.
 
-    For the main bulding blocks of `probly`, like the main transofrmations, utilities & layers, and evaluation tools, see :doc:`Main Components <main_components>`.
+    For the main bulding blocks of ``probly``, like the main transofrmations, utilities & layers, and evaluation tools, see :doc:`Main Components <main_components>`.
 
 2. Custom Transformations
 -------------------------
@@ -60,7 +60,7 @@ You can think of a transformation as an adapter between “nice for the optimise
 
 2.2 When to implement your own?
 
-The built-in transformations in `probly` cover many common situations, such as positive scales,
+The built-in transformations in ``probly`` cover many common situations, such as positive scales,
 simple box constraints, or mappings to probability vectors. In many projects these are sufficient
 and you never have to write your own.
 
@@ -84,11 +84,11 @@ There are, however, important cases where a **custom transformation** is the bet
   more transparent.
 
 - **Integration with existing code or libraries**  
-  When you plug `probly` into an existing ML pipeline, external code often expects parameters
-  in a fixed format. A transformation can serve as a bridge: `probly` works in its preferred
+  When you plug ``probly`` into an existing ML pipeline, external code often expects parameters
+  in a fixed format. A transformation can serve as a bridge: ``probly`` works in its preferred
   unconstrained space, while the surrounding code still “sees” the familiar domain-specific
   representation.
 
-As a practical rule: if you frequently add manual clamps, `min`/`max` operations, or ad-hoc
+As a practical rule: if you frequently add manual clamps, min/max operations, or ad-hoc
 post-processing to keep parameters valid, it is a strong signal that a dedicated custom
 transformation would make the model cleaner and more robust.
