@@ -30,7 +30,8 @@ These use cases often require a deeper understanding of transformations, scalabi
 
 .. seealso::
 
-   For background material, see :doc:`Core Concepts <core_concepts>`.
+    For background material, see :doc:`Core Concepts <core_concepts>`.
 
-    For the main bulding blocks of `probly`, like the main transofrmations, utilities & layers, and evaluation tools, see :doc: `Main Components <main_components>`.
-`
+    For the main bulding blocks of `probly`, like the main transofrmations, utilities & layers, and evaluation tools, see :doc:`Main Components <main_components>`.
+
+
