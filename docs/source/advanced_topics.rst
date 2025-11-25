@@ -287,4 +287,51 @@ discretisation). When doing so, keep in mind:
 - the statistical interpretation of the model should remain clear even when transformations are
   stochastic.
 
+2.6 Testing & debugging
+
+Well-tested transformations are crucial for trustworthy models. Because transformations sit between
+the internal representation and the visible parameters, subtle bugs can be hard to detect unless
+you test them explicitly.
+
+**Round-trip tests (forward + inverse)**
+
+A basic but powerful test is the **round-trip check**:
+
+- sample or construct a range of valid unconstrained inputs,
+- apply the forward mapping followed by the inverse mapping,
+- verify that the original inputs are recovered (up to numerical tolerance).
+
+Similarly, you can test constrained values by applying inverse then forward. Systematic deviations
+usually indicate mistakes in the formulas or shape handling.
+
+**Numerical stability checks**
+
+Transformations that operate near boundaries (very small or very large values, probabilities near
+0 or 1, etc.) can suffer from numerical problems. It is good practice to:
+
+- test extreme but valid inputs,
+- check for overflow, underflow, or `nan`/`inf` values,
+- monitor gradients if the transformation is used in gradient-based inference.
+
+Where necessary, introduce small epsilons, safe clipping, or alternative parameterisations to keep
+the transformation stable.
+
+**Common pitfalls and how to recognise them**
+
+Typical issues with custom transformations include:
+
+- silently producing invalid outputs (for example negative values where only positives are allowed),
+- mismatched shapes between forward and inverse mappings,
+- forgetting to update the transformation when the model structure changes,
+- inconsistent handling of broadcasting or batching.
+
+Symptoms of these problems often show up later as:
+
+- optimisation failing to converge,
+- extremely large or unstable uncertainty estimates,
+- runtime errors deep inside the inference code.
+
+When such issues appear, it is often helpful to temporarily isolate the transformation in a small
+test script, run the round-trip and stability checks described above, and only then reintegrate it
+into the full ``probly`` model.
   
