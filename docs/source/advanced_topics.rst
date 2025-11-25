@@ -7,7 +7,7 @@ Advanced Topics
 1.1 Purpose of this chapter
 This chapter explains:
 
-- what “advanced” means in the context of *probly*,
+- what “advanced” means in the context of `probly`,
 - when you should read this chapter (recommended after Core Concepts and Main Components).
 
 1.2 Prerequisites & notation
@@ -28,3 +28,10 @@ This chapter is intended for scenarios where users go beyond simple toy examples
 
 These use cases often require a deeper understanding of transformations, scalability, and framework interoperability, which this chapter provides.
 
+.. see also::
+
+
+    
+    For background material, see :doc:`Core Concepts <core_concepts>`.
+    For the main bulding blocks of `probly`, like the main transofrmations, utilities & layers, and evaluation tools, see :doc: `Main Components <main_components>`.
+`
