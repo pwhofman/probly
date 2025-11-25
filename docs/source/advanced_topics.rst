@@ -38,7 +38,8 @@ These use cases often require a deeper understanding of transformations, scalabi
 -------------------------
 
 2.1 Recall: What is a transformation?
-In `probly`, a **transformation** is a small building block that maps values between two spaces:
+
+In ``probly``, a **transformation** is a small building block that maps values between two spaces:
 
 - an **unconstrained space**, where optimisation and inference algorithms can work freely, and  
 - a **constrained space**, which matches the natural domain of your parameters or predictions
@@ -58,6 +59,7 @@ You can think of a transformation as an adapter between “nice for the optimise
 “nice for the human” coordinates.
 
 2.2 When to implement your own?
+
 The built-in transformations in `probly` cover many common situations, such as positive scales,
 simple box constraints, or mappings to probability vectors. In many projects these are sufficient
 and you never have to write your own.
