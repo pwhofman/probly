@@ -10,7 +10,7 @@ This chapter explains:
 - what “advanced” means in the context of `probly`,
 - when you should read this chapter (recommended after Core Concepts and Main Components).
 
-1.2 Prerequisites & notation
+1.2 Prerequisites & notatin
 Before reading this chapter, the reader should already be familiar with:
 
 - the concepts introduced in Core Concepts,  
