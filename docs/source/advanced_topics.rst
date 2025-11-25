@@ -92,3 +92,38 @@ There are, however, important cases where a **custom transformation** is the bet
 As a practical rule: if you frequently add manual clamps, min/max operations, or ad-hoc
 post-processing to keep parameters valid, it is a strong signal that a dedicated custom
 transformation would make the model cleaner and more robust.
+
+2.3 API & design principles
+
+Custom transformations should follow a **small and predictable interface**. Conceptually, each
+transformation is responsible for three things:
+
+- a **forward mapping** from an unconstrained input to the constrained parameter space,
+- an **inverse mapping** that recovers the unconstrained value from a constrained one (where
+  this is well-defined),
+- any **auxiliary quantities** that inference algorithms may need, such as Jacobians or
+  log-determinants, depending on the method used.
+
+Beyond this minimal interface, good transformations follow a few design principles:
+
+- **Local and self-contained**  
+  All logic that enforces a particular constraint should live inside the transformation. The rest
+  of the model should not need to know which reparameterisation is used internally.
+
+- **Clearly documented domain and range**  
+  It should be obvious which inputs are valid, what shapes are expected, and which constraints the
+  outputs satisfy. This makes debugging and reuse much easier.
+
+- **Numerically stable**  
+  The implementation should avoid unnecessary overflow, underflow, or extreme gradients. Small
+  epsilons, stable variants of mathematical formulas, or safe clipping near the boundaries are
+  often needed in practice.
+
+- **Composable**  
+  Whenever possible, transformations should work well in combination with others, for example a
+  scaling transform followed by a simplex transform, or a log-transform followed by a shift.
+
+During **sampling and inference**, ``probly`` repeatedly calls the forward and inverse mappings of
+your transformation to move between the internal unconstrained representation and the external
+constrained parameters that appear in the model. A well-designed transformation therefore keeps
+these operations cheap, stable, and easy to reason about.
