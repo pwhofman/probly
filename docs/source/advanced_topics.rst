@@ -127,3 +127,74 @@ During **sampling and inference**, ``probly`` repeatedly calls the forward and i
 your transformation to move between the internal unconstrained representation and the external
 constrained parameters that appear in the model. A well-designed transformation therefore keeps
 these operations cheap, stable, and easy to reason about.
+
+2.4 Step-by-step tutorial: simple custom transformation
+
+This section walks through a minimal example of implementing a custom transformation in ``probly``.
+The goal is not to show every detail of the library API, but to illustrate the typical workflow
+from idea to a working component that can be used inside a model.
+
+**Problem description**
+
+Suppose we want a parameter that must always be **strictly positive**, for example a scale or
+standard deviation. Working directly with a positive variable is inconvenient for optimisation, so
+we introduce an unconstrained real-valued variable and use a transformation to map it into the
+positive domain.
+
+Our transformation therefore needs to:
+
+- take any real number as input,
+- output a strictly positive value,
+- be invertible (or at least approximately invertible) so that inference algorithms in ``probly``
+  can move between the two spaces.
+
+**Implementation**
+
+At implementation time we translate this idea into a small transformation object. Conceptually, it
+contains:
+
+- a **forward** method that maps from the unconstrained real line to positive values
+  (for example via an exponential or softplus mapping),
+- an **inverse** method that maps positive values back to the real line,
+- any additional helpers required by the inference backends, such as computing a log-determinant
+  of the Jacobian if needed.
+
+The concrete class and method names depend on the exact transformation base class used by
+``probly``, but the conceptual structure is always the same.
+
+**Registration / configuration**
+
+Once implemented, the transformation must be **registered** so that ``probly`` can find and use it.
+This usually means:
+
+- making the class importable from the appropriate module,
+- optionally adding it to a registry or configuration table,
+- defining any configuration options (for example, whether to clamp values near the boundary, or
+  which nonlinearity to use).
+
+After registration, the transformation can be referred to by name or imported wherever it is needed.
+
+**Using it in a model**
+
+To use the transformation in a model, we introduce an unconstrained latent parameter and attach the
+transformation to it. During model construction, ``probly`` will then:
+
+- store the transformation together with the parameter,
+- transparently apply the forward mapping whenever the constrained parameter is needed,
+- keep track of the relationship so that gradients and uncertainty estimates remain consistent.
+
+From the model author’s perspective, the parameter now behaves like a normal positive quantity, even
+though internally it is represented by an unconstrained variable.
+
+**Running inference and inspecting results**
+
+When we run inference, optimisation, or sampling, ``probly`` operates in the unconstrained space but
+uses the transformation to interpret results in the constrained space. After the run finishes, we
+can:
+
+- inspect posterior samples or point estimates of the constrained parameter,
+- verify that all inferred values satisfy the desired constraints,
+- compare behaviour with and without the custom transformation to understand its impact.
+
+This simple workflow generalises to more complex transformations with multiple inputs, coupled
+constraints, or additional structure.
