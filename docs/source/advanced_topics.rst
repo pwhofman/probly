@@ -38,8 +38,7 @@ These use cases often require a deeper understanding of transformations, scalabi
 -------------------------
 
 2.1 Recall: What is a transformation?
-
-In *probly*, a **transformation** is a small building block that maps values between two spaces:
+In `probly`, a **transformation** is a small building block that maps values between two spaces:
 
 - an **unconstrained space**, where optimisation and inference algorithms can work freely, and  
 - a **constrained space**, which matches the natural domain of your parameters or predictions
@@ -57,3 +56,37 @@ In practice this means that transformations:
 
 You can think of a transformation as an adapter between “nice for the optimiser” coordinates and
 “nice for the human” coordinates.
+
+2.2 When to implement your own?
+The built-in transformations in `probly` cover many common situations, such as positive scales,
+simple box constraints, or mappings to probability vectors. In many projects these are sufficient
+and you never have to write your own.
+
+There are, however, important cases where a **custom transformation** is the better choice:
+
+- **Limitations of built-in transformations**  
+  Your model uses a parameter space that is not covered by the standard transforms. Examples
+  include structured covariance matrices, ordered variables, monotone functions, or parameters
+  that must satisfy several coupled constraints at once.
+
+- **Custom distributions or domain constraints**  
+  Domain knowledge may require that parameters follow a particular shape or relationship
+  (“these values must always sum to one”, “this parameter must stay in a problem-specific
+  range”, “these two variables share a common scale”). A custom transformation lets you encode
+  these rules explicitly instead of relying on ad-hoc clipping.
+
+- **Cleaner uncertainty behaviour**  
+  Some parameterisations produce more interpretable or numerically stable uncertainty estimates,
+  for example working on a log-scale for strictly positive variances. A custom transformation can
+  make the connection to the uncertainty representations from :doc:`Core Concepts <core_concepts>`
+  more transparent.
+
+- **Integration with existing code or libraries**  
+  When you plug `probly` into an existing ML pipeline, external code often expects parameters
+  in a fixed format. A transformation can serve as a bridge: `probly` works in its preferred
+  unconstrained space, while the surrounding code still “sees” the familiar domain-specific
+  representation.
+
+As a practical rule: if you frequently add manual clamps, `min`/`max` operations, or ad-hoc
+post-processing to keep parameters valid, it is a strong signal that a dedicated custom
+transformation would make the model cleaner and more robust.
