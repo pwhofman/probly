@@ -198,3 +198,93 @@ can:
 
 This simple workflow generalises to more complex transformations with multiple inputs, coupled
 constraints, or additional structure.
+
+2.5 Advanced patterns
+
+Once you are comfortable with basic custom transformations, ``probly`` allows for more advanced
+usage patterns that can make large or complex models easier to express.
+
+**Composing multiple transformations**
+
+Often it is easier to build a complex mapping by **composing several simple transformations** rather
+than writing one large one. For example, you might:
+
+- first apply a shift-and-scale transform,
+- then map the result onto a simplex,
+- finally enforce an ordering constraint.
+
+When transformations are designed to be composable, ``probly`` can chain their forward and inverse
+operations, giving you a flexible way to express rich constraints while keeping each component easy
+to test and reason about.
+
+**Sharing parameters across transformations**
+
+In some models, several transformations depend on a **shared parameter** or hyperparameter (for
+example a common scale or concentration parameter). Instead of duplicating this value, it is often
+better to:
+
+- define the shared quantity once,
+- pass references to it into multiple transformations,
+- ensure that updates to the shared parameter are consistently reflected in all dependent
+  transformations.
+
+This pattern encourages modular model design while keeping the statistical meaning of shared
+structure explicit.
+
+**Handling randomness vs determinism inside transformations**
+
+Most transformations are deterministic mappings, but in some cases it is useful to include
+controlled **randomness** inside a transformation (for example randomised rounding or stochastic
+discretisation). When doing so, keep in mind:
+
+- deterministic behaviour is usually easier for optimisation and debugging,
+- if randomness is used, it should be driven by the same PRNG and seeding mechanisms as the rest
+  of the ``probly`` model,
+- the statistical interpretation of the model should remain clear even when transformations are
+  stochastic.
+
+2.5 Advanced patterns
+
+Once you are comfortable with basic custom transformations, ``probly`` allows for more advanced
+usage patterns that can make large or complex models easier to express.
+
+**Composing multiple transformations**
+
+Often it is easier to build a complex mapping by **composing several simple transformations** rather
+than writing one large one. For example, you might:
+
+- first apply a shift-and-scale transform,
+- then map the result onto a simplex,
+- finally enforce an ordering constraint.
+
+When transformations are designed to be composable, ``probly`` can chain their forward and inverse
+operations, giving you a flexible way to express rich constraints while keeping each component easy
+to test and reason about.
+
+**Sharing parameters across transformations**
+
+In some models, several transformations depend on a **shared parameter** or hyperparameter (for
+example a common scale or concentration parameter). Instead of duplicating this value, it is often
+better to:
+
+- define the shared quantity once,
+- pass references to it into multiple transformations,
+- ensure that updates to the shared parameter are consistently reflected in all dependent
+  transformations.
+
+This pattern encourages modular model design while keeping the statistical meaning of shared
+structure explicit.
+
+**Handling randomness vs determinism inside transformations**
+
+Most transformations are deterministic mappings, but in some cases it is useful to include
+controlled **randomness** inside a transformation (for example randomised rounding or stochastic
+discretisation). When doing so, keep in mind:
+
+- deterministic behaviour is usually easier for optimisation and debugging,
+- if randomness is used, it should be driven by the same PRNG and seeding mechanisms as the rest
+  of the ``probly`` model,
+- the statistical interpretation of the model should remain clear even when transformations are
+  stochastic.
+
+  
