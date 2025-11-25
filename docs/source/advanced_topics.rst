@@ -106,20 +106,20 @@ transformation is responsible for three things:
 
 Beyond this minimal interface, good transformations follow a few design principles:
 
-- **Local and self-contained**  
+- **local and self-contained**  
   All logic that enforces a particular constraint should live inside the transformation. The rest
   of the model should not need to know which reparameterisation is used internally.
 
-- **Clearly documented domain and range**  
+- **clearly documented domain and range**  
   It should be obvious which inputs are valid, what shapes are expected, and which constraints the
   outputs satisfy. This makes debugging and reuse much easier.
 
-- **Numerically stable**  
+- **numerically stable**  
   The implementation should avoid unnecessary overflow, underflow, or extreme gradients. Small
   epsilons, stable variants of mathematical formulas, or safe clipping near the boundaries are
   often needed in practice.
 
-- **Composable**  
+- **composable**  
   Whenever possible, transformations should work well in combination with others, for example a
   scaling transform followed by a simplex transform, or a log-transform followed by a shift.
 
