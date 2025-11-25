@@ -134,7 +134,7 @@ This section walks through a minimal example of implementing a custom transforma
 The goal is not to show every detail of the library API, but to illustrate the typical workflow
 from idea to a working component that can be used inside a model.
 
-**Problem description**
+**Problem description:**
 
 Suppose we want a parameter that must always be **strictly positive**, for example a scale or
 standard deviation. Working directly with a positive variable is inconvenient for optimisation, so
@@ -148,7 +148,7 @@ Our transformation therefore needs to:
 - be invertible (or at least approximately invertible) so that inference algorithms in ``probly``
   can move between the two spaces.
 
-**Implementation**
+**Implementation:**
 
 At implementation time we translate this idea into a small transformation object. Conceptually, it
 contains:
@@ -162,7 +162,7 @@ contains:
 The concrete class and method names depend on the exact transformation base class used by
 ``probly``, but the conceptual structure is always the same.
 
-**Registration / configuration**
+**Registration / configuration:**
 
 Once implemented, the transformation must be **registered** so that ``probly`` can find and use it.
 This usually means:
@@ -174,7 +174,7 @@ This usually means:
 
 After registration, the transformation can be referred to by name or imported wherever it is needed.
 
-**Using it in a model**
+**Using it in a model:**
 
 To use the transformation in a model, we introduce an unconstrained latent parameter and attach the
 transformation to it. During model construction, ``probly`` will then:
@@ -186,7 +186,7 @@ transformation to it. During model construction, ``probly`` will then:
 From the model author’s perspective, the parameter now behaves like a normal positive quantity, even
 though internally it is represented by an unconstrained variable.
 
-**Running inference and inspecting results**
+**Running inference and inspecting results:**
 
 When we run inference, optimisation, or sampling, ``probly`` operates in the unconstrained space but
 uses the transformation to interpret results in the constrained space. After the run finishes, we
