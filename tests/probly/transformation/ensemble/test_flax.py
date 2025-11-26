@@ -1,10 +1,9 @@
-
-from probly.transformation.ensemble.flax import generate_flax_ensemble
-
 import pytest
 
 flax = pytest.importorskip("flax")
 from flax import nnx
+
+from probly.transformation.ensemble.flax import generate_flax_ensemble
 import jax
 import jax.numpy as jnp
 import numpy as np
