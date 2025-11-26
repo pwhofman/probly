@@ -132,7 +132,7 @@ Step 5: Perform Monte Carlo inference
 Step 6: Visualize uncertainty
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. image:: images/examples/mc_dropout_example.png
+.. image:: mc_dropout_example.png
    :width: 550px
    :align: center
    :alt: Monte Carlo Dropout uncertainty visualization
@@ -252,7 +252,7 @@ Step 5: Create and evaluate a SubEnsemble
 Visual result
 ~~~~~~~~~~~~~
 
-.. image:: images/examples/subensemble_comparison.png
+.. image:: subensemble_comparison.png
    :width: 500px
    :align: center
    :alt: Accuracy comparison between full ensemble and SubEnsemble
@@ -403,7 +403,7 @@ Step 5: Evaluate both ensembles
 Visual result
 -------------
 
-.. image:: images/examples/mixed_ensemble_comparison.png
+.. image:: mixed_ensemble_comparison.png
    :width: 500px
    :align: center
    :alt: Accuracy comparison between homogeneous and mixed ensembles
