@@ -1,4 +1,11 @@
-Uncertainty estimation with Dropout on MNIST
+Examples and tutorials
+======================
+
+This section contains a collection of practical, end-to-end examples that demonstrate how the library can be used in real applications. Each tutorial focuses on a specific concept and provides a guided workflow from start to finish, including model configuration, execution, and interpretation of the results. The examples are designed to help users understand how different components of the library work together, learn recommended usage patterns through concrete demonstrations, and reproduce results with minimal setup effort. They also offer a foundation that can easily be adapted to individual projects and datasets.
+
+All tutorials are fully self-contained and can be executed independently. Each example includes runnable code snippets and, where useful, visual output to support comprehension and interpretation. Users who are new to the library are encouraged to begin with the introductory examples before moving on to more advanced topics such as uncertainty estimation, ensemble methods, and performance comparisons.
+
+1.Uncertainty estimation with Dropout on MNIST
 ===========================================
 
 What you will learn
@@ -158,7 +165,7 @@ In this example, you learned that Dropout can be used not only as a regularizati
 
 ---
 
-Creating a SubEnsemble for large models
+2.Creating a SubEnsemble for large models
 =======================================
 
 What you will learn
