@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from probly.tasks import out_of_distribution_detection_fpr_at_95_tpr, selective_prediction
+from probly.evaluation.tasks import out_of_distribution_detection_fpr_at_95_tpr, selective_prediction, out_of_distribution_detection_fnr_at_95
 
 
 def test_selective_prediction_shapes() -> None:
@@ -82,3 +82,48 @@ def test_fpr_at_95_tpr_complete_overlap():
 
     assert result == 0.0
 
+
+def test_fnr_at_95_returns_float():
+    """Tests if the funtion returns floats."""
+    in_scores = np.array([0.1, 0.2, 0.3])
+    out_scores = np.array([0.8, 0.9, 1.0])
+
+    fnr = out_of_distribution_detection_fnr_at_95(in_scores, out_scores)
+
+    assert isinstance(fnr, float)
+
+def test_fnr_zero_when_perfect_separation():
+    """If ID scores are clearly lower than OOD scores, FN should be 0."""
+    in_scores = np.array([0.1, 0.2, 0.3])
+    out_scores = np.array([1.0, 0.9, 0.8])
+
+    fnr = out_of_distribution_detection_fnr_at_95(in_scores, out_scores)
+    assert fnr == 0.0
+
+
+def test_fnr_one_when_in_and_out_fully_reversed():
+    """If OOD scores are completely lower than all ID scores, 
+    then at 95% TPR all OOD samples are misclassified => FNR = 1."""
+    in_scores = np.array([0.9, 0.8, 1.0])
+    out_scores = np.array([0.1, 0.2, 0.3])
+
+    fnr = out_of_distribution_detection_fnr_at_95(in_scores, out_scores)
+    assert fnr == 1.0
+
+
+def test_fnr_with_partial_overlap():
+    """With overlapping distributions, the FNR should be between 0 and 1."""
+    in_scores = np.array([0.1, 0.4, 0.6])
+    out_scores = np.array([0.3, 0.5, 0.9])
+
+    fnr = out_of_distribution_detection_fnr_at_95(in_scores, out_scores)
+    assert 0.0 <= fnr <= 1.0
+
+
+def test_single_element_arrays():
+    """Edge case: one ID sample and one OOD sample."""
+    in_scores = np.array([0.2])
+    out_scores = np.array([0.9])
+
+    fnr = out_of_distribution_detection_fnr_at_95(in_scores, out_scores)
+    assert fnr == 0.0  # OOD is correctly classified as OOD

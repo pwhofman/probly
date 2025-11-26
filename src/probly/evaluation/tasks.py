@@ -83,3 +83,30 @@ def out_of_distribution_detection_fpr_at_95_tpr(in_distribution: np.ndarray, out
         return float(fpr[0])
     "Interpolate fpr because tpr=0.95 usually does not occur exactly"
     return float(np.interp(target_tpr, tpr, fpr))
+
+def out_of_distribution_detection_fnr_at_95(in_distribution: np.ndarray, out_distribution: np.ndarray) -> float:
+    """Perform out-of-distribution detection using prediction functionals from id and ood data.
+
+    This can be epistemic uncertainty, as is common, but also e.g. softmax confidence.
+
+    Args:
+        in_distribution: in-distribution prediction functionals
+        out_distribution: out-of-distribution prediction functionals
+    Returns:
+        fnr@95: float, false negative rate at 95% true positive rate
+    """
+    preds = np.concatenate((in_distribution, out_distribution))
+    labels = np.concatenate((np.zeros(len(in_distribution)), np.ones(len(out_distribution)))) 
+    _, tpr, threshold = sm.roc_curve(labels, preds)
+
+    target_tpr = 0.95
+    idx = np.where(tpr >= target_tpr)[0][0]
+    threshold_at_95_tpr = threshold[idx]
+
+
+    labels_at_95 = (preds >= threshold_at_95_tpr).astype(int)
+    fn = np.sum((labels == 1) & (labels_at_95 == 0))
+    preds_pos = np.sum(labels == 1)
+    fnr_at_95 = fn / preds_pos
+
+    return float(fnr_at_95)
