@@ -5,7 +5,6 @@ Examples and tutorials
 This section contains a collection of practical, end-to-end examples that demonstrate how **probly** can be used in real applications. Each tutorial provides a guided workflow from start to finish, including model transformation, execution and interpretation of the results. The examples are self-contained and can be adapted to individual projects and datasets.
 
 Users who are new to probly are encouraged to begin with the introductory Dropout example before exploring ensemble-based methods and more advanced uncertainty-aware workflows.
-
 .. toctree::
    :maxdepth: 1
 
