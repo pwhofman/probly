@@ -1,5 +1,6 @@
 name: CI Documentation Check
 
+# TRIGGERING AND ENVIRONMENT SETUP
 on:
   push:
     branches:
@@ -24,7 +25,7 @@ jobs:
 
     strategy:
       matrix:
-        python-version: ["3.9", "3.12"]
+        python-version: ["3.9", "3.13"]
 
     steps:
       - name: Checkout Repository
@@ -51,7 +52,7 @@ jobs:
           cp .github/CONTRIBUTING.md docs/source/contributing.md
           cp -r notebooks/examples/ docs/source/
 
-
+      # CODE QUALITY ASSURANCE
       - name: Run Ruff Style and Linting Checks
         run: |
           uv run ruff check .
@@ -67,7 +68,7 @@ jobs:
           uv run pytest --cov=src/probly --cov-report=xml
 
 
-
+      # DOCUMENTATION BUILD AND INTEGRITY CHECKS
       - name: Build documentation with warnings as errors (Main Check)
         working-directory: ./docs
         run: |
