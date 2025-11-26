@@ -30,18 +30,24 @@ def _copy(module: nnx.Module) -> nnx.Module:
 def generate_flax_subensemble(
     obj: nnx.Module,
     num_heads: int,
+    head: nnx.Module | None = None,
     reset_params: bool = False,
+    head_layer: int = 1,
 ) -> nnx.List:
-    """Build a flax subensemble by copying the last layer num_heads times, resetting the parameters of each head."""
-    feature_extractor = nnx.Sequential(*obj.layers[:-1])
-    last_layer = obj.layers[-1]
+    """Build a flax subensemble by copying the last layer or head model num_heads times.
+
+    Resets the parameters of each head.
+    """
+    if head is None:
+        head = nnx.Sequential(*obj.layers[-head_layer:])
+        obj = nnx.Sequential(*obj.layers[:-head_layer])
 
     if reset_params:
-        heads = nnx.List([_reset_copy(last_layer) for _ in range(num_heads)])
+        heads = nnx.List([_reset_copy(head) for _ in range(num_heads)])
     else:
-        heads = nnx.List([_copy(last_layer) for _ in range(num_heads)])
+        heads = nnx.List([_copy(head) for _ in range(num_heads)])
 
-    return nnx.List([feature_extractor, heads])
+    return nnx.List([obj, heads])
 
 
 register(nnx.Module, generate_flax_subensemble)
