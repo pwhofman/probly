@@ -30,7 +30,7 @@ These use cases often require a deeper understanding of transformations, scalabi
 
 .. seealso::
 
-    For background material, see :doc:`Core Concepts <core_concepts>`.
+    For background material, see :doc:`Core Concepts <core_concepts.rst>`.
 
     For the main bulding blocks of ``probly``, like the main transofrmations, utilities & layers, and evaluation tools, see :doc:`Main Components <main_components>`.
 
@@ -80,7 +80,7 @@ There are, however, important cases where a **custom transformation** is the bet
 - **Cleaner uncertainty behaviour**  
   Some parameterisations produce more interpretable or numerically stable uncertainty estimates,
   for example working on a log-scale for strictly positive variances. A custom transformation can
-  make the connection to the uncertainty representations from :doc:`Core Concepts <core_concepts>`
+  make the connection to the uncertainty representations from :doc:`Core Concepts <core_concepts.rst>`
   more transparent.
 
 - **Integration with existing code or libraries**  
