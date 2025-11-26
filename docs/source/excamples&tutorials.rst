@@ -5,13 +5,10 @@ Examples and tutorials
 This section contains a collection of practical, end-to-end examples that demonstrate how **probly** can be used in real applications. Each tutorial provides a guided workflow from start to finish, including model transformation, execution and interpretation of the results. The examples are self-contained and can be adapted to individual projects and datasets.
 
 Users who are new to probly are encouraged to begin with the introductory Dropout example before exploring ensemble-based methods and more advanced uncertainty-aware workflows.
-.. toctree::
-   :maxdepth: 1
 
-   examples_dropout_mnist
-   examples_subensemble
-   examples_mixed_ensemble
-   tutorial_dropout_transformation
+.. contents::
+   :local:
+   :depth: 2
 
 
 1. Uncertainty estimation with Dropout on MNIST
@@ -129,8 +126,8 @@ Step 5: Perform Monte Carlo inference
 
    mean_probs, std_probs = mc_predict(prob_model, x_batch[0:1])
 
-   print(mean_probs)
-   print(std_probs)
+   print("Mean probabilities:", mean_probs.squeeze().cpu())
+   print("Std probabilities:", std_probs.squeeze().cpu())
 
 Step 6: Visualize uncertainty
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -258,7 +255,7 @@ Visual result
 .. image:: images/examples/subensemble_comparison.png
    :width: 500px
    :align: center
-   :alt: Accuracy comparison between full ensemble and subensemble
+   :alt: Accuracy comparison between full ensemble and SubEnsemble
 
 Summary
 -------
@@ -391,7 +388,8 @@ Step 5: Evaluate both ensembles
        total = 0
        for x, y in loader:
            x, y = x.to(device), y.to(device)
-           preds = model(x).argmax(dim=1)
+           logits = model(x)
+           preds = logits.argmax(dim=1)
            correct += (preds == y).sum().item()
            total += x.size(0)
        return correct / total
@@ -414,4 +412,3 @@ Summary
 -------
 
 In this example, you used probly to construct both a homogeneous ensemble and a MixedEnsemble combining different model types. The MixedEnsemble may capture complementary model behaviour, which can improve robustness and calibration in some settings.
-
