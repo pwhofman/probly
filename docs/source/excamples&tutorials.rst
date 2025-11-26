@@ -167,7 +167,7 @@ Summary
 
 In this example, you learned that Dropout can be used not only as a regularization technique but also as an approximate Bayesian inference method. By enabling dropout during evaluation and performing multiple forward passes, you obtained a distribution over predictions. The mean probability reflects the predicted class, while the standard deviation indicates how uncertain the model is. This approach is useful in real-world scenarios where uncertainty awareness is important, such as medical diagnosis or autonomous decision-making.
 
----
+
 
 2.Creating a SubEnsemble for large models
 =======================================
