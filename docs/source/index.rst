@@ -53,6 +53,7 @@ Quickstart
    :hidden:
 
    advanced_topics
+   core_concepts
    methods
    references
 
