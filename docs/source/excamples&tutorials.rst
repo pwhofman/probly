@@ -1,5 +1,6 @@
+##########################
 Examples and tutorials
-======================
+##########################
 
 This section contains a collection of practical, end-to-end examples that demonstrate how the library can be used in real applications. Each tutorial focuses on a specific concept and provides a guided workflow from start to finish, including model configuration, execution, and interpretation of the results. The examples are designed to help users understand how different components of the library work together, learn recommended usage patterns through concrete demonstrations, and reproduce results with minimal setup effort. They also offer a foundation that can easily be adapted to individual projects and datasets.
 
@@ -156,7 +157,10 @@ To estimate uncertainty, we perform multiple forward passes with dropout activat
 Step 5: Visualize uncertainty
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-[Platzhalter: MC Dropout PNG einfügen]
+.. image:: mc_dropout_example.png
+   :width: 550px
+   :align: center
+   :alt: Monte Carlo dropout uncertainty visualization
 
 Summary
 -------
@@ -294,7 +298,10 @@ We now create a smaller SubEnsemble that uses only two of the five original mode
 Visual result
 -------------
 
-[Platzhalter: SubEnsemble PNG einfügen]
+.. image:: subensemble_comparison.png
+   :width: 500px
+   :align: center
+   :alt: Accuracy comparison between full ensemble and subensemble
 
 Summary
 -------
