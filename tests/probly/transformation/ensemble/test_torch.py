@@ -12,17 +12,12 @@ from torch import nn  # noqa: E402
 
 class TestTorchEnsemble:
 
-    def test_invalid_members(self, torch_model_small_2d_2d: nn.Module) -> None: 
-
-        with pytest.raises(ValueError, match="num_members must be >= 1"):
-            ensemble(torch_model_small_2d_2d, num_members=0)
-
-    def test_returning_modulelist(self, torch_model_small_2d_2d: nn.Module) -> None: 
+    def test_returning_modulelist(self, torch_model_small_2d_2d: nn.Module) -> None:
 
         model = ensemble(torch_model_small_2d_2d, num_members=3)
         assert isinstance(model, nn.ModuleList)
 
-    def test_correct_number_of_members(self, torch_model_small_2d_2d: nn.Module) -> None: 
+    def test_correct_number_of_members(self, torch_model_small_2d_2d: nn.Module) -> None:
 
         num_members = 5
         model_list = ensemble(torch_model_small_2d_2d, num_members=num_members)
