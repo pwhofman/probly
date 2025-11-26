@@ -1,5 +1,7 @@
 
-from probly.transformation.ensemble.flax import generate_flax_ensemblimport pytest
+from probly.transformation.ensemble.flax import generate_flax_ensemble
+
+import pytest
 
 from flax import nnx
 import jax
