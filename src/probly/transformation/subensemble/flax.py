@@ -28,20 +28,29 @@ def _copy(module: nnx.Module) -> nnx.Module:
 
 
 def generate_flax_subensemble(
-    obj: nnx.Module,
+    obj: nnx.Module | None,
     num_heads: int,
+    *,
     head: nnx.Module | None = None,
     reset_params: bool = False,
     head_layer: int = 1,
 ) -> nnx.List:
-    """Build a flax subensemble by copying the last layer or head model num_heads times.
+    """Build a flax subensemble.
 
+    By either:
+    - copying head_layer (default: 1) last layers of obj num_heads, if no head model is provided.
+    - using an obj as shared backbone, copying the head model num_heads times.
     Resets the parameters of each head.
     """
+    # no head -> split obj into backbone and head
     if head is None:
+        if obj is None:
+            msg = "Either base, head or both must be provided."
+            raise ValueError(msg)
         head = nnx.Sequential(*obj.layers[-head_layer:])
         obj = nnx.Sequential(*obj.layers[:-head_layer])
 
+    # obj and head
     if reset_params:
         heads = nnx.List([_reset_copy(head) for _ in range(num_heads)])
     else:
