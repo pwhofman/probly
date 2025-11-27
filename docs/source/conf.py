@@ -11,6 +11,7 @@ import inspect
 import os
 import sys
 
+
 # -- Path setup --------------------------------------------------------------
 sys.path.insert(0, os.path.abspath("../../src"))
 sys.path.insert(0, os.path.abspath("../../examples"))
@@ -152,3 +153,4 @@ linkcheck_ignore = [
     r"https://doi.org/10.1080/03081070500473490",
     r"https://www.tandfonline.com/.*",
 ]
+
