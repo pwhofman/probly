@@ -9,6 +9,11 @@ from typing import TYPE_CHECKING, Any, Literal, Self, override
 import numpy as np
 
 from probly.representation.sampling.array_sample_axis_tracking import Index, track_axis
+from probly.representation.sampling.array_sample_functions import (
+    array_function,
+    array_sample_internals,
+    track_sample_axis_after_reduction,
+)
 from probly.representation.sampling.common_sample import Sample, SampleAxis
 
 if TYPE_CHECKING:
@@ -108,9 +113,9 @@ class ArraySample[D: Numeric](Sample[D], np.lib.mixins.NDArrayOperatorsMixin):
         return self.array.device
 
     @property
-    def mT(self) -> np.ndarray:  # noqa: N802
+    def mT(self) -> Self:  # noqa: N802
         """The transposed version of the underlying array."""
-        return self.array.mT
+        return np.matrix_transpose(self)  #  type: ignore[return-value]
 
     @property
     def ndim(self) -> int:
@@ -128,9 +133,9 @@ class ArraySample[D: Numeric](Sample[D], np.lib.mixins.NDArrayOperatorsMixin):
         return self.array.size
 
     @property
-    def T(self) -> np.ndarray:  # noqa: N802
+    def T(self) -> Self:  # noqa: N802
         """The transposed version of the underlying array."""
-        return self.array.T
+        return np.transpose(self)  #  type: ignore[return-value]
 
     @property
     def sample_size(self) -> int:
@@ -227,7 +232,7 @@ class ArraySample[D: Numeric](Sample[D], np.lib.mixins.NDArrayOperatorsMixin):
 
         return np.asarray(self.array, dtype=dtype, copy=copy)
 
-    def __array_ufunc__(self, ufunc: np.ufunc, method: str, *inputs: Any, **kwargs: Any) -> Any:  # noqa: ANN401, C901, PLR0912
+    def __array_ufunc__(self, ufunc: np.ufunc, method: str, *inputs: Any, **kwargs: Any) -> Any:  # noqa: ANN401
         """Handle numpy ufuncs.
 
         Args:
@@ -239,7 +244,7 @@ class ArraySample[D: Numeric](Sample[D], np.lib.mixins.NDArrayOperatorsMixin):
         Returns:
             The result of applying the ufunc.
         """
-        new_sample_axis = self.sample_axis
+        new_sample_axis: int | None = self.sample_axis
         arrays = [x.array if isinstance(x, ArraySample) else x for x in inputs]
 
         if method in ("__call__", "reduce", "reduceat", "accumulate") and "out" in kwargs:
@@ -256,24 +261,17 @@ class ArraySample[D: Numeric](Sample[D], np.lib.mixins.NDArrayOperatorsMixin):
 
         if method in {"reduce", "reduceat", "accumulate"}:
             axis: int | tuple[int, ...] = kwargs.get("axis", 0)
-            axes: tuple[int, ...] = axis if isinstance(axis, tuple) else (axis,)
-            axes = tuple(a if a >= 0 else self.array.ndim + a for a in axes)
-            keepdims: bool = kwargs.get("keepdims", False)
-            if (method != "reduce" or not keepdims) and self.sample_axis in axes:
-                return result
-            if not keepdims:
-                for a in axes:
-                    if a < self.sample_axis:
-                        new_sample_axis -= 1
+            keepdims: bool = method == "reduce" and kwargs.get("keepdims", False)
+            new_sample_axis = track_sample_axis_after_reduction(self.sample_axis, self.ndim, axis, keepdims)
         elif method in ("at", "outer"):
-            return result
+            new_sample_axis = None
 
         if outs is not None:
             if len(outs) == 1:
                 return outs[0]
             return outs
 
-        if isinstance(result, np.ndarray):
+        if new_sample_axis is not None and isinstance(result, np.ndarray):
             return type(self)(result, sample_axis=new_sample_axis)
         return result
 
@@ -295,9 +293,14 @@ class ArraySample[D: Numeric](Sample[D], np.lib.mixins.NDArrayOperatorsMixin):
         Returns:
             The result of applying the numpy function.
         """
-        return func._implementation(*args, **kwargs)  # type: ignore[attr-defined]  # noqa: SLF001
+        return array_function(
+            func,
+            types,
+            args,
+            kwargs,
+        )
 
-    def copy(self) -> ArraySample[D]:
+    def copy(self) -> Self:
         """Create a copy of the ArraySample.
 
         Returns:
@@ -318,3 +321,17 @@ class ArraySample[D: Numeric](Sample[D], np.lib.mixins.NDArrayOperatorsMixin):
             return self
 
         return type(self)(array=self.array.to_device(device), sample_axis=self.sample_axis)
+
+    def __eq__(self, value: Any) -> Self:  # type: ignore[override]  # noqa: ANN401, PYI032
+        """Vectorized equality comparison."""
+        return np.equal(self, value)  # type: ignore[return-value]
+
+    def __hash__(self) -> int:
+        """Compute the hash of the ArraySample."""
+        return super().__hash__()
+
+
+@array_sample_internals.register
+def _(array: ArraySample) -> tuple[np.ndarray, int]:
+    """Get the sample dimension of an ArraySample."""
+    return array.array, array.sample_axis
