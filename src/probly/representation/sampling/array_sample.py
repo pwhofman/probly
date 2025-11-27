@@ -42,6 +42,10 @@ class ArraySample[D: Numeric](Sample[D], np.lib.mixins.NDArrayOperatorsMixin):
                 raise ValueError(msg)
             super().__setattr__("sample_axis", self.array.ndim + self.sample_axis)
 
+        if not isinstance(self.array, np.ndarray):
+            msg = "array must be a numpy ndarray."
+            raise TypeError(msg)
+
     @classmethod
     def from_iterable(cls, samples: Iterable[D], sample_axis: SampleAxis = "auto", dtype: DTypeLike = None) -> Self:
         """Create an ArraySample from a sequence of samples.
