@@ -3,14 +3,15 @@
 from __future__ import annotations
 
 import pytest
+
+flax = pytest.importorskip("flax", reason="Flax not installed, skipping DropConnect tests")
+jax = pytest.importorskip("jax", reason="JAX not installed, skipping DropConnect tests")
+
 import jax.numpy as jnp
+from flax import nnx  # noqa: E402
 
 from probly.transformation import dropconnect
 from tests.probly.flax_utils import count_layers
-
-
-flax = pytest.importorskip("flax")
-from flax import nnx  # noqa: E402
 
 
 class TestNetworkArchitectures:
