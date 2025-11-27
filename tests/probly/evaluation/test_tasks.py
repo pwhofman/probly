@@ -39,7 +39,7 @@ def test_out_of_distribution_detection_order() -> None:
     in_distribution = np.linspace(0, 1, 10)
     out_distribution = np.linspace(0, 1, 10) + 1
     auroc = out_of_distribution_detection(in_distribution, out_distribution)
-    assert auroc == 0.995
+    assert np.isclose(auroc, 0.995)
 
 def test_out_of_distribution_detection_aupr_shape() -> None:
     """Test that AUPR OOD detection returns a float."""
@@ -54,7 +54,7 @@ def test_out_of_distribution_detection_aupr_order() -> None:
     out_distribution = np.linspace(0, 1, 10) + 1  # clearly separated distributions
     aupr = out_of_distribution_detection_aupr(in_distribution, out_distribution)
     assert aupr > 0.99
-    assert np.isclose(auroc, 0.995)
+    
 
 
 def test_fpr_at_tpr_simple_case() -> None:
