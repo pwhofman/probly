@@ -75,3 +75,44 @@ def out_of_distribution_detection_aupr(in_distribution: np.ndarray, out_distribu
     labels = np.concatenate((np.zeros(len(in_distribution)), np.ones(len(out_distribution))))
     aupr = sm.average_precision_score(labels, preds)
     return float(aupr)
+  
+def fpr_at_tpr(in_distribution: np.ndarray, out_distribution: np.ndarray, tpr_target: float = 0.95,) -> float:
+    """Compute FPR@XTPR for OOD detection.
+
+    This metric measures the false positive rate (FPR) at a given true positive
+    rate (TPR) target. Here we treat OOD samples as the positive class.
+
+    Args:
+        in_distribution: numpy.ndarray, scores for in-distribution samples
+        out_distribution: numpy.ndarray, scores for out-of-distribution samples
+        tpr_target: target TPR value in [0, 1], e.g. 0.95
+
+    Returns:
+        fpr_at_target: float, FPR at the first threshold where TPR >= tpr_target
+
+    Notes:
+        - Assumes that larger scores correspond to the positive class
+          (out-of-distribution).
+        - If tpr_target cannot be reached, a ValueError is raised.
+    """
+    if not 0.0 < tpr_target <= 1.0:
+        msg = f"tpr_target must be in the interval (0, 1], got {tpr_target}."
+        raise ValueError(msg)
+
+    scores = np.concatenate((in_distribution, out_distribution))
+    # 0 = in-distribution, 1 = out-of-distribution (positive class)
+    labels = np.concatenate(
+        (np.zeros(len(in_distribution)), np.ones(len(out_distribution)))
+    )
+
+    fpr, tpr, thresholds = sm.roc_curve(labels, scores)
+
+    # indices where TPR is at least the target
+    idxs = np.where(tpr >= tpr_target)[0]
+    if len(idxs) == 0:
+        msg = f"Could not achieve TPR >= {tpr_target:.3f} with given scores."
+        raise ValueError(msg)
+
+    first_idx = idxs[0]
+    fpr_at_target = fpr[first_idx]
+    return float(fpr_at_target)

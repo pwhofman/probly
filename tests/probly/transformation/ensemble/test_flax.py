@@ -2,14 +2,16 @@
 
 from __future__ import annotations
 
-import random
-
-from flax import nnx
-import jax.numpy as jnp
 import pytest
 
-from probly.transformation.ensemble import flax as flx
+pytest.importorskip("jax", reason="JAX is required for Flax ensemble tests")
+pytest.importorskip("flax", reason="Flax is required for Flax ensemble tests")
 
+import random
+import jax.numpy as jnp
+from flax import nnx
+
+from probly.transformation.ensemble import flax as flx
 
 @pytest.fixture
 def sample_input_2batches() -> jnp.ndarray:
