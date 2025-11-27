@@ -58,6 +58,24 @@ def out_of_distribution_detection(in_distribution: np.ndarray, out_distribution:
     return float(auroc)
 
 
+def out_of_distribution_detection_aupr(in_distribution: np.ndarray, out_distribution: np.ndarray) -> float:
+    """Perform out-of-distribution detection using AUPR (Area Under the Precision–Recall Curve).
+
+    This metric evaluates how well the model distinguishes between in- and out-of-distribution samples,
+    focusing more on positive class (OOD) precision and recall.
+
+    Args:
+        in_distribution: in-distribution prediction functionals
+        out_distribution: out-of-distribution prediction functionals
+
+    Returns:
+        aupr: float, area under the precision-recall curve
+    """
+    preds = np.concatenate((in_distribution, out_distribution))
+    labels = np.concatenate((np.zeros(len(in_distribution)), np.ones(len(out_distribution))))
+    aupr = sm.average_precision_score(labels, preds)
+    return float(aupr)
+  
 def fpr_at_tpr(in_distribution: np.ndarray, out_distribution: np.ndarray, tpr_target: float = 0.95,) -> float:
     """Compute FPR@XTPR for OOD detection.
 
