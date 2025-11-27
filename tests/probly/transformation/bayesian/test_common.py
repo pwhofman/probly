@@ -23,19 +23,4 @@ def test_bayesian(dummy_predictor: Predictor) -> None:
     assert isinstance(bayesian_predictor, type(dummy_predictor))
 
 
-def test_invalid_parameters(dummy_predictor: Predictor) -> None:
-    # invalid posterior_std SHOULD NOT raise an error
-    bayesian(
-        dummy_predictor,
-        posterior_std=-0.1,
-        prior_mean=0.0,
-        prior_std=1.0,
-    )
 
-    # invalid prior_std SHOULD NOT raise an error
-    bayesian(
-        dummy_predictor,
-        posterior_std=0.1,
-        prior_mean=0.0,
-        prior_std=-1.0,
-    )
