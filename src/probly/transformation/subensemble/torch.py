@@ -10,24 +10,30 @@ from .common import register
 
 
 def generate_torch_subensemble(
-    obj: nn.Module,
+    obj: nn.Module | None,
     num_heads: int,
+    *,
     head: nn.Module | None = None,
     reset_params: bool = False,
     head_layer: int = 1,
 ) -> nn.ModuleList:
-    """Build a torch subensemble by copying the last layer or head model num_heads times.
+    """Build a torch subensemble.
 
+    By either:
+    - copying head_layer (default: 1) last layers of obj num_heads times, if no head model is provided.
+    - using an obj as shared backbone and copying the head model num_heads times.
     Resets the parameters of each head.
     """
+    # no head -> split obj into backbone and head
     if head is None:
+        if obj is None:
+            msg = "Either base, head or both must be provided."
+            raise ValueError(msg)
         head = nn.Sequential(*list(obj.children())[-head_layer:])
         obj = nn.Sequential(*list(obj.children())[:-head_layer])
 
-    if reset_params:
-        heads = ensemble(head, num_members=num_heads, reset_params=reset_params)
-    else:
-        heads = ensemble(head, num_members=num_heads, reset_params=reset_params)
+    # obj and head
+    heads = ensemble(head, num_members=num_heads, reset_params=reset_params)
 
     return nn.ModuleList([obj, heads])
 
