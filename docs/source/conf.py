@@ -11,7 +11,6 @@ import inspect
 import os
 import sys
 
-
 # -- Path setup --------------------------------------------------------------
 sys.path.insert(0, os.path.abspath("../../src"))
 sys.path.insert(0, os.path.abspath("../../examples"))
@@ -131,6 +130,7 @@ autosummary_generate = True
 autodoc_default_options = {
     "show-inheritance": True,
     "members": True,
+    "interited-members": True,
     "member-order": "groupwise",
     "special-members": "__call__",
     "undoc-members": True,
@@ -153,4 +153,3 @@ linkcheck_ignore = [
     r"https://doi.org/10.1080/03081070500473490",
     r"https://www.tandfonline.com/.*",
 ]
-
