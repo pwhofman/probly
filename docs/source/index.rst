@@ -55,6 +55,7 @@ Quickstart
    introduction
    core_concepts
    methods
+   faq
    references
 
 .. toctree::
