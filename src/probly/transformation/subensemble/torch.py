@@ -10,7 +10,7 @@ from .common import register
 
 
 def generate_torch_subensemble(
-    obj: nn.Module | None,
+    obj: nn.Module,
     num_heads: int,
     *,
     head: nn.Module | None = None,
@@ -24,11 +24,8 @@ def generate_torch_subensemble(
     - using an obj as shared backbone and copying the head model num_heads times.
     Resets the parameters of each head.
     """
-    # no head -> split obj into backbone and head
+    # no head
     if head is None:
-        if obj is None:
-            msg = "Either base, head or both must be provided."
-            raise ValueError(msg)
         head = nn.Sequential(*list(obj.children())[-head_layer:])
         obj = nn.Sequential(*list(obj.children())[:-head_layer])
 

@@ -28,7 +28,7 @@ def _copy(module: nnx.Module) -> nnx.Module:
 
 
 def generate_flax_subensemble(
-    obj: nnx.Module | None,
+    obj: nnx.Module,
     num_heads: int,
     *,
     head: nnx.Module | None = None,
@@ -42,11 +42,8 @@ def generate_flax_subensemble(
     - using an obj as shared backbone, copying the head model num_heads times.
     Resets the parameters of each head.
     """
-    # no head -> split obj into backbone and head
+    # no head
     if head is None:
-        if obj is None:
-            msg = "Either base, head or both must be provided."
-            raise ValueError(msg)
         head = nnx.Sequential(*obj.layers[-head_layer:])
         obj = nnx.Sequential(*obj.layers[:-head_layer])
 
