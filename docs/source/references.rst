@@ -24,10 +24,10 @@ We believe in using the right tool for the right job. While ``probly`` offers a 
 * **GPyTorch:**
     A Gaussian process library built on PyTorch, designed for creating and training Gaussian process models.
     `Visit GPyTorch <https://gpytorch.ai/>`_
-* **Laplace**
+* **Laplace:**
     A library for Laplace approximations in PyTorch, useful for Bayesian deep learning.
     `Visit Laplace <httsps://github.com/AlexImmer/Laplace>`_
-* **Fortuna**
+* **Fortuna:**
    An uncertainty quantification library by AWS, focusing on calibration and probabilistic modeling.
    `Visit Fortuna <https://github.com/awslabs/fortuna>`_
 
