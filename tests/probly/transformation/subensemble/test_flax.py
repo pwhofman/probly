@@ -23,7 +23,7 @@ class TestGenerate:
         num_heads = 4
 
         # default subensemble
-        subensemble_result = subensemble(num_heads=num_heads, base=flax_model_small_2d_2d,reset_params=True)
+        subensemble_result = subensemble(flax_model_small_2d_2d, num_heads=num_heads, reset_params=True)
         backbone = subensemble_result[0]
         heads = subensemble_result[1]
 
@@ -38,10 +38,8 @@ class TestGenerate:
         """Tests if the subensemble transformation creates the correct number of heads when head_layer is zero."""
 
         num_heads = 3
-        # how many layers from the end should be considered as head
-        head_layer = 1
 
-        subensemble_result = subensemble(num_heads=num_heads, base=flax_model_small_2d_2d, head_layer=head_layer, reset_params=True)
+        subensemble_result = subensemble(flax_model_small_2d_2d, num_heads=num_heads, reset_params=True)
         backbone = subensemble_result[0]
         heads = subensemble_result[1]
 
@@ -55,7 +53,7 @@ class TestGenerate:
         assert heads is not None
         assert len(heads) == num_heads
         # check tha last layer is removed from backbone
-        # assert original_layers ==  modified_layers - 1
+        assert original_layers - 1 ==  modified_layers
     
     def test_number_of_heads_large_head_layer(self, flax_model_small_2d_2d: nnx.Sequential) -> None:
         """Tests if the subensemble transformation creates the correct number of heads when head_layer exceeds model depth."""
@@ -65,7 +63,7 @@ class TestGenerate:
         head_layer = 2
 
         # subensemble with input for head_layer
-        subensemble_result = subensemble(num_heads=num_heads, base=flax_model_small_2d_2d,head_layer= head_layer, reset_params=True)
+        subensemble_result = subensemble(flax_model_small_2d_2d, num_heads=num_heads, head_layer=head_layer, reset_params=True)
         backbone = subensemble_result[0]
         heads = subensemble_result[1]
 
@@ -90,8 +88,7 @@ class TestReset:
 
         original_params = jax.tree_util.tree_leaves(flax_model_small_2d_2d.layers[-1])
 
-        subensemble_result = subensemble(num_heads=num_heads, base=flax_model_small_2d_2d, reset_params=True)
-        backbone = subensemble_result[0]
+        subensemble_result = subensemble(flax_model_small_2d_2d, num_heads=num_heads, reset_params=True)
         heads = subensemble_result[1]
 
         head1 = heads[0]
@@ -115,8 +112,7 @@ class TestReset:
 
         original_params = jax.tree_util.tree_leaves(flax_model_small_2d_2d.layers[-1])
 
-        subensemble_result = subensemble(num_heads=num_heads, base=flax_model_small_2d_2d, reset_params=False)
-        backbone = subensemble_result[0]
+        subensemble_result = subensemble(flax_model_small_2d_2d, num_heads=num_heads, reset_params=False)
         heads = subensemble_result[1]
 
         for head in heads:
