@@ -6,9 +6,9 @@ from unittest.mock import Mock
 
 import pytest
 
+from probly.predictor import Predictor
 from probly.transformation import ensemble
 from probly.transformation.ensemble.common import ensemble_generator, register
-from probly.predictor import Predictor
 
 
 def test_invalid_base_module(dummy_predictor: Predictor) -> None:

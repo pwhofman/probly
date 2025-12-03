@@ -75,8 +75,9 @@ def out_of_distribution_detection_aupr(in_distribution: np.ndarray, out_distribu
     labels = np.concatenate((np.zeros(len(in_distribution)), np.ones(len(out_distribution))))
     aupr = sm.average_precision_score(labels, preds)
     return float(aupr)
-  
-def fpr_at_tpr(in_distribution: np.ndarray, out_distribution: np.ndarray, tpr_target: float = 0.95,) -> float:
+
+
+def fpr_at_tpr(in_distribution: np.ndarray, out_distribution: np.ndarray, tpr_target: float = 0.95) -> float:
     """Compute FPR@XTPR for OOD detection.
 
     This metric measures the false positive rate (FPR) at a given true positive
@@ -102,7 +103,7 @@ def fpr_at_tpr(in_distribution: np.ndarray, out_distribution: np.ndarray, tpr_ta
     scores = np.concatenate((in_distribution, out_distribution))
     # 0 = in-distribution, 1 = out-of-distribution (positive class)
     labels = np.concatenate(
-        (np.zeros(len(in_distribution)), np.ones(len(out_distribution)))
+        (np.zeros(len(in_distribution)), np.ones(len(out_distribution))),
     )
 
     fpr, tpr, thresholds = sm.roc_curve(labels, scores)

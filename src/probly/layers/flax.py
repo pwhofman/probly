@@ -2,16 +2,15 @@
 
 from __future__ import annotations
 
-from typing import Literal, Optional, Tuple, Union
+from typing import Literal, Union
 
+from flax import nnx
 import jax
 import jax.numpy as jnp
-from flax import nnx
 
 
 class DropConnectLinear(nnx.Module):
-    """
-    Linear layer with DropConnect on weights during training.
+    """Linear layer with DropConnect on weights during training.
 
     Wichtig: Wir WRAPPEN keinen nnx.Linear mehr,
     sondern übernehmen nur dessen Parameter (kernel, bias).
@@ -35,9 +34,14 @@ class DropConnectLinear(nnx.Module):
         self.in_features = getattr(base_layer, "in_features", None)
         self.out_features = getattr(base_layer, "out_features", None)
 
-    def __call__(self, x: jnp.ndarray, *, training: bool | None = None) -> jnp.ndarray:
-        """
-        Forward pass with DropConnect.
+    def __call__(
+        self,
+        x: jnp.ndarray,
+        *,
+        training: bool | None = None,
+        rng: jax.random.KeyArray | None = None,
+    ) -> jnp.ndarray:
+        """Forward pass with DropConnect.
 
         Args:
             x: [batch, in_features]
@@ -77,10 +81,10 @@ class DropConnectLinear(nnx.Module):
         )
 
 
-_Size2 = Union[int, Tuple[int, int]]
+_Size2 = Union[int, tuple[int, int]]
 
 
-def _pair(v: _Size2) -> Tuple[int, int]:
+def _pair(v: _Size2) -> tuple[int, int]:
     if isinstance(v, tuple):
         if len(v) != 2:
             raise ValueError(f"Expected tuple of length 2, got {v}")
@@ -89,8 +93,7 @@ def _pair(v: _Size2) -> Tuple[int, int]:
 
 
 class Conv2d(nnx.Module):
-    """
-    PyTorch-like Conv2d implemented on top of flax.nnx.Conv.
+    """PyTorch-like Conv2d implemented on top of flax.nnx.Conv.
     Expects input in NCHW (N, C_in, H, W), returns NCHW (N, C_out, H_out, W_out).
     """
 
@@ -100,19 +103,19 @@ class Conv2d(nnx.Module):
         out_channels: int,
         kernel_size: _Size2,
         stride: _Size2 = 1,
-        padding: Union[str, _Size2] = 0,
+        padding: str | _Size2 = 0,
         dilation: _Size2 = 1,
         groups: int = 1,
         bias: bool = True,
         padding_mode: Literal["zeros", "reflect", "replicate", "circular"] = "zeros",
         *,
         rngs: nnx.Rngs,
-        dtype=None,
-        param_dtype=jnp.float32,
+        dtype: jnp.dtype | None = None,
+        param_dtype: jnp.dtype = jnp.float32,
     ) -> None:
         if padding_mode != "zeros":
             raise NotImplementedError(
-                f"padding_mode='{padding_mode}' is not implemented; use 'zeros'."
+                f"padding_mode='{padding_mode}' is not implemented; use 'zeros'.",
             )
 
         k_h, k_w = _pair(kernel_size)
@@ -131,7 +134,7 @@ class Conv2d(nnx.Module):
         self.param_dtype = param_dtype
 
         # Handle padding argument
-        self._explicit_padding: Optional[Tuple[Tuple[int, int], ...]]
+        self._explicit_padding: tuple[tuple[int, int], ...] | None
         if isinstance(padding, str):
             pad_str = padding.lower()
             if pad_str == "same":
@@ -142,16 +145,15 @@ class Conv2d(nnx.Module):
                 self._explicit_padding = None
             else:
                 raise ValueError(
-                    f"Unsupported padding string '{padding}'. "
-                    f"Use 'same', 'valid', or integer/tuple."
+                    f"Unsupported padding string '{padding}'. Use 'same', 'valid', or integer/tuple.",
                 )
         else:
             p_h, p_w = _pair(padding)
             self._explicit_padding = (
-                (0, 0),        # N
-                (0, 0),        # C
-                (p_h, p_h),    # H
-                (p_w, p_w),    # W
+                (0, 0),  # N
+                (0, 0),  # C
+                (p_h, p_h),  # H
+                (p_w, p_w),  # W
             )
             flax_padding = "VALID"
 
@@ -171,14 +173,12 @@ class Conv2d(nnx.Module):
         )
 
     def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
-        """
-        x: (N, C_in, H, W)  -> returns (N, C_out, H_out, W_out)
-        """
+        """x: (N, C_in, H, W)  -> returns (N, C_out, H_out, W_out)"""
         if x.ndim != 4:
             raise ValueError(f"Conv2d expects 4D input (N, C, H, W), got shape {x.shape}")
         if x.shape[1] != self.in_channels:
             raise ValueError(
-                f"Input has {x.shape[1]} channels, but Conv2d.in_channels={self.in_channels}"
+                f"Input has {x.shape[1]} channels, but Conv2d.in_channels={self.in_channels}",
             )
 
         # Apply explicit padding in NCHW if configured
@@ -195,5 +195,5 @@ class Conv2d(nnx.Module):
 
 
 # Make available as nnx.Conv2d and nnx.DropConnectLinear
-setattr(nnx, "Conv2d", Conv2d)
-setattr(nnx, "DropConnectLinear", DropConnectLinear)
+nnx.Conv2d = Conv2d
+nnx.DropConnectLinear = DropConnectLinear

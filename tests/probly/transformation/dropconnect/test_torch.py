@@ -9,8 +9,9 @@ from tests.probly.torch_utils import count_layers
 
 torch = pytest.importorskip("torch")
 
-from torch import nn  
-from probly.layers.torch import DropConnectLinear  
+from torch import nn
+
+from probly.layers.torch import DropConnectLinear
 
 
 class TestNetworkArchitectures:
@@ -28,7 +29,7 @@ class TestNetworkArchitectures:
             torch_model_small_2d_2d: The torch model to be tested, specified as a sequential model.
 
         Raises:
-            AssertionError: If the structure of the model differs in an unexpected manner or if 
+            AssertionError: If the structure of the model differs in an unexpected manner or if
             the DropConnect layer is not inserted correctly.
         """
         p = 0.5
@@ -40,7 +41,7 @@ class TestNetworkArchitectures:
         count_sequential_original = count_layers(torch_model_small_2d_2d, nn.Sequential)
         # count number of nn.DropConnectLinear layers in original model
         count_dropconnect_original = count_layers(torch_model_small_2d_2d, DropConnectLinear)
-        
+
         # count number of DropConnectLinear layers in modified model
         count_dropconnect_modified = count_layers(model, DropConnectLinear)
         # count number of nn.Linear layers in modified model
@@ -48,11 +49,11 @@ class TestNetworkArchitectures:
         # count number of nn.Sequential layers in modified model
         count_sequential_modified = count_layers(model, nn.Sequential)
 
-        # check that linear layers are replaced by DropConnectLinear layers 
+        # check that linear layers are replaced by DropConnectLinear layers
         assert model is not None
         assert isinstance(model, type(torch_model_small_2d_2d))
-        assert count_dropconnect_modified == count_linear_original - 1  
-        assert count_linear_modified == 1 
+        assert count_dropconnect_modified == count_linear_original - 1
+        assert count_linear_modified == 1
         assert count_dropconnect_original == 0
         assert count_sequential_original == count_sequential_modified
 
@@ -94,12 +95,12 @@ class TestNetworkArchitectures:
         # check that the model is not modified except for the dropout layer
         assert model is not None
         assert isinstance(model, type(torch_conv_linear_model))
-        assert count_dropconnect_original == 0 
+        assert count_dropconnect_original == 0
         assert count_dropconnect_modified == count_linear_original  # No skipping in conv models
         assert count_linear_modified == 0  # All linear layers should be replaced
         assert count_sequential_original == count_sequential_modified
         assert count_conv_original == count_conv_modified
-        
+
         # Additional verification: the linear layer should be replaced with DropConnectLinear
         assert isinstance(model[3], DropConnectLinear), "Linear layer should be replaced with DropConnectLinear"
 
@@ -116,36 +117,34 @@ class TestNetworkArchitectures:
         """Test that the first linear layer is not replaced due to is_first_layer condition."""
         p = 0.5
         model = dropconnect(torch_model_small_2d_2d, p)
-        
+
         # First layer should stay unchanged
         assert isinstance(model[0], nn.Linear), "First layer should remain nn.Linear"
         assert not isinstance(model[0], DropConnectLinear), "First layer should not be DropConnectLinear"
-        
+
         # Linear layers should be replaced
         for i in range(1, len(model)):
             if isinstance(torch_model_small_2d_2d[i], nn.Linear):
-                assert isinstance(model[i], DropConnectLinear), \
-                    f"Layer {i} should be DropConnectLinear"
-                    
+                assert isinstance(model[i], DropConnectLinear), f"Layer {i} should be DropConnectLinear"
+
     def test_dropconnect_duplicates_behavior(self, torch_model_small_2d_2d: nn.Sequential) -> None:
         """Tests that reapplying in dropconnect doesn't create duplicates."""
-        
         first_p = 0.3
         model_after_first = dropconnect(torch_model_small_2d_2d, first_p)
-        
+
         second_p = 0.5
         model_after_second = dropconnect(model_after_first, second_p)
-        
+
         count_dropconnect_first = count_layers(model_after_first, DropConnectLinear)
         count_linear_first = count_layers(model_after_first, nn.Linear)
-        
+
         count_dropconnect_second = count_layers(model_after_second, DropConnectLinear)
         count_linear_second = count_layers(model_after_second, nn.Linear)
-        
+
         # Layers are replaced, reapplying should not change layer counts
         assert count_dropconnect_first == count_dropconnect_second
         assert count_linear_first == count_linear_second
-        
+
 
 class TestPValues:
     """Test class for p-value tests with DropConnect."""
@@ -186,8 +185,3 @@ class TestPValues:
         for m in model.modules():
             if isinstance(m, DropConnectLinear):
                 assert m.p == p
-
-
-
-
-

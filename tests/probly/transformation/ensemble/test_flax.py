@@ -8,10 +8,12 @@ pytest.importorskip("jax", reason="JAX is required for Flax ensemble tests")
 pytest.importorskip("flax", reason="Flax is required for Flax ensemble tests")
 
 import random
-import jax.numpy as jnp
+
 from flax import nnx
+import jax.numpy as jnp
 
 from probly.transformation.ensemble import flax as flx
+
 
 @pytest.fixture
 def sample_input_2batches() -> jnp.ndarray:
