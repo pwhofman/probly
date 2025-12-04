@@ -32,7 +32,17 @@ def generate_torch_ensemble(
     num_members: int,
     reset_params: bool = True,
 ) -> nn.ModuleList:
-    """Build a torch ensemble by copying the base model num_members times, resetting the parameters of each member."""
+    """Build a torch ensemble by copying the base model num_members times, resetting the parameters of each member.
+
+    If reset-params is True, parameters are re-initialised to ensure independence,
+    which is crucial for estimating epistemic uncertainty via Deep Ensembles.
+
+    References:
+        Based on: 'Simple and Scalable Predictive Uncertainty Estimation using
+        Deep Ensembles' by Lakshminarayanan et al.,2017).
+        See: :cite:t:`lakshminarayananSimpleScalable2017
+
+    """
     if reset_params:
         return nn.ModuleList([_reset_copy(obj) for _ in range(num_members)])
     return nn.ModuleList([_copy(obj) for _ in range(num_members)])

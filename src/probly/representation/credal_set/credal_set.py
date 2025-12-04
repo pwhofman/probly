@@ -15,7 +15,13 @@ if TYPE_CHECKING:
 
 
 class CredalSet[T]:
-    """Base class for credal sets."""
+    """Base class for credal sets.
+
+    References:
+        Based on 'Credal ensembling in multi-class classification' by Nguyen et al. 2025).
+        See: :cite:t:`nguyenCredalEnsembling2025`
+
+    """
 
     def lower(self) -> T:
         """Compute the lower envelope of the credal set."""

@@ -10,7 +10,13 @@ from .common import register
 
 
 def replace_torch_dropconnect(obj: nn.Linear, p: float) -> DropConnectLinear:
-    """Replace a given layer by a DropConnectLinear layer."""
+    """Replace a given layer by a DropConnectLinear layer.
+
+    References:
+        Based on 'DropConnect Is Effective in Modeling Uncertainty of Bayesian Deep Networks' (Mobiny et al., 2019).
+        See: :cite:t:`mobinyDropConnectEffective2019`
+
+    """
     return DropConnectLinear(obj, p=p)
 
 

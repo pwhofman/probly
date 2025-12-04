@@ -3,7 +3,7 @@ References and Further Reading
 
 This section provides the theoretical background for the models implemented in ``probly`` as well as references to relevant literature and acknowledgments.
 
-Related Reasearch Papers
+Related Research Papers
 -----------------------
 The core functionality of this package is built upon the following foundational research papers. We recommend reading the papers to gain a deeper understanding of the algorithms and methodologies used:
 
@@ -15,7 +15,7 @@ Similar Tools & Ecosystem
 -------------------------
 We believe in using the right tool for the right job. While ``probly`` offers a unique set of features, there are several other tools in the ecosystem that may complement or enhance your workflow:
 
-* **TensorFlow Pobability (TFP):**
+* **TensorFlow Probability (TFP):**
     A library for probabilistic reasoning and statistical analysis in TensorFlow. It provides a wide range of probabilistic models and inference algorithms.
     `Visit TensorFlow Probability <https://www.tensorflow.org/probability>`_
 * **Pyro:**

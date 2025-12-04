@@ -14,7 +14,15 @@ if TYPE_CHECKING:
 
 
 def replace_last_torch_nig(obj: nn.Linear, state: State) -> TraverserResult:
-    """Register a class to be replaced by the NormalInverseGammaLinear layer."""
+    """Register a class to be replaced by the NormalInverseGammaLinear layer.
+
+    This layer outputs the parameters of a Normal Inverse Gamma distribution, which is central to evidential regression.
+
+    References:
+        Based on: 'Deep Evidential Regression' by Amini et al.,2020).
+        See: :cite:t:`aminDeepEvidential2020`
+
+    """
     state[REPLACED_LAST_LINEAR] = True
     return NormalInverseGammaLinear(
         obj.in_features,
