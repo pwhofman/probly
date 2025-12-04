@@ -2,16 +2,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 import torch
 from torch import Tensor, nn
 from torch.distributions import Dirichlet
 from torch.nn import functional as F
 from torch.special import digamma, gammaln
-
-if TYPE_CHECKING:
-    from torch.utils.data import DataLoader
 
 # ============================================================================
 # Missing utility implementations (stubs to satisfy mypy)
@@ -248,53 +243,3 @@ class RPNDistillationLoss(nn.Module):
             losses.append(-logp.mean())
 
         return torch.stack(losses).mean()
-
-
-# ============================================================================
-# TRAINING LOOP
-# ============================================================================
-
-
-def dpn_loss_training_epoch(
-    model: nn.Module,
-    optimizer: torch.optim.Optimizer,
-    id_loader: DataLoader,
-    device: torch.device,
-) -> float:
-    """Train one epoch using DPN loss (ID only).
-
-    Args:
-        model: A model outputting Dirichlet parameters.
-        optimizer: Optimizer instance.
-        id_loader: In-distribution DataLoader.
-        device: Target device.
-
-    Returns:
-        Average epoch loss.
-    """
-    model.train()
-
-    total_loss = 0.0
-    total_batches = 0
-
-    for x_raw, y_raw in id_loader:
-        x = x_raw.to(device)
-        y = y_raw.to(device)
-
-        optimizer.zero_grad()
-
-        alpha = model(x)
-        alpha_target = make_in_domain_target_alpha(y)
-
-        kl = kl_dirichlet(alpha_target, alpha).mean()
-        probs = predictive_probs(alpha)
-        ce = F.nll_loss(torch.log(probs + 1e-8), y)
-
-        loss = kl + 0.1 * ce
-        loss.backward()
-        optimizer.step()
-
-        total_loss += loss.item()
-        total_batches += 1
-
-    return total_loss / total_batches
