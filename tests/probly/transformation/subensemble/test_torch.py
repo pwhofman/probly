@@ -1,107 +1,73 @@
 from __future__ import annotations
 
-import pytest
-import torch
 from torch import nn
 
-from probly.transformation.ensemble.torch import generate_torch_ensemble
+from probly.transformation.subensemble import subensemble
+from tests.probly.torch_utils import count_layers
 
 
-class DummyNet(nn.Module):
-    """A small MLP used for testing ensemble behavior."""
+def test_subensemble_returns_expected_structure(
+    torch_model_small_2d_2d: nn.Module,
+) -> None:
+    """The subensemble should return [backbone, heads] as an nn.ModuleList."""
+    num_heads = 4
 
-    def __init__(self) -> None:
-        """Initialize layers."""
-        super().__init__()
-        self.fc1 = nn.Linear(10, 5)
-        self.fc2 = nn.Linear(5, 2)
+    model = subensemble(torch_model_small_2d_2d, num_heads)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Apply the forward pass."""
-        return self.fc2(self.fc1(x))
+    assert isinstance(model, nn.ModuleList)
+    assert len(model) == 2
 
+    backbone, heads = model
 
-def test_ensemble_returns_modulelist() -> None:
-    """The factory should return nn.ModuleList."""
-    model = DummyNet()
-    ensemble = generate_torch_ensemble(model, num_members=4)
-
-    assert isinstance(ensemble, nn.ModuleList)
-    assert len(ensemble) == 4
+    assert isinstance(backbone, nn.Module)
+    assert isinstance(heads, nn.ModuleList)
+    assert len(heads) == num_heads
 
 
-def test_members_are_deep_copied() -> None:
-    """Members must be deep-copied, not shared."""
-    model = DummyNet()
-    ensemble = generate_torch_ensemble(model, num_members=3, reset_params=False)
+def test_subensemble_creates_expected_number_of_linear_heads(
+    torch_model_small_2d_2d: nn.Module,
+) -> None:
+    """The subensemble should contain exactly num_heads Linear heads."""
+    num_heads = 5
 
-    p0 = next(iter(ensemble[0].parameters())).detach().clone()
-    p1 = next(iter(ensemble[1].parameters())).detach().clone()
+    model = subensemble(torch_model_small_2d_2d, num_heads)
+    _, heads = model
 
-    assert p0.data_ptr() != p1.data_ptr()
-
-
-def test_reset_params_changes_initialization() -> None:
-    """Resetting parameters should result in different initialization."""
-    model = DummyNet()
-    ensemble = generate_torch_ensemble(model, num_members=2, reset_params=True)
-
-    params0 = next(iter(ensemble[0].parameters())).detach().clone()
-    params1 = next(iter(ensemble[1].parameters())).detach().clone()
-
-    assert not torch.equal(params0, params1)
+    count_linear_heads = count_layers(heads, nn.Linear)
+    assert count_linear_heads == num_heads
 
 
-def test_no_reset_keeps_same_initialization() -> None:
-    """Without reset, members should have identical parameters."""
-    model = DummyNet()
-    ensemble = generate_torch_ensemble(model, num_members=2, reset_params=False)
+def test_subensemble_splits_backbone_and_head_layers(
+    torch_model_small_2d_2d: nn.Module,
+) -> None:
+    """The default head_layer should split backbone and head correctly."""
+    num_heads = 3
 
-    params0 = next(iter(ensemble[0].parameters())).detach().clone()
-    params1 = next(iter(ensemble[1].parameters())).detach().clone()
+    model = subensemble(torch_model_small_2d_2d, num_heads)
+    backbone, heads = model
 
-    assert torch.equal(params0, params1)
+    # original model has 3 Linear layers; backbone should keep first 2
+    backbone_layers = list(backbone.children())
+    assert len(backbone_layers) == 2
+    assert all(isinstance(layer, nn.Linear) for layer in backbone_layers)
 
-
-def test_forward_batch_compatibility() -> None:
-    """Each copied model should process a batch normally."""
-    model = DummyNet()
-    ensemble = generate_torch_ensemble(model, num_members=3)
-
-    x = torch.randn(4, 10)
-
-    for member in ensemble:
-        out = member(x)
-        assert out.shape == (4, 2)
+    first_head = heads[0]
+    head_layers = list(first_head.children())
+    assert len(head_layers) == 1
+    assert isinstance(head_layers[0], nn.Linear)
 
 
-@pytest.mark.skipif(not torch.cuda.is_available(), reason="GPU not available")
-def test_ensemble_gpu_cpu_compatibility() -> None:
-    """Models should run correctly on GPU if available."""
-    model = DummyNet().cuda()
-    ensemble = generate_torch_ensemble(model, num_members=2)
+def test_subensemble_heads_are_independent(
+    torch_model_small_2d_2d: nn.Module,
+) -> None:
+    """Each head should be an independent module with its own parameters."""
+    num_heads = 2
 
-    x = torch.randn(3, 10).cuda()
+    model = subensemble(torch_model_small_2d_2d, num_heads)
+    _, heads = model
 
-    for member in ensemble:
-        out = member(x)
-        assert out.is_cuda
-        assert out.shape == (3, 2)
+    params0 = next(iter(heads[0].parameters())).detach().clone()
+    params1 = next(iter(heads[1].parameters())).detach().clone()
 
-
-def test_empty_ensemble() -> None:
-    """num_members = 0 should return empty ModuleList."""
-    model = DummyNet()
-    ensemble = generate_torch_ensemble(model, num_members=0)
-
-    assert isinstance(ensemble, nn.ModuleList)
-    assert len(ensemble) == 0
-
-
-def test_single_member_ensemble() -> None:
-    """num_members = 1 should produce a single model copy."""
-    model = DummyNet()
-    ensemble = generate_torch_ensemble(model, num_members=1)
-
-    assert len(ensemble) == 1
-    assert isinstance(ensemble[0], nn.Module)
+    # parameters should not be the same object in memory
+    assert params0.data_ptr() != params1.data_ptr()
