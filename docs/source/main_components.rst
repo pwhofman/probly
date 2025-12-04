@@ -66,17 +66,16 @@ estimates that often perform well in practice.
 Evidential methods model uncertainty by learning the parameters of a distribution over predictions themselves, 
 providing a principled framework for capturing aleatoric and epistemic uncertainty simultaneously.
 
- 1.5.1 Evidential Regression
- 
-
+1.5.1 Evidential Regression
+----------------------------
 For regression tasks, evidential regression learns a Normal-Inverse-Gamma distribution, allowing the model 
 to estimate both prediction uncertainty and the uncertainty in that uncertainty estimate.
 
 :doc:`Evidential Regression Transformation <../../notebooks/examples/evidential_regression_transformation>`
 
-1.5.2 Evidential Classification
-   
 
+1.5.2 Evidential Classification
+----------------------------
 For classification, evidential classification learns a Dirichlet distribution over class probabilities, 
 enabling sophisticated uncertainty quantification for multi-class prediction tasks.
 
@@ -84,7 +83,7 @@ enabling sophisticated uncertainty quantification for multi-class prediction tas
 
 
 2. Utilities and Layers
-----------------------------
+~~~~~~~~~~~~~~~~~~~~~~~
 
 Beyond transformations, ``probly`` offers a comprehensive suite of **Utilities and Layers** that facilitate 
 building and training uncertainty-aware models. These components are specifically designed to work seamlessly 
@@ -92,7 +91,9 @@ with probabilistic outputs and enable end-to-end uncertainty-aware workflows.
 
 Key utilities include:
 
-- **Custom Loss Functions**: Tailored loss functions that properly account for uncertainty in predictions. These include negative log-likelihood variants, evidential loss functions, and calibration-aware losses that ensure your model learns meaningful uncertainty estimates.
+- **Custom Loss Functions**: Tailored loss functions that properly account for uncertainty in predictions. These include negative log-likelihood variants, evidential loss functions,
+ and calibration-aware losses that ensure your model learns meaningful uncertainty estimates.
+
 
 - **Metrics**: Specialized metrics to evaluate not only prediction accuracy but also the quality of uncertainty estimates, including calibration error, sharpness, and proper scoring rules.
 
@@ -105,8 +106,7 @@ effectively train, evaluate, and deploy them within the same unified framework.
 
 
 3. Evaluation and Quantification
-----------------------------
-
+~~~~~~~~~~~~~~~~~~~~~~~
 Finally, ``probly`` provides comprehensive tools for **Evaluation and Quantification** of uncertainty estimates. 
 This includes rigorous methods to assess the calibration of uncertainty estimates, techniques to visualize 
 uncertainty in predictions, and approaches to interpret where uncertainty comes from.
