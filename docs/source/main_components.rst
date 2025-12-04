@@ -30,7 +30,7 @@ Dropout-based uncertainty leverages the interpretation of dropout as approximate
 By enabling dropout at test time (Monte Carlo Dropout), you can generate multiple stochastic forward passes 
 to estimate model uncertainty.
 
-.. TODO: Add a link to the corresponding python notebook
+:doc:`Dropout Transformation <../../notebooks/examples/dropout_transformation>`
 
 1.2 DropConnect
 ~~~~~~~~~~~~~~~~~~~~~~~
