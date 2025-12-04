@@ -83,7 +83,8 @@ enabling sophisticated uncertainty quantification for multi-class prediction tas
 
 
 2. Utilities and Layers
-~~~~~~~~~~~~~~~~~~~~~~~
+==============
+
 
 Beyond transformations, ``probly`` offers a comprehensive suite of **Utilities and Layers** that facilitate 
 building and training uncertainty-aware models. These components are specifically designed to work seamlessly 
@@ -106,7 +107,8 @@ effectively train, evaluate, and deploy them within the same unified framework.
 
 
 3. Evaluation and Quantification
-~~~~~~~~~~~~~~~~~~~~~~~
+==============
+
 Finally, ``probly`` provides comprehensive tools for **Evaluation and Quantification** of uncertainty estimates. 
 This includes rigorous methods to assess the calibration of uncertainty estimates, techniques to visualize 
 uncertainty in predictions, and approaches to interpret where uncertainty comes from.
