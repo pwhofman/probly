@@ -89,10 +89,10 @@ Beyond transformations, ``probly`` offers a comprehensive suite of **Utilities a
 building and training uncertainty-aware models. These components are specifically designed to work seamlessly 
 with probabilistic outputs and enable end-to-end uncertainty-aware workflows.
 
-Key utilities include:
+**Key utilities include:**
 
 - **Custom Loss Functions**: Tailored loss functions that properly account for uncertainty in predictions. These include negative log-likelihood variants, evidential loss functions,
- and calibration-aware losses that ensure your model learns meaningful uncertainty estimates.
+and calibration-aware losses that ensure your model learns meaningful uncertainty estimates.
 
 
 - **Metrics**: Specialized metrics to evaluate not only prediction accuracy but also the quality of uncertainty estimates, including calibration error, sharpness, and proper scoring rules.
@@ -114,7 +114,7 @@ uncertainty in predictions, and approaches to interpret where uncertainty comes 
 These tools are essential for understanding how well a model's uncertainty estimates align with real-world outcomes, 
 validating that uncertainty is meaningful, and making informed decisions based on those estimates.
 
-Key evaluation tools include:
+**Key evaluation tools include:**
 
 - **Calibration Metrics**: Tools to assess how well uncertainty estimates correspond to actual prediction errors. This includes expected calibration error (ECE), maximum calibration error (MCE), and negative log-likelihood metrics.
 
