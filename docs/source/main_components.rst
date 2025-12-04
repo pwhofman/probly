@@ -64,21 +64,21 @@ estimates that often perform well in practice.
 Evidential methods model uncertainty by learning the parameters of a distribution over predictions themselves, 
 providing a principled framework for capturing aleatoric and epistemic uncertainty simultaneously.
 
-1.5.1 Evidential Regression
-~~~~~~~~~~~~~~~~~~~~~~~
+    1.5.1 Evidential Regression
+    ~~~~~~~~~~~~~~~~~~~~~~~
 
-For regression tasks, evidential regression learns a Normal-Inverse-Gamma distribution, allowing the model 
-to estimate both prediction uncertainty and the uncertainty in that uncertainty estimate.
+    For regression tasks, evidential regression learns a Normal-Inverse-Gamma distribution, allowing the model 
+    to estimate both prediction uncertainty and the uncertainty in that uncertainty estimate.
 
-:doc:`Evidential Regression Transformation <../../notebooks/examples/evidential_regression_transformation>`
+    :doc:`Evidential Regression Transformation <../../notebooks/examples/evidential_regression_transformation>`
 
-1.5.2 Evidential Classification
-~~~~~~~~~~~~~~~~~~~~~~~
+    1.5.2 Evidential Classification
+    ~~~~~~~~~~~~~~~~~~~~~~~
 
-For classification, evidential classification learns a Dirichlet distribution over class probabilities, 
-enabling sophisticated uncertainty quantification for multi-class prediction tasks.
+    For classification, evidential classification learns a Dirichlet distribution over class probabilities, 
+    enabling sophisticated uncertainty quantification for multi-class prediction tasks.
 
-:doc:`Evidential Classification Transformation <../../notebooks/examples/evidential_classification_transformation>`
+    :doc:`Evidential Classification Transformation <../../notebooks/examples/evidential_classification_transformation>`
 
 
 2. Utilities and Layers
