@@ -20,7 +20,7 @@ Before reading this chapter, the reader should already be familiar with:
 For clarity, this chapter follows the same notation conventions used throughout the ``probly`` documentation.
 
 1.3 Typical advanced use cases
-This chapter is intended for scenarios where users go beyond simple toy examples, such as:
+This chapter is intended for scenarios where users go beyond simple examples, such as:
 
 - training or evaluating large or real-world models,  
 - dealing with tight performance or memory constraints,  
@@ -39,24 +39,29 @@ These use cases often require a deeper understanding of transformations, scalabi
 
 2.1 Recall: What is a transformation?
 
-In ``probly``, a **transformation** is a small building block that maps values between two spaces:
+In ``probly``, a **transformation** is a small building block that maps values between two spaces,
+similar in spirit to the bijectors used in TensorFlow Probability (TensorFlow Probability, 2023;
+Rezende & Mohamed, 2015):
 
 - an **unconstrained space**, where optimisation and inference algorithms can work freely, and  
 - a **constrained space**, which matches the natural domain of your parameters or predictions
-  (for example positive scales, probabilities on a simplex, or bounded intervals).
+  (for example positive scales, probabilities on a simplex, or bounded intervals)
+  (TensorFlow Probability, 2023).
 
 Instead of forcing you to design models directly in a complicated constrained space, you write
-your model in terms of meaningful parameters. The transformation then takes care of the math that
-keeps everything inside the valid domain.
+your model in terms of meaningful parameters, and the transformation then takes care of the math
+that keeps everything inside the valid domain (TensorFlow Probability, 2023; Rezende & Mohamed, 2015).
 
 In practice this means that transformations:
 
-- provide a *short, reusable recipe* for how to turn raw latent variables into valid parameters,
-- enable **reparameterisation**, which can make optimisation easier and gradients better behaved,
-- automatically enforce **constraints** such as positivity, bounds, or simplex structure.
+- provide a *short, reusable recipe* for how to turn raw latent variables into valid parameters,  
+- enable **reparameterisation**, which can make optimisation easier and gradients better behaved
+  (Kingma & Welling, 2014),  
+- automatically enforce **constraints** such as positivity, bounds, or simplex structure
+  (TensorFlow Probability, 2023).
 
 You can think of a transformation as an adapter between “nice for the optimiser” coordinates and
-“nice for the human” coordinates.
+“nice for the human” coordinates (Kingma & Welling, 2014; Rezende & Mohamed, 2015).
 
 2.2 When to implement your own?
 
@@ -290,4 +295,37 @@ Symptoms of these problems often show up later as:
 When such issues appear, it is often helpful to temporarily isolate the transformation in a small
 test script, run the round-trip and stability checks described above, and only then reintegrate it
 into the full ``probly`` model.
-  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.. bibliography::
+Kingma, D. P., & Welling, M. (2014). Auto-encoding variational Bayes. *Proceedings of the 2nd
+International Conference on Learning Representations (ICLR).* https://arxiv.org/abs/1312.6114
+
+Rezende, D. J., & Mohamed, S. (2015). Variational inference with normalizing flows. *Proceedings of
+the 32nd International Conference on Machine Learning (ICML), 37*, 1530–1538.
+https://proceedings.mlr.press/v37/rezende15.html
+
+TensorFlow Probability. (2023). *Module: tfp.bijectors* [Computer software documentation].
+TensorFlow. https://www.tensorflow.org/probability/api_docs/python/tfp/bijectors
+
+
+
+
