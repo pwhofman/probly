@@ -100,15 +100,13 @@ def fpr_at_tpr(in_distribution: np.ndarray, out_distribution: np.ndarray, tpr_ta
         msg = f"tpr_target must be in the interval (0, 1], got {tpr_target}."
         raise ValueError(msg)
 
-    scores = np.concatenate((in_distribution, out_distribution))
-    # 0 = in-distribution, 1 = out-of-distribution (positive class)
+    preds = np.concatenate((in_distribution, out_distribution))
     labels = np.concatenate(
         (np.zeros(len(in_distribution)), np.ones(len(out_distribution))),
     )
 
-    fpr, tpr, thresholds = sm.roc_curve(labels, scores)
+    fpr, tpr, _ = sm.roc_curve(labels, preds)
 
-    # indices where TPR is at least the target
     idxs = np.where(tpr >= tpr_target)[0]
     if len(idxs) == 0:
         msg = f"Could not achieve TPR >= {tpr_target:.3f} with given scores."
@@ -117,3 +115,30 @@ def fpr_at_tpr(in_distribution: np.ndarray, out_distribution: np.ndarray, tpr_ta
     first_idx = idxs[0]
     fpr_at_target = fpr[first_idx]
     return float(fpr_at_target)
+
+
+def out_of_distribution_detection_fpr_at_95_tpr(in_distribution: np.ndarray, out_distribution: np.ndarray) -> float:
+    """Perform out-of-distribution detection using prediction functionals from id and ood data.
+
+    This can be epistemic uncertainty, as is common, but also e.g. softmax confidence.
+
+    Args:
+        in_distribution: in-distribution prediction functionals
+        out_distribution: out-of-distribution prediction functionals
+    Returns:
+        fpr@95tpr: float, false positive rate at 95% true positive rate
+    """
+    preds = np.concatenate((in_distribution, out_distribution))
+    labels = np.concatenate((np.zeros(len(in_distribution)), np.ones(len(out_distribution))))
+    fpr, tpr, _ = sm.roc_curve(labels, preds)
+
+    target_tpr = 0.95
+
+    if target_tpr in tpr:
+        idx = np.where(tpr == target_tpr)[0][0]
+        return float(fpr[idx])
+
+    if target_tpr < tpr[0]:
+        return float(fpr[0])
+    "Interpolate fpr when  tpr not exactly 0.95"
+    return float(np.interp(target_tpr, tpr, fpr))
