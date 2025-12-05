@@ -245,7 +245,7 @@ class RPNDistillationLoss(nn.Module):
         return torch.stack(losses).mean()
 
 
-class PostNetLoss(nn.Nodule):
+class PostNetLoss(nn.Module):
     """Posterior Networks (PostNet) loss."""
 
     def __init__(self) -> None:
