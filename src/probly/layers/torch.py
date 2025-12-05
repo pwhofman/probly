@@ -504,3 +504,85 @@ class NormalInverseGammaLinear(nn.Module):
             init.uniform_(self.nu_bias, -bound, bound)
             init.uniform_(self.alpha_bias, -bound, bound)
             init.uniform_(self.beta_bias, -bound, bound)
+
+
+# radial flows
+class RadialFlowLayer(nn.Module):
+    """Single radial flow transformation shared across all classes."""
+
+    def __init__(self, num_classes: int, dim: int) -> None:
+        """Initialize parameters for a radial flow transform."""
+        super().__init__()
+        self.c = num_classes
+        self.dim = dim
+
+        self.x0 = nn.Parameter(torch.zeros(self.c, self.dim))
+        self.alpha_prime = nn.Parameter(torch.zeros(self.c))
+        self.beta_prime = nn.Parameter(torch.zeros(self.c))
+
+        self.reset_parameters()
+
+    def reset_parameters(self) -> None:
+        """Reset learnable parameters with a small uniform init."""
+        stdv = 1.0 / math.sqrt(self.dim)
+        self.x0.data.uniform_(-stdv, stdv)
+        self.alpha_prime.data.uniform_(-stdv, stdv)
+        self.beta_prime.data.uniform_(-stdv, stdv)
+
+    def forward(self, zc: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        """Apply the radial flow to latent inputs zc."""
+        alpha = torch.nn.functional.softplus(self.alpha_prime)
+        beta = -alpha + torch.nn.functional.softplus(self.beta_prime)
+
+        x0 = self.x0.unsqueeze(1)
+        diff = zc - x0
+        r = diff.norm(dim=-1)
+
+        h = 1.0 / (alpha.unsqueeze(1) + r)
+        h_prime = -h * h
+        beta_h = beta.unsqueeze(1) * h
+
+        z_new = zc + beta_h.unsqueeze(-1) * diff
+
+        term1 = (self.dim - 1) * torch.log1p(beta_h)
+        term2 = torch.log1p(beta_h + beta.unsqueeze(1) * h_prime * r)
+        log_abs_det = term1 + term2
+
+        return z_new, log_abs_det
+
+
+class BatchedRadialFlowDensity(nn.Module):
+    """Radial-flow density estimator that computes P(z|c) for all classes."""
+
+    def __init__(self, num_classes: int, dim: int, flow_length: int = 6) -> None:
+        """Create a sequence of radial flow layers and base distribution."""
+        super().__init__()
+        self.c = num_classes
+        self.dim = dim
+
+        self.layers = nn.ModuleList(
+            [RadialFlowLayer(num_classes, dim) for _ in range(flow_length)],
+        )
+
+        self.log_base_const = -0.5 * self.dim * math.log(2 * math.pi)
+
+    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        """Expand input x for all classes and apply flow layers."""
+        B = x.size(0)  # noqa: N806
+        zc = x.unsqueeze(0).expand(self.c, B, self.dim)
+        sum_log_jac = torch.zeros(self.c, B, device=x.device)
+
+        for layer in self.layers:
+            zc, log_j = layer(zc)
+            sum_log_jac = sum_log_jac + log_j
+
+        return zc, sum_log_jac
+
+    def log_prob(self, x: torch.Tensor) -> torch.Tensor:
+        """Return class-conditional log densities log P(x|c)."""
+        zc, sum_log_jac = self.forward(x)  # zc: [C,B,D]
+
+        base_logp = self.log_base_const - 0.5 * (zc**2).sum(dim=-1)
+        logp = base_logp + sum_log_jac  # [C,B]
+
+        return logp.transpose(0, 1)  # [B,C]
