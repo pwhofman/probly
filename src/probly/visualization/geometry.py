@@ -31,7 +31,6 @@ class CredalVisualizer:
             raise ValueError(msg)
 
         coords = np.array([self.probs_to_coords(p) for p in probs])
-
         if ax is None:
             fig, ax = plt.subplots(figsize=(6, 6))  # noqa: RUF059
 
