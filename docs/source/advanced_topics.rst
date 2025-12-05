@@ -65,73 +65,127 @@ You can think of a transformation as an adapter between “nice for the optimise
 
 2.2 When to implement your own?
 
-The built-in transformations in ``probly`` cover many common situations, such as positive scales,
-simple box constraints, or mappings to probability vectors. In many projects these are sufficient
-and you never have to write your own.
+The built-in transformations in ``probly`` are designed to cover many common cases,
+such as positive scales, simple box constraints, or mappings to probability vectors.
+This is similar in spirit to other probabilistic frameworks that provide default
+constraint transforms for bounded, ordered, simplex, correlation, or covariance
+parameters (Stan Development Team, 2025). In many projects these standard building
+blocks are sufficient and you never need to write your own transformation.
 
-There are, however, important cases where a **custom transformation** is the better choice:
+There are, however, important situations where a **custom transformation** is the
+better choice.
 
 - **Limitations of built-in transformations**  
-  Your model uses a parameter space that is not covered by the standard transforms. Examples
-  include structured covariance matrices, ordered variables, monotone functions, or parameters
-  that must satisfy several coupled constraints at once.
+  Some models use parameter spaces that go beyond the usual catalogue of common constraints such as positive,
+bounded, or simplex parameters. For example, you may need structured covariance matrices,
+  ordered-but-positive sequences, monotone functions, or parameters that satisfy
+  several coupled constraints at once. The Stan reference manual notes that
+  “vectors may … be constrained to be ordered, positive ordered, or simplexes”
+  and matrices “to be correlation matrices or covariance matrices” (Stan
+  Development Team, 2025, Constraint Transforms section), but real applications
+  often demand more specialised structures. In such cases, a custom
+  transformation lets you explicitly encode the structure your model needs.
 
 - **Custom distributions or domain constraints**  
-  Domain knowledge may require that parameters follow a particular shape or relationship
-  (“these values must always sum to one”, “this parameter must stay in a problem-specific
-  range”, “these two variables share a common scale”). A custom transformation lets you encode
-  these rules explicitly instead of relying on ad-hoc clipping.
+  In many domains, prior knowledge is naturally expressed as constraints on
+  parameters: certain probabilities must always sum to one, some effects must be
+  monotone, or fairness and safety requirements restrict which configurations are
+  admissible. Recent work on probabilistic circuits emphasises that domain
+  constraints can “encode information about general trends in the domain and
+  serve as effective inductive biases” (Karanam et al., 2024, p. 3). A custom
+  transformation is a convenient way to build such domain-specific rules into the
+  parameterisation instead of relying on ad-hoc clipping or post-processing.
 
-- **Cleaner uncertainty behaviour**  
-  Some parameterisations produce more interpretable or numerically stable uncertainty estimates,
-  for example working on a log-scale for strictly positive variances. A custom transformation can
-  make the connection to the uncertainty representations from :doc:`Core Concepts <core_concepts.rst>`
-  more transparent.
+- **Cleaner uncertainty behaviour and numerical stability**  
+  Some parameterisations yield more interpretable and numerically stable
+  uncertainty estimates than others. A classic example is working on a log or
+  softplus scale for strictly positive parameters. Stan, for instance, uses a
+  logarithmic transform for lower-bounded variables and applies the inverse
+  exponential to map back to the constrained space (Stan Development Team, 2025).
+  Practitioners have observed that replacing a naïve exponential with a softplus
+  transform can substantially stabilise inference; one NumPyro user reports “a
+  very substantial improvement in inference stability when I replace `exp`
+  transformation with `softplus` for constraining `site_scale`” (vitkl, 2020,
+  para. 31). In ``probly``, a custom transformation can encapsulate this kind of
+  numerically robust parameterisation and make its effect on uncertainty
+  representations easier to reason about.
 
 - **Integration with existing code or libraries**  
-  When you plug ``probly`` into an existing ML pipeline, external code often expects parameters
-  in a fixed format. A transformation can serve as a bridge: ``probly`` works in its preferred
-  unconstrained space, while the surrounding code still “sees” the familiar domain-specific
-  representation.
+  When you plug ``probly`` into an existing machine-learning pipeline, external
+  code often expects parameters in a fixed, domain-specific representation. The
+  internal unconstrained parameterisation that is convenient for inference may
+  not match what a legacy training loop, a deep-learning framework, or a
+  production system “expects to see.” A transformation can act as a bridge:
+  ``probly`` operates in its preferred unconstrained space, while the surrounding
+  code continues to work with familiar application-level parameters (cf. the use
+  of constraint transforms to reconcile internal and external parameterisations
+  in Stan; Stan Development Team, 2025).
 
-As a practical rule: if you frequently add manual clamps, min/max operations, or ad-hoc
-post-processing to keep parameters valid, it is a strong signal that a dedicated custom
-transformation would make the model cleaner and more robust.
+As a practical rule of thumb: if you frequently add manual clamps, min/max
+operations, or ad-hoc post-processing steps just to keep parameters valid, that is
+a strong signal that a dedicated custom transformation would make the model
+cleaner, more robust, and easier to maintain.
 
 2.3 API & design principles
 
-Custom transformations should follow a **small and predictable interface**. Conceptually, each
-transformation is responsible for three things:
+Custom transformations in ``probly`` should follow a **small and predictable interface**. Similar
+interfaces appear in other probabilistic libraries. For example, TensorFlow Probability notes
+that “A `Bijector` is characterized by three operations: 1. Forward … 2. Inverse … 3.
+`log_det_jacobian(x)`” (TensorFlow Probability, 2023), and the Open Source Vizier guide adds
+that “Each bijector implements at least 3 methods: `forward`, `inverse`, and (at least) one
+of `forward_log_det_jacobian` and `inverse_log_det_jacobian`” (Open Source Vizier Authors, 2022).
+
+Conceptually, each transformation in ``probly`` is responsible for three things:
 
 - a **forward mapping** from an unconstrained input to the constrained parameter space,
-- an **inverse mapping** that recovers the unconstrained value from a constrained one (where
-  this is well-defined),
+  typically used to turn one random outcome into another (TensorFlow Probability, 2023),  
+- an **inverse mapping** that recovers the unconstrained value from a constrained one,
+  enabling probability and density computations,  
 - any **auxiliary quantities** that inference algorithms may need, such as Jacobians or
-  log-determinants, depending on the method used.
+  log-determinants, to account for the change of variables.
 
-Beyond this minimal interface, good transformations follow a few design principles:
+Stan’s transform system illustrates the same pattern: “every (multivariate) parameter in a Stan
+model is transformed to an unconstrained variable behind the scenes by the model compiler”
+and “the C++ classes also include code to transform the parameters from unconstrained to
+constrained and apply the appropriate Jacobians” (Stan Development Team, 2025). In other
+words, the model is written in terms of constrained parameters, while inference operates in an
+unconstrained space connected by well-defined forward and inverse transforms.
+
+Beyond this minimal interface, good transformations follow several design principles:
 
 - **local and self-contained**  
   All logic that enforces a particular constraint should live inside the transformation. The rest
-  of the model should not need to know which reparameterisation is used internally.
+  of the model should not need to know which reparameterisation is used internally. This mirrors
+  how libraries like Stan and NumPyro encapsulate constraints as self-contained objects that define
+  where parameters are valid (Contributors to the Pyro Project, 2019; Stan Development Team, 2025).
 
 - **clearly documented domain and range**  
   It should be obvious which inputs are valid, what shapes are expected, and which constraints the
-  outputs satisfy. This makes debugging and reuse much easier.
+  outputs satisfy. NumPyro’s ``Constraint`` base class explicitly states that “A constraint object
+  represents a region over which a variable is valid, e.g. within which a variable can be
+  optimized” (Contributors to the Pyro Project, 2019). Documenting domains and ranges for custom
+  transformations in ``probly`` serves the same purpose.
 
 - **numerically stable**  
-  The implementation should avoid unnecessary overflow, underflow, or extreme gradients. Small
-  epsilons, stable variants of mathematical formulas, or safe clipping near the boundaries are
-  often needed in practice.
+  The implementation should avoid unnecessary overflow, underflow, or extreme gradients. Stan’s
+  documentation on constraint transforms highlights numerical issues arising from floating-point
+  arithmetic and the need for careful treatment of boundaries and Jacobian terms (Stan Development
+  Team, 2025). In practice, this often means using stable variants of mathematical formulas,
+  adding small epsilons, or applying safe clipping near boundaries.
 
 - **composable**  
-  Whenever possible, transformations should work well in combination with others, for example a
-  scaling transform followed by a simplex transform, or a log-transform followed by a shift.
+  Whenever possible, transformations should work well in combination with others. TensorFlow
+  Probability, for example, provides composition utilities such as ``Chain`` to build complex
+  mappings out of simpler bijectors (Open Source Vizier Authors, 2022). In ``probly``, the same
+  idea applies: designing transformations to be composable makes it easier to express rich
+  constraints while keeping each individual component small and testable.
 
 During **sampling and inference**, ``probly`` repeatedly calls the forward and inverse mappings of
 your transformation to move between the internal unconstrained representation and the external
 constrained parameters that appear in the model. A well-designed transformation therefore keeps
-these operations cheap, stable, and easy to reason about.
+these operations cheap, stable, and easy to reason about, in line with the goals of similar
+transform systems in Stan and TensorFlow Probability (Stan Development Team, 2025;
+TensorFlow Probability, 2023).
 
 2.4 Step-by-step tutorial: simple custom transformation
 
@@ -298,23 +352,6 @@ into the full ``probly`` model.
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 .. bibliography::
 Kingma, D. P., & Welling, M. (2014). Auto-encoding variational Bayes. *Proceedings of the 2nd
 International Conference on Learning Representations (ICLR).* https://arxiv.org/abs/1312.6114
@@ -326,6 +363,32 @@ https://proceedings.mlr.press/v37/rezende15.html
 TensorFlow Probability. (2023). *Module: tfp.bijectors* [Computer software documentation].
 TensorFlow. https://www.tensorflow.org/probability/api_docs/python/tfp/bijectors
 
+Karanam, A., Mathur, S., Sidheekh, S., & Natarajan, S. (2024).
+A unified framework for human-allied learning of probabilistic circuits.
+*arXiv.* https://arxiv.org/abs/2405.02413
 
+Stan Development Team. (2025).
+*Stan reference manual* (Version 2.37).
+https://mc-stan.org/docs/reference-manual/
+
+vitkl. (2020, December 31).
+*Softplus transform as a more numerically stable way to enforce positive constraint
+[Issue #855]*. GitHub. https://github.com/pyro-ppl/numpyro/issues/855
+
+Contributors to the Pyro Project. (2019).
+*NumPyro: numpyro.distributions.constraints* [Source code documentation].
+NumPyro. https://num.pyro.ai/en/0.3.0/_modules/numpyro/distributions/constraints.html
+
+Open Source Vizier Authors. (2022).
+*Bijectors*. In *Open Source Vizier documentation*.
+https://oss-vizier.readthedocs.io/en/latest/advanced_topics/tfp/bijectors.html
+
+Stan Development Team. (2025).
+*Constraint transforms*. In *Stan reference manual* (Version 2.37).
+https://mc-stan.org/docs/reference-manual/transforms.html
+
+TensorFlow Probability. (2023).
+*tfp.bijectors.Bijector* [Computer software documentation].
+TensorFlow. https://www.tensorflow.org/probability/api_docs/python/tfp/bijectors/Bijector
 
 
