@@ -125,7 +125,7 @@ validating that uncertainty is meaningful, and making informed decisions based o
 - **Interpretation Techniques**: Approaches to decompose uncertainty into aleatoric (data) and epistemic (model) components, identify which inputs drive uncertainty, and understand the sources and implications of uncertainty in model outputs.
 
 **Conclusion**
-
+==============
 By providing a comprehensive suite of tools across these three pillars—Transformations, Utilities & Layers, 
 and Evaluation & Quantification—``probly`` aims to make uncertainty estimation accessible and practical 
 for a wide range of machine learning applications, from research prototyping to production deployment.

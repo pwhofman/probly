@@ -68,6 +68,12 @@ Quickstart
    examples/train_bnn_classification
    examples/train_evidential_classification
    examples/train_evidential_regression
+   examples/bayesian_transformation
+   examples/dropconnect_transformation
+   examples/dropout_transformation
+   examples/ensemble_transformation
+   examples/evidential_classification_transformation
+   examples/evidential_regression_transformation
 
 .. toctree::
    :maxdepth: 2
