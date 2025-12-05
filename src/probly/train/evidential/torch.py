@@ -2,16 +2,16 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import torch
 from torch import Tensor, nn
 from torch.distributions import Dirichlet
 from torch.nn import functional as F
 from torch.special import digamma, gammaln
 
-# ============================================================================
-# Missing utility implementations (stubs to satisfy mypy)
-# Replace with your real project implementations later.
-# ============================================================================
+if TYPE_CHECKING:
+    from probly.layers import torch as t
 
 
 def normal_wishart_log_prob(
@@ -243,3 +243,36 @@ class RPNDistillationLoss(nn.Module):
             losses.append(-logp.mean())
 
         return torch.stack(losses).mean()
+
+
+class PostNetLoss(nn.Nodule):
+    """Posterior Networks (PostNet) loss."""
+
+    def __init__(self) -> None:
+        """Initialize PostNet loss."""
+        super().__init__()
+
+    def forward(
+        self,
+        z: Tensor,
+        y: Tensor,
+        flow: t.BatchedRadialFlowDensity,
+        class_counts: Tensor,
+        entropy_weight: float = 1e-5,
+    ) -> torch.Tensor:
+        """Compute PostNet loss."""
+        log_dens = flow.log_prob(z)  # [B,C]
+        dens = log_dens.exp()
+
+        beta = dens * class_counts.unsqueeze(0)
+        alpha = beta + 1.0
+        alpha0 = alpha.sum(dim=1)
+
+        digamma = torch.digamma
+        batch_idx = torch.arange(len(y), device=y.device)
+        expected_ce = digamma(alpha0) - digamma(alpha[batch_idx, y])
+
+        entropy = Dirichlet(alpha).entropy()
+
+        loss = (expected_ce - entropy_weight * entropy).mean()
+        return loss, alpha
