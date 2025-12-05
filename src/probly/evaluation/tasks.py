@@ -59,7 +59,7 @@ def out_of_distribution_detection(in_distribution: np.ndarray, out_distribution:
 
 
 def out_of_distribution_detection_aupr(in_distribution: np.ndarray, out_distribution: np.ndarray) -> float:
-    """Perform out-of-distribution detection using AUPR (Area Under the Precision–Recall Curve).
+    """Perform out-of-distribution detection using AUPR (Area Under the Precision-Recall Curve).
 
     This metric evaluates how well the model distinguishes between in- and out-of-distribution samples,
     focusing more on positive class (OOD) precision and recall.
