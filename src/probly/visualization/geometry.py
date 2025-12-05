@@ -43,22 +43,23 @@ class CredalVisualizer:
 
         returns an axes object.
         """
-        msg = "Inpu must have 3 dimensions."
+        msg = "Input must have 3 dimensions."
         if probs.shape[1] != 3:
             raise ValueError(msg)
 
         coords = np.array([self.probs_to_coords(p) for p in probs])
-
         if ax is None:
             fig, ax = plt.subplots(figsize=(6, 6))
 
-        verts = np.array(
-            [
-                [0, 0],
-                [1, 0],
-                [0.5, np.sqrt(3) / 2],
-            ],
-        )
+        v1 = np.array([0.0,0.0])
+        v2 = np.array([1.0,0.0])
+        v3 = np.array([0.5, np.sqrt(3)/2])
+
+        ax.axis("off")
+        verts = np.array([v1,v2,v3])
+        ax.text(v1[0], v1[1], "Class 1", ha='right',  va='top',    fontsize=12)
+        ax.text(v2[0], v2[1], "Class 2", ha='left',   va='top',    fontsize=12)
+        ax.text(v3[0], v3[1], "Class 3", ha='center', va='bottom', fontsize=12)
 
         triangle = plt.Polygon(verts, closed=True, fill=False)
         ax.add_patch(triangle)
