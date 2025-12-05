@@ -35,18 +35,19 @@ import probly
 import torch.nn.functional as F
 
 net = ...  # get neural network
-model = probly.representation.Dropout(net)  # make neural network a Dropout model
+model = probly.transformation.dropout(net)  # make neural network a Dropout model
 train(model)  # train model as usual
 
 data = ...  # get data
-preds = model.predict_representation(data)  # predict an uncertainty representation
-eu = probly.quantification.classification.mutual_information(preds)  # compute model's epistemic uncertainty
-
 data_ood = ...  # get out of distribution data
-preds_ood = model.predict_representation(data_ood)
-eu_ood = probly.quantification.classification.mutual_information(preds_ood)
-auroc = probly.evaluation.tasks.out_of_distribution_detection(eu,
-                                                              eu_ood)  # compute the AUROC score for out of distribution detection
+sampler = probly.representation.Sampler(model, num_samples=20)
+sample = sampler.predict(data) # predict an uncertainty representation
+sample_ood = sampler.predict(data_ood)
+
+eu = probly.quantification.classification.mutual_information(sample)  # quantify model's epistemic uncertainty
+eu_ood = probly.quantification.classification.mutual_information(sample_ood)
+
+auroc = probly.evaluation.tasks.out_of_distribution_detection(eu, eu_ood)  # evaluate model's uncertainty
 ```
 
 ## 📜 License
