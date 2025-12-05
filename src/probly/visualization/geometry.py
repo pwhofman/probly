@@ -1,4 +1,4 @@
-from __future__ import annotations  # noqa: D100
+from __future__ import annotations
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -9,11 +9,17 @@ from scipy.spatial import ConvexHull
 class CredalVisualizer:
     """Class to collect all the geometric plots."""
 
-    def __init__(self) -> None:  # noqa: D107
+    def __init__(self) -> None:
+        """Initialize the class."""
         pass
 
     def probs_to_coords(self, probs: np.ndarray) -> tuple:
-        """Convert ternary probabilities to 2D coordinates."""
+        """Convert ternary probabilities to 2D coordinates.
+
+        args:
+        probs: the ternary probabilities.
+
+        return: Tuple containing the 2D coordinates."""
         p1, p2, p3 = probs  # noqa: RUF059
         x = p2 + 0.5 * p3
         y = (np.sqrt(3) / 2) * p3
@@ -25,7 +31,14 @@ class CredalVisualizer:
         ax: mpl.axes.Axes = None,
         **scatter_kwargs: mpl.Kwargs,
     ) -> mpl.axes.Axes:
-        """Plot ternary scatter points."""
+        """Plot ternary scatter points.
+
+        args:
+        probs: the ternary probabilities.
+        ax: matplotlib axes.Axes to plot on.
+        **scatter_kwargs: kwargs to pass to scatter.
+
+        returns: Ternary plot with scattered points."""
         msg = "Input must have 3 dimensions."
         if probs.shape[1] != 3:
             raise ValueError(msg)
@@ -56,6 +69,15 @@ class CredalVisualizer:
 
         return ax
 
+
+    def interval_plot(self) -> None:
+        """To be implemented. Plot for 2 classes."""
+        return
+
+    def spider_plot(self) -> None:
+        """To be implemented. Plot for more than 3 classes."""
+        return
+
     def plot_convex_hull(
         self,
         probs: np.ndarray,
@@ -65,12 +87,22 @@ class CredalVisualizer:
         edgecolor: str = "green",
         linewidth: float = 2.0,
     ) -> mpl.axes.Axes:
-        """Draw the convex hull around ternary points.
+        """Draw the convex hull around the points.
         Handles special cases:
         - 1 point (degenerate)
         - 2 points (line segment)
-        - ≥3 points (polygon).
-        """  # noqa: D205
+        - >= 3 points (polygon)
+
+        args:
+        probs: Array of probabilities
+        ax: Axes to draw on
+        facecolor: Color of the convex hull
+        alpha: Opacity of the convex hull
+        edgecolor: Color of the outline
+        linewitdth: Width of the convex hull
+
+        returns: Plot with convex hull.
+        """
         coords = np.array([self.probs_to_coords(p) for p in probs])
 
         if ax is None:
@@ -128,7 +160,7 @@ points = np.array(
         [0.8, 0.1, 0.1],
         [0.3, 0.1, 0.6],
         [0.33, 0.33, 0.34],
-    ],
+    ]
 )
 
 viz = CredalVisualizer()

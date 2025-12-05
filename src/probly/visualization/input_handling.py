@@ -7,7 +7,7 @@ import numpy as np
 from .geometry import CredalVisualizer
 
 
-def check_num_classes(input_data: np.ndarray) -> None:
+def check_num_classes(input_data: np.ndarray):
     """Checks number of classes and refers to respective function.
 
     Args:
@@ -15,15 +15,15 @@ def check_num_classes(input_data: np.ndarray) -> None:
     """
     viz = CredalVisualizer()
     if input_data.shape[2] == 2:
-        return viz.interval_plot()  # not yet implemented
+        return viz.interval_plot()
     if input_data.shape[2] == 3:
         return viz.ternary_plot(input_data)
     if input_data.shape[2] == 4:
-        return viz.spider_plot()  # not yet implemented
+        return viz.spider_plot()
     raise NotImplementedError
 
 
-def check_shape(input_data: np.ndarray) -> None:
+def check_shape(input_data: np.ndarray):
     """Sanity check.
 
     Args:
