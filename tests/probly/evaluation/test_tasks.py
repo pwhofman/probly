@@ -81,9 +81,8 @@ def test_fpr_at_tpr_invalid_tpr_target() -> None:
         fpr_at_tpr(in_scores, out_scores, tpr_target=0.0)
 
     with pytest.raises(ValueError, match=msg):
-        fpr_at_tpr(in_scores, out_scores, tpr_target=1.1)
-
-
+        fpr_at_tpr(in_scores, out_scores, tpr_target=1.1)      
+        
 def test_fpr_at_tpr_perfect_separation() -> None:
     in_scores = np.array([0.1, 0.2, 0.3, 0.4])
     out_scores = np.array([0.8, 0.9, 1.0, 1.1])
