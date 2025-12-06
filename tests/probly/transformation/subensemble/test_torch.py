@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import pytest
 import torch
 from torch import nn
 
@@ -199,45 +200,19 @@ class TestEdgeCases:
         assert count_layers(backbone, nn.Conv2d) == 0
         assert count_layers(backbone, nn.Sequential) == 1
 
-    def test_head_layer_zero_moves_all_layers_to_head(
+    def test_head_layer_zero_raises_value_error(
         self,
         torch_model_small_2d_2d: nn.Module,
     ) -> None:
-        """head_layer=0 should move all layers into the head and leave backbone empty."""
+        """head_layer <= 0 should raise a ValueError exception."""
         num_heads = 3
-        original_params = [p.detach().clone() for p in torch_model_small_2d_2d.parameters()]
 
-        subensemble_model = subensemble(
-            torch_model_small_2d_2d,
-            num_heads=num_heads,
-            head_layer=0,
-        )
-        backbone, heads = subensemble_model
-
-        # backbone becomes an empty Sequential
-        assert isinstance(backbone, nn.Sequential)
-        assert len(list(backbone.children())) == 0
-        assert count_layers(backbone, nn.Linear) == 0
-        assert count_layers(backbone, nn.Conv2d) == 0
-        assert count_layers(backbone, nn.Sequential) == 1
-
-        # heads contain num_heads copies of the full original model.
-        assert isinstance(heads, nn.ModuleList)
-        assert len(heads) == num_heads
-        assert count_layers(heads, nn.Linear) == 3 * num_heads
-        assert count_layers(heads, nn.Conv2d) == 0
-        assert count_layers(heads, nn.Sequential) == num_heads
-
-        # original model remains unchanged
-        assert count_layers(torch_model_small_2d_2d, nn.Linear) == 3
-        assert all(
-            torch.equal(p_before, p_after)
-            for p_before, p_after in zip(
-                original_params,
-                torch_model_small_2d_2d.parameters(),
-                strict=False,
+        with pytest.raises(ValueError, match="head_layer must be a positive number, but got head_layer=0 instead"):
+            subensemble(
+                torch_model_small_2d_2d,
+                num_heads=num_heads,
+                head_layer=0,
             )
-        )
 
     def test_large_head_layer_uses_all_layers_as_head(
         self,
