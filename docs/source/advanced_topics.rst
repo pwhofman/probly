@@ -441,379 +441,270 @@ high-level tests of full models (Carpenter et al., 2017).
 
 3.1 What is a “large” model in practice?
 
-What counts as a “large” model depends on the context, hardware, and goals of the project. In the
-literature on large AI models, the term is often used for networks with hundreds of millions or
-billions of parameters and complex computational structures (Tu, 2024). In everyday ``probly``
-projects, you will usually encounter “large-model” issues much earlier, whenever memory, runtime,
-or data handling start to dominate your workflow.
+What counts as a “large” model depends on your hardware and your goals. In the
+research world, “large models” often mean networks with hundreds of millions or
+billions of parameters (Tu, 2024). In everyday ``probly`` projects, you will
+usually run into “large-model” problems much earlier, as soon as memory, data
+handling, or runtime start to become annoying.
 
-A model is typically “large in practice” when at least one of the following becomes a real
-constraint:
+In practice, a model is “large” when one or more of these become real limits:
 
-- **Model dimensions and parameter count**  
-  As parameter counts grow, the memory footprint for parameters, gradients, optimizer state, and
-  activations can approach or exceed what a single device can handle comfortably. Practical guides
-  on deploying large-scale deep learning models emphasise that model size, memory usage, and the
-  need to split computation across multiple GPUs or machines are central challenges (Tyagi, 2025).
+- **Model size (number of parameters)**  
+  As you add layers and parameters, you need memory for parameters, gradients,
+  optimiser state, and activations. If this no longer fits comfortably on a
+  single device, you are in “large-model” territory (Tyagi, 2025).
 
 - **Dataset size**  
-  A model can also feel “large” because the dataset is large. If the full dataset no longer fits
-  into memory, you must rely on streaming, sharding, or mini-batch pipelines. Large-scale systems
-  often report that I/O and data preprocessing can become bottlenecks as data volume increases
-  (Tyagi, 2025), and the same effect appears in ``probly`` projects once you move beyond small,
-  in-memory datasets.
+  A model can also feel large because the **data** are large. If the full
+  dataset does not fit in RAM, you have to switch to streaming or mini-batches
+  instead of loading everything at once (Tyagi, 2025).
 
-- **Runtime and resource constraints**  
-  Even a moderate-sized model may be “large” if a single training run takes many hours, if
-  inference latency is critical, or if energy and hardware costs limit how many experiments you
-  can run. Discussions of large-model deployments highlight the tension between model size,
-  training time, and cost as a key obstacle in practice (Tyagi, 2025; Tu, 2024).
+- **Runtime and cost**  
+  Even a medium-sized model becomes “large” if one run takes many hours, or if
+  GPU time is expensive and you can only afford a few runs (Tu, 2024; Tyagi,
+  2025).
 
-For the purposes of this chapter, we will treat a model as “large” whenever memory, data handling,
-or runtime constraints force you to think about how the model is structured and how computations
-are organised, rather than letting you focus solely on the modelling idea.
+For this chapter, we call a model “large” whenever memory, data handling, or
+runtime force you to think about structure and efficiency, instead of just
+writing the most direct version of the model.
 
 3.2 Model structuring strategies
 
-As models and datasets grow, the structure of your code and model definition becomes just as
-important as the choice of algorithm. Good project structure makes it easier to reason about large
-systems, reuse components, and debug problems. Guides on organising Python and data science
-projects consistently recommend a modular layout rather than a single monolithic script (Pati,
-2025; The Hitchhiker’s Guide to Python Contributors, 2024).
+As models and datasets grow, **code structure** becomes as important as the
+choice of algorithm. A messy single file might work for a tiny example but
+quickly becomes painful for larger projects. Guides on structuring data science
+projects recommend a simple, modular layout instead of one big script (Pati,
+2025; Zinkevich, n.d.).
 
 **Modular design (sub-models and reusable components)**
 
 For ``probly`` projects, a modular design usually means:
 
 - separating data loading and preprocessing from model definition and inference,
-- grouping related model components (for example a family of uncertainty-aware classifiers) into
-  their own modules,
-- encapsulating common patterns into reusable functions or classes.
+- grouping related model parts into their own modules (for example,
+  ``uncertainty_heads.py`` or ``transforms/constraints.py``),
+- turning common patterns into reusable functions or classes.
 
-Pati (2025) illustrates how splitting a data science project into modules such as
-``preprocess.py``, ``train.py``, and ``predict.py`` improves maintainability and reuse. The same
-idea applies to ``probly``: instead of one very large model file, you can create sub-models or
-building blocks (for example, shared transformation libraries or common likelihood components)
-that can be imported into multiple experiments.
+Pati (2025) shows how splitting a project into files like
+``preprocess.py``, ``train.py``, and ``evaluate.py`` makes it easier to maintain
+and reuse code. The same idea applies to ``probly``: instead of one huge model
+file, you build small building blocks (e.g. shared transformations or likelihood
+components) and import them where you need them.
 
-**Naming conventions and file/project organisation**
+**Naming and project layout**
 
-Clear naming and consistent layout make large codebases easier to navigate. The “Structuring Your
-Project” chapter in *The Hitchhiker’s Guide to Python* recommends short, lowercase module names
-and discourages deeply nested, ad hoc layouts, because they tend to introduce confusing imports
-and circular dependencies (The Hitchhiker’s Guide to Python Contributors, 2024).
+A clear layout makes a large codebase feel smaller. In practice, this can mean:
 
-In practice, this can mean:
+- using descriptive filenames such as ``large_models/core_layers.py`` or
+  ``pipelines/experiment_large_01.py``,
+- keeping reusable library code separate from experiment-specific scripts and
+  notebooks,
+- writing down a short “project structure” section in the README so new people
+  can quickly find the important pieces (Pati, 2025; Zinkevich, n.d.).
 
-- using descriptive filenames such as ``large_models/core_layers.py``,
-  ``probly_transforms/constraints.py``, or ``pipelines/large_experiment.py``,
-- keeping reusable library code (for example, generic ``probly`` models and transformations)
-  separate from experiment-specific scripts and notebooks,
-- adopting a simple, documented folder structure so that new contributors can quickly find model
-  definitions, data processing code, configurations, and documentation (LuxDevHQ, 2023; Pati, 2025).
-
-A clean structure does not make a model smaller, but it makes it **feel** smaller: you can focus on
-one piece at a time, understand dependencies, and swap components in and out without losing track
-of the overall system. The later sections in this chapter (3.3–3.6) assume that your ``probly``
-code is at least partially modularised into sub-models, transformations, and pipelines rather than
-being a single long script.
+Good structure does not make the model mathematically simpler, but it makes it
+much easier to find bugs, add new ideas, and run larger experiments without
+getting lost.
 
 3.3 Memory management
 
-For small toy examples, you can often ignore memory and just run the model. As soon as datasets
-and models grow, memory becomes a central constraint: you may hit GPU out-of-memory errors, see
-training slow down because of data loading, or notice that copying tensors between devices
-dominates the runtime. This section outlines a few practical patterns for managing memory in
-``probly`` projects.
+For small toy examples, you can often ignore memory and just run the model. As
+soon as you start using bigger datasets or deeper networks, memory becomes a
+real constraint. Typical symptoms are “out of memory” errors on the GPU, very
+slow training, or code that spends a lot of time just moving data around.
 
 **Batching and mini-batching**
 
-The basic idea of mini-batching is simple: instead of processing the whole dataset at once, you
-split it into smaller batches and process one batch at a time. Mini-batch gradient descent is
-commonly described as balancing the stability of full-batch gradient descent with the efficiency
-of stochastic updates by “processing small batches of data at a time” (Bhuva, 2025), which both
-reduces memory usage and improves hardware utilisation (GeeksforGeeks, 2025; Jason Brownlee, 2019).
+Mini-batching means processing a subset of the data at a time instead of the
+whole dataset. This is standard practice in large-scale deep learning: it
+reduces memory usage and often makes hardware utilisation better (Tyagi, 2025).
 
-For memory management in ``probly``, this means:
+For ``probly`` models, this usually means:
 
-- choose a batch size that comfortably fits into GPU or CPU memory,
-- keep intermediate tensors (activations, representations) only for the current batch,
-- avoid accidentally materialising the entire dataset as one huge tensor.
-
-As long as your batch fits into device memory, you can usually scale to much larger datasets by
-running more batches, rather than trying to fit everything at once.
+- choosing a batch size that fits comfortably in GPU or CPU memory,
+- keeping intermediate tensors only for the current batch,
+- scaling to larger datasets by running more batches instead of making each
+  batch bigger and bigger.
 
 **Streaming data**
 
-When datasets no longer fit into RAM (or when reading them all at once would be too slow),
-streaming becomes essential. Deep-learning input-pipeline tools such as TensorFlow’s ``tf.data``
-API are explicitly designed to “handle large amounts of data, read from different data formats,
-and perform complex transformations” in a streaming fashion (TensorFlow, 2024a). Performance
-guides recommend combining operations such as ``prefetch`` which overlaps data loading and model
-execution and parallel ``map`` and ``interleave`` to ensure that the model is never waiting
-idly for the next batch of data (TensorFlow, 2024b; Martire, 2022).
+When the dataset does not fit into RAM, you need some form of **streaming**:
 
-The same principles apply to ``probly``:
+- a data loader that reads from disk in chunks,
+- a generator that yields one batch at a time,
+- sharded datasets that are loaded piece by piece.
 
-- build a data pipeline (using your framework of choice) that yields reasonably sized batches,
-- overlap I/O and preprocessing with computation where possible,
-- avoid repeatedly re-reading or re-decoding the same data if it can be cached safely.
-
-From ``probly``’s perspective, it does not matter whether the batch comes from an in-memory list,
-a generator, or a sophisticated ``tf.data`` or PyTorch ``DataLoader`` pipeline only that each
-batch fits in memory and arrives fast enough.
+The details depend on whether you use PyTorch, JAX, or something else, but the
+idea is always the same: the model only ever sees a manageable batch, not the
+entire dataset at once (Tyagi, 2025).
 
 **Avoiding unnecessary copies and recomputations**
 
-Memory pressure and slowdowns often come from hidden copies:
+Memory and runtime are often wasted by hidden copies and repeated work. Common
+issues include:
 
-- moving tensors back and forth between CPU and GPU unnecessarily,
-- creating new tensors instead of reusing existing buffers,
-- recomputing large intermediate results instead of caching them.
+- moving tensors between CPU and GPU more often than necessary,
+- calling ``.cpu()``, ``.numpy()`` or similar conversions in tight loops,
+- recomputing the same large intermediate results in every iteration.
 
-The PyTorch CUDA semantics guide, for example, notes that host-to-GPU copies are “much faster
-when they originate from pinned (page-locked) memory” and exposes a ``pin_memory()`` method on
-CPU tensors for that reason (PyTorch Documentation, 2017). More recent tutorials explain that
-with ``pin_memory=True``, data can be transferred asynchronously and “pre-loaded into the GPU”
-while the previous batch is still being processed, reducing idle time (Hey Amit, 2024).
+A simple rule of thumb is:
 
-In practice for ``probly`` models this suggests:
-
-- minimise the number of device transfers inside hot loops (move data once per batch, not once
-  per operation),
-- be deliberate about when you call operations such as ``.cpu()``, ``.numpy()`` or similar
-  conversions, since each conversion can allocate new memory,
-- cache expensive, reusable results (for example, fixed embeddings or precomputed features),
-  rather than recomputing them every iteration if they do not change.
-
-Careful profiling of memory and runtime (for example with your framework’s profiler) will usually
-reveal whether copies, data loading, or the model itself are the main bottleneck. The strategies
-above are then the first levers to try.
+- move data to the right device **once per batch**,  
+- cache expensive things that do not change,  
+- profile your code to see whether the main cost is in the model, the data
+  pipeline, or device transfers (Tyagi, 2025).
 
 3.4 Scalability features in ``probly``
 
-Even with good memory-management habits, some models will still push the limits of hardware
-capacity. To cope with that, modern numerical libraries provide features such as vectorisation
-and just-in-time (JIT) compilation. ``probly`` can take advantage of similar ideas when it is
-built on top of frameworks like JAX or other XLA-based backends.
+Even with good batching and streaming, some models will still push the limits
+of your hardware. Modern numerical libraries provide features like
+**vectorisation** and **just-in-time (JIT) compilation** to help with this.
+``probly`` can benefit from these features when it runs on JAX or similar
+backends.
 
 **Vectorisation**
 
-Vectorisation means applying the same computation to many inputs in one go, using array
-operations instead of Python loops. In JAX, for example, the ``vmap`` transformation “maps a
-function over array axes” and lets you write a function once and apply it efficiently to a whole
-batch of inputs (JAX Authors, n.d.-a; Foreman-Mackey, n.d.). Tutorials highlight that these tools
-allow you “to apply functions to arrays of data in parallel” and thereby improve performance
-(PyImageSearch, 2023).
+Vectorisation means writing code that works on whole arrays at once instead of
+looping in Python. This lets the backend use fast compiled kernels and parallel
+hardware (Tu, 2024; Tyagi, 2025).
 
-In ``probly``, vectorisation typically shows up as:
+In ``probly``, vectorisation usually looks like:
 
-- writing model code so that it naturally accepts batched inputs,
-- leveraging backend tools (such as ``vmap`` in JAX or vectorised operations in NumPy/PyTorch)
-  to evaluate many parameter settings or data points in a single call,
-- avoiding Python ``for``-loops in critical performance paths when a batched array operation
-  would suffice.
+- writing your model so it naturally accepts batches of inputs,
+- evaluating many data points or parameter settings in one call,
+- avoiding Python ``for``-loops in the hottest parts of the code when an array
+  operation would do.
 
-This reduces Python overhead, allows the compiler or backend to fuse operations, and often leads
-to both faster and more memory-efficient code.
+**JIT compilation and configuration knobs**
 
-**JIT compilation and backend compilation options**
+JIT compilation takes a Python function and compiles it into an efficient
+accelerator program. Frameworks such as JAX use this to turn numerical Python
+code into highly optimised kernels (Tu, 2024).
 
-Just-in-time compilation takes a Python function and compiles it into an efficient, static
-computation graph for accelerators. The JAX documentation describes ``jax.jit`` as a
-transformation that “will perform Just In Time (JIT) compilation of a JAX Python function so it
-can be executed efficiently in XLA” (JAX Authors, n.d.-b). Other tutorials show how combining
-``jit`` with vectorisation can “make simulations faster” and fully exploit GPUs (Jaxley Team,
-n.d.; Koul, 2023).
+When ``probly`` runs on such a backend, you can:
 
-When ``probly`` runs on such backends, it can:
+- JIT-compile the main log-likelihood or posterior function,
+- reuse compiled functions across many batches or chains,
+- switch JIT on or off depending on whether you are debugging or running a
+  large experiment (Tyagi, 2025).
 
-- trace parts of the model or inference loop into compiled functions,
-- reuse compiled graphs across many calls (for example many batches or chains),
-- use configuration flags to enable or disable JIT depending on debugging vs. production needs.
+Typical configuration “knobs” in a ``probly`` project include:
 
-Typical configuration “knobs” you might expose in a ``probly`` project include:
-
-- turning JIT on or off for the main log-likelihood or posterior evaluation,
-- controlling which axes are vectorised (e.g. batching over data vs. batching over chains),
-- switching between pure Python execution (for debugging) and fully compiled execution (for
-  large experiments).
-
-The underlying ideas come directly from libraries like JAX, which describe themselves as
-“composable transformations of Python+NumPy programs” and use XLA to “compile and scale your
-NumPy programs on TPUs, GPUs, and other hardware accelerators” (JAX Authors, n.d.-c). ``probly``
-can build on these mechanisms to make large models feasible to run in practice, while still
-giving users explicit control over when and how compilation is used.
+- enabling/disabling JIT for specific functions,
+- deciding which dimension to batch over (data vs. chains),
+- choosing between a slow, very transparent debug mode and a fast, compiled mode.
 
 3.5 Case study: scaling up a small example
 
-This section sketches a typical journey: you start with a tiny, clean example on your laptop and
-gradually grow it into a larger ``probly`` model and dataset. The goal is not to provide exact
-code, but to show which design choices make scaling smoother.
+This section sketches a typical path from a tiny prototype to a more serious
+large-model setup in ``probly``. The exact code will differ, but the steps are
+similar in most projects.
 
-**Step 1 – Start with a small, clean baseline**
+**Step 1 – Start small and simple**
 
-Imagine you begin with a simple classification model on a small, well-known dataset (for example,
-a few thousand examples stored in a single file). At this stage you:
+You begin with a small dataset and a simple model on your laptop. At this
+stage, you:
 
-- use a straightforward model structure,
-- run on a single CPU or GPU,
+- run everything on a single device,
 - keep all data in memory,
 - focus on correctness and clarity, not speed.
 
-Guides on practical ML strongly recommend this style: start with a simple model and get the
-pipeline right before adding complexity (Zinkevich, n.d.; Karpathy, 2019).
-For a ``probly`` project, this means:
+Practical ML advice strongly recommends starting this way: get a simple
+baseline working end-to-end before you add complexity (Zinkevich, n.d.). For a
+``probly`` model, this means checking that:
 
-- verifying that the model compiles and runs end-to-end,
-- checking that transformations, priors, and inference all behave as expected,
-- establishing a small set of metrics (loss, accuracy, calibration, runtime per epoch, etc.).
+- the model compiles,
+- transformations and priors behave sensibly,
+- metrics such as loss and accuracy look reasonable.
 
-At this phase, you deliberately avoid large datasets and complicated architectures so that bugs
-are easy to spot.
+**Step 2 – Add more data and batching**
 
-**Step 2 – Increase data size and add batching**
+Next, you switch to a larger dataset. Now you:
 
-Next, you replace the toy dataset with a larger one perhaps ten or a hundred times bigger. A blog
-on scaling up machine learning notes that once you move to “millions or even billions of rows,”
-memory and I/O become major challenges and you need efficient strategies such as batching and
-incremental loading (Khan, 2024).
+- introduce mini-batches so only part of the data is in memory at a time,
+- replace ad-hoc loading with a proper data loader or generator,
+- keep the model structure almost the same so you can tell whether problems
+  come from the data size or from the model itself (Tyagi, 2025).
 
-In a ``probly`` context, this step usually includes:
+You watch for memory errors, runtime per step, and whether the metrics still
+behave similarly to the small-data case.
 
-- introducing **mini-batching** so only a subset of the data is in memory at once,
-- moving from in-memory lists to a proper data pipeline (e.g. a generator, ``DataLoader``, or
-  ``tf.data``),
-- keeping the model structure almost the same, so you can attribute changes in behaviour
-  primarily to the increased data size.
+**Step 3 – Grow the model and use the hardware**
 
-You now monitor:
+Once data handling is under control, you might want a bigger or more expressive
+model. At this point, you:
 
-- whether memory usage stays within limits,
-- how runtime per training step changes,
-- whether metrics behave similarly to the small-data case (if not, you investigate why).
+- add layers or hierarchical structure where it helps,
+- use regularisation to keep things stable,
+- start using vectorisation and, where available, JIT compilation to make
+  better use of the hardware (Tu, 2024; Tyagi, 2025).
 
-If the model no longer fits easily in memory, you adapt batch sizes and streaming strategies
-rather than rewriting the whole model at once.
+Profiling helps you see whether the time is spent in the model, the data
+pipeline, or somewhere else.
 
-**Step 3 – Scale the model and optimisation**
+**Step 4 – Run “production-like” experiments**
 
-Once data handling is under control, you may want a more expressive model: deeper networks,
-richer likelihoods, or more hierarchical structure. Research on scaling up algorithms suggests
-that, as complexity grows, you need to be thoughtful about approximate methods, incremental
-updates, and data subsampling (Domingos & Hulten, 2002).
+Finally, you run something closer to a real large-scale experiment:
 
-Typical adjustments in this phase include:
-
-- **richer model structure**: adding hierarchy, more parameters, or additional sub-models,
-- **stronger regularisation**: to keep the larger model from overfitting,
-- **more advanced optimisation**: switching from basic settings to tuned learning rates, schedulers,
-  or different inference algorithms.
-
-You also start to care about **hardware utilisation**: making use of vectorisation and JIT
-compilation where the backend allows it (see Section 3.4). Proper profiling can tell you whether
-time is spent in the model, the data pipeline, or in overhead.
-
-**Step 4 – Move towards “production-like” runs**
-
-In the final step of this case study, the same conceptual model is run under conditions closer to
-a real large-scale experiment:
-
-- full-sized training and validation sets,
+- full training and validation sets,
 - realistic batch sizes and number of epochs,
 - logging, monitoring, and checkpointing turned on.
 
-Checklists for training deep learning models emphasise that, at this stage, you need systematic
-checks for data quality, experiment tracking, and evaluation (Alvi, 2024; Murtuzova, 2024).
-Similarly, the ML Test Score rubric proposes dozens of concrete tests and monitors for assessing
-production readiness (Breck et al., 2017).
-
-For a large ``probly`` run, you now:
-
-- track key metrics and system statistics over time,
-- watch for instabilities (e.g. sudden spikes in loss or NaNs),
-- ensure that checkpoints and seeds are stored so you can reproduce or resume the run if needed.
-
-The important point is that you do **not** jump directly from a tiny prototype to the full
-large-scale setup. Instead, you gradually expand data, model, and infrastructure, verifying at
-each step that the system still behaves in a controlled way.
+Guides for real-world ML systems stress the importance of data checks, clear
+metrics, and experiment tracking at this stage (Zinkevich, n.d.; Tyagi, 2025).
+For ``probly``, the idea is the same: you want runs that are not only fast,
+but also traceable and reproducible.
 
 3.6 Checklist: preparing a large model run
 
-Before you launch a big, potentially expensive model run, it helps to have a simple checklist.
-Practical guides and checklists for deep learning stress that overlooking basic steps like data
-validation, metric definitions, or logging often causes more trouble than the choice of
-architecture itself (Alvi, 2024; Murtuzova, 2024).
-Google’s “Rules of Machine Learning” and the ML Test Score similarly focus on robust pipelines and
-testing rather than exotic algorithms (Breck et al., 2017; Zinkevich, n.d.).
+Before starting a big and expensive run, it helps to walk through a short
+checklist. Many common problems in production ML come from skipped basic steps,
+not from exotic algorithms (Zinkevich, n.d.; Tyagi, 2025).
 
-The checklist below is adapted from these sources, but phrased in a way that fits ``probly`` use
-cases.
+**Data and problem**
 
-**Data and problem definition**
-
-- Have you clearly defined the prediction task, target, and evaluation metric(s)?  
-- Is your training data validated for basic issues (missing values, label errors, obviously wrong
-  ranges)? (Alvi, 2024)  
-- Do you have separate training, validation, and test splits, and do you understand how they were
-  created?  
-- If you are using very large datasets, have you checked that your streaming/batching pipeline
-  actually covers the full data, not just a subset?
+- Is the prediction task clearly defined (inputs, target, evaluation metric)?  
+- Has the training data been checked for obvious issues (missing values, wrong
+  ranges, label problems)?  
+- Are training, validation, and test splits clearly separated?  
+- If you stream data, are you sure the pipeline eventually covers the whole
+  dataset?
 
 **Model and code**
 
-- Is the model architecture documented at a high level (inputs, key components, outputs)?  
-- Have you already run the same model on a **smaller** dataset and confirmed that it trains and
-  evaluates correctly? (Zinkevich, n.d.; Karpathy, 2019)  
-- Are custom transformations, likelihoods, and priors covered by basic unit tests (e.g. round-trip
-  checks, shape checks)? (see Section 2.6; Breck et al., 2017)  
-- Is there a clear configuration mechanism (e.g. config files) that separates code from run-time
-  settings (batch size, learning rate, number of epochs, etc.)?
+- Has the same model been run on a smaller dataset as a sanity check? (Zinkevich, n.d.)  
+- Are custom pieces (e.g. transformations) covered by at least basic tests
+  (shapes, ranges, round-trip checks)?  
+- Is configuration (batch size, learning rate, etc.) separated from the code so
+  you can easily rerun experiments with different settings?
 
-**Infrastructure and resources**
+**Resources and runtime**
 
-- Do you know which hardware you will use (CPU, GPU(s), TPU), and have you confirmed that the
-  model fits into memory with the planned batch size? (Khan, 2024)  
-- Have you tested a short “smoke test” run (for example, a few batches or one epoch) on the target
-  hardware?  
-- Is checkpointing enabled so that long runs can be resumed after interruptions?  
-- If running distributed or multi-GPU training, have you verified that all workers see consistent
-  data and configurations?
+- Does the model fit in memory on the planned hardware with the chosen batch
+  size? (Tyagi, 2025)  
+- Have you done a short “smoke test” run (for example, one epoch or a few
+  batches) on the real hardware?  
+- Is checkpointing enabled so that you can resume after interruptions?
 
-**Monitoring, logging, and experiment tracking**
+**Monitoring and reproducibility**
 
-- Are you logging key training metrics (loss, accuracy, calibration metrics, etc.) and system
-  metrics (runtime per step, memory usage)?  
-- Do you have a central place (e.g. experiment tracker or dashboard) where runs and their configs
-  are stored? MLOps best-practices emphasise systematic tracking of experiments and models as a
-  foundation for reliable systems (Neptune.ai, 2021).  
-- Is there a basic monitoring plan for long runs (alerts for divergence, NaNs, or stalled progress)?
-  Guidance on ML system monitoring suggests that you should keep an eye on data quality, model
-  performance, and operational metrics, not just final accuracy (Breck et al., 2017;
-  Zinkevich, n.d.; Neptune.ai, 2021).  
+- Are key metrics (loss, accuracy, calibration, runtime per step) being logged
+  somewhere you can inspect later?  
+- Are random seeds, library versions, and important hyperparameters recorded
+  so that important runs can be reproduced? (Zinkevich, n.d.)  
 
-**Reproducibility and governance**
+**Before you press “run”**
 
-- Are random seeds, library versions, and hardware details recorded so that important runs can be
-  reproduced?  
-- Is the training data snapshot (or at least its exact version and location) documented?  
-- Do you know which model artefacts (weights, configuration, logs) must be kept for later analysis
-  or deployment?
+Ask yourself:
 
-**Pre-launch sanity checks**
+- If this run fails, do I know what I will try next?  
+- Is there a cheaper or smaller version of this experiment I could run first?  
+- Do I have clear success criteria (for example, “validation accuracy improves
+  by at least 2 points without worse calibration”)?
 
-Before committing to a long and expensive run, it is useful to answer a few final questions:
-
-- If this run fails or produces unusable results, do you have a clear next step?  
-- Is there a simpler or cheaper “trial run” you can do first (fewer epochs, smaller dataset, fewer
-  parameters)?  
-- Do you have clear success criteria for this experiment (for example: “improve AUROC by at least
-  2 percentage points on the validation set without degrading calibration”)?
-
-Papers on ML production readiness note that having explicit tests and criteria greatly reduces the
-risk of shipping fragile systems (Breck et al., 2017).
-In the ``probly`` context, this checklist helps ensure that when you finally press “run” on a large
-model, you are using your compute budget wisely and can trust the results.
+Walking through this checklist helps make sure that, when you finally launch a
+large ``probly`` run, you use your compute budget wisely and can trust what the
+results are telling you (Tu, 2024; Tyagi, 2025; Zinkevich, n.d.; Pati, 2025).
 
 4. Integration with Other Frameworks
 ------------------------------------
