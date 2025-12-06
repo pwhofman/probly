@@ -825,7 +825,7 @@ recurring themes show up:
 - how **types, shapes, and devices** are handled,  
 - how **randomness and seeding** are coordinated.
 
-**Data flow between ``probly`` and other libraries**
+Data flow between ``probly`` and other libraries
 
 At a high level, ``probly`` consumes and produces arrays: batches of inputs, parameter vectors,
 uncertainty representations, and so on. Other frameworks do the same, but often with their own
