@@ -901,7 +901,7 @@ manages parameters, state, and randomness in a structured way (Flax Developers, 
 n.d.-b). This makes it a natural companion for ``probly`` when you need neural networks as part
 of a probabilistic model.
 
-**Typical workflow: Flax for neural nets, ``probly`` for probabilistic parts**
+**Typical workflow: Flax for neural nets, `probly` for probabilistic parts**
 
 A common pattern looks like this:
 
@@ -920,7 +920,7 @@ model, while reusing Flax’s building blocks for the deterministic parts.
 
 **Sharing parameters and state**
 
-In a joint Flax+``probly`` setup, you often want to:
+In a joint Flax+ ``probly`` setup, you often want to:
 
 - keep all learnable quantities (Flax parameters, ``probly`` parameters) in a single **PyTree**
   so that optimisers can see and update everything,  
@@ -966,14 +966,14 @@ serving infrastructure. A custom integration with ``probly`` would usually focus
 TensorFlow for data and training orchestration**, while letting ``probly`` handle probabilistic
 modelling.
 
-**Passing TensorFlow tensors and datasets into ``probly``**
+**Passing TensorFlow tensors and datasets into `probly`**
 
 TensorFlow’s ``tf.data`` API introduces a ``tf.data.Dataset`` abstraction that represents a
 sequence of elements, where each element consists of one or more tensors (TensorFlow, 2024a).
 You can create datasets from memory, TFRecord files, and many other sources, and then apply
 transformations like ``map`` and ``batch`` to build efficient pipelines.
 
-In a TensorFlow+``probly`` workflow, a typical pattern is:
+In a TensorFlow+ ``probly`` workflow, a typical pattern is:
 
 - build a ``tf.data.Dataset`` that yields batches of inputs and labels (TensorFlow, 2024a),  
 - inside a Python or ``tf.function`` training loop, convert each batch into the array type
@@ -1026,7 +1026,7 @@ learning) ``y`` as inputs and return the estimator itself (scikit-learn Develope
 To integrate ``probly`` into this ecosystem, you can wrap a ``probly`` model in a thin
 scikit-learn-style estimator.
 
-**Wrapping a ``probly`` model as an estimator**
+**Wrapping a `probly` model as an estimator**
 
 A minimal wrapper class might:
 
@@ -1041,7 +1041,7 @@ This follows the standard estimator design described in scikit-learn’s develop
 (scikit-learn Developers, 2024) and allows your custom ``probly`` estimator to be used with tools
 such as ``cross_val_score`` and ``cross_validate`` for evaluation (scikit-learn, 2024a).
 
-**Using ``probly`` in pipelines and cross-validation**
+**Using `probly` in pipelines and cross-validation**
 
 Once wrapped, your ``probly`` estimator can be plugged into scikit-learn’s ``Pipeline``, which is
 defined as “a sequence of data transformers with an optional final predictor” (scikit-learn,
