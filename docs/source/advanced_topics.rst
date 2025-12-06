@@ -5,6 +5,7 @@ Advanced Topics
 -----------
 
 1.1 Purpose of this chapter
+
 This chapter explains:
 
 - what “advanced” means in the context of ``probly``,
