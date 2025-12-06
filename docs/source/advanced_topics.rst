@@ -549,8 +549,8 @@ When datasets no longer fit into RAM (or when reading them all at once would be 
 streaming becomes essential. Deep-learning input-pipeline tools such as TensorFlow’s ``tf.data``
 API are explicitly designed to “handle large amounts of data, read from different data formats,
 and perform complex transformations” in a streaming fashion (TensorFlow, 2024a). Performance
-guides recommend combining operations such as ``prefetch``—which overlaps data loading and model
-execution—and parallel ``map`` and ``interleave`` to ensure that the model is never waiting
+guides recommend combining operations such as ``prefetch`` which overlaps data loading and model
+execution and parallel ``map`` and ``interleave`` to ensure that the model is never waiting
 idly for the next batch of data (TensorFlow, 2024b; Martire, 2022).
 
 The same principles apply to ``probly``:
@@ -560,7 +560,7 @@ The same principles apply to ``probly``:
 - avoid repeatedly re-reading or re-decoding the same data if it can be cached safely.
 
 From ``probly``’s perspective, it does not matter whether the batch comes from an in-memory list,
-a generator, or a sophisticated ``tf.data`` or PyTorch ``DataLoader`` pipeline—only that each
+a generator, or a sophisticated ``tf.data`` or PyTorch ``DataLoader`` pipeline only that each
 batch fits in memory and arrives fast enough.
 
 **Avoiding unnecessary copies and recomputations**
@@ -674,7 +674,7 @@ are easy to spot.
 
 **Step 2 – Increase data size and add batching**
 
-Next, you replace the toy dataset with a larger one—perhaps ten or a hundred times bigger. A blog
+Next, you replace the toy dataset with a larger one perhaps ten or a hundred times bigger. A blog
 on scaling up machine learning notes that once you move to “millions or even billions of rows,”
 memory and I/O become major challenges and you need efficient strategies such as batching and
 incremental loading (Khan, 2024).
@@ -741,8 +741,8 @@ each step that the system still behaves in a controlled way.
 3.6 Checklist: preparing a large model run
 
 Before you launch a big, potentially expensive model run, it helps to have a simple checklist.
-Practical guides and checklists for deep learning stress that overlooking basic steps—like data
-validation, metric definitions, or logging—often causes more trouble than the choice of
+Practical guides and checklists for deep learning stress that overlooking basic steps like data
+validation, metric definitions, or logging often causes more trouble than the choice of
 architecture itself (Alvi, 2024; Murtuzova, 2024).
 Google’s “Rules of Machine Learning” and the ML Test Score similarly focus on robust pipelines and
 testing rather than exotic algorithms (Breck et al., 2017; Zinkevich, n.d.).
@@ -1024,8 +1024,8 @@ trade-offs in any such custom integration:
    this subsection show how you could implement your **own** adapter class that follows the
    standard estimator API.
 
-scikit-learn provides a standard **estimator interface**—objects with ``fit``, ``predict``,
-and often ``score`` methods—plus tools like ``Pipeline`` and ``GridSearchCV`` for combining and
+scikit-learn provides a standard **estimator interface** objects with ``fit``, ``predict``,
+and often ``score`` methods plus tools like ``Pipeline`` and ``GridSearchCV`` for combining and
 tuning models. The scikit-learn developer guide describes ``fit`` as the method “where the
 training happens” and specifies that it should take the training data ``X`` and (for supervised
 learning) ``y`` as inputs and return the estimator itself (scikit-learn Developers, 2024).
@@ -1099,8 +1099,8 @@ inconsistent devices, or misaligned RNG handling. When debugging:
 - re-run with fixed seeds and controlled randomness to see if errors are deterministic (JAX
   Authors, n.d.; TensorFlow, 2024a).
 
-By treating the integration points as first-class components—carefully designed, tested, and
-documented—you can combine ``probly`` with other frameworks without turning your project into a
+By treating the integration points as first-class components carefully designed, tested, and
+documented, you can combine ``probly`` with other frameworks without turning your project into a
 black box.
 
 
@@ -1262,7 +1262,7 @@ conceptually with ``probly`` and where they are typically useful.
 **Hierarchical models**
 
 Hierarchical (or multilevel) models are used when data are organised in groups, levels, or
-contexts—for example students within classes, patients within hospitals, or measurements for
+contexts, for example students within classes, patients within hospitals, or measurements for
 multiple machines. Instead of fitting a separate model to each group, a hierarchical model
 shares information across groups via higher-level parameters. This “partial pooling” helps
 stabilise estimates, especially when some groups have only a few observations (Gelman & Hill,
@@ -1311,7 +1311,7 @@ and mixtures (e.g. different regimes or behaviours).
 
 6.2 Reusable templates
 
-As your models become more complex, it is helpful to identify **reusable templates**—small
+As your models become more complex, it is helpful to identify **reusable templates** small
 patterns that keep recurring across projects. Examples include:
 
 - a standard hierarchical regression block for grouped data,
@@ -1386,8 +1386,8 @@ most important ideas to remember:
   well-structured models with honest uncertainty are usually more valuable than fragile,
   over-complicated constructions.
 
-If you keep these principles in mind, the rest of the ``probly`` documentation—methods,
-modules, and examples—should slot naturally into your own advanced models and experiments.
+If you keep these principles in mind, the rest of the ``probly`` documentation methods,
+modules, and examples should slot naturally into your own advanced models and experiments.
 
 
 .. bibliography::
