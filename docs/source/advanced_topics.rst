@@ -429,6 +429,650 @@ above, and only then reintegrate it into the full model. This mirrors the way ma
 probabilistic frameworks separate low-level tests of math functions and transforms from
 high-level tests of full models (Carpenter et al., 2017).
 
+3. Working with Large Models
+----------------------------
+
+3.1 What is a “large” model in practice?
+
+What counts as a “large” model depends on the context, hardware, and goals of the project. In the
+literature on large AI models, the term is often used for networks with hundreds of millions or
+billions of parameters and complex computational structures (Tu, 2024). In everyday ``probly``
+projects, you will usually encounter “large-model” issues much earlier, whenever memory, runtime,
+or data handling start to dominate your workflow.
+
+A model is typically “large in practice” when at least one of the following becomes a real
+constraint:
+
+- **Model dimensions and parameter count**  
+  As parameter counts grow, the memory footprint for parameters, gradients, optimizer state, and
+  activations can approach or exceed what a single device can handle comfortably. Practical guides
+  on deploying large-scale deep learning models emphasise that model size, memory usage, and the
+  need to split computation across multiple GPUs or machines are central challenges (Tyagi, 2025).
+
+- **Dataset size**  
+  A model can also feel “large” because the dataset is large. If the full dataset no longer fits
+  into memory, you must rely on streaming, sharding, or mini-batch pipelines. Large-scale systems
+  often report that I/O and data preprocessing can become bottlenecks as data volume increases
+  (Tyagi, 2025), and the same effect appears in ``probly`` projects once you move beyond small,
+  in-memory datasets.
+
+- **Runtime and resource constraints**  
+  Even a moderate-sized model may be “large” if a single training run takes many hours, if
+  inference latency is critical, or if energy and hardware costs limit how many experiments you
+  can run. Discussions of large-model deployments highlight the tension between model size,
+  training time, and cost as a key obstacle in practice (Tyagi, 2025; Tu, 2024).
+
+For the purposes of this chapter, we will treat a model as “large” whenever memory, data handling,
+or runtime constraints force you to think about how the model is structured and how computations
+are organised, rather than letting you focus solely on the modelling idea.
+
+3.2 Model structuring strategies
+
+As models and datasets grow, the structure of your code and model definition becomes just as
+important as the choice of algorithm. Good project structure makes it easier to reason about large
+systems, reuse components, and debug problems. Guides on organising Python and data science
+projects consistently recommend a modular layout rather than a single monolithic script (Pati,
+2025; The Hitchhiker’s Guide to Python Contributors, 2024).
+
+**Modular design (sub-models and reusable components)**
+
+For ``probly`` projects, a modular design usually means:
+
+- separating data loading and preprocessing from model definition and inference,
+- grouping related model components (for example a family of uncertainty-aware classifiers) into
+  their own modules,
+- encapsulating common patterns into reusable functions or classes.
+
+Pati (2025) illustrates how splitting a data science project into modules such as
+``preprocess.py``, ``train.py``, and ``predict.py`` improves maintainability and reuse. The same
+idea applies to ``probly``: instead of one very large model file, you can create sub-models or
+building blocks (for example, shared transformation libraries or common likelihood components)
+that can be imported into multiple experiments.
+
+**Naming conventions and file/project organisation**
+
+Clear naming and consistent layout make large codebases easier to navigate. The “Structuring Your
+Project” chapter in *The Hitchhiker’s Guide to Python* recommends short, lowercase module names
+and discourages deeply nested, ad hoc layouts, because they tend to introduce confusing imports
+and circular dependencies (The Hitchhiker’s Guide to Python Contributors, 2024).
+
+In practice, this can mean:
+
+- using descriptive filenames such as ``large_models/core_layers.py``,
+  ``probly_transforms/constraints.py``, or ``pipelines/large_experiment.py``,
+- keeping reusable library code (for example, generic ``probly`` models and transformations)
+  separate from experiment-specific scripts and notebooks,
+- adopting a simple, documented folder structure so that new contributors can quickly find model
+  definitions, data processing code, configurations, and documentation (LuxDevHQ, 2023; Pati, 2025).
+
+A clean structure does not make a model smaller, but it makes it **feel** smaller: you can focus on
+one piece at a time, understand dependencies, and swap components in and out without losing track
+of the overall system. The later sections in this chapter (3.3–3.6) assume that your ``probly``
+code is at least partially modularised into sub-models, transformations, and pipelines rather than
+being a single long script.
+
+3.3 Memory management
+
+For small toy examples, you can often ignore memory and just run the model. As soon as datasets
+and models grow, memory becomes a central constraint: you may hit GPU out-of-memory errors, see
+training slow down because of data loading, or notice that copying tensors between devices
+dominates the runtime. This section outlines a few practical patterns for managing memory in
+``probly`` projects.
+
+**Batching and mini-batching**
+
+The basic idea of mini-batching is simple: instead of processing the whole dataset at once, you
+split it into smaller batches and process one batch at a time. Mini-batch gradient descent is
+commonly described as balancing the stability of full-batch gradient descent with the efficiency
+of stochastic updates by “processing small batches of data at a time” (Bhuva, 2025), which both
+reduces memory usage and improves hardware utilisation (GeeksforGeeks, 2025; Jason Brownlee, 2019).
+
+For memory management in ``probly``, this means:
+
+- choose a batch size that comfortably fits into GPU or CPU memory,
+- keep intermediate tensors (activations, representations) only for the current batch,
+- avoid accidentally materialising the entire dataset as one huge tensor.
+
+As long as your batch fits into device memory, you can usually scale to much larger datasets by
+running more batches, rather than trying to fit everything at once.
+
+**Streaming data**
+
+When datasets no longer fit into RAM (or when reading them all at once would be too slow),
+streaming becomes essential. Deep-learning input-pipeline tools such as TensorFlow’s ``tf.data``
+API are explicitly designed to “handle large amounts of data, read from different data formats,
+and perform complex transformations” in a streaming fashion (TensorFlow, 2024a). Performance
+guides recommend combining operations such as ``prefetch``—which overlaps data loading and model
+execution—and parallel ``map`` and ``interleave`` to ensure that the model is never waiting
+idly for the next batch of data (TensorFlow, 2024b; Martire, 2022).
+
+The same principles apply to ``probly``:
+
+- build a data pipeline (using your framework of choice) that yields reasonably sized batches,
+- overlap I/O and preprocessing with computation where possible,
+- avoid repeatedly re-reading or re-decoding the same data if it can be cached safely.
+
+From ``probly``’s perspective, it does not matter whether the batch comes from an in-memory list,
+a generator, or a sophisticated ``tf.data`` or PyTorch ``DataLoader`` pipeline—only that each
+batch fits in memory and arrives fast enough.
+
+**Avoiding unnecessary copies and recomputations**
+
+Memory pressure and slowdowns often come from hidden copies:
+
+- moving tensors back and forth between CPU and GPU unnecessarily,
+- creating new tensors instead of reusing existing buffers,
+- recomputing large intermediate results instead of caching them.
+
+The PyTorch CUDA semantics guide, for example, notes that host-to-GPU copies are “much faster
+when they originate from pinned (page-locked) memory” and exposes a ``pin_memory()`` method on
+CPU tensors for that reason (PyTorch Documentation, 2017). More recent tutorials explain that
+with ``pin_memory=True``, data can be transferred asynchronously and “pre-loaded into the GPU”
+while the previous batch is still being processed, reducing idle time (Hey Amit, 2024).
+
+In practice for ``probly`` models this suggests:
+
+- minimise the number of device transfers inside hot loops (move data once per batch, not once
+  per operation),
+- be deliberate about when you call operations such as ``.cpu()``, ``.numpy()`` or similar
+  conversions, since each conversion can allocate new memory,
+- cache expensive, reusable results (for example, fixed embeddings or precomputed features),
+  rather than recomputing them every iteration if they do not change.
+
+Careful profiling of memory and runtime (for example with your framework’s profiler) will usually
+reveal whether copies, data loading, or the model itself are the main bottleneck. The strategies
+above are then the first levers to try.
+
+3.4 Scalability features in ``probly``
+
+Even with good memory-management habits, some models will still push the limits of hardware
+capacity. To cope with that, modern numerical libraries provide features such as vectorisation
+and just-in-time (JIT) compilation. ``probly`` can take advantage of similar ideas when it is
+built on top of frameworks like JAX or other XLA-based backends.
+
+**Vectorisation**
+
+Vectorisation means applying the same computation to many inputs in one go, using array
+operations instead of Python loops. In JAX, for example, the ``vmap`` transformation “maps a
+function over array axes” and lets you write a function once and apply it efficiently to a whole
+batch of inputs (JAX Authors, n.d.-a; Foreman-Mackey, n.d.). Tutorials highlight that these tools
+allow you “to apply functions to arrays of data in parallel” and thereby improve performance
+(PyImageSearch, 2023).
+
+In ``probly``, vectorisation typically shows up as:
+
+- writing model code so that it naturally accepts batched inputs,
+- leveraging backend tools (such as ``vmap`` in JAX or vectorised operations in NumPy/PyTorch)
+  to evaluate many parameter settings or data points in a single call,
+- avoiding Python ``for``-loops in critical performance paths when a batched array operation
+  would suffice.
+
+This reduces Python overhead, allows the compiler or backend to fuse operations, and often leads
+to both faster and more memory-efficient code.
+
+**JIT compilation and backend compilation options**
+
+Just-in-time compilation takes a Python function and compiles it into an efficient, static
+computation graph for accelerators. The JAX documentation describes ``jax.jit`` as a
+transformation that “will perform Just In Time (JIT) compilation of a JAX Python function so it
+can be executed efficiently in XLA” (JAX Authors, n.d.-b). Other tutorials show how combining
+``jit`` with vectorisation can “make simulations faster” and fully exploit GPUs (Jaxley Team,
+n.d.; Koul, 2023).
+
+When ``probly`` runs on such backends, it can:
+
+- trace parts of the model or inference loop into compiled functions,
+- reuse compiled graphs across many calls (for example many batches or chains),
+- use configuration flags to enable or disable JIT depending on debugging vs. production needs.
+
+Typical configuration “knobs” you might expose in a ``probly`` project include:
+
+- turning JIT on or off for the main log-likelihood or posterior evaluation,
+- controlling which axes are vectorised (e.g. batching over data vs. batching over chains),
+- switching between pure Python execution (for debugging) and fully compiled execution (for
+  large experiments).
+
+The underlying ideas come directly from libraries like JAX, which describe themselves as
+“composable transformations of Python+NumPy programs” and use XLA to “compile and scale your
+NumPy programs on TPUs, GPUs, and other hardware accelerators” (JAX Authors, n.d.-c). ``probly``
+can build on these mechanisms to make large models feasible to run in practice, while still
+giving users explicit control over when and how compilation is used.
+
+3.5 Case study: scaling up a small example
+
+This section sketches a typical journey: you start with a tiny, clean example on your laptop and
+gradually grow it into a larger ``probly`` model and dataset. The goal is not to provide exact
+code, but to show which design choices make scaling smoother.
+
+**Step 1 – Start with a small, clean baseline**
+
+Imagine you begin with a simple classification model on a small, well-known dataset (for example,
+a few thousand examples stored in a single file). At this stage you:
+
+- use a straightforward model structure,
+- run on a single CPU or GPU,
+- keep all data in memory,
+- focus on correctness and clarity, not speed.
+
+Guides on practical ML strongly recommend this style: start with a simple model and get the
+pipeline right before adding complexity (Zinkevich, n.d.; Karpathy, 2019).
+For a ``probly`` project, this means:
+
+- verifying that the model compiles and runs end-to-end,
+- checking that transformations, priors, and inference all behave as expected,
+- establishing a small set of metrics (loss, accuracy, calibration, runtime per epoch, etc.).
+
+At this phase, you deliberately avoid large datasets and complicated architectures so that bugs
+are easy to spot.
+
+**Step 2 – Increase data size and add batching**
+
+Next, you replace the toy dataset with a larger one—perhaps ten or a hundred times bigger. A blog
+on scaling up machine learning notes that once you move to “millions or even billions of rows,”
+memory and I/O become major challenges and you need efficient strategies such as batching and
+incremental loading (Khan, 2024).
+
+In a ``probly`` context, this step usually includes:
+
+- introducing **mini-batching** so only a subset of the data is in memory at once,
+- moving from in-memory lists to a proper data pipeline (e.g. a generator, ``DataLoader``, or
+  ``tf.data``),
+- keeping the model structure almost the same, so you can attribute changes in behaviour
+  primarily to the increased data size.
+
+You now monitor:
+
+- whether memory usage stays within limits,
+- how runtime per training step changes,
+- whether metrics behave similarly to the small-data case (if not, you investigate why).
+
+If the model no longer fits easily in memory, you adapt batch sizes and streaming strategies
+rather than rewriting the whole model at once.
+
+**Step 3 – Scale the model and optimisation**
+
+Once data handling is under control, you may want a more expressive model: deeper networks,
+richer likelihoods, or more hierarchical structure. Research on scaling up algorithms suggests
+that, as complexity grows, you need to be thoughtful about approximate methods, incremental
+updates, and data subsampling (Domingos & Hulten, 2002).
+
+Typical adjustments in this phase include:
+
+- **richer model structure**: adding hierarchy, more parameters, or additional sub-models,
+- **stronger regularisation**: to keep the larger model from overfitting,
+- **more advanced optimisation**: switching from basic settings to tuned learning rates, schedulers,
+  or different inference algorithms.
+
+You also start to care about **hardware utilisation**: making use of vectorisation and JIT
+compilation where the backend allows it (see Section 3.4). Proper profiling can tell you whether
+time is spent in the model, the data pipeline, or in overhead.
+
+**Step 4 – Move towards “production-like” runs**
+
+In the final step of this case study, the same conceptual model is run under conditions closer to
+a real large-scale experiment:
+
+- full-sized training and validation sets,
+- realistic batch sizes and number of epochs,
+- logging, monitoring, and checkpointing turned on.
+
+Checklists for training deep learning models emphasise that, at this stage, you need systematic
+checks for data quality, experiment tracking, and evaluation (Alvi, 2024; Murtuzova, 2024).
+Similarly, the ML Test Score rubric proposes dozens of concrete tests and monitors for assessing
+production readiness (Breck et al., 2017).
+
+For a large ``probly`` run, you now:
+
+- track key metrics and system statistics over time,
+- watch for instabilities (e.g. sudden spikes in loss or NaNs),
+- ensure that checkpoints and seeds are stored so you can reproduce or resume the run if needed.
+
+The important point is that you do **not** jump directly from a tiny prototype to the full
+large-scale setup. Instead, you gradually expand data, model, and infrastructure, verifying at
+each step that the system still behaves in a controlled way.
+
+3.6 Checklist: preparing a large model run
+
+Before you launch a big, potentially expensive model run, it helps to have a simple checklist.
+Practical guides and checklists for deep learning stress that overlooking basic steps—like data
+validation, metric definitions, or logging—often causes more trouble than the choice of
+architecture itself (Alvi, 2024; Murtuzova, 2024).
+Google’s “Rules of Machine Learning” and the ML Test Score similarly focus on robust pipelines and
+testing rather than exotic algorithms (Breck et al., 2017; Zinkevich, n.d.).
+
+The checklist below is adapted from these sources, but phrased in a way that fits ``probly`` use
+cases.
+
+**Data and problem definition**
+
+- Have you clearly defined the prediction task, target, and evaluation metric(s)?  
+- Is your training data validated for basic issues (missing values, label errors, obviously wrong
+  ranges)? (Alvi, 2024)  
+- Do you have separate training, validation, and test splits, and do you understand how they were
+  created?  
+- If you are using very large datasets, have you checked that your streaming/batching pipeline
+  actually covers the full data, not just a subset?
+
+**Model and code**
+
+- Is the model architecture documented at a high level (inputs, key components, outputs)?  
+- Have you already run the same model on a **smaller** dataset and confirmed that it trains and
+  evaluates correctly? (Zinkevich, n.d.; Karpathy, 2019)  
+- Are custom transformations, likelihoods, and priors covered by basic unit tests (e.g. round-trip
+  checks, shape checks)? (see Section 2.6; Breck et al., 2017)  
+- Is there a clear configuration mechanism (e.g. config files) that separates code from run-time
+  settings (batch size, learning rate, number of epochs, etc.)?
+
+**Infrastructure and resources**
+
+- Do you know which hardware you will use (CPU, GPU(s), TPU), and have you confirmed that the
+  model fits into memory with the planned batch size? (Khan, 2024)  
+- Have you tested a short “smoke test” run (for example, a few batches or one epoch) on the target
+  hardware?  
+- Is checkpointing enabled so that long runs can be resumed after interruptions?  
+- If running distributed or multi-GPU training, have you verified that all workers see consistent
+  data and configurations?
+
+**Monitoring, logging, and experiment tracking**
+
+- Are you logging key training metrics (loss, accuracy, calibration metrics, etc.) and system
+  metrics (runtime per step, memory usage)?  
+- Do you have a central place (e.g. experiment tracker or dashboard) where runs and their configs
+  are stored? MLOps best-practices emphasise systematic tracking of experiments and models as a
+  foundation for reliable systems (Neptune.ai, 2021).  
+- Is there a basic monitoring plan for long runs (alerts for divergence, NaNs, or stalled progress)?
+  Guidance on ML system monitoring suggests that you should keep an eye on data quality, model
+  performance, and operational metrics, not just final accuracy (Breck et al., 2017;
+  Zinkevich, n.d.; Neptune.ai, 2021).  
+
+**Reproducibility and governance**
+
+- Are random seeds, library versions, and hardware details recorded so that important runs can be
+  reproduced?  
+- Is the training data snapshot (or at least its exact version and location) documented?  
+- Do you know which model artefacts (weights, configuration, logs) must be kept for later analysis
+  or deployment?
+
+**Pre-launch sanity checks**
+
+Before committing to a long and expensive run, it is useful to answer a few final questions:
+
+- If this run fails or produces unusable results, do you have a clear next step?  
+- Is there a simpler or cheaper “trial run” you can do first (fewer epochs, smaller dataset, fewer
+  parameters)?  
+- Do you have clear success criteria for this experiment (for example: “improve AUROC by at least
+  2 percentage points on the validation set without degrading calibration”)?
+
+Papers on ML production readiness note that having explicit tests and criteria greatly reduces the
+risk of shipping fragile systems (Breck et al., 2017).
+In the ``probly`` context, this checklist helps ensure that when you finally press “run” on a large
+model, you are using your compute budget wisely and can trust the results.
+
+4. Integration with Other Frameworks
+------------------------------------
+
+This chapter assumes that you often want to use ``probly`` together with other tools:
+neural-network libraries, data pipelines, or classical ML components. The goal is not to cover
+every integration pattern in detail, but to give you a mental model of how ``probly`` fits into
+larger systems and what to watch out for when wiring different libraries together.
+
+4.1 General integration concepts
+
+When integrating ``probly`` with other frameworks (Flax, TensorFlow, scikit-learn, etc.), three
+recurring themes show up:
+
+- how **data flows** between components,  
+- how **types, shapes, and devices** are handled,  
+- how **randomness and seeding** are coordinated.
+
+**Data flow between ``probly`` and other libraries**
+
+At a high level, ``probly`` consumes and produces arrays: batches of inputs, parameter vectors,
+uncertainty representations, and so on. Other frameworks do the same, but often with their own
+array types:
+
+- JAX / Flax use JAX arrays and pytrees,  
+- TensorFlow uses ``tf.Tensor`` and ``tf.data.Dataset`` objects (TensorFlow, 2024a),  
+- scikit-learn expects NumPy arrays or array-like structures as inputs (scikit-learn Developers,
+  2024).
+
+The main integration task is to **convert between these representations in a controlled way**.
+This typically means:
+
+- deciding in which library the “main” computation lives (for example, running models in JAX and
+  converting data from TensorFlow or NumPy when needed),  
+- minimising the number of conversions (for example, not converting back and forth inside inner
+  training loops),  
+- keeping a clear boundary in your code where data moves from one framework to another.
+
+**Type, shape, and device (CPU/GPU) considerations**
+
+Array libraries are strict about shapes and dtypes:
+
+- TensorFlow’s ``tf.data`` pipeline builds datasets as sequences of elements where each element
+  has a fixed structure and shape (TensorFlow, 2024a),  
+- scikit-learn’s estimator API assumes 2D feature matrices of shape
+  ``(n_samples, n_features)`` for most supervised learning tasks (scikit-learn Developers, 2024),  
+- Flax / JAX models typically assume explicit batch dimensions and well-defined dtypes.
+
+When integrating with ``probly``, it helps to:
+
+- decide on a **canonical shape convention** (for example: leading batch dimension, channel
+  ordering, etc.),  
+- standardise dtypes (e.g. always using ``float32`` unless there is a reason to do otherwise),  
+- ensure that arrays live on the right **device** (CPU vs GPU/TPU) before calling library
+  functions.
+
+Moving data between devices (CPU ↔ GPU) is often more expensive than moving it between Python
+functions in the same library, so it is worth designing your integration to minimise those hops.
+
+**Randomness and seed management across frameworks**
+
+Different frameworks handle randomness differently:
+
+- JAX uses **explicit PRNG keys**. You create a key from an integer seed and then split it as you
+  need more randomness, rather than relying on a global RNG (JAX Authors, n.d.).  
+- Flax builds on this system and treats RNG streams as part of the module’s state and lifecycle
+  (Flax Developers, n.d.-a, n.d.-b).  
+- TensorFlow and NumPy use more traditional global or graph-local RNGs, controlled by functions
+  such as ``tf.random.set_seed`` or ``numpy.random.seed`` (TensorFlow, 2024a; JAX Authors, n.d.).
+
+When combining these with ``probly``, a good rule of thumb is:
+
+- pick one library (often JAX in a Flax/``probly`` setup) as the “source of truth” for randomness,  
+- derive and pass keys or seeds *into* other parts of the system, instead of letting each library
+  silently manage its own global RNG,  
+- log the seeds/keys used for important experiments so that runs can be reproduced.
+
+4.2 Using ``probly`` with Flax
+
+Flax is a neural-network library built on top of JAX. It provides a **Module** abstraction that
+manages parameters, state, and randomness in a structured way (Flax Developers, n.d.-a,
+n.d.-b). This makes it a natural companion for ``probly`` when you need neural networks as part
+of a probabilistic model.
+
+**Typical workflow: Flax for neural nets, ``probly`` for probabilistic parts**
+
+A common pattern looks like this:
+
+1. Define a Flax model (for example, an encoder or feature extractor) as a Linen Module.  
+2. Initialise the Flax model to obtain a **variables dict** that contains parameters and any
+   state (e.g. batch statistics) (Flax Developers, n.d.-a).  
+3. Define a ``probly`` model that takes the Flax outputs (representations, logits, etc.) as
+   inputs to probabilistic components (likelihoods, uncertainty representations, priors).  
+4. Build a joint training or inference loop that updates both Flax parameters and ``probly``
+   parameters in a consistent way.
+
+Flax documentation emphasises the separation between **computation** and **parameters/state**:
+“Modules offer a Pythonic abstraction … that have state, parameters and randomness on top of JAX”
+(Flax Developers, n.d.-b). ``probly`` can treat these parameters as part of a larger probabilistic
+model, while reusing Flax’s building blocks for the deterministic parts.
+
+**Sharing parameters and state**
+
+In a joint Flax+``probly`` setup, you often want to:
+
+- keep all learnable quantities (Flax parameters, ``probly`` parameters) in a single **PyTree**
+  so that optimisers can see and update everything,  
+- clearly separate **deterministic state** (e.g. batch statistics) from **stochastic parameters**
+  so that inference algorithms know what should be treated as random.
+
+A practical approach is to:
+
+- treat the Flax ``variables["params"]`` as one subset of the parameters,  
+- treat ``probly``’s own parameters as another subset,  
+- design a small utility that packs/unpacks these subsets from a combined structure passed into
+  optimisers and inference routines.
+
+**PRNG handling and common gotchas**
+
+Both Flax and JAX rely on explicit PRNG keys; the JAX random-number documentation highlights that
+keys are *pure values* and must be split to produce independent streams (JAX Authors, n.d.).
+Flax modules provide helper methods such as ``make_rng`` to obtain new keys inside modules
+(Flax Developers, n.d.-b).
+
+Typical gotchas include:
+
+- accidentally reusing the same key across multiple calls (leading to correlated “random” values),  
+- mixing global RNGs (e.g. ``numpy.random``) with JAX/Flax keys in a way that is hard to
+  reproduce,  
+- forgetting to thread keys through ``probly``’s probabilistic components when they need
+  randomness.
+
+A robust integration treats PRNG keys just like any other part of the model state: they are
+explicit, passed around deliberately, and included in experiment logs when reproducibility
+matters.
+
+4.3 Using ``probly`` with TensorFlow
+
+TensorFlow provides a powerful ecosystem for building data pipelines, training loops, and
+serving infrastructure. Integration with ``probly`` usually focuses on **using TensorFlow for
+data and training orchestration**, while letting ``probly`` handle probabilistic modelling.
+
+**Passing TensorFlow tensors and datasets into ``probly``**
+
+TensorFlow’s ``tf.data`` API introduces a ``tf.data.Dataset`` abstraction that represents a
+sequence of elements, where each element consists of one or more tensors (TensorFlow, 2024a).
+You can create datasets from memory, TFRecord files, and many other sources, and then apply
+transformations like ``map`` and ``batch`` to build efficient pipelines.
+
+In a TensorFlow+``probly`` workflow, a typical pattern is:
+
+- build a ``tf.data.Dataset`` that yields batches of inputs and labels (TensorFlow, 2024a),  
+- inside a Python or ``tf.function`` training loop, convert each batch into the array type
+  expected by ``probly`` (for example, NumPy arrays or JAX arrays),  
+- call the ``probly`` model or log-likelihood on these batches,  
+- optionally convert results (e.g. predictions, uncertainty measures) back to TensorFlow tensors
+  if you want to integrate with other TF components.
+
+**Integrating with TensorFlow training loops**
+
+You can integrate ``probly`` with TensorFlow training in several ways:
+
+- treat ``probly`` as a **black-box model**: in each training step, get a batch from
+  ``tf.data``, convert it, run ``probly``, and update parameters using your chosen optimiser;  
+- embed ``probly`` calls inside a ``tf.function`` for performance, as long as the conversions and
+  control flow are compatible with TensorFlow’s tracing model;  
+- use TensorFlow’s metrics and logging (e.g. TensorBoard) to monitor losses and uncertainty
+  metrics produced by ``probly``.
+
+Performance guides for ``tf.data`` stress the importance of overlapping input-pipeline work with
+model execution using operations like ``prefetch`` and careful pipeline construction
+(TensorFlow, 2024b). The same advice applies here: make sure your input pipeline is not the
+bottleneck when calling into ``probly``.
+
+**Known limitations and patterns**
+
+Because TensorFlow and JAX/NumPy have different execution models and device handling, there are
+trade-offs:
+
+- cross-framework calls introduce overhead and can complicate gradient computation,  
+- some advanced TensorFlow features (e.g. distribution strategies) may not work smoothly if the
+  core model lives outside of TensorFlow,  
+- it is often simpler to use TensorFlow mainly for **data pipelines and infrastructure**, while
+  keeping the heavy numerical work inside a single array framework that ``probly`` is built on.
+
+4.4 Using ``probly`` with scikit-learn
+
+scikit-learn provides a standard **estimator interface**—objects with ``fit``, ``predict``,
+and often ``score`` methods—plus tools like ``Pipeline`` and ``GridSearchCV`` for combining and
+tuning models. The scikit-learn developer guide describes ``fit`` as the method “where the
+training happens” and specifies that it should take the training data ``X`` and (for supervised
+learning) ``y`` as inputs and return the estimator itself (scikit-learn Developers, 2024).
+
+To integrate ``probly`` into this ecosystem, you can wrap a ``probly`` model in a thin
+scikit-learn-style estimator.
+
+**Wrapping a ``probly`` model as an estimator**
+
+A minimal wrapper class might:
+
+- accept configuration arguments in ``__init__`` (for example, model structure, prior settings,
+  inference method),  
+- implement ``fit(X, y=None)`` to run ``probly``’s training or inference on the data,  
+- implement ``predict(X)`` or ``predict_proba(X)`` to return point predictions or uncertainty
+  summaries,  
+- optionally implement ``score(X, y)`` using scikit-learn’s metrics or your own metric.
+
+This follows the standard estimator design described in scikit-learn’s developer documentation
+(scikit-learn Developers, 2024) and allows your ``probly`` model to be used with tools such as
+``cross_val_score`` and ``cross_validate`` for evaluation (scikit-learn, 2024a).
+
+**Using ``probly`` in pipelines and cross-validation**
+
+Once wrapped, your ``probly`` estimator can be plugged into scikit-learn’s ``Pipeline``, which is
+defined as “a sequence of data transformers with an optional final predictor” (scikit-learn,
+2024b). Pipelines make it easy to:
+
+- chain preprocessing steps (e.g. scaling, feature selection) with your ``probly`` estimator,  
+- tune hyperparameters across all steps using ``GridSearchCV`` or ``RandomizedSearchCV``,  
+- evaluate the whole pipeline with cross-validation, ensuring that preprocessing is learned only
+  on training folds (scikit-learn, 2024a, 2024b).
+
+From ``probly``’s perspective, the key requirement is simply to behave like a scikit-learn
+estimator: support the right methods and follow the standard conventions for inputs and
+attributes.
+
+4.5 Interoperability best practices
+
+When connecting ``probly`` to other frameworks, a few general best practices help avoid
+frustrating bugs and performance issues.
+
+**Device management (CPU/GPU)**
+
+- Decide early which **devices** will run which parts of the system. For example, you might keep
+  your Flax/``probly`` model entirely on GPU, while scikit-learn components run on CPU.  
+- Minimise device transfers by grouping computations: move a batch *once* to GPU, perform all
+  relevant model calls there, and only bring back aggregated results.  
+- When using libraries like TensorFlow’s ``tf.data`` on GPU, follow their performance guidelines
+  (e.g. prefetching, parallel mapping) to keep accelerators fully utilised (TensorFlow, 2024b).
+
+**Version compatibility tips**
+
+- Pin versions of core libraries (JAX, Flax, TensorFlow, scikit-learn, etc.) in your environment
+  and CI configuration. Many of these libraries publish compatibility notes (for example, which
+  JAX versions are supported by a given Flax release).  
+- Avoid mixing very old and very new versions of closely related libraries, as subtle API changes
+  (especially around randomness and device placement) can cause integration problems.  
+- Document the versions used for key experiments so that collaborators can recreate your setup.
+
+**Debugging errors across library boundaries**
+
+Cross-library bugs are often about **mismatched assumptions**: incorrect shapes, wrong dtypes,
+inconsistent devices, or misaligned RNG handling. When debugging:
+
+- start with a very small example that uses the integration boundary only (for example, one batch
+  flowing from a ``tf.data.Dataset`` into a ``probly`` model),  
+- inspect and log shapes, dtypes, and devices right before and after conversion points,  
+- temporarily disable advanced features (JIT compilation, complex pipelines) to reduce the search
+  space,  
+- re-run with fixed seeds and controlled randomness to see if errors are deterministic (JAX
+  Authors, n.d.; TensorFlow, 2024a).
+
+By treating the integration points as first-class components—carefully designed, tested, and
+documented—you can combine ``probly`` with other frameworks without turning your project into a
+black box.
+
 
 .. bibliography::
 Kingma, D. P., & Welling, M. (2014). Auto-encoding variational Bayes. *Proceedings of the 2nd
@@ -521,5 +1165,180 @@ relationships between data* (Area Exam Report No. AREA-202307-Walton). Universit
 Department of Computer and Information Sciences.  
 https://www.cs.uoregon.edu/Reports/AREA-202307-Walton.pdf
 
+LuxDevHQ. (2023, August 28).
+Generic folder structure for your machine learning projects.
+DEV Community.
+https://dev.to/luxdevhq/generic-folder-structure-for-your-machine-learning-projects-4coe
+
+Pati, S. K. (2025, March 27).
+Best practices for organizing and coding data science projects — Part 1.
+The Deep Hub.
+https://medium.com/thedeephub/best-practices-for-organizing-and-coding-data-science-projects-part-1-72539e14a7a0
+
+The Hitchhiker’s Guide to Python Contributors. (2024).
+Structuring your project.
+In *The Hitchhiker’s Guide to Python*.
+https://docs.python-guide.org/writing/structure/
+
+Tu, X. (2024).
+An overview of large AI models and their applications.
+*Visual Intelligence, 2*(1), Article 34.
+https://doi.org/10.1007/s44267-024-00065-8
+
+Tyagi, A. J. (2025).
+Scaling deep learning models: Challenges and solutions for large-scale deployments.
+*World Journal of Advanced Engineering Technology and Sciences, 16*(2), 10–20.
+https://doi.org/10.30574/wjaets.2025.16.2.1252
+
+Bhuva, L. (2024, November 30).
+Mini-batch gradient descent: A comprehensive guide.
+Medium.
+https://medium.com/@lomashbhuva/mini-batch-gradient-descent-a-comprehensive-guide-ba27a6dc4863
+
+GeeksforGeeks. (2025, September 30).
+Mini-batch gradient descent in deep learning.
+GeeksforGeeks.
+https://www.geeksforgeeks.org/deep-learning/mini-batch-gradient-descent-in-deep-learning/
+
+Hey Amit. (2024, May 10).
+When to set pin_memory to True in PyTorch.
+Medium.
+https://medium.com/data-scientists-diary/when-to-set-pin-memory-to-true-in-pytorch-75141c0f598d
+
+JAX Authors. (n.d.-a).
+A brief introduction to JAX.
+JAX documentation.
+https://jax.exoplanet.codes/en/latest/tutorials/introduction-to-jax/
+
+JAX Authors. (n.d.-b).
+Just-in-time compilation.
+JAX documentation.
+https://docs.jax.dev/en/latest/jit-compilation.html
+
+JAX Authors. (n.d.-c).
+JAX: Composable transformations of Python+NumPy programs.
+GitHub.
+https://github.com/jax-ml/jax
+
+Jaxley Team. (n.d.).
+Speeding up simulations with JIT-compilation and GPUs.
+Jaxley documentation.
+https://jaxley.readthedocs.io/en/v0.4.0/tutorials/04_jit_and_vmap.html
+
+Jason Brownlee. (2019, August 19).
+A gentle introduction to mini-batch gradient descent and how to configure batch size.
+Machine Learning Mastery.
+https://www.machinelearningmastery.com/gentle-introduction-mini-batch-gradient-descent-configure-batch-size/
+
+Koul, N. (2023, March 3).
+JAX — A beginner’s tutorial.
+Medium.
+https://medium.com/@nimritakoul01/jax-a-beginners-tutorial-ca09b25a3f56
+
+Martire, S. (2022, March 12).
+Optimizing a TensorFlow input pipeline: Best practices in 2022.
+Medium.
+https://medium.com/@virtualmartire/optimizing-a-tensorflow-input-pipeline-best-practices-in-2022-4ade92ef8736
+
+PyImageSearch. (2023, February 27).
+Learning JAX in 2023: Part 2 — JAX’s power tools: grad, jit, vmap, and pmap.
+PyImageSearch.
+https://pyimagesearch.com/2023/02/27/learning-jax-in-2023-part-2-jaxs-power-tools-grad-jit-vmap-and-pmap/
+
+PyTorch Documentation. (2017, January 16).
+CUDA semantics.
+PyTorch.
+https://docs.pytorch.org/docs/stable/notes/cuda.html
+
+TensorFlow. (2024a, August 15).
+tf.data: Build TensorFlow input pipelines.
+TensorFlow.
+https://www.tensorflow.org/guide/data
+
+TensorFlow. (2024b, August 15).
+Better performance with the tf.data API.
+TensorFlow.
+https://www.tensorflow.org/guide/data_performance
+
+Alvi, F. (2024, November 6).
+Deep learning model training checklist: Essential steps for building and deploying models.
+OpenCV.
+https://opencv.org/blog/deep-learning-model-training/
+
+Breck, E., Cai, S., Nielsen, E., Salib, M., & Sculley, D. (2017).
+The ML test score: A rubric for ML production readiness and technical debt reduction.
+In *Proceedings of the IEEE International Conference on Big Data* (pp. 1123–1132).
+IEEE.
+https://research.google/pubs/the-ml-test-score-a-rubric-for-ml-production-readiness-and-technical-debt-reduction/
+
+Domingos, P., & Hulten, G. (2002).
+A general method for scaling up machine learning algorithms and its application to clustering.
+In *Proceedings of the Eighteenth International Conference on Machine Learning* (pp. 106–113).
+Morgan Kaufmann.
+https://dl.acm.org/doi/10.5555/645530.658293
+
+Karpathy, A. (2019, April 25).
+A recipe for training neural networks.
+https://karpathy.github.io/2019/04/25/recipe/
+
+Khan, F. T. (2024, October 11).
+Scaling up machine learning: Efficient strategies for handling large datasets.
+Medium.
+https://medium.com/@ftech/scaling-up-machine-learning-efficient-strategies-for-handling-large-datasets-1d329c608470
+
+Murtuzova, T. (2024, June 17).
+Essential deep learning checklist: Best practices unveiled.
+DEV Community.
+https://dev.to/api4ai/essential-deep-learning-checklist-best-practices-unveiled-5gma
+
+Neptune.ai. (2021, March 5).
+MLOps checklist – 10 best practices for a successful model deployment.
+Neptune Blog.
+https://neptune.ai/blog/mlops-best-practices
+
+Zinkevich, M. (n.d.).
+Rules of machine learning: Best practices for ML engineering.
+Google Developers.
+https://developers.google.com/machine-learning/guides/rules-of-ml
+
+Flax Developers. (n.d.-a).
+Managing parameters and state.
+In *Flax Linen fundamentals*.
+https://flax-linen.readthedocs.io/en/latest/guides/flax_fundamentals/state_params.html
+
+Flax Developers. (n.d.-b).
+The Flax Module lifecycle.
+In *Flax Linen developer notes*.
+https://flax-linen.readthedocs.io/en/latest/developer_notes/module_lifecycle.html
+
+JAX Authors. (n.d.).
+Pseudorandom numbers.
+In *JAX documentation*.
+https://docs.jax.dev/en/latest/random-numbers.html
+
+scikit-learn. (2024a).
+3.1. Cross-validation: evaluating estimator performance.
+In *scikit-learn 1.7.2 documentation*.
+https://scikit-learn.org/stable/modules/cross_validation.html
+
+scikit-learn. (2024b).
+Pipeline.
+In *scikit-learn 1.7.2 documentation*.
+https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html
+
+scikit-learn Developers. (2024).
+Developing scikit-learn estimators.
+In *scikit-learn 1.7.2 documentation*.
+https://scikit-learn.org/stable/developers/develop.html
+
+TensorFlow. (2024a, August 15).
+tf.data: Build TensorFlow input pipelines.
+TensorFlow Guide.
+https://www.tensorflow.org/guide/data
+
+TensorFlow. (2024b, August 15).
+Better performance with the tf.data API.
+TensorFlow Guide.
+https://www.tensorflow.org/guide/data_performance
 
 
