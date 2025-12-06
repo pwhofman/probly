@@ -29,8 +29,9 @@ class TestGenerate:
         backbone_layers = count_layers(backbone, nnx.Linear)
 
         # check tha backbone and heads are created correctly and heads have the correct structure
-        assert backbone is type(nnx.Sequential)
-        assert heads is type(nnx.List)
+        assert isinstance(subensemble_result, nnx.Module)
+        assert isinstance(backbone, nnx.Sequential)
+        assert isinstance(heads, nnx.List)
         assert len(heads) == num_heads
         assert original_layers - 1 == backbone_layers
         for head in heads:
@@ -56,6 +57,7 @@ class TestGenerate:
         backbone_layers = count_layers(backbone, nnx.Linear)
 
         # check tha backbone is created correctly and heads have the correct structure
+        assert isinstance(subensemble_result, nnx.Module)
         assert isinstance(backbone, nnx.Sequential)
         assert isinstance(heads, nnx.List)
         assert original_layers - 2 == backbone_layers
