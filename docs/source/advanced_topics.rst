@@ -1117,93 +1117,109 @@ and far more likely to understand what your large ``probly`` runs are doing.
 
 6.1 Common advanced modeling patterns
 
-This section sketches a few common “advanced” modelling patterns that often appear in real
-projects. The goal is not to give full mathematical detail, but to show how these ideas fit
-conceptually with ``probly`` and where they are typically useful.
+This section sketches a few “advanced” modelling patterns you will often see in
+real projects. The goal is not to give full mathematical detail, but to show how
+they fit conceptually with ``probly`` and when they are useful.
 
 **Hierarchical models**
 
-Hierarchical (or multilevel) models are used when data are organised in groups, levels, or
-contexts, for example students within classes, patients within hospitals, or measurements for
-multiple machines. Instead of fitting a separate model to each group, a hierarchical model
-shares information across groups via higher-level parameters. This “partial pooling” helps
-stabilise estimates, especially when some groups have only a few observations (Gelman & Hill,
-2007).
+Hierarchical (or multilevel) models are used when data are organised in groups,
+levels, or contexts – for example, students within classes, patients within
+hospitals, or measurements for multiple machines. Instead of fitting a separate
+model to each group, a hierarchical model shares information across groups using
+higher-level parameters. This “partial pooling” stabilises estimates, especially
+when some groups have only a few observations (Gelman & Hill, 2007).
 
-In ``probly``, hierarchical models can be expressed by:
+In ``probly``, hierarchical models typically:
 
-- defining group-specific parameters (e.g. intercepts or slopes),
-- tying them together through shared hyperparameters,
-- using uncertainty representations to see how much information is borrowed across groups.
+- define group-specific parameters (e.g. intercepts or slopes),
+- tie them together through shared hyperparameters,
+- use uncertainty representations to see how much information is borrowed across groups.
 
-This pattern is particularly useful when you care about both overall trends and group-level
-differences.
+This pattern is especially helpful when you care about both overall trends and
+group-level differences at the same time.
 
 **Mixture models**
 
-Mixture models assume that the data come from a combination of several latent components, such
-as different customer types, regimes, or clusters. A simple example is a Gaussian mixture
-model, where each data point is generated from one of several Gaussian components with its own
-mean and variance (Bishop, 2006).
+Mixture models assume that the data come from a combination of several latent
+components, such as different customer types, regimes, or clusters. A classic
+example is a Gaussian mixture model, where each data point is generated from one
+of several Gaussian components, each with its own mean and variance
+(Bishop, 2006).
 
-In ``probly``, you can:
+In ``probly``, mixture models can:
 
-- represent component-specific parameters and their mixing weights,
-- use discrete or continuous latent variables to indicate which component generated each observation,
-- quantify uncertainty about both the component assignments and the component parameters.
+- represent component-specific parameters and their mixing weights,  
+- use latent variables (discrete or continuous) to indicate which component
+  generated each observation,  
+- quantify uncertainty about both the component assignments and the component
+  parameters.
 
-Mixture models are helpful when a single simple distribution is not flexible enough to describe
-your data.
+You would reach for a mixture model when a single simple distribution cannot
+capture the shape of your data (for example, clearly multi-modal data).
 
 **Time-series and sequential models**
 
-Time-series and sequential models capture data that arrive in order, such as sensor readings,
-financial prices, or user activity over time. Typical goals include forecasting the future,
-detecting regime changes, or understanding temporal structure (Hyndman & Athanasopoulos,
-2018).
+Time-series and sequential models deal with data that arrive in order, such as
+sensor readings, financial prices, or user activity over time. Typical goals are
+to forecast future values, detect regime changes, or understand temporal
+structure (Hyndman & Athanasopoulos, 2018).
 
 With ``probly``, you can:
 
-- build models that include lagged variables, latent states, or dynamic parameters,
-- express uncertainty about future trajectories, not just point forecasts,
-- plug the resulting uncertainty into downstream decision-making or risk analyses.
+- build models that include lagged variables, latent states, or time-varying
+  parameters,  
+- express uncertainty about future trajectories, not just single point forecasts,  
+- feed these predictive distributions into downstream decisions or risk analysis.
 
-Often, advanced time-series models combine ideas from hierarchies (e.g. many related series)
-and mixtures (e.g. different regimes or behaviours).
+More advanced time-series models often mix ideas from hierarchies (e.g. many
+related series, like many stores over time) and mixtures (e.g. different
+behavioural regimes).
 
 6.2 Reusable templates
 
-As your models become more complex, it is helpful to identify **reusable templates** small
-patterns that keep recurring across projects. Examples include:
+As your models become more complex, it helps to recognise **reusable templates**:
+small patterns that show up again and again. Examples include:
 
-- a standard hierarchical regression block for grouped data,
-- a generic mixture-of-experts block that combines several prediction heads,
-- a time-series forecasting head that can be attached to different feature extractors.
+- a standard hierarchical regression block for grouped data (inspired by
+  typical multilevel models in Gelman & Hill, 2007),
+- a generic mixture-of-experts block that combines several prediction heads
+  (Bishop, 2006),
+- a time-series forecasting head that can be attached to different feature
+  extractors (Hyndman & Athanasopoulos, 2018).
 
-In ``probly``, these templates can be written as functions or modules that:
+In ``probly``, you can implement these templates as functions or modules that:
 
-- take in model-specific pieces (e.g. feature networks, priors, or likelihood choices),
-- expose a clean, well-documented interface,
-- return both predictions and uncertainty representations in a consistent format.
+- take model-specific pieces as arguments (e.g. feature networks, priors, or
+  likelihood choices),  
+- expose a clear, well-documented interface,  
+- return predictions and uncertainty representations in a consistent format.
 
-By reusing such templates, you reduce boilerplate, keep designs more uniform across projects,
-and make it easier for others to understand or extend your work.
+By reusing such templates, you:
+
+- reduce copy–paste boilerplate,  
+- keep projects more uniform,  
+- make it easier for other people (or future you) to understand and extend your
+  models.
 
 6.3 Pointers to examples
 
-To make these patterns concrete, it is useful to link each abstract idea to a **worked
-example**:
+To make these patterns easier to learn, it is useful to connect each idea to at
+least one **worked example**:
 
-- For hierarchical models, an example with grouped data (e.g. “schools”, “hospitals”, or
-  “stores”) that walks through model specification, inference, and interpretation.
-- For mixture models, a clustering or anomaly-detection example that shows how component
-  responsibilities and uncertainty can be visualised.
-- For time-series models, a forecasting example that compares point forecasts to predictive
-  intervals over time.
+- For hierarchical models, a grouped-data example (e.g. “schools”, “hospitals”,
+  or “stores”) that walks through model specification, inference, and how to
+  read the group-level posteriors (Gelman & Hill, 2007).  
+- For mixture models, a clustering or anomaly-detection example that shows both
+  cluster responsibilities and uncertainty about the clusters themselves
+  (Bishop, 2006).  
+- For time-series models, a forecasting example that compares point forecasts to
+  predictive intervals over time, and shows how to evaluate them
+  (Hyndman & Athanasopoulos, 2018).
 
-In the long run, the aim is that each advanced pattern described here corresponds to at least
-one notebook in the *Examples & Tutorials* section, so that readers can jump directly from the
-conceptual description to runnable code.
+In the long run, the goal is that each advanced pattern here has at least one
+notebook in the *Examples & Tutorials* section, so readers can jump straight
+from the concept to runnable code.
 
 7. Summary
 ----------
