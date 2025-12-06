@@ -1360,75 +1360,41 @@ modules, and examples—should slot naturally into your own advanced models and 
 
 
 .. bibliography::
-Kingma, D. P., & Welling, M. (2014). Auto-encoding variational Bayes. *Proceedings of the 2nd
-International Conference on Learning Representations (ICLR).* https://arxiv.org/abs/1312.6114
+Alvi, F. (2024, November 6).
+Deep learning model training checklist: Essential steps for building and deploying models.
+OpenCV.
+https://opencv.org/blog/deep-learning-model-training/
 
-Rezende, D. J., & Mohamed, S. (2015). Variational inference with normalizing flows. *Proceedings of
-the 32nd International Conference on Machine Learning (ICML), 37*, 1530–1538.
-https://proceedings.mlr.press/v37/rezende15.html
+Bhuva, L. (2024, November 30).
+Mini-batch gradient descent: A comprehensive guide.
+Medium.
+https://medium.com/@lomashbhuva/mini-batch-gradient-descent-a-comprehensive-guide-ba27a6dc4863
 
-TensorFlow Probability. (2023). *Module: tfp.bijectors* [Computer software documentation].
-TensorFlow. https://www.tensorflow.org/probability/api_docs/python/tfp/bijectors
+Bishop, C. M. (2006). *Pattern recognition and machine learning*. Springer.
+   https://www.springer.com/gp/book/9780387310732
 
-Karanam, A., Mathur, S., Sidheekh, S., & Natarajan, S. (2024).
-A unified framework for human-allied learning of probabilistic circuits.
-*arXiv.* https://arxiv.org/abs/2405.02413
+Breck, E., Cai, S., Nielsen, E., Salib, M., & Sculley, D. (2017).
+The ML test score: A rubric for ML production readiness and technical debt reduction.
+In *Proceedings of the IEEE International Conference on Big Data* (pp. 1123–1132).
+IEEE.
+https://research.google/pubs/the-ml-test-score-a-rubric-for-ml-production-readiness-and-technical-debt-reduction/
 
-Stan Development Team. (2025).
-*Stan reference manual* (Version 2.37).
-https://mc-stan.org/docs/reference-manual/
-
-vitkl. (2020, December 31).
-*Softplus transform as a more numerically stable way to enforce positive constraint
-[Issue #855]*. GitHub. https://github.com/pyro-ppl/numpyro/issues/855
+Carpenter, B., Gelman, A., Hoffman, M. D., Lee, D., Goodrich, B., Betancourt, M.,
+Brubaker, M. A., Guo, J., Li, P., & Riddell, A. (2017). Stan: A probabilistic programming
+language. *Journal of Statistical Software, 76*(1), 1–32. https://doi.org/10.18637/jss.v076.i01
 
 Contributors to the Pyro Project. (2019).
 *NumPyro: numpyro.distributions.constraints* [Source code documentation].
 NumPyro. https://num.pyro.ai/en/0.3.0/_modules/numpyro/distributions/constraints.html
 
-Open Source Vizier Authors. (2022).
-*Bijectors*. In *Open Source Vizier documentation*.
-https://oss-vizier.readthedocs.io/en/latest/advanced_topics/tfp/bijectors.html
-
-Stan Development Team. (2025).
-*Constraint transforms*. In *Stan reference manual* (Version 2.37).
-https://mc-stan.org/docs/reference-manual/transforms.html
-
-TensorFlow Probability. (2023).
-*tfp.bijectors.Bijector* [Computer software documentation].
-TensorFlow. https://www.tensorflow.org/probability/api_docs/python/tfp/bijectors/Bijector
-
 Contributors to the Pyro Project. (2020). *NumPyro documentation* (Version 0.3.0). NumPyro.
 https://num.pyro.ai/_/downloads/en/0.3.0/pdf/
 
-Stan Development Team. (n.d.). *10.2 Lower bounded scalar*. In *Stan reference manual* (Version 2.22).
-Stan. https://mc-stan.org/docs/2_22/reference-manual/lower-bound-transform-section.html
-
-TensorFlow Probability. (2023). *tfp.bijectors.Softplus* [Computer software documentation]. TensorFlow.
-https://www.tensorflow.org/probability/api_docs/python/tfp/bijectors/Softplus
-
-vitkl. (2020, December 30). *Softplus transform as a more numerically stable way to enforce positive
-constraint [Issue #855]*. In *NumPyro* (GitHub repository). GitHub.
-https://github.com/pyro-ppl/numpyro/issues/855
-
-Mittal, B. (2025, July 23). *Bayesian hierarchical models*. GeeksforGeeks.  
-https://www.geeksforgeeks.org/machine-learning/bayesian-hierarchical-models/
-
-Papamakarios, G., Nalisnick, E., Rezende, D. J., Mohamed, S., & Lakshminarayanan, B. (2021). Normalizing flows for probabilistic modeling and inference. *Journal of Machine Learning Research, 22*(57), 1–64.  
-https://www.jmlr.org/papers/volume22/19-1028/19-1028.pdf
-
-Rezende, D. J., & Mohamed, S. (2015). Variational inference with normalizing flows. In *Proceedings of the 32nd International Conference on Machine Learning* (pp. 1530–1538). PMLR.  
-https://proceedings.mlr.press/v37/rezende15.html
-
-TensorFlow Probability. (n.d.). *Module: tfp.bijectors*. In *TensorFlow Probability API documentation*. Retrieved December 5, 2025, from  
-https://www.tensorflow.org/probability/api_docs/python/tfp/bijectors
-
-The JAX Authors. (2024). *Pseudorandom numbers*. JAX documentation.  
-https://docs.jax.dev/en/latest/random-numbers.html
-
-Carpenter, B., Gelman, A., Hoffman, M. D., Lee, D., Goodrich, B., Betancourt, M.,
-Brubaker, M. A., Guo, J., Li, P., & Riddell, A. (2017). Stan: A probabilistic programming
-language. *Journal of Statistical Software, 76*(1), 1–32. https://doi.org/10.18637/jss.v076.i01
+Domingos, P., & Hulten, G. (2002).
+A general method for scaling up machine learning algorithms and its application to clustering.
+In *Proceedings of the Eighteenth International Conference on Machine Learning* (pp. 106–113).
+Morgan Kaufmann.
+https://dl.acm.org/doi/10.5555/645530.658293
 
 Dutta, S., Legunsen, O., Huang, Z., & Misailovic, S. (2018). Testing probabilistic programming
 systems. In *Proceedings of the 26th ACM Joint European Software Engineering Conference and
@@ -1438,57 +1404,43 @@ Association for Computing Machinery. https://doi.org/10.1145/3236024.3236057
 Eertmans, J. (2025). *NaN and infinite values*. In *DiffeRT documentation*.  
 https://differt.eertmans.be/latest/nans_and_infs.html
 
-Griewank, A., & Walther, A. (2008). *Evaluating derivatives: Principles and techniques of
-algorithmic differentiation* (2nd ed.). Society for Industrial and Applied Mathematics.  
-https://doi.org/10.1137/1.9780898717766
+Flax Developers. (n.d.-a).
+Managing parameters and state.
+In *Flax Linen fundamentals*.
+https://flax-linen.readthedocs.io/en/latest/guides/flax_fundamentals/state_params.html
 
-hvgotcodes. (2012, March 29). *What are some good practices for unit testing probability
-distributions?* Stack Overflow. https://stackoverflow.com/questions/9934903
-
-Walton, S. (2023). *Isomorphism, normalizing flows, and density estimation: Preserving
-relationships between data* (Area Exam Report No. AREA-202307-Walton). University of Oregon,
-Department of Computer and Information Sciences.  
-https://www.cs.uoregon.edu/Reports/AREA-202307-Walton.pdf
-
-LuxDevHQ. (2023, August 28).
-Generic folder structure for your machine learning projects.
-DEV Community.
-https://dev.to/luxdevhq/generic-folder-structure-for-your-machine-learning-projects-4coe
-
-Pati, S. K. (2025, March 27).
-Best practices for organizing and coding data science projects — Part 1.
-The Deep Hub.
-https://medium.com/thedeephub/best-practices-for-organizing-and-coding-data-science-projects-part-1-72539e14a7a0
-
-The Hitchhiker’s Guide to Python Contributors. (2024).
-Structuring your project.
-In *The Hitchhiker’s Guide to Python*.
-https://docs.python-guide.org/writing/structure/
-
-Tu, X. (2024).
-An overview of large AI models and their applications.
-*Visual Intelligence, 2*(1), Article 34.
-https://doi.org/10.1007/s44267-024-00065-8
-
-Tyagi, A. J. (2025).
-Scaling deep learning models: Challenges and solutions for large-scale deployments.
-*World Journal of Advanced Engineering Technology and Sciences, 16*(2), 10–20.
-https://doi.org/10.30574/wjaets.2025.16.2.1252
-
-Bhuva, L. (2024, November 30).
-Mini-batch gradient descent: A comprehensive guide.
-Medium.
-https://medium.com/@lomashbhuva/mini-batch-gradient-descent-a-comprehensive-guide-ba27a6dc4863
+Flax Developers. (n.d.-b).
+The Flax Module lifecycle.
+In *Flax Linen developer notes*.
+https://flax-linen.readthedocs.io/en/latest/developer_notes/module_lifecycle.html
 
 GeeksforGeeks. (2025, September 30).
 Mini-batch gradient descent in deep learning.
 GeeksforGeeks.
 https://www.geeksforgeeks.org/deep-learning/mini-batch-gradient-descent-in-deep-learning/
 
+Gelman, A., & Hill, J. (2007). *Data analysis using regression and multilevel/hierarchical models*.
+   Cambridge University Press.
+   https://www.cambridge.org/core/books/data-analysis-using-regression-and-multilevelhierarchical-models/0C1C3F8F5E6C5D7D5C7D40D5D6A50F5F
+
+Griewank, A., & Walther, A. (2008). *Evaluating derivatives: Principles and techniques of
+algorithmic differentiation* (2nd ed.). Society for Industrial and Applied Mathematics.  
+https://doi.org/10.1137/1.9780898717766
+
+Harris, C. R., Millman, K. J., van der Walt, S. J., Gommers, R., Virtanen, P.,
+Cournapeau, D., … Oliphant, T. E. (2020). Array programming with NumPy.
+*Nature*, 585(7825), 357–362. https://doi.org/10.1038/s41586-020-2649-2
+
 Hey Amit. (2024, May 10).
 When to set pin_memory to True in PyTorch.
 Medium.
 https://medium.com/data-scientists-diary/when-to-set-pin-memory-to-true-in-pytorch-75141c0f598d
+
+hvgotcodes. (2012, March 29). *What are some good practices for unit testing probability
+distributions?* Stack Overflow. https://stackoverflow.com/questions/9934903
+
+Hyndman, R. J., & Athanasopoulos, G. (2018). *Forecasting: Principles and practice* (2nd ed.).
+   OTexts. https://otexts.com/fpp2/
 
 JAX Authors. (n.d.-a).
 A brief introduction to JAX.
@@ -1505,62 +1457,24 @@ JAX: Composable transformations of Python+NumPy programs.
 GitHub.
 https://github.com/jax-ml/jax
 
-Jaxley Team. (n.d.).
-Speeding up simulations with JIT-compilation and GPUs.
-Jaxley documentation.
-https://jaxley.readthedocs.io/en/v0.4.0/tutorials/04_jit_and_vmap.html
+JAX Authors. (n.d.).
+Pseudorandom numbers.
+In *JAX documentation*.
+https://docs.jax.dev/en/latest/random-numbers.html
 
 Jason Brownlee. (2019, August 19).
 A gentle introduction to mini-batch gradient descent and how to configure batch size.
 Machine Learning Mastery.
 https://www.machinelearningmastery.com/gentle-introduction-mini-batch-gradient-descent-configure-batch-size/
 
-Koul, N. (2023, March 3).
-JAX — A beginner’s tutorial.
-Medium.
-https://medium.com/@nimritakoul01/jax-a-beginners-tutorial-ca09b25a3f56
+Jaxley Team. (n.d.).
+Speeding up simulations with JIT-compilation and GPUs.
+Jaxley documentation.
+https://jaxley.readthedocs.io/en/v0.4.0/tutorials/04_jit_and_vmap.html
 
-Martire, S. (2022, March 12).
-Optimizing a TensorFlow input pipeline: Best practices in 2022.
-Medium.
-https://medium.com/@virtualmartire/optimizing-a-tensorflow-input-pipeline-best-practices-in-2022-4ade92ef8736
-
-PyImageSearch. (2023, February 27).
-Learning JAX in 2023: Part 2 — JAX’s power tools: grad, jit, vmap, and pmap.
-PyImageSearch.
-https://pyimagesearch.com/2023/02/27/learning-jax-in-2023-part-2-jaxs-power-tools-grad-jit-vmap-and-pmap/
-
-PyTorch Documentation. (2017, January 16).
-CUDA semantics.
-PyTorch.
-https://docs.pytorch.org/docs/stable/notes/cuda.html
-
-TensorFlow. (2024a, August 15).
-tf.data: Build TensorFlow input pipelines.
-TensorFlow.
-https://www.tensorflow.org/guide/data
-
-TensorFlow. (2024b, August 15).
-Better performance with the tf.data API.
-TensorFlow.
-https://www.tensorflow.org/guide/data_performance
-
-Alvi, F. (2024, November 6).
-Deep learning model training checklist: Essential steps for building and deploying models.
-OpenCV.
-https://opencv.org/blog/deep-learning-model-training/
-
-Breck, E., Cai, S., Nielsen, E., Salib, M., & Sculley, D. (2017).
-The ML test score: A rubric for ML production readiness and technical debt reduction.
-In *Proceedings of the IEEE International Conference on Big Data* (pp. 1123–1132).
-IEEE.
-https://research.google/pubs/the-ml-test-score-a-rubric-for-ml-production-readiness-and-technical-debt-reduction/
-
-Domingos, P., & Hulten, G. (2002).
-A general method for scaling up machine learning algorithms and its application to clustering.
-In *Proceedings of the Eighteenth International Conference on Machine Learning* (pp. 106–113).
-Morgan Kaufmann.
-https://dl.acm.org/doi/10.5555/645530.658293
+Karanam, A., Mathur, S., Sidheekh, S., & Natarajan, S. (2024).
+A unified framework for human-allied learning of probabilistic circuits.
+*arXiv.* https://arxiv.org/abs/2405.02413
 
 Karpathy, A. (2019, April 25).
 A recipe for training neural networks.
@@ -1570,6 +1484,27 @@ Khan, F. T. (2024, October 11).
 Scaling up machine learning: Efficient strategies for handling large datasets.
 Medium.
 https://medium.com/@ftech/scaling-up-machine-learning-efficient-strategies-for-handling-large-datasets-1d329c608470
+
+Kingma, D. P., & Welling, M. (2014). Auto-encoding variational Bayes. *Proceedings of the 2nd
+International Conference on Learning Representations (ICLR).* https://arxiv.org/abs/1312.6114
+
+Koul, N. (2023, March 3).
+JAX — A beginner’s tutorial.
+Medium.
+https://medium.com/@nimritakoul01/jax-a-beginners-tutorial-ca09b25a3f56
+
+LuxDevHQ. (2023, August 28).
+Generic folder structure for your machine learning projects.
+DEV Community.
+https://dev.to/luxdevhq/generic-folder-structure-for-your-machine-learning-projects-4coe
+
+Martire, S. (2022, March 12).
+Optimizing a TensorFlow input pipeline: Best practices in 2022.
+Medium.
+https://medium.com/@virtualmartire/optimizing-a-tensorflow-input-pipeline-best-practices-in-2022-4ade92ef8736
+
+Mittal, B. (2025, July 23). *Bayesian hierarchical models*. GeeksforGeeks.  
+https://www.geeksforgeeks.org/machine-learning/bayesian-hierarchical-models/
 
 Murtuzova, T. (2024, June 17).
 Essential deep learning checklist: Best practices unveiled.
@@ -1581,25 +1516,41 @@ MLOps checklist – 10 best practices for a successful model deployment.
 Neptune Blog.
 https://neptune.ai/blog/mlops-best-practices
 
-Zinkevich, M. (n.d.).
-Rules of machine learning: Best practices for ML engineering.
-Google Developers.
-https://developers.google.com/machine-learning/guides/rules-of-ml
+Open Data Science. (2019, April 24). *Properly setting the random seed in ML experiments:
+Not as simple as you might imagine*. OpenDataScience.com.
+https://opendatascience.com/properly-setting-the-random-seed-in-ml-experiments-not-as-simple-as-you-might-imagine/
 
-Flax Developers. (n.d.-a).
-Managing parameters and state.
-In *Flax Linen fundamentals*.
-https://flax-linen.readthedocs.io/en/latest/guides/flax_fundamentals/state_params.html
+Open Source Vizier Authors. (2022).
+*Bijectors*. In *Open Source Vizier documentation*.
+https://oss-vizier.readthedocs.io/en/latest/advanced_topics/tfp/bijectors.html
 
-Flax Developers. (n.d.-b).
-The Flax Module lifecycle.
-In *Flax Linen developer notes*.
-https://flax-linen.readthedocs.io/en/latest/developer_notes/module_lifecycle.html
+Papamakarios, G., Nalisnick, E., Rezende, D. J., Mohamed, S., & Lakshminarayanan, B. (2021). Normalizing flows for probabilistic modeling and inference. *Journal of Machine Learning Research, 22*(57), 1–64.  
+https://www.jmlr.org/papers/volume22/19-1028/19-1028.pdf
 
-JAX Authors. (n.d.).
-Pseudorandom numbers.
-In *JAX documentation*.
-https://docs.jax.dev/en/latest/random-numbers.html
+Pati, S. K. (2025, March 27).
+Best practices for organizing and coding data science projects — Part 1.
+The Deep Hub.
+https://medium.com/thedeephub/best-practices-for-organizing-and-coding-data-science-projects-part-1-72539e14a7a0
+
+Python Software Foundation. (n.d.). *The Python profilers*. Python documentation.
+https://docs.python.org/3/library/profile.html
+
+PyImageSearch. (2023, February 27).
+Learning JAX in 2023: Part 2 — JAX’s power tools: grad, jit, vmap, and pmap.
+PyImageSearch.
+https://pyimagesearch.com/2023/02/27/learning-jax-in-2023-part-2-jaxs-power-tools-grad-jit-vmap-and-pmap/
+
+PyTorch Documentation. (2017, January 16).
+CUDA semantics.
+PyTorch.
+https://docs.pytorch.org/docs/stable/notes/cuda.html
+
+Rezende, D. J., & Mohamed, S. (2015). Variational inference with normalizing flows. *Proceedings of
+the 32nd International Conference on Machine Learning (ICML), 37*, 1530–1538.
+https://proceedings.mlr.press/v37/rezende15.html
+
+Rezende, D. J., & Mohamed, S. (2015). Variational inference with normalizing flows. In *Proceedings of the 32nd International Conference on Machine Learning* (pp. 1530–1538). PMLR.  
+https://proceedings.mlr.press/v37/rezende15.html
 
 scikit-learn. (2024a).
 3.1. Cross-validation: evaluating estimator performance.
@@ -1616,6 +1567,22 @@ Developing scikit-learn estimators.
 In *scikit-learn 1.7.2 documentation*.
 https://scikit-learn.org/stable/developers/develop.html
 
+Stan Development Team. (n.d.). *10.2 Lower bounded scalar*. In *Stan reference manual* (Version 2.22).
+Stan. https://mc-stan.org/docs/2_22/reference-manual/lower-bound-transform-section.html
+
+Stan Development Team. (2025).
+*Constraint transforms*. In *Stan reference manual* (Version 2.37).
+https://mc-stan.org/docs/reference-manual/transforms.html
+
+Stan Development Team. (2025).
+*Stan reference manual* (Version 2.37).
+https://mc-stan.org/docs/reference-manual/
+
+TensorFlow. (2024a, August 15).
+tf.data: Build TensorFlow input pipelines.
+TensorFlow.
+https://www.tensorflow.org/guide/data
+
 TensorFlow. (2024a, August 15).
 tf.data: Build TensorFlow input pipelines.
 TensorFlow Guide.
@@ -1623,35 +1590,59 @@ https://www.tensorflow.org/guide/data
 
 TensorFlow. (2024b, August 15).
 Better performance with the tf.data API.
+TensorFlow.
+https://www.tensorflow.org/guide/data_performance
+
+TensorFlow. (2024b, August 15).
+Better performance with the tf.data API.
 TensorFlow Guide.
 https://www.tensorflow.org/guide/data_performance
 
-Harris, C. R., Millman, K. J., van der Walt, S. J., Gommers, R., Virtanen, P.,
-Cournapeau, D., … Oliphant, T. E. (2020). Array programming with NumPy.
-*Nature*, 585(7825), 357–362. https://doi.org/10.1038/s41586-020-2649-2
+TensorFlow Probability. (n.d.). *Module: tfp.bijectors*. In *TensorFlow Probability API documentation*. Retrieved December 5, 2025, from  
+https://www.tensorflow.org/probability/api_docs/python/tfp/bijectors
 
-Open Data Science. (2019, April 24). *Properly setting the random seed in ML experiments:
-Not as simple as you might imagine*. OpenDataScience.com.
-https://opendatascience.com/properly-setting-the-random-seed-in-ml-experiments-not-as-simple-as-you-might-imagine/
+TensorFlow Probability. (2023). *Module: tfp.bijectors* [Computer software documentation].
+TensorFlow. https://www.tensorflow.org/probability/api_docs/python/tfp/bijectors
 
-Python Software Foundation. (n.d.). *The Python profilers*. Python documentation.
-https://docs.python.org/3/library/profile.html
+TensorFlow Probability. (2023).
+*tfp.bijectors.Bijector* [Computer software documentation].
+TensorFlow. https://www.tensorflow.org/probability/api_docs/python/tfp/bijectors/Bijector
 
-Bishop, C. M. (2006). *Pattern recognition and machine learning*. Springer.
-   https://www.springer.com/gp/book/9780387310732
+TensorFlow Probability. (2023). *tfp.bijectors.Softplus* [Computer software documentation]. TensorFlow.
+https://www.tensorflow.org/probability/api_docs/python/tfp/bijectors/Softplus
 
-Gelman, A., & Hill, J. (2007). *Data analysis using regression and multilevel/hierarchical models*.
-   Cambridge University Press.
-   https://www.cambridge.org/core/books/data-analysis-using-regression-and-multilevelhierarchical-models/0C1C3F8F5E6C5D7D5C7D40D5D6A50F5F
+The Hitchhiker’s Guide to Python Contributors. (2024).
+Structuring your project.
+In *The Hitchhiker’s Guide to Python*.
+https://docs.python-guide.org/writing/structure/
 
-Hyndman, R. J., & Athanasopoulos, G. (2018). *Forecasting: Principles and practice* (2nd ed.).
-   OTexts. https://otexts.com/fpp2/
+The JAX Authors. (2024). *Pseudorandom numbers*. JAX documentation.  
+https://docs.jax.dev/en/latest/random-numbers.html
 
+Tu, X. (2024).
+An overview of large AI models and their applications.
+*Visual Intelligence, 2*(1), Article 34.
+https://doi.org/10.1007/s44267-024-00065-8
 
+Tyagi, A. J. (2025).
+Scaling deep learning models: Challenges and solutions for large-scale deployments.
+*World Journal of Advanced Engineering Technology and Sciences, 16*(2), 10–20.
+https://doi.org/10.30574/wjaets.2025.16.2.1252
 
+vitkl. (2020, December 30). *Softplus transform as a more numerically stable way to enforce positive
+constraint [Issue #855]*. In *NumPyro* (GitHub repository). GitHub.
+https://github.com/pyro-ppl/numpyro/issues/855
 
+vitkl. (2020, December 31).
+*Softplus transform as a more numerically stable way to enforce positive constraint
+[Issue #855]*. GitHub. https://github.com/pyro-ppl/numpyro/issues/855
 
+Walton, S. (2023). *Isomorphism, normalizing flows, and density estimation: Preserving
+relationships between data* (Area Exam Report No. AREA-202307-Walton). University of Oregon,
+Department of Computer and Information Sciences.  
+https://www.cs.uoregon.edu/Reports/AREA-202307-Walton.pdf
 
-
-
-
+Zinkevich, M. (n.d.).
+Rules of machine learning: Best practices for ML engineering.
+Google Developers.
+https://developers.google.com/machine-learning/guides/rules-of-ml
