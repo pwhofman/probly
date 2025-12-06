@@ -89,6 +89,7 @@ better choice.
   often demand more specialised structures. In such cases, a custom
   transformation lets you explicitly encode the structure your model needs.
 
+
 - **Custom distributions or domain constraints**  
   In many domains, prior knowledge is naturally expressed as constraints on
   parameters: certain probabilities must always sum to one, some effects must be
@@ -98,6 +99,7 @@ better choice.
   serve as effective inductive biases” (Karanam et al., 2024, p. 3). A custom
   transformation is a convenient way to build such domain-specific rules into the
   parameterisation instead of relying on ad-hoc clipping or post-processing.
+
 
 - **Cleaner uncertainty behaviour and numerical stability**  
   Some parameterisations yield more interpretable and numerically stable
@@ -113,6 +115,7 @@ better choice.
   numerically robust parameterisation and make its effect on uncertainty
   representations easier to reason about.
 
+
 - **Integration with existing code or libraries**  
   When you plug ``probly`` into an existing machine-learning pipeline, external
   code often expects parameters in a fixed, domain-specific representation. The
@@ -123,6 +126,7 @@ better choice.
   code continues to work with familiar application-level parameters (cf. the use
   of constraint transforms to reconcile internal and external parameterisations
   in Stan; Stan Development Team, 2025).
+
 
 As a practical rule of thumb: if you frequently add manual clamps, min/max
 operations, or ad-hoc post-processing steps just to keep parameters valid, that is
