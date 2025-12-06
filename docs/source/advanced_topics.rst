@@ -1268,6 +1268,12 @@ If you keep these principles in mind, the rest of the ``probly`` documentation m
 modules, and examples should slot naturally into your own advanced models and experiments.
 
 
+
+
+
+
+
+
 .. bibliography::
 
    Bishop, C. M. (2006). *Pattern recognition and machine learning*. Springer.
