@@ -1073,6 +1073,154 @@ By treating the integration points as first-class components—carefully designe
 documented—you can combine ``probly`` with other frameworks without turning your project into a
 black box.
 
+5. Performance & Computational Efficiency
+-----------------------------------------
+
+5.1 Understanding performance bottlenecks
+
+When a model feels “slow”, the first step is to understand **where the time is actually
+spent**. For typical ``probly`` workflows, the main bottlenecks are:
+
+- **CPU compute** – scalar Python loops, non-vectorised NumPy operations, or expensive
+  Python-level bookkeeping.
+- **GPU compute** – large matrix multiplications or convolutions that fully occupy the GPU.
+- **I/O** – loading data from disk, the network, or very slow preprocessing.
+- **Python overhead** – frequent Python function calls, dynamic graph construction, or
+  heavy logging that prevents libraries from executing efficiently in compiled code.
+
+Profiling tools help to diagnose these issues. For example, the standard Python profilers
+collect “statistics that describe how often and for how long various parts of the program
+executed” (Python Software Foundation, n.d.), which makes it easier to see whether time is
+dominated by your model code, the data pipeline, or external libraries.
+
+In practice, it is useful to adopt a simple routine:
+
+- run a **small experiment** with realistic settings,
+- profile the run to identify the **slowest functions and lines**,
+- focus optimisation efforts only on the few hot spots that clearly dominate runtime.
+
+5.2 Profiling your ``probly`` code
+
+Profiling does not have to be complicated. For many questions, it is enough to:
+
+- use a **function-level profiler** (e.g., ``cProfile``) to find the most expensive calls
+  (Python Software Foundation, n.d.),
+- complement this with a **line-level or memory profiler** when you suspect specific
+  sections of code are responsible for high memory usage or unexpected slowdowns.
+
+A practical workflow might look like this:
+
+1. Wrap the main training / inference loop in a profiler context.
+2. Run a short experiment on a subset of the data.
+3. Sort the profiler output by **cumulative time** to find the most expensive functions.
+4. For one or two of these functions, use a line profiler or targeted logging to drill
+   down further.
+
+The goal is not to micro-optimise everything, but to answer concrete questions such as:
+
+- Is the time spent mostly in ``probly`` / NumPy / JAX, or in custom Python code?
+- Is data loading or preprocessing slower than the actual model computations?
+- Do a few functions account for most of the runtime?
+
+Once you know this, the optimisation strategy usually becomes obvious.
+
+5.3 Algorithmic improvements
+
+Before tuning low-level details, it is often more effective to change the **algorithm**
+itself:
+
+- **Choose inference methods suited to your model.** Some models work well with simple
+  optimisation-based approaches, while others require more expressive samplers. Methods
+  with better convergence behaviour can dramatically reduce total runtime, even if each
+  step is slightly more expensive.
+
+- **Simplify or re-parameterise the model.** Alternative parameterisations can improve
+  gradient flow, reduce pathological curvature, or make constraints easier to handle. This
+  often leads to faster convergence and fewer required iterations.
+
+- **Re-use previous runs.** Warm starts, cached results, or saved initialisations can
+  avoid repeating expensive computations. For example, you might start a new experiment
+  from the parameters of a previous run with similar settings instead of reinitialising
+  from scratch.
+
+Many performance problems disappear once the model and inference method are well aligned
+with the task.
+
+5.4 Vectorisation & parallelisation
+
+Low-level performance often comes from **doing more work per call** rather than adding
+more explicit loops. Numerical Python libraries such as NumPy are designed so that
+vectorised operations “push” work into efficient compiled kernels instead of looping in
+pure Python (Harris et al., 2020). In the context of ``probly``, this means:
+
+- prefer **batch operations** over explicit Python loops,
+- structure code so that entire arrays of parameters, samples, or observations can be
+  processed at once,
+- let the underlying backend (NumPy, JAX, etc.) take advantage of SIMD, multi-core, or
+  GPU execution.
+
+Vectorisation can be combined with **parallelisation**. For example, parallelising
+independent chains or tasks across CPU cores or devices can further reduce wall-clock
+time, provided that:
+
+- the cost of launching parallel jobs and synchronising results is small compared to the
+  work done per task,
+- memory usage remains within the limits of each device,
+- the random seeds and PRNG handling are designed to keep chains statistically
+  independent (Open Data Science, 2019).
+
+The trade-off is that more parallelism is not always better: beyond a certain point, the
+overhead can outweigh the benefits, especially for small models or very short runs.
+
+5.5 Reproducibility & randomness
+
+Randomness is essential to many probabilistic methods, but it can also make performance
+difficult to reason about. To keep experiments reproducible:
+
+- **Set random seeds deliberately.** Using fixed seeds for NumPy, JAX, and other
+  backends ensures that repeated runs with the same configuration produce comparable
+  results (Open Data Science, 2019).
+
+- **Log all relevant settings.** This includes seeds, dataset versions, batch sizes,
+  hardware configuration, and important hyperparameters.
+
+- **Balance reproducibility and exploration.** During debugging or benchmarking, fixed
+  seeds are helpful. For final experiments, it may be preferable to run multiple
+  independent seeds to understand variability.
+
+Reproducibility is not just about fairness in comparison; it also makes performance
+optimisation much easier, because you can be confident that changes in runtime are due to
+code changes rather than random fluctuations.
+
+5.6 Performance checklist
+
+Before launching a large, expensive run, it is useful to walk through a short checklist:
+
+- **Model & algorithm**
+  - Is the chosen inference method appropriate for the model structure?
+  - Are there unnecessary layers, parameters, or transformations that could be removed?
+
+- **Implementation**
+  - Are the main computations vectorised rather than written as Python loops?
+  - Have you avoided repeated work, such as recomputing static quantities inside the main
+    loop?
+
+- **Data pipeline**
+  - Is data loading and preprocessing fast enough compared to the model computation?
+  - Are you using batching or mini-batching where appropriate?
+
+- **Resources**
+  - Is the model configured to use available hardware (CPU cores, GPU, memory) sensibly?
+  - Is logging kept at a reasonable level so it does not become an I/O bottleneck?
+
+- **Reproducibility**
+  - Are random seeds set and logged?
+  - Can you reliably reproduce a small profiling run before scaling up?
+
+Answering these questions ahead of time helps avoid wasted compute and makes it easier to
+interpret the results of large experiments.
+
+
 
 .. bibliography::
 Kingma, D. P., & Welling, M. (2014). Auto-encoding variational Bayes. *Proceedings of the 2nd
@@ -1340,5 +1488,16 @@ TensorFlow. (2024b, August 15).
 Better performance with the tf.data API.
 TensorFlow Guide.
 https://www.tensorflow.org/guide/data_performance
+
+Harris, C. R., Millman, K. J., van der Walt, S. J., Gommers, R., Virtanen, P.,
+Cournapeau, D., … Oliphant, T. E. (2020). Array programming with NumPy.
+*Nature*, 585(7825), 357–362. https://doi.org/10.1038/s41586-020-2649-2
+
+Open Data Science. (2019, April 24). *Properly setting the random seed in ML experiments:
+Not as simple as you might imagine*. OpenDataScience.com.
+https://opendatascience.com/properly-setting-the-random-seed-in-ml-experiments-not-as-simple-as-you-might-imagine/
+
+Python Software Foundation. (n.d.). *The Python profilers*. Python documentation.
+https://docs.python.org/3/library/profile.html
 
 
