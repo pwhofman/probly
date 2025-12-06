@@ -709,437 +709,408 @@ results are telling you (Tu, 2024; Tyagi, 2025; Zinkevich, n.d.; Pati, 2025).
 4. Integration with Other Frameworks
 ------------------------------------
 
-This chapter assumes that you often want to use ``probly`` together with other tools:
-neural-network libraries, data pipelines, or classical ML components. The goal is not to cover
-every integration pattern in detail, but to give you a mental model of how ``probly`` fits into
-larger systems and what to watch out for when wiring different libraries together.
+This chapter assumes that you sometimes want to use ``probly`` together with other
+tools: neural-network libraries, data pipelines, or classic ML components.  
+The goal is not to cover every possible setup, but to give you an idea of how
+``probly`` can fit into a larger system and what to watch out for at the
+boundaries.
 
 .. note::
 
-   At the moment, ``probly`` provides first-class helpers and maintained examples for
+   Right now, ``probly`` has first-class helpers and maintained examples for
    **PyTorch** and **Flax/JAX** only.
 
    References to other libraries in this section (such as TensorFlow, ``tf.data``,
-   TensorFlow Probability, or scikit-learn) are intended as *conceptual* integration
-   patterns or ideas for future extensions, **not** as built-in, officially supported
-   backends.
+   or scikit-learn) are meant as *conceptual* integration patterns or ideas for
+   your own adapters, **not** as built-in, officially supported backends.
 
 4.1 General integration concepts
 
-When integrating ``probly`` with other frameworks (Flax, TensorFlow, scikit-learn, etc.), three
-recurring themes show up:
+When you connect ``probly`` with other frameworks, three questions come up over
+and over again:
 
-- how **data flows** between components,  
+- how **data** moves between components,  
 - how **types, shapes, and devices** are handled,  
-- how **randomness and seeding** are coordinated.
+- how **randomness and seeds** are managed.
 
-**Data flow between our library and other libraries**
+**Data flow between ``probly`` and other libraries**
 
-At a high level, ``probly`` consumes and produces arrays: batches of inputs, parameter vectors,
-uncertainty representations, and so on. Other frameworks do the same, but often with their own
-array types:
+``probly`` works with array-like objects: batches of inputs, parameter vectors,
+and uncertainty representations. Other libraries do the same, but each has its
+own types:
 
 - JAX / Flax use JAX arrays and pytrees,  
-- TensorFlow uses ``tf.Tensor`` and ``tf.data.Dataset`` objects (TensorFlow, 2024a),  
-- scikit-learn expects NumPy arrays or array-like structures as inputs (scikit-learn Developers,
-  2024).
+- TensorFlow uses ``tf.Tensor`` and ``tf.data.Dataset`` (TensorFlow, 2024),  
+- scikit-learn expects NumPy arrays or “array-like” objects for ``fit`` and
+  ``predict`` (scikit-learn Developers, 2024).
 
-The main integration task is to **convert between these representations in a controlled way**.
-This typically means:
+When integrating, the main job is to **convert between these array types in a
+controlled place**. In practice this usually means:
 
-- deciding in which library the “main” computation lives (for example, running models in JAX and
-  converting data from TensorFlow or NumPy when needed),  
-- minimising the number of conversions (for example, not converting back and forth inside inner
-  training loops),  
-- keeping a clear boundary in your code where data moves from one framework to another.
+- deciding where the **main computation** lives (e.g. in JAX/Flax or PyTorch),  
+- converting data *once* at a clear boundary (not back and forth inside tight
+  loops),  
+- keeping helper functions like ``to_jax_array(...)`` or ``to_numpy(...)`` in one
+  module so you can change them later if needed.
 
-**Type, shape, and device (CPU/GPU) considerations**
+**Types, shapes, and devices (CPU/GPU)**
 
-Array libraries are strict about shapes and dtypes:
+Array libraries are quite strict about shapes and dtypes. For example,
+``tf.data`` datasets produce elements with a fixed structure and shape
+(TensorFlow, 2024), and scikit-learn’s estimators assume 2D matrices of shape
+``(n_samples, n_features)`` (scikit-learn Developers, 2024).
 
-- TensorFlow’s ``tf.data`` pipeline builds datasets as sequences of elements where each element
-  has a fixed structure and shape (TensorFlow, 2024a),  
-- scikit-learn’s estimator API assumes 2D feature matrices of shape
-  ``(n_samples, n_features)`` for most supervised learning tasks (scikit-learn Developers, 2024),  
-- Flax / JAX models typically assume explicit batch dimensions and well-defined dtypes.
+To avoid surprises, it helps to:
 
-When integrating with ``probly``, it helps to:
-
-- decide on a **canonical shape convention** (for example: leading batch dimension, channel
-  ordering, etc.),  
-- standardise dtypes (e.g. always using ``float32`` unless there is a reason to do otherwise),  
-- ensure that arrays live on the right **device** (CPU vs GPU/TPU) before calling library
+- settle on a simple **shape convention** (e.g. “batch dimension first”),  
+- standardise dtypes (usually ``float32`` for model inputs),  
+- move arrays to the correct **device** (CPU vs GPU) *before* calling library
   functions.
 
-Moving data between devices (CPU ↔ GPU) is often more expensive than moving it between Python
-functions in the same library, so it is worth designing your integration to minimise those hops.
+Copying data between CPU and GPU is often more expensive than calling another
+Python function, so you want to minimise those device hops.
 
-**Randomness and seed management across frameworks**
+**Randomness and seeds across frameworks**
 
-Different frameworks handle randomness differently:
+Different frameworks treat randomness differently:
 
-- JAX uses **explicit PRNG keys**. You create a key from an integer seed and then split it as you
-  need more randomness, rather than relying on a global RNG (JAX Authors, n.d.).  
-- Flax builds on this system and treats RNG streams as part of the module’s state and lifecycle
-  (Flax Developers, n.d.-a, n.d.-b).  
-- TensorFlow and NumPy use more traditional global or graph-local RNGs, controlled by functions
-  such as ``tf.random.set_seed`` or ``numpy.random.seed`` (TensorFlow, 2024a; JAX Authors, n.d.).
+- JAX uses **explicit PRNG keys**: you create a key from a seed and then *split*
+  it whenever you need fresh randomness (JAX Authors, n.d.).  
+- Flax builds on this and treats RNG streams as part of a module’s state and
+  lifecycle (Flax Developers, n.d.).  
+- Many other libraries (TensorFlow, NumPy, PyTorch) use global or graph-local
+  RNGs with functions like ``set_seed`` (TensorFlow, 2024).
 
-When combining these with ``probly``, a good rule of thumb is:
+A simple pattern for combined setups is:
 
-- pick one library (often JAX in a Flax/``probly`` setup) as the “source of truth” for randomness,  
-- derive and pass keys or seeds *into* other parts of the system, instead of letting each library
-  silently manage its own global RNG,  
-- log the seeds/keys used for important experiments so that runs can be reproduced.
+- pick one library (often JAX in a Flax/``probly`` project) as the **main source
+  of randomness**,  
+- derive keys or seeds from there and pass them into other parts of the system,  
+- log the seeds/keys you used for important runs so they can be reproduced later
+  (JAX Authors, n.d.).
 
 4.2 Using ``probly`` with Flax
 
-Flax is a neural-network library built on top of JAX. It provides a **Module** abstraction that
-manages parameters, state, and randomness in a structured way (Flax Developers, n.d.-a,
-n.d.-b). This makes it a natural companion for ``probly`` when you need neural networks as part
-of a probabilistic model.
+Flax is a neural-network library on top of JAX. It provides a **Module**
+abstraction that cleanly separates parameters, state, and randomness
+(Flax Developers, n.d.). This makes it a natural match for ``probly`` when you
+want neural nets inside a probabilistic model.
 
-**Typical workflow: Flax for neural nets, `probly` for probabilistic parts**
+**Typical workflow: Flax for neural nets, ``probly`` for probabilistic parts**
 
-A common pattern looks like this:
+A common setup looks like this:
 
-1. Define a Flax model (for example, an encoder or feature extractor) as a Linen Module.  
-2. Initialise the Flax model to obtain a **variables dict** that contains parameters and any
-   state (e.g. batch statistics) (Flax Developers, n.d.-a).  
-3. Define a ``probly`` model that takes the Flax outputs (representations, logits, etc.) as
-   inputs to probabilistic components (likelihoods, uncertainty representations, priors).  
-4. Build a joint training or inference loop that updates both Flax parameters and ``probly``
-   parameters in a consistent way.
+1. Define a Flax model (for example, an encoder or feature extractor) as a Linen
+   Module.  
+2. Initialise the Flax model to get a **variables dict** that holds parameters
+   and any extra state (e.g. batch-norm statistics) (Flax Developers, n.d.).  
+3. Define a ``probly`` model that takes the Flax outputs (features, logits,
+   etc.) as inputs to probabilistic components (likelihoods, priors, uncertainty
+   heads).  
+4. Build a training or inference loop that updates both the Flax parameters and
+   the ``probly`` parameters together.
 
-Flax documentation emphasises the separation between **computation** and **parameters/state**:
-“Modules offer a Pythonic abstraction … that have state, parameters and randomness on top of JAX”
-(Flax Developers, n.d.-b). ``probly`` can treat these parameters as part of a larger probabilistic
-model, while reusing Flax’s building blocks for the deterministic parts.
+Flax’s design highlights the difference between **computation** and
+**parameters/state**: modules define the computation, while parameters and state
+live in separate data structures (Flax Developers, n.d.). ``probly`` can then
+treat those parameters as just another part of the probabilistic model.
 
 **Sharing parameters and state**
 
-In a joint Flax+ ``probly`` setup, you often want to:
+In a joint Flax+``probly`` model you typically want:
 
-- keep all learnable quantities (Flax parameters, ``probly`` parameters) in a single **PyTree**
-  so that optimisers can see and update everything,  
-- clearly separate **deterministic state** (e.g. batch statistics) from **stochastic parameters**
-  so that inference algorithms know what should be treated as random.
+- all learnable parameters (Flax + ``probly``) inside one combined PyTree,  
+- deterministic state (e.g. running means) clearly separated from stochastic
+  parameters.
 
-A practical approach is to:
+A small helper that packs and unpacks these pieces makes it easy for optimisers
+to see “one big parameter object” while still keeping a clear structure inside.
 
-- treat the Flax ``variables["params"]`` as one subset of the parameters,  
-- treat ``probly``’s own parameters as another subset,  
-- design a small utility that packs/unpacks these subsets from a combined structure passed into
-  optimisers and inference routines.
+**PRNG handling**
 
-**PRNG handling and common gotchas**
+Both JAX and Flax use explicit PRNG keys. The JAX docs emphasise that keys are
+pure values and that you should **never reuse the same key twice** (JAX Authors,
+n.d.). Flax modules provide helpers like ``make_rng`` to get new keys when they
+need randomness (Flax Developers, n.d.).
 
-Both Flax and JAX rely on explicit PRNG keys; the JAX random-number documentation highlights that
-keys are *pure values* and must be split to produce independent streams (JAX Authors, n.d.).
-Flax modules provide helper methods such as ``make_rng`` to obtain new keys inside modules
-(Flax Developers, n.d.-b).
+For a stable integration, treat keys just like any other input:
 
-Typical gotchas include:
-
-- accidentally reusing the same key across multiple calls (leading to correlated “random” values),  
-- mixing global RNGs (e.g. ``numpy.random``) with JAX/Flax keys in a way that is hard to
-  reproduce,  
-- forgetting to thread keys through ``probly``’s probabilistic components when they need
-  randomness.
-
-A robust integration treats PRNG keys just like any other part of the model state: they are
-explicit, passed around deliberately, and included in experiment logs when reproducibility
-matters.
+- thread them through your top-level training/inference functions,  
+- split them where you need extra randomness,  
+- store the initial seed in your experiment logs.
 
 4.3 Using ``probly`` with TensorFlow
 
 .. note::
 
-   ``probly`` does **not** currently ship an official TensorFlow backend or ready-made
-   integration module. This subsection describes how you *could* wire ``probly`` together
-   with TensorFlow and ``tf.data`` in your own projects, by analogy with other frameworks.
+   ``probly`` does **not** currently ship an official TensorFlow backend.  
+   The patterns in this subsection describe how you *could* connect things in
+   your own code, by analogy with other frameworks.
 
-TensorFlow provides a powerful ecosystem for building data pipelines, training loops, and
-serving infrastructure. A custom integration with ``probly`` would usually focus on **using
-TensorFlow for data and training orchestration**, while letting ``probly`` handle probabilistic
-modelling.
+TensorFlow is often used for input pipelines and training infrastructure. A
+typical custom integration would use **TensorFlow for data and orchestration**
+and **``probly`` for the probabilistic core**.
 
-**Passing TensorFlow tensors and datasets into `probly`**
+**Passing TensorFlow data into ``probly``**
 
-TensorFlow’s ``tf.data`` API introduces a ``tf.data.Dataset`` abstraction that represents a
-sequence of elements, where each element consists of one or more tensors (TensorFlow, 2024a).
-You can create datasets from memory, TFRecord files, and many other sources, and then apply
-transformations like ``map`` and ``batch`` to build efficient pipelines.
+TensorFlow’s ``tf.data`` API represents datasets as streams of elements
+(tensors) that you can map, batch, and shuffle (TensorFlow, 2024). In a
+TensorFlow+``probly`` workflow you might:
 
-In a TensorFlow+ ``probly`` workflow, a typical pattern is:
+- build a ``tf.data.Dataset`` that yields batches of inputs and targets,  
+- inside the training loop, turn each batch into NumPy or JAX arrays in the
+  format ``probly`` expects,  
+- call the ``probly`` model on these arrays,  
+- optionally convert results (e.g. predictions, uncertainties) back to tensors
+  if you want to use TensorFlow tools like TensorBoard.
 
-- build a ``tf.data.Dataset`` that yields batches of inputs and labels (TensorFlow, 2024a),  
-- inside a Python or ``tf.function`` training loop, convert each batch into the array type
-  expected by ``probly`` (for example, NumPy arrays or JAX arrays),  
-- call the ``probly`` model or log-likelihood on these batches,  
-- optionally convert results (e.g. predictions, uncertainty measures) back to TensorFlow tensors
-  if you want to integrate with other TF components.
+**Training loops and performance**
 
-**Integrating with TensorFlow training loops**
-
-You can integrate ``probly`` with TensorFlow training in several ways:
-
-- treat ``probly`` as a **black-box model**: in each training step, get a batch from
-  ``tf.data``, convert it, run ``probly``, and update parameters using your chosen optimiser;  
-- embed ``probly`` calls inside a ``tf.function`` for performance, as long as the conversions and
-  control flow are compatible with TensorFlow’s tracing model;  
-- use TensorFlow’s metrics and logging (e.g. TensorBoard) to monitor losses and uncertainty
-  metrics produced by ``probly``.
-
-Performance guides for ``tf.data`` stress the importance of overlapping input-pipeline work with
-model execution using operations like ``prefetch`` and careful pipeline construction
-(TensorFlow, 2024b). The same advice applies here: make sure your input pipeline is not the
-bottleneck when calling into ``probly``.
-
-**Known limitations and patterns**
-
-Because TensorFlow and JAX/NumPy have different execution models and device handling, there are
-trade-offs in any such custom integration:
-
-- cross-framework calls introduce overhead and can complicate gradient computation,  
-- some advanced TensorFlow features (e.g. distribution strategies) may not work smoothly if the
-  core model lives outside of TensorFlow,  
-- it is often simpler to use TensorFlow mainly for **data pipelines and infrastructure**, while
-  keeping the heavy numerical work inside a single array framework that ``probly`` is built on.
+You can treat ``probly`` as a black-box model called from a TensorFlow training
+loop. Performance guides for ``tf.data`` recommend overlapping input loading
+with model execution using things like ``prefetch`` and parallel ``map``
+(TensorFlow, 2024). The same idea applies here: make sure the data pipeline
+keeps the probabilistic model busy instead of letting it wait for I/O.
 
 4.4 Using ``probly`` with scikit-learn
 
 .. note::
 
-   ``probly`` does not currently include a built-in scikit-learn wrapper. The patterns in
-   this subsection show how you could implement your **own** adapter class that follows the
-   standard estimator API.
+   ``probly`` does not currently include a built-in scikit-learn adapter.  
+   The code patterns here are suggestions for writing your **own** wrapper that
+   follows scikit-learn’s estimator API.
 
-scikit-learn provides a standard **estimator interface** objects with ``fit``, ``predict``,
-and often ``score`` methods plus tools like ``Pipeline`` and ``GridSearchCV`` for combining and
-tuning models. The scikit-learn developer guide describes ``fit`` as the method “where the
-training happens” and specifies that it should take the training data ``X`` and (for supervised
-learning) ``y`` as inputs and return the estimator itself (scikit-learn Developers, 2024).
+scikit-learn defines a standard estimator interface with methods like ``fit``,
+``predict``, and ``score``. The developer guide explains that ``fit`` is “where
+the training happens” and that estimators should follow common rules for inputs
+and attributes (scikit-learn Developers, 2024).
 
-To integrate ``probly`` into this ecosystem, you can wrap a ``probly`` model in a thin
-scikit-learn-style estimator.
+To plug ``probly`` into this ecosystem, you can write a small wrapper class.
 
-**Wrapping a `probly` model as an estimator**
+**Wrapping a ``probly`` model as an estimator**
 
-A minimal wrapper class might:
+A minimal wrapper might:
 
-- accept configuration arguments in ``__init__`` (for example, model structure, prior settings,
-  inference method),  
-- implement ``fit(X, y=None)`` to run ``probly``’s training or inference on the data,  
-- implement ``predict(X)`` or ``predict_proba(X)`` to return point predictions or uncertainty
-  summaries,  
-- optionally implement ``score(X, y)`` using scikit-learn’s metrics or your own metric.
+- take configuration options (model structure, priors, inference method) in
+  ``__init__``,  
+- implement ``fit(X, y=None)`` to run ``probly``’s training or inference on the
+  given data,  
+- implement ``predict(X)`` or ``predict_proba(X)`` to return point predictions
+  or uncertainty summaries,  
+- optionally implement ``score(X, y)`` using scikit-learn metrics or your own
+  custom metric.
 
-This follows the standard estimator design described in scikit-learn’s developer documentation
-(scikit-learn Developers, 2024) and allows your custom ``probly`` estimator to be used with tools
-such as ``cross_val_score`` and ``cross_validate`` for evaluation (scikit-learn, 2024a).
+If your wrapper follows the standard estimator rules, it can be used with
+scikit-learn tools like cross-validation and grid search (scikit-learn
+Developers, 2024).
 
-**Using `probly` in pipelines and cross-validation**
+**Pipelines and cross-validation**
 
-Once wrapped, your ``probly`` estimator can be plugged into scikit-learn’s ``Pipeline``, which is
-defined as “a sequence of data transformers with an optional final predictor” (scikit-learn,
-2024b). Pipelines make it easy to:
-
-- chain preprocessing steps (e.g. scaling, feature selection) with your ``probly`` estimator,  
-- tune hyperparameters across all steps using ``GridSearchCV`` or ``RandomizedSearchCV``,  
-- evaluate the whole pipeline with cross-validation, ensuring that preprocessing is learned only
-  on training folds (scikit-learn, 2024a, 2024b).
-
-From ``probly``’s perspective, the key requirement is simply that your wrapper behaves like a
-scikit-learn estimator: support the right methods and follow the standard conventions for inputs
-and attributes.
+Once wrapped, a ``probly`` estimator can be placed inside a scikit-learn
+``Pipeline`` together with preprocessing steps, and then evaluated with
+cross-validation. The advantage is that preprocessing and modelling are tuned
+and evaluated together, using familiar tools from the scikit-learn ecosystem
+(scikit-learn Developers, 2024).
 
 4.5 Interoperability best practices
 
-When connecting ``probly`` to other frameworks, a few general best practices help avoid
-frustrating bugs and performance issues.
+A few habits make life much easier when ``probly`` and other frameworks meet:
 
-**Device management (CPU/GPU)**
+**Device management**
 
-- Decide early which **devices** will run which parts of the system. For example, you might keep
-  your Flax/``probly`` model entirely on GPU, while scikit-learn components run on CPU.  
-- Minimise device transfers by grouping computations: move a batch *once* to GPU, perform all
-  relevant model calls there, and only bring back aggregated results.  
-- When using libraries like TensorFlow’s ``tf.data`` on GPU, follow their performance guidelines
-  (e.g. prefetching, parallel mapping) to keep accelerators fully utilised (TensorFlow, 2024b).
+- Decide early which parts run on CPU and which on GPU.  
+- Move a batch to the target device **once**, do all the work there, then move
+  back only summary results if needed.  
+- Avoid hidden device transfers in utility functions.
 
-**Version compatibility tips**
+**Version management**
 
-- Pin versions of core libraries (JAX, Flax, TensorFlow, scikit-learn, etc.) in your environment
-  and CI configuration. Many of these libraries publish compatibility notes (for example, which
-  JAX versions are supported by a given Flax release).  
-- Avoid mixing very old and very new versions of closely related libraries, as subtle API changes
-  (especially around randomness and device placement) can cause integration problems.  
-- Document the versions used for key experiments so that collaborators can recreate your setup.
+- Pin versions of key libraries (JAX, Flax, PyTorch, TensorFlow, scikit-learn)
+  so everyone runs the same stack.  
+- Note any known compatibility requirements (for example, which JAX version a
+  given Flax release expects) (Flax Developers, n.d.).  
+- Record the versions used for important experiments.
 
-**Debugging errors across library boundaries**
+**Debugging across library boundaries**
 
-Cross-library bugs are often about **mismatched assumptions**: incorrect shapes, wrong dtypes,
-inconsistent devices, or misaligned RNG handling. When debugging:
+Cross-library bugs usually come from mismatched assumptions:
 
-- start with a very small example that uses the integration boundary only (for example, one batch
-  flowing from a ``tf.data.Dataset`` into a ``probly`` model),  
-- inspect and log shapes, dtypes, and devices right before and after conversion points,  
-- temporarily disable advanced features (JIT compilation, complex pipelines) to reduce the search
-  space,  
-- re-run with fixed seeds and controlled randomness to see if errors are deterministic (JAX
-  Authors, n.d.; TensorFlow, 2024a).
+- shape or dtype mismatches,  
+- data accidentally on the wrong device,  
+- inconsistent random-number handling.
 
-By treating the integration points as first-class components carefully designed, tested, and
-documented, you can combine ``probly`` with other frameworks without turning your project into a
-black box.
+When debugging:
 
+- start with a tiny example that only tests the hand-off between libraries,  
+- print/log shapes, dtypes, and devices right before and after conversion
+  points,  
+- disable advanced features like JIT or complex pipelines until the basics
+  work,  
+- re-run with fixed seeds so you can tell whether errors are deterministic
+  (JAX Authors, n.d.; TensorFlow, 2024).
+
+If you treat integration points as “first-class citizens” and give them a bit
+of structure and testing, you can combine ``probly`` with other frameworks
+without turning the whole project into a black box.
 
 5. Performance & Computational Efficiency
 -----------------------------------------
 
 5.1 Understanding performance bottlenecks
 
-When a model feels “slow”, the first step is to understand **where the time is actually
-spent**. For typical ``probly`` workflows, the main bottlenecks are:
+When a model feels “slow”, the first step is to understand **where the time is
+actually spent**. In typical ``probly`` workflows, bottlenecks usually fall into
+a few simple categories:
 
-- **CPU compute**: scalar Python loops, non-vectorised NumPy operations, or expensive
-  Python-level bookkeeping.
-- **GPU compute**: large matrix multiplications or convolutions that fully occupy the GPU.
-- **I/O**: loading data from disk, the network, or very slow preprocessing.
-- **Python overhead**: frequent Python function calls, dynamic graph construction, or
-  heavy logging that prevents libraries from executing efficiently in compiled code.
+- **CPU compute** – lots of Python loops, non-vectorised NumPy operations, or
+  heavy bookkeeping in pure Python.
+- **GPU compute** – large matrix multiplications or convolutions that fully
+  load the GPU.
+- **I/O** – reading data from disk or the network, or slow preprocessing.
+- **Python overhead** – very frequent function calls, dynamic graph building,
+  or extremely verbose logging.
 
-Profiling tools help to diagnose these issues. For example, the standard Python profilers
-collect “statistics that describe how often and for how long various parts of the program
-executed” (Python Software Foundation, n.d.), which makes it easier to see whether time is
-dominated by your model code, the data pipeline, or external libraries.
+Profiling tools help you see which of these dominates. The standard Python
+profilers, for example, record “how often and for how long various parts of the
+program executed” (Python Software Foundation, n.d.), so you can check whether
+time goes into your model, the data pipeline, or external libraries.
 
-In practice, it is useful to adopt a simple routine:
+A simple routine that works well in practice:
 
-- run a **small experiment** with realistic settings,
-- profile the run to identify the **slowest functions and lines**,
-- focus optimisation efforts only on the few hot spots that clearly dominate runtime.
+- run a **small experiment** with realistic settings,  
+- profile the run to find the **slowest functions/lines**,  
+- focus optimisation on the few places that clearly dominate runtime.
+
+You do not need perfect measurements – just enough to see where the main time
+sink is.
 
 5.2 Profiling your ``probly`` code
 
-Profiling does not have to be complicated. For many questions, it is enough to:
+Profiling your code can stay very simple. In many cases, it is enough to:
 
-- use a **function-level profiler** (e.g., ``cProfile``) to find the most expensive calls
-  (Python Software Foundation, n.d.),
-- complement this with a **line-level or memory profiler** when you suspect specific
-  sections of code are responsible for high memory usage or unexpected slowdowns.
+- use a **function-level profiler** (like ``cProfile``) to find the most
+  expensive calls (Python Software Foundation, n.d.),  
+- add a **line-level or memory profiler** only when you suspect a specific
+  block of code.
 
-A practical workflow might look like this:
+A practical workflow:
 
-1. Wrap the main training / inference loop in a profiler context.
-2. Run a short experiment on a subset of the data.
-3. Sort the profiler output by **cumulative time** to find the most expensive functions.
-4. For one or two of these functions, use a line profiler or targeted logging to drill
-   down further.
+1. Wrap your main training or inference loop in a profiler context.  
+2. Run a short experiment on a subset of the data.  
+3. Sort the output by **cumulative time** to see the top few functions.  
+4. For one or two of those, use a line profiler or add logging to see what is
+   really happening.
 
-The goal is not to micro-optimise everything, but to answer concrete questions such as:
+The goal is not to optimise every line. You just want to answer questions like:
 
-- Is the time spent mostly in ``probly`` / NumPy / JAX, or in custom Python code?
-- Is data loading or preprocessing slower than the actual model computations?
-- Do a few functions account for most of the runtime?
+- Is the time mostly in ``probly`` / NumPy / JAX, or in my own Python glue
+  code?  
+- Is data loading slower than the model itself?  
+- Are there one or two functions that dominate runtime?
 
-Once you know this, the optimisation strategy usually becomes obvious.
+Once you know that, it is much easier to decide what to change.
 
 5.3 Algorithmic improvements
 
-Before tuning low-level details, it is often more effective to change the **algorithm**
-itself:
+Before you tweak low-level details, it often helps more to change the
+**algorithmic setup**:
 
-- **Choose inference methods suited to your model.** Some models work well with simple
-  optimisation-based approaches, while others require more expressive samplers. Methods
-  with better convergence behaviour can dramatically reduce total runtime, even if each
-  step is slightly more expensive.
+- **Pick an inference method that fits the model.**  
+  Some models work fine with simple optimisation; others need richer samplers.
+  A method with better convergence can cut total runtime a lot, even if each
+  step is a bit slower.
 
-- **Simplify or re-parameterise the model.** Alternative parameterisations can improve
-  gradient flow, reduce pathological curvature, or make constraints easier to handle. This
-  often leads to faster convergence and fewer required iterations.
+- **Simplify or re-parameterise the model.**  
+  Better parameterisations can improve gradient flow, avoid extreme curvature,
+  and make constraints easier to handle. That usually means fewer iterations
+  and more stable training.
 
-- **Re-use previous runs.** Warm starts, cached results, or saved initialisations can
-  avoid repeating expensive computations. For example, you might start a new experiment
-  from the parameters of a previous run with similar settings instead of reinitialising
-  from scratch.
+- **Re-use previous runs.**  
+  Warm-start from parameters that already work reasonably well, or cache
+  expensive intermediate results. There is no need to recompute everything from
+  scratch if a similar experiment has already been done.
 
-Many performance problems disappear once the model and inference method are well aligned
-with the task.
+Many “performance problems” disappear once the model and inference method are a
+good match for the task.
 
 5.4 Vectorisation & parallelisation
 
-Low-level performance often comes from **doing more work per call** rather than adding
-more explicit loops. Numerical Python libraries such as NumPy are designed so that
-vectorised operations “push” work into efficient compiled kernels instead of looping in
-pure Python (Harris et al., 2020). In the context of ``probly``, this means:
+Low-level speed usually comes from **doing more work per call**, not from
+writing more loops. Array libraries like NumPy are designed so that you express
+operations on whole arrays and they run in fast compiled code instead of pure
+Python (Harris et al., 2020).
 
-- prefer **batch operations** over explicit Python loops,
-- structure code so that entire arrays of parameters, samples, or observations can be
-  processed at once,
-- let the underlying backend (NumPy, JAX, etc.) take advantage of SIMD, multi-core, or
-  GPU execution.
+In ``probly``, this means:
 
-Vectorisation can be combined with **parallelisation**. For example, parallelising
-independent chains or tasks across CPU cores or devices can further reduce wall-clock
-time, provided that:
+- prefer **batch operations** over manual Python ``for``-loops,  
+- write code so that entire arrays of parameters, samples, or observations can
+  be processed at once,  
+- let the backend (NumPy, JAX, etc.) use SIMD, multi-core CPUs, or GPUs.
 
-- the cost of launching parallel jobs and synchronising results is small compared to the
-  work done per task,
-- memory usage remains within the limits of each device,
-- the random seeds and PRNG handling are designed to keep chains statistically
-  independent (Open Data Science, 2019).
+You can combine this with **parallelisation**:
 
-The trade-off is that more parallelism is not always better: beyond a certain point, the
-overhead can outweigh the benefits, especially for small models or very short runs.
+- run independent chains or tasks on different CPU cores or devices,  
+- make sure the work per task is large enough so that parallel overhead does
+  not dominate,  
+- keep seeds and random-number streams clearly separated, so parallel chains
+  really are independent (Open Data Science, 2019).
+
+More parallelism is not always better: if each task is tiny, the overhead of
+starting and syncing workers can outweigh any speedup.
 
 5.5 Reproducibility & randomness
 
-Randomness is essential to many probabilistic methods, but it can also make performance
-difficult to reason about. To keep experiments reproducible:
+Randomness is central to probabilistic modelling but can make performance
+harder to debug if every run behaves differently. A few simple habits help:
 
-- **Set random seeds deliberately.** Using fixed seeds for NumPy, JAX, and other
-  backends ensures that repeated runs with the same configuration produce comparable
-  results (Open Data Science, 2019).
+- **Set random seeds on purpose.**  
+  Use fixed seeds for NumPy, JAX, and other backends so that runs with the same
+  settings produce comparable results (Open Data Science, 2019).
 
-- **Log all relevant settings.** This includes seeds, dataset versions, batch sizes,
-  hardware configuration, and important hyperparameters.
+- **Log important settings.**  
+  Store seeds, dataset versions, batch sizes, hardware info, and key
+  hyperparameters somewhere (config files, experiment tracker, or logs).
 
-- **Balance reproducibility and exploration.** During debugging or benchmarking, fixed
-  seeds are helpful. For final experiments, it may be preferable to run multiple
-  independent seeds to understand variability.
+- **Balance reproducibility and exploration.**  
+  During debugging and profiling, fixed seeds are very helpful. For final
+  experiments, you might run several seeds to see how stable the results are.
 
-Reproducibility is not just about fairness in comparison; it also makes performance
-optimisation much easier, because you can be confident that changes in runtime are due to
-code changes rather than random fluctuations.
+Good reproducibility is not just “nice for papers”; it makes performance tuning
+much easier, because you know that changes in runtime or metrics are due to
+your code changes, not random noise.
 
 5.6 Performance checklist
 
-Before launching a large, expensive run, it is useful to walk through a short checklist:
+Before you launch a big and expensive run, a quick checklist can save a lot of
+time:
 
 - **Model & algorithm**
-  - Is the chosen inference method appropriate for the model structure?
-  - Are there unnecessary layers, parameters, or transformations that could be removed?
+  - Does the inference method make sense for this model?  
+  - Are there layers, parameters, or transforms you can remove without losing
+    quality?
 
 - **Implementation**
-  - Are the main computations vectorised rather than written as Python loops?
-  - Have you avoided repeated work, such as recomputing static quantities inside the main loop?
+  - Are your main computations vectorised, or are there slow Python loops in
+    the hot path?  
+  - Are you avoiding repeated work (e.g. recomputing static features inside the
+    main loop)?
 
 - **Data pipeline**
-  - Is data loading and preprocessing fast enough compared to the model computation?
-  - Are you using batching or mini-batching where appropriate?
+  - Is data loading fast enough compared to the model compute?  
+  - Are you using batching or mini-batching to keep memory usage under control?
 
 - **Resources**
-  - Is the model configured to use available hardware (CPU cores, GPU, memory) sensibly?
-  - Is logging kept at a reasonable level so it does not become an I/O bottleneck?
+  - Is the model using available hardware (CPU cores, GPU, memory) in a
+    sensible way?  
+  - Is logging set to a reasonable level so it does not become an I/O
+    bottleneck?
 
 - **Reproducibility**
-  - Are random seeds set and logged?
-  - Can you reliably reproduce a small profiling run before scaling up?
+  - Are seeds and key settings stored somewhere?  
+  - Can you reproduce a small profiling run before scaling up?
 
-Answering these questions ahead of time helps avoid wasted compute and makes it easier to
-interpret the results of large experiments.
+If you can honestly tick these boxes, you are much less likely to waste compute
+and far more likely to understand what your large ``probly`` runs are doing.
 
 6. Advanced Usage Patterns & Recipes
 ------------------------------------
