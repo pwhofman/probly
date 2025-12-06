@@ -121,6 +121,7 @@ validating that uncertainty is meaningful, and making informed decisions based o
 - **Calibration Metrics**: Tools to assess how well uncertainty estimates correspond to actual prediction errors. This includes expected calibration error (ECE), maximum calibration error (MCE), and negative log-likelihood metrics.
 
 - **Visualization Tools**: Methods to visualize uncertainty in predictions through confidence bands, prediction interval plots, and uncertainty heatmaps, aiding in qualitative interpretation and model debugging.
+For a detailed guide on plotting, see our documentation on :ref:`visualisation tools <visualisation-tools-section>`.    
 
 - **Interpretation Techniques**: Approaches to decompose uncertainty into aleatoric (data) and epistemic (model) components, identify which inputs drive uncertainty, and understand the sources and implications of uncertainty in model outputs.
 
