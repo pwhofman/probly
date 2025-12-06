@@ -1081,11 +1081,11 @@ black box.
 When a model feels “slow”, the first step is to understand **where the time is actually
 spent**. For typical ``probly`` workflows, the main bottlenecks are:
 
-- **CPU compute** – scalar Python loops, non-vectorised NumPy operations, or expensive
+- **CPU compute**: scalar Python loops, non-vectorised NumPy operations, or expensive
   Python-level bookkeeping.
-- **GPU compute** – large matrix multiplications or convolutions that fully occupy the GPU.
-- **I/O** – loading data from disk, the network, or very slow preprocessing.
-- **Python overhead** – frequent Python function calls, dynamic graph construction, or
+- **GPU compute**: large matrix multiplications or convolutions that fully occupy the GPU.
+- **I/O**: loading data from disk, the network, or very slow preprocessing.
+- **Python overhead**: frequent Python function calls, dynamic graph construction, or
   heavy logging that prevents libraries from executing efficiently in compiled code.
 
 Profiling tools help to diagnose these issues. For example, the standard Python profilers
