@@ -1202,8 +1202,7 @@ Before launching a large, expensive run, it is useful to walk through a short ch
 
 - **Implementation**
   - Are the main computations vectorised rather than written as Python loops?
-  - Have you avoided repeated work, such as recomputing static quantities inside the main
-    loop?
+  - Have you avoided repeated work, such as recomputing static quantities inside the main loop?
 
 - **Data pipeline**
   - Is data loading and preprocessing fast enough compared to the model computation?
@@ -1257,8 +1256,7 @@ mean and variance (Bishop, 2006).
 In ``probly``, you can:
 
 - represent component-specific parameters and their mixing weights,
-- use discrete or continuous latent variables to indicate which component generated each
-  observation,
+- use discrete or continuous latent variables to indicate which component generated each observation,
 - quantify uncertainty about both the component assignments and the component parameters.
 
 Mixture models are helpful when a single simple distribution is not flexible enough to describe
