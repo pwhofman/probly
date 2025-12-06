@@ -816,6 +816,16 @@ neural-network libraries, data pipelines, or classical ML components. The goal i
 every integration pattern in detail, but to give you a mental model of how ``probly`` fits into
 larger systems and what to watch out for when wiring different libraries together.
 
+.. note::
+
+   At the moment, ``probly`` provides first-class helpers and maintained examples for
+   **PyTorch** and **Flax/JAX** only.
+
+   References to other libraries in this section (such as TensorFlow, ``tf.data``,
+   TensorFlow Probability, or scikit-learn) are intended as *conceptual* integration
+   patterns or ideas for future extensions, **not** as built-in, officially supported
+   backends.
+
 4.1 General integration concepts
 
 When integrating ``probly`` with other frameworks (Flax, TensorFlow, scikit-learn, etc.), three
@@ -945,9 +955,16 @@ matters.
 
 4.3 Using ``probly`` with TensorFlow
 
+.. note::
+
+   ``probly`` does **not** currently ship an official TensorFlow backend or ready-made
+   integration module. This subsection describes how you *could* wire ``probly`` together
+   with TensorFlow and ``tf.data`` in your own projects, by analogy with other frameworks.
+
 TensorFlow provides a powerful ecosystem for building data pipelines, training loops, and
-serving infrastructure. Integration with ``probly`` usually focuses on **using TensorFlow for
-data and training orchestration**, while letting ``probly`` handle probabilistic modelling.
+serving infrastructure. A custom integration with ``probly`` would usually focus on **using
+TensorFlow for data and training orchestration**, while letting ``probly`` handle probabilistic
+modelling.
 
 **Passing TensorFlow tensors and datasets into ``probly``**
 
@@ -984,7 +1001,7 @@ bottleneck when calling into ``probly``.
 **Known limitations and patterns**
 
 Because TensorFlow and JAX/NumPy have different execution models and device handling, there are
-trade-offs:
+trade-offs in any such custom integration:
 
 - cross-framework calls introduce overhead and can complicate gradient computation,  
 - some advanced TensorFlow features (e.g. distribution strategies) may not work smoothly if the
@@ -993,6 +1010,12 @@ trade-offs:
   keeping the heavy numerical work inside a single array framework that ``probly`` is built on.
 
 4.4 Using ``probly`` with scikit-learn
+
+.. note::
+
+   ``probly`` does not currently include a built-in scikit-learn wrapper. The patterns in
+   this subsection show how you could implement your **own** adapter class that follows the
+   standard estimator API.
 
 scikit-learn provides a standard **estimator interface**—objects with ``fit``, ``predict``,
 and often ``score`` methods—plus tools like ``Pipeline`` and ``GridSearchCV`` for combining and
@@ -1015,8 +1038,8 @@ A minimal wrapper class might:
 - optionally implement ``score(X, y)`` using scikit-learn’s metrics or your own metric.
 
 This follows the standard estimator design described in scikit-learn’s developer documentation
-(scikit-learn Developers, 2024) and allows your ``probly`` model to be used with tools such as
-``cross_val_score`` and ``cross_validate`` for evaluation (scikit-learn, 2024a).
+(scikit-learn Developers, 2024) and allows your custom ``probly`` estimator to be used with tools
+such as ``cross_val_score`` and ``cross_validate`` for evaluation (scikit-learn, 2024a).
 
 **Using ``probly`` in pipelines and cross-validation**
 
@@ -1029,9 +1052,9 @@ defined as “a sequence of data transformers with an optional final predictor�
 - evaluate the whole pipeline with cross-validation, ensuring that preprocessing is learned only
   on training folds (scikit-learn, 2024a, 2024b).
 
-From ``probly``’s perspective, the key requirement is simply to behave like a scikit-learn
-estimator: support the right methods and follow the standard conventions for inputs and
-attributes.
+From ``probly``’s perspective, the key requirement is simply that your wrapper behaves like a
+scikit-learn estimator: support the right methods and follow the standard conventions for inputs
+and attributes.
 
 4.5 Interoperability best practices
 
@@ -1072,6 +1095,7 @@ inconsistent devices, or misaligned RNG handling. When debugging:
 By treating the integration points as first-class components—carefully designed, tested, and
 documented—you can combine ``probly`` with other frameworks without turning your project into a
 black box.
+
 
 5. Performance & Computational Efficiency
 -----------------------------------------
