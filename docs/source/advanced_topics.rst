@@ -12,6 +12,7 @@ This chapter explains:
 - when you should read this chapter (recommended after Core Concepts and Main Components).
 
 1.2 Prerequisites & notatin
+
 Before reading this chapter, the reader should already be familiar with:
 
 - the concepts introduced in Core Concepts,  
@@ -21,6 +22,7 @@ Before reading this chapter, the reader should already be familiar with:
 For clarity, this chapter follows the same notation conventions used throughout the ``probly`` documentation.
 
 1.3 Typical advanced use cases
+
 This chapter is intended for scenarios where users go beyond simple examples, such as:
 
 - training or evaluating large or real-world models,  
