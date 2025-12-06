@@ -1220,6 +1220,99 @@ Before launching a large, expensive run, it is useful to walk through a short ch
 Answering these questions ahead of time helps avoid wasted compute and makes it easier to
 interpret the results of large experiments.
 
+6. Advanced Usage Patterns & Recipes
+------------------------------------
+
+6.1 Common advanced modeling patterns
+
+This section sketches a few common “advanced” modelling patterns that often appear in real
+projects. The goal is not to give full mathematical detail, but to show how these ideas fit
+conceptually with ``probly`` and where they are typically useful.
+
+**Hierarchical models**
+
+Hierarchical (or multilevel) models are used when data are organised in groups, levels, or
+contexts—for example students within classes, patients within hospitals, or measurements for
+multiple machines. Instead of fitting a separate model to each group, a hierarchical model
+shares information across groups via higher-level parameters. This “partial pooling” helps
+stabilise estimates, especially when some groups have only a few observations (Gelman & Hill,
+2007).
+
+In ``probly``, hierarchical models can be expressed by:
+
+- defining group-specific parameters (e.g. intercepts or slopes),
+- tying them together through shared hyperparameters,
+- using uncertainty representations to see how much information is borrowed across groups.
+
+This pattern is particularly useful when you care about both overall trends and group-level
+differences.
+
+**Mixture models**
+
+Mixture models assume that the data come from a combination of several latent components, such
+as different customer types, regimes, or clusters. A simple example is a Gaussian mixture
+model, where each data point is generated from one of several Gaussian components with its own
+mean and variance (Bishop, 2006).
+
+In ``probly``, you can:
+
+- represent component-specific parameters and their mixing weights,
+- use discrete or continuous latent variables to indicate which component generated each
+  observation,
+- quantify uncertainty about both the component assignments and the component parameters.
+
+Mixture models are helpful when a single simple distribution is not flexible enough to describe
+your data.
+
+**Time-series and sequential models**
+
+Time-series and sequential models capture data that arrive in order, such as sensor readings,
+financial prices, or user activity over time. Typical goals include forecasting the future,
+detecting regime changes, or understanding temporal structure (Hyndman & Athanasopoulos,
+2018).
+
+With ``probly``, you can:
+
+- build models that include lagged variables, latent states, or dynamic parameters,
+- express uncertainty about future trajectories, not just point forecasts,
+- plug the resulting uncertainty into downstream decision-making or risk analyses.
+
+Often, advanced time-series models combine ideas from hierarchies (e.g. many related series)
+and mixtures (e.g. different regimes or behaviours).
+
+6.2 Reusable templates
+
+As your models become more complex, it is helpful to identify **reusable templates**—small
+patterns that keep recurring across projects. Examples include:
+
+- a standard hierarchical regression block for grouped data,
+- a generic mixture-of-experts block that combines several prediction heads,
+- a time-series forecasting head that can be attached to different feature extractors.
+
+In ``probly``, these templates can be written as functions or modules that:
+
+- take in model-specific pieces (e.g. feature networks, priors, or likelihood choices),
+- expose a clean, well-documented interface,
+- return both predictions and uncertainty representations in a consistent format.
+
+By reusing such templates, you reduce boilerplate, keep designs more uniform across projects,
+and make it easier for others to understand or extend your work.
+
+6.3 Pointers to examples
+
+To make these patterns concrete, it is useful to link each abstract idea to a **worked
+example**:
+
+- For hierarchical models, an example with grouped data (e.g. “schools”, “hospitals”, or
+  “stores”) that walks through model specification, inference, and interpretation.
+- For mixture models, a clustering or anomaly-detection example that shows how component
+  responsibilities and uncertainty can be visualised.
+- For time-series models, a forecasting example that compares point forecasts to predictive
+  intervals over time.
+
+In the long run, the aim is that each advanced pattern described here corresponds to at least
+one notebook in the *Examples & Tutorials* section, so that readers can jump directly from the
+conceptual description to runnable code.
 
 
 .. bibliography::
@@ -1499,5 +1592,22 @@ https://opendatascience.com/properly-setting-the-random-seed-in-ml-experiments-n
 
 Python Software Foundation. (n.d.). *The Python profilers*. Python documentation.
 https://docs.python.org/3/library/profile.html
+
+Bishop, C. M. (2006). *Pattern recognition and machine learning*. Springer.
+   https://www.springer.com/gp/book/9780387310732
+
+Gelman, A., & Hill, J. (2007). *Data analysis using regression and multilevel/hierarchical models*.
+   Cambridge University Press.
+   https://www.cambridge.org/core/books/data-analysis-using-regression-and-multilevelhierarchical-models/0C1C3F8F5E6C5D7D5C7D40D5D6A50F5F
+
+Hyndman, R. J., & Athanasopoulos, G. (2018). *Forecasting: Principles and practice* (2nd ed.).
+   OTexts. https://otexts.com/fpp2/
+
+
+
+
+
+
+
 
 
