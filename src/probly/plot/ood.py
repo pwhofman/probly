@@ -59,3 +59,35 @@ def plot_roc_curve(
     ax.grid(True, linestyle="--", alpha=0.5)
 
     return fig
+
+
+def plot_pr_curve(
+    precision: np.ndarray,
+    recall: np.ndarray,
+    aupr: float,
+    ax: Axes | None = None,
+) -> Figure:
+    """Plots precision and recall curve."""
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(7, 6))
+    else:
+        fig = ax.get_figure()
+
+    ax.plot(
+        recall,
+        precision,
+        lw=2,
+        color="green",
+        label=f"PR Curve (AUPR = {aupr:.3f})",
+    )
+
+    # Grid + Labels.
+    ax.set_xlabel("Recall (Sensitivity)")
+    ax.set_ylabel("Precision (PPV)")
+    ax.set_title("Precision-Recall Curve")
+    ax.set_xlim(0.0, 1.0)
+    ax.set_ylim(0.0, 1.05)
+    ax.legend()
+    ax.grid(True, linestyle="--", alpha=0.5)
+
+    return fig

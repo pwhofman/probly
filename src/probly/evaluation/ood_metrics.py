@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import numpy as np
-from sklearn.metrics import auc, roc_curve
+from sklearn.metrics import auc, average_precision_score, precision_recall_curve, roc_curve
 
 
 @dataclass
@@ -17,6 +17,9 @@ class OodEvaluationResult:
     tpr: np.ndarray
     labels: np.ndarray
     preds: np.ndarray
+    aupr: float
+    precision: np.ndarray
+    recall: np.ndarray
 
 
 def evaluate_ood_performance(
@@ -46,10 +49,16 @@ def evaluate_ood_performance(
     fpr, tpr, _ = roc_curve(labels, preds)
     roc_auc = auc(fpr, tpr)
 
+    precision, recall, _ = precision_recall_curve(labels, preds)
+    aupr = average_precision_score(labels, preds)
+
     return OodEvaluationResult(
         auroc=roc_auc,
         fpr=fpr,
         tpr=tpr,
         labels=labels,
         preds=preds,
+        precision=precision,
+        recall=recall,
+        aupr=aupr,
     )
