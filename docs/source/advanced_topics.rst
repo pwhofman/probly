@@ -1314,6 +1314,52 @@ In the long run, the aim is that each advanced pattern described here correspond
 one notebook in the *Examples & Tutorials* section, so that readers can jump directly from the
 conceptual description to runnable code.
 
+7. Summary
+----------
+
+7.1 Key takeaways
+
+This chapter pulled together the “advanced” parts of working with ``probly``. Here are the
+most important ideas to remember:
+
+- **Think in workflows, not one-off runs.**  
+  You rarely get the model right on the first attempt. Start simple, run it, look at what
+  goes wrong, and then refine. Advanced topics are mostly about having good tools for
+  iterating in a controlled way.
+
+- **Use transformations to tame tricky parameter spaces.**  
+  Transformations let you express models in natural, human-friendly parameters while keeping
+  inference in a convenient unconstrained space. Custom transforms are the place to encode
+  constraints, reparameterisations, and numerical tricks so the rest of the model stays clean.
+
+- **Structure your code for large models and datasets.**  
+  As things grow, clear modular structure matters as much as the math: separate data loading,
+  model definition, and inference; avoid giant monolithic scripts; and reuse building blocks
+  across projects.
+
+- **Lean on vectorisation, batching, and compilation.**  
+  Performance usually comes from doing more work per call, not from clever loops. Writing
+  models in a vectorised style and using backend compilation options (where available) can
+  make the difference between a toy demo and a practical large-scale run.
+
+- **Integrate carefully with other frameworks.**  
+  When combining ``probly`` with Flax, TensorFlow, or scikit-learn, be explicit about how
+  data, shapes, devices (CPU/GPU), and random seeds move across boundaries. Clear integration
+  points make complex systems much easier to debug.
+
+- **Test, profile, and document advanced pieces.**  
+  Custom transformations, large-model setups, and multi-framework integrations deserve small
+  dedicated tests and occasional profiling runs. A few well-placed checks (round-trip tests,
+  shape checks, smoke tests) catch many subtle bugs before they become expensive.
+
+- **Favour clarity and robustness over cleverness.**  
+  An “advanced” model is only useful if people can understand, trust, and maintain it. Simple,
+  well-structured models with honest uncertainty are usually more valuable than fragile,
+  over-complicated constructions.
+
+If you keep these principles in mind, the rest of the ``probly`` documentation—methods,
+modules, and examples—should slot naturally into your own advanced models and experiments.
+
 
 .. bibliography::
 Kingma, D. P., & Welling, M. (2014). Auto-encoding variational Bayes. *Proceedings of the 2nd
