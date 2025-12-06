@@ -1395,7 +1395,7 @@ Medium.
 https://medium.com/@lomashbhuva/mini-batch-gradient-descent-a-comprehensive-guide-ba27a6dc4863
 
 Bishop, C. M. (2006). *Pattern recognition and machine learning*. Springer.
-   https://www.springer.com/gp/book/9780387310732
+https://www.springer.com/gp/book/9780387310732
 
 Breck, E., Cai, S., Nielsen, E., Salib, M., & Sculley, D. (2017).
 The ML test score: A rubric for ML production readiness and technical debt reduction.
@@ -1444,8 +1444,8 @@ GeeksforGeeks.
 https://www.geeksforgeeks.org/deep-learning/mini-batch-gradient-descent-in-deep-learning/
 
 Gelman, A., & Hill, J. (2007). *Data analysis using regression and multilevel/hierarchical models*.
-   Cambridge University Press.
-   https://www.cambridge.org/core/books/data-analysis-using-regression-and-multilevelhierarchical-models/0C1C3F8F5E6C5D7D5C7D40D5D6A50F5F
+Cambridge University Press.
+https://www.cambridge.org/core/books/data-analysis-using-regression-and-multilevelhierarchical-models/0C1C3F8F5E6C5D7D5C7D40D5D6A50F5F
 
 Griewank, A., & Walther, A. (2008). *Evaluating derivatives: Principles and techniques of
 algorithmic differentiation* (2nd ed.). Society for Industrial and Applied Mathematics.  
@@ -1464,7 +1464,7 @@ hvgotcodes. (2012, March 29). *What are some good practices for unit testing pro
 distributions?* Stack Overflow. https://stackoverflow.com/questions/9934903
 
 Hyndman, R. J., & Athanasopoulos, G. (2018). *Forecasting: Principles and practice* (2nd ed.).
-   OTexts. https://otexts.com/fpp2/
+OTexts. https://otexts.com/fpp2/
 
 JAX Authors. (n.d.-a).
 A brief introduction to JAX.
