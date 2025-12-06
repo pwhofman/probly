@@ -1217,9 +1217,7 @@ least one **worked example**:
   predictive intervals over time, and shows how to evaluate them
   (Hyndman & Athanasopoulos, 2018).
 
-In the long run, the goal is that each advanced pattern here has at least one
-notebook in the *Examples & Tutorials* section, so readers can jump straight
-from the concept to runnable code.
+For each advanced pattern in this chapter, there is at least one worked example in the :doc:`Examples & Tutorials <examples_tutorials>` file.
 
 7. Summary
 ----------
@@ -1266,7 +1264,6 @@ most important ideas to remember:
 
 If you keep these principles in mind, the rest of the ``probly`` documentation methods,
 modules, and examples should slot naturally into your own advanced models and experiments.
-
 
 
 
