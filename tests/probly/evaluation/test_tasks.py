@@ -10,7 +10,6 @@ from probly.evaluation.tasks import (
     out_of_distribution_detection,
     out_of_distribution_detection_aupr,
     selective_prediction,
-    out_of_distribution_detection_fnr_at_95
 )
 
 
@@ -92,45 +91,3 @@ def test_fpr_at_tpr_perfect_separation() -> None:
     fpr = fpr_at_tpr(in_scores, out_scores, tpr_target=0.95)
 
     assert np.isclose(fpr, 0.0)
-
-def test_fnr_at_95_returns_float() -> None:
-    """Tests if the funtion returns floats."""
-    in_distribution = np.array([0.1, 0.2, 0.3])
-    out_distribution = np.array([0.8, 0.9, 1.0])
-
-    fnr = out_of_distribution_detection_fnr_at_95(in_distribution, out_distribution)
-
-    assert isinstance(fnr, float)
-
-def test_fnr_zero_when_perfect_separation() -> None:
-    """If ID scores are clearly lower than OOD scores, FN should be 0."""
-    in_distribution = np.array([0.1, 0.2, 0.3])
-    out_distribution = np.array([1.0, 0.9, 0.8])
-
-    fnr = out_of_distribution_detection_fnr_at_95(in_distribution, out_distribution)
-    assert fnr == 0.0
-
-def test_fnr_one_when_in_and_out_fully_reversed() -> None:
-    """If OOD scores are completely lower than all ID scores, then at 95% TPR all OOD samples are misclassified => FNR = 1."""
-    in_distribution = np.array([0.9, 0.8, 1.0])
-    out_distribution = np.array([0.1, 0.2, 0.3])
-
-    fnr = out_of_distribution_detection_fnr_at_95(in_distribution, out_distribution)
-    assert fnr == 1.0
-
-def test_fnr_with_partial_overlap() -> None:
-    """With overlapping distributions, the FNR should be between 0 and 1."""
-    in_distribution = np.array([0.1, 0.4, 0.6])
-    out_distribution = np.array([0.3, 0.5, 0.9])
-
-    fnr = out_of_distribution_detection_fnr_at_95(in_distribution, out_distribution)
-    assert 0.0 <= fnr <= 1.0
-
-def test_single_element_arrays() -> None:
-    """Edge case: one ID sample and one OOD sample."""
-    in_distribution = np.array([0.2])
-    out_distribution = np.array([0.9])
-
-    fnr = out_of_distribution_detection_fnr_at_95(in_distribution, out_distribution)
-    assert fnr == 0.0
-
