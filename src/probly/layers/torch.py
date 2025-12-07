@@ -129,8 +129,8 @@ class BayesLinear(nn.Module):
         """Reset the parameters of the Bayesian conv2d layer.
 
         Setting a=sqrt(5) in kaiming_uniform is the same as initializing with
-        uniform(-1/sqrt(k), 1/sqrt(k)), where k = weight.size(1) * prod(*kernel_size)
-        For more details see: https://github.com/pytorch/pytorch/issues/15314#issuecomment-477448573
+        uniform(-1/sqrt(k), 1/sqrt(k)), where ``k = weight.size(1) * prod(*kernel_size)``
+        For more details see: https://github.com/pytorch/pytorch/issues/15314
         """
         init.kaiming_uniform_(self.weight_mu, a=math.sqrt(5))
         if self.bias is not False:
@@ -313,8 +313,8 @@ class BayesConv2d(nn.Module):
         """Reset the parameters of the Bayesian conv2d layer.
 
         Setting a=sqrt(5) in kaiming_uniform is the same as initializing with
-        uniform(-1/sqrt(k), 1/sqrt(k)), where k = weight.size(1) * prod(*kernel_size)
-        For more details see: https://github.com/pytorch/pytorch/issues/15314#issuecomment-477448573
+        uniform(-1/sqrt(k), 1/sqrt(k)), where ``k = weight.size(1) * prod(*kernel_size)``
+        For more details see: https://github.com/pytorch/pytorch/issues/15314
         """
         init.kaiming_uniform_(self.weight_mu, a=math.sqrt(5))
         if self.bias is not False:

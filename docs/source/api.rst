@@ -5,18 +5,7 @@ API Reference
    :toctree: api/
    :recursive:
 
-   probly.datasets
-   probly.evaluation
-   probly.layers
-   probly.plot
-   probly.predictor
-   probly.quantification
-   probly.representation
-   probly.train
-   probly.transformation
-   probly.traverse_nn
-   probly.utils
-
+   probly
 
 .. automodule:: probly
    :members:

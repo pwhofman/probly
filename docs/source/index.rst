@@ -54,7 +54,11 @@ Quickstart
 
    advanced_topics
    core_concepts
+   introduction
+   core_concepts
+   user_guide
    methods
+   faq
    references
 
 .. toctree::
