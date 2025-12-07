@@ -14,7 +14,7 @@ class CredalVisualizer:
 
     def probs_to_coords(self, probs: np.ndarray) -> tuple:
         """Convert ternary probabilities to 2D coordinates."""
-        p1, p2, p3 = probs
+        p1, p2, p3 = probs  # noqa: RUF059
         x = p2 + 0.5 * p3
         y = (np.sqrt(3) / 2) * p3
         return x, y
@@ -32,7 +32,7 @@ class CredalVisualizer:
 
         coords = np.array([self.probs_to_coords(p) for p in probs])
         if ax is None:
-            fig, ax = plt.subplots(figsize=(6, 6))
+            fig, ax = plt.subplots(figsize=(6, 6))  # noqa: RUF059
 
         # Draw triangle
         v1 = np.array([0.0, 0.0])
@@ -74,7 +74,7 @@ class CredalVisualizer:
         coords = np.array([self.probs_to_coords(p) for p in probs])
 
         if ax is None:
-            fig, ax = plt.subplots(figsize=(6, 6))
+            fig, ax = plt.subplots(figsize=(6, 6))  # noqa: RUF059
 
         # Handle degenerate cases
         unique = np.unique(coords, axis=0)
