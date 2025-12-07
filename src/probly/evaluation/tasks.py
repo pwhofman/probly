@@ -100,13 +100,15 @@ def fpr_at_tpr(in_distribution: np.ndarray, out_distribution: np.ndarray, tpr_ta
         msg = f"tpr_target must be in the interval (0, 1], got {tpr_target}."
         raise ValueError(msg)
 
-    preds = np.concatenate((in_distribution, out_distribution))
+    scores = np.concatenate((in_distribution, out_distribution))
+    # 0 = in-distribution, 1 = out-of-distribution (positive class)
     labels = np.concatenate(
         (np.zeros(len(in_distribution)), np.ones(len(out_distribution))),
     )
 
-    fpr, tpr, _ = sm.roc_curve(labels, preds)
+    fpr, tpr, thresholds = sm.roc_curve(labels, scores)
 
+    # indices where TPR is at least the target
     idxs = np.where(tpr >= tpr_target)[0]
     if len(idxs) == 0:
         msg = f"Could not achieve TPR >= {tpr_target:.3f} with given scores."
