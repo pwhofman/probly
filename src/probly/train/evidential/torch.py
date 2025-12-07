@@ -50,6 +50,20 @@ def make_in_domain_target_alpha(y: Tensor) -> Tensor:
     return alpha
 
 
+def make_ood_target_alpha(
+    batch_size: int,
+    num_classes: int = 10,
+    alpha0: float = 10,
+) -> torch.Tensor:
+    """Construct flat Dirichlet targets for out-of-distribution samples."""
+    mu = torch.full(
+        (batch_size, num_classes),
+        1.0 / num_classes,
+        device="cpu",
+    )
+    return mu * alpha0
+
+
 def kl_dirichlet(alpha_p: Tensor, alpha_q: Tensor) -> Tensor:
     """Compute KL(Dir(alpha_p) || Dir(alpha_q)) for each batch item.
 

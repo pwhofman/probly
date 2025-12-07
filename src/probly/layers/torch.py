@@ -586,3 +586,36 @@ class BatchedRadialFlowDensity(nn.Module):
         logp = base_logp + sum_log_jac  # [C,B]
 
         return logp.transpose(0, 1)  # [B,C]
+
+
+class ConvDPN(nn.Module):
+    """Convolutional Dirichlet Prior Network producing concentration parameters (alpha)."""
+
+    def __init__(self, num_classes: int = 10) -> None:
+        """Initialize the ConvDPN model with the given number of output classes."""
+        super().__init__()
+
+        # Convolutional feature extractor
+        self.features = nn.Sequential(
+            nn.Conv2d(1, 64, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(2),
+            nn.Conv2d(64, 128, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(2),
+        )
+
+        # Fully-connected classifier head
+        self.classifier = nn.Sequential(
+            nn.Flatten(),
+            nn.Linear(128 * 7 * 7, 256),
+            nn.ReLU(),
+            nn.Linear(256, num_classes),
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Return Dirichlet concentration parameters (alpha)(x) > 0."""
+        x = self.features(x)
+        logits = self.classifier(x)
+        alpha = F.softplus(logits) + 1e-3
+        return alpha
