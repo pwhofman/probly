@@ -92,18 +92,14 @@ with probabilistic outputs and enable end-to-end uncertainty-aware workflows.
 
 **Key utilities include:**
 
-- :doc:`Custom Loss Functions <../../notebooks/utilities_and_layers/custom_loss_functions>`: Tailored loss functions that properly account for uncertainty in predictions. These include negative log-likelihood variants, evidential loss functions,
-and calibration-aware losses that ensure your model learns meaningful uncertainty estimates.
+- :doc:`Custom Loss Functions <../../notebooks/utilities_and_layers/custom_loss_functions>`: Tailored loss functions that properly account for uncertainty in predictions. These include negative log-likelihood variants, evidential loss functions,and calibration-aware losses that ensure your model learns meaningful uncertainty estimates.
 
-- :doc:`Metrics <../../notebooks/utilities_and_layers/metrics>`: Specialized metrics to evaluate not only prediction accuracy but also the quality of uncertainty estimates, 
-including calibration error, sharpness, and proper scoring rules.
+- :doc:`Metrics <../../notebooks/utilities_and_layers/metrics>`: Specialized metrics to evaluate not only prediction accuracy but also the quality of uncertainty estimates, including calibration error, sharpness, and proper scoring rules.
 
-- :doc:`Probabilistic Layers <../../notebooks/utilities_and_layers/probabilistic_layers>`
-: Drop-in replacements for standard layers (Linear, Conv2D, etc.) that incorporate stochasticity,
-enabling Bayesian inference within your models.
+- :doc:`Probabilistic Layers <../../notebooks/utilities_and_layers/probabilistic_layers>`: Drop-in replacements for standard layers (Linear, Conv2D, etc.) that incorporate stochasticity,enabling Bayesian inference within your models.
 
 -  :doc:`Utility Functions <../../notebooks/utilities_and_layers/utility_functions>`: Helper functions for extracting mean and variance from model outputs,
-computing prediction intervals, and formatting probabilistic predictions for downstream tasks.
+ computing prediction intervals, and formatting probabilistic predictions for downstream tasks.
 
 These components ensure that users can not only modify their models to be uncertainty-aware but also 
 effectively train, evaluate, and deploy them within the same unified framework.
@@ -121,16 +117,11 @@ validating that uncertainty is meaningful, and making informed decisions based o
 
 **Key evaluation tools include:**
 
-- :doc:`Calibration Metrics <../../notebooks/examples/evaluation_and_quantification/calibration_metrics>`: Tools to assess how well uncertainty 
-estimates correspond to actual prediction errors. This includes expected calibration error (ECE), 
-maximum calibration error (MCE), and negative log-likelihood metrics.
+- :doc:`Calibration Metrics <../../notebooks/examples/evaluation_and_quantification/calibration_metrics>`: Tools to assess how well uncertainty estimates correspond to actual prediction errors. This includes expected calibration error (ECE), maximum calibration error (MCE), and negative log-likelihood metrics.
 
-- :doc:`Visualization Tools <../../notebooks/examples/evaluation_and_quantification/visualization_tools>`: Methods to visualize uncertainty in predictions through confidence bands, prediction interval plots, 
-and uncertainty heatmaps, aiding in qualitative interpretation and model debugging.
+- :doc:`Visualization Tools <../../notebooks/examples/evaluation_and_quantification/visualization_tools>`: Methods to visualize uncertainty in predictions through confidence bands, prediction interval plots, and uncertainty heatmaps, aiding in qualitative interpretation and model debugging.
 
-- :doc:`Interpretation Techniques <../../notebooks/examples/evaluation_and_quantification/interpretation_techniques>`: Approaches 
-to decompose uncertainty into aleatoric (data) and epistemic (model) components,
-identify which inputs drive uncertainty, and understand the sources and implications of uncertainty in model outputs.
+- :doc:`Interpretation Techniques <../../notebooks/examples/evaluation_and_quantification/interpretation_techniques>`: Approaches to decompose uncertainty into aleatoric (data) and epistemic (model) components,identify which inputs drive uncertainty, and understand the sources and implications of uncertainty in model outputs.
 
 
 
