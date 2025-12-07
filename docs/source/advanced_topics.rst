@@ -1267,10 +1267,6 @@ modules, and examples should slot naturally into your own advanced models and ex
 
 
 
-
-
-
-
 .. bibliography::
 
    Bishop, C. M. (2006). *Pattern recognition and machine learning*. Springer.
@@ -1405,11 +1401,4 @@ modules, and examples should slot naturally into your own advanced models and ex
    engineering. Google Developers.
    https://developers.google.com/machine-learning/guides/rules-of-ml
 
-   Bishop, C. M. (2006). *Pattern recognition and machine learning*. Springer.
-
-   Gelman, A., & Hill, J. (2007). *Data analysis using regression and
-   multilevel/hierarchical models*. Cambridge University Press.
-
-   Hyndman, R. J., & Athanasopoulos, G. (2018). *Forecasting: Principles and
-   practice* (2nd ed.). OTexts. https://otexts.com/fpp2/
 
