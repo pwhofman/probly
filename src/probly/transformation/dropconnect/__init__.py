@@ -17,5 +17,5 @@ def _(_: type) -> None:
 
 
 @common.dropconnect_traverser.delayed_register(FLAX_MODULE)
-def _(cls: type) -> None:
-    from . import flax  # noqa: PLC0415
+def _(_: type) -> None:
+    from . import flax as flax  # noqa: PLC0415
