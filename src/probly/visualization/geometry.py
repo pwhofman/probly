@@ -1,3 +1,5 @@
+"""Class to collect the different types of plots."""
+
 from __future__ import annotations
 
 import matplotlib as mpl
@@ -15,11 +17,12 @@ class CredalVisualizer:
     def probs_to_coords(self, probs: np.ndarray) -> tuple:
         """Convert ternary probabilities to 2D coordinates.
 
-        args:
+        Args:
         probs: the ternary probabilities.
 
-        return: Tuple containing the 2D coordinates."""
-        p1, p2, p3 = probs  # noqa: RUF059
+        return: Tuple containing the 2D coordinates.
+        """
+        p1, p2, p3 = probs
         x = p2 + 0.5 * p3
         y = (np.sqrt(3) / 2) * p3
         return x, y
@@ -32,12 +35,13 @@ class CredalVisualizer:
     ) -> mpl.axes.Axes:
         """Plot ternary scatter points.
 
-        args:
+        Args:
         probs: the ternary probabilities.
         ax: matplotlib axes.Axes to plot on.
         **scatter_kwargs: kwargs to pass to scatter.
 
-        returns: Ternary plot with scattered points."""
+        returns: Ternary plot with scattered points.
+        """
         msg = "Input must have 3 dimensions."
         if probs.shape[1] != 3:
             raise ValueError(msg)
@@ -45,7 +49,7 @@ class CredalVisualizer:
         coords = np.array([self.probs_to_coords(p) for p in probs])
 
         if ax is None:
-            fig, ax = plt.subplots(figsize=(6, 6))  # noqa: RUF059
+            fig, ax = plt.subplots(figsize=(6, 6))
 
         # Draw triangle
         v1 = np.array([0.0, 0.0])
@@ -69,7 +73,6 @@ class CredalVisualizer:
 
         return ax
 
-
     def interval_plot(self) -> None:
         """To be implemented. Plot for 2 classes."""
         return
@@ -88,25 +91,26 @@ class CredalVisualizer:
         linewidth: float = 2.0,
     ) -> mpl.axes.Axes:
         """Draw the convex hull around the points.
+
         Handles special cases:
         - 1 point (degenerate)
         - 2 points (line segment)
         - >= 3 points (polygon)
 
-        args:
+        Args:
         probs: Array of probabilities
         ax: Axes to draw on
         facecolor: Color of the convex hull
         alpha: Opacity of the convex hull
         edgecolor: Color of the outline
-        linewitdth: Width of the convex hull
+        linewidth: Width of the convex hull
 
         returns: Plot with convex hull.
         """
         coords = np.array([self.probs_to_coords(p) for p in probs])
 
         if ax is None:
-            fig, ax = plt.subplots(figsize=(6, 6))  # noqa: RUF059
+            fig, ax = plt.subplots(figsize=(6, 6))
 
         # Handle degenerate cases
         unique = np.unique(coords, axis=0)
@@ -152,8 +156,6 @@ class CredalVisualizer:
         return ax
 
 
-
-
 points = np.array(
     [
         [0.7, 0.2, 0.1],
@@ -162,7 +164,7 @@ points = np.array(
         [0.8, 0.1, 0.1],
         [0.3, 0.1, 0.6],
         [0.33, 0.33, 0.34],
-    ]
+    ],
 )
 
 viz = CredalVisualizer()
