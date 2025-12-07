@@ -88,7 +88,7 @@ following https://github.com/google/jax#installation.
 to make it uncertainty-aware. The most common approach is to use one of the transformations 
 from the ``probly.transformation`` module.
 
-Example using Monte Carlo Dropout (Gal & Ghahramani, 2016):
+Example using Monte Carlo Dropout :cite:`galDropoutBayesian2016`:
 
 .. code-block:: python
 
@@ -184,25 +184,25 @@ See :doc:`core_concepts` section 3.1 for more quantification methods.
 The choice of uncertainty method depends on your specific use case, computational 
 constraints, and the type of uncertainty you want to capture:
 
-**Monte Carlo Dropout (Gal & Ghahramani, 2016)**
+**Monte Carlo Dropout** :cite:`galDropoutBayesian2016`
 
 * **Pros:** Easy to implement, works with any model that has dropout layers, computationally efficient
 * **Cons:** May underestimate uncertainty, requires multiple forward passes
 * **Use when:** You want a quick and simple way to add uncertainty to existing models
 
-**Ensembles (Lakshminarayanan et al., 2017)**
+**Ensembles** :cite:`lakshminarayananSimpleScalable2017`
 
 * **Pros:** Robust, well-calibrated, captures epistemic uncertainty effectively
 * **Cons:** Requires training multiple models, higher memory and computation costs
 * **Use when:** You have computational resources and need reliable uncertainty estimates
 
-**Evidential Neural Networks (Sensoy et al., 2018; Amini et al., 2020)**
+**Evidential Neural Networks** :cite:`sensoyEvidentialDeep2018,aminiDeepEvidential2020`
 
 * **Pros:** Single forward pass, explicitly models higher-order uncertainty
 * **Cons:** Requires specific training procedures and loss functions
 * **Use when:** You need fast inference and can modify your training pipeline
 
-**Bayesian Neural Networks (Blundell et al., 2015)**
+**Bayesian Neural Networks** :cite:`blundellWeightUncertainty2015`
 
 * **Pros:** Principled probabilistic framework, captures full posterior distribution
 * **Cons:** Computationally expensive, requires specialized training
@@ -217,7 +217,7 @@ For conceptual background, see :doc:`core_concepts` and :doc:`introduction`.
 because it has not seen similar data during training. This uncertainty can be reduced 
 by collecting more training data or improving the model.
 
-For a theoretical foundation of this decomposition, see Depeweg et al. (2018).
+For a theoretical foundation of this decomposition, see :cite:`depewegDecompositionUncertainty2018`.
 
 **Aleatoric uncertainty** (also called data uncertainty) reflects inherent noise or ambiguity 
 in the data itself, such as sensor noise, label disagreements, or inherently ambiguous cases. 
@@ -438,6 +438,7 @@ Move computations to GPU if available:
 
    model = model.to('cuda')
    input_data = input_data.to('cuda')
+
 7. Troubleshooting Advanced Features
 ------------------------------------
 
@@ -729,28 +730,5 @@ community resources may also be helpful.
 References
 ----------
 
-Abellán, J., & Moral, S. (2000). A non-specificity measure for convex sets of probability distributions. *International Journal of Uncertainty, Fuzziness and Knowledge-Based Systems*, *8*(3), 357-367. https://doi.org/10.1142/S0218488500000253
-
-Abellán, J., Klir, G. J., & Moral, S. (2006). Disaggregated total uncertainty measure for credal sets. *International Journal of General Systems*, *35*(1), 29–44. https://doi.org/10.1080/03081070500473490
-
-Amini, A., Schwarting, W., Soleimany, A., & Rus, D. (2020). Deep evidential regression. In H. Larochelle, M. Ranzato, R. Hadsell, M.-F. Balcan, & H.-T. Lin (Eds.), *Advances in Neural Information Processing Systems 33* (NeurIPS 2020). https://proceedings.neurips.cc/paper/2020/hash/aab085461de182608ee9f607f3f7d18f-Abstract.html
-
-Angelopoulos, A. N., & Bates, S. (2021). A gentle introduction to conformal prediction and distribution-free uncertainty quantification. *arXiv preprint arXiv:2107.07511*. https://arxiv.org/abs/2107.07511
-
-Blundell, C., Cornebise, J., Kavukcuoglu, K., & Wierstra, D. (2015). Weight uncertainty in neural network. In F. R. Bach & D. M. Blei (Eds.), *Proceedings of the 32nd International Conference on Machine Learning* (ICML 2015, Vol. 37, pp. 1613–1622). JMLR.org. http://proceedings.mlr.press/v37/blundell15.html
-
-Depeweg, S., Hernández-Lobato, J. M., Doshi-Velez, F., & Udluft, S. (2018). Decomposition of uncertainty in Bayesian deep learning for efficient and risk-sensitive learning. In J. G. Dy & A. Krause (Eds.), *Proceedings of the 35th International Conference on Machine Learning* (ICML 2018, Vol. 80, pp. 1192–1201). PMLR. http://proceedings.mlr.press/v80/depeweg18a.html
-
-Gal, Y., & Ghahramani, Z. (2016). Dropout as a Bayesian approximation: Representing model uncertainty in deep learning. In M.-F. Balcan & K. Q. Weinberger (Eds.), *Proceedings of the 33rd International Conference on Machine Learning* (ICML 2016, Vol. 48, pp. 1050–1059). JMLR.org. http://proceedings.mlr.press/v48/gal16.html
-
-Guo, C., Pleiss, G., Sun, Y., & Weinberger, K. Q. (2017). On calibration of modern neural networks. In D. Precup & Y. W. Teh (Eds.), *Proceedings of the 34th International Conference on Machine Learning* (ICML 2017, Vol. 70, pp. 1321–1330). PMLR. http://proceedings.mlr.press/v70/guo17a.html
-
-Lakshminarayanan, B., Pritzel, A., & Blundell, C. (2017). Simple and scalable predictive uncertainty estimation using deep ensembles. In I. Guyon, U. von Luxburg, S. Bengio, H. M. Wallach, R. Fergus, S. V. N. Vishwanathan, & R. Garnett (Eds.), *Advances in Neural Information Processing Systems 30* (NeurIPS 2017, pp. 6402–6413). https://proceedings.neurips.cc/paper/2017/hash/9ef2ed4b7fd2c810847ffa5fa85bce38-Abstract.html
-
-Lienen, J., & Hüllermeier, E. (2021). From label smoothing to label relaxation. In *Thirty-Fifth AAAI Conference on Artificial Intelligence* (AAAI 2021, pp. 8583–8591). AAAI Press. https://doi.org/10.1609/aaai.v35i10.17041
-
-Mobiny, A., Van Nguyen, H., Moulik, S., Garg, N., & Wu, C. C. (2019). DropConnect is effective in modeling uncertainty of Bayesian deep networks. *arXiv preprint arXiv:1906.04569*. http://arxiv.org/abs/1906.04569
-
-Nguyen, V.-L., Zhang, H., & Destercke, S. (2025). Credal ensembling in multi-class classification. *Machine Learning*, *114*(1), 19. https://doi.org/10.1007/s10994-024-06703-y
-
-Sensoy, M., Kaplan, L. M., & Kandemir, M. (2018). Evidential deep learning to quantify classification uncertainty. In S. Bengio, H. M. Wallach, H. Larochelle, K. Grauman, N. Cesa-Bianchi, & R. Garnett (Eds.), *Advances in Neural Information Processing Systems 31* (NeurIPS 2018, pp. 3179–3189). https://proceedings.neurips.cc/paper/2018/hash/a981f2b708044d6fb4a71a1463242520-Abstract.html
+.. bibliography::
+   :filter: docname in docnames
