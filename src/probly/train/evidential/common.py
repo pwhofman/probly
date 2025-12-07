@@ -44,6 +44,9 @@ def unified_evidential_trainn(
             outputs = model(x)  # computes model-outputs
             if mode == "PostNet":
                 loss, _ = loss_fn(outputs, y, flow, class_count)
+            elif mode == "NatPostNet":
+                alpha, _, _ = outputs
+                loss = loss_fn(alpha, y)
             elif mode == "EDL":
                 loss = loss_fn(outputs, y)  # calculate the evidential loss
             elif mode == "PrNet":

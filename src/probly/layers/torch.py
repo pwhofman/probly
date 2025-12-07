@@ -678,3 +678,207 @@ class GrayscaleMNISTCNN(nn.Module):
         x = x + torch.ones_like(x)
 
         return x
+
+
+class RadialFlowLayer2(nn.Module):
+    """Single radial flow layer for a latent vector z ∈ R^D."""
+
+    def __init__(self, dim: int) -> None:  # noqa: D107
+        super().__init__()
+        self.dim = dim
+
+        # Learnable parameters:
+        # - x0: center of the radial transformation (vector in R^D)
+        # - alpha_prime, beta_prime: unconstrained scalars that we transform to valid alpha, beta
+        self.x0 = nn.Parameter(torch.zeros(dim))
+        self.alpha_prime = nn.Parameter(torch.zeros(1))
+        self.beta_prime = nn.Parameter(torch.zeros(1))
+
+    def forward(self, z: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        """Apply the radial flow to latent inputs z.
+
+        Args:
+            z: Tensor of shape [B, D].
+
+        Returns:
+            z_new: Transformed latent tensor, shape [B, D].
+            log_abs_det: Log-absolute determinant of the Jacobian, shape [B].
+        """
+        # Ensure alpha > 0 and beta > -alpha for invertibility
+        alpha = torch.nn.functional.softplus(self.alpha_prime)  # scalar > 0
+        beta = -alpha + torch.nn.functional.softplus(self.beta_prime)  # scalar > -alpha
+
+        # z0 is the learnable center (broadcast to [B, D])
+        x0 = self.x0  # [D]
+
+        # Difference from the center
+        diff = z - x0  # [B, D]
+        r = diff.norm(dim=-1)  # Distance to center, shape [B]
+
+        # Radial flow scalar functions h(r) and h'(r)
+        h = 1.0 / (alpha + r)  # [B]
+        h_prime = -h * h  # [B]
+        beta_h = beta * h  # [B]
+
+        # Apply the radial flow transformation:
+        z_new = z + beta_h.unsqueeze(-1) * diff  # [B, D]
+
+        # Log determinant of the Jacobian:
+        # formula derived in Rezende & Mohamed (2015)
+        term1 = (self.dim - 1) * torch.log1p(beta_h)  # [B]
+        term2 = torch.log1p(beta_h + beta * h_prime * r)  # [B]
+        log_abs_det = term1 + term2  # [B]
+
+        return z_new, log_abs_det
+
+
+class Encoder(nn.Module):
+    """Simple encoder mapping MNIST images to a low-dimensional latent vector z."""
+
+    def __init__(self, latent_dim: int = 2) -> None:  # noqa: D107
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Flatten(),  # [B, 1, 28, 28] -> [B, 784]
+            nn.Linear(28 * 28, 256),
+            nn.ReLU(),
+            nn.Linear(256, latent_dim),  # [B, latent_dim]
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Encode a batch of images into latent vectors z.
+
+        Args:
+            x: Tensor of shape [B, 1, 28, 28].
+
+        Returns:
+            z: Tensor of shape [B, latent_dim].
+        """
+        return self.net(x)
+
+
+class RadialFlowDensity(nn.Module):
+    """Normalizing flow density p(z) using a stack of radial flows."""
+
+    def __init__(self, dim: int, flow_length: int = 4) -> None:  # noqa: D107
+        super().__init__()
+        self.dim = dim
+        self.layers = nn.ModuleList([RadialFlowLayer2(dim=dim) for _ in range(flow_length)])
+
+        # Constant term for log N(z|0, I): -0.5 * D * log(2π)
+        self.log_base_const = -0.5 * self.dim * math.log(2 * math.pi)
+
+    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        """Apply all flow layers to x.
+
+        Args:
+            x: Tensor of shape [B, D].
+
+        Returns:
+            z: Transformed latent tensor after all flows, shape [B, D].
+            sum_log_jac: Summed log-det Jacobian across flows, shape [B].
+        """
+        z = x
+        sum_log_jac = torch.zeros(z.size(0), device=z.device)
+
+        for layer in self.layers:
+            z, log_j = layer(z)
+            sum_log_jac = sum_log_jac + log_j
+
+        return z, sum_log_jac
+
+    def log_prob(self, x: torch.Tensor) -> torch.Tensor:
+        """Compute log p(x) under the flow-based density.
+
+        Args:
+            x: Tensor of shape [B, D].
+
+        Returns:
+            logp: Log-density log p(x), shape [B].
+        """
+        # Apply flow
+        z, sum_log_jac = self.forward(x)
+
+        # Base log-prob under N(0, I): -0.5 * (D * log(2π) + ||z||^2)
+        base_logp = self.log_base_const - 0.5 * (z**2).sum(dim=-1)  # [B]
+
+        # Add the log-determinant of the Jacobian
+        logp = base_logp + sum_log_jac  # [B]
+        return logp
+
+
+class NatPNClassifier(nn.Module):
+    """Natural Posterior Network for classification with a Dirichlet posterior over class probabilities."""
+
+    def __init__(
+        self,
+        num_classes: int = 10,
+        latent_dim: int = 2,
+        flow_length: int = 4,
+        certainty_budget: float | None = None,
+        n_prior: float | None = None,
+    ) -> None:
+        """Initialize the NatPN classifier and its components."""
+        super().__init__()
+
+        self.num_classes = num_classes
+        self.latent_dim = latent_dim
+
+        # 1. Encoder: x -> z
+        self.encoder = Encoder(latent_dim=latent_dim)
+
+        # 2. Decoder: z -> logits for each class
+        self.classifier = nn.Linear(latent_dim, num_classes)
+
+        # 3. Single normalizing flow density over z
+        self.flow = RadialFlowDensity(dim=latent_dim, flow_length=flow_length)
+
+        # 4. Certainty budget N_H: scales the density into "evidence"
+        #    Intuition: total evidence mass to distribute over the latent space.
+        if certainty_budget is None:
+            certainty_budget = float(latent_dim)
+        self.certainty_budget = certainty_budget
+
+        # 5. Prior pseudo-count n_prior and prior χ_prior
+        if n_prior is None:
+            n_prior = float(num_classes)
+
+        # χ_prior: uniform over classes
+        chi_prior = torch.full((num_classes,), 1.0 / num_classes)  # [C]
+        alpha_prior = n_prior * chi_prior  # [C] -> Dirichlet(1,1,...,1)
+
+        # Register as buffer so it is moved automatically with model.to(device)
+        self.register_buffer("alpha_prior", alpha_prior)
+
+    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        """Forward pass.
+
+        Args:
+            x: Input batch, shape [B, 1, 28, 28] for MNIST.
+
+        Returns:
+            alpha: Posterior Dirichlet parameters, shape [B, C].
+            z: Latent representation, shape [B, latent_dim].
+            log_pz: Log-density log p(z) under the flow, shape [B].
+        """
+        # Encode to latent space
+        z = self.encoder(x)  # [B, latent_dim]
+
+        # Class logits -> per-class χ (like normalized preferences)
+        logits = self.classifier(z)  # [B, C]
+        chi = torch.softmax(logits, dim=-1)  # [B, C], sums to 1
+
+        # Flow density over z -> log p(z)
+        log_pz = self.flow.log_prob(z)  # [B]
+
+        # Convert density into scalar evidence n(x)
+        # n(x) = N_H * exp(log p(z)) = N_H * p(z)
+        n = self.certainty_budget * log_pz.exp()  # [B], evidence ≥ 0
+        n = torch.clamp(n, min=1e-8)  # avoid exact zero for numerical stability
+
+        # Evidence per class: n_i * χ_i  -> pseudo-counts
+        evidence = n.unsqueeze(-1) * chi  # [B, C]
+
+        # Posterior Dirichlet parameters: alpha = alpha_prior + evidence
+        alpha = self.alpha_prior.unsqueeze(0) + evidence  # [B, C]
+
+        return alpha, z, log_pz

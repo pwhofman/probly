@@ -490,3 +490,37 @@ def loss_ird(  # noqa: D417
     loss = lp_term + lam * reg_term - gamma * entropy_term
 
     return loss
+
+
+def natpn_loss(
+    alpha: torch.Tensor,
+    y: torch.Tensor,
+    entropy_weight: float = 1e-4,
+) -> torch.Tensor:
+    """NatPN classification loss based on a Dirichlet-Categorical Bayesian formulation.
+
+    Args:
+        alpha: Posterior Dirichlet parameters, shape [B, C].
+        y: Ground-truth class labels, shape [B] with values in [0, C-1].
+        entropy_weight: λ controlling the strength of the entropy regularizer.
+
+    Returns:
+        Scalar loss tensor.
+    """
+    # Total concentration alpha0 per sample
+    alpha0 = alpha.sum(dim=-1)  # [B]
+
+    # Digamma function
+    digamma = torch.digamma
+
+    # Expected negative log-likelihood for each sample:
+    # E[-log p(y)] = ψ(alpha0) - ψ(alpha_y)
+    idx = torch.arange(y.size(0), device=y.device)
+    expected_nll = digamma(alpha0) - digamma(alpha[idx, y])  # [B]
+
+    # Entropy of Dirichlet posterior
+    dir_dist = Dirichlet(alpha)
+    entropy = dir_dist.entropy()  # [B]
+
+    loss = (expected_nll - entropy_weight * entropy).mean()
+    return loss
