@@ -1292,7 +1292,7 @@ modules, and examples should slot naturally into your own advanced models and ex
    Eertmans, J. (2025). *NaN and infinite values*. In *DiffeRT documentation*.
    https://differt.eertmans.be/latest/nans_and_infs.html
 
-   Flax Developers. (n.d.). Flax Linen fundamentals and developer notes. In
+   Flax Developers. (2023). Flax Linen fundamentals and developer notes. In
    *Flax documentation*. https://flax-linen.readthedocs.io/
 
    Gelman, A., & Hill, J. (2007). *Data analysis using regression and
@@ -1313,7 +1313,7 @@ modules, and examples should slot naturally into your own advanced models and ex
    Hyndman, R. J., & Athanasopoulos, G. (2018). *Forecasting: Principles and
    practice* (2nd ed.). OTexts. https://otexts.com/fpp2/
 
-   JAX Authors. (n.d.). Pseudorandom numbers. In *JAX documentation*.
+   JAX Authors. (2024). Pseudorandom numbers. In *JAX documentation*.
    https://docs.jax.dev/en/latest/random-numbers.html
 
    Karanam, A., Mathur, S., Sidheekh, S., & Natarajan, S. (2024). A unified
