@@ -120,13 +120,16 @@ def fpr_at_tpr(in_distribution: np.ndarray, out_distribution: np.ndarray, tpr_ta
 def out_of_distribution_detection_fpr_at_95_tpr(in_distribution: np.ndarray, out_distribution: np.ndarray) -> float:
     """Perform out-of-distribution detection using prediction functionals from id and ood data.
 
+    This metric measures the false positive rate (FPR) at a given true positive
+    rate (TPR) target. Here we treat OOD samples as the positive class.
+
     This can be epistemic uncertainty, as is common, but also e.g. softmax confidence.
 
     Args:
         in_distribution: in-distribution prediction functionals
         out_distribution: out-of-distribution prediction functionals
     Returns:
-        fpr@95tpr: float, false positive rate at 95% true positive rate
+        fpr@95tpr: float, false positive rate where true positive rate >= 95%
     """
     preds = np.concatenate((in_distribution, out_distribution))
     labels = np.concatenate((np.zeros(len(in_distribution)), np.ones(len(out_distribution))))
@@ -134,11 +137,11 @@ def out_of_distribution_detection_fpr_at_95_tpr(in_distribution: np.ndarray, out
 
     target_tpr = 0.95
 
-    if target_tpr in tpr:
-        idx = np.where(tpr == target_tpr)[0][0]
-        return float(fpr[idx])
+    idxs_at_target_tpr = np.where(tpr >= target_tpr)[0]
 
-    if target_tpr < tpr[0]:
-        return float(fpr[0])
-    "Interpolate fpr when  tpr not exactly 0.95"
-    return float(np.interp(target_tpr, tpr, fpr))
+    if len(idxs_at_target_tpr) == 0:
+        msg = f"Could not achieve TPR >= {target_tpr:.1f} with given scores."
+        raise ValueError(msg)
+
+    fpr_idx = idxs_at_target_tpr[0]
+    return float(fpr[fpr_idx])

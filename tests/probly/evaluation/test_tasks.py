@@ -133,4 +133,4 @@ def test_fpr_at_95_tpr_complete_overlap() -> None:
 
     result = out_of_distribution_detection_fpr_at_95_tpr(in_distribution, out_distribution)
 
-    assert result == 0.95
+    assert result == 1.0
