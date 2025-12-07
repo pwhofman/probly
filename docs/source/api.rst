@@ -14,6 +14,11 @@ API Reference
    probly.representation
    probly.train
    probly.transformation
+   probly.transformation.dropout
+   probly.transformation.dropconnect
+   probly.transformation.ensemble
+   probly.transformation.bayesian
+   probly.transformation.evidential
    probly.traverse_nn
    probly.utils
 
