@@ -55,6 +55,17 @@ class CredalVisualizer:
         v1 = np.array([0.0, 0.0])
         v2 = np.array([1.0, 0.0])
         v3 = np.array([0.5, np.sqrt(3) / 2])
+
+        edges = [(v1,v2,"axis A")
+                 (v2,v3,"axis B")
+                 (v3,v1,"axis C")]
+
+        triangle_x = [v1[0], v2[0], v3[0], v1[0]]
+        triangle_y = [v1[1], v2[1], v3[1], v1[1]]
+
+        ax.plot(triangle_x, triangle_y)
+        ax.axis("off")
+
         c1 = "Class 1"
         c2 = "Class 2"
         c3 = "Class 3"
@@ -65,8 +76,8 @@ class CredalVisualizer:
         ax.axis("off")
         verts = np.array([v1, v2, v3])
 
-        triangle = plt.Polygon(verts, closed=True, fill=False)
-        ax.add_patch(triangle)
+        #triangle = plt.Polygon(verts, closed=True, fill=False)
+        #ax.add_patch(triangle)
 
         # Scatter points
         ax.scatter(coords[:, 0], coords[:, 1], **scatter_kwargs)
