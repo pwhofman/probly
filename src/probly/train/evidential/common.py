@@ -49,6 +49,12 @@ def unified_evidential_trainn(
             elif mode == "PrNet":
                 total_loss = train_pn(model, optimizer, dataloader, oodloader)
                 break
+            elif mode == "IRD":
+                x_adv = x + 0.01 * torch.randn_like(x)  # oder FGSM
+                alpha = outputs
+                alpha_adv = model(x_adv)
+                y_oh = nn.functional.one_hot(y, num_classes=outputs.shape[1]).float()
+                loss = loss_fn(alpha, y_oh, adversarial_alpha=alpha_adv)
             else:
                 msg = "Enter valid mode"
                 raise ValueError(msg)

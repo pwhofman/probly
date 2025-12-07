@@ -290,3 +290,203 @@ class PostNetLoss(nn.Module):
 
         loss = (expected_ce - entropy_weight * entropy).mean()
         return loss, alpha
+
+
+def lp_fn(alpha: torch.Tensor, y: torch.Tensor, p: float = 2.0) -> torch.Tensor:
+    """Compute the Lp calibration loss (upper bound Fi).
+
+    Computes F_i using the expectation-based formulation:
+        F_i = ( E[(1-p_c)^p] + Σ_{j≠c} E[p_j^p] )^(1/p)
+
+    Args:
+        alpha: Dirichlet concentration parameters, shape (B, K), must be > 0
+        y: One-hot encoded labels, shape (B, K)
+        p: Lp norm exponent (default: 2.0)
+
+    Returns:
+        Scalar loss summed over batch
+
+    Raises:
+        ValueError: If alpha contains non-positive values or shapes don't match
+    """
+    if not torch.all(alpha > 0):
+        msg = f"All alpha values must be > 0, got min={alpha.min().item()}"
+        raise ValueError(msg)
+
+    if alpha.shape != y.shape:
+        msg = f"alpha and y shape mismatch: {alpha.shape} vs {y.shape}"
+        raise ValueError(msg)
+
+    # total concentration alpha0
+    alpha0 = alpha.sum(dim=1, keepdim=True)  # (B,1)
+
+    # extract alpha_c (correct class)
+    alpha_c = (alpha * y).sum(dim=1, keepdim=True)  # (B,1)
+    alpha0_minus_c = alpha0 - alpha_c  # (B,1)
+
+    # log B(a,b) used for expectations: E[X^p] = B(a+p,b)/B(a,b)
+    def logb(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
+        return torch.lgamma(a) + torch.lgamma(b) - torch.lgamma(a + b)
+
+    # E[(1 - p_c)^p]   where (1 - p_c) ~ Beta( alpha0 - alpha_c , alpha_c )
+    log_e1 = logb(alpha0_minus_c + p, alpha_c) - logb(alpha0_minus_c, alpha_c)
+    e1 = torch.exp(log_e1)  # (B,1)
+
+    # Per-class E[p_j^p] for all j
+    log_ep = logb(alpha + p, alpha0 - alpha) - logb(alpha, alpha0 - alpha)  # (B,K)
+    ep = torch.exp(log_ep)
+
+    # zero-out the true class term so we sum only j≠c
+    ep = ep * (1 - y)
+
+    # final expectation sum
+    e_sum = e1 + ep.sum(dim=1, keepdim=True)  # (B,1)
+
+    # apply ^(1/p)  # noqa: ERA001
+    fi = torch.exp(torch.log(e_sum + 1e-8) / p).squeeze(1)  # (B,)
+
+    return fi.sum()
+
+
+def regularization_fn(alpha: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+    """Compute the regularization term using trigamma functions.
+
+    Penalizes high alpha values for incorrect classes to encourage confident
+    but calibrated predictions.
+
+    Args:
+        alpha: Dirichlet concentration parameters, shape (B, K), must be > 0
+        y: One-hot encoded labels, shape (B, K)
+
+    Returns:
+        Scalar regularization loss
+
+    Raises:
+        ValueError: If shapes don't match
+    """
+    if alpha.shape != y.shape:
+        msg = f"alpha and y shape mismatch: {alpha.shape} vs {y.shape}"
+        raise ValueError(msg)
+
+    # Build alpha_tilde by replacing correct-class alpha with 1
+    alpha_tilde = alpha * (1 - y) + y
+
+    # Compute alpha_tilde_0 = 1 + sum over incorrect classes
+    alpha_tilde_0 = torch.sum(alpha_tilde, dim=1, keepdim=True)
+
+    # Polygamma(1, x) = trigamma(x)
+    trigamma_alpha = torch.polygamma(1, alpha_tilde)
+    trigamma_alpha0 = torch.polygamma(1, alpha_tilde_0)
+
+    # (alpha_tilde - 1)^2 term
+    diff_sq = (alpha_tilde - 1.0) ** 2
+
+    # Penalty only for incorrect classes → mask out true class
+    mask = 1 - y
+
+    # Compute elementwise contribution
+    term = 0.5 * diff_sq * (trigamma_alpha - trigamma_alpha0) * mask
+
+    # Sum over classes and batch
+    return torch.sum(term)
+
+
+def dirichlet_entropy(alpha: torch.Tensor) -> torch.Tensor:
+    """Compute Dirichlet entropy.
+
+    For adversarial examples, we want to maximize entropy (reward the model for
+    being uncertain), which appears as a negative term in the loss.
+
+    Entropy formula:
+        H(alpha) = log B(alpha) + (alpha_0 - K) * ψ(alpha_0) - Σ_k (alpha_k - 1) * ψ(alpha_k)
+
+    Args:
+        alpha: Dirichlet concentration parameters, shape (B_a, K), must be > 0
+
+    Returns:
+        Scalar entropy summed over batch
+
+    Raises:
+        ValueError: If alpha contains non-positive values
+    """
+    if not torch.all(alpha > 0):
+        msg = f"All alpha values must be > 0, got min={alpha.min().item()}"
+        raise ValueError(msg)
+
+    k = alpha.size(-1)
+    alpha0 = alpha.sum(dim=-1)
+
+    log_b = torch.lgamma(alpha).sum(dim=-1) - torch.lgamma(alpha0)
+
+    term1 = log_b
+    term2 = (alpha0 - k) * digamma(alpha0)
+    term3 = ((alpha - 1) * digamma(alpha)).sum(dim=-1)
+    entropy = term1 + term2 - term3
+
+    return entropy.sum()
+
+
+def loss_ird(  # noqa: D417
+    alpha: torch.Tensor,
+    y: torch.Tensor,
+    adversarial_alpha: torch.Tensor | None = None,
+    p: float = 2.0,
+    lam: float = 1.0,
+    gamma: float = 1.0,
+    normalize: bool = True,
+) -> torch.Tensor:
+    """Compute the Loss introduced in paper: IRD Networks for Predictive Uncertainty Estimation.
+
+    Args:
+        alpha : (B, K) Dirichlet concentration parameters
+        adversarial_alpha : (B_a, K) adversarial_alpha concentration parameters for adversarial inputs
+        y     : (B, K) one-hot labels
+        p     : scalar exponent
+    Returns:
+        loss_ird : the IRD loss comprised of all three terms, summed over all input examples.
+    """
+    # Input validation
+    if alpha.dim() != 2 or y.dim() != 2:
+        msg = f"alpha and y must be 2D, got {alpha.dim()}, {y.dim()}"
+        raise ValueError(msg)
+
+    if alpha.shape != y.shape:
+        msg = f"alpha and y shape mismatch: {alpha.shape} vs {y.shape}"
+        raise ValueError(msg)
+
+    if not torch.all(alpha > 0):
+        msg = f"All alpha values must be > 0, got min={alpha.min().item()}"
+        raise ValueError(msg)
+
+    # Compute Loss Components
+    lp_term = lp_fn(alpha, y, p)
+    reg_term = regularization_fn(alpha, y)
+
+    if adversarial_alpha is not None:
+        if adversarial_alpha.dim() != 2:
+            msg = f"adversarial_alpha must be 2D, got {adversarial_alpha.dim()}"
+            raise ValueError(msg)
+
+        if adversarial_alpha.shape[1] != alpha.shape[1]:
+            msg1 = "adversarial_alpha must have same number of classes as alpha: "
+            msg2 = f"{adversarial_alpha.shape[1]} vs {alpha.shape[1]}"
+            raise ValueError(msg1 + msg2)
+
+        entropy_term = dirichlet_entropy(adversarial_alpha)
+    else:
+        entropy_term = 0.0
+
+    # Normalize by batch sizes for stable training across different batch sizes
+    if normalize:
+        b = alpha.shape[0]
+        k = alpha.shape[1]
+        lp_term = lp_term / b
+        reg_term = reg_term / (b * k)
+
+        if adversarial_alpha is not None and isinstance(entropy_term, torch.Tensor):
+            b_a = adversarial_alpha.shape[0]
+            entropy_term = entropy_term / b_a
+
+    loss = lp_term + lam * reg_term - gamma * entropy_term
+
+    return loss

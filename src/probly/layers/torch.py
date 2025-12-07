@@ -619,3 +619,62 @@ class ConvDPN(nn.Module):
         logits = self.classifier(x)
         alpha = F.softplus(logits) + 1e-3
         return alpha
+
+
+class GrayscaleMNISTCNN(nn.Module):
+    """Simple Evidential CNN for grayscale MNIST images.
+    Returns Dirichlet parameters (alpha) as output.
+    """  # noqa: D205
+
+    def __init__(self, num_classes: int = 10) -> None:
+        """Initialize the CNN."""
+        super().__init__()
+        # (batch, 1, 28, 28) -> (batch, 32, 28, 28)
+        self.conv1 = nn.Conv2d(1, 32, kernel_size=3, padding=1)
+        self.bn1 = nn.BatchNorm2d(32)
+        self.conv2 = nn.Conv2d(32, 64, kernel_size=3, padding=1)
+        self.bn2 = nn.BatchNorm2d(64)
+        self.conv3 = nn.Conv2d(64, 128, kernel_size=3, padding=1)
+        self.bn3 = nn.BatchNorm2d(128)
+
+        self.pool = nn.MaxPool2d(2, 2)
+        self.relu = nn.ReLU(inplace=True)
+
+        # After 3 pooling layers: 28 -> 14 -> 7 -> 3 (with padding)
+        # Actual: 28 -> 14 -> 7 -> 3
+        self.fc1 = nn.Linear(128 * 3 * 3, 256)
+        self.dropout = nn.Dropout(0.5)
+        self.fc2 = nn.Linear(256, num_classes)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Forward pass."""
+        # Conv block 1
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.relu(x)
+        x = self.pool(x)  # 28 -> 14
+
+        # Conv block 2
+        x = self.conv2(x)
+        x = self.bn2(x)
+        x = self.relu(x)
+        x = self.pool(x)  # 14 -> 7
+
+        # Conv block 3
+        x = self.conv3(x)
+        x = self.bn3(x)
+        x = self.relu(x)
+        x = self.pool(x)  # 7 -> 3
+
+        # Flatten and fully connected
+        x = x.view(x.size(0), -1)
+        x = self.fc1(x)
+        x = self.relu(x)
+        x = self.dropout(x)
+        x = self.fc2(x)
+
+        # Turn outputs into alpha values for evidential learning
+        x = self.relu(x)
+        x = x + torch.ones_like(x)
+
+        return x
