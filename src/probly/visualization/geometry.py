@@ -73,9 +73,10 @@ class CredalVisualizer:
         c1 = "Class 1"
         c2 = "Class 2"
         c3 = "Class 3"
-        ax.text(v1[0], v1[1], c1, ha="right", va="top", label_offset = 0.05, fontsize=12)
-        ax.text(v2[0], v2[1], c2, ha="left", va="top", fontsize=12)
-        ax.text(v3[0], v3[1], c3, ha="center", va="bottom", fontsize=12)
+        offset_x = 0.06
+        ax.text(v1[0] + 0.02 , v1[1] - offset_x, c1, ha="right", va="top", fontsize=12)
+        ax.text(v2[0] + 0.02 , v2[1] - offset_x, c2, ha="left", va="top", fontsize=12)
+        ax.text(v3[0], v3[1] + offset_x, c3, ha="center", va="bottom", fontsize=12)
 
         verts = np.array([v1, v2, v3])
         tick_values = np.linspace(0.0, 1.0, 10)
@@ -109,8 +110,7 @@ class CredalVisualizer:
         ax.set_aspect("equal", "box")
         ax.set_xlim(-0.1, 1.1)
         ax.set_ylim(-0.1, np.sqrt(3) / 2 + 0.2)
-        #triangle = plt.Polygon(verts, closed=True, fill=False)
-        #ax.add_patch(triangle)
+
 
         # Scatter points
         ax.scatter(coords[:, 0], coords[:, 1], **scatter_kwargs)
