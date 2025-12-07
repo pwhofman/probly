@@ -88,7 +88,7 @@ following https://github.com/google/jax#installation.
 to make it uncertainty-aware. The most common approach is to use one of the transformations 
 from the ``probly.transformation`` module.
 
-Example using Monte Carlo Dropout:
+Example using Monte Carlo Dropout (Gal & Ghahramani, 2016):
 
 .. code-block:: python
 
@@ -184,25 +184,25 @@ See :doc:`core_concepts` section 3.1 for more quantification methods.
 The choice of uncertainty method depends on your specific use case, computational 
 constraints, and the type of uncertainty you want to capture:
 
-**Monte Carlo Dropout**
+**Monte Carlo Dropout (Gal & Ghahramani, 2016)**
 
 * **Pros:** Easy to implement, works with any model that has dropout layers, computationally efficient
 * **Cons:** May underestimate uncertainty, requires multiple forward passes
 * **Use when:** You want a quick and simple way to add uncertainty to existing models
 
-**Ensembles**
+**Ensembles (Lakshminarayanan et al., 2017)**
 
 * **Pros:** Robust, well-calibrated, captures epistemic uncertainty effectively
 * **Cons:** Requires training multiple models, higher memory and computation costs
 * **Use when:** You have computational resources and need reliable uncertainty estimates
 
-**Evidential Neural Networks**
+**Evidential Neural Networks (Sensoy et al., 2018; Amini et al., 2020)**
 
 * **Pros:** Single forward pass, explicitly models higher-order uncertainty
 * **Cons:** Requires specific training procedures and loss functions
 * **Use when:** You need fast inference and can modify your training pipeline
 
-**Bayesian Neural Networks**
+**Bayesian Neural Networks (Blundell et al., 2015)**
 
 * **Pros:** Principled probabilistic framework, captures full posterior distribution
 * **Cons:** Computationally expensive, requires specialized training
@@ -216,6 +216,8 @@ For conceptual background, see :doc:`core_concepts` and :doc:`introduction`.
 **Epistemic uncertainty** (also called model uncertainty) reflects what the model does not know 
 because it has not seen similar data during training. This uncertainty can be reduced 
 by collecting more training data or improving the model.
+
+For a theoretical foundation of this decomposition, see Depeweg et al. (2018).
 
 **Aleatoric uncertainty** (also called data uncertainty) reflects inherent noise or ambiguity 
 in the data itself, such as sensor noise, label disagreements, or inherently ambiguous cases. 
@@ -436,87 +438,206 @@ Move computations to GPU if available:
 
    model = model.to('cuda')
    input_data = input_data.to('cuda')
+7. Troubleshooting Advanced Features
+------------------------------------
 
-7. Debugging and Validation
-----------------------------
+7.1 Frequent Issues and Error Messages
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-7.1 How can I verify that my uncertainty estimates are reasonable?
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+**Custom Transformations**
 
-You can validate uncertainty estimates using several approaches:
+When implementing custom uncertainty transformations, users may encounter:
 
-**Calibration analysis:**
+* **Type errors:** Ensure your custom transformation returns the expected representation format
+* **Shape mismatches:** Verify that output dimensions match the expected uncertainty representation
+* **Integration issues:** Check that the transformation is compatible with the base model framework
 
-Check if predicted probabilities match actual frequencies using calibration curves.
+**Large Models**
 
-**Out-of-distribution detection:**
+Working with large models introduces specific challenges:
 
-Test whether the model assigns higher uncertainty to inputs that are very different 
-from the training data.
+* **Memory errors during ensemble creation:** Large models multiplied across ensemble members can exceed GPU memory
+  
+  **Solution:** Use gradient checkpointing, reduce batch size, or process ensemble members sequentially
+  
+* **Slow inference with MC Dropout:** Multiple forward passes on large models can be time-consuming
+  
+  **Solution:** Reduce the number of samples, use mixed precision, or consider single-pass methods like evidential networks
 
-**Visual inspection:**
+**Integration with Flax/TensorFlow/scikit-learn**
 
-Plot uncertainty scores alongside predictions to see if they correlate with model errors.
+* **Flax/JAX compatibility:** Ensure you're using compatible JAX and Flax versions (JAX ≥0.8.0, Flax ≥0.12.0)
+  
+  **Solution:** Check version compatibility in your environment and update if needed
+  
+* **TensorFlow models:** ``probly`` primarily supports PyTorch and Flax/JAX. For TensorFlow, you may need to convert models or use probability outputs directly
+  
+* **scikit-learn integration:** While ``probly`` is designed for neural networks, some quantification functions can work with probability outputs from scikit-learn classifiers if properly formatted
 
-**Comparison with baselines:**
+**Performance Problems**
 
-Compare your uncertainty estimates with those from different methods or with ensemble baselines.
+* **Slow uncertainty quantification:** Vectorized operations are optimized, but large batch sizes or many samples can still be slow
+  
+  **Solution:** Profile your code to identify bottlenecks, reduce sample counts during development, use GPU acceleration
+  
+* **High memory usage:** Storing multiple samples from ensemble or MC Dropout methods requires significant memory
+  
+  **Solution:** Process in smaller batches, use streaming quantification where possible, or reduce the number of samples
 
-7.2 My model gives the same uncertainty for all inputs. What is wrong?
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+7.2 Systematic Debugging Approach
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This suggests the uncertainty representation is not capturing meaningful variation.
+When encountering issues with ``probly``, follow this systematic approach to isolate problems:
 
-**Possible causes:**
+**Step 1: Reduce Model Complexity**
 
-* Transformation was not applied correctly
-* Model is not stochastic (e.g., dropout disabled)
-* Quantification function is incorrect for the representation type
-* Model is extremely confident on all inputs (check on diverse test sets)
-
-**Debugging steps:**
+Start with a minimal model to verify the transformation works:
 
 .. code-block:: python
 
-   from probly.quantification import classification
-   from probly.representation.sampling import sampler_factory
+   import torch
+   import probly
+   
+   # Create a simple model
+   simple_model = torch.nn.Sequential(
+       torch.nn.Linear(10, 5),
+       torch.nn.ReLU(),
+       torch.nn.Linear(5, 2)
+   )
+   
+   # Test transformation
+   dropout_model = probly.transformation.dropout(simple_model, p=0.3)
+   
+   # Verify it works
+   test_input = torch.randn(4, 10)
+   output = dropout_model(test_input)
+   print("Simple model works:", output.shape)
+
+**Step 2: Use Smaller Data**
+
+Test with a small synthetic dataset before using your full data:
+
+.. code-block:: python
+
    import numpy as np
+   from probly.representation.sampling import sampler_factory
    
-   # Create sampler
-   sampler = sampler_factory(model, num_samples=10)
-   predictions = sampler(input_data)
+   # Small synthetic data
+   small_data = torch.randn(10, 10)
    
-   # Stack predictions
+   # Test sampler
+   sampler = sampler_factory(dropout_model, num_samples=5)
+   predictions = sampler(small_data)
+   
+   # Verify output format
    stacked = np.stack([p.detach().numpy() for p in predictions])
+   print("Predictions shape:", stacked.shape)  # Should be (5, 10, 2)
+
+**Step 3: Disable Features Incrementally**
+
+If using multiple features, disable them one by one to identify the problematic component:
+
+* Remove custom transformations
+* Use fewer samples
+* Simplify quantification metrics
+* Test on CPU before GPU
+
+**Step 4: Distinguish Transformation vs. Integration Issues**
+
+**Transformation issues** typically manifest as:
+
+* Incorrect output shapes
+* Deterministic outputs when stochastic behavior is expected
+* Type errors when calling transformation functions
+
+**Integration issues** typically manifest as:
+
+* Framework-specific errors (PyTorch vs. Flax)
+* Incompatibility with model architectures
+* Device placement errors (CPU vs. GPU)
+
+**Debugging example:**
+
+.. code-block:: python
+
+   # Test if issue is with transformation or integration
    
-   # Compute different uncertainty measures
-   entropy_scores = classification.entropy(stacked)
-   mi_scores = classification.mutual_information(stacked)
+   # 1. Test transformation directly
+   transformed = probly.transformation.dropout(model, p=0.5)
+   out1 = transformed(test_input)
+   out2 = transformed(test_input)
    
-   print("Entropy range:", entropy_scores.min(), "-", entropy_scores.max())
-   print("MI range:", mi_scores.min(), "-", mi_scores.max())
+   # Should be different if dropout is working
+   print("Outputs differ:", not torch.allclose(out1, out2))
+   
+   # 2. Test integration with sampler
+   from probly.representation.sampling import sampler_factory
+   sampler = sampler_factory(transformed, num_samples=3)
+   samples = sampler(test_input)
+   
+   # Should get list of 3 different outputs
+   print("Got", len(samples), "samples")
 
-   # Test on diverse inputs
-   # Include in-distribution, out-of-distribution, and adversarial examples
+7.3 Getting Help
+^^^^^^^^^^^^^^^^
 
-7.3 How do I interpret uncertainty scores?
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+**What Information to Include in Bug Reports**
 
-Uncertainty scores are typically relative rather than absolute. A score of 0.5 by itself 
-does not have a universal meaning, but:
+When reporting bugs or asking for help, include:
 
-* **Higher scores** indicate more uncertainty
-* **Lower scores** indicate more confidence
-* **Comparing scores** across inputs helps identify uncertain cases
+1. **Environment details:**
+   
+   * Python version
+   * ``probly`` version
+   * Framework versions (PyTorch/JAX/Flax)
+   * Operating system
 
-Use scores to:
+2. **Minimal reproducible example:**
+   
+   * Simplest code that demonstrates the issue
+   * Sample data or synthetic data that triggers the problem
+   * Expected vs. actual behavior
 
-* Rank inputs by uncertainty
-* Set thresholds for rejection or human review
-* Detect out-of-distribution inputs
-* Evaluate model calibration
+3. **Error messages:**
+   
+   * Complete stack trace
+   * Any warning messages
+   * Console output
 
-For practical usage guidance, see :doc:`introduction` and :doc:`core_concepts`.
+**Example bug report:**
+
+.. code-block:: text
+
+   **Environment:**
+   - Python 3.12.1
+   - probly 0.1.0
+   - PyTorch 2.1.0
+   - Ubuntu 22.04
+   
+   **Issue:**
+   Getting shape mismatch when using mutual_information with dropout predictions
+   
+   **Code:**
+```python
+   import probly
+   import torch
+   
+   model = torch.nn.Linear(10, 3)
+   dropout_model = probly.transformation.dropout(model, p=0.5)
+   # ... rest of minimal example
+```
+   
+   **Error:**
+```
+   ValueError: Shape mismatch in mutual_information...
+```
+
+**Where to Get Help**
+
+* **GitHub Issues:** Report bugs and request features at https://github.com/pwhofman/probly/issues
+* **FAQ & Troubleshooting:** Check this document for common solutions
+* **Documentation:** Refer to :doc:`core_concepts`, :doc:`introduction`, and :doc:`examples_and_tutorials`
+* **Community:** Discuss with other users through the GitHub issue tracker
 
 8. Advanced Topics
 ------------------
@@ -604,3 +725,32 @@ Join the ``probly`` community:
 
 For questions about uncertainty quantification in general, the broader machine learning 
 community resources may also be helpful.
+
+References
+----------
+
+Abellán, J., & Moral, S. (2000). A non-specificity measure for convex sets of probability distributions. *International Journal of Uncertainty, Fuzziness and Knowledge-Based Systems*, *8*(3), 357-367. https://doi.org/10.1142/S0218488500000253
+
+Abellán, J., Klir, G. J., & Moral, S. (2006). Disaggregated total uncertainty measure for credal sets. *International Journal of General Systems*, *35*(1), 29–44. https://doi.org/10.1080/03081070500473490
+
+Amini, A., Schwarting, W., Soleimany, A., & Rus, D. (2020). Deep evidential regression. In H. Larochelle, M. Ranzato, R. Hadsell, M.-F. Balcan, & H.-T. Lin (Eds.), *Advances in Neural Information Processing Systems 33* (NeurIPS 2020). https://proceedings.neurips.cc/paper/2020/hash/aab085461de182608ee9f607f3f7d18f-Abstract.html
+
+Angelopoulos, A. N., & Bates, S. (2021). A gentle introduction to conformal prediction and distribution-free uncertainty quantification. *arXiv preprint arXiv:2107.07511*. https://arxiv.org/abs/2107.07511
+
+Blundell, C., Cornebise, J., Kavukcuoglu, K., & Wierstra, D. (2015). Weight uncertainty in neural network. In F. R. Bach & D. M. Blei (Eds.), *Proceedings of the 32nd International Conference on Machine Learning* (ICML 2015, Vol. 37, pp. 1613–1622). JMLR.org. http://proceedings.mlr.press/v37/blundell15.html
+
+Depeweg, S., Hernández-Lobato, J. M., Doshi-Velez, F., & Udluft, S. (2018). Decomposition of uncertainty in Bayesian deep learning for efficient and risk-sensitive learning. In J. G. Dy & A. Krause (Eds.), *Proceedings of the 35th International Conference on Machine Learning* (ICML 2018, Vol. 80, pp. 1192–1201). PMLR. http://proceedings.mlr.press/v80/depeweg18a.html
+
+Gal, Y., & Ghahramani, Z. (2016). Dropout as a Bayesian approximation: Representing model uncertainty in deep learning. In M.-F. Balcan & K. Q. Weinberger (Eds.), *Proceedings of the 33rd International Conference on Machine Learning* (ICML 2016, Vol. 48, pp. 1050–1059). JMLR.org. http://proceedings.mlr.press/v48/gal16.html
+
+Guo, C., Pleiss, G., Sun, Y., & Weinberger, K. Q. (2017). On calibration of modern neural networks. In D. Precup & Y. W. Teh (Eds.), *Proceedings of the 34th International Conference on Machine Learning* (ICML 2017, Vol. 70, pp. 1321–1330). PMLR. http://proceedings.mlr.press/v70/guo17a.html
+
+Lakshminarayanan, B., Pritzel, A., & Blundell, C. (2017). Simple and scalable predictive uncertainty estimation using deep ensembles. In I. Guyon, U. von Luxburg, S. Bengio, H. M. Wallach, R. Fergus, S. V. N. Vishwanathan, & R. Garnett (Eds.), *Advances in Neural Information Processing Systems 30* (NeurIPS 2017, pp. 6402–6413). https://proceedings.neurips.cc/paper/2017/hash/9ef2ed4b7fd2c810847ffa5fa85bce38-Abstract.html
+
+Lienen, J., & Hüllermeier, E. (2021). From label smoothing to label relaxation. In *Thirty-Fifth AAAI Conference on Artificial Intelligence* (AAAI 2021, pp. 8583–8591). AAAI Press. https://doi.org/10.1609/aaai.v35i10.17041
+
+Mobiny, A., Van Nguyen, H., Moulik, S., Garg, N., & Wu, C. C. (2019). DropConnect is effective in modeling uncertainty of Bayesian deep networks. *arXiv preprint arXiv:1906.04569*. http://arxiv.org/abs/1906.04569
+
+Nguyen, V.-L., Zhang, H., & Destercke, S. (2025). Credal ensembling in multi-class classification. *Machine Learning*, *114*(1), 19. https://doi.org/10.1007/s10994-024-06703-y
+
+Sensoy, M., Kaplan, L. M., & Kandemir, M. (2018). Evidential deep learning to quantify classification uncertainty. In S. Bengio, H. M. Wallach, H. Larochelle, K. Grauman, N. Cesa-Bianchi, & R. Garnett (Eds.), *Advances in Neural Information Processing Systems 31* (NeurIPS 2018, pp. 3179–3189). https://proceedings.neurips.cc/paper/2018/hash/a981f2b708044d6fb4a71a1463242520-Abstract.html
