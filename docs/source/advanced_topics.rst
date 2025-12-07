@@ -1280,7 +1280,7 @@ modules, and examples should slot naturally into your own advanced models and ex
    numpyro.distributions.constraints* [Source code documentation]. NumPyro.
    https://num.pyro.ai/en/0.3.0/_modules/numpyro/distributions/constraints.html
 
-   Contributors to the Pyro Project. (n.d.). *NumPyro transforms module*
+   Contributors to the Pyro Project. (2019). *NumPyro transforms module*
    [Documentation]. NumPyro. https://num.pyro.ai/
 
    Dutta, S., Legunsen, O., Huang, Z., & Misailovic, S. (2018). Testing
