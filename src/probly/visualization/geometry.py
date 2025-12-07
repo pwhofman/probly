@@ -51,37 +51,69 @@ class CredalVisualizer:
         if ax is None:
             fig, ax = plt.subplots(figsize=(6, 6))
 
+        def lerp(P, Q, t):
+            """Linear Interpolation for line values."""
+            return (1 - t) * P + t * Q
+
         # Draw triangle
         v1 = np.array([0.0, 0.0])
         v2 = np.array([1.0, 0.0])
         v3 = np.array([0.5, np.sqrt(3) / 2])
 
-        edges = [(v1,v2,"axis A")
-                 (v2,v3,"axis B")
-                 (v3,v1,"axis C")]
+        edges = [(v1,v2,"axis A"),
+                 (v2,v3,"axis B"),
+                 (v3,v1,"axis C"),]
 
         triangle_x = [v1[0], v2[0], v3[0], v1[0]]
         triangle_y = [v1[1], v2[1], v3[1], v1[1]]
 
-        ax.plot(triangle_x, triangle_y)
+        ax.plot(triangle_x, triangle_y, color="black")
         ax.axis("off")
 
         c1 = "Class 1"
         c2 = "Class 2"
         c3 = "Class 3"
-        ax.text(v1[0], v1[1], c1, ha="right", va="top", fontsize=12)
+        ax.text(v1[0], v1[1], c1, ha="right", va="top", label_offset = 0.05, fontsize=12)
         ax.text(v2[0], v2[1], c2, ha="left", va="top", fontsize=12)
         ax.text(v3[0], v3[1], c3, ha="center", va="bottom", fontsize=12)
 
-        ax.axis("off")
         verts = np.array([v1, v2, v3])
+        tick_values = np.linspace(0.0, 1.0, 10)
+        tick_length = 0.01
+        label_offset = -0.05
 
+        for P, Q, axis_name in edges:
+            edge_vec = Q - P
+            normal = np.array([-edge_vec[1], edge_vec[0]])
+            normal = normal / np.linalg.norm(normal)
+
+            for t in tick_values:
+                pos = lerp(P, Q, t)
+
+                tick_start = pos - normal * (tick_length / 2)
+                tick_end = pos + normal * (tick_length / 2)
+                ax.plot(
+                    [tick_start[0], tick_end[0]],
+                    [tick_start[1], tick_end[1]],
+                    color="black",
+                )
+                label_pos = pos + normal * label_offset
+                ax.text(
+                    label_pos[0],
+                    label_pos[1],
+                    f"{t:.1f}",
+                    ha="center",
+                    va="center",
+                    fontsize=8,
+                )
+        ax.set_aspect("equal", "box")
+        ax.set_xlim(-0.1, 1.1)
+        ax.set_ylim(-0.1, np.sqrt(3) / 2 + 0.2)
         #triangle = plt.Polygon(verts, closed=True, fill=False)
         #ax.add_patch(triangle)
 
         # Scatter points
         ax.scatter(coords[:, 0], coords[:, 1], **scatter_kwargs)
-
         return ax
 
     def interval_plot(self) -> None:
