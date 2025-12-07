@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from functools import singledispatch, update_wrapper
-from typing import TYPE_CHECKING, Any, Union, get_args, overload
+import operator
+from functools import reduce, singledispatch, update_wrapper
+from typing import TYPE_CHECKING, Any, get_args, overload
 
 from lazy_dispatch.isinstance import (
     LazyType,
@@ -131,7 +132,7 @@ class lazydispatch[A: Callable, Out]:  # noqa: N801
         types, strings = _split_lazy_type(cls)  # type: ignore[arg-type]
 
         if len(types) > 0:
-            union_type: UnionType = Union.__getitem__(tuple(types))  # type: ignore[assignment]
+            union_type = reduce(operator.or_, types)  # type: ignore[assignment]
             self.eager_register(union_type, func)
 
         if len(strings) > 0:

@@ -54,6 +54,7 @@ Quickstart
 
    introduction
    core_concepts
+   user_guide
    methods
    faq
    references
