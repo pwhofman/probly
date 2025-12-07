@@ -52,7 +52,10 @@ Quickstart
    :caption: Content
    :hidden:
 
+   introduction
+   core_concepts
    methods
+   faq
    references
 
 .. toctree::
