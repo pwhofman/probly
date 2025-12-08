@@ -7,11 +7,6 @@ This section contains practical, end-to-end examples that demonstrate how **prob
 
 Users who are new to probly are encouraged to begin with the introductory Dropout example before exploring ensemble-based methods and more advanced uncertainty-aware workflows.
 
-.. contents::
-   :local:
-   :depth: 2
-
-
 1. Uncertainty estimation with Dropout on MNIST
 ===============================================
 
