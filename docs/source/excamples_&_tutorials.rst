@@ -8,8 +8,8 @@ This section contains practical, end-to-end examples that demonstrate how **prob
 Users who are new to probly are encouraged to begin with the introductory Dropout example before exploring ensemble-based methods and more advanced uncertainty-aware workflows.
 
 .. contents::
-   :local:
-   :depth: 2
+   :local:
+   :depth: 2
 
 
 1. Uncertainty estimation with Dropout on MNIST
@@ -30,7 +30,7 @@ This example requires Python 3.8 or later and the packages ``probly``, ``torch``
 
 .. code-block:: bash
 
-   pip install probly torch torchvision
+   pip install probly torch torchvision
 
 The use of PyTorch and torchvision for MNIST follows standard practice in modern deep learning workflows, as also outlined in :cite:`goodfellow2016deep`.
 
@@ -42,19 +42,19 @@ In this step, you load the MNIST dataset, a canonical benchmark for handwritten 
 
 .. code-block:: python
 
-   import torch
-   from torch.utils.data import DataLoader
-   from torchvision import datasets, transforms
+   import torch
+   from torch.utils.data import DataLoader
+   from torchvision import datasets, transforms
 
-   device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+   device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-   transform = transforms.ToTensor()
+   transform = transforms.ToTensor()
 
-   train_dataset = datasets.MNIST(root="./data", train=True, transform=transform, download=True)
-   test_dataset = datasets.MNIST(root="./data", train=False, transform=transform, download=True)
+   train_dataset = datasets.MNIST(root="./data", train=True, transform=transform, download=True)
+   test_dataset = datasets.MNIST(root="./data", train=False, transform=transform, download=True)
 
-   train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
-   test_loader = DataLoader(test_dataset, batch_size=128, shuffle=False)
+   train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
+   test_loader = DataLoader(test_dataset, batch_size=128, shuffle=False)
 
 By wrapping MNIST with ``DataLoader`` and using ``ToTensor()``, you obtain batched tensors suitable for GPU-accelerated training. This setup is standard for supervised image classification tasks :cite:`goodfellow2016deep`.
 
@@ -66,26 +66,26 @@ Here, you define a simple convolutional neural network (CNN) with two convolutio
 
 .. code-block:: python
 
-   import torch.nn as nn
+   import torch.nn as nn
 
-   class SimpleCNN(nn.Module):
-       def __init__(self):
-           super().__init__()
-           self.net = nn.Sequential(
-               nn.Conv2d(1, 32, 3, padding=1),
-               nn.ReLU(),
-               nn.MaxPool2d(2),
-               nn.Conv2d(32, 64, 3, padding=1),
-               nn.ReLU(),
-               nn.MaxPool2d(2),
-               nn.Flatten(),
-               nn.Linear(64 * 7 * 7, 10),
-           )
+   class SimpleCNN(nn.Module):
+       def __init__(self):
+           super().__init__()
+           self.net = nn.Sequential(
+               nn.Conv2d(1, 32, 3, padding=1),
+               nn.ReLU(),
+               nn.MaxPool2d(2),
+               nn.Conv2d(32, 64, 3, padding=1),
+               nn.ReLU(),
+               nn.MaxPool2d(2),
+               nn.Flatten(),
+               nn.Linear(64 * 7 * 7, 10),
+           )
 
-       def forward(self, x):
-           return self.net(x)
+       def forward(self, x):
+           return self.net(x)
 
-   model = SimpleCNN().to(device)
+   model = SimpleCNN().to(device)
 
 The network is deliberately compact, keeping training quick while still being expressive enough to benefit from uncertainty estimation techniques discussed in Bayesian deep learning :cite:`bishop2006pattern,gal2016dropout`.
 
@@ -97,20 +97,20 @@ You now train the CNN using the Adam optimizer and the cross-entropy loss, which
 
 .. code-block:: python
 
-   import torch.optim as optim
-   import torch.nn.functional as F
+   import torch.optim as optim
+   import torch.nn.functional as F
 
-   optimizer = optim.Adam(model.parameters(), lr=1e-3)
+   optimizer = optim.Adam(model.parameters(), lr=1e-3)
 
-   model.train()
-   for epoch in range(1):
-       for x, y in train_loader:
-           x, y = x.to(device), y.to(device)
-           optimizer.zero_grad()
-           logits = model(x)
-           loss = F.cross_entropy(logits, y)
-           loss.backward()
-           optimizer.step()
+   model.train()
+   for epoch in range(1):
+       for x, y in train_loader:
+           x, y = x.to(device), y.to(device)
+           optimizer.zero_grad()
+           logits = model(x)
+           loss = F.cross_entropy(logits, y)
+           loss.backward()
+           optimizer.step()
 
 A single training epoch is sufficient for demonstration purposes. In practice, you would typically train longer for higher accuracy, but the uncertainty-aware part of the pipeline is independent of the exact training duration.
 
@@ -122,9 +122,9 @@ The crucial step is to transform the trained model into an uncertainty-aware mod
 
 .. code-block:: python
 
-   from probly.transformation import dropout
+   from probly.transformation import dropout
 
-   prob_model = dropout(model, p=0.5, enable_at_eval=True)
+   prob_model = dropout(model, p=0.5, enable_at_eval=True)
 
 This setup follows the Monte Carlo Dropout (MC Dropout) interpretation, where Dropout is treated as a variational approximation to a Bayesian neural network :cite:`gal2016dropout`. The probability ``p=0.5`` controls the amount of stochasticity, i.e. how strongly the model’s predictions will vary across stochastic forward passes.
 
@@ -136,27 +136,27 @@ You now perform multiple stochastic forward passes to obtain a Monte Carlo estim
 
 .. code-block:: python
 
-   import torch.nn.functional as F
-   import torch
+   import torch.nn.functional as F
+   import torch
 
-   @torch.no_grad()
-   def mc_predict(model, x, samples=30):
-       model.eval()  # Dropout remains active
-       probs = []
-       for _ in range(samples):
-           logits = model(x)
-           p = F.softmax(logits, dim=-1)
-           probs.append(p.unsqueeze(0))
-       probs = torch.cat(probs, dim=0)
-       return probs.mean(0), probs.std(0)
+   @torch.no_grad()
+   def mc_predict(model, x, samples=30):
+       model.eval()  # Dropout remains active
+       probs = []
+       for _ in range(samples):
+           logits = model(x)
+           p = F.softmax(logits, dim=-1)
+           probs.append(p.unsqueeze(0))
+       probs = torch.cat(probs, dim=0)
+       return probs.mean(0), probs.std(0)
 
-   x_batch, _ = next(iter(test_loader))
-   x_batch = x_batch.to(device)
+   x_batch, _ = next(iter(test_loader))
+   x_batch = x_batch.to(device)
 
-   mean_probs, std_probs = mc_predict(prob_model, x_batch[0:1])
+   mean_probs, std_probs = mc_predict(prob_model, x_batch[0:1])
 
-   print("Mean probabilities:", mean_probs.squeeze().cpu())
-   print("Std probabilities:", std_probs.squeeze().cpu())
+   print("Mean probabilities:", mean_probs.squeeze().cpu())
+   print("Std probabilities:", std_probs.squeeze().cpu())
 
 The function ``mc_predict`` implements the Monte Carlo estimator by repeatedly sampling from the implicit model posterior induced by Dropout. The resulting uncertainty estimates are particularly useful under distribution shift and for downstream decision making :cite:`ovadia2019trust`.
 
@@ -167,9 +167,9 @@ Step 6: Visualize uncertainty
 Visualizing both the predictive mean and the associated uncertainty (e.g. as error bars or shaded regions) can help you identify ambiguous or out-of-distribution samples :cite:`kendall2017uncertainties,ovadia2019trust`.
 
 .. image:: mc_dropout_example.png
-   :width: 550px
-   :align: center
-   :alt: Monte Carlo Dropout uncertainty visualization
+   :width: 550px
+   :align: center
+   :alt: Monte Carlo Dropout uncertainty visualization
 
 Summary
 -------
@@ -193,33 +193,33 @@ You first define a small multilayer perceptron (MLP) that will serve as the base
 
 .. code-block:: python
 
-   import torch
-   import torch.nn as nn
-   from torch.utils.data import DataLoader
-   from torchvision import datasets, transforms
+   import torch
+   import torch.nn as nn
+   from torch.utils.data import DataLoader
+   from torchvision import datasets, transforms
 
-   device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+   device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-   transform = transforms.ToTensor()
+   transform = transforms.ToTensor()
 
-   train_dataset = datasets.MNIST(root="./data", train=True, transform=transform, download=True)
-   test_dataset = datasets.MNIST(root="./data", train=False, transform=transform, download=True)
+   train_dataset = datasets.MNIST(root="./data", train=True, transform=transform, download=True)
+   test_dataset = datasets.MNIST(root="./data", train=False, transform=transform, download=True)
 
-   train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
-   test_loader = DataLoader(test_dataset, batch_size=256, shuffle=False)
+   train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
+   test_loader = DataLoader(test_dataset, batch_size=256, shuffle=False)
 
-   class SmallMLP(nn.Module):
-       def __init__(self):
-           super().__init__()
-           self.net = nn.Sequential(
-               nn.Flatten(),
-               nn.Linear(28 * 28, 128),
-               nn.ReLU(),
-               nn.Linear(128, 10),
-           )
+   class SmallMLP(nn.Module):
+       def __init__(self):
+           super().__init__()
+           self.net = nn.Sequential(
+               nn.Flatten(),
+               nn.Linear(28 * 28, 128),
+               nn.ReLU(),
+               nn.Linear(128, 10),
+           )
 
-       def forward(self, x):
-           return self.net(x)
+       def forward(self, x):
+           return self.net(x)
 
 The shared base model architecture ensures that differences between ensemble members arise primarily from random initialization and stochastic optimization, which is essential for diverse deep ensembles :cite:`fort2019deep`.
 
@@ -231,11 +231,11 @@ You now instantiate multiple independent copies of the base model and wrap them 
 
 .. code-block:: python
 
-   from probly.ensemble import Ensemble
+   from probly.ensemble import Ensemble
 
-   num_members = 5
-   members = [SmallMLP().to(device) for _ in range(num_members)]
-   ensemble = Ensemble(members)
+   num_members = 5
+   members = [SmallMLP().to(device) for _ in range(num_members)]
+   ensemble = Ensemble(members)
 
 This construction corresponds to the **deep ensemble** paradigm :cite:`lakshminarayanan2017simple`, where several independently trained networks are combined to obtain improved accuracy and better-calibrated uncertainty estimates compared to a single model.
 
@@ -247,23 +247,23 @@ Each ensemble member is trained independently on the same data. Due to random in
 
 .. code-block:: python
 
-   import torch.nn.functional as F
-   import torch.optim as optim
+   import torch.nn.functional as F
+   import torch.optim as optim
 
-   def train_member(model, loader, epochs=1):
-       optimizer = optim.Adam(model.parameters(), lr=1e-3)
-       model.train()
-       for _ in range(epochs):
-           for x, y in loader:
-               x, y = x.to(device), y.to(device)
-               optimizer.zero_grad()
-               logits = model(x)
-               loss = F.cross_entropy(logits, y)
-               loss.backward()
-               optimizer.step()
+   def train_member(model, loader, epochs=1):
+       optimizer = optim.Adam(model.parameters(), lr=1e-3)
+       model.train()
+       for _ in range(epochs):
+           for x, y in loader:
+               x, y = x.to(device), y.to(device)
+               optimizer.zero_grad()
+               logits = model(x)
+               loss = F.cross_entropy(logits, y)
+               loss.backward()
+               optimizer.step()
 
-   for m in members:
-       train_member(m, train_loader, epochs=1)
+   for m in members:
+       train_member(m, train_loader, epochs=1)
 
 While only one epoch is used here for brevity, additional epochs typically increase accuracy. The crucial property is that each member learns a slightly different function, giving rise to ensemble diversity :cite:`dietterich2000ensemble,fort2019deep`.
 
@@ -275,20 +275,20 @@ The ensemble prediction is obtained by aggregating individual member predictions
 
 .. code-block:: python
 
-   @torch.no_grad()
-   def evaluate(model, loader):
-       model.eval()
-       correct = 0
-       total = 0
-       for x, y in loader:
-           x, y = x.to(device), y.to(device)
-           preds = model(x).argmax(dim=1)
-           correct += (preds == y).sum().item()
-           total += x.size(0)
-       return correct / total
+   @torch.no_grad()
+   def evaluate(model, loader):
+       model.eval()
+       correct = 0
+       total = 0
+       for x, y in loader:
+           x, y = x.to(device), y.to(device)
+           preds = model(x).argmax(dim=1)
+           correct += (preds == y).sum().item()
+           total += x.size(0)
+       return correct / total
 
-   full_acc = evaluate(ensemble, test_loader)
-   print("Ensemble accuracy:", full_acc)
+   full_acc = evaluate(ensemble, test_loader)
+   print("Ensemble accuracy:", full_acc)
 
 In probly, the ``Ensemble`` abstraction takes care of combining member outputs internally, making it straightforward to compare an ensemble to a single model in terms of accuracy and uncertainty.
 
@@ -300,11 +300,11 @@ Using the trained ensemble, you can construct a ``SubEnsemble`` that uses only a
 
 .. code-block:: python
 
-   from probly.ensemble import SubEnsemble
+   from probly.ensemble import SubEnsemble
 
-   sub = SubEnsemble(ensemble, indices=[0, 1])
-   sub_acc = evaluate(sub, test_loader)
-   print("SubEnsemble accuracy:", sub_acc)
+   sub = SubEnsemble(ensemble, indices=[0, 1])
+   sub_acc = evaluate(sub, test_loader)
+   print("SubEnsemble accuracy:", sub_acc)
 
 The idea of using partial ensembles or subnetworks to control computational budget is related to recent work on training independent subnetworks for robust predictions :cite:`havasi2021training` and subsampling strategies for efficient uncertainty estimation :cite:`cunningham2020ensemble`. With probly, this pattern becomes a simple configuration choice.
 
@@ -312,9 +312,9 @@ Visual result
 ~~~~~~~~~~~~~
 
 .. image:: subensemble_comparison.png
-   :width: 500px
-   :align: center
-   :alt: Accuracy comparison between full ensemble and SubEnsemble
+   :width: 500px
+   :align: center
+   :alt: Accuracy comparison between full ensemble and SubEnsemble
 
 Summary
 -------
@@ -338,19 +338,19 @@ As in the previous tutorials, you use MNIST as a benchmark dataset :cite:`lecun1
 
 .. code-block:: python
 
-   import torch
-   from torch.utils.data import DataLoader
-   from torchvision import datasets, transforms
+   import torch
+   from torch.utils.data import DataLoader
+   from torchvision import datasets, transforms
 
-   device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+   device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-   transform = transforms.ToTensor()
+   transform = transforms.ToTensor()
 
-   train_dataset = datasets.MNIST(root="./data", train=True, transform=transform, download=True)
-   test_dataset = datasets.MNIST(root="./data", train=False, transform=transform, download=True)
+   train_dataset = datasets.MNIST(root="./data", train=True, transform=transform, download=True)
+   test_dataset = datasets.MNIST(root="./data", train=False, transform=transform, download=True)
 
-   train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
-   test_loader = DataLoader(test_dataset, batch_size=256, shuffle=False)
+   train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
+   test_loader = DataLoader(test_dataset, batch_size=256, shuffle=False)
 
 
 Step 2: Define different architectures
@@ -360,44 +360,44 @@ You now define two different architectures: a small CNN and a small MLP. The CNN
 
 .. code-block:: python
 
-   import torch.nn as nn
-   import torch.nn.functional as F
+   import torch.nn as nn
+   import torch.nn.functional as F
 
-   class SmallCNN(nn.Module):
-       def __init__(self):
-           super().__init__()
-           self.conv = nn.Sequential(
-               nn.Conv2d(1, 32, 3, padding=1),
-               nn.ReLU(),
-               nn.MaxPool2d(2),
-               nn.Conv2d(32, 64, 3, padding=1),
-               nn.ReLU(),
-               nn.MaxPool2d(2),
-           )
-           self.head = nn.Sequential(
-               nn.Flatten(),
-               nn.Linear(64 * 7 * 7, 128),
-               nn.ReLU(),
-               nn.Linear(128, 10),
-           )
+   class SmallCNN(nn.Module):
+       def __init__(self):
+           super().__init__()
+           self.conv = nn.Sequential(
+               nn.Conv2d(1, 32, 3, padding=1),
+               nn.ReLU(),
+               nn.MaxPool2d(2),
+               nn.Conv2d(32, 64, 3, padding=1),
+               nn.ReLU(),
+               nn.MaxPool2d(2),
+           )
+           self.head = nn.Sequential(
+               nn.Flatten(),
+               nn.Linear(64 * 7 * 7, 128),
+               nn.ReLU(),
+               nn.Linear(128, 10),
+           )
 
-       def forward(self, x):
-           x = self.conv(x)
-           x = self.head(x)
-           return x
+       def forward(self, x):
+           x = self.conv(x)
+           x = self.head(x)
+           return x
 
-   class SmallMLP(nn.Module):
-       def __init__(self):
-           super().__init__()
-           self.net = nn.Sequential(
-               nn.Flatten(),
-               nn.Linear(28 * 28, 256),
-               nn.ReLU(),
-               nn.Linear(256, 10),
-           )
+   class SmallMLP(nn.Module):
+       def __init__(self):
+           super().__init__()
+           self.net = nn.Sequential(
+               nn.Flatten(),
+               nn.Linear(28 * 28, 256),
+               nn.ReLU(),
+               nn.Linear(256, 10),
+           )
 
-       def forward(self, x):
-           return self.net(x)
+       def forward(self, x):
+           return self.net(x)
 
 The architectural diversity is the main driver of improved robustness in heterogeneous ensembles :cite:`opitz1999popular`, since different architectures often fail on different inputs.
 
@@ -409,17 +409,17 @@ You first construct a homogeneous ensemble consisting only of CNNs, and then a `
 
 .. code-block:: python
 
-   from probly.ensemble import Ensemble, MixedEnsemble
+   from probly.ensemble import Ensemble, MixedEnsemble
 
-   cnn_members = [SmallCNN().to(device) for _ in range(3)]
-   cnn_ensemble = Ensemble(cnn_members)
+   cnn_members = [SmallCNN().to(device) for _ in range(3)]
+   cnn_ensemble = Ensemble(cnn_members)
 
-   mixed_members = [
-       SmallCNN().to(device),
-       SmallCNN().to(device),
-       SmallMLP().to(device),
-   ]
-   mixed_ensemble = MixedEnsemble(mixed_members)
+   mixed_members = [
+       SmallCNN().to(device),
+       SmallCNN().to(device),
+       SmallMLP().to(device),
+   ]
+   mixed_ensemble = MixedEnsemble(mixed_members)
 
 This setup mirrors the idea of mixtures of experts :cite:`jacobs1991adaptive` and modern large-scale sparse ensembles :cite:`shazeer2017outrageously`, but in a simplified form where probly handles the aggregation of member predictions without a separate gating network.
 
@@ -427,29 +427,29 @@ This setup mirrors the idea of mixtures of experts :cite:`jacobs1991adaptive` an
 Step 4: Train all members
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-All ensemble members—both in the homogeneous CNN ensemble and the mixed ensemble—are trained independently using the same training loop.
+All ensemble members, both in the homogeneous CNN ensemble as well as the mixed ensemble are trained independently using the same training loop.
 
 .. code-block:: python
 
-   import torch.optim as optim
+   import torch.optim as optim
 
-   def train(model, loader, epochs=1):
-       optimizer = optim.Adam(model.parameters(), lr=1e-3)
-       model.train()
-       for _ in range(epochs):
-           for x, y in loader:
-               x, y = x.to(device), y.to(device)
-               optimizer.zero_grad()
-               logits = model(x)
-               loss = F.cross_entropy(logits, y)
-               loss.backward()
-               optimizer.step()
+   def train(model, loader, epochs=1):
+       optimizer = optim.Adam(model.parameters(), lr=1e-3)
+       model.train()
+       for _ in range(epochs):
+           for x, y in loader:
+               x, y = x.to(device), y.to(device)
+               optimizer.zero_grad()
+               logits = model(x)
+               loss = F.cross_entropy(logits, y)
+               loss.backward()
+               optimizer.step()
 
-   for m in cnn_members:
-       train(m, train_loader, epochs=1)
+   for m in cnn_members:
+       train(m, train_loader, epochs=1)
 
-   for m in mixed_members:
-       train(m, train_loader, epochs=1)
+   for m in mixed_members:
+       train(m, train_loader, epochs=1)
 
 Independent training encourages diversity in the learned decision boundaries, which is critical for ensemble performance under distribution shift :cite:`opitz1999popular,ovadia2019trust`.
 
@@ -461,24 +461,24 @@ Finally, you evaluate both the homogeneous CNN ensemble and the MixedEnsemble on
 
 .. code-block:: python
 
-   @torch.no_grad()
-   def evaluate(model, loader):
-       model.eval()
-       correct = 0
-       total = 0
-       for x, y in loader:
-           x, y = x.to(device), y.to(device)
-           logits = model(x)
-           preds = logits.argmax(dim=1)
-           correct += (preds == y).sum().item()
-           total += x.size(0)
-       return correct / total
+   @torch.no_grad()
+   def evaluate(model, loader):
+       model.eval()
+       correct = 0
+       total = 0
+       for x, y in loader:
+           x, y = x.to(device), y.to(device)
+           logits = model(x)
+           preds = logits.argmax(dim=1)
+           correct += (preds == y).sum().item()
+           total += x.size(0)
+       return correct / total
 
-   acc_cnn = evaluate(cnn_ensemble, test_loader)
-   acc_mixed = evaluate(mixed_ensemble, test_loader)
+   acc_cnn = evaluate(cnn_ensemble, test_loader)
+   acc_mixed = evaluate(mixed_ensemble, test_loader)
 
-   print("Homogeneous CNN Ensemble accuracy:", acc_cnn)
-   print("MixedEnsemble accuracy:", acc_mixed)
+   print("Homogeneous CNN Ensemble accuracy:", acc_cnn)
+   print("MixedEnsemble accuracy:", acc_mixed)
 
 Beyond accuracy, you could also compare calibration and robustness under distribution shift, as suggested by Ovadia et al. :cite:`ovadia2019trust`. Mixed ensembles often exhibit different failure modes than homogeneous ones, which can be beneficial in safety-critical applications.
 
@@ -487,9 +487,9 @@ Visual result
 -------------
 
 .. image:: mixed_ensemble_comparison.png
-   :width: 500px
-   :align: center
-   :alt: Accuracy comparison between homogeneous and mixed ensembles
+   :width: 500px
+   :align: center
+   :alt: Accuracy comparison between homogeneous and mixed ensembles
 
 Summary
 -------
@@ -503,61 +503,60 @@ References
 These tutorials build on established work in deep learning, Bayesian deep learning,
 and ensemble methods. Key references include:
 
-[1]  Yann LeCun, Léon Bottou, Yoshua Bengio, and Patrick Haffner.
-     *Gradient-based learning applied to document recognition.*
-     Proceedings of the IEEE, 86(11):2278–2324, 1998.
+[1]  Yann LeCun, Léon Bottou, Yoshua Bengio, and Patrick Haffner.
+     *Gradient-based learning applied to document recognition.*
+     Proceedings of the IEEE, 86(11):2278–2324, 1998.
 
-[2]  Ian Goodfellow, Yoshua Bengio, and Aaron Courville.
-     *Deep Learning.*
-     MIT Press, 2016.
+[2]  Ian Goodfellow, Yoshua Bengio, and Aaron Courville.
+     *Deep Learning.*
+     MIT Press, 2016.
 
-[3]  Christopher M. Bishop.
-     *Pattern Recognition and Machine Learning.*
-     Springer, 2006.
+[3]  Christopher M. Bishop.
+     *Pattern Recognition and Machine Learning.*
+     Springer, 2006.
 
-[4]  Yarin Gal and Zoubin Ghahramani.
-     *Dropout as a Bayesian approximation: Representing model uncertainty in deep learning.*
-     In Proceedings of the 33rd International Conference on Machine Learning (ICML), 2016.
+[4]  Yarin Gal and Zoubin Ghahramani.
+     *Dropout as a Bayesian approximation: Representing model uncertainty in deep learning.*
+     In Proceedings of the 33rd International Conference on Machine Learning (ICML), 2016.
 
-[5]  Alex Kendall and Yarin Gal.
-     *What uncertainties do we need in Bayesian deep learning for computer vision?*
-     In Advances in Neural Information Processing Systems (NeurIPS), 2017.
+[5]  Alex Kendall and Yarin Gal.
+     *What uncertainties do we need in Bayesian deep learning for computer vision?*
+     In Advances in Neural Information Processing Systems (NeurIPS), 2017.
 
-[6]  Yaniv Ovadia, Emily Fertig, Jie Ren, Zachary Nado, D. Sculley, Sebastian Nowozin,
-     Joshua V. Dillon, Balaji Lakshminarayanan, and Jasper Snoek.
-     *Can you trust your model's uncertainty? Evaluating predictive uncertainty under dataset shift.*
-     In Advances in Neural Information Processing Systems (NeurIPS), 2019.
+[6]  Yaniv Ovadia, Emily Fertig, Jie Ren, Zachary Nado, D. Sculley, Sebastian Nowozin,
+     Joshua V. Dillon, Balaji Lakshminarayanan, and Jasper Snoek.
+     *Can you trust your model's uncertainty? Evaluating predictive uncertainty under dataset shift.*
+     In Advances in Neural Information Processing Systems (NeurIPS), 2019.
 
-[7]  Balaji Lakshminarayanan, Alexander Pritzel, and Charles Blundell.
-     *Simple and scalable predictive uncertainty estimation using deep ensembles.*
-     In Advances in Neural Information Processing Systems (NeurIPS), 2017.
+[7]  Balaji Lakshminarayanan, Alexander Pritzel, and Charles Blundell.
+     *Simple and scalable predictive uncertainty estimation using deep ensembles.*
+     In Advances in Neural Information Processing Systems (NeurIPS), 2017.
 
-[8]  Thomas G. Dietterich.
-     *Ensemble methods in machine learning.*
-     In Multiple Classifier Systems, Lecture Notes in Computer Science, vol. 1857, 2000.
+[8]  Thomas G. Dietterich.
+     *Ensemble methods in machine learning.*
+     In Multiple Classifier Systems, Lecture Notes in Computer Science, vol. 1857, 2000.
 
-[9]  Stanislav Fort, Huiyi Hu, and Balaji Lakshminarayanan.
-     *Deep ensembles: A loss landscape perspective.*
-     arXiv preprint arXiv:1912.02757, 2019.
+[9]  Stanislav Fort, Huiyi Hu, and Balaji Lakshminarayanan.
+     *Deep ensembles: A loss landscape perspective.*
+     arXiv preprint arXiv:1912.02757, 2019.
 
 [10] Márton Havasi, Robert Peharz, and José Miguel Hernández-Lobato.
-     *Training independent subnetworks for robust prediction.*
-     In International Conference on Learning Representations (ICLR), 2021.
+     *Training independent subnetworks for robust prediction.*
+     In International Conference on Learning Representations (ICLR), 2021.
 
 [11] John P. Cunningham, Tamara Broderick, and others.
-     *Ensemble methods for uncertainty estimation in deep learning.*
-     Tutorial and survey material, 2020.
+     *Ensemble methods for uncertainty estimation in deep learning.*
+     Tutorial and survey material, 2020.
 
 [12] David Opitz and Richard Maclin.
-     *Popular ensemble methods: An empirical study.*
-     Journal of Artificial Intelligence Research, 11:169–198, 1999.
+     *Popular ensemble methods: An empirical study.*
+     Journal of Artificial Intelligence Research, 11:169–198, 1999.
 
 [13] Robert A. Jacobs, Michael I. Jordan, Steven J. Nowlan, and Geoffrey E. Hinton.
-     *Adaptive mixtures of local experts.*
-     Neural Computation, 3(1):79–87, 1991.
+     *Adaptive mixtures of local experts.*
+     Neural Computation, 3(1):79–87, 1991.
 
 [14] Noam Shazeer, Azalia Mirhoseini, Krzysztof Maziarz, et al.
-     *Outrageously large neural networks: The sparsely-gated mixture-of-experts layer.*
-     In International Conference on Learning Representations (ICLR), 2017.
+     *Outrageously large neural networks: The sparsely-gated mixture-of-experts layer.*
+     In International Conference on Learning Representations (ICLR), 2017.
 
-kannst du mir helfen das besser zumcahen ist ein .rst für github 
