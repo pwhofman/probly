@@ -16,6 +16,7 @@ dependencies = [
     "scikit-learn",
     "tqdm",
     "joblib",
+    "flax",
 ]
 authors = [
     {name = "Paul Hofman", email = "paul.hofman@ifi.lmu.de"},
