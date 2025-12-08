@@ -1,3 +1,5 @@
+"""Geometry-related visualization utilities for credal sets."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -75,7 +77,7 @@ class CredalVisualizer:
 
     def __init__(self) -> None:
         pass
-    
+
 def spider_plot(
     self,
     lower: np.ndarray | None,
