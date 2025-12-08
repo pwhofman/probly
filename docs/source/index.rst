@@ -53,11 +53,11 @@ Quickstart
    installation
    core_concepts
    main_components
-   api
-   examples_and_tutorials
    advanced_topics
-   faq
+   examples_&_tutorials
+   contributing
    references
+   faq
 
 
 
