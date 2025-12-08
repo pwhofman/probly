@@ -6,9 +6,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 try:
-    from intervall import CredalVisualizer as IntervalVisualizer
-    from spider import radar_factory  # Importing the factory function from spider.py
-    from triangle import CredalVisualizer as TernaryVisualizer
+    from .geometry import CredalVisualizer
+    #from spider import radar_factory  # Importing the factory function from spider.py
+    #from .geometry import CredalVisualizer
 except ImportError as e:
     print(  # noqa: T201
         f"Warning: Modules could not be imported. Please ensure all plotting files are present. Error: {e}",
@@ -24,14 +24,8 @@ def check_num_classes(input_data: np.ndarray) -> int:
     Returns:
     Number of classes.
     """
-    if input_data.shape[-1] == 2:
-        return 2
-    if input_data.shape[-1] == 3:
-        return 3
-    if input_data.shape[-1] == 4:
-        return 4
-    raise NotImplementedError
-
+    n_classes = input_data.shape[-1]
+    return n_classes
 
 def check_shape(input_data: np.ndarray) -> np.ndarray:
     """Sanity check.
@@ -39,11 +33,12 @@ def check_shape(input_data: np.ndarray) -> np.ndarray:
     Args:
     input_data: 3D tensor.
     """
-    msg1 = "Input must be a tensor with shape (n_models, n_samples, n_classes."
+    msg1 = "Input must be a NumPy Array."
     msg2 = "There must be at least 2 classes."
     msg3 = "The probabilities of each class must sum to 1."
     msg4 = "All probabilities must be positive."
-    if not isinstance(input_data, np.ndarray) and input_data.ndim != 3:
+    msg5 = "Input_data must be at least a 2D NumPy Array."
+    if not isinstance(input_data, np.ndarray):
         raise ValueError(msg1)
     if input_data.shape[2] <= 1:
         raise ValueError(msg2)
@@ -51,8 +46,19 @@ def check_shape(input_data: np.ndarray) -> np.ndarray:
         raise ValueError(msg3)
     if (input_data < 0).any():
         raise ValueError(msg4)
+    if input_data.ndim < 2:
+        raise ValueError(msg5)
     return input_data
 
+def normalize_input(input_data: np.ndarray) -> np.ndarray:
+    """Normalize input data.
+    Args:
+    """
+    if input_data.ndim >= 3:
+        input_data = input_data.reshape(-1, input_data.shape[-1])
+        return input_data
+    else:
+        return input_data
 
 def dispatch_plot(input_data: np.ndarray, labels: list[str] | None = None) -> None:
     """Selects and executes the correct plotting function based on class count.
@@ -65,32 +71,26 @@ def dispatch_plot(input_data: np.ndarray, labels: list[str] | None = None) -> No
     input_data = check_shape(input_data)
 
     # 2. Flatten if 3D: (Models, Samples, Classes) -> (Total Samples, Classes)
-    # The visualizers generally expect a list of points (samples).
-    if input_data.ndim == 3:  # noqa: SIM108
-        # Combine all models and samples into one large point cloud
-        points = input_data.reshape(-1, input_data.shape[-1])
-    else:
-        points = input_data
+    points = normalize_input(input_data)
 
     n_classes = check_num_classes(points)
 
     print(f"Detected {n_classes} classes. Selecting visualizer...")  # noqa: T201
 
+    viz = CredalVisualizer()
     # 3. Dispatch Logic
     if n_classes == 2:
         # --- Interval Plot ---
-        viz = IntervalVisualizer()
-        viz.interval_plot(points)
+        viz.interval_plot()
         plt.title("Interval Plot (2 Classes)")
         plt.show()
 
     elif n_classes == 3:
         # --- Ternary Plot ---
-        viz_ternary = TernaryVisualizer()
         # Initialize plot
-        ax = viz_ternary.ternary_plot(points, s=30, alpha=0.6)
+        ax = viz.ternary_plot(points, s=30, alpha=0.6)
         # Draw Convex Hull on top
-        viz_ternary.plot_convex_hull(points, ax=ax, facecolor="lightgreen", alpha=0.2)
+        viz.plot_convex_hull(points, ax=ax, facecolor="lightgreen", alpha=0.2)
         plt.title("Ternary Plot (3 Classes)")
         plt.show()
 
