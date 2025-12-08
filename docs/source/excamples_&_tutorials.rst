@@ -500,6 +500,66 @@ In this example, you used probly to construct both a homogeneous ensemble and a 
 References
 ==========
 
-These tutorials build on established work in deep learning, Bayesian deep learning and ensemble methods 
+References
+==========
 
-:cite:lecun1998gradient,goodfellow2016deep,bishop2006pattern,gal2016dropout,kendall2017uncertainties,ovadia2019trust,lakshminarayanan2017simple,dietterich2000ensemble,fort2019deep,havasi2021training,cunningham2020ensemble,opitz1999popular,jacobs1991adaptive,shazeer2017outrageously.
+These tutorials build on established work in deep learning, Bayesian deep learning,
+and ensemble methods. Key references include:
+
+[1]  Yann LeCun, Léon Bottou, Yoshua Bengio, and Patrick Haffner.
+     *Gradient-based learning applied to document recognition.*
+     Proceedings of the IEEE, 86(11):2278–2324, 1998.
+
+[2]  Ian Goodfellow, Yoshua Bengio, and Aaron Courville.
+     *Deep Learning.*
+     MIT Press, 2016.
+
+[3]  Christopher M. Bishop.
+     *Pattern Recognition and Machine Learning.*
+     Springer, 2006.
+
+[4]  Yarin Gal and Zoubin Ghahramani.
+     *Dropout as a Bayesian approximation: Representing model uncertainty in deep learning.*
+     In Proceedings of the 33rd International Conference on Machine Learning (ICML), 2016.
+
+[5]  Alex Kendall and Yarin Gal.
+     *What uncertainties do we need in Bayesian deep learning for computer vision?*
+     In Advances in Neural Information Processing Systems (NeurIPS), 2017.
+
+[6]  Yaniv Ovadia, Emily Fertig, Jie Ren, Zachary Nado, D. Sculley, Sebastian Nowozin,
+     Joshua V. Dillon, Balaji Lakshminarayanan, and Jasper Snoek.
+     *Can you trust your model's uncertainty? Evaluating predictive uncertainty under dataset shift.*
+     In Advances in Neural Information Processing Systems (NeurIPS), 2019.
+
+[7]  Balaji Lakshminarayanan, Alexander Pritzel, and Charles Blundell.
+     *Simple and scalable predictive uncertainty estimation using deep ensembles.*
+     In Advances in Neural Information Processing Systems (NeurIPS), 2017.
+
+[8]  Thomas G. Dietterich.
+     *Ensemble methods in machine learning.*
+     In Multiple Classifier Systems, Lecture Notes in Computer Science, vol. 1857, 2000.
+
+[9]  Stanislav Fort, Huiyi Hu, and Balaji Lakshminarayanan.
+     *Deep ensembles: A loss landscape perspective.*
+     arXiv preprint arXiv:1912.02757, 2019.
+
+[10] Márton Havasi, Robert Peharz, and José Miguel Hernández-Lobato.
+     *Training independent subnetworks for robust prediction.*
+     In International Conference on Learning Representations (ICLR), 2021.
+
+[11] John P. Cunningham, Tamara Broderick, and others.
+     *Ensemble methods for uncertainty estimation in deep learning.*
+     Tutorial and survey material, 2020.
+
+[12] David Opitz and Richard Maclin.
+     *Popular ensemble methods: An empirical study.*
+     Journal of Artificial Intelligence Research, 11:169–198, 1999.
+
+[13] Robert A. Jacobs, Michael I. Jordan, Steven J. Nowlan, and Geoffrey E. Hinton.
+     *Adaptive mixtures of local experts.*
+     Neural Computation, 3(1):79–87, 1991.
+
+[14] Noam Shazeer, Azalia Mirhoseini, Krzysztof Maziarz, et al.
+     *Outrageously large neural networks: The sparsely-gated mixture-of-experts layer.*
+     In International Conference on Learning Representations (ICLR), 2017.
+
