@@ -16,13 +16,7 @@ def replace_torch_bayesian_linear(
     prior_mean: float,
     prior_std: float,
 ) -> BayesLinear:
-    """Replace a given layer by a BayesLinear layer.
-
-    References:
-        Based on 'Weight Uncertainty in Neural Networks' by Blundell et al. (2015).
-        See: :cite:t`blundellWeightUncertainty2015`
-
-    """
+    """Replace a given layer by a BayesLinear layer based on :cite:`blundellWeightUncertainty2015`."""
     return BayesLinear(obj, use_base_weights, posterior_std, prior_mean, prior_std)
 
 
@@ -33,7 +27,7 @@ def replace_torch_bayesian_conv2d(
     prior_mean: float,
     prior_std: float,
 ) -> BayesConv2d:
-    """Replace a given layer by a BayesConv2d layer."""
+    """Replace a given layer by a BayesConv2d layer based on :cite:`blundellWeightUncertainty2015`."""
     return BayesConv2d(obj, use_base_weights, posterior_std, prior_mean, prior_std)
 
 
