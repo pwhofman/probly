@@ -126,7 +126,7 @@ html_sidebars = {
 html_show_sourcelink = False  # to remove button next to dark mode showing source in txt format
 
 # -- Autodoc ---------------------------------------------------------------------------------------
-autosummary_generate = True
+autosummary_generate = False
 autodoc_default_options = {
     "show-inheritance": True,
     "members": True,
