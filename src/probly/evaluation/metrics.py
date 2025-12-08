@@ -40,7 +40,7 @@ def expected_calibration_error(probs: np.ndarray, labels: np.ndarray, num_bins: 
 
 
 def coverage(preds: np.ndarray, targets: np.ndarray) -> float:
-    """Compute the coverage of set-valued predictions.
+    """Compute the coverage of set-valued predictions described in :cite:`angelopoulosGentleIntroduction2021`.
 
     Args:
         preds: The predictions as an array of shape `(n_instances, n_classes)` or
@@ -66,7 +66,7 @@ def coverage(preds: np.ndarray, targets: np.ndarray) -> float:
 
 
 def efficiency(preds: np.ndarray) -> float:
-    """Compute the efficiency of set-valued predictions.
+    """Compute the efficiency of set-valued predictions described in :cite:`angelopoulosGentleIntroduction2021`.
 
     In the case of a set over classes this is the mean of the number of classes in the set. In the
     case of a credal set, this is computed by the mean difference between the upper and lower
@@ -93,7 +93,7 @@ def efficiency(preds: np.ndarray) -> float:
 
 
 def coverage_convex_hull(probs: np.ndarray, targets: np.ndarray) -> float:
-    """Compute the coverage given the credal set defined by the convex hull of the predicted probabilities.
+    """Compute credal set coverage via convex hull :cite:`nguyenCredalEnsembling2025`.
 
     The coverage is defined as the proportion of instances whose true distribution is contained in the convex hull.
     This is computed using linear programming by checking whether the target distribution can be expressed as

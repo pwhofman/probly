@@ -14,7 +14,7 @@ def prepend_torch_dropout(obj: nn.Module, p: float) -> nn.Sequential:
 
     References:
         Based on 'Dropout as a Bayesian Approximation' by Y. Gal and Z. Ghahramani (2016).
-        See: :cite:`gal2016dropout`
+        See: :cite:`galDropoutBayesian2016`
 
     """
     return nn.Sequential(nn.Dropout(p=p), obj)

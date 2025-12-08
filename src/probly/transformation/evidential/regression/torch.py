@@ -20,7 +20,7 @@ def replace_last_torch_nig(obj: nn.Linear, state: State) -> TraverserResult:
 
     References:
         Based on: 'Deep Evidential Regression' by Amini et al.,2020).
-        See: :cite:t:`aminDeepEvidential2020`
+        See: :cite:t:`aminiDeepEvidential2020`
 
     """
     state[REPLACED_LAST_LINEAR] = True
