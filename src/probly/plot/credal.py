@@ -24,7 +24,7 @@ def simplex_plot(probs: np.ndarray) -> tuple[plt.Figure, plt.Axes]:
 
 
 def credal_set_plot(probs: np.ndarray) -> tuple[plt.Figure, plt.Axes]:
-    """Plot credal sets based on intervals of lower and upper probabilities.
+    """Plot credal sets based on intervals of lower and upper probabilities based on :cite:`nguyenCredalEnsembling2025`.
 
     Args:
         probs: numpy.ndarray of shape (n_samples, n_classes)
