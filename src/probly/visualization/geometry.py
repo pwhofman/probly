@@ -46,23 +46,21 @@ class CredalVisualizer:
         if probs.shape[1] != 3:
             raise ValueError(msg)
 
-        coords = np.array([self.probs_to_coords(p) for p in probs])
+        coords = np.array([self.probs_to_coords(x) for x in probs])
 
         if ax is None:
             fig, ax = plt.subplots(figsize=(6, 6))
 
-        def lerp(P, Q, t):
+        def lerp(p: np.ndarray, q: np.ndarray, t: float) -> np.ndarray:
             """Linear Interpolation for line values."""
-            return (1 - t) * P + t * Q
+            return (1 - t) * p + t * q
 
         # Draw triangle
         v1 = np.array([0.0, 0.0])
         v2 = np.array([1.0, 0.0])
         v3 = np.array([0.5, np.sqrt(3) / 2])
 
-        edges = [(v1,v2,"axis A"),
-                 (v2,v3,"axis B"),
-                 (v3,v1,"axis C"),]
+        edges = [(v1, v2, "axis A"), (v2, v3, "axis B"), (v3, v1, "axis C")]
 
         triangle_x = [v1[0], v2[0], v3[0], v1[0]]
         triangle_y = [v1[1], v2[1], v3[1], v1[1]]
@@ -74,26 +72,26 @@ class CredalVisualizer:
         c2 = "Class 2"
         c3 = "Class 3"
         offset_x = 0.06
-        ax.text(v1[0] + 0.02 , v1[1] - offset_x, c1, ha="right", va="top", fontsize=12)
-        ax.text(v2[0] + 0.02 , v2[1] - offset_x, c2, ha="left", va="top", fontsize=12)
+        ax.text(v1[0] + 0.02, v1[1] - offset_x, c1, ha="right", va="top", fontsize=12)
+        ax.text(v2[0] + 0.02, v2[1] - offset_x, c2, ha="left", va="top", fontsize=12)
         ax.text(v3[0], v3[1] + offset_x, c3, ha="center", va="bottom", fontsize=12)
 
-        verts = np.array([v1, v2, v3])
-        #tick_values are set in a way that they won't interfere at the edges
-        tick_values = np.linspace(0.1, 0.90, 10)
+        verts = np.array([v1, v2, v3])  # noqa: F841
+        # tick_values are set in a way that they won't interfere at the edges
+        tick_values = np.linspace(0.1, 0.90, 11)
         tick_length = 0.01
         label_offset = -0.05
         edge_lable = "0.0 / 1.0"
         ax.text(v1[0], v1[1], edge_lable, ha="right", va="top", fontsize=8)
         ax.text(v2[0], v2[1], edge_lable, ha="left", va="top", fontsize=8)
         ax.text(v3[0], v3[1], edge_lable, ha="center", va="bottom", fontsize=8)
-        for P, Q, axis_name in edges:
-            edge_vec = Q - P
+        for p, q, axis_name in edges:  # noqa: B007
+            edge_vec = q - p
             normal = np.array([-edge_vec[1], edge_vec[0]])
             normal = normal / np.linalg.norm(normal)
 
             for t in tick_values:
-                pos = lerp(P, Q, t)
+                pos = lerp(p, q, t)
 
                 tick_start = pos - normal * (tick_length / 2)
                 tick_end = pos + normal * (tick_length / 2)
@@ -114,7 +112,6 @@ class CredalVisualizer:
         ax.set_aspect("equal", "box")
         ax.set_xlim(-0.1, 1.1)
         ax.set_ylim(-0.1, np.sqrt(3) / 2)
-
 
         # Scatter points
         ax.scatter(coords[:, 0], coords[:, 1], **scatter_kwargs)
