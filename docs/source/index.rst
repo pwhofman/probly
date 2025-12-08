@@ -53,33 +53,17 @@ Quickstart
    :hidden:
 
    introduction
+   installation
    core_concepts
-   methods
+   main_components
+   api
+   examples_&_tutorials
    advanced_topics
-   user_guide/index
    faq
    references
 
 
-.. toctree::
-   :maxdepth: 0
-   :caption: Tutorials
-   :hidden:
 
-   examples/fashionmnist_ood_ensemble
-   examples/label_relaxation_calibration
-   examples/sklearn_selective_prediction
-   examples/synthetic_regression_dropout
-   examples/temperature_scaling_calibration
-   examples/train_bnn_classification
-   examples/train_evidential_classification
-   examples/train_evidential_regression
-   examples/bayesian_transformation
-   examples/dropconnect_transformation
-   examples/dropout_transformation
-   examples/ensemble_transformation
-   examples/evidential_classification_transformation
-   examples/evidential_regression_transformation
 
 .. toctree::
    :maxdepth: 2
