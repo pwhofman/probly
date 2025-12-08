@@ -30,21 +30,22 @@ class CredalVisualizer:
     def ternary_plot(
         self,
         probs: np.ndarray,
-        ax: mpl.axes.Axes = None,
+        labels: list[str] | None = None,
+        ax: plt.Axes = None,
         **scatter_kwargs: mpl.Kwargs,
-    ) -> mpl.axes.Axes:
+    ) -> plt.Axes:
         """Plot ternary scatter points.
 
         Args:
         probs: the ternary probabilities.
+        labels: the labels of the ternary points.
+        scatter_kwargs: keyword arguments passed to scatter_kwargs.
         ax: matplotlib axes.Axes to plot on.
-        **scatter_kwargs: kwargs to pass to scatter.
 
         returns: Ternary plot with scattered points.
         """
-        msg = "Input must have 3 dimensions."
         if probs.shape[1] != 3:
-            raise ValueError(msg)
+            raise ValueError
 
         coords = np.array([self.probs_to_coords(x) for x in probs])
 
@@ -68,9 +69,18 @@ class CredalVisualizer:
         ax.plot(triangle_x, triangle_y, color="black")
         ax.axis("off")
 
-        c1 = "Class 1"
-        c2 = "Class 2"
-        c3 = "Class 3"
+        n_classes = probs.shape[-1]
+
+        if labels is None:
+            labels = [f"C{i + 1}" for i in range(n_classes)]
+
+        if len(labels) != n_classes:
+            msg = f"Number of labels ({len(labels)}) must match number of classes ({n_classes})."
+            raise ValueError(msg)
+
+        c1 = f"{labels[0]}"
+        c2 = f"{labels[1]}"
+        c3 = f"{labels[2]}"
         offset_x = 0.06
         ax.text(v1[0] + 0.02, v1[1] - offset_x, c1, ha="right", va="top", fontsize=12)
         ax.text(v2[0] + 0.02, v2[1] - offset_x, c2, ha="left", va="top", fontsize=12)
@@ -213,7 +223,7 @@ points = np.array(
 
 viz = CredalVisualizer()
 
-ax = viz.ternary_plot(points, color="blue", s=50)
+ax = viz.ternary_plot(points)
 viz.plot_convex_hull(points, ax=ax)
 
 plt.show()
