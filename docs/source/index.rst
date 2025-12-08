@@ -45,8 +45,6 @@ Quickstart
    eu_ood = probly.quantification.classification.mutual_information(preds_ood)
    auroc = probly.tasks.out_of_distribution_detection(eu, eu_ood) # compute the AUROC score for out of distribution detection
 
-
-
 .. toctree::
    :maxdepth: 1
    :caption: Content
@@ -56,7 +54,7 @@ Quickstart
    core_concepts
    main_components
    api
-   examples_&_tutorials
+   examples_and_tutorials
    advanced_topics
    faq
    references
