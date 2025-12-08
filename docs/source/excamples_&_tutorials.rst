@@ -3,7 +3,7 @@ Examples and tutorials
 ##########################
 
 This section contains practical, end-to-end examples that demonstrate how **probly** can be used in real applications. Each tutorial provides a guided workflow from start to finish, including model transformation, execution and interpretation of the results. The examples also directly correspond to the advanced modeling patterns discussed in :doc:`Advanced Topics <advanced_topics>`
-, providing at least one worked example for concepts such as uncertainty-aware transformations, ensemble methods, and mixed-model workflows.They are self-contained and can be adapted to individual projects and datasets.
+, providing at least one worked example for concepts such as uncertainty-aware transformations, ensemble methods, and mixed-model workflows. They are self-contained and can be adapted to individual projects and datasets.
 
 Users who are new to probly are encouraged to begin with the introductory Dropout example before exploring ensemble-based methods and more advanced uncertainty-aware workflows.
 
@@ -20,6 +20,9 @@ What you will learn
 
 In this tutorial, you will learn how to use **probly** to make a standard neural network uncertainty-aware with the Dropout transformation. You start from a conventional PyTorch model trained on MNIST and then apply probly so that Dropout remains active during inference. By running multiple stochastic forward passes, you obtain a distribution of predictions and estimate predictive uncertainty.
 
+This workflow is conceptually based on treating Dropout as a Bayesian approximation in deep neural networks, as proposed by Gal and Ghahramani :cite:`gal2016dropout`, and follows the standard deep learning setup described in :cite:`lecun1998gradient,goodfellow2016deep`.
+
+
 Prerequisites
 -------------
 
@@ -29,8 +32,13 @@ This example requires Python 3.8 or later and the packages ``probly``, ``torch``
 
    pip install probly torch torchvision
 
+The use of PyTorch and torchvision for MNIST follows standard practice in modern deep learning workflows, as also outlined in :cite:`goodfellow2016deep`.
+
+
 Step 1: Load the MNIST dataset
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In this step, you load the MNIST dataset, a canonical benchmark for handwritten digit recognition consisting of 60,000 training and 10,000 test images :cite:`lecun1998gradient`. The dataset is widely used to illustrate methods for uncertainty estimation because it is small, well-understood, and easy to train on.
 
 .. code-block:: python
 
@@ -48,8 +56,13 @@ Step 1: Load the MNIST dataset
    train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
    test_loader = DataLoader(test_dataset, batch_size=128, shuffle=False)
 
+By wrapping MNIST with ``DataLoader`` and using ``ToTensor()``, you obtain batched tensors suitable for GPU-accelerated training. This setup is standard for supervised image classification tasks :cite:`goodfellow2016deep`.
+
+
 Step 2: Define a base convolutional model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Here, you define a simple convolutional neural network (CNN) with two convolution–ReLU–max-pooling stages followed by a fully connected classification head. CNNs are a natural choice for image classification and build on the ideas introduced by LeCun et al. :cite:`lecun1998gradient`.
 
 .. code-block:: python
 
@@ -74,8 +87,13 @@ Step 2: Define a base convolutional model
 
    model = SimpleCNN().to(device)
 
+The network is deliberately compact, keeping training quick while still being expressive enough to benefit from uncertainty estimation techniques discussed in Bayesian deep learning :cite:`bishop2006pattern,gal2016dropout`.
+
+
 Step 3: Train the model briefly
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You now train the CNN using the Adam optimizer and the cross-entropy loss, which is the standard objective for multi-class classification problems :cite:`bishop2006pattern`.
 
 .. code-block:: python
 
@@ -94,8 +112,13 @@ Step 3: Train the model briefly
            loss.backward()
            optimizer.step()
 
+A single training epoch is sufficient for demonstration purposes. In practice, you would typically train longer for higher accuracy, but the uncertainty-aware part of the pipeline is independent of the exact training duration.
+
+
 Step 4: Apply probly’s Dropout transformation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The crucial step is to transform the trained model into an uncertainty-aware model by enabling Dropout at inference time. Probly provides a high-level transformation that keeps Dropout active even when the model is in ``eval()`` mode.
 
 .. code-block:: python
 
@@ -103,8 +126,13 @@ Step 4: Apply probly’s Dropout transformation
 
    prob_model = dropout(model, p=0.5, enable_at_eval=True)
 
+This setup follows the Monte Carlo Dropout (MC Dropout) interpretation, where Dropout is treated as a variational approximation to a Bayesian neural network :cite:`gal2016dropout`. The probability ``p=0.5`` controls the amount of stochasticity, i.e. how strongly the model’s predictions will vary across stochastic forward passes.
+
+
 Step 5: Perform Monte Carlo inference
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You now perform multiple stochastic forward passes to obtain a Monte Carlo estimate of the predictive distribution. The mean of the sampled probabilities approximates the predictive mean, while the standard deviation provides a measure of epistemic uncertainty :cite:`gal2016dropout,kendall2017uncertainties`.
 
 .. code-block:: python
 
@@ -130,8 +158,13 @@ Step 5: Perform Monte Carlo inference
    print("Mean probabilities:", mean_probs.squeeze().cpu())
    print("Std probabilities:", std_probs.squeeze().cpu())
 
+The function ``mc_predict`` implements the Monte Carlo estimator by repeatedly sampling from the implicit model posterior induced by Dropout. The resulting uncertainty estimates are particularly useful under distribution shift and for downstream decision making :cite:`ovadia2019trust`.
+
+
 Step 6: Visualize uncertainty
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Visualizing both the predictive mean and the associated uncertainty (e.g. as error bars or shaded regions) can help you identify ambiguous or out-of-distribution samples :cite:`kendall2017uncertainties,ovadia2019trust`.
 
 .. image:: mc_dropout_example.png
    :width: 550px
@@ -141,7 +174,7 @@ Step 6: Visualize uncertainty
 Summary
 -------
 
-In this example, probly was used to transform a standard neural network into an uncertainty-aware model. Dropout remains active during inference and multiple forward passes allow you to obtain predictive uncertainty without modifying the original architecture.
+In this example, probly was used to transform a standard neural network into an uncertainty-aware model. Dropout remains active during inference and multiple forward passes allow you to obtain predictive uncertainty without modifying the original architecture. This approach builds on the MC Dropout framework for approximate Bayesian inference in deep networks :cite:`gal2016dropout` and follows standard best practices in deep learning :cite:`goodfellow2016deep,bishop2006pattern`.
 
 
 2. Creating a SubEnsemble with probly
@@ -150,10 +183,13 @@ In this example, probly was used to transform a standard neural network into an 
 What you will learn
 -------------------
 
-In this tutorial, you will learn how to construct an ensemble using probly and how to derive a smaller ``SubEnsemble`` without retraining. This allows you to trade inference speed for accuracy in a controlled way.
+In this tutorial, you will learn how to construct an ensemble using probly and how to derive a smaller ``SubEnsemble`` without retraining. This allows you to trade inference speed for accuracy and predictive uncertainty quality in a controlled way. The design follows the deep ensemble methodology of Lakshminarayanan et al. :cite:`lakshminarayanan2017simple` and classical ensemble learning ideas :cite:`dietterich2000ensemble`.
+
 
 Step 1: Define a simple base model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You first define a small multilayer perceptron (MLP) that will serve as the base architecture for all ensemble members. Even though CNNs often achieve higher accuracy on MNIST, MLPs remain a simple and effective choice for illustrating ensemble techniques :cite:`bishop2006pattern`.
 
 .. code-block:: python
 
@@ -185,8 +221,13 @@ Step 1: Define a simple base model
        def forward(self, x):
            return self.net(x)
 
+The shared base model architecture ensures that differences between ensemble members arise primarily from random initialization and stochastic optimization, which is essential for diverse deep ensembles :cite:`fort2019deep`.
+
+
 Step 2: Create an Ensemble with probly
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You now instantiate multiple independent copies of the base model and wrap them into a probly ``Ensemble``. Each member will be trained separately but evaluated jointly.
 
 .. code-block:: python
 
@@ -196,8 +237,13 @@ Step 2: Create an Ensemble with probly
    members = [SmallMLP().to(device) for _ in range(num_members)]
    ensemble = Ensemble(members)
 
+This construction corresponds to the **deep ensemble** paradigm :cite:`lakshminarayanan2017simple`, where several independently trained networks are combined to obtain improved accuracy and better-calibrated uncertainty estimates compared to a single model.
+
+
 Step 3: Train ensemble members
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Each ensemble member is trained independently on the same data. Due to random initialization and mini-batch sampling, the members converge to different local optima in the loss landscape, which is a key factor for the effectiveness of ensembles :cite:`fort2019deep`.
 
 .. code-block:: python
 
@@ -219,8 +265,13 @@ Step 3: Train ensemble members
    for m in members:
        train_member(m, train_loader, epochs=1)
 
+While only one epoch is used here for brevity, additional epochs typically increase accuracy. The crucial property is that each member learns a slightly different function, giving rise to ensemble diversity :cite:`dietterich2000ensemble,fort2019deep`.
+
+
 Step 4: Evaluate the Ensemble
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The ensemble prediction is obtained by aggregating individual member predictions (e.g. by averaging logits or probabilities). This aggregation reduces variance and often improves both accuracy and calibration compared to single models :cite:`lakshminarayanan2017simple`.
 
 .. code-block:: python
 
@@ -239,8 +290,13 @@ Step 4: Evaluate the Ensemble
    full_acc = evaluate(ensemble, test_loader)
    print("Ensemble accuracy:", full_acc)
 
+In probly, the ``Ensemble`` abstraction takes care of combining member outputs internally, making it straightforward to compare an ensemble to a single model in terms of accuracy and uncertainty.
+
+
 Step 5: Create and evaluate a SubEnsemble
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Using the trained ensemble, you can construct a ``SubEnsemble`` that uses only a subset of the ensemble members. This allows for a flexible accuracy–latency trade-off at deployment time without needing to retrain any models.
 
 .. code-block:: python
 
@@ -249,6 +305,8 @@ Step 5: Create and evaluate a SubEnsemble
    sub = SubEnsemble(ensemble, indices=[0, 1])
    sub_acc = evaluate(sub, test_loader)
    print("SubEnsemble accuracy:", sub_acc)
+
+The idea of using partial ensembles or subnetworks to control computational budget is related to recent work on training independent subnetworks for robust predictions :cite:`havasi2021training` and subsampling strategies for efficient uncertainty estimation :cite:`cunningham2020ensemble`. With probly, this pattern becomes a simple configuration choice.
 
 Visual result
 ~~~~~~~~~~~~~
@@ -261,7 +319,7 @@ Visual result
 Summary
 -------
 
-In this example, probly was used to create both a full Ensemble and a SubEnsemble without retraining. The SubEnsemble provides faster inference while maintaining useful accuracy, enabling deployment-time flexibility.
+In this example, probly was used to create both a full Ensemble and a SubEnsemble without retraining. The full Ensemble generally provides the highest accuracy and most reliable uncertainty, while the SubEnsemble offers reduced inference cost with still useful performance. This illustrates how deep ensembles :cite:`lakshminarayanan2017simple` can be adapted to practical deployment constraints using probly’s ensemble abstractions.
 
 
 3. MixedEnsemble with probly
@@ -270,10 +328,13 @@ In this example, probly was used to create both a full Ensemble and a SubEnsembl
 What you will learn
 -------------------
 
-In this tutorial, you will learn how to build a MixedEnsemble using probly by combining different neural network architectures into a single probabilistic ensemble. You will compare it to a homogeneous ensemble and observe how model diversity may influence performance.
+In this tutorial, you will learn how to build a ``MixedEnsemble`` using probly by combining different neural network architectures into a single probabilistic ensemble. You will compare it to a homogeneous ensemble and observe how model diversity may influence performance and robustness. This follows the general idea that heterogeneous ensembles can outperform homogeneous ones when models capture complementary inductive biases :cite:`opitz1999popular,jacobs1991adaptive`.
+
 
 Step 1: Prepare data
 ~~~~~~~~~~~~~~~~~~~~
+
+As in the previous tutorials, you use MNIST as a benchmark dataset :cite:`lecun1998gradient`. The data loading pipeline is identical, which highlights that probly’s advanced ensemble types can be introduced without changing the dataset interface.
 
 .. code-block:: python
 
@@ -291,8 +352,11 @@ Step 1: Prepare data
    train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
    test_loader = DataLoader(test_dataset, batch_size=256, shuffle=False)
 
+
 Step 2: Define different architectures
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You now define two different architectures: a small CNN and a small MLP. The CNN leverages spatial structure in the images, while the MLP operates on flattened pixels. Combining these architectures in a MixedEnsemble reflects the idea of mixing experts with different inductive biases :cite:`jacobs1991adaptive`.
 
 .. code-block:: python
 
@@ -335,8 +399,13 @@ Step 2: Define different architectures
        def forward(self, x):
            return self.net(x)
 
+The architectural diversity is the main driver of improved robustness in heterogeneous ensembles :cite:`opitz1999popular`, since different architectures often fail on different inputs.
+
+
 Step 3: Create Ensemble and MixedEnsemble
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You first construct a homogeneous ensemble consisting only of CNNs, and then a ``MixedEnsemble`` containing both CNN and MLP members.
 
 .. code-block:: python
 
@@ -352,8 +421,13 @@ Step 3: Create Ensemble and MixedEnsemble
    ]
    mixed_ensemble = MixedEnsemble(mixed_members)
 
+This setup mirrors the idea of mixtures of experts :cite:`jacobs1991adaptive` and modern large-scale sparse ensembles :cite:`shazeer2017outrageously`, but in a simplified form where probly handles the aggregation of member predictions without a separate gating network.
+
+
 Step 4: Train all members
 ~~~~~~~~~~~~~~~~~~~~~~~~~
+
+All ensemble members—both in the homogeneous CNN ensemble and the mixed ensemble—are trained independently using the same training loop.
 
 .. code-block:: python
 
@@ -377,8 +451,13 @@ Step 4: Train all members
    for m in mixed_members:
        train(m, train_loader, epochs=1)
 
+Independent training encourages diversity in the learned decision boundaries, which is critical for ensemble performance under distribution shift :cite:`opitz1999popular,ovadia2019trust`.
+
+
 Step 5: Evaluate both ensembles
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Finally, you evaluate both the homogeneous CNN ensemble and the MixedEnsemble on the test set and compare their accuracies.
 
 .. code-block:: python
 
@@ -401,6 +480,9 @@ Step 5: Evaluate both ensembles
    print("Homogeneous CNN Ensemble accuracy:", acc_cnn)
    print("MixedEnsemble accuracy:", acc_mixed)
 
+Beyond accuracy, you could also compare calibration and robustness under distribution shift, as suggested by Ovadia et al. :cite:`ovadia2019trust`. Mixed ensembles often exhibit different failure modes than homogeneous ones, which can be beneficial in safety-critical applications.
+
+
 Visual result
 -------------
 
@@ -412,4 +494,10 @@ Visual result
 Summary
 -------
 
-In this example, you used probly to construct both a homogeneous ensemble and a MixedEnsemble combining different model types. The MixedEnsemble may capture complementary model behaviour, which can improve robustness and calibration in some settings.
+In this example, you used probly to construct both a homogeneous ensemble and a ``MixedEnsemble`` combining different model types. The MixedEnsemble may capture complementary model behaviour and can therefore improve robustness and calibration in some settings :cite:`opitz1999popular,ovadia2019trust`. By providing a unified abstraction for homogeneous and heterogeneous ensembles, probly makes it straightforward to explore such design choices in practical applications.
+
+
+References
+==========
+
+These tutorials build on established work in deep learning, Bayesian deep learning and ensemble methods :cite:`lecun1998gradient,goodfellow2016deep,bishop2006pattern,gal2016dropout,kendall2017uncertainties,ovadia2019trust,lakshminarayanan2017simple,dietterich2000ensemble,fort2019deep,havasi2021training,cunningham2020ensemble,opitz1999popular,jacobs1991adaptive,shazeer2017outrageously`.
