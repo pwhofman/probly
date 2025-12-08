@@ -500,9 +500,6 @@ In this example, you used probly to construct both a homogeneous ensemble and a 
 References
 ==========
 
-References
-==========
-
 These tutorials build on established work in deep learning, Bayesian deep learning,
 and ensemble methods. Key references include:
 
