@@ -15,7 +15,7 @@ def generate_torch_subensemble(
     *,
     head: nn.Module | None = None,
     reset_params: bool = False,
-    head_layer: int = 1,
+    head_layer: int,
 ) -> nn.ModuleList:
     """Build a torch subensemble.
 

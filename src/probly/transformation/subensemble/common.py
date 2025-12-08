@@ -32,7 +32,7 @@ def subensemble[T: Predictor](
     reset_params: bool = True,
     head_layer: int = 1,
 ) -> T:
-    """Create a subensemble predictor from a base model or a base model and head model..
+    """Create a subensemble predictor from a base model or a base model and head model.
 
     Supported configurations:
         1. base only:
@@ -52,5 +52,11 @@ def subensemble[T: Predictor](
 
     Returns:
         Predictor, The subensemble predictor.
+
+    Raises:
+        ValueError: If `head_layer` is not a positive integer.
     """
+    if head_layer <= 0:
+        msg = f"head_layer must be a positive number, but got head_layer={head_layer} instead."
+        raise ValueError(msg)
     return subensemble_generator(base, num_heads=num_heads, head=head, reset_params=reset_params, head_layer=head_layer)

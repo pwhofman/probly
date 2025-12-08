@@ -33,7 +33,7 @@ def generate_flax_subensemble(
     *,
     head: nnx.Module | None = None,
     reset_params: bool = False,
-    head_layer: int = 1,
+    head_layer: int,
 ) -> nnx.List:
     """Build a flax subensemble.
 
