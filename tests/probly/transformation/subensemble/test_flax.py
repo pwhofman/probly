@@ -25,13 +25,13 @@ class TestGenerate:
             "flax_regression_model_2d",
         ],
     )
-    def test_number_of_heads(self, request, model_fixture) -> None:
+    def test_number_of_heads(self, request: pytest.FixtureRequest, model_fixture: str) -> None:
         """Tests if the subensemble transformation creates the correct number of heads."""
         num_heads = 4
         model = request.getfixturevalue(model_fixture)
 
         # default subensemble
-        subensemble_result = subensemble(model, num_heads=num_heads, reset_params=True)
+        subensemble_result = subensemble(model, num_heads=num_heads)
         backbone = subensemble_result[0]
         heads = subensemble_result[1]
 
@@ -56,7 +56,7 @@ class TestGenerate:
             "flax_regression_model_2d",
         ],
     )
-    def test_number_of_heads_large_head_layer(self, request, model_fixture) -> None:
+    def test_number_of_heads_large_head_layer(self, request: pytest.FixtureRequest, model_fixture: str) -> None:
         """Tests if the subensemble transformation creates the correct number and larger head_layer."""
         num_heads = 2
         # how many layers from the end should be considered as head
@@ -68,7 +68,6 @@ class TestGenerate:
             model,
             num_heads=num_heads,
             head_layer=head_layer,
-            reset_params=True,
         )
         backbone = subensemble_result[0]
         heads = subensemble_result[1]
@@ -165,3 +164,57 @@ class TestReset:
             head_output = head(backbone_output)
             expected_output_shape = (1, head.layers[-1].out_features)
             assert head_output.shape == expected_output_shape
+
+
+class TestEdgeCases:
+    """Tests for edge-case configurations."""
+
+    def test_zero_heads(self, flax_model_small_2d_2d: nnx.Module) -> None:
+        """num_heads = 0 should split the model and return an empty list of heads."""
+        num_heads = 0
+        head_layer = 1
+
+        subensemble_result = subensemble(flax_model_small_2d_2d, num_heads=num_heads)
+        backbone = subensemble_result[0]
+        heads = subensemble_result[1]
+
+        original_layers = count_layers(flax_model_small_2d_2d, nnx.Module)
+        backbone_layers = count_layers(backbone, nnx.Module)
+
+        assert isinstance(subensemble_result, nnx.Module)
+        assert isinstance(backbone, nnx.Sequential)
+        assert isinstance(heads, nnx.List)
+        assert len(heads) == num_heads
+        assert backbone_layers == original_layers - head_layer
+        for head in heads:
+            head_layers = count_layers(head, nnx.Module)
+            assert head_layers == 0
+
+    def test_invalid_head_layer(self, flax_model_small_2d_2d: nnx.Module) -> None:
+        """Test if head_layer <= 0 raises ValueError."""
+        num_heads = 4
+        head_layer = 0
+
+        with pytest.raises(ValueError, match="head_layer must be a positive number, but got head_layer=0 instead"):
+            subensemble(flax_model_small_2d_2d, num_heads=num_heads, head_layer=head_layer)
+
+    def test_large_head_layer(self, flax_model_small_2d_2d: nnx.Module) -> None:
+        """Test if backbone can be empty while head is an ensemble of the base model."""
+        num_heads = 4
+        head_layer = count_layers(flax_model_small_2d_2d, nnx.Module)
+
+        subensemble_result = subensemble(flax_model_small_2d_2d, num_heads=num_heads, head_layer=head_layer)
+        backbone = subensemble_result[0]
+        heads = subensemble_result[1]
+
+        original_layers = count_layers(flax_model_small_2d_2d, nnx.Module)
+        backbone_layers = count_layers(backbone, nnx.Module)
+
+        assert isinstance(subensemble_result, nnx.Module)
+        assert isinstance(backbone, nnx.Sequential)
+        assert isinstance(heads, nnx.List)
+        assert len(heads) == num_heads
+        assert backbone_layers == 2  # Sequential + List
+        for head in heads:
+            head_layers = count_layers(head, nnx.Module)
+            assert head_layers == original_layers
