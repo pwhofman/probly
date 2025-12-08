@@ -10,13 +10,7 @@ from probly.representation.sampling.torch_sample import TorchTensorSample
 
 @credal_set_from_sample.register(TorchTensorSample)
 class TorchTensorCredalSet(CredalSet[torch.Tensor]):
-    """A credal set implementation for torch tensors.
-
-    References:
-        Based on 'Credal Ensembling in multi-class classification' (Nguyen et al., 2025).
-        See: :cite:t:`nguyenCredalEnsembling2025`
-
-    """
+    """A credal set implementation for torch tensors based on :cite:`nguyenCredalEnsembling2025`."""
 
     def __init__(self, sample: TorchTensorSample) -> None:
         """Initialize the torch tensor credal set."""
