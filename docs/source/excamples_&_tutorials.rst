@@ -500,4 +500,6 @@ In this example, you used probly to construct both a homogeneous ensemble and a 
 References
 ==========
 
-These tutorials build on established work in deep learning, Bayesian deep learning and ensemble methods :cite:lecun1998gradient,goodfellow2016deep,bishop2006pattern,gal2016dropout,kendall2017uncertainties,ovadia2019trust,lakshminarayanan2017simple,dietterich2000ensemble,fort2019deep,havasi2021training,cunningham2020ensemble,opitz1999popular,jacobs1991adaptive,shazeer2017outrageously.
+These tutorials build on established work in deep learning, Bayesian deep learning and ensemble methods 
+
+:cite:lecun1998gradient,goodfellow2016deep,bishop2006pattern,gal2016dropout,kendall2017uncertainties,ovadia2019trust,lakshminarayanan2017simple,dietterich2000ensemble,fort2019deep,havasi2021training,cunningham2020ensemble,opitz1999popular,jacobs1991adaptive,shazeer2017outrageously.
