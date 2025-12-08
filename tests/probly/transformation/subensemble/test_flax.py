@@ -6,15 +6,15 @@ import jax
 from jax import numpy as jnp
 import pytest
 
-from probly.transformation import subensemble
+from probly.transformation.subensemble import subensemble
 from tests.probly.flax_utils import count_layers
 
 flax = pytest.importorskip("flax")
 from flax import nnx  # noqa: E402
 
 
-class TestGenerate:
-    """Test class for subensemble generation."""
+class TestGeneration:
+    """Tests for different subensemble generations."""
 
     @pytest.mark.parametrize(
         "model_fixture",
@@ -23,29 +23,37 @@ class TestGenerate:
             "flax_conv_linear_model",
             "flax_regression_model_1d",
             "flax_regression_model_2d",
+            "flax_dropout_model",
         ],
     )
-    def test_number_of_heads(self, request: pytest.FixtureRequest, model_fixture: str) -> None:
-        """Tests if the subensemble transformation creates the correct number of heads."""
-        num_heads = 4
+    def test_subensemble_default(self, request: pytest.FixtureRequest, model_fixture: str) -> None:
+        """Test for default subensemble generation."""
         model = request.getfixturevalue(model_fixture)
+        num_heads = 5
+        subensemble_model = subensemble(model, num_heads=num_heads)
+        backbone = subensemble_model[0]
+        heads = subensemble_model[1]
 
-        # default subensemble
-        subensemble_result = subensemble(model, num_heads=num_heads)
-        backbone = subensemble_result[0]
-        heads = subensemble_result[1]
+        count_linear_original = count_layers(model, nnx.Linear)
+        count_linear_backbone = count_layers(backbone, nnx.Linear)
+        count_linear_heads = count_layers(heads, nnx.Linear)
+        count_sequential_original = count_layers(model, nnx.Sequential)
+        count_sequential_backbone = count_layers(backbone, nnx.Sequential)
+        count_sequential_heads = count_layers(heads, nnx.Sequential)
+        count_convolution_original = count_layers(model, nnx.Conv)
+        count_convolution_backbone = count_layers(backbone, nnx.Conv)
+        count_convolution_heads = count_layers(heads, nnx.Conv)
 
-        original_layers = count_layers(model, nnx.Module)
-        backbone_layers = count_layers(backbone, nnx.Module)
-
-        # check tha backbone and heads are created correctly and heads have the correct structure
-        assert isinstance(subensemble_result, nnx.Module)
+        assert isinstance(subensemble_model, nnx.Module)
         assert isinstance(backbone, nnx.Sequential)
         assert isinstance(heads, nnx.List)
-        assert len(heads) == num_heads
-        assert original_layers - 1 == backbone_layers
-        for head in heads:
-            assert count_layers(head, nnx.Linear) == 1
+        assert count_linear_heads == num_heads
+        assert count_linear_backbone == (count_linear_original - 1)
+        assert (count_linear_original + num_heads - 1) == count_linear_heads + count_linear_backbone
+        assert count_sequential_heads == num_heads
+        assert count_sequential_backbone == count_sequential_original
+        assert count_convolution_backbone == count_convolution_original
+        assert count_convolution_heads == 0
 
     @pytest.mark.parametrize(
         "model_fixture",
@@ -54,43 +62,88 @@ class TestGenerate:
             "flax_conv_linear_model",
             "flax_regression_model_1d",
             "flax_regression_model_2d",
+            "flax_dropout_model",
         ],
     )
-    def test_number_of_heads_large_head_layer(self, request: pytest.FixtureRequest, model_fixture: str) -> None:
-        """Tests if the subensemble transformation creates the correct number and larger head_layer."""
-        num_heads = 2
-        # how many layers from the end should be considered as head
+    def test_subensemble_2_head_layers(self, request: pytest.FixtureRequest, model_fixture: str) -> None:
+        """Test for 2 head layers subensemble generation."""
+        model = request.getfixturevalue(model_fixture)
+        num_heads = 5
         head_layer = 2
-        model = request.getfixturevalue(model_fixture)
+        subensemble_model = subensemble(model, num_heads=num_heads, head_layer=head_layer)
+        backbone = subensemble_model[0]
+        heads = subensemble_model[1]
 
-        # subensemble with input for head_layer
-        subensemble_result = subensemble(
-            model,
-            num_heads=num_heads,
-            head_layer=head_layer,
-        )
-        backbone = subensemble_result[0]
-        heads = subensemble_result[1]
+        count_linear_original = count_layers(model, nnx.Linear)
+        count_linear_backbone = count_layers(backbone, nnx.Linear)
+        count_linear_heads = count_layers(heads, nnx.Linear)
+        count_sequential_original = count_layers(model, nnx.Sequential)
+        count_sequential_backbone = count_layers(backbone, nnx.Sequential)
+        count_sequential_heads = count_layers(heads, nnx.Sequential)
+        count_convolution_original = count_layers(model, nnx.Conv)
+        count_convolution_backbone = count_layers(backbone, nnx.Conv)
+        count_convolution_heads = count_layers(heads, nnx.Conv)
 
-        original_layers = count_layers(model, nnx.Module)
-        backbone_layers = count_layers(backbone, nnx.Module)
-
-        # check tha backbone is created correctly and heads have the correct structure
-        assert isinstance(subensemble_result, nnx.Module)
+        assert isinstance(subensemble_model, nnx.Module)
         assert isinstance(backbone, nnx.Sequential)
         assert isinstance(heads, nnx.List)
-        if model_fixture == "flax_model_small_2d_2d":
-            assert original_layers - head_layer == backbone_layers
+        if isinstance(model.layers[-2], nnx.Linear):
+            assert count_linear_heads == (num_heads * head_layer)
         else:
-            # +1 because every model has only one "real" layer in the last two layers of the fixtures
-            assert original_layers - head_layer + 1 == backbone_layers
-        assert len(heads) == num_heads
-        for head in heads:
-            # different check for different models because of differetn structures
-            if model_fixture == "flax_model_small_2d_2d":
-                assert count_layers(head, nnx.Module) - 2 == head_layer
-            else:
-                assert count_layers(head, nnx.Module) - 1 == head_layer
+            assert count_sequential_heads == num_heads
+        if isinstance(model.layers[-2], nnx.Linear):
+            assert count_linear_backbone == (count_linear_original - head_layer)
+        else:
+            assert count_linear_backbone == (count_linear_original - 1)
+        if isinstance(model.layers[-2], nnx.Linear):
+            assert count_linear_original == (count_linear_heads - (num_heads * head_layer) + 2) + count_linear_backbone
+        else:
+            assert count_linear_original == (count_linear_heads - num_heads + 1) + count_linear_backbone
+        assert count_sequential_heads == num_heads
+        assert count_sequential_backbone == count_sequential_original
+        assert count_convolution_backbone == count_convolution_original
+        assert count_convolution_heads == 0
+
+    @pytest.mark.parametrize(
+        "model_fixture",
+        [
+            "flax_model_small_2d_2d",
+            "flax_conv_linear_model",
+            "flax_regression_model_1d",
+            "flax_regression_model_2d",
+            "flax_dropout_model",
+        ],
+    )
+    def test_subensemble_with_head_model(self, request: pytest.FixtureRequest, model_fixture: str) -> None:
+        """Test for backbone and head model subensemble generation."""
+        model = request.getfixturevalue(model_fixture)
+        num_heads = 5
+        subensemble_model = subensemble(base=model, num_heads=num_heads, head=model)
+        backbone = subensemble_model[0]
+        heads = subensemble_model[1]
+
+        count_linear_original = count_layers(model, nnx.Linear)
+        count_linear_backbone = count_layers(backbone, nnx.Linear)
+        count_linear_heads = count_layers(heads, nnx.Linear)
+        count_sequential_original = count_layers(model, nnx.Sequential)
+        count_sequential_backbone = count_layers(backbone, nnx.Sequential)
+        count_sequential_heads = count_layers(heads, nnx.Sequential)
+        count_convolution_original = count_layers(model, nnx.Conv)
+        count_convolution_backbone = count_layers(backbone, nnx.Conv)
+        count_convolution_heads = count_layers(heads, nnx.Conv)
+
+        assert isinstance(subensemble_model, nnx.Module)
+        assert isinstance(backbone, nnx.Sequential)
+        assert isinstance(heads, nnx.List)
+        assert count_linear_heads == (count_linear_original * num_heads)
+        assert count_linear_backbone == count_linear_original
+        assert (
+            (count_linear_original * num_heads) + count_linear_original
+        ) == count_linear_heads + count_linear_backbone
+        assert count_sequential_heads == num_heads
+        assert count_sequential_backbone == count_sequential_original
+        assert count_convolution_backbone == count_convolution_original
+        assert count_convolution_heads == (count_convolution_original * num_heads)
 
 
 class TestReset:
