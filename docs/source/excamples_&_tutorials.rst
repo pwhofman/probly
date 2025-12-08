@@ -427,7 +427,7 @@ This setup mirrors the idea of mixtures of experts :cite:`jacobs1991adaptive` an
 Step 4: Train all members
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-All ensemble members—both in the homogeneous CNN ensemble and the mixed ensemble—are trained independently using the same training loop.
+All ensemble members, both in the homogeneous CNN ensemble as well as the mixed ensemble are trained independently using the same training loop.
 
 .. code-block:: python
 
