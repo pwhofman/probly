@@ -2,7 +2,8 @@
 Examples and tutorials
 ##########################
 
-This section contains practical, end-to-end examples that demonstrate how **probly** can be used in real applications. Each tutorial provides a guided workflow from start to finish, including model transformation, execution and interpretation of the results. The examples also directly correspond to the advanced modeling patterns discussed in :doc:`Advanced Topics <user_guide/advanced_topics>`, providing at least one worked example for concepts such as uncertainty-aware transformations, ensemble methods, and mixed-model workflows.They are self-contained and can be adapted to individual projects and datasets.
+This section contains practical, end-to-end examples that demonstrate how **probly** can be used in real applications. Each tutorial provides a guided workflow from start to finish, including model transformation, execution and interpretation of the results. The examples also directly correspond to the advanced modeling patterns discussed in :doc:`Advanced Topics <advanced_topics>`
+ , providing at least one worked example for concepts such as uncertainty-aware transformations, ensemble methods, and mixed-model workflows.They are self-contained and can be adapted to individual projects and datasets.
 
 Users who are new to probly are encouraged to begin with the introductory Dropout example before exploring ensemble-based methods and more advanced uncertainty-aware workflows.
 
