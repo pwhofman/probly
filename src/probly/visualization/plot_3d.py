@@ -8,7 +8,7 @@ import numpy as np
 from scipy.spatial import ConvexHull
 
 
-class CredalVisualizer:
+class TernaryVisualizer:
     """Class to collect all the geometric plots."""
 
     def __init__(self) -> None:
@@ -221,9 +221,9 @@ points = np.array(
     ],
 )
 
-viz = CredalVisualizer()
+ter = TernaryVisualizer()
 
-ax = viz.ternary_plot(points)
-viz.plot_convex_hull(points, ax=ax)
+ax = ter.ternary_plot(points)
+ter.plot_convex_hull(points, ax=ax)
 
 plt.show()
