@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 
 class CredalSet[T]:
-    """Base class for credal sets."""
+    """Base class for credal sets based on :cite:`nguyenCredalEnsembling2025`."""
 
     def lower(self) -> T:
         """Compute the lower envelope of the credal set."""
