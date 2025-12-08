@@ -15,8 +15,8 @@ This chapter explains:
 
 Before reading this chapter, the reader should already be familiar with:
 
-- the concepts introduced in Core Concepts,  
-- the basic workflows described in Main Components,  
+- the concepts introduced in Core Concepts,
+- the basic workflows described in Main Components,
 - foundational ideas such as uncertainty representations, transformations, and inference.
 
 For clarity, this chapter follows the same notation conventions used throughout the ``probly`` documentation.
@@ -25,8 +25,8 @@ For clarity, this chapter follows the same notation conventions used throughout 
 
 This chapter is intended for scenarios where users go beyond simple examples, such as:
 
-- training or evaluating large or real-world models,  
-- dealing with tight performance or memory constraints,  
+- training or evaluating large or real-world models,
+- dealing with tight performance or memory constraints,
 - integrating ``probly`` into existing machine-learning pipelines.
 
 These use cases often require a deeper understanding of transformations, scalability, and framework interoperability, which this chapter provides.
@@ -45,7 +45,7 @@ These use cases often require a deeper understanding of transformations, scalabi
 In ``probly``, a **transformation** is a small building block that maps values between two spaces,
 similar in spirit to the bijectors used in TensorFlow Probability~\citep{tfpBijectorSoftplus2023, rezendeVariationalFlows2015}:
 
-- an **unconstrained space**, where optimisation and inference algorithms can work freely, and  
+- an **unconstrained space**, where optimisation and inference algorithms can work freely, and
 - a **constrained space**, which matches the natural domain of your parameters or predictions
   (for example positive scales, probabilities on a simplex, or bounded intervals)~\citep{tfpBijectorSoftplus2023}.
 
@@ -55,8 +55,8 @@ that keeps everything inside the valid domain~\citep{tfpBijectorSoftplus2023, re
 
 In practice this means that transformations:
 
-- provide a *short, reusable recipe* for how to turn raw latent variables into valid parameters,  
-- enable **reparameterisation**, which can make optimisation easier and gradients better behaved~\citep{kingmaAutoEncodingVB2014},  
+- provide a *short, reusable recipe* for how to turn raw latent variables into valid parameters,
+- enable **reparameterisation**, which can make optimisation easier and gradients better behaved~\citep{kingmaAutoEncodingVB2014},
 - automatically enforce **constraints** such as positivity, bounds, or simplex structure~\citep{tfpBijectorSoftplus2023}.
 
 You can think of a transformation as an adapter between “nice for the optimiser” coordinates and
@@ -74,7 +74,7 @@ blocks are sufficient and you never need to write your own transformation.
 There are, however, important situations where a **custom transformation** is the
 better choice.
 
-- **Limitations of built-in transformations**  
+- **Limitations of built-in transformations**
   Some models use parameter spaces that go beyond the usual catalogue of common constraints such as positive,
   bounded, or simplex parameters. For example, you may need structured covariance matrices,
   ordered-but-positive sequences, monotone functions, or parameters that satisfy
@@ -86,7 +86,7 @@ better choice.
   transformation lets you explicitly encode the structure your model needs.
 
 
-- **Custom distributions or domain constraints**  
+- **Custom distributions or domain constraints**
   In many domains, prior knowledge is naturally expressed as constraints on
   parameters: certain probabilities must always sum to one, some effects must be
   monotone, or fairness and safety requirements restrict which configurations are
@@ -97,7 +97,7 @@ better choice.
   parameterisation instead of relying on ad-hoc clipping or post-processing.
 
 
-- **Cleaner uncertainty behaviour and numerical stability**  
+- **Cleaner uncertainty behaviour and numerical stability**
   Some parameterisations yield more interpretable and numerically stable
   uncertainty estimates than others. A classic example is working on a log or
   softplus scale for strictly positive parameters. Stan, for instance, uses a
@@ -111,7 +111,7 @@ better choice.
   representations easier to reason about.
 
 
-- **Integration with existing code or libraries**  
+- **Integration with existing code or libraries**
   When you plug ``probly`` into an existing machine-learning pipeline, external
   code often expects parameters in a fixed, domain-specific representation. The
   internal unconstrained parameterisation that is convenient for inference may
@@ -140,9 +140,9 @@ of `forward_log_det_jacobian` and `inverse_log_det_jacobian`”~\citep{ossvizier
 Conceptually, each transformation in ``probly`` is responsible for three things:
 
 - a **forward mapping** from an unconstrained input to the constrained parameter space,
-  typically used to turn one random outcome into another~\citep{tfpBijectorSoftplus2023},  
+  typically used to turn one random outcome into another~\citep{tfpBijectorSoftplus2023},
 - an **inverse mapping** that recovers the unconstrained value from a constrained one,
-  enabling probability and density computations,  
+  enabling probability and density computations,
 - any **auxiliary quantities** that inference algorithms may need, such as Jacobians or
   log-determinants, to account for the change of variables.
 
@@ -155,26 +155,26 @@ unconstrained space connected by well-defined forward and inverse transforms.
 
 Beyond this minimal interface, good transformations follow several design principles:
 
-- **local and self-contained**  
+- **local and self-contained**
   All logic that enforces a particular constraint should live inside the transformation. The rest
   of the model should not need to know which reparameterisation is used internally. This mirrors
   how libraries like Stan and NumPyro encapsulate constraints as self-contained objects that define
   where parameters are valid~\citep{numpyroConstraints2019, stanConstraintTransforms2025}.
 
-- **clearly documented domain and range**  
+- **clearly documented domain and range**
   It should be obvious which inputs are valid, what shapes are expected, and which constraints the
   outputs satisfy. NumPyro’s ``Constraint`` base class explicitly states that “A constraint object
   represents a region over which a variable is valid, e.g. within which a variable can be
   optimized”~\citep{numpyroConstraints2019}. Documenting domains and ranges for custom
   transformations in ``probly`` serves the same purpose.
 
-- **numerically stable**  
+- **numerically stable**
   The implementation should avoid unnecessary overflow, underflow, or extreme gradients. Stan’s
   documentation on constraint transforms highlights numerical issues arising from floating-point
   arithmetic and the need for careful treatment of boundaries and Jacobian terms~\citep{stanConstraintTransforms2025}. In practice, this often means using stable variants of mathematical formulas,
   adding small epsilons, or applying safe clipping near boundaries.
 
-- **composable**  
+- **composable**
   Whenever possible, transformations should work well in combination with others. TensorFlow
   Probability, for example, provides composition utilities such as ``Chain`` to build complex
   mappings out of simpler bijectors~\citep{tfpModuleBijectorsND}. In ``probly``, the same
@@ -436,17 +436,17 @@ handling, or runtime start to become annoying.
 
 In practice, a model is “large” when one or more of these become real limits:
 
-- **Model size (number of parameters)**  
+- **Model size (number of parameters)**
   As you add layers and parameters, you need memory for parameters, gradients,
   optimiser state, and activations. If this no longer fits comfortably on a
   single device, you are in “large-model” territory~\citep{tyagiScalingDeepLearning2025}.
 
-- **Dataset size**  
+- **Dataset size**
   A model can also feel large because the **data** are large. If the full
   dataset does not fit in RAM, you have to switch to streaming or mini-batches
   instead of loading everything at once~\citep{tyagiScalingDeepLearning2025}.
 
-- **Runtime and cost**  
+- **Runtime and cost**
   Even a medium-sized model becomes “large” if one run takes many hours, or if
   GPU time is expensive and you can only afford a few runs~\citep{tuOverviewLargeAI2024, tyagiScalingDeepLearning2025}.
 
@@ -534,8 +534,8 @@ issues include:
 
 A simple rule of thumb is:
 
-- move data to the right device **once per batch**,  
-- cache expensive things that do not change,  
+- move data to the right device **once per batch**,
+- cache expensive things that do not change,
 - profile your code to see whether the main cost is in the model, the data
   pipeline, or device transfers~\citep{tyagiScalingDeepLearning2025}.
 
@@ -647,42 +647,42 @@ not from exotic algorithms~\citep{zinkevichRulesMLND, tyagiScalingDeepLearning20
 
 **Data and problem**
 
-- Is the prediction task clearly defined (inputs, target, evaluation metric)?  
+- Is the prediction task clearly defined (inputs, target, evaluation metric)?
 - Has the training data been checked for obvious issues (missing values, wrong
-  ranges, label problems)?  
-- Are training, validation, and test splits clearly separated?  
+  ranges, label problems)?
+- Are training, validation, and test splits clearly separated?
 - If you stream data, are you sure the pipeline eventually covers the whole
   dataset?
 
 **Model and code**
 
-- Has the same model been run on a smaller dataset as a sanity check?~\citep{zinkevichRulesMLND}  
+- Has the same model been run on a smaller dataset as a sanity check?~\citep{zinkevichRulesMLND}
 - Are custom pieces (e.g. transformations) covered by at least basic tests
-  (shapes, ranges, round-trip checks)?  
+  (shapes, ranges, round-trip checks)?
 - Is configuration (batch size, learning rate, etc.) separated from the code so
   you can easily rerun experiments with different settings?
 
 **Resources and runtime**
 
 - Does the model fit in memory on the planned hardware with the chosen batch
-  size?~\citep{tyagiScalingDeepLearning2025}  
+  size?~\citep{tyagiScalingDeepLearning2025}
 - Have you done a short “smoke test” run (for example, one epoch or a few
-  batches) on the real hardware?  
+  batches) on the real hardware?
 - Is checkpointing enabled so that you can resume after interruptions?
 
 **Monitoring and reproducibility**
 
 - Are key metrics (loss, accuracy, calibration, runtime per step) being logged
-  somewhere you can inspect later?  
+  somewhere you can inspect later?
 - Are random seeds, library versions, and important hyperparameters recorded
-  so that important runs can be reproduced?~\citep{zinkevichRulesMLND}  
+  so that important runs can be reproduced?~\citep{zinkevichRulesMLND}
 
 **Before you press “run”**
 
 Ask yourself:
 
-- If this run fails, do I know what I will try next?  
-- Is there a cheaper or smaller version of this experiment I could run first?  
+- If this run fails, do I know what I will try next?
+- Is there a cheaper or smaller version of this experiment I could run first?
 - Do I have clear success criteria (for example, “validation accuracy improves
   by at least 2 points without worse calibration”)?
 
@@ -694,7 +694,7 @@ results are telling you~\citep{tuOverviewLargeAI2024, tyagiScalingDeepLearning20
 ------------------------------------
 
 This chapter assumes that you sometimes want to use ``probly`` together with other
-tools: neural-network libraries, data pipelines, or classic ML components.  
+tools: neural-network libraries, data pipelines, or classic ML components.
 The goal is not to cover every possible setup, but to give you an idea of how
 ``probly`` can fit into a larger system and what to watch out for at the
 boundaries.
@@ -713,8 +713,8 @@ boundaries.
 When you connect ``probly`` with other frameworks, three questions come up over
 and over again:
 
-- how **data** moves between components,  
-- how **types, shapes, and devices** are handled,  
+- how **data** moves between components,
+- how **types, shapes, and devices** are handled,
 - how **randomness and seeds** are managed.
 
 **Data flow between ``probly`` and other libraries**
@@ -723,17 +723,17 @@ and over again:
 and uncertainty representations. Other libraries do the same, but each has its
 own types:
 
-- JAX / Flax use JAX arrays and pytrees,  
-- TensorFlow uses ``tf.Tensor`` and ``tf.data.Dataset``~\citep{tensorflowTfDataGuide2024},  
+- JAX / Flax use JAX arrays and pytrees,
+- TensorFlow uses ``tf.Tensor`` and ``tf.data.Dataset``~\citep{tensorflowTfDataGuide2024},
 - scikit-learn expects NumPy arrays or “array-like” objects for ``fit`` and
   ``predict``~\citep{sklearnDevelopingEstimators2024}.
 
 When integrating, the main job is to **convert between these array types in a
 controlled place**. In practice this usually means:
 
-- deciding where the **main computation** lives (e.g. in JAX/Flax or PyTorch),  
+- deciding where the **main computation** lives (e.g. in JAX/Flax or PyTorch),
 - converting data *once* at a clear boundary (not back and forth inside tight
-  loops),  
+  loops),
 - keeping helper functions like ``to_jax_array(...)`` or ``to_numpy(...)`` in one
   module so you can change them later if needed.
 
@@ -746,8 +746,8 @@ and scikit-learn’s estimators assume 2D matrices of shape
 
 To avoid surprises, it helps to:
 
-- settle on a simple **shape convention** (e.g. “batch dimension first”),  
-- standardise dtypes (usually ``float32`` for model inputs),  
+- settle on a simple **shape convention** (e.g. “batch dimension first”),
+- standardise dtypes (usually ``float32`` for model inputs),
 - move arrays to the correct **device** (CPU vs GPU) *before* calling library
   functions.
 
@@ -759,17 +759,17 @@ Python function, so you want to minimise those device hops.
 Different frameworks treat randomness differently:
 
 - JAX uses **explicit PRNG keys**: you create a key from a seed and then *split*
-  it whenever you need fresh randomness~\citep{jaxPseudorandomNumbers2024}.  
+  it whenever you need fresh randomness~\citep{jaxPseudorandomNumbers2024}.
 - Flax builds on this and treats RNG streams as part of a module’s state and
-  lifecycle~\citep{flaxDevelopersLinenFundamentals2023}.  
+  lifecycle~\citep{flaxDevelopersLinenFundamentals2023}.
 - Many other libraries (TensorFlow, NumPy, PyTorch) use global or graph-local
   RNGs with functions like ``set_seed``~\citep{tensorflowTfDataGuide2024}.
 
 A simple pattern for combined setups is:
 
 - pick one library (often JAX in a Flax/``probly`` project) as the **main source
-  of randomness**,  
-- derive keys or seeds from there and pass them into other parts of the system,  
+  of randomness**,
+- derive keys or seeds from there and pass them into other parts of the system,
 - log the seeds/keys you used for important runs so they can be reproduced later~\citep{jaxPseudorandomNumbers2024}.
 
 4.2 Using ``probly`` with Flax
@@ -783,12 +783,12 @@ want neural nets inside a probabilistic model.
 A common setup looks like this:
 
 1. Define a Flax model (for example, an encoder or feature extractor) as a Linen
-   Module.  
+   Module.
 2. Initialise the Flax model to get a **variables dict** that holds parameters
-   and any extra state (e.g. batch-norm statistics)~\citep{flaxDevelopersLinenFundamentals2023}.  
+   and any extra state (e.g. batch-norm statistics)~\citep{flaxDevelopersLinenFundamentals2023}.
 3. Define a ``probly`` model that takes the Flax outputs (features, logits,
    etc.) as inputs to probabilistic components (likelihoods, priors, uncertainty
-   heads).  
+   heads).
 4. Build a training or inference loop that updates both the Flax parameters and
    the ``probly`` parameters together.
 
@@ -801,7 +801,7 @@ treat those parameters as just another part of the probabilistic model.
 
 In a joint Flax+``probly`` model you typically want:
 
-- all learnable parameters (Flax + ``probly``) inside one combined PyTree,  
+- all learnable parameters (Flax + ``probly``) inside one combined PyTree,
 - deterministic state (e.g. running means) clearly separated from stochastic
   parameters.
 
@@ -817,15 +817,15 @@ need randomness~\citep{flaxDevelopersLinenFundamentals2023}.
 
 For a stable integration, treat keys just like any other input:
 
-- thread them through your top-level training/inference functions,  
-- split them where you need extra randomness,  
+- thread them through your top-level training/inference functions,
+- split them where you need extra randomness,
 - store the initial seed in your experiment logs.
 
 4.3 Using ``probly`` with TensorFlow
 
 .. note::
 
-   ``probly`` does **not** currently ship an official TensorFlow backend.  
+   ``probly`` does **not** currently ship an official TensorFlow backend.
    The patterns in this subsection describe how you *could* connect things in
    your own code, by analogy with other frameworks.
 
@@ -839,10 +839,10 @@ TensorFlow’s ``tf.data`` API represents datasets as streams of elements
 (tensors) that you can map, batch, and shuffle~\citep{tensorflowTfDataGuide2024}. In a
 TensorFlow+``probly`` workflow you might:
 
-- build a ``tf.data.Dataset`` that yields batches of inputs and targets,  
+- build a ``tf.data.Dataset`` that yields batches of inputs and targets,
 - inside the training loop, turn each batch into NumPy or JAX arrays in the
-  format ``probly`` expects,  
-- call the ``probly`` model on these arrays,  
+  format ``probly`` expects,
+- call the ``probly`` model on these arrays,
 - optionally convert results (e.g. predictions, uncertainties) back to tensors
   if you want to use TensorFlow tools like TensorBoard.
 
@@ -857,7 +857,7 @@ keeps the probabilistic model busy instead of letting it wait for I/O.
 
 .. note::
 
-   ``probly`` does not currently include a built-in scikit-learn adapter.  
+   ``probly`` does not currently include a built-in scikit-learn adapter.
    The code patterns here are suggestions for writing your **own** wrapper that
    follows scikit-learn’s estimator API.
 
@@ -873,11 +873,11 @@ To plug ``probly`` into this ecosystem, you can write a small wrapper class.
 A minimal wrapper might:
 
 - take configuration options (model structure, priors, inference method) in
-  ``__init__``,  
+  ``__init__``,
 - implement ``fit(X, y=None)`` to run ``probly``’s training or inference on the
-  given data,  
+  given data,
 - implement ``predict(X)`` or ``predict_proba(X)`` to return point predictions
-  or uncertainty summaries,  
+  or uncertainty summaries,
 - optionally implement ``score(X, y)`` using scikit-learn metrics or your own
   custom metric.
 
@@ -897,34 +897,34 @@ A few habits make life much easier when ``probly`` and other frameworks meet:
 
 **Device management**
 
-- Decide early which parts run on CPU and which on GPU.  
+- Decide early which parts run on CPU and which on GPU.
 - Move a batch to the target device **once**, do all the work there, then move
-  back only summary results if needed.  
+  back only summary results if needed.
 - Avoid hidden device transfers in utility functions.
 
 **Version management**
 
 - Pin versions of key libraries (JAX, Flax, PyTorch, TensorFlow, scikit-learn)
-  so everyone runs the same stack.  
+  so everyone runs the same stack.
 - Note any known compatibility requirements (for example, which JAX version a
-  given Flax release expects)~\citep{flaxDevelopersLinenFundamentals2023}.  
+  given Flax release expects)~\citep{flaxDevelopersLinenFundamentals2023}.
 - Record the versions used for important experiments.
 
 **Debugging across library boundaries**
 
 Cross-library bugs usually come from mismatched assumptions:
 
-- shape or dtype mismatches,  
-- data accidentally on the wrong device,  
+- shape or dtype mismatches,
+- data accidentally on the wrong device,
 - inconsistent random-number handling.
 
 When debugging:
 
-- start with a tiny example that only tests the hand-off between libraries,  
+- start with a tiny example that only tests the hand-off between libraries,
 - print/log shapes, dtypes, and devices right before and after conversion
-  points,  
+  points,
 - disable advanced features like JIT or complex pipelines until the basics
-  work,  
+  work,
 - re-run with fixed seeds so you can tell whether errors are deterministic~\citep{jaxPseudorandomNumbers2024, tensorflowTfDataGuide2024}.
 
 If you treat integration points as “first-class citizens” and give them a bit
@@ -955,8 +955,8 @@ time goes into your model, the data pipeline, or external libraries.
 
 A simple routine that works well in practice:
 
-- run a **small experiment** with realistic settings,  
-- profile the run to find the **slowest functions/lines**,  
+- run a **small experiment** with realistic settings,
+- profile the run to find the **slowest functions/lines**,
 - focus optimisation on the few places that clearly dominate runtime.
 
 You do not need perfect measurements – just enough to see where the main time
@@ -967,23 +967,23 @@ sink is.
 Profiling your code can stay very simple. In many cases, it is enough to:
 
 - use a **function-level profiler** (like ``cProfile``) to find the most
-  expensive calls~\citep{pythonProfilersND},  
+  expensive calls~\citep{pythonProfilersND},
 - add a **line-level or memory profiler** only when you suspect a specific
   block of code.
 
 A practical workflow:
 
-1. Wrap your main training or inference loop in a profiler context.  
-2. Run a short experiment on a subset of the data.  
-3. Sort the output by **cumulative time** to see the top few functions.  
+1. Wrap your main training or inference loop in a profiler context.
+2. Run a short experiment on a subset of the data.
+3. Sort the output by **cumulative time** to see the top few functions.
 4. For one or two of those, use a line profiler or add logging to see what is
    really happening.
 
 The goal is not to optimise every line. You just want to answer questions like:
 
 - Is the time mostly in ``probly`` / NumPy / JAX, or in my own Python glue
-  code?  
-- Is data loading slower than the model itself?  
+  code?
+- Is data loading slower than the model itself?
 - Are there one or two functions that dominate runtime?
 
 Once you know that, it is much easier to decide what to change.
@@ -993,17 +993,17 @@ Once you know that, it is much easier to decide what to change.
 Before you tweak low-level details, it often helps more to change the
 **algorithmic setup**:
 
-- **Pick an inference method that fits the model.**  
+- **Pick an inference method that fits the model.**
   Some models work fine with simple optimisation; others need richer samplers.
   A method with better convergence can cut total runtime a lot, even if each
   step is a bit slower.
 
-- **Simplify or re-parameterise the model.**  
+- **Simplify or re-parameterise the model.**
   Better parameterisations can improve gradient flow, avoid extreme curvature,
   and make constraints easier to handle. That usually means fewer iterations
   and more stable training.
 
-- **Re-use previous runs.**  
+- **Re-use previous runs.**
   Warm-start from parameters that already work reasonably well, or cache
   expensive intermediate results. There is no need to recompute everything from
   scratch if a similar experiment has already been done.
@@ -1020,16 +1020,16 @@ Python~\citep{harrisArrayProgramming2020}.
 
 In ``probly``, this means:
 
-- prefer **batch operations** over manual Python ``for``-loops,  
+- prefer **batch operations** over manual Python ``for``-loops,
 - write code so that entire arrays of parameters, samples, or observations can
-  be processed at once,  
+  be processed at once,
 - let the backend (NumPy, JAX, etc.) use SIMD, multi-core CPUs, or GPUs.
 
 You can combine this with **parallelisation**:
 
-- run independent chains or tasks on different CPU cores or devices,  
+- run independent chains or tasks on different CPU cores or devices,
 - make sure the work per task is large enough so that parallel overhead does
-  not dominate,  
+  not dominate,
 - keep seeds and random-number streams clearly separated, so parallel chains
   really are independent~\citep{opendatascienceRandomSeed2019}.
 
@@ -1041,15 +1041,15 @@ starting and syncing workers can outweigh any speedup.
 Randomness is central to probabilistic modelling but can make performance
 harder to debug if every run behaves differently. A few simple habits help:
 
-- **Set random seeds on purpose.**  
+- **Set random seeds on purpose.**
   Use fixed seeds for NumPy, JAX, and other backends so that runs with the same
   settings produce comparable results~\citep{opendatascienceRandomSeed2019}.
 
-- **Log important settings.**  
+- **Log important settings.**
   Store seeds, dataset versions, batch sizes, hardware info, and key
   hyperparameters somewhere (config files, experiment tracker, or logs).
 
-- **Balance reproducibility and exploration.**  
+- **Balance reproducibility and exploration.**
   During debugging and profiling, fixed seeds are very helpful. For final
   experiments, you might run several seeds to see how stable the results are.
 
@@ -1063,28 +1063,28 @@ Before you launch a big and expensive run, a quick checklist can save a lot of
 time:
 
 - **Model & algorithm**
-  - Does the inference method make sense for this model?  
+  - Does the inference method make sense for this model?
   - Are there layers, parameters, or transforms you can remove without losing
     quality?
 
 - **Implementation**
   - Are your main computations vectorised, or are there slow Python loops in
-    the hot path?  
+    the hot path?
   - Are you avoiding repeated work (e.g. recomputing static features inside the
     main loop)?
 
 - **Data pipeline**
-  - Is data loading fast enough compared to the model compute?  
+  - Is data loading fast enough compared to the model compute?
   - Are you using batching or mini-batching to keep memory usage under control?
 
 - **Resources**
   - Is the model using available hardware (CPU cores, GPU, memory) in a
-    sensible way?  
+    sensible way?
   - Is logging set to a reasonable level so it does not become an I/O
     bottleneck?
 
 - **Reproducibility**
-  - Are seeds and key settings stored somewhere?  
+  - Are seeds and key settings stored somewhere?
   - Can you reproduce a small profiling run before scaling up?
 
 If you can honestly tick these boxes, you are much less likely to waste compute
@@ -1126,9 +1126,9 @@ of several Gaussian components, each with its own mean and variance~\citep{bisho
 
 In ``probly``, mixture models can:
 
-- represent component-specific parameters and their mixing weights,  
+- represent component-specific parameters and their mixing weights,
 - use latent variables (discrete or continuous) to indicate which component
-  generated each observation,  
+  generated each observation,
 - quantify uncertainty about both the component assignments and the component
   parameters.
 
@@ -1145,8 +1145,8 @@ structure~\citep{hyndmanForecastingPrinciples2018}.
 With ``probly``, you can:
 
 - build models that include lagged variables, latent states, or time-varying
-  parameters,  
-- express uncertainty about future trajectories, not just single point forecasts,  
+  parameters,
+- express uncertainty about future trajectories, not just single point forecasts,
 - feed these predictive distributions into downstream decisions or risk analysis.
 
 More advanced time-series models often mix ideas from hierarchies (e.g. many
@@ -1159,22 +1159,22 @@ As your models become more complex, it helps to recognise **reusable templates**
 small patterns that show up again and again. Examples include:
 
 - a standard hierarchical regression block for grouped data (inspired by
-  typical multilevel models in~\citep{gelmanHillDataAnalysis2007}),  
-- a generic mixture-of-experts block that combines several prediction heads~\citep{bishopPatternRecognition2006},  
+  typical multilevel models in~\citep{gelmanHillDataAnalysis2007}),
+- a generic mixture-of-experts block that combines several prediction heads~\citep{bishopPatternRecognition2006},
 - a time-series forecasting head that can be attached to different feature
   extractors~\citep{hyndmanForecastingPrinciples2018}.
 
 In ``probly``, you can implement these templates as functions or modules that:
 
 - take model-specific pieces as arguments (e.g. feature networks, priors, or
-  likelihood choices),  
-- expose a clear, well-documented interface,  
+  likelihood choices),
+- expose a clear, well-documented interface,
 - return predictions and uncertainty representations in a consistent format.
 
 By reusing such templates, you:
 
-- reduce copy–paste boilerplate,  
-- keep projects more uniform,  
+- reduce copy–paste boilerplate,
+- keep projects more uniform,
 - make it easier for other people (or future you) to understand and extend your
   models.
 
@@ -1185,9 +1185,9 @@ least one **worked example**:
 
 - For hierarchical models, a grouped-data example (e.g. “schools”, “hospitals”,
   or “stores”) that walks through model specification, inference, and how to
-  read the group-level posteriors~\citep{gelmanHillDataAnalysis2007}.  
+  read the group-level posteriors~\citep{gelmanHillDataAnalysis2007}.
 - For mixture models, a clustering or anomaly-detection example that shows both
-  cluster responsibilities and uncertainty about the clusters themselves~\citep{bishopPatternRecognition2006}.  
+  cluster responsibilities and uncertainty about the clusters themselves~\citep{bishopPatternRecognition2006}.
 - For time-series models, a forecasting example that compares point forecasts to
   predictive intervals over time, and shows how to evaluate them~\citep{hyndmanForecastingPrinciples2018}.
 
@@ -1202,37 +1202,37 @@ For each advanced pattern in this chapter, there is at least one worked example 
 This chapter pulled together the “advanced” parts of working with ``probly``. Here are the
 most important ideas to remember:
 
-- **Think in workflows, not one-off runs.**  
+- **Think in workflows, not one-off runs.**
   You rarely get the model right on the first attempt. Start simple, run it, look at what
   goes wrong, and then refine. Advanced topics are mostly about having good tools for
   iterating in a controlled way.
 
-- **Use transformations to tame tricky parameter spaces.**  
+- **Use transformations to tame tricky parameter spaces.**
   Transformations let you express models in natural, human-friendly parameters while keeping
   inference in a convenient unconstrained space. Custom transforms are the place to encode
   constraints, reparameterisations, and numerical tricks so the rest of the model stays clean.
 
-- **Structure your code for large models and datasets.**  
+- **Structure your code for large models and datasets.**
   As things grow, clear modular structure matters as much as the math: separate data loading,
   model definition, and inference; avoid giant monolithic scripts; and reuse building blocks
   across projects.
 
-- **Lean on vectorisation, batching, and compilation.**  
+- **Lean on vectorisation, batching, and compilation.**
   Performance usually comes from doing more work per call, not from clever loops. Writing
   models in a vectorised style and using backend compilation options (where available) can
   make the difference between a toy demo and a practical large-scale run.
 
-- **Integrate carefully with other frameworks.**  
+- **Integrate carefully with other frameworks.**
   When combining ``probly`` with Flax, TensorFlow, or scikit-learn, be explicit about how
   data, shapes, devices (CPU/GPU), and random seeds move across boundaries. Clear integration
   points make complex systems much easier to debug.
 
-- **Test, profile, and document advanced pieces.**  
+- **Test, profile, and document advanced pieces.**
   Custom transformations, large-model setups, and multi-framework integrations deserve small
   dedicated tests and occasional profiling runs. A few well-placed checks (round-trip tests,
   shape checks, smoke tests) catch many subtle bugs before they become expensive.
 
-- **Favour clarity and robustness over cleverness.**  
+- **Favour clarity and robustness over cleverness.**
   An “advanced” model is only useful if people can understand, trust, and maintain it. Simple,
   well-structured models with honest uncertainty are usually more valuable than fragile,
   over-complicated constructions.
@@ -1240,8 +1240,6 @@ most important ideas to remember:
 If you keep these principles in mind, the rest of the ``probly`` documentation methods,
 modules, and examples should slot naturally into your own advanced models and experiments.
 
-
-.. bibliography::
 
    Bishop, C. M. (2006). *Pattern recognition and machine learning*. Springer.
 
@@ -1374,8 +1372,3 @@ modules, and examples should slot naturally into your own advanced models and ex
    Zinkevich, M. (n.d.). Rules of machine learning: Best practices for ML
    engineering. Google Developers.
    https://developers.google.com/machine-learning/guides/rules-of-ml
-
-.. bibliography::
-   :style: unsrt
-   :filter: docname in docnames
-

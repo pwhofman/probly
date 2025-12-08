@@ -1,14 +1,14 @@
 FAQ and Troubleshooting
 =======================
 
-This page provides answers to frequently asked questions about using ``probly`` and 
-solutions to common problems that users may encounter. It is organized into sections 
-covering installation issues, basic usage questions, uncertainty methods, integration 
+This page provides answers to frequently asked questions about using ``probly`` and
+solutions to common problems that users may encounter. It is organized into sections
+covering installation issues, basic usage questions, uncertainty methods, integration
 with different frameworks, and debugging tips.
 
-If you cannot find an answer to your question here, please refer to the 
-:doc:`core_concepts` section for conceptual background, the :doc:`main_components` 
-section for detailed component descriptions, or the :doc:`examples_and_tutorials` 
+If you cannot find an answer to your question here, please refer to the
+:doc:`core_concepts` section for conceptual background, the :doc:`main_components`
+section for detailed component descriptions, or the :doc:`examples_and_tutorials`
 section for practical demonstrations.
 
 1. Installation and Setup
@@ -17,8 +17,8 @@ section for practical demonstrations.
 1.1 Which Python versions does ``probly`` support?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-``probly`` is designed to work with **Python 3.12 and above**. 
-If you are using an older Python version, you may encounter compatibility issues 
+``probly`` is designed to work with **Python 3.12 and above**.
+If you are using an older Python version, you may encounter compatibility issues
 with dependencies or type hints. We recommend upgrading to Python 3.12 or later.
 
 For installation instructions, see :doc:`Installation`.
@@ -43,7 +43,7 @@ For more details, refer to the :doc:`Installation` section.
 1.3 Installation fails with dependency conflicts. What should I do?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Dependency conflicts can occur when ``probly`` requires specific versions of libraries 
+Dependency conflicts can occur when ``probly`` requires specific versions of libraries
 that conflict with other packages in your environment. Here are some solutions:
 
 **Create a clean virtual environment:**
@@ -65,17 +65,17 @@ The ``uv`` package manager often handles dependency conflicts more effectively:
 
 **Check for conflicting packages:**
 
-If you have existing PyTorch, JAX, or Flax installations, make sure they are compatible 
+If you have existing PyTorch, JAX, or Flax installations, make sure they are compatible
 with the versions required by ``probly``. You may need to upgrade or downgrade these packages.
 
 1.4 Do I need to install PyTorch or JAX separately?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Yes. ``probly`` integrates with PyTorch and Flax/JAX but does not install them automatically 
-as dependencies. This allows you to choose the appropriate version and configuration 
+Yes. ``probly`` integrates with PyTorch and Flax/JAX but does not install them automatically
+as dependencies. This allows you to choose the appropriate version and configuration
 (CPU or GPU) for your system.
 
-Install PyTorch following the instructions at https://pytorch.org/, or install JAX 
+Install PyTorch following the instructions at https://pytorch.org/, or install JAX
 following https://github.com/google/jax#installation.
 
 2. Basic Usage Questions
@@ -84,8 +84,8 @@ following https://github.com/google/jax#installation.
 2.1 How do I make my model uncertainty-aware?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-``probly`` provides high-level transformation functions that wrap your existing model 
-to make it uncertainty-aware. The most common approach is to use one of the transformations 
+``probly`` provides high-level transformation functions that wrap your existing model
+to make it uncertainty-aware. The most common approach is to use one of the transformations
 from the ``probly.transformation`` module.
 
 Example using Monte Carlo Dropout :cite:`galDropoutBayesian2016`:
@@ -117,12 +117,12 @@ For more details, see :doc:`introduction` section 3.2.
 2.2 Do I need to retrain my model to use ``probly``?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**No.** One of the key design principles of ``probly`` is that it works with models 
-you have already trained. You train your model exactly as usual, then apply a 
+**No.** One of the key design principles of ``probly`` is that it works with models
+you have already trained. You train your model exactly as usual, then apply a
 ``probly`` transformation to add uncertainty awareness during inference.
 
-Some uncertainty methods, such as evidential networks or Bayesian neural networks, 
-do require specific training procedures, but even these can often be retrofitted 
+Some uncertainty methods, such as evidential networks or Bayesian neural networks,
+do require specific training procedures, but even these can often be retrofitted
 to existing architectures with minimal changes.
 
 See :doc:`introduction` section 3 for the complete workflow.
@@ -130,15 +130,15 @@ See :doc:`introduction` section 3 for the complete workflow.
 2.3 What is an uncertainty representation?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-An uncertainty representation is a structured object that contains information about 
-how confident or uncertain a model is about its predictions. Instead of returning 
+An uncertainty representation is a structured object that contains information about
+how confident or uncertain a model is about its predictions. Instead of returning
 a single prediction, the model returns additional information such as:
 
 * Multiple stochastic samples (from dropout or ensembles)
 * Distribution parameters (from evidential models)
 * Probability intervals or credal sets
 
-``probly`` unifies these different formats into a consistent interface so they can 
+``probly`` unifies these different formats into a consistent interface so they can
 be quantified and used in downstream tasks.
 
 For a detailed explanation, see :doc:`core_concepts` section 2.
@@ -146,7 +146,7 @@ For a detailed explanation, see :doc:`core_concepts` section 2.
 2.4 How do I quantify uncertainty from a representation?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Once you have predictions from a sampling-based uncertainty method, you can use the 
+Once you have predictions from a sampling-based uncertainty method, you can use the
 quantification functions in ``probly.quantification`` to compute numerical uncertainty scores:
 
 .. code-block:: python
@@ -170,7 +170,7 @@ quantification functions in ``probly.quantification`` to compute numerical uncer
    # Compute total entropy
    entropy_scores = classification.entropy(stacked_preds)
 
-These scores can then be used for tasks such as out-of-distribution detection 
+These scores can then be used for tasks such as out-of-distribution detection
 or selective prediction.
 
 See :doc:`core_concepts` section 3.1 for more quantification methods.
@@ -181,7 +181,7 @@ See :doc:`core_concepts` section 3.1 for more quantification methods.
 3.1 Which uncertainty method should I use?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The choice of uncertainty method depends on your specific use case, computational 
+The choice of uncertainty method depends on your specific use case, computational
 constraints, and the type of uncertainty you want to capture:
 
 **Monte Carlo Dropout** :cite:`galDropoutBayesian2016`
@@ -213,17 +213,17 @@ For conceptual background, see :doc:`core_concepts` and :doc:`introduction`.
 3.2 What is the difference between epistemic and aleatoric uncertainty?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Epistemic uncertainty** (also called model uncertainty) reflects what the model does not know 
-because it has not seen similar data during training. This uncertainty can be reduced 
+**Epistemic uncertainty** (also called model uncertainty) reflects what the model does not know
+because it has not seen similar data during training. This uncertainty can be reduced
 by collecting more training data or improving the model.
 
 For a theoretical foundation of this decomposition, see :cite:`depewegDecompositionUncertainty2018`.
 
-**Aleatoric uncertainty** (also called data uncertainty) reflects inherent noise or ambiguity 
-in the data itself, such as sensor noise, label disagreements, or inherently ambiguous cases. 
+**Aleatoric uncertainty** (also called data uncertainty) reflects inherent noise or ambiguity
+in the data itself, such as sensor noise, label disagreements, or inherently ambiguous cases.
 This uncertainty cannot be reduced by simply collecting more data.
 
-``probly`` provides tools to quantify both types of uncertainty. For example, 
+``probly`` provides tools to quantify both types of uncertainty. For example,
 mutual information captures epistemic uncertainty, while total entropy includes both types.
 
 See :doc:`core_concepts` section 1.1 for detailed explanations with visualizations.
@@ -231,14 +231,14 @@ See :doc:`core_concepts` section 1.1 for detailed explanations with visualizatio
 3.3 Can I combine different uncertainty methods?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Yes. ``probly`` is designed so that different uncertainty methods share a common interface. 
+Yes. ``probly`` is designed so that different uncertainty methods share a common interface.
 This means you can:
 
 * Compare different methods on the same dataset
 * Use ensemble-based and dropout-based uncertainty in parallel
 * Switch between methods without changing your downstream analysis code
 
-The unified representation format makes it easy to experiment with different approaches 
+The unified representation format makes it easy to experiment with different approaches
 and choose the one that works best for your application.
 
 4. Framework Integration
@@ -247,7 +247,7 @@ and choose the one that works best for your application.
 4.1 Does ``probly`` work with PyTorch?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Yes. ``probly`` has full support for PyTorch models. You can wrap any ``torch.nn.Module`` 
+Yes. ``probly`` has full support for PyTorch models. You can wrap any ``torch.nn.Module``
 with a ``probly`` transformation to make it uncertainty-aware.
 
 Example:
@@ -270,7 +270,7 @@ Example:
 4.2 Does ``probly`` work with Flax/JAX?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Yes. ``probly`` supports Flax/JAX models through the same transformation interface. 
+Yes. ``probly`` supports Flax/JAX models through the same transformation interface.
 You can apply uncertainty transformations to ``flax.nnx.Module`` objects.
 
 See :doc:`introduction` section 5 for supported frameworks.
@@ -278,8 +278,8 @@ See :doc:`introduction` section 5 for supported frameworks.
 4.3 Can I use ``probly`` with scikit-learn models?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-``probly`` is primarily designed for neural network frameworks like PyTorch and Flax/JAX. 
-However, some uncertainty quantification functions can work with probability outputs 
+``probly`` is primarily designed for neural network frameworks like PyTorch and Flax/JAX.
+However, some uncertainty quantification functions can work with probability outputs
 from scikit-learn models if they are formatted correctly.
 
 For full integration, we recommend using neural network-based models.
@@ -287,7 +287,7 @@ For full integration, we recommend using neural network-based models.
 4.4 How do I use ``probly`` with pre-trained models?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-You can apply ``probly`` transformations to any pre-trained model, whether you trained it yourself 
+You can apply ``probly`` transformations to any pre-trained model, whether you trained it yourself
 or loaded it from a model zoo. Simply pass the pre-trained model to a transformation function:
 
 .. code-block:: python
@@ -326,7 +326,7 @@ This error occurs when the array passed to quantification has an unexpected shap
 
 **Solution:**
 
-The quantification functions expect a numpy array with shape ``(num_samples, batch_size, num_classes)`` 
+The quantification functions expect a numpy array with shape ``(num_samples, batch_size, num_classes)``
 for classification tasks. Make sure you are stacking predictions correctly:
 
 .. code-block:: python
@@ -336,11 +336,11 @@ for classification tasks. Make sure you are stacking predictions correctly:
 
    # If you have a list of predictions from sampler_factory:
    predictions = sampler(input_data)  # Returns list of tensors
-   
+
    # Stack into correct shape
    stacked = np.stack([p.detach().numpy() for p in predictions])
    print(stacked.shape)  # Should be (num_samples, batch_size, num_classes)
-   
+
    # Now quantification will work
    mi_scores = classification.mutual_information(stacked)
 
@@ -349,7 +349,7 @@ Make sure the first dimension is the number of samples, not the batch size.
 5.3 Warning: "Model returns deterministic output"
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This warning appears when a transformation that requires stochastic behavior 
+This warning appears when a transformation that requires stochastic behavior
 (like dropout) produces identical outputs across multiple forward passes.
 
 **Solution:**
@@ -373,7 +373,7 @@ Example:
 5.4 Error: "Out of memory during ensemble prediction"
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Ensemble methods require running multiple models simultaneously, which can consume 
+Ensemble methods require running multiple models simultaneously, which can consume
 significant GPU memory.
 
 **Solution:**
@@ -395,7 +395,7 @@ The number of forward passes (samples) is a trade-off between accuracy and compu
 * **50-100 samples:** Better uncertainty estimates, higher computational cost
 * **100+ samples:** Diminishing returns, use only if very precise estimates are needed
 
-You can experiment with different numbers of samples and evaluate using uncertainty 
+You can experiment with different numbers of samples and evaluate using uncertainty
 calibration metrics.
 
 6.2 Is ``probly`` slow compared to standard inference?
@@ -407,7 +407,7 @@ Uncertainty-aware inference is inherently more expensive than standard inference
 * Ensembles require multiple models
 * Bayesian methods involve sampling procedures
 
-However, ``probly`` is designed to be as efficient as possible within these constraints. 
+However, ``probly`` is designed to be as efficient as possible within these constraints.
 If speed is critical, consider:
 
 * Using fewer samples for Monte Carlo methods
@@ -420,12 +420,12 @@ If speed is critical, consider:
 
 **Use vectorized operations:**
 
-``probly`` quantification functions are implemented with vectorized operations 
+``probly`` quantification functions are implemented with vectorized operations
 and work efficiently on batched data.
 
 **Reduce the number of samples:**
 
-If using Monte Carlo methods, try using fewer samples during development and 
+If using Monte Carlo methods, try using fewer samples during development and
 increase only for final evaluation.
 
 **Use appropriate hardware:**
@@ -458,31 +458,31 @@ When implementing custom uncertainty transformations, users may encounter:
 Working with large models introduces specific challenges:
 
 * **Memory errors during ensemble creation:** Large models multiplied across ensemble members can exceed GPU memory
-  
+
   **Solution:** Use gradient checkpointing, reduce batch size, or process ensemble members sequentially
-  
+
 * **Slow inference with MC Dropout:** Multiple forward passes on large models can be time-consuming
-  
+
   **Solution:** Reduce the number of samples, use mixed precision, or consider single-pass methods like evidential networks
 
 **Integration with Flax/TensorFlow/scikit-learn**
 
 * **Flax/JAX compatibility:** Ensure you're using compatible JAX and Flax versions (JAX ≥0.8.0, Flax ≥0.12.0)
-  
+
   **Solution:** Check version compatibility in your environment and update if needed
-  
+
 * **TensorFlow models:** ``probly`` primarily supports PyTorch and Flax/JAX. For TensorFlow, you may need to convert models or use probability outputs directly
-  
+
 * **scikit-learn integration:** While ``probly`` is designed for neural networks, some quantification functions can work with probability outputs from scikit-learn classifiers if properly formatted
 
 **Performance Problems**
 
 * **Slow uncertainty quantification:** Vectorized operations are optimized, but large batch sizes or many samples can still be slow
-  
+
   **Solution:** Profile your code to identify bottlenecks, reduce sample counts during development, use GPU acceleration
-  
+
 * **High memory usage:** Storing multiple samples from ensemble or MC Dropout methods requires significant memory
-  
+
   **Solution:** Process in smaller batches, use streaming quantification where possible, or reduce the number of samples
 
 7.2 Systematic Debugging Approach
@@ -498,17 +498,17 @@ Start with a minimal model to verify the transformation works:
 
    import torch
    import probly
-   
+
    # Create a simple model
    simple_model = torch.nn.Sequential(
        torch.nn.Linear(10, 5),
        torch.nn.ReLU(),
        torch.nn.Linear(5, 2)
    )
-   
+
    # Test transformation
    dropout_model = probly.transformation.dropout(simple_model, p=0.3)
-   
+
    # Verify it works
    test_input = torch.randn(4, 10)
    output = dropout_model(test_input)
@@ -522,14 +522,14 @@ Test with a small synthetic dataset before using your full data:
 
    import numpy as np
    from probly.representation.sampling import sampler_factory
-   
+
    # Small synthetic data
    small_data = torch.randn(10, 10)
-   
+
    # Test sampler
    sampler = sampler_factory(dropout_model, num_samples=5)
    predictions = sampler(small_data)
-   
+
    # Verify output format
    stacked = np.stack([p.detach().numpy() for p in predictions])
    print("Predictions shape:", stacked.shape)  # Should be (5, 10, 2)
@@ -562,20 +562,20 @@ If using multiple features, disable them one by one to identify the problematic 
 .. code-block:: python
 
    # Test if issue is with transformation or integration
-   
+
    # 1. Test transformation directly
    transformed = probly.transformation.dropout(model, p=0.5)
    out1 = transformed(test_input)
    out2 = transformed(test_input)
-   
+
    # Should be different if dropout is working
    print("Outputs differ:", not torch.allclose(out1, out2))
-   
+
    # 2. Test integration with sampler
    from probly.representation.sampling import sampler_factory
    sampler = sampler_factory(transformed, num_samples=3)
    samples = sampler(test_input)
-   
+
    # Should get list of 3 different outputs
    print("Got", len(samples), "samples")
 
@@ -587,20 +587,20 @@ If using multiple features, disable them one by one to identify the problematic 
 When reporting bugs or asking for help, include:
 
 1. **Environment details:**
-   
+
    * Python version
    * ``probly`` version
    * Framework versions (PyTorch/JAX/Flax)
    * Operating system
 
 2. **Minimal reproducible example:**
-   
+
    * Simplest code that demonstrates the issue
    * Sample data or synthetic data that triggers the problem
    * Expected vs. actual behavior
 
 3. **Error messages:**
-   
+
    * Complete stack trace
    * Any warning messages
    * Console output
@@ -614,20 +614,20 @@ When reporting bugs or asking for help, include:
    - probly 0.1.0
    - PyTorch 2.1.0
    - Ubuntu 22.04
-   
+
    **Issue:**
    Getting shape mismatch when using mutual_information with dropout predictions
-   
+
    **Code:**
 ```python
    import probly
    import torch
-   
+
    model = torch.nn.Linear(10, 3)
    dropout_model = probly.transformation.dropout(model, p=0.5)
    # ... rest of minimal example
 ```
-   
+
    **Error:**
 ```
    ValueError: Shape mismatch in mutual_information...
@@ -646,7 +646,7 @@ When reporting bugs or asking for help, include:
 8.1 Can I use custom uncertainty quantification metrics?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Yes. If you have a custom metric, you can implement it as a function that takes 
+Yes. If you have a custom metric, you can implement it as a function that takes
 a stacked numpy array of predictions and returns numerical scores.
 
 Example:
@@ -663,11 +663,11 @@ Example:
 
    # Use it
    from probly.representation.sampling import sampler_factory
-   
+
    sampler = sampler_factory(model, num_samples=10)
    predictions = sampler(input_data)
    stacked = np.stack([p.detach().numpy() for p in predictions])
-   
+
    custom_scores = custom_uncertainty_metric(stacked)
 
 8.2 How do I integrate ``probly`` into a production system?
@@ -724,11 +724,5 @@ Join the ``probly`` community:
 
 * Issue tracker for questions: https://github.com/pwhofman/probly/issues
 
-For questions about uncertainty quantification in general, the broader machine learning 
+For questions about uncertainty quantification in general, the broader machine learning
 community resources may also be helpful.
-
-References
-----------
-
-.. bibliography::
-   :filter: docname in docnames

@@ -490,16 +490,3 @@ Summary
 -------
 
 In this example, you used probly to construct both a homogeneous ensemble and a ``MixedEnsemble`` combining different model types. The MixedEnsemble may capture complementary model behaviour and can therefore improve robustness and calibration in some settings :cite:`opitz1999popular,ovadia2019trust`. By providing a unified abstraction for homogeneous and heterogeneous ensembles, probly makes it straightforward to explore such design choices in practical applications.
-
-
-References
-==========
-
-These tutorials build on established work in deep learning, Bayesian deep learning,
-and ensemble methods. Key references include:
-
-.. bibliography::
-   :style: unsrt
-   :filter: docname in docnames
-
-
