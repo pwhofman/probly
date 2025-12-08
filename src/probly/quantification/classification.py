@@ -19,7 +19,7 @@ MINIMIZE_EPS = 1e-3  # A small epsilon to avoid problems when the initial soluti
 
 
 def total_entropy(probs: np.ndarray, base: float = 2) -> np.ndarray:
-    """Compute the total entropy as the total uncertainty.
+    """Compute the total entropy as the total uncertainty based on :cite:`depewegDecompositionUncertainty2018`.
 
     The computation is based on samples from a second-order distribution.
 
@@ -394,7 +394,7 @@ def lower_entropy_convex_hull(probs: np.ndarray, base: float = 2, n_jobs: int | 
 
 
 def generalized_hartley(probs: np.ndarray, base: float = 2) -> np.ndarray:
-    """Compute the generalized Hartley measure.
+    """Compute the generalized Hartley measure as defined in :cite:`abellanDisaggregatedTotal2006`.
 
     Based on the extreme points of a credal set the generalized Hartley measure is computed.
 
@@ -417,7 +417,7 @@ def generalized_hartley(probs: np.ndarray, base: float = 2) -> np.ndarray:
 
 
 def evidential_uncertainty(evidences: np.ndarray) -> np.ndarray:
-    """Compute the evidential uncertainty given the evidences.
+    """Compute the evidential uncertainty given the evidences based on :cite:`sensoyEvidentialDeep2018`.
 
     Args:
         evidences: Evidence values of shape (n_instances, n_classes).
