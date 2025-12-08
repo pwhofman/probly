@@ -65,16 +65,3 @@ Quickstart
 
 
 
-.. toctree::
-   :maxdepth: 2
-   :caption: API
-   :hidden:
-
-   api
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Development
-   :hidden:
-
-   contributing
