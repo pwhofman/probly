@@ -29,6 +29,7 @@ class IntervalVisualizer:
         self,
         probs: np.ndarray,
         labels: list[str] | None = None,
+        title: str = "Interval Plot (2 Classes)",
         ax: plt.Axes = None,
     ) -> plt.Axes:
         """Plot the interval plot.
@@ -47,13 +48,13 @@ class IntervalVisualizer:
 
         y_marg = np.array([0.1, -0.1])
 
-        plt.plot([0, 1], [0, 0], color="black", linewidth=4, zorder=0)
+        plt.plot([0, 1], [0, 0], color="black", linewidth=2, zorder=0)
 
         coord_max = np.max(coords[:, 0])
         coord_min = np.min(coords[:, 0])
         ax.fill_betweenx(y_marg, coord_max, coord_min, color="purple", alpha=0.5, zorder=2)
 
-        ax.scatter(coords[:, 0], coords[:, 1], color="green", zorder=1)
+        ax.scatter(coords[:, 0], coords[:, 1], color="green", zorder=1, label = "Probabilities")
 
         ax.axis("off")
         ax.set_ylim((-0.2, 0.2))
@@ -72,9 +73,6 @@ class IntervalVisualizer:
             msg = f"Number of labels ({len(labels)}) must match number of classes ({n_classes})."
             raise ValueError(msg)
 
-        ax.text(x_beg, y_anchor, "0 ", ha="center", va="top")
-        ax.text(x_mid, y_anchor, "0.5", ha="center", va="top")
-        ax.text(x_end, y_anchor, "1 ", ha="center", va="top")
         ax.text(x_beg, y_anchor - 0.07, f"{labels[0]}", ha="center", va="top")
         ax.text(x_end, y_anchor - 0.07, f"{labels[1]}", ha="center", va="top")
 
@@ -113,6 +111,9 @@ class IntervalVisualizer:
                     va="center",
                     fontsize=8,
                 )
+        ax.set_title(title, pad = 20)
+        ax.legend(loc="upper left")
+
         return ax
 
 
@@ -124,6 +125,6 @@ points_2d = np.array(
     ],
 )
 
-int_viz = IntervalVisualizer()
-ax = int_viz.interval_plot(points_2d)  # 1 row, 2 columns
+viz = IntervalVisualizer()
+ax = viz.interval_plot(points_2d)
 plt.show()

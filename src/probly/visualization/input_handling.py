@@ -6,7 +6,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 try:
-    from .geometry import CredalVisualizer
+    from .plot_2d import IntervalVisualizer
+    from .plot_3d import TernaryVisualizer
     #from spider import radar_factory  # Importing the factory function from spider.py
     #from .geometry import CredalVisualizer
 except ImportError as e:
@@ -77,25 +78,21 @@ def dispatch_plot(input_data: np.ndarray, labels: list[str] | None = None) -> No
 
     print(f"Detected {n_classes} classes. Selecting visualizer...")  # noqa: T201
 
-    viz = CredalVisualizer()
     # 3. Dispatch Logic
     if n_classes == 2:
-        # --- Interval Plot ---
+        viz = IntervalVisualizer()
         viz.interval_plot()
-        plt.title("Interval Plot (2 Classes)")
         plt.show()
 
     elif n_classes == 3:
-        # --- Ternary Plot ---
-        # Initialize plot
-        ax = viz.ternary_plot(points, s=30, alpha=0.6)
+        ter = TernaryVisualizer()
+        ax = ter.ternary_plot(points, s=30, alpha=0.6)
+
         # Draw Convex Hull on top
-        viz.plot_convex_hull(points, ax=ax, facecolor="lightgreen", alpha=0.2)
-        plt.title("Ternary Plot (3 Classes)")
+        ter.plot_convex_hull(points, ax=ax, facecolor="lightgreen", alpha=0.2)
         plt.show()
 
     else:
-        # --- Spider Plot (>3 Classes) ---
         _plot_spider_custom(points, n_classes, labels)
 
 

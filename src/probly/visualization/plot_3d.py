@@ -31,6 +31,7 @@ class TernaryVisualizer:
         self,
         probs: np.ndarray,
         labels: list[str] | None = None,
+        title: str = "Ternary Plot (3 Classes)",
         ax: plt.Axes = None,
         **scatter_kwargs: mpl.Kwargs,
     ) -> plt.Axes:
@@ -125,6 +126,10 @@ class TernaryVisualizer:
 
         # Scatter points
         ax.scatter(coords[:, 0], coords[:, 1], **scatter_kwargs)
+
+
+        ax.set_title(title, pad = 20, y = -0.2)
+
         return ax
 
     def interval_plot(self) -> None:
