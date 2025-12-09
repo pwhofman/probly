@@ -736,7 +736,7 @@ and over again:
 - how **types, shapes, and devices** are handled,
 - how **randomness and seeds** are managed.
 
-**Data flow between ``probly`` and other libraries**
+**Data flow between `probly` and other libraries**
 
 ``probly`` works with array-like objects: batches of inputs, parameter vectors,
 and uncertainty representations. Other libraries do the same, but each has its
