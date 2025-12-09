@@ -819,7 +819,7 @@ treat those parameters as just another part of the probabilistic model.
 
 **Sharing parameters and state**
 
-In a joint Flax+``probly`` model you typically want:
+In a joint Flax+ ``probly`` model you typically want:
 
 - all learnable parameters (Flax + ``probly``) inside one combined PyTree,
 - deterministic state (e.g. running means) clearly separated from stochastic
@@ -852,13 +852,13 @@ For a stable integration, treat keys just like any other input:
 
 TensorFlow is often used for input pipelines and training infrastructure. A
 typical custom integration would use **TensorFlow for data and orchestration**
-and **``probly`` for the probabilistic core**.
+and **`probly` for the probabilistic core**.
 
-**Passing TensorFlow data into ``probly``**
+**Passing TensorFlow data into `probly`**
 
 TensorFlow’s ``tf.data`` API represents datasets as streams of elements
 (tensors) that you can map, batch, and shuffle :cite:`tensorflowTfDataGuide2024`. In a
-TensorFlow+``probly`` workflow you might:
+TensorFlow+ ``probly`` workflow you might:
 
 - build a ``tf.data.Dataset`` that yields batches of inputs and targets,
 - inside the training loop, turn each batch into NumPy or JAX arrays in the
@@ -890,7 +890,7 @@ and attributes :cite:`sklearnDevelopingEstimators2024`.
 
 To plug ``probly`` into this ecosystem, you can write a small wrapper class.
 
-**Wrapping a ``probly`` model as an estimator**
+**Wrapping a `probly` model as an estimator**
 
 A minimal wrapper might:
 
