@@ -83,12 +83,14 @@ class MultiVisualizer:
         self,
         probs: np.ndarray,
         labels: list[str] | None = None,
+        ax: plt.Axes | None = None,
     ) -> plt.Axes:
         """General radar (spider) plot for credal predictions.
 
         Args:
         probs: NumPy array with probabilities.
         labels: labels for the classes.
+        ax: Axes on which to create the radar chart.
         """
         n_classes = probs.shape[-1]
 
@@ -99,31 +101,23 @@ class MultiVisualizer:
             msg = f"Number of labels ({len(labels)}) must match number of classes ({n_classes})."
             raise ValueError(msg)
 
-        # Calculate Mean Prediction
-        mean_probs = np.mean(probs, axis=0)
-
         # Use the factory from spider.py
         theta = radar_factory(n_classes, frame="polygon")
 
-        fig, ax = plt.subplots(figsize=(6, 6), subplot_kw={"projection": "radar"})
+        if ax is None:
+            fig, ax = plt.subplots(figsize=(6, 6), subplot_kw={"projection": "radar"})
 
         # Setup Axis
         ax.set_rgrids([0.2, 0.4, 0.6, 0.8, 1.0])
         ax.set_ylim(0.0, 1.0)
         ax.set_varlabels(labels)
 
-        # Plot the Mean Prediction
-        ax.plot(theta, mean_probs, color="b", linewidth=2, label="Mean Prediction")
-        ax.fill(theta, mean_probs, facecolor="b", alpha=0.25)
+        probs_flat = probs.flatten()
+        max_class = np.argmax(probs_flat)
+        ax.scatter(theta[max_class], probs_flat[max_class], s=80, color="red", label="MLE")
 
-        # Calculate Min/Max for the "Credal Set" area
-        min_probs = np.min(probs, axis=0)
-        max_probs = np.max(probs, axis=0)
-
-        # Fill the area between Min and Max (Uncertainty)
-        ax.fill_between(theta, min_probs, max_probs, color="green", alpha=0.3, label="Credal Set Range")
-
-        plt.title(f"Spider Plot ({n_classes} Classes)", pad=20)
+        ax.set_title(f"Spider Plot ({n_classes} Classes)", pad=20)
         ax.legend(loc="upper right", bbox_to_anchor=(1.3, 1.1))
         plt.tight_layout()
-        plt.show()
+
+        return ax
