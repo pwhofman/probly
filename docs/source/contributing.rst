@@ -128,9 +128,9 @@ You can build the documentation locally by following these steps:
 
 Documentation test warnings should be fixed by running:
 
-.. code-block:: sh
+   .. code-block:: sh
 
-   sphinx-build -b linkcheck . _build/linkcheck
+      sphinx-build -b linkcheck . _build/linkcheck
 
 
 Doctrings and style guide
@@ -140,8 +140,76 @@ When contributing code, please ensure that your code follows the `PEP 8 <https:/
 
 CI checks
 ----------------
-All contributions are subject to continuous integration (CI) checks to ensure code quality and consistency. Please make sure your code passes all CI checks before submitting a pull request. You can view the status of the CI checks on the pull request page.
+All contributions are subject to continuous integration (CI) checks to ensure code quality and consistency. CI checks help identify issues such as failing tests, code style violations, and other potential problems.
+When you submit a pull request, the CI checks will automatically run on your code. You should ensure that all CI checks pass before your pull request can be merged.
 
+The following CI checks are performed during a pull request:
+
+- Code quality checks
+      `pre-commit` is used to run various code quality checks on the codebase. this ist run throuch `uv`
+
+- Install and import check
+   see the :ref:`installation` section for more details.
+
+- Unit tests
+      `pytest` is used to run the unit tests for the project. This is done across four different environments: ubuntu-latest (all_ml), ubuntu-latest(torch), windows-latest and macos-latest with Python 3.11.
+
+- Documentation build checks
+      Sphinx is used to build the documentation and check for any build errors.
+      Install all dependencies listed in `docs/requirements.txt` to ensure the documentation builds correctly.
+      You can build the documentation locally by running:
+      .. code-block:: sh
+
+         sphinx-build -b html docs/ docs/_build/html
+- Test coverage
+      `coverage.py` is used to measure the test coverage of the codebase. The goal is to maintain a high level of test coverage to ensure that the code is well-tested and reliable.
+      This runs after the unit tests, code quality checks and documentation build checks have passed. It generates a coverage report `coverage.xml` that shows the percentage of code that is covered by tests.
+
+
+The following CI checks are performed specifically for documentation contributions:
+
+- Link checks
+      Sphinx linkcheck builder is used to check for broken links in the documentation.
+
+- Type checking
+     `mypy` is used to check for type hints and type consistency in the codebase.
+
+- Formatting checks
+     `Ruffly` is run to ensure consistent code formatting across the codebase.
+
+- Example checks
+      The examples in the `examples/` directory are run to ensure they work correctly.
+
+- Doctests
+      Doctests in the documentation are run to ensure they work correctly. If they fail, artifacts are generated to help debug the issues.
+
+- You can view the status of the CI checks on the pull request page.
+      A checkmark indicates that the check has passed, while a red cross indicates that the check has failed. A spinning circle indicates that the check is still in progress.
+      Click on any jobs to view detailed logs and information about the check.
+
+You can also run the CI checks locally before submitting your pull request. This can help you identify and fix issues before they are caught by the CI system.
+   .. code-block:: sh
+
+      # Build the documentation
+      sphinx-build -b html docs/ docs/_build/html
+
+      # Run unit tests
+      pytest
+
+      # Run link checks
+      sphinx-build -b linkcheck docs/ docs/_build/linkcheck
+
+      #Run doctests
+      sphinx-build -b doctest docs/ docs/_build/doctest
+
+      # Run mypy for type checking
+      mypy probly/
+
+      # Run ruffly for formatting checks
+      ruff check probly/
+
+      # Run examples
+      python examples/example_script.py
 
 
 Automated Contributions Policy
