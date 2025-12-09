@@ -826,8 +826,12 @@ class NatPNClassifier(nn.Module):
         # 1. Encoder: x -> z
         self.encoder = Encoder(latent_dim=latent_dim)
 
-        # 2. Decoder: z -> logits for each class
-        self.classifier = nn.Linear(latent_dim, num_classes)
+        # 2. Decoder: z -> logits for each class (SMOOTHED)
+        self.classifier = nn.Sequential(
+            nn.Linear(latent_dim, 64),
+            nn.ReLU(),
+            nn.Linear(64, num_classes),
+        )
 
         # 3. Single normalizing flow density over z
         self.flow = RadialFlowDensity(dim=latent_dim, flow_length=flow_length)
