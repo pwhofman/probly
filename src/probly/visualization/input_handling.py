@@ -105,13 +105,4 @@ def dispatch_plot(input_data: np.ndarray) -> plt.Axes:
         return ax
 
     multi = MultiVisualizer()
-
-    # Compute MLE as mean across samples
-    mle = points.mean(axis=0)
-    labels = ["Class 1", "Class 2", "Class 3", "Class 4"]
-    return multi.spider_plot(
-        lower=None,
-        upper=None,
-        mle=mle,
-        labels=labels,
-    )
+    return multi.spider_plot(points)

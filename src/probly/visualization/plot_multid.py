@@ -1,10 +1,10 @@
-"""Plotting for >3 class probabilities."""
+"""Plotting for >3 classes."""
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+from typing import Any
 
-from matplotlib.patches import Circle, Patch, RegularPolygon
+from matplotlib.patches import Circle, RegularPolygon
 from matplotlib.path import Path
 from matplotlib.projections import register_projection
 from matplotlib.projections.polar import PolarAxes
@@ -13,18 +13,14 @@ from matplotlib.spines import Spine
 from matplotlib.transforms import Affine2D
 import numpy as np
 
-if TYPE_CHECKING:
-    from matplotlib.axes import Axes
-    from matplotlib.lines import Line2D
 
-
-def radar_factory(num_vars: int, frame: str = "polygon") -> np.ndarray:  # noqa: C901
-    """Create radar chart angles and register a custom radar projection."""
-    theta = np.linspace(0.0, 2.0 * np.pi, num_vars, endpoint=False)
+def radar_factory(num_vars: int, frame: str = "circle") -> np.ndarray:  # noqa: C901
+    """Create a radar chart with `num_vars` axes."""
+    theta = np.linspace(0, 2 * np.pi, num_vars, endpoint=False)
 
     class RadarTransform(PolarAxes.PolarTransform):
         def transform_path_non_affine(self, path: Path) -> Path:
-            """Interpolate paths so gridlines become straight in radar coordinates."""
+            # Note: _interpolation_steps is internal logic needed for this projection hack
             if path._interpolation_steps > 1:  # noqa: SLF001
                 path = path.interpolated(num_vars)
             return Path(self.transform(path.vertices), path.codes)
@@ -33,152 +29,101 @@ def radar_factory(num_vars: int, frame: str = "polygon") -> np.ndarray:  # noqa:
         name = "radar"
         PolarTransform = RadarTransform
 
-        def __init__(self, *args: object, **kwargs: object) -> None:
+        def __init__(self, *args: Any, **kwargs: Any) -> None:  # noqa: ANN401
             super().__init__(*args, **kwargs)
             self.set_theta_zero_location("N")
 
-        def fill(
-            self,
-            *args: object,
-            closed: bool = True,
-            **kwargs: object,
-        ) -> list[Patch]:
-            """Override fill to always close the polygon."""
-            patches = super().fill(*args, closed=closed, **kwargs)
-            return cast("list[Patch]", patches)
+        def fill(self, *args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
+            """Override fill to handle closed polygons by default."""
+            closed = kwargs.pop("closed", True)
+            return super().fill(closed=closed, *args, **kwargs)  # noqa: B026
 
-        def plot(
-            self,
-            *args: object,
-            **kwargs: object,
-        ) -> list[Line2D]:
-            """Override plot to automatically close lines."""
-            lines = cast("list[Line2D]", super().plot(*args, **kwargs))
+        def plot(self, *args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
+            lines = super().plot(*args, **kwargs)
             for line in lines:
                 self._close_line(line)
             return lines
 
-        def _close_line(self, line: Line2D) -> None:
-            """Ensure that the first and last point of a line coincide."""
+        def _close_line(self, line: Any) -> None:  # noqa: ANN401
             x, y = line.get_data()
             if x[0] != x[-1]:
-                line.set_data(np.append(x, x[0]), np.append(y, y[0]))
+                x = np.append(x, x[0])
+                y = np.append(y, y[0])
+                line.set_data(x, y)
 
         def set_varlabels(self, labels: list[str]) -> None:
-            """Set the labels for each axis."""
             self.set_thetagrids(np.degrees(theta), labels)
 
-        def _gen_axes_patch(self) -> Patch:
-            """Draw the background patch (circle or polygon)."""
+        def _gen_axes_patch(self) -> Any:  # noqa: ANN401
+            if frame == "circle":
+                return Circle((0.5, 0.5), 0.5)
             if frame == "polygon":
-                return RegularPolygon((0.5, 0.5), num_vars, radius=0.5)
-            return Circle((0.5, 0.5), 0.5)
+                return RegularPolygon((0.5, 0.5), num_vars, radius=0.5, edgecolor="k")
+            msg = f"Unknown value for 'frame': {frame}"
+            raise ValueError(msg)
 
-        def _gen_axes_spines(self) -> dict[str, Spine]:
-            """Draw the frame (spines) around the radar plot."""
+        def _gen_axes_spines(self) -> Any:  # noqa: ANN401
+            if frame == "circle":
+                return super()._gen_axes_spines()
             if frame == "polygon":
-                spine = Spine(
-                    axes=self,
-                    spine_type="circle",
-                    path=Path.unit_regular_polygon(num_vars),
-                )
-                spine.set_transform(
-                    Affine2D().scale(0.5).translate(0.5, 0.5) + self.transAxes,
-                )
+                spine = Spine(axes=self, spine_type="circle", path=Path.unit_regular_polygon(num_vars))
+                spine.set_transform(Affine2D().scale(0.5).translate(0.5, 0.5) + self.transAxes)
                 return {"polar": spine}
-            # super()._gen_axes_spines returns a dict-like mapping
-            spines = super()._gen_axes_spines()
-            return cast("dict[str, Spine]", spines)
+            msg = f"Unknown value for 'frame': {frame}"
+            raise ValueError(msg)
 
     register_projection(RadarAxes)
-
-    # Close the theta array so polygons are closed by default
-    return np.append(theta, theta[0])
+    return theta
 
 
 class MultiVisualizer:
-    """Collection of geometric plots for credal predictions."""
-
-    # No explicit __init__ needed; default is fine.
+    """Class to create multidimensional plots."""
 
     def spider_plot(
         self,
-        lower: np.ndarray | None,
-        upper: np.ndarray | None,
-        mle: np.ndarray | None,
-        labels: list[str],
-        title: str = "Credal Prediction",
-        rmax: float = 1.0,
-        ax: Axes | None = None,
-    ) -> Axes:
+        probs: np.ndarray,
+        labels: list[str] | None = None,
+    ) -> plt.Axes:
         """General radar (spider) plot for credal predictions.
 
-        Parameters
-        ----------
-        lower:
-            Lower credal bounds (length K) or None.
-        upper:
-            Upper credal bounds (length K) or None.
-        mle:
-            Point prediction (length K) or None.
-        labels:
-            Class labels (length K).
-        title:
-            Plot title.
-        rmax:
-            Maximum radial value (e.g. 1.0 for probabilities).
-        ax:
-            Optional pre-existing radar axis to plot into.
-
-        Returns:
-        -------
-        ax:
-            Axis containing the spider plot.
+        Args:
+        probs: NumPy array with probabilities.
+        labels: labels for the classes.
         """
-        num_classes = len(labels)
+        n_classes = probs.shape[-1]
 
-        if mle is None and (lower is None or upper is None):
-            msg = "Either 'mle' or both 'lower' and 'upper' must be provided."
+        if labels is None:
+            labels = [f"C{i + 1}" for i in range(n_classes)]
+
+        if len(labels) != n_classes:
+            msg = f"Number of labels ({len(labels)}) must match number of classes ({n_classes})."
             raise ValueError(msg)
 
-        if mle is not None and len(mle) != num_classes:
-            msg = "mle must have the same length as labels."
-            raise ValueError(msg)
+        # Calculate Mean Prediction
+        mean_probs = np.mean(probs, axis=0)
 
-        if lower is not None and upper is not None and (len(lower) != num_classes or len(upper) != num_classes):
-            msg = "lower and upper must have the same length as labels."
-            raise ValueError(msg)
+        # Use the factory from spider.py
+        theta = radar_factory(n_classes, frame="polygon")
 
-        theta = radar_factory(num_classes)
+        fig, ax = plt.subplots(figsize=(6, 6), subplot_kw={"projection": "radar"})
 
-        if ax is None:
-            _, ax = plt.subplots(
-                figsize=(6, 6),
-                subplot_kw={"projection": "radar"},
-            )
-
-        ax.set_rgrids(np.linspace(0.0, rmax, 6)[1:])
-        ax.set_ylim(0.0, rmax)
+        # Setup Axis
+        ax.set_rgrids([0.2, 0.4, 0.6, 0.8, 1.0])
+        ax.set_ylim(0.0, 1.0)
         ax.set_varlabels(labels)
 
-        # Credal set region
-        if lower is not None and upper is not None:
-            lower_c = np.append(lower, lower[0])
-            upper_c = np.append(upper, upper[0])
-            ax.fill(theta, upper_c, alpha=0.25, label="Credal set")
-            ax.fill(theta, lower_c, color="white")
+        # Plot the Mean Prediction
+        ax.plot(theta, mean_probs, color="b", linewidth=2, label="Mean Prediction")
+        ax.fill(theta, mean_probs, facecolor="b", alpha=0.25)
 
-        # MLE point
-        if mle is not None:
-            idx = int(np.argmax(mle))
-            ax.scatter(
-                [theta[idx]],
-                [float(mle[idx])],
-                s=80,
-                color="red",
-                label="MLE",
-            )
+        # Calculate Min/Max for the "Credal Set" area
+        min_probs = np.min(probs, axis=0)
+        max_probs = np.max(probs, axis=0)
 
-        ax.set_title(title, pad=20)
-        ax.legend(loc="upper right", bbox_to_anchor=(1.2, 1.1))
-        return ax
+        # Fill the area between Min and Max (Uncertainty)
+        ax.fill_between(theta, min_probs, max_probs, color="green", alpha=0.3, label="Credal Set Range")
+
+        plt.title(f"Spider Plot ({n_classes} Classes)", pad=20)
+        ax.legend(loc="upper right", bbox_to_anchor=(1.3, 1.1))
+        plt.tight_layout()
+        plt.show()

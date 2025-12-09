@@ -202,22 +202,3 @@ class TernaryVisualizer:
             )
 
         return ax
-
-
-points = np.array(
-    [
-        [0.7, 0.2, 0.1],
-        [0.4, 0.3, 0.3],
-        [0.1, 0.8, 0.1],
-        [0.8, 0.1, 0.1],
-        [0.3, 0.1, 0.6],
-        [0.33, 0.33, 0.34],
-    ],
-)
-
-ter = TernaryVisualizer()
-
-ax = ter.ternary_plot(points)
-ter.plot_convex_hull(points, ax=ax)
-
-plt.show()
