@@ -6,10 +6,10 @@ import numpy as np
 import pytest
 
 from probly.evaluation.tasks import (
-    fpr_at_tpr,
-    out_of_distribution_detection,
     out_of_distribution_detection_aupr,
+    out_of_distribution_detection_auroc,
     out_of_distribution_detection_fnr_at_95,
+    out_of_distribution_detection_fpr_at_x_tpr,
     selective_prediction,
 )
 
@@ -37,14 +37,14 @@ def test_selective_prediction_too_many_bins() -> None:
 
 def test_out_of_distribution_detection_shape() -> None:
     rng = np.random.default_rng()
-    auroc = out_of_distribution_detection(rng.random(10), rng.random(10))
+    auroc = out_of_distribution_detection_auroc(rng.random(10), rng.random(10))
     assert isinstance(auroc, float)
 
 
 def test_out_of_distribution_detection_order() -> None:
     in_distribution = np.linspace(0, 1, 10)
     out_distribution = np.linspace(0, 1, 10) + 1
-    auroc = out_of_distribution_detection(in_distribution, out_distribution)
+    auroc = out_of_distribution_detection_auroc(in_distribution, out_distribution)
     assert np.isclose(auroc, 0.995)
 
 
@@ -67,7 +67,7 @@ def test_fpr_at_tpr_simple_case() -> None:
     in_scores = np.array([0.1, 0.2, 0.6, 0.7])
     out_scores = np.array([0.3, 0.4, 0.8, 0.9])
 
-    fpr = fpr_at_tpr(in_scores, out_scores, tpr_target=0.95)
+    fpr = out_of_distribution_detection_fpr_at_x_tpr(in_scores, out_scores, tpr_target=0.95)
 
     assert np.isclose(fpr, 0.5)
 
@@ -79,17 +79,17 @@ def test_fpr_at_tpr_invalid_tpr_target() -> None:
     msg = r"tpr_target must be in the interval \(0, 1]"
 
     with pytest.raises(ValueError, match=msg):
-        fpr_at_tpr(in_scores, out_scores, tpr_target=0.0)
+        out_of_distribution_detection_fpr_at_x_tpr(in_scores, out_scores, tpr_target=0.0)
 
     with pytest.raises(ValueError, match=msg):
-        fpr_at_tpr(in_scores, out_scores, tpr_target=1.1)
+        out_of_distribution_detection_fpr_at_x_tpr(in_scores, out_scores, tpr_target=1.1)
 
 
 def test_fpr_at_tpr_perfect_separation() -> None:
     in_scores = np.array([0.1, 0.2, 0.3, 0.4])
     out_scores = np.array([0.8, 0.9, 1.0, 1.1])
 
-    fpr = fpr_at_tpr(in_scores, out_scores, tpr_target=0.95)
+    fpr = out_of_distribution_detection_fpr_at_x_tpr(in_scores, out_scores, tpr_target=0.95)
 
     assert np.isclose(fpr, 0.0)
 
