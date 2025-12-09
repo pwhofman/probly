@@ -798,7 +798,7 @@ Flax is a neural-network library on top of JAX. It provides a **Module**
 abstraction that cleanly separates parameters, state, and randomness :cite:`flaxDevelopersLinenFundamentals2023`. This makes it a natural match for ``probly`` when you
 want neural nets inside a probabilistic model.
 
-**Typical workflow: Flax for neural nets, ``probly`` for probabilistic parts**
+**Typical workflow: Flax for neural nets, `probly` for probabilistic parts**
 
 A common setup looks like this:
 
