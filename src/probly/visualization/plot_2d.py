@@ -1,4 +1,4 @@
-"""Geometry-related visualization utilities for credal sets."""
+"""Plotting for 2 class probabilities."""
 
 from __future__ import annotations
 
@@ -37,6 +37,7 @@ class IntervalVisualizer:
         Args:
         probs: probability vector for 2 classes.
         labels: labels for the interval plot.
+        title: Fixed Title for the plot.
         ax: matplotlib axes.Axes.
 
         returns: plot.
@@ -54,14 +55,14 @@ class IntervalVisualizer:
         coord_min = np.min(coords[:, 0])
         ax.fill_betweenx(y_marg, coord_max, coord_min, color="purple", alpha=0.5, zorder=2)
 
-        ax.scatter(coords[:, 0], coords[:, 1], color="green", zorder=1, label = "Probabilities")
+        ax.scatter(coords[:, 0], coords[:, 1], color="green", zorder=1, label="Probabilities")
 
         ax.axis("off")
         ax.set_ylim((-0.2, 0.2))
 
         y_anchor = -0.07
         x_beg = 0
-        x_mid = 0.5
+        x_mid = 0.5  # noqa: F841
         x_end = 1
 
         n_classes = probs.shape[-1]
@@ -111,20 +112,7 @@ class IntervalVisualizer:
                     va="center",
                     fontsize=8,
                 )
-        ax.set_title(title, pad = 20)
+        ax.set_title(title, pad=20)
         ax.legend(loc="upper left")
 
         return ax
-
-
-points_2d = np.array(
-    [
-        [0.2, 0.8],
-        [0.5, 0.5],
-        [0.1, 0.9],
-    ],
-)
-
-viz = IntervalVisualizer()
-ax = viz.interval_plot(points_2d)
-plt.show()

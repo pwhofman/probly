@@ -1,4 +1,4 @@
-"""Class to collect the different types of plots."""
+"""Plotting for 3 class probabilities."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ class TernaryVisualizer:
     def __init__(self) -> None:
         """Initialize the class."""
 
-    def probs_to_coords(self, probs: np.ndarray) -> tuple:
+    def probs_to_coords_3d(self, probs: np.ndarray) -> tuple:
         """Convert ternary probabilities to 2D coordinates.
 
         Args:
@@ -33,22 +33,20 @@ class TernaryVisualizer:
         labels: list[str] | None = None,
         title: str = "Ternary Plot (3 Classes)",
         ax: plt.Axes = None,
-        **scatter_kwargs: mpl.Kwargs,
+        **scatter_kwargs: object,
     ) -> plt.Axes:
         """Plot ternary scatter points.
 
         Args:
         probs: the ternary probabilities.
         labels: the labels of the ternary points.
+        title: fixed title of the plot.
         scatter_kwargs: keyword arguments passed to scatter_kwargs.
         ax: matplotlib axes.Axes to plot on.
 
         returns: Ternary plot with scattered points.
         """
-        if probs.shape[1] != 3:
-            raise ValueError
-
-        coords = np.array([self.probs_to_coords(x) for x in probs])
+        coords = np.array([self.probs_to_coords_3d(x) for x in probs])
 
         if ax is None:
             fig, ax = plt.subplots(figsize=(6, 6))
@@ -127,18 +125,9 @@ class TernaryVisualizer:
         # Scatter points
         ax.scatter(coords[:, 0], coords[:, 1], **scatter_kwargs)
 
-
-        ax.set_title(title, pad = 20, y = -0.2)
+        ax.set_title(title, pad=20, y=-0.2)
 
         return ax
-
-    def interval_plot(self) -> None:
-        """To be implemented. Plot for 2 classes."""
-        return
-
-    def spider_plot(self) -> None:
-        """To be implemented. Plot for more than 3 classes."""
-        return
 
     def plot_convex_hull(
         self,
@@ -148,7 +137,7 @@ class TernaryVisualizer:
         alpha: float = 0.4,
         edgecolor: str = "green",
         linewidth: float = 2.0,
-    ) -> mpl.axes.Axes:
+    ) -> plt.Axes:
         """Draw the convex hull around the points.
 
         Handles special cases:
@@ -166,7 +155,7 @@ class TernaryVisualizer:
 
         returns: Plot with convex hull.
         """
-        coords = np.array([self.probs_to_coords(p) for p in probs])
+        coords = np.array([self.probs_to_coords_3d(p) for p in probs])
 
         if ax is None:
             fig, ax = plt.subplots(figsize=(6, 6))

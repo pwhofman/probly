@@ -1,4 +1,4 @@
-"""Geometry-related visualization utilities for credal sets."""
+"""Plotting for >3 class probabilities."""
 
 from __future__ import annotations
 
@@ -96,7 +96,7 @@ def radar_factory(num_vars: int, frame: str = "polygon") -> np.ndarray:  # noqa:
     return np.append(theta, theta[0])
 
 
-class CredalVisualizer:
+class MultiVisualizer:
     """Collection of geometric plots for credal predictions."""
 
     # No explicit __init__ needed; default is fine.
