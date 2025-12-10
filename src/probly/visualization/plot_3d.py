@@ -26,7 +26,15 @@ class TernaryVisualizer:
         y = (np.sqrt(3) / 2) * p3
         return x, y
 
-    def label_corners_and_vertices(self, ax, v1, v2, v3,labels):
+    def label_corners_and_vertices(
+        self,
+        ax: plt.Axes,
+        v1: np.array,
+        v2: np.array,
+        v3: np.array,
+        labels: list[str],
+    ) -> None:
+        """Labeling the corners and vertices."""
         c1 = f"{labels[0]}"
         c2 = f"{labels[1]}"
         c3 = f"{labels[2]}"
@@ -39,7 +47,6 @@ class TernaryVisualizer:
         ax.text(v1[0], v1[1], edge_lable, ha="right", va="top", fontsize=8)
         ax.text(v2[0], v2[1], edge_lable, ha="left", va="top", fontsize=8)
         ax.text(v3[0], v3[1], edge_lable, ha="center", va="bottom", fontsize=8)
-
 
     def ternary_plot(
         self,
@@ -100,7 +107,7 @@ class TernaryVisualizer:
         tick_values = np.linspace(0.1, 0.90, 11)
         tick_length = 0.01
         label_offset = -0.05
-        
+
         for p, q, axis_name in edges:  # noqa: B007
             edge_vec = q - p
             normal = np.array([-edge_vec[1], edge_vec[0]])
