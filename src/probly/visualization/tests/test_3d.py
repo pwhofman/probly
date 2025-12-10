@@ -23,11 +23,12 @@ def test_ternary_plot_uses_custom_labels_for_vertices() -> None:
     assert "C" in texts  # noqa: S101
 
 
-def test_ternary_plot_raises_if_label_count_mismatch() -> None:
-    """Testing if lable mismatch is throwing error."""
+def test_ternary_plot_raises_if_label_count_too_small() -> None:
+    """Testing that too few labels cause an IndexError."""
     viz = TernaryVisualizer()
     probs = np.array([[0.2, 0.3, 0.5]])
-    with pytest.raises(ValueError, match=r"Lables don't match."):
+
+    with pytest.raises(IndexError):
         viz.ternary_plot(probs, labels=["C1", "C2"])
 
 

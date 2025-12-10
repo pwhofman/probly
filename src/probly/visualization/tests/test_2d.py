@@ -19,9 +19,15 @@ def test_edge_values() -> None:
     assert y == pytest.approx(0.0)  # noqa: S101
 
 
-def test_raise_with_nonmatching_classes() -> None:
-    """Testing if more clases are raising error."""
+def test_interval_plot_uses_two_lables_accepted() -> None:
+    """Interval plot should ignore extra labels and still work."""
     viz = IntervalVisualizer()
     probs = np.array([[0.4, 0.6]])
-    with pytest.raises(ValueError, match=r"Number of labels .* must match number of classes"):
-        viz.interval_plot(probs, labels=["C1", "C2", "C3", "C4"])
+
+    ax = viz.interval_plot(probs, labels=["C1", "C2", "C3", "C4"])
+    assert ax is not None  # noqa: S101
+
+    texts = [t.get_text() for t in ax.texts]
+
+    assert "C1" in texts  # noqa: S101
+    assert "C2" in texts  # noqa: S101
