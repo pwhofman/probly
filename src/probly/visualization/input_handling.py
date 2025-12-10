@@ -109,10 +109,6 @@ def dispatch_plot(
     if n_classes == 3:
         ter = TernaryVisualizer()
         ax = ter.ternary_plot(points, labels=labels)
-
-        # Draw Convex Hull on top
-        ter.plot_convex_hull(points, ax=ax)
-
         return ax
 
     multi = MultiVisualizer()
