@@ -64,7 +64,9 @@ In practice this means that transformations:
 - automatically enforce **constraints** such as positivity, bounds, or simplex structure :cite:`tfpBijectorSoftplus2023`.
 
 You can think of a transformation as an adapter between “nice for the optimiser” coordinates and
-“nice for the human” coordinates :cite:`kingmaAutoEncodingVB2014,rezendeVariationalFlows2015`.
+“nice for the human” coordinates :cite:`kingmaAutoEncodingVB2014,rezendeVariationalFlows2015`. Clear
+parameterisations also make it easier to reason about how epistemic and aleatoric uncertainty are
+represented in the model :cite:`Hullermeier2021`.
 
 2.2 When to implement your own?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
