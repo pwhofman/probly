@@ -1,5 +1,5 @@
 ##########################
-Examples and tutorials
+Examples and Tutorials
 ##########################
 
 This section contains practical, end-to-end examples that demonstrate how ``probly`` can be used in real applications. Each tutorial provides a guided workflow from start to finish, including model transformation, execution and interpretation of the results. The examples also directly correspond to the advanced modeling patterns discussed in :doc:`Advanced Topics <advanced_topics>`
