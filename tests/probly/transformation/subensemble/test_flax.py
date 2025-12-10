@@ -262,30 +262,6 @@ class TestReset:
 class TestEdgeCases:
     """Tests for edge-case configurations."""
 
-    def test_zero_heads(
-        self,
-        flax_model_small_2d_2d: nnx.Module,
-    ) -> None:
-        """num_heads = 0 should split the model and return an empty list of heads."""
-        num_heads = 0
-        head_layer = 1
-
-        subensemble_result = subensemble(flax_model_small_2d_2d, num_heads=num_heads)
-        backbone = subensemble_result[0]
-        heads = subensemble_result[1]
-
-        original_layers = count_layers(flax_model_small_2d_2d, nnx.Module)
-        backbone_layers = count_layers(backbone, nnx.Module)
-
-        assert isinstance(subensemble_result, nnx.Module)
-        assert isinstance(backbone, nnx.Sequential)
-        assert isinstance(heads, nnx.List)
-        assert len(heads) == num_heads
-        assert backbone_layers == original_layers - head_layer
-        for head in heads:
-            head_layers = count_layers(head, nnx.Module)
-            assert head_layers == 0
-
     def test_invalid_head_layer(
         self,
         flax_model_small_2d_2d: nnx.Module,

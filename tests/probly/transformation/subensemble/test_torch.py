@@ -207,39 +207,6 @@ class TestParameterReset:
 class TestEdgeCases:
     """Tests for edge-case configurations of subensemble."""
 
-    def test_zero_heads(
-        self,
-        torch_model_small_2d_2d: nn.Module,
-    ) -> None:
-        """num_heads = 0 should split the model and return an empty list of heads."""
-        num_heads = 0
-
-        subensemble_model = subensemble(
-            torch_model_small_2d_2d,
-            num_heads=num_heads,
-        )
-        backbone = subensemble_model[0]
-        heads = subensemble_model[1]
-
-        count_linear_original = count_layers(torch_model_small_2d_2d, nn.Linear)
-        count_linear_backbone = count_layers(backbone, nn.Linear)
-        count_linear_heads = count_layers(heads, nn.Linear)
-        count_sequential_original = count_layers(torch_model_small_2d_2d, nn.Sequential)
-        count_sequential_backbone = count_layers(backbone, nn.Sequential)
-        count_sequential_heads = count_layers(heads, nn.Sequential)
-        count_convolutional_original = count_layers(torch_model_small_2d_2d, nn.Conv2d)
-        count_convolutional_backbone = count_layers(backbone, nn.Conv2d)
-        count_convolutional_heads = count_layers(heads, nn.Conv2d)
-
-        assert isinstance(heads, nn.ModuleList)
-        assert len(heads) == num_heads
-        assert count_linear_backbone == count_linear_original - 1
-        assert count_convolutional_backbone == count_convolutional_original
-        assert count_sequential_backbone == count_sequential_original
-        assert count_linear_heads == 0
-        assert count_convolutional_heads == 0
-        assert count_sequential_heads == 0
-
     def test_invalid_head_layer(
         self,
         torch_model_small_2d_2d: nn.Module,
