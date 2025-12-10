@@ -75,11 +75,15 @@ def normalize_input(input_data: np.ndarray) -> np.ndarray:
     return input_data
 
 
-def dispatch_plot(input_data: np.ndarray) -> plt.Axes:
+def dispatch_plot(
+    input_data: np.ndarray,
+    labels: list[str] | None = None,
+) -> plt.Axes:
     """Selects and executes the correct plotting function based on class count.
 
     Args:
         input_data: Probabilities vector.
+        labels: List of labels corresponding to the classes.
     """
     # Validates input.
     input_data = check_shape(input_data)
@@ -90,14 +94,21 @@ def dispatch_plot(input_data: np.ndarray) -> plt.Axes:
     # Counts the number of classes to refer correctly
     n_classes = check_num_classes(points)
 
+    if labels is None:
+        labels = [f"C{i + 1}" for i in range(n_classes)]
+
+    if len(labels) != n_classes:
+        msg = f"Number of labels ({len(labels)}) must match number of classes ({n_classes})."
+        raise ValueError(msg)
+
     # Depending on number of classes chooses correct plotting function.
     if n_classes == 2:
         viz = IntervalVisualizer()
-        return viz.interval_plot(points)
+        return viz.interval_plot(points, labels=labels)
 
     if n_classes == 3:
         ter = TernaryVisualizer()
-        ax = ter.ternary_plot(points)
+        ax = ter.ternary_plot(points, labels=labels)
 
         # Draw Convex Hull on top
         ter.plot_convex_hull(points, ax=ax)
@@ -105,4 +116,4 @@ def dispatch_plot(input_data: np.ndarray) -> plt.Axes:
         return ax
 
     multi = MultiVisualizer()
-    return multi.spider_plot(points)
+    return multi.spider_plot(points, labels=labels)

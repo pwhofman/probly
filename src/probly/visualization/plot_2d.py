@@ -28,7 +28,7 @@ class IntervalVisualizer:
     def interval_plot(
         self,
         probs: np.ndarray,
-        labels: list[str] | None = None,
+        labels: list[str],
         title: str = "Interval Plot (2 Classes)",
         ax: plt.Axes = None,
     ) -> plt.Axes:
@@ -64,15 +64,6 @@ class IntervalVisualizer:
         x_beg = 0
         x_mid = 0.5  # noqa: F841
         x_end = 1
-
-        n_classes = probs.shape[-1]
-
-        if labels is None:
-            labels = [f"C{i + 1}" for i in range(n_classes)]
-
-        if len(labels) != n_classes:
-            msg = f"Number of labels ({len(labels)}) must match number of classes ({n_classes})."
-            raise ValueError(msg)
 
         ax.text(x_beg, y_anchor - 0.07, f"{labels[0]}", ha="center", va="top")
         ax.text(x_end, y_anchor - 0.07, f"{labels[1]}", ha="center", va="top")
