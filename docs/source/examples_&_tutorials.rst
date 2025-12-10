@@ -1,6 +1,3 @@
-(examples_tutorials)=
-Examples & Tutorials
-
 ##########################
 Examples and tutorials
 ##########################

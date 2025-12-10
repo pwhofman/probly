@@ -1,6 +1,3 @@
-(core_concepts)=
-Core Concepts
-
 Core Concepts
 =============
 
@@ -170,7 +167,7 @@ As a result, different uncertainty methods integrate seamlessly into one workflo
 3.1 What is Uncertainty Quantification?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Models after being made uncertainty-aware can generate various forms of uncertainty 
+Models after being made uncertainty-aware can generate various forms of uncertainty
 representations (e.g., samples, credal sets, distributions over distributions).
 Uncertainty quantification means converting these representations into numerical
 measures of uncertainty.
@@ -178,11 +175,11 @@ measures of uncertainty.
 Typical measures:
 
 **Entropy-based measures**
-– Total entropy :cite:`Shannon1948`  
+– Total entropy :cite:`Shannon1948`
 – Decompositions (e.g., upper/lower entropy) :cite:`Hullermeier2021`
 
 **Variance-based measures**
-– Variance of model predictions, e.g., in ensembles :cite:`Lakshminarayanan2017`  
+– Variance of model predictions, e.g., in ensembles :cite:`Lakshminarayanan2017`
 – Variance under MC dropout :cite:`Gal2016`
 
 **Scoring-Rule-Based Quantification**
@@ -191,14 +188,14 @@ Typical measures:
 **Wasserstein-Based Quantification**
 – Distributional distances as uncertainty indicators :cite:`Arjovsky2017`
 
-The distinction between the two main types of uncertainty follows the widely cited 
+The distinction between the two main types of uncertainty follows the widely cited
 taxonomy introduced in :cite:`Hullermeier2021`:
 
-- *Aleatory uncertainty*: inherent randomness and irreducible variability  
+- *Aleatory uncertainty*: inherent randomness and irreducible variability
 - *Epistemic uncertainty*: reducible uncertainty caused by lack of knowledge,
-  limited data, or model misspecification  
+  limited data, or model misspecification
 
-This distinction forms the basis of most modern uncertainty-aware machine learning 
+This distinction forms the basis of most modern uncertainty-aware machine learning
 approaches.
 
 Thus, quantification = generating one or more meaningful numbers per example from
@@ -213,17 +210,17 @@ comparable, testable, and operable.
 
 Reasons:
 
-**Comparing model behavior**  
+**Comparing model behavior**
 Different uncertainty-aware model families (Bayesian NNs, MC Dropout, Ensembles,
-Evidential Models, Conformal Prediction) can only be systematically compared when 
+Evidential Models, Conformal Prediction) can only be systematically compared when
 their uncertainty is expressed as measurable quantities :cite:`Abdar2021`.
 
-**Detecting invalid predictions**  
-Quantified uncertainty enables detecting model failures and OOD data, a key idea in 
+**Detecting invalid predictions**
+Quantified uncertainty enables detecting model failures and OOD data, a key idea in
 uncertainty-aware ML :cite:`Hullermeier2021`, :cite:`Hendrycks2017`.
 
-**Better decisions**  
-Selective prediction and selective rejection rely directly on uncertainty 
+**Better decisions**
+Selective prediction and selective rejection rely directly on uncertainty
 quantification :cite:`Geifman2017`.
 
 Without quantification, none of these downstream tasks would be feasible.
@@ -234,12 +231,12 @@ Without quantification, none of these downstream tasks would be feasible.
 
 The presentation introduces several practical applications of quantified uncertainty.
 
-**Out-of-Distribution (OOD) Detection**  
-Models should detect when an input is outside the training distribution.  
+**Out-of-Distribution (OOD) Detection**
+Models should detect when an input is outside the training distribution.
 OOD detection is a core task in uncertainty research :cite:`Yang2021`, :cite:`Hendrycks2017`.
 
-**Selective Prediction / Confidence-Based Rejection**  
-The model may output *“I don’t know.”*  
+**Selective Prediction / Confidence-Based Rejection**
+The model may output *“I don’t know.”*
 This behavior is evaluated with accuracy–rejection curves :cite:`Geifman2017`.
 
 .. figure:: Accuracy-Rejection-Curve.png
@@ -249,12 +246,12 @@ This behavior is evaluated with accuracy–rejection curves :cite:`Geifman2017`.
 
    Accuracy–Rejection Curve illustrating the effect of rejecting uncertain samples.
 
-**Calibration**  
-Calibration ensures that predicted probabilities match empirical frequencies, an issue 
+**Calibration**
+Calibration ensures that predicted probabilities match empirical frequencies, an issue
 highlighted in modern deep learning models :cite:`Guo2017`.
 
-**Risk-Aware Decision Making**  
-Credal sets, distributional ambiguity, and pessimistic/robust reasoning are tools for 
+**Risk-Aware Decision Making**
+Credal sets, distributional ambiguity, and pessimistic/robust reasoning are tools for
 risk-sensitive decisions :cite:`Augustin2014`, :cite:`Hullermeier2021`.
 
 .. raw:: html
@@ -282,20 +279,19 @@ risk-sensitive decisions :cite:`Augustin2014`, :cite:`Hullermeier2021`.
 3.4 How everything is connected
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**1. Model Transformation**  
-A standard ML model is transformed into an uncertainty-aware version using techniques 
-such as MC Dropout :cite:`Gal2016`, Bayesian Layers :cite:`Tran2019`, or Ensembles 
+**1. Model Transformation**
+A standard ML model is transformed into an uncertainty-aware version using techniques
+such as MC Dropout :cite:`Gal2016`, Bayesian Layers :cite:`Tran2019`, or Ensembles
 :cite:`Lakshminarayanan2017`.
 
-**2. Uncertainty Representation**  
-The resulting model produces samples, credal sets, interval predictions, or 
+**2. Uncertainty Representation**
+The resulting model produces samples, credal sets, interval predictions, or
 distributions over distributions :cite:`Hullermeier2021`.
 
-**3. Uncertainty Quantification**  
-From these structures, entropy, variance, or scoring-rule-based measures are computed 
+**3. Uncertainty Quantification**
+From these structures, entropy, variance, or scoring-rule-based measures are computed
 :cite:`Gneiting2007`, :cite:`Abdar2021`.
 
-**4. Downstream Tasks & Visualization**  
-OOD detection, selective prediction, calibration, and risk-aware decisions depend 
+**4. Downstream Tasks & Visualization**
+OOD detection, selective prediction, calibration, and risk-aware decisions depend
 directly on quantified uncertainty.
-
