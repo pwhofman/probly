@@ -169,84 +169,93 @@ As a result, different uncertainty methods integrate seamlessly into one workflo
 
 3.1 What is Uncertainty Quantification?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Models after being made uncertainty-aware can generate various forms of uncertainty representations (e.g., samples, credal sets, distributions over distributions).
-Uncertainty quantification means converting these pipe representations into numerical measures of uncertainty.
+
+Models after being made uncertainty-aware can generate various forms of uncertainty 
+representations (e.g., samples, credal sets, distributions over distributions).
+Uncertainty quantification means converting these representations into numerical
+measures of uncertainty.
 
 Typical measures:
 
 **Entropy-based measures**
-– Total entropy
-– Decompositions (e.g., upper/lower entropy)
+– Total entropy :cite:`Shannon1948`  
+– Decompositions (e.g., upper/lower entropy) :cite:`Hullermeier2021`
 
 **Variance-based measures**
-– Variance of model predictions, e.g., B. in ensembles or MC dropout
+– Variance of model predictions, e.g., in ensembles :cite:`Lakshminarayanan2017`  
+– Variance under MC dropout :cite:`Gal2016`
 
 **Scoring-Rule-Based Quantification**
-– Uncertainty measures via "Proper Scoring Rules"
+– Proper scoring rules as uncertainty measures :cite:`Gneiting2007`
 
 **Wasserstein-Based Quantification**
-– Distance between probability distributions as an indicator of uncertainty
+– Distributional distances as uncertainty indicators :cite:`Arjovsky2017`
 
+The distinction between the two main types of uncertainty follows the widely cited 
+taxonomy introduced in :cite:`Hullermeier2021`:
 
+- *Aleatory uncertainty*: inherent randomness and irreducible variability  
+- *Epistemic uncertainty*: reducible uncertainty caused by lack of knowledge,
+  limited data, or model misspecification  
 
-At the same time, these measures are connected  with the two types of uncertainty:
+This distinction forms the basis of most modern uncertainty-aware machine learning 
+approaches.
 
-Aleatory uncertainty – inherent randomness of the data
-
-Epistemic uncertainty – the model's lack of knowledge (e.g., insufficient or poor-quality training data)
-
-Thus:
-
-Quantification = generating one or more meaningful numbers per example from an uncertainty representation.
+Thus, quantification = generating one or more meaningful numbers per example from
+an uncertainty representation.
 
 
 3.2 Why Quantification is Important
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-What is the purpose of uncertainty quantification?
 
-It is the foundation for making models comparable, testable, and usable.
+Uncertainty quantification is essential for making uncertainty-aware models
+comparable, testable, and operable.
 
-Why this is important:
+Reasons:
 
-**Comparing model behavior**
-Different uncertainty-aware models (MC Dropout, Bayesian NN, Ensembles, Evidential, Conformal Prediction, etc.) can only be meaningfully compared if their uncertainties are made measurable.
+**Comparing model behavior**  
+Different uncertainty-aware model families (Bayesian NNs, MC Dropout, Ensembles,
+Evidential Models, Conformal Prediction) can only be systematically compared when 
+their uncertainty is expressed as measurable quantities :cite:`Abdar2021`.
 
-**Detecting invalid predictions**
-Quantified uncertainty allows the detection of cases where the model "doesn't know that it doesn't know"—for example, in the OOD (Out-of-Distribution Detection) examples in the presentation.
+**Detecting invalid predictions**  
+Quantified uncertainty enables detecting model failures and OOD data, a key idea in 
+uncertainty-aware ML :cite:`Hullermeier2021`, :cite:`Hendrycks2017`.
 
-**Better decisions**
-The Tasks section visually demonstrates how uncertainty is used to make more risk- or security-conscious decisions (e.g., Accuracy-Rejection Curves).
+**Better decisions**  
+Selective prediction and selective rejection rely directly on uncertainty 
+quantification :cite:`Geifman2017`.
 
-Without quantification, there is no basis for these decisions.
+Without quantification, none of these downstream tasks would be feasible.
 
 
 3.3 Downstream Tasks
 ^^^^^^^^^^^^^^^^^^^^^^^^
-Following the quantification section, the presentation presents various practical tasks:
 
-**Out-of-Distribution (OOD) Detection**
-Models should detect whether an input does not originate from the training distribution.
-For excample: OOD detection as one of the central downstream modules in "Tasks & Visualization"
+The presentation introduces several practical applications of quantified uncertainty.
 
-**Selective Prediction / Confidence-Based Rejection**
-The model is allowed to say "I don't know."
-Represented in the form of the accuracy-rejection curves:
+**Out-of-Distribution (OOD) Detection**  
+Models should detect when an input is outside the training distribution.  
+OOD detection is a core task in uncertainty research :cite:`Yang2021`, :cite:`Hendrycks2017`.
+
+**Selective Prediction / Confidence-Based Rejection**  
+The model may output *“I don’t know.”*  
+This behavior is evaluated with accuracy–rejection curves :cite:`Geifman2017`.
 
 .. figure:: Accuracy-Rejection-Curve.png
    :alt: Accuracy-Rejection Curve
    :width: 50%
    :align: center
 
-   Accuracy–Rejection Curve illustrating how model accuracy improves as uncertain samples are rejected.
+   Accuracy–Rejection Curve illustrating the effect of rejecting uncertain samples.
 
+**Calibration**  
+Calibration ensures that predicted probabilities match empirical frequencies, an issue 
+highlighted in modern deep learning models :cite:`Guo2017`.
 
-**Calibration**
-Goal: Prediction probabilities should correspond to the actual frequency.
-
-**Risk-Aware Decision Making**
-The visualization shows how quantification is used to make risk-adjusted decisions.
-For excample corresponding grid plots and derivations from credal sets and entropies:
-[Platzhalter]
+**Risk-Aware Decision Making**  
+Credal sets, distributional ambiguity, and pessimistic/robust reasoning are tools for 
+risk-sensitive decisions :cite:`Augustin2014`, :cite:`Hullermeier2021`.
 
 .. raw:: html
 
@@ -269,18 +278,24 @@ For excample corresponding grid plots and derivations from credal sets and entro
      </tr>
    </table>
 
+
 3.4 How everything is connected
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**1. Model Transformation**
-First, an existing machine learning model is transformed into an uncertainty-aware model using a PyTraverse rule (e.g., MC Dropout, Bayesian Layers).
+**1. Model Transformation**  
+A standard ML model is transformed into an uncertainty-aware version using techniques 
+such as MC Dropout :cite:`Gal2016`, Bayesian Layers :cite:`Tran2019`, or Ensembles 
+:cite:`Lakshminarayanan2017`.
 
-**2. Uncertainty Representation**
-The model outputs specific structures:
-Samples, credal sets, interval predictions, distributions of distributions
+**2. Uncertainty Representation**  
+The resulting model produces samples, credal sets, interval predictions, or 
+distributions over distributions :cite:`Hullermeier2021`.
 
-**3. Uncertainty Quantification**
-From these representations, entropies, variances, scores, etc., are calculated (several methods are available).
+**3. Uncertainty Quantification**  
+From these structures, entropy, variance, or scoring-rule-based measures are computed 
+:cite:`Gneiting2007`, :cite:`Abdar2021`.
 
-**4. Downstream Tasks & Visualization**
-OOD detection, accuracy-rejection curves, uncertainty visualization, etc., build directly upon this.
+**4. Downstream Tasks & Visualization**  
+OOD detection, selective prediction, calibration, and risk-aware decisions depend 
+directly on quantified uncertainty.
+
