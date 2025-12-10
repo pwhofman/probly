@@ -1,4 +1,4 @@
-"""Visualization Modules for OOD Evaluation in Probly."""
+"""Plotting utilities for OOD evaluation."""
 
 from __future__ import annotations
 
@@ -9,85 +9,110 @@ import matplotlib.pyplot as plt
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
     from matplotlib.figure import Figure
-    import numpy as np
+
+    from probly.evaluation.types import OodEvaluationResult
 
 
 def plot_histogram(
-    id_scores: np.ndarray,
-    ood_scores: np.ndarray,
+    results: OodEvaluationResult,
     ax: Axes | None = None,
-    title: str = "Confidence Score Distribution",
+    bins: int = 50,
+    title: str = "Score Distribution",
 ) -> Figure:
-    """Plot histogram."""
+    """Plot ID vs OOD score histogram."""
     if ax is None:
-        fig, ax = plt.subplots(figsize=(7, 6))
+        fig, ax = plt.subplots(figsize=(6, 5))
     else:
         fig = ax.get_figure()
 
-    ax.hist(id_scores, bins=30, alpha=0.6, label="In-Distribution (ID)", density=True)
-    ax.hist(ood_scores, bins=30, alpha=0.6, label="Out-of-Distribution (OOD)", density=True)
+    if results.id_scores is None or results.ood_scores is None:
+        msg = "Results object must contain raw scores for histogram."
+        raise ValueError(msg)
 
-    ax.set_title(title)
-    ax.set_xlabel("Confidence Score")
+    ax.hist(
+        results.id_scores,
+        bins=bins,
+        alpha=0.6,
+        density=True,
+        label="In-Distribution",
+    )
+    ax.hist(
+        results.ood_scores,
+        bins=bins,
+        alpha=0.6,
+        density=True,
+        label="Out-of-Distribution",
+    )
+
+    ax.set_xlabel("Score")
     ax.set_ylabel("Density")
-    ax.legend()
+    ax.set_title(title)
+    ax.legend(loc="upper center")
     ax.grid(True, linestyle="--", alpha=0.5)
 
     return fig
 
 
 def plot_roc_curve(
-    fpr: np.ndarray,
-    tpr: np.ndarray,
-    roc_auc: float,
+    results: OodEvaluationResult,
     ax: Axes | None = None,
 ) -> Figure:
-    """Plot roc_curve."""
+    """Plot ROC curve."""
     if ax is None:
-        fig, ax = plt.subplots(figsize=(7, 6))
+        fig, ax = plt.subplots(figsize=(6, 5))
     else:
         fig = ax.get_figure()
 
-    ax.plot(fpr, tpr, lw=2, label=f"ROC Curve (AUROC = {roc_auc:.3f})")
-    ax.plot([0, 1], [0, 1], lw=2, linestyle="--", label="Random Guess")
+    if results.fpr is None or results.tpr is None:
+        msg = "Results object missing FPR/TPR arrays."
+        raise ValueError(msg)
+
+    label = f"AUROC = {results.auroc:.3f}"
+    if results.fpr95 is not None:
+        label += f" (FPR@95 = {results.fpr95:.3f})"
+
+    ax.plot(results.fpr, results.tpr, lw=2, label=label)
+    ax.plot([0, 1], [0, 1], linestyle="--", color="gray", label="Random")
 
     ax.set_xlim(0.0, 1.0)
     ax.set_ylim(0.0, 1.05)
     ax.set_xlabel("False Positive Rate")
     ax.set_ylabel("True Positive Rate")
-    ax.legend()
+    ax.set_title("ROC Curve")
+    ax.legend(loc="lower right")
     ax.grid(True, linestyle="--", alpha=0.5)
 
     return fig
 
 
 def plot_pr_curve(
-    precision: np.ndarray,
-    recall: np.ndarray,
-    aupr: float,
+    results: OodEvaluationResult,
     ax: Axes | None = None,
 ) -> Figure:
-    """Plots precision and recall curve."""
+    """Plot Precision-Recall curve."""
     if ax is None:
-        fig, ax = plt.subplots(figsize=(7, 6))
+        fig, ax = plt.subplots(figsize=(6, 5))
     else:
         fig = ax.get_figure()
 
+    if results.precision is None or results.recall is None:
+        msg = "Results object missing Precision/Recall arrays."
+        raise ValueError(msg)
+
     ax.plot(
-        recall,
-        precision,
+        results.recall,
+        results.precision,
         lw=2,
         color="green",
-        label=f"PR Curve (AUPR = {aupr:.3f})",
+        label=f"AUPR = {results.aupr:.3f}",
     )
 
-    # Grid + Labels.
-    ax.set_xlabel("Recall (Sensitivity)")
-    ax.set_ylabel("Precision (PPV)")
+    ax.set_xlabel("Recall")
+    ax.set_ylabel("Precision")
     ax.set_title("Precision-Recall Curve")
     ax.set_xlim(0.0, 1.0)
     ax.set_ylim(0.0, 1.05)
-    ax.legend()
+    ax.legend(loc="lower left")
     ax.grid(True, linestyle="--", alpha=0.5)
 
     return fig

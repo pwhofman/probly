@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import numpy as np
+from sklearn.metrics import precision_recall_curve, roc_curve
 
 from probly.evaluation.tasks import (
     out_of_distribution_detection_aupr,
@@ -14,9 +15,15 @@ from probly.evaluation.tasks import (
     out_of_distribution_detection_fpr_at_95_tpr,
     out_of_distribution_detection_fpr_at_x_tpr,
 )
+from probly.evaluation.types import (
+    OodEvaluationResult,
+)
+from probly.plot.ood import plot_histogram, plot_pr_curve, plot_roc_curve
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+
+    from matplotlib.figure import Figure
 
 
 STATIC_METRICS: dict[str, Callable[[np.ndarray, np.ndarray], float]] = {
@@ -122,3 +129,69 @@ def evaluate_ood(
         raise ValueError(msg)
 
     return results
+
+
+def visualize_ood(
+    in_distribution: np.ndarray | list[float],
+    out_distribution: np.ndarray | list[float],
+    invert_scores: bool = True,
+) -> dict[str, Figure]:
+    """Generate visualization plots for OOD evaluation.
+
+    Calculates curve data (ROC, PR) and generates standard plots.
+
+    Parameters:
+    in_distribution :
+        Scores for in-distribution samples.
+    out_distribution :
+        Scores for out-of-distribution samples.
+    invert_scores : bool
+        If True (default), assumes scores are 'Confidence' (High = ID).
+        They will be inverted (1.0 - score) for metrics where OOD is the positive class.
+        If False, assumes scores are 'Anomaly Scores' (High = OOD).
+
+    Returns:
+        Dict containing matplotlib Figures: 'roc', 'pr', 'hist'.
+    """
+    id_s = np.asarray(in_distribution)
+    ood_s = np.asarray(out_distribution)
+
+    # 1. Calculate scalar metrics using the Unified API
+    # -> We use the existing API to ensure consistency in values
+    scalars = evaluate_ood(id_s, ood_s, metrics=["auroc", "aupr", "fpr@95tpr"])
+    if not isinstance(scalars, dict):
+        # Fallback should technically not happen with explicit list input
+        scalars = {"auroc": scalars, "aupr": 0.0, "fpr@95tpr": 0.0}
+
+    # 2. Prepare Data for Curves (Requires sklearn)
+    # -> We need to construct labels and scores manually for the curves
+    labels = np.concatenate([np.zeros(len(id_s)), np.ones(len(ood_s))])
+    all_scores = np.concatenate([id_s, ood_s])
+
+    preds = 1.0 - all_scores if invert_scores else all_scores
+
+    # Compute curve arrays
+    fpr, tpr, _ = roc_curve(labels, preds)
+    precision, recall, _ = precision_recall_curve(labels, preds)
+
+    # 3. -> Result Object from types.
+    result_data = OodEvaluationResult(
+        auroc=scalars["auroc"],
+        aupr=scalars["aupr"],
+        fpr95=scalars.get("fpr@95tpr"),
+        fpr=fpr,
+        tpr=tpr,
+        precision=precision,
+        recall=recall,
+        id_scores=id_s,
+        ood_scores=ood_s,
+    )
+
+    # 4.Generate Plots as figures.
+    figures = {
+        "hist": plot_histogram(result_data),
+        "roc": plot_roc_curve(result_data),
+        "pr": plot_pr_curve(result_data),
+    }
+
+    return figures
