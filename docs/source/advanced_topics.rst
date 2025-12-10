@@ -735,8 +735,10 @@ and over again:
 
 **Data flow between ``probly`` and other libraries**
 
-- PyTorch: pass/return ``torch.Tensor`` (supported directly in ``probly`` via ``probly.*.torch``).
-- Flax/JAX: pass/return JAX arrays/pytrees (supported directly in ``probly`` via ``probly.*.jax``).
+- PyTorch: pass/return ``torch.Tensor`` (supported directly in ``probly`` via built-in torch modules,
+  e.g. ``probly.representation.sampling.torch_sample``).
+- Flax/JAX: pass/return JAX arrays/pytrees (supported directly in ``probly`` via built-in JAX modules,
+  e.g. ``probly.representation.sampling.jax_sample``).
 - TensorFlow: convert tensors or ``tf.data`` batches to NumPy/JAX (e.g. ``np.array(batch)`` or
   ``tfds.as_numpy``) before calling ``probly``. Convert results back to tensors only if you need TF
   tools.
