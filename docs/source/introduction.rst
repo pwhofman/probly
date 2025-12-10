@@ -2,7 +2,7 @@ Introduction
 ============
 
 This page gives a gentle, high-level overview of what ``probly`` is and why 
-uncertainty is an important topic in modern machine learning. It is meant as
+uncertainty is an important topic in modern machine learning :cite:`Hullermeier2021`. It is meant as
 a starting point for new users before they continue reading the rest of the User Guide, which 
 covers everything from installation and quickstart examples to core concepts, main components,
 advanced topics, and hands-on tutorials. The aim is to equip readers with the conceptual background needed
@@ -17,7 +17,7 @@ In a typical machine-learning project you train a model (for example a neural
 network or a random forest) and then use it to make predictions. Most models
 only return a **single number or label**: a class, a score, a regression
 value. However, in many applications we also want to know **how sure** the
-model is about this prediction.
+model is about this prediction—distinguishing epistemic vs. aleatoric uncertainty :cite:`Hullermeier2021`.
 
 ``probly`` helps with exactly this. It provides:
 
@@ -39,14 +39,14 @@ Most machine learning models today are overconfident.
 They output a single prediction such as a class label, a score, or a regression value,  
 but they do not tell us how uncertain they are about that prediction.
 
-This becomes a problem in practical applications:
+This becomes a problem in practical applications :cite:`Hendrycks2017`:
 
 * A medical classifier might give the wrong diagnosis but still report a confident 0.98 probability.  
 * An autonomous vehicle might misinterpret a rare object because it has never seen anything similar before.  
 * A financial model may make predictions far outside the training distribution without realizing it.
 
 Standard ML tools such as PyTorch, TensorFlow, and scikit learn do not provide a unified way  
-to represent uncertainty. Each uncertainty method such as dropout, ensembles, Bayesian networks,  
+to represent uncertainty. Each uncertainty method such as dropout :cite:`Gal2016`, ensembles :cite:`Lakshminarayanan2017`, Bayesian networks,  
 and evidential models uses different outputs, shapes, and conventions.  
 This makes it difficult to compare or combine uncertainty methods.
 
@@ -86,7 +86,7 @@ A low confidence prediction might trigger a safety mechanism, a manual review, o
 A high confidence prediction might allow the system to act automatically.
 
 Without uncertainty information, a model can appear confident even when it is wrong.  
-With uncertainty awareness, the model becomes more reliable, more transparent, and more useful in real world applications.
+With uncertainty awareness, the model becomes more reliable, more transparent, and more useful in real world applications :cite:`Guo2017`.
 
 1.3 What Does ``probly`` Provide?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
