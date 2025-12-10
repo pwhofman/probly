@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.spatial import ConvexHull
@@ -132,7 +131,7 @@ class TernaryVisualizer:
     def plot_convex_hull(
         self,
         probs: np.ndarray,
-        ax: mpl.axes.Axes = None,
+        ax: plt.Axes = None,
         facecolor: str = "lightgreen",
         alpha: float = 0.4,
         edgecolor: str = "green",
