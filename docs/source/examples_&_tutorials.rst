@@ -1,5 +1,5 @@
 (examples_tutorials)=
-#Examples & Tutorials
+Examples & Tutorials
 
 ##########################
 Examples and tutorials

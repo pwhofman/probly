@@ -1,5 +1,5 @@
 (core_concepts)=
-#Core Concepts
+Core Concepts
 
 Core Concepts
 =============
