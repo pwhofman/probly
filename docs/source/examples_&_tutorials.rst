@@ -14,7 +14,7 @@ Users who are new to probly are encouraged to begin with the introductory Dropou
 ===============================================
 
 What you will learn (I)
----------------------------
+----------------------------
 
 In this tutorial, you will learn how to use **probly** to make a standard neural network uncertainty-aware with the Dropout transformation. You start from a conventional PyTorch model trained on MNIST and then apply probly so that Dropout remains active during inference. By running multiple stochastic forward passes, you obtain a distribution of predictions and estimate predictive uncertainty.
 

@@ -5,7 +5,7 @@ Core Concepts
 =============
 
 1. Understanding Uncertainty in Machine Learning
--------------------------------------------------
+---------------------------------------------------
 
 This section explains what uncertainty means in machine learning, why it naturally
 arises in real-world problems, and why handling it correctly is essential for
