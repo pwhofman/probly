@@ -5,7 +5,7 @@
     <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../../../genindex.html" /><link rel="search" title="Search" href="../../../search.html" />
 
     <!-- Generated with Sphinx 8.2.3 and Furo 2024.08.06 -->
-        <title>probly.utils.torch - probly 0.3.1 documentation</title>
+        <title>probly.layers.flax - probly 0.3.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo.css?v=354aac6f" />
     <link rel="stylesheet" type="text/css" href="../../../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
@@ -356,76 +356,142 @@
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <h1>Source code for probly.utils.torch</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;Utility functions for PyTorch models.&quot;&quot;&quot;</span>
+          <h1>Source code for probly.layers.flax</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;flax layer implementation.&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
-<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn.functional</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">F</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">tqdm</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">flax</span><span class="w"> </span><span class="kn">import</span> <span class="n">nnx</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">flax.nnx</span><span class="w"> </span><span class="kn">import</span> <span class="n">rnglib</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">flax.nnx.module</span><span class="w"> </span><span class="kn">import</span> <span class="n">first_from</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">jax</span><span class="w"> </span><span class="kn">import</span> <span class="n">lax</span><span class="p">,</span> <span class="n">random</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
 
 
-<div class="viewcode-block" id="torch_collect_outputs">
-<a class="viewcode-back" href="../../../api/probly.utils.torch.html#probly.utils.torch.torch_collect_outputs">[docs]</a>
-<span class="nd">@torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">()</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">torch_collect_outputs</span><span class="p">(</span>
-    <span class="n">model</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span>
-    <span class="n">loader</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">DataLoader</span><span class="p">,</span>
-    <span class="n">device</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Collect outputs and targets from a model for a given data loader.</span>
+<div class="viewcode-block" id="DropConnectLinear">
+<a class="viewcode-back" href="../../../api/probly.layers.flax.html#probly.layers.flax.DropConnectLinear">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">DropConnectLinear</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Custom Linear layer with DropConnect applied to weights during training.</span>
 
-<span class="sd">    Args:</span>
-<span class="sd">        model: torch.nn.Module, model to collect outputs from</span>
-<span class="sd">        loader: torch.utils.data.DataLoader, data loader to collect outputs from</span>
-<span class="sd">        device: torch.device, device to move data to</span>
-<span class="sd">    Returns:</span>
-<span class="sd">        outputs: torch.Tensor, shape (n_instances, n_classes), model outputs</span>
-<span class="sd">        targets: torch.Tensor, shape (n_instances,), target labels</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">outputs</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
-    <span class="n">targets</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">inpt</span><span class="p">,</span> <span class="n">target</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">loader</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Batches&quot;</span><span class="p">):</span>
-        <span class="n">outputs</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">((</span><span class="n">outputs</span><span class="p">,</span> <span class="n">model</span><span class="p">(</span><span class="n">inpt</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">))),</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-        <span class="n">targets</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">((</span><span class="n">targets</span><span class="p">,</span> <span class="n">target</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)),</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">outputs</span><span class="p">,</span> <span class="n">targets</span></div>
-
-
-
-<div class="viewcode-block" id="torch_reset_all_parameters">
-<a class="viewcode-back" href="../../../api/probly.utils.torch.html#probly.utils.torch.torch_reset_all_parameters">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">torch_reset_all_parameters</span><span class="p">(</span><span class="n">module</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Reset all parameters of a torch module.</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        module: torch.nn.Module, module to reset parameters</span>
+<span class="sd">    Attributes:</span>
+<span class="sd">        weight: nnx.Param, weight matrix of shape.</span>
+<span class="sd">        bias: nnx.Param, bias vector of shape.</span>
+<span class="sd">        rate: float, the dropconnect probability.</span>
+<span class="sd">        deterministic: bool, if false the inputs are masked, whereas if true, no mask</span>
+<span class="sd">            is applied and the inputs are returned as is.</span>
+<span class="sd">        rng_collection: str, the rng collection name to use when requesting a rng key.</span>
+<span class="sd">        rngs: nnx.Rngs or nnx.RngStream or None, rng key.</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="s2">&quot;reset_parameters&quot;</span><span class="p">):</span>
-        <span class="n">module</span><span class="o">.</span><span class="n">reset_parameters</span><span class="p">()</span>
-    <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">module</span><span class="o">.</span><span class="n">children</span><span class="p">():</span>
-        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">child</span><span class="p">,</span> <span class="s2">&quot;reset_parameters&quot;</span><span class="p">):</span>
-            <span class="n">child</span><span class="o">.</span><span class="n">reset_parameters</span><span class="p">()</span></div>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">base_layer</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">,</span>
+        <span class="n">rate</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.25</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">rng_collection</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;dropconnect&quot;</span><span class="p">,</span>
+        <span class="n">rngs</span><span class="p">:</span> <span class="n">rnglib</span><span class="o">.</span><span class="n">Rngs</span> <span class="o">|</span> <span class="n">rnglib</span><span class="o">.</span><span class="n">RngStream</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize a DropConnectLinear layer based on a given linear base layer.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            base_layer: nnx.Linear, The original linear layer to be wrapped.</span>
+<span class="sd">            rate: float, the dropconnect probability.</span>
+<span class="sd">            rng_collection: str, rng collection name to use when requesting a rng key.</span>
+<span class="sd">            rngs: nnx.Rngs or nn.RngStream or None, rng key.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">weight</span> <span class="o">=</span> <span class="n">base_layer</span><span class="o">.</span><span class="n">kernel</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bias</span> <span class="o">=</span> <span class="n">base_layer</span><span class="o">.</span><span class="n">bias</span> <span class="k">if</span> <span class="n">base_layer</span><span class="o">.</span><span class="n">bias</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rate</span> <span class="o">=</span> <span class="n">rate</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rng_collection</span> <span class="o">=</span> <span class="n">rng_collection</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rngs</span><span class="p">,</span> <span class="n">rnglib</span><span class="o">.</span><span class="n">Rngs</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">rngs</span> <span class="o">=</span> <span class="n">rngs</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">rng_collection</span><span class="p">]</span><span class="o">.</span><span class="n">fork</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rngs</span><span class="p">,</span> <span class="n">rnglib</span><span class="o">.</span><span class="n">RngStream</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">rngs</span> <span class="o">=</span> <span class="n">rngs</span><span class="o">.</span><span class="n">fork</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="n">rngs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">rngs</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">data</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;rngs must be a RNGS, RngStream or None, but got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">rngs</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+<div class="viewcode-block" id="DropConnectLinear.__call__">
+<a class="viewcode-back" href="../../../api/probly.layers.flax.html#probly.layers.flax.DropConnectLinear.__call__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">inputs</span><span class="p">:</span> <span class="n">jax</span><span class="o">.</span><span class="n">Array</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">deterministic</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">rngs</span><span class="p">:</span> <span class="n">rnglib</span><span class="o">.</span><span class="n">Rngs</span> <span class="o">|</span> <span class="n">rnglib</span><span class="o">.</span><span class="n">RngStream</span> <span class="o">|</span> <span class="n">jax</span><span class="o">.</span><span class="n">Array</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">jax</span><span class="o">.</span><span class="n">Array</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Forward pass of the DropConnectLinear layer.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">           inputs: jax.Array, input data that should be randomly masked.</span>
+<span class="sd">           deterministic: bool, if false the inputs are masked, whereas if true, no mask</span>
+<span class="sd">            is applied and the inputs are returned as is.</span>
+<span class="sd">           rngs: nnx.Rngs, nnx.RngStream or jax.Array, optional key used to generate the dropconnect mask.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            jax.Array, layer output.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">deterministic</span> <span class="o">=</span> <span class="n">deterministic</span>
+
+        <span class="n">deterministic</span> <span class="o">=</span> <span class="n">first_from</span><span class="p">(</span>
+            <span class="n">deterministic</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">deterministic</span><span class="p">,</span>
+            <span class="n">error_msg</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;No `deterministic` argument was provided to DropConnect</span>
+<span class="s2">                as either a __call__ argument or class attribute.&quot;&quot;&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rate</span> <span class="o">==</span> <span class="mf">0.0</span><span class="p">)</span> <span class="ow">or</span> <span class="n">deterministic</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">inputs</span>
+
+        <span class="c1"># Prevent gradient NaNs in 1.0 edge-case.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">rate</span> <span class="o">==</span> <span class="mf">1.0</span><span class="p">:</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">inputs</span> <span class="o">@</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">out</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bias</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">out</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">bias</span>
+
+        <span class="n">rngs</span> <span class="o">=</span> <span class="n">first_from</span><span class="p">(</span>
+            <span class="n">rngs</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">error_msg</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;`deterministic` is False, but no `rngs` argument was provided</span>
+<span class="s2">                to DropConnect as either a __call__ argument or class atribute.&quot;&quot;&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rngs</span><span class="p">,</span> <span class="n">rnglib</span><span class="o">.</span><span class="n">Rngs</span><span class="p">):</span>
+            <span class="n">key</span> <span class="o">=</span> <span class="n">rngs</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">rng_collection</span><span class="p">]()</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rngs</span><span class="p">,</span> <span class="n">rnglib</span><span class="o">.</span><span class="n">RngStream</span><span class="p">):</span>
+            <span class="n">key</span> <span class="o">=</span> <span class="n">rngs</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rngs</span><span class="p">,</span> <span class="n">jax</span><span class="o">.</span><span class="n">Array</span><span class="p">):</span>
+            <span class="n">key</span> <span class="o">=</span> <span class="n">rngs</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;rngs must be Rngs, RngStream or jax.Array, but got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">rngs</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+        <span class="n">keep_prob</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">rate</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">bernoulli</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="n">keep_prob</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="n">masked_weight</span> <span class="o">=</span> <span class="n">lax</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">value</span> <span class="o">/</span> <span class="n">keep_prob</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">value</span><span class="p">))</span>
+
+        <span class="n">out</span> <span class="o">=</span> <span class="n">inputs</span> <span class="o">@</span> <span class="n">masked_weight</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bias</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">out</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">bias</span><span class="o">.</span><span class="n">value</span>
+        <span class="k">return</span> <span class="n">out</span></div>
 
 
+    <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a string representation of the layer including its class name and key attributes.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">(</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">extra_repr</span><span class="p">()</span><span class="si">}</span><span class="s2">)&quot;</span>
 
-<div class="viewcode-block" id="temperature_softmax">
-<a class="viewcode-back" href="../../../api/probly.utils.torch.html#probly.utils.torch.temperature_softmax">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">temperature_softmax</span><span class="p">(</span><span class="n">logits</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">temperature</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute the softmax of logits with temperature scaling applied.</span>
-
-<span class="sd">    Computes the softmax based on the logits divided by the temperature. Assumes that the last dimension</span>
-<span class="sd">    of logits is the class dimension.</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        logits: torch.Tensor, shape (n_instances, n_classes), logits to apply softmax on</span>
-<span class="sd">        temperature: float, temperature scaling factor</span>
-<span class="sd">    Returns:</span>
-<span class="sd">        ts: torch.Tensor, shape (n_instances, n_classes), softmax of logits with temperature scaling applied</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">ts</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">logits</span> <span class="o">/</span> <span class="n">temperature</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">ts</span></div>
+<div class="viewcode-block" id="DropConnectLinear.extra_repr">
+<a class="viewcode-back" href="../../../api/probly.layers.flax.html#probly.layers.flax.DropConnectLinear.extra_repr">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">extra_repr</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Expose description of in- and out-features of this layer.&quot;&quot;&quot;</span>
+        <span class="n">in_features</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">out_features</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;in_features=</span><span class="si">{</span><span class="n">in_features</span><span class="si">}</span><span class="s2">, out_features=</span><span class="si">{</span><span class="n">out_features</span><span class="si">}</span><span class="s2">, bias=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">bias</span><span class="w"> </span><span class="ow">is</span><span class="w"> </span><span class="ow">not</span><span class="w"> </span><span class="kc">None</span><span class="si">}</span><span class="s2">&quot;</span></div>
+</div>
 
 </pre></div>
         </article>
