@@ -17,7 +17,7 @@ a class label, a probability, or a regression value. However this number does
 not tell us **how confident** the model actually is.
 
 In machine learning, uncertainty refers to the **degree of confidence** a model
-has in its outputs. There are two fundamental types:
+has in its outputs. There are two fundamental types :cite:`Hullermeier2021`:
 
 **Epistemic Uncertainty**
 
@@ -78,14 +78,15 @@ A deterministic network without any probabilistic layers, for example,
 will always output a single best guess regardless of how unsure it is.
 
 probly provides mechanisms to model all these uncertainty sources explicitly
-instead of ignoring them.
+instead of ignoring them, aligning with the common epistemic/aleatoric framing :cite:`Hullermeier2021`.
 
 1.3 Why Overconfidence Is a Problem?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Modern ML models are often overconfident. They produce strong high probability
 predictions even when they should be unsure. This causes serious issues in
-real world systems:
+real world systems. Misjudging whether uncertainty is epistemic or aleatoric
+is a common driver of such overconfidence :cite:`Hullermeier2021`:
 
 **Safety Critical Failures**
 
