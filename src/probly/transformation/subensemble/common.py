@@ -54,9 +54,12 @@ def subensemble[T: Predictor](
         Predictor, The subensemble predictor.
 
     Raises:
-        ValueError: If `head_layer` is not a positive integer.
+        ValueError: If `head_layer` or `num_heads` is not a positive integer.
     """
     if head_layer <= 0:
         msg = f"head_layer must be a positive number, but got head_layer={head_layer} instead."
+        raise ValueError(msg)
+    if num_heads <= 0:
+        msg = f"num_heads must be positive number, but got num_heads={num_heads} instead."
         raise ValueError(msg)
     return subensemble_generator(base, num_heads=num_heads, head=head, reset_params=reset_params, head_layer=head_layer)
