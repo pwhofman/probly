@@ -841,7 +841,80 @@ For a stable integration, treat keys just like any other input:
 - split them where you need extra randomness,
 - store the initial seed in your experiment logs.
 
-4.3 Interoperability best practices
+4.3 Using ``probly`` with TensorFlow
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. note::
+
+   ``probly`` does **not** currently ship an official TensorFlow backend.
+   The patterns in this subsection describe how you *could* connect things in
+   your own code, by analogy with other frameworks.
+
+TensorFlow is often used for input pipelines and training infrastructure. A
+typical custom integration would use **TensorFlow for data and orchestration**
+and **`probly` for the probabilistic core**.
+
+**Passing TensorFlow data into `probly`**
+
+TensorFlow’s ``tf.data`` API represents datasets as streams of elements
+(tensors) that you can map, batch, and shuffle :cite:`tensorflowTfDataGuide2024`. In a
+TensorFlow+ ``probly`` workflow you might:
+
+- build a ``tf.data.Dataset`` that yields batches of inputs and targets,
+- inside the training loop, turn each batch into NumPy or JAX arrays in the
+  format ``probly`` expects,
+- call the ``probly`` model on these arrays,
+- optionally convert results (e.g. predictions, uncertainties) back to tensors
+  if you want to use TensorFlow tools like TensorBoard.
+
+**Training loops and performance**
+
+You can treat ``probly`` as a black-box model called from a TensorFlow training
+loop. Performance guides for ``tf.data`` recommend overlapping input loading
+with model execution using things like ``prefetch`` and parallel ``map`` :cite:`tensorflowTfDataGuide2024`. The same idea applies here: make sure the data pipeline
+keeps the probabilistic model busy instead of letting it wait for I/O.
+
+4.4 Using ``probly`` with scikit-learn
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. note::
+
+   ``probly`` does not currently include a built-in scikit-learn adapter.
+   The code patterns here are suggestions for writing your **own** wrapper that
+   follows scikit-learn’s estimator API.
+
+scikit-learn defines a standard estimator interface with methods like ``fit``,
+``predict``, and ``score``. The developer guide explains that ``fit`` is where
+the training happens and that estimators should follow common rules for inputs
+and attributes :cite:`sklearnDevelopingEstimators2024`.
+
+To plug ``probly`` into this ecosystem, you can write a small wrapper class.
+
+**Wrapping a `probly` model as an estimator**
+
+A minimal wrapper might:
+
+- take configuration options (model structure, priors, inference method) in
+  ``__init__``,
+- implement ``fit(X, y=None)`` to run ``probly``’s training or inference on the
+  given data,
+- implement ``predict(X)`` or ``predict_proba(X)`` to return point predictions
+  or uncertainty summaries,
+- optionally implement ``score(X, y)`` using scikit-learn metrics or your own
+  custom metric.
+
+If your wrapper follows the standard estimator rules, it can be used with
+scikit-learn tools like cross-validation and grid search :cite:`sklearnDevelopingEstimators2024`.
+
+**Pipelines and cross-validation**
+
+Once wrapped, a ``probly`` estimator can be placed inside a scikit-learn
+``Pipeline`` together with preprocessing steps, and then evaluated with
+cross-validation. The advantage is that preprocessing and modelling are tuned
+and evaluated together, using familiar tools from the scikit-learn ecosystem :cite:`sklearnDevelopingEstimators2024`.
+
+
+4.5 Interoperability best practices
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 A few habits make life much easier when ``probly`` and other frameworks meet:
