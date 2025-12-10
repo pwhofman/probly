@@ -1,0 +1,1 @@
+"""Initialisation for visualization tests."""
