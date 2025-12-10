@@ -1,5 +1,5 @@
 ****************
-Main components
+Main Components
 ****************
 ``probly`` is designed to bridge the gap between standard deterministic deep 
 learning and probabilistic modeling. Instead of requiring you to rewrite your 
