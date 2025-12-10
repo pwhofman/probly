@@ -26,12 +26,28 @@ class TernaryVisualizer:
         y = (np.sqrt(3) / 2) * p3
         return x, y
 
+    def label_corners_and_vertices(self, ax, v1, v2, v3,labels):
+        c1 = f"{labels[0]}"
+        c2 = f"{labels[1]}"
+        c3 = f"{labels[2]}"
+        offset_x = 0.06
+        ax.text(v1[0] + 0.02, v1[1] - offset_x, c1, ha="right", va="top", fontsize=12)
+        ax.text(v2[0] + 0.02, v2[1] - offset_x, c2, ha="left", va="top", fontsize=12)
+        ax.text(v3[0], v3[1] + offset_x, c3, ha="center", va="bottom", fontsize=12)
+
+        edge_lable = "0.0 / 1.0"
+        ax.text(v1[0], v1[1], edge_lable, ha="right", va="top", fontsize=8)
+        ax.text(v2[0], v2[1], edge_lable, ha="left", va="top", fontsize=8)
+        ax.text(v3[0], v3[1], edge_lable, ha="center", va="bottom", fontsize=8)
+
+
     def ternary_plot(
         self,
         probs: np.ndarray,
         labels: list[str] | None = None,
         title: str = "Ternary Plot (3 Classes)",
         ax: plt.Axes = None,
+        plot_hull: bool = True,
         **scatter_kwargs: object,
     ) -> plt.Axes:
         """Plot ternary scatter points.
@@ -42,6 +58,7 @@ class TernaryVisualizer:
         title: fixed title of the plot.
         scatter_kwargs: keyword arguments passed to scatter_kwargs.
         ax: matplotlib axes.Axes to plot on.
+        plot_hull: bool defaulted to true, which optionally draws a convex hull.
 
         returns: Ternary plot with scattered points.
         """
@@ -76,23 +93,14 @@ class TernaryVisualizer:
             msg = f"Number of labels ({len(labels)}) must match number of classes ({n_classes})."
             raise ValueError(msg)
 
-        c1 = f"{labels[0]}"
-        c2 = f"{labels[1]}"
-        c3 = f"{labels[2]}"
-        offset_x = 0.06
-        ax.text(v1[0] + 0.02, v1[1] - offset_x, c1, ha="right", va="top", fontsize=12)
-        ax.text(v2[0] + 0.02, v2[1] - offset_x, c2, ha="left", va="top", fontsize=12)
-        ax.text(v3[0], v3[1] + offset_x, c3, ha="center", va="bottom", fontsize=12)
+        self.label_corners_and_vertices(ax, v1, v2, v3, labels)
 
         verts = np.array([v1, v2, v3])  # noqa: F841
         # tick_values are set in a way that they won't interfere at the edges
         tick_values = np.linspace(0.1, 0.90, 11)
         tick_length = 0.01
         label_offset = -0.05
-        edge_lable = "0.0 / 1.0"
-        ax.text(v1[0], v1[1], edge_lable, ha="right", va="top", fontsize=8)
-        ax.text(v2[0], v2[1], edge_lable, ha="left", va="top", fontsize=8)
-        ax.text(v3[0], v3[1], edge_lable, ha="center", va="bottom", fontsize=8)
+        
         for p, q, axis_name in edges:  # noqa: B007
             edge_vec = q - p
             normal = np.array([-edge_vec[1], edge_vec[0]])
@@ -125,6 +133,10 @@ class TernaryVisualizer:
         ax.scatter(coords[:, 0], coords[:, 1], **scatter_kwargs)
 
         ax.set_title(title, pad=20, y=-0.2)
+
+        # Optionally draw convex hull
+        if plot_hull:
+            self.plot_convex_hull(probs, ax=ax)
 
         return ax
 

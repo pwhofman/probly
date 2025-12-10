@@ -98,10 +98,6 @@ def dispatch_plot(input_data: np.ndarray) -> plt.Axes:
     if n_classes == 3:
         ter = TernaryVisualizer()
         ax = ter.ternary_plot(points)
-
-        # Draw Convex Hull on top
-        ter.plot_convex_hull(points, ax=ax)
-
         return ax
 
     multi = MultiVisualizer()
