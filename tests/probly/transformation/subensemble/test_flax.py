@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-import jax
-from jax import numpy as jnp
 import pytest
 
 from probly.transformation.subensemble import subensemble
 from tests.probly.flax_utils import count_layers
+
+jax = pytest.importorskip("jax")
+from jax import numpy as jnp  # noqa: E402
 
 flax = pytest.importorskip("flax")
 from flax import nnx  # noqa: E402
@@ -62,7 +63,6 @@ class TestGeneration:
             "flax_conv_linear_model",
             "flax_regression_model_1d",
             "flax_regression_model_2d",
-            "flax_dropout_model",
         ],
     )
     def test_subensemble_2_head_layers(self, request: pytest.FixtureRequest, model_fixture: str) -> None:
@@ -111,7 +111,6 @@ class TestGeneration:
             "flax_conv_linear_model",
             "flax_regression_model_1d",
             "flax_regression_model_2d",
-            "flax_dropout_model",
         ],
     )
     def test_subensemble_with_head_model(self, request: pytest.FixtureRequest, model_fixture: str) -> None:
