@@ -22,11 +22,9 @@ def test_normalize_input_keeps_2d_shape() -> None:
     data = np.ones((4, 3)) / 3
     result = normalize_input(data)
     assert result.shape == (4, 3)
-    # Optional: selbes Objekt
     assert result is data
 
 def test_normalize_input_flattens_3d_to_2d() -> None:
-    # shape: (2, 4, 3) → (8, 3)
     data = np.ones((2, 4, 3)) / 3
     result = normalize_input(data)
     assert result.shape == (8, 3)
