@@ -1,3 +1,5 @@
+"""Test for torch subensemble models."""
+
 from __future__ import annotations
 
 import pytest
@@ -6,16 +8,6 @@ from torch import nn
 
 from probly.transformation.subensemble import subensemble
 from tests.probly.torch_utils import count_layers
-
-
-def layer_counts(
-    model: nn.Module,
-    *layer_types: type[nn.Module],
-) -> dict[type[nn.Module], int]:
-    """Count occurrences of each requested layer type in a module."""
-    if not layer_types:
-        layer_types = (nn.Linear, nn.Sequential, nn.Conv2d)
-    return {layer: count_layers(model, layer) for layer in layer_types}
 
 
 class TestGeneration:
@@ -36,34 +28,35 @@ class TestGeneration:
         request: pytest.FixtureRequest,
         model_fixture: str,
     ) -> None:
-        """Default call: split the last layer into heads."""
+        """Test for default subensemble generation."""
         model = request.getfixturevalue(model_fixture)
         num_heads = 5
+        head_layer = 1  # default
 
         subensemble_model = subensemble(model, num_heads=num_heads)
         backbone = subensemble_model[0]
         heads = subensemble_model[1]
 
-        counts_original = layer_counts(model)
-        counts_backbone = layer_counts(backbone)
-        counts_heads = layer_counts(heads)
+        count_linear_original = count_layers(model, nn.Linear)
+        count_linear_backbone = count_layers(backbone, nn.Linear)
+        count_linear_heads = count_layers(heads, nn.Linear)
+        count_sequential_original = count_layers(model, nn.Sequential)
+        count_sequential_backbone = count_layers(backbone, nn.Sequential)
+        count_sequential_heads = count_layers(heads, nn.Sequential)
+        count_convolutional_original = count_layers(model, nn.Conv2d)
+        count_convolutional_backbone = count_layers(backbone, nn.Conv2d)
+        count_convolutional_heads = count_layers(heads, nn.Conv2d)
 
         assert isinstance(subensemble_model, nn.Module)
         assert isinstance(backbone, nn.Sequential)
         assert isinstance(heads, nn.ModuleList)
-
-        # last layer goes to the heads
-        assert counts_heads[nn.Linear] == num_heads
-        assert counts_backbone[nn.Linear] == counts_original[nn.Linear] - 1
-        assert (counts_original[nn.Linear] + num_heads - 1) == (counts_heads[nn.Linear] + counts_backbone[nn.Linear])
-
-        # structure stays consistent
-        assert counts_heads[nn.Sequential] == num_heads
-        assert counts_backbone[nn.Sequential] == counts_original[nn.Sequential]
-
-        # conv layers should always stay in the backbone
-        assert counts_backbone[nn.Conv2d] == counts_original[nn.Conv2d]
-        assert counts_heads[nn.Conv2d] == 0
+        assert len(heads) == num_heads
+        assert count_sequential_heads == num_heads
+        assert count_linear_backbone == count_linear_original - head_layer
+        assert (count_linear_original + num_heads - 1) == (count_linear_heads + count_linear_backbone)
+        assert count_sequential_backbone == count_sequential_original
+        assert count_convolutional_backbone == count_convolutional_original
+        assert count_convolutional_heads == 0
 
     @pytest.mark.parametrize(
         "model_fixture",
@@ -80,7 +73,7 @@ class TestGeneration:
         request: pytest.FixtureRequest,
         model_fixture: str,
     ) -> None:
-        """Using head_layer=2 should split the last two layers into the head."""
+        """Test for 2 head layers subensemble generation."""
         model = request.getfixturevalue(model_fixture)
         num_heads = 5
         head_layer = 2
@@ -93,29 +86,31 @@ class TestGeneration:
         backbone = subensemble_model[0]
         heads = subensemble_model[1]
 
-        counts_original = layer_counts(model)
-        counts_backbone = layer_counts(backbone)
-        counts_heads = layer_counts(heads)
+        count_linear_original = count_layers(model, nn.Linear)
+        count_linear_backbone = count_layers(backbone, nn.Linear)
+        count_linear_heads = count_layers(heads, nn.Linear)
+        count_sequential_original = count_layers(model, nn.Sequential)
+        count_sequential_backbone = count_layers(backbone, nn.Sequential)
+        count_sequential_heads = count_layers(heads, nn.Sequential)
+        count_convolutional_original = count_layers(model, nn.Conv2d)
+        count_convolutional_backbone = count_layers(backbone, nn.Conv2d)
+        count_convolutional_heads = count_layers(heads, nn.Conv2d)
 
         assert isinstance(subensemble_model, nn.Module)
         assert isinstance(backbone, nn.Sequential)
         assert isinstance(heads, nn.ModuleList)
-
-        # Distinguish: both last layers are Linear vs. only the last is Linear.
+        assert len(heads) == num_heads
+        assert count_sequential_heads == num_heads
         if isinstance(model[-2], nn.Linear):
-            # Pure linear stack: last two layers are Linear.
-            assert counts_heads[nn.Linear] == num_heads * head_layer
-            assert counts_backbone[nn.Linear] == counts_original[nn.Linear] - head_layer
-            assert counts_original[nn.Linear] == head_layer + counts_backbone[nn.Linear]
+            assert count_linear_heads == num_heads * head_layer
+            assert count_linear_backbone == count_linear_original - head_layer
+            assert count_linear_original == head_layer + count_linear_backbone
         else:
-            # Mixed conv/flatten/dropout/relu + final Linear: only last Linear goes to heads.
-            assert counts_heads[nn.Linear] == num_heads
-            assert counts_backbone[nn.Linear] == counts_original[nn.Linear] - 1
-
-        assert counts_heads[nn.Sequential] == num_heads
-        assert counts_backbone[nn.Sequential] == counts_original[nn.Sequential]
-        assert counts_backbone[nn.Conv2d] == counts_original[nn.Conv2d]
-        assert counts_heads[nn.Conv2d] == 0
+            assert count_linear_heads == num_heads
+            assert count_linear_backbone == count_linear_original - 1
+        assert count_sequential_backbone == count_sequential_original
+        assert count_convolutional_backbone == count_convolutional_original
+        assert count_convolutional_heads == 0
 
     @pytest.mark.parametrize(
         "model_fixture",
@@ -132,7 +127,7 @@ class TestGeneration:
         request: pytest.FixtureRequest,
         model_fixture: str,
     ) -> None:
-        """Using an explicit head model keeps base intact and clones the head."""
+        """Test for backbone and head model subensemble generation."""
         model = request.getfixturevalue(model_fixture)
         num_heads = 5
 
@@ -144,26 +139,28 @@ class TestGeneration:
         backbone = subensemble_model[0]
         heads = subensemble_model[1]
 
-        counts_original = layer_counts(model)
-        counts_backbone = layer_counts(backbone)
-        counts_heads = layer_counts(heads)
+        count_linear_original = count_layers(model, nn.Linear)
+        count_linear_backbone = count_layers(backbone, nn.Linear)
+        count_linear_heads = count_layers(heads, nn.Linear)
+        count_sequential_original = count_layers(model, nn.Sequential)
+        count_sequential_backbone = count_layers(backbone, nn.Sequential)
+        count_sequential_heads = count_layers(heads, nn.Sequential)
+        count_convolutional_original = count_layers(model, nn.Conv2d)
+        count_convolutional_backbone = count_layers(backbone, nn.Conv2d)
+        count_convolutional_heads = count_layers(heads, nn.Conv2d)
 
         assert isinstance(subensemble_model, nn.Module)
         assert isinstance(backbone, nn.Sequential)
         assert isinstance(heads, nn.ModuleList)
-
-        # backbone == original model
-        assert counts_backbone[nn.Linear] == counts_original[nn.Linear]
-        assert counts_backbone[nn.Conv2d] == counts_original[nn.Conv2d]
-        assert counts_backbone[nn.Sequential] == counts_original[nn.Sequential]
-
-        # heads = num_heads clones of the original model
-        assert counts_heads[nn.Linear] == counts_original[nn.Linear] * num_heads
-        assert counts_heads[nn.Conv2d] == counts_original[nn.Conv2d] * num_heads
-        assert counts_heads[nn.Sequential] == num_heads
-
-        # total number of linear layers matches expectation
-        assert counts_heads[nn.Linear] + counts_backbone[nn.Linear] == counts_original[nn.Linear] * (num_heads + 1)
+        assert len(heads) == num_heads
+        assert count_sequential_heads == num_heads
+        assert count_linear_backbone == count_linear_original
+        assert count_convolutional_backbone == count_convolutional_original
+        assert count_sequential_backbone == count_sequential_original
+        assert count_linear_heads == count_linear_original * num_heads
+        assert count_convolutional_heads == count_convolutional_original * num_heads
+        assert count_sequential_heads == num_heads
+        assert count_linear_heads + count_linear_backbone == count_linear_original * (num_heads + 1)
 
 
 class TestParameterReset:
@@ -210,39 +207,44 @@ class TestParameterReset:
 class TestEdgeCases:
     """Tests for edge-case configurations of subensemble."""
 
-    def test_zero_heads_returns_empty_heads(
+    def test_zero_heads(
         self,
         torch_model_small_2d_2d: nn.Module,
     ) -> None:
-        """num_heads=0 should produce an empty head list and a valid backbone."""
+        """num_heads = 0 should split the model and return an empty list of heads."""
         num_heads = 0
 
         subensemble_model = subensemble(
             torch_model_small_2d_2d,
             num_heads=num_heads,
         )
-        backbone, heads = subensemble_model
-        counts_original = layer_counts(torch_model_small_2d_2d)
-        counts_backbone = layer_counts(backbone)
-        counts_heads = layer_counts(heads)
+        backbone = subensemble_model[0]
+        heads = subensemble_model[1]
 
-        # heads should be an empty ModuleList
+        count_linear_original = count_layers(torch_model_small_2d_2d, nn.Linear)
+        count_linear_backbone = count_layers(backbone, nn.Linear)
+        count_linear_heads = count_layers(heads, nn.Linear)
+        count_sequential_original = count_layers(torch_model_small_2d_2d, nn.Sequential)
+        count_sequential_backbone = count_layers(backbone, nn.Sequential)
+        count_sequential_heads = count_layers(heads, nn.Sequential)
+        count_convolutional_original = count_layers(torch_model_small_2d_2d, nn.Conv2d)
+        count_convolutional_backbone = count_layers(backbone, nn.Conv2d)
+        count_convolutional_heads = count_layers(heads, nn.Conv2d)
+
         assert isinstance(heads, nn.ModuleList)
         assert len(heads) == num_heads
+        assert count_linear_backbone == count_linear_original - 1
+        assert count_convolutional_backbone == count_convolutional_original
+        assert count_sequential_backbone == count_sequential_original
+        assert count_linear_heads == 0
+        assert count_convolutional_heads == 0
+        assert count_sequential_heads == 0
 
-        # backbone should still contain all but the default head layer
-        assert counts_backbone[nn.Linear] == counts_original[nn.Linear] - 1
-        assert counts_backbone[nn.Conv2d] == counts_original[nn.Conv2d]
-        assert counts_backbone[nn.Sequential] == counts_original[nn.Sequential]
-        assert counts_heads[nn.Linear] == 0
-        assert counts_heads[nn.Conv2d] == 0
-        assert counts_heads[nn.Sequential] == 0
-
-    def test_head_layer_zero_raises_value_error(
+    def test_invalid_head_layer(
         self,
         torch_model_small_2d_2d: nn.Module,
     ) -> None:
-        """head_layer <= 0 should raise a ValueError exception."""
+        """Test if head_layer <= 0 raises ValueError."""
         num_heads = 3
 
         with pytest.raises(
@@ -255,11 +257,11 @@ class TestEdgeCases:
                 head_layer=0,
             )
 
-    def test_large_head_layer_uses_all_layers_as_head(
+    def test_large_head_layer(
         self,
         torch_model_small_2d_2d: nn.Module,
     ) -> None:
-        """A very large head_layer should move all layers into the head."""
+        """Test if backbone can be empty while head is an ensemble of the base model."""
         num_heads = 2
         head_layer = count_layers(torch_model_small_2d_2d, nn.Linear)
 
@@ -268,19 +270,17 @@ class TestEdgeCases:
             num_heads=num_heads,
             head_layer=head_layer,
         )
-        backbone, heads = subensemble_model
-        counts_original = layer_counts(torch_model_small_2d_2d)
-        counts_backbone = layer_counts(backbone)
-        counts_heads = layer_counts(heads)
+        backbone = subensemble_model[0]
+        heads = subensemble_model[1]
 
-        # backbone becomes empty, since all layers are taken into the head.
-        assert counts_backbone[nn.Linear] == 0
-        assert counts_backbone[nn.Conv2d] == 0
-        assert counts_backbone[nn.Sequential] == counts_original[nn.Sequential]
+        original_layers = count_layers(torch_model_small_2d_2d, nn.Module)
+        backbone_layers = count_layers(backbone, nn.Module)
 
-        # heads contain num_heads copies of the full original model.
+        assert isinstance(subensemble_model, nn.Module)
+        assert isinstance(backbone, nn.Sequential)
         assert isinstance(heads, nn.ModuleList)
         assert len(heads) == num_heads
-        assert counts_heads[nn.Linear] == head_layer * num_heads
-        assert counts_heads[nn.Conv2d] == 0
-        assert counts_heads[nn.Sequential] == num_heads
+        assert backbone_layers == 1  # Empty Sequential
+        for head in heads:
+            head_layers = count_layers(head, nn.Module)
+            assert head_layers == original_layers
