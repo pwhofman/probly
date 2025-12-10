@@ -506,6 +506,20 @@ class NormalInverseGammaLinear(nn.Module):
             init.uniform_(self.beta_bias, -bound, bound)
 
 
+class SimpleCNN(nn.Module):
+    """Simple CNN."""
+
+    def __init__(self, num_classes: int = 10) -> torch.Tensor:  # noqa: D107
+        super().__init__()
+        self.fc1 = nn.Linear(28 * 28 * 1, 128)
+        self.fc2 = nn.Linear(128, num_classes)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:  # noqa: D102
+        x = torch.flatten(x, 1)
+        x = F.relu(self.fc1(x))
+        return F.softplus(self.fc2(x))  # use of softplus so that our output is always positive
+
+
 # radial flows
 class RadialFlowLayer(nn.Module):
     """Single radial flow transformation shared across all classes."""
