@@ -59,4 +59,3 @@ def test_temperature_dispatch_raises_for_unregistered_model() -> None:
 
     with pytest.raises(NotImplementedError):
         common.Temperature(model, device)
-

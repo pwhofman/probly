@@ -52,4 +52,3 @@ def test_predict(setup_model: ReturnTypeFixture) -> None:
     assert predictions.shape == (20, 4)
     row_sums = predictions.sum(dim=1)
     assert torch.allclose(row_sums, torch.ones_like(row_sums))
-
