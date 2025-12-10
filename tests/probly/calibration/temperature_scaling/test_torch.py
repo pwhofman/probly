@@ -9,6 +9,7 @@ from probly.calibration.temperature_scaling.torch import TorchTemperature
 
 ReturnTypeFixture = tuple[TorchTemperature, nn.Module, Tensor, DataLoader[tuple[Tensor, ...]]]
 
+
 @pytest.fixture
 def setup_model(torch_custom_model: nn.Sequential) -> ReturnTypeFixture:
     """Set up a dummy model and calibration set."""
