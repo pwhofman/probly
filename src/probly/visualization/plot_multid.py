@@ -82,7 +82,7 @@ class MultiVisualizer:
     def spider_plot(
         self,
         probs: np.ndarray,
-        labels: list[str] | None = None,
+        labels: list[str],
         ax: plt.Axes | None = None,
     ) -> plt.Axes:
         """General radar (spider) plot for credal predictions.
@@ -93,13 +93,6 @@ class MultiVisualizer:
         ax: Axes on which to create the radar chart.
         """
         n_classes = probs.shape[-1]
-
-        if labels is None:
-            labels = [f"C{i + 1}" for i in range(n_classes)]
-
-        if len(labels) != n_classes:
-            msg = f"Number of labels ({len(labels)}) must match number of classes ({n_classes})."
-            raise ValueError(msg)
 
         # Use the factory from spider.py
         theta = radar_factory(n_classes, frame="polygon")

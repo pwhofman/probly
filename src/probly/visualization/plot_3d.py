@@ -29,7 +29,7 @@ class TernaryVisualizer:
     def ternary_plot(
         self,
         probs: np.ndarray,
-        labels: list[str] | None = None,
+        labels: list[str],
         title: str = "Ternary Plot (3 Classes)",
         ax: plt.Axes = None,
         **scatter_kwargs: object,
@@ -66,15 +66,6 @@ class TernaryVisualizer:
 
         ax.plot(triangle_x, triangle_y, color="black")
         ax.axis("off")
-
-        n_classes = probs.shape[-1]
-
-        if labels is None:
-            labels = [f"C{i + 1}" for i in range(n_classes)]
-
-        if len(labels) != n_classes:
-            msg = f"Number of labels ({len(labels)}) must match number of classes ({n_classes})."
-            raise ValueError(msg)
 
         c1 = f"{labels[0]}"
         c2 = f"{labels[1]}"
