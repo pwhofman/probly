@@ -9,6 +9,7 @@ from torch import nn
 from torch.nn import functional as F
 
 import probly.train.evidential.torch as e
+from probly.train.evidential.torch import der_loss, rpn_ng_kl, rpn_prior
 
 if TYPE_CHECKING:
     from torch.utils.data import DataLoader
@@ -122,3 +123,54 @@ def train_pn(
         total_loss += loss.item()
 
     return total_loss
+
+
+def unified_loss(
+    y: torch.Tensor,
+    mu: torch.Tensor,
+    kappa: torch.Tensor,
+    alpha: torch.Tensor,
+    beta: torch.Tensor,
+    is_ood: torch.Tensor,
+    lam_der: float = 0.01,
+    lam_rpn: float = 1.0,
+) -> torch.Tensor:
+    """Compute unified DER + RPN loss.
+
+    Deep Evidential Regression is applied to in-distribution samples, while a
+    Normal-Gamma KL divergence (RPN) is applied to out-of-distribution samples.
+    """
+    is_ood_bool = is_ood.bool()
+    id_mask = ~is_ood_bool
+    ood_mask = is_ood_bool
+
+    device = y.device
+    loss_id = torch.tensor(0.0, device=device)
+    loss_ood = torch.tensor(0.0, device=device)
+
+    if id_mask.any():
+        loss_id = der_loss(
+            y[id_mask],
+            mu[id_mask],
+            kappa[id_mask],
+            alpha[id_mask],
+            beta[id_mask],
+            lam=lam_der,
+        )
+
+    if ood_mask.any():
+        shape = mu[ood_mask].shape
+        mu0, kappa0, alpha0, beta0 = rpn_prior(shape, device)
+
+        loss_ood = rpn_ng_kl(
+            mu[ood_mask],
+            kappa[ood_mask],
+            alpha[ood_mask],
+            beta[ood_mask],
+            mu0,
+            kappa0,
+            alpha0,
+            beta0,
+        )
+
+    return loss_id + lam_rpn * loss_ood

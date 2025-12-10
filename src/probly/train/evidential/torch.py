@@ -524,3 +524,74 @@ def natpn_loss(
 
     loss = (expected_nll - entropy_weight * entropy).mean()
     return loss
+
+
+def der_loss(
+    y: Tensor,
+    mu: Tensor,
+    kappa: Tensor,
+    alpha: Tensor,
+    beta: Tensor,
+    lam: float = 0.01,
+) -> Tensor:
+    """Deep Evidential Regression loss (Student-t NLL + evidence regularizer)."""
+    eps = 1e-8
+    two_bv = 2.0 * beta * (1.0 + kappa) + eps
+
+    lnll = (
+        0.5 * torch.log(torch.pi / (kappa + eps))
+        - alpha * torch.log(two_bv)
+        + (alpha + 0.5) * torch.log(kappa * (y - mu) ** 2 + two_bv)
+        + torch.lgamma(alpha)
+        - torch.lgamma(alpha + 0.5)
+    )
+
+    evidence = 2.0 * kappa + alpha
+    reg = torch.abs(y - mu) * evidence
+
+    return (lnll + lam * reg).mean()
+
+
+def rpn_prior(
+    shape: torch.Size | tuple[int, ...],
+    device: torch.device,
+) -> tuple[Tensor, Tensor, Tensor, Tensor]:
+    """Return zero-evidence Normal-Gamma prior parameters for RPN KL."""
+    eps = 1e-6
+    mu0 = torch.zeros(shape, device=device)
+    kappa0 = torch.ones(shape, device=device) * eps
+    alpha0 = torch.ones(shape, device=device) * (1.0 + eps)
+    beta0 = torch.ones(shape, device=device) * eps
+    return mu0, kappa0, alpha0, beta0
+
+
+def rpn_ng_kl(
+    mu: Tensor,
+    kappa: Tensor,
+    alpha: Tensor,
+    beta: Tensor,
+    mu0: Tensor,
+    kappa0: Tensor,
+    alpha0: Tensor,
+    beta0: Tensor,
+) -> Tensor:
+    """Compute KL divergence between two 1D Normal-Gamma distributions."""
+    eps = 1e-8
+
+    kappa = kappa + eps
+    kappa0 = kappa0 + eps
+    beta = beta + eps
+    beta0 = beta0 + eps
+
+    ratio_kappa = kappa / kappa0
+    term_mu = 0.5 * (alpha / beta) * kappa0 * (mu - mu0).pow(2)
+    term_kappa = 0.5 * (ratio_kappa - torch.log(ratio_kappa) - 1.0)
+    term_gamma = (
+        alpha0 * torch.log(beta / beta0)
+        - torch.lgamma(alpha)
+        + torch.lgamma(alpha0)
+        + (alpha - alpha0) * torch.digamma(alpha)
+        - (beta - beta0) * (alpha / beta)
+    )
+
+    return (term_mu + term_kappa + term_gamma).mean()
