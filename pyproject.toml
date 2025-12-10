@@ -222,4 +222,3 @@ disallow_subclassing_any = false # to make sure we can subclass from e.g. torch.
 disallow_any_generics = false    # to avoid warnings for type-based singledispatch
 disallow_untyped_calls = false   # to avoid issues with using torch, numpy, scipy, etc. internals
 disable_error_code = "misc"      # disable errors caused by torch not typing decorators, wrapping would be overkill
-exclude = "docs"

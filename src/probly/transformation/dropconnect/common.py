@@ -12,7 +12,11 @@ if TYPE_CHECKING:
     from probly.predictor import Predictor
     from pytraverse.composition import RegisteredLooseTraverser
 
-P = GlobalVariable[float]("P", "The probability of dropconnect.")
+P = GlobalVariable[float](
+    "P",
+    "The probability of dropconnect.",
+    0.25,
+)
 
 dropconnect_traverser = lazydispatch_traverser[object](name="dropconnect_traverser")
 
