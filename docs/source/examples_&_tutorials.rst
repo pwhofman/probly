@@ -2,7 +2,7 @@
 Examples and tutorials
 ##########################
 
-This section contains practical, end-to-end examples that demonstrate how "probly" can be used in real applications. Each tutorial provides a guided workflow from start to finish, including model transformation, execution and interpretation of the results. The examples also directly correspond to the advanced modeling patterns discussed in :doc:`Advanced Topics <advanced_topics>`
+This section contains practical, end-to-end examples that demonstrate how ``probly`` can be used in real applications. Each tutorial provides a guided workflow from start to finish, including model transformation, execution and interpretation of the results. The examples also directly correspond to the advanced modeling patterns discussed in :doc:`Advanced Topics <advanced_topics>`
 , providing at least one worked example for concepts such as uncertainty-aware transformations, ensemble methods, and mixed-model workflows. They are self-contained and can be adapted to individual projects and datasets.
 
 Users who are new to probly are encouraged to begin with the introductory Dropout example before exploring ensemble-based methods and more advanced uncertainty-aware workflows.
@@ -13,7 +13,7 @@ Users who are new to probly are encouraged to begin with the introductory Dropou
 What you will learn (I)
 ----------------------------
 
-In this tutorial, you will learn how to use **probly** to make a standard neural network uncertainty-aware with the Dropout transformation. You start from a conventional PyTorch model trained on MNIST and then apply probly so that Dropout remains active during inference. By running multiple stochastic forward passes, you obtain a distribution of predictions and estimate predictive uncertainty.
+In this tutorial, you will learn how to use ``probly`` to make a standard neural network uncertainty-aware with the Dropout transformation. You start from a conventional PyTorch model trained on MNIST and then apply probly so that Dropout remains active during inference. By running multiple stochastic forward passes, you obtain a distribution of predictions and estimate predictive uncertainty.
 
 This workflow is conceptually based on treating Dropout as a Bayesian approximation in deep neural networks, as proposed by Gal and Ghahramani :cite:`gal2016dropout`, and follows the standard deep learning setup described in :cite:`lecun1998gradient,goodfellow2016deep`.
 
@@ -169,7 +169,7 @@ Visualizing both the predictive mean and the associated uncertainty (e.g. as err
 Summary (I)
 -------------
 
-In this example, probly was used to transform a standard neural network into an uncertainty-aware model. Dropout remains active during inference and multiple forward passes allow you to obtain predictive uncertainty without modifying the original architecture. This approach builds on the MC Dropout framework for approximate Bayesian inference in deep networks :cite:`gal2016dropout` and follows standard best practices in deep learning :cite:`goodfellow2016deep,bishop2006pattern`.
+In this example,``probly`` was used to transform a standard neural network into an uncertainty-aware model. Dropout remains active during inference and multiple forward passes allow you to obtain predictive uncertainty without modifying the original architecture. This approach builds on the MC Dropout framework for approximate Bayesian inference in deep networks :cite:`gal2016dropout` and follows standard best practices in deep learning :cite:`goodfellow2016deep,bishop2006pattern`.
 
 
 2. Creating a SubEnsemble with probly
