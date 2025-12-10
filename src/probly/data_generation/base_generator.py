@@ -1,67 +1,35 @@
-"""
-Abstract base class: Defines the interface that all data generators must implement.
-"""
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional
+from typing import Dict, Any
 
 
 class BaseDataGenerator(ABC):
-    """Base class for all data generators"""
+    """
+    Base class for data generators used in our project.
+    """
+
+    def __init__(self, model, dataset, batch_size=32, device=None):
+        self.model = model
+        self.dataset = dataset
+        self.batch_size = batch_size
+        self.device = device
 
     @abstractmethod
-    def __init__(
-        self,
-        model: Any,
-        dataset: Any,
-        batch_size: int = 32,
-        device: Optional[str] = None,
-        **kwargs
-    ):
-        """Initialize data generator"""
+    def generate(self) -> Dict[str, Any]:
+        """Run the model on the dataset and collect statistics."""
         pass
 
     @abstractmethod
-    def generate_distributions(self) -> Dict[str, Any]:
-        """
-        Generate probability distribution data
-
-        Returns:
-            Dictionary containing probability distributions
-        """
+    def save(self, path: str) -> None:
+        """Save generated results to a file."""
         pass
 
     @abstractmethod
-    def save_distributions(self, path: str) -> None:
-        """
-        Save the generated data
-
-        Args:
-            path: Save path
-        """
-        pass
-
-    @abstractmethod
-    def load_distributions(self, path: str) -> Dict[str, Any]:
-        """
-        Load saved data
-
-        Args:
-            path: File path
-
-        Returns:
-            Loaded data dictionary
-        """
+    def load(self, path: str) -> Dict[str, Any]:
+        """Load results from a file."""
         pass
 
     def get_info(self) -> Dict[str, Any]:
-        """
-        Get generator information
-
-        Returns:
-            Dictionary containing information
-        """
         return {
-            "framework": "unknown",
-            "batch_size": getattr(self, 'batch_size', None),
-            "device": getattr(self, 'device', None)
+            "batch_size": self.batch_size,
+            "device": self.device
         }
