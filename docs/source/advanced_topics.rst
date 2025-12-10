@@ -96,11 +96,9 @@ better choice.
   In many domains, prior knowledge is naturally expressed as constraints on
   parameters: certain probabilities must always sum to one, some effects must be
   monotone, or fairness and safety requirements restrict which configurations are
-  admissible. Work on probabilistic circuits emphasises that domain
-  constraints can encode general trends in the domain and
-  serve as effective inductive biases :cite:`karanamHumanAlliedPCs2024`. A custom
-  transformation is a convenient way to build such domain-specific rules into the
-  parameterisation instead of relying on ad-hoc clipping or post-processing.
+  admissible. A custom transformation is a convenient way to build such
+  domain-specific rules into the parameterisation instead of relying on
+  ad-hoc clipping or post-processing.
 
 - **Cleaner uncertainty behaviour and numerical stability**
 
@@ -138,9 +136,7 @@ cleaner, more robust, and easier to maintain.
 Custom transformations in ``probly`` should follow a **small and predictable interface**. Similar
 interfaces appear in other probabilistic libraries. For example, TensorFlow Probability notes
 that a ``Bijector`` is characterised by three operations (forward, inverse, and a log-determinant
-Jacobian) :cite:`tfpBijectorSoftplus2023`, and the Open Source Vizier guide adds
-that each bijector implements at least three methods (``forward``, ``inverse``, and one of the
-log-Jacobian methods) :cite:`ossvizierBijectors2022`.
+Jacobian) :cite:`tfpBijectorSoftplus2023`, and other libraries adopt essentially the same pattern.
 
 Conceptually, each transformation in ``probly`` is responsible for three things:
 
@@ -165,13 +161,13 @@ Beyond this minimal interface, good transformations follow several design princi
   All logic that enforces a particular constraint should live inside the transformation. The rest
   of the model should not need to know which reparameterisation is used internally. This mirrors
   how libraries like Stan and NumPyro encapsulate constraints as self-contained objects that define
-  where parameters are valid :cite:`numpyroConstraints2019,stanConstraintTransforms2025`.
+  where parameters are valid :cite:`numpyroTransforms2019,stanConstraintTransforms2025`.
 
 - **clearly documented domain and range**
 
   It should be obvious which inputs are valid, what shapes are expected, and which constraints the
-  outputs satisfy. NumPyro’s ``Constraint`` base class explicitly states that a constraint object
-  represents a region over which a variable is valid and can be optimised :cite:`numpyroConstraints2019`. Documenting domains and ranges for custom
+  outputs satisfy. NumPyro’s documentation describes constraint objects as representing regions over
+  which a variable is valid and can be optimised :cite:`numpyroTransforms2019`. Documenting domains and ranges for custom
   transformations in ``probly`` serves the same purpose.
 
 - **numerically stable**
@@ -268,7 +264,7 @@ transformation to it. During model construction, ``probly`` will then:
 - keep track of the relationship so that gradients and uncertainty estimates remain consistent.
 
 This mirrors the way Stan and other packages internally work with unconstrained parameters while
-presenting constrained parameters in the modelling language :cite:`stanLowerBoundedScalarND,stanProgrammingLanguage2p8p0`. From the model author’s perspective, the parameter now behaves like a
+presenting constrained parameters in the modelling language :cite:`stanLowerBoundedScalarND`. From the model author’s perspective, the parameter now behaves like a
 normal positive quantity, even though internally it is represented by an unconstrained variable.
 
 **Running inference and inspecting results**
@@ -329,7 +325,7 @@ better to:
 This pattern is closely related to hierarchical Bayesian modelling, where group-specific
 parameters are tied together through common hyperparameters. In that context, hierarchical models
 allow for the pooling of information across groups while accounting for group-specific
-variations :cite:`mittalBayesianHierarchicalModels2025`. Using shared parameters across transformations in ``probly``
+variations :cite:`gelmanHillDataAnalysis2007`. Using shared parameters across transformations in ``probly``
 has a similar effect: information is shared in a controlled way, and the structure of the model
 remains explicit and interpretable.
 
@@ -372,9 +368,9 @@ A basic but powerful test is the **round-trip check**:
 - verify that the original inputs are recovered (up to numerical tolerance).
 
 From a mathematical point of view, this is just checking the fundamental property of a
-bijective transform. Walton emphasises that all bijective functions are invertible
-and satisfy :math:`f^{-1}(f(x)) = x`, which is exactly what round-trip tests are designed to
-catch when your implementation or shape handling is wrong :cite:`waltonIsomorphismNormalizing2023`.
+bijective transform: bijective functions are invertible and satisfy :math:`f^{-1}(f(x)) = x`.
+Round-trip tests are designed to catch cases where implementation details or shape handling
+break this property.
 
 Similarly, you can test constrained values by applying inverse then forward. Systematic
 deviations in either direction usually indicate mistakes in the formulas, inconsistencies in
@@ -389,10 +385,9 @@ near 0 or 1, etc.) can suffer from numerical problems. It is good practice to:
 - check for overflow, underflow, or ``nan``/``inf`` values,
 - monitor gradients if the transformation is used in gradient-based inference.
 
-Practical experience in differentiable simulation libraries shows why this matters. The
-DiffeRT documentation notes that NaNs tend to spread uncontrollably, making it difficult to
-trace their origin, and therefore adopts a strict no-NaN policy for both outputs and
-gradients :cite:`eertmansNaNInfinite2025`. The same mindset works well in
+Experience in differentiable simulation libraries shows why this matters: NaNs tend to
+spread uncontrollably, making it difficult to trace their origin, so many projects adopt a
+strict no-NaN policy for both outputs and gradients. The same mindset works well in
 ``probly``: treat any appearance of NaNs or infinities as a bug in either the transformation
 or its inputs, and add targeted tests to reproduce and eliminate it.
 
@@ -410,10 +405,10 @@ Typical issues with custom transformations include:
 - forgetting to update the transformation when the model structure changes,
 - inconsistent handling of broadcasting or batching.
 
-Basic unit-testing advice for probabilistic code still applies here. As one practitioner
-summarises, you should at least assert that returned values are not null and lie in the
-expected range, and then add stronger distributional checks where appropriate :cite:`hvgotcodesUnitTesting2012`. For transformations, that means checking *both* the unconstrained and constrained
-spaces for sanity (ranges, monotonicity, simple invariants).
+Basic unit-testing advice for probabilistic code still applies here: at least assert that
+returned values are not null and lie in the expected range, and then add stronger
+distributional checks where appropriate. For transformations, that means checking *both* the
+unconstrained and constrained spaces for sanity (ranges, monotonicity, simple invariants).
 
 Symptoms of problems with transformations often show up later as:
 
@@ -421,11 +416,10 @@ Symptoms of problems with transformations often show up later as:
 - extremely large or unstable uncertainty estimates,
 - runtime errors or NaNs deep inside the inference code.
 
-Empirical studies of probabilistic programming systems show that many real bugs are linked
-to boundary conditions, dimension handling, and numerical issues :cite:`duttaTestingProbabilistic2018`. Their
-tool ProbFuzz, for example, discovered many previously unknown bugs across several
-systems and caught at least one existing bug in most categories they targeted :cite:`duttaTestingProbabilistic2018`. This underlines that small mistakes in transform logic can
-have large downstream effects.
+Empirical work on probabilistic programming systems suggests that many real bugs are linked
+to boundary conditions, dimension handling, and numerical issues. Tools that systematically
+stress-test these systems have uncovered previously unknown bugs across several frameworks,
+underlining that small mistakes in transform logic can have large downstream effects.
 
 When such issues appear in a ``probly`` model, it is often helpful to temporarily isolate
 the transformation in a small test script, run the round-trip and stability checks described
@@ -896,7 +890,7 @@ good match for the task.
 Low-level speed usually comes from **doing more work per call**, not from
 writing more loops. Array libraries like NumPy are designed so that you express
 operations on whole arrays and they run in fast compiled code instead of pure
-Python :cite:`harrisArrayProgramming2020`.
+Python.
 
 In ``probly``, this means:
 
@@ -911,7 +905,7 @@ You can combine this with **parallelisation**:
 - make sure the work per task is large enough so that parallel overhead does
   not dominate,
 - keep seeds and random-number streams clearly separated, so parallel chains
-  really are independent :cite:`opendatascienceRandomSeed2019`.
+  really are independent.
 
 More parallelism is not always better: if each task is tiny, the overhead of
 starting and syncing workers can outweigh any speedup.
@@ -924,7 +918,7 @@ harder to debug if every run behaves differently. A few simple habits help:
 
 - **Set random seeds on purpose.**
   Use fixed seeds for NumPy, JAX, and other backends so that runs with the same
-  settings produce comparable results :cite:`opendatascienceRandomSeed2019`.
+  settings produce comparable results.
 
 - **Log important settings.**
   Store seeds, dataset versions, batch sizes, hardware info, and key
