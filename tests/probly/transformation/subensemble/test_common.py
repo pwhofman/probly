@@ -3,9 +3,9 @@ from __future__ import annotations
 import pytest
 
 from probly.predictor import Predictor
-
 from probly.transformation.subensemble import subensemble
 from probly.transformation.subensemble.common import subensemble_generator
+
 
 class InvalidPredictor(Predictor):
     def __call__(self, x: int) -> int:
@@ -15,15 +15,17 @@ class InvalidPredictor(Predictor):
 class ValidPredictor(Predictor):
     pass
 
+
 def test_invalid_type(dummy_predictor: InvalidPredictor) -> None:
     """Test that an invalid type raises NotImplementedError."""
     msg = f"No subensemble generator is registered for type {type(dummy_predictor)}"
-    with pytest.raises(NotImplementedError,match=msg):
+    with pytest.raises(NotImplementedError, match=msg):
         subensemble_generator(dummy_predictor)
+
 
 def test_invalid_head_layer(dummy_predictor: ValidPredictor) -> None:
     """Test head_layer is a valid type."""
     head_layer = 0
     msg = f"head_layer must be a positive number, but got head_layer={head_layer} instead."
-    with pytest.raises(ValueError,match=msg):
-        subensemble(base=dummy_predictor,num_heads=1,head_layer=head_layer)
+    with pytest.raises(ValueError, match=msg):
+        subensemble(base=dummy_predictor, num_heads=1, head_layer=head_layer)
