@@ -36,7 +36,7 @@ These use cases often require a deeper understanding of transformations, scalabi
 
 .. seealso::
 
-    For background material, see :doc:`Core Concepts <core_concepts.rst>`.
+    For background material, see :ref:`core_concepts`.
 
     For the main building blocks of ``probly``, like the main transformations, utilities & layers, and evaluation tools, see :doc:`Main Components <main_components>`.
 
@@ -1094,13 +1094,13 @@ time:
 - **Model & algorithm**
   - Does the inference method make sense for this model?
   - Are there layers, parameters, or transforms you can remove without losing
-    quality?
+  quality?
 
 - **Implementation**
   - Are your main computations vectorised, or are there slow Python loops in
-    the hot path?
+  the hot path?
   - Are you avoiding repeated work (e.g. recomputing static features inside the
-    main loop)?
+  main loop)?
 
 - **Data pipeline**
   - Is data loading fast enough compared to the model compute?
@@ -1108,9 +1108,9 @@ time:
 
 - **Resources**
   - Is the model using available hardware (CPU cores, GPU, memory) in a
-    sensible way?
+  sensible way?
   - Is logging set to a reasonable level so it does not become an I/O
-    bottleneck?
+  bottleneck?
 
 - **Reproducibility**
   - Are seeds and key settings stored somewhere?
@@ -1224,7 +1224,7 @@ least one **worked example**:
   predictive intervals over time, and shows how to evaluate them :cite:`hyndmanForecastingPrinciples2018`.
 
 For each advanced pattern in this chapter, there is at least one worked example in the
-:doc:`Examples & Tutorials <examples_tutorials>` file.
+:ref:`examples_tutorials` file.
 
 7. Summary
 ----------

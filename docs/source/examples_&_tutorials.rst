@@ -1,3 +1,6 @@
+(examples_tutorials)=
+#Examples & Tutorials
+
 ##########################
 Examples and tutorials
 ##########################
@@ -10,8 +13,8 @@ Users who are new to probly are encouraged to begin with the introductory Dropou
 1. Uncertainty estimation with Dropout on MNIST
 ===============================================
 
-What you will learn
--------------------
+What you will learn (I)
+---------------------------
 
 In this tutorial, you will learn how to use **probly** to make a standard neural network uncertainty-aware with the Dropout transformation. You start from a conventional PyTorch model trained on MNIST and then apply probly so that Dropout remains active during inference. By running multiple stochastic forward passes, you obtain a distribution of predictions and estimate predictive uncertainty.
 
@@ -166,8 +169,8 @@ Visualizing both the predictive mean and the associated uncertainty (e.g. as err
    :align: center
    :alt: Monte Carlo Dropout uncertainty visualization
 
-Summary
--------
+Summary (I)
+-------------
 
 In this example, probly was used to transform a standard neural network into an uncertainty-aware model. Dropout remains active during inference and multiple forward passes allow you to obtain predictive uncertainty without modifying the original architecture. This approach builds on the MC Dropout framework for approximate Bayesian inference in deep networks :cite:`gal2016dropout` and follows standard best practices in deep learning :cite:`goodfellow2016deep,bishop2006pattern`.
 
@@ -175,8 +178,8 @@ In this example, probly was used to transform a standard neural network into an 
 2. Creating a SubEnsemble with probly
 =====================================
 
-What you will learn
--------------------
+What you will learn (II)
+----------------------------
 
 In this tutorial, you will learn how to construct an ensemble using probly and how to derive a smaller ``SubEnsemble`` without retraining. This allows you to trade inference speed for accuracy and predictive uncertainty quality in a controlled way. The design follows the deep ensemble methodology of Lakshminarayanan et al. :cite:`lakshminarayanan2017simple` and classical ensemble learning ideas :cite:`dietterich2000ensemble`.
 
@@ -303,16 +306,16 @@ Using the trained ensemble, you can construct a ``SubEnsemble`` that uses only a
 
 The idea of using partial ensembles or subnetworks to control computational budget is related to recent work on training independent subnetworks for robust predictions :cite:`havasi2021training` and subsampling strategies for efficient uncertainty estimation :cite:`cunningham2020ensemble`. With probly, this pattern becomes a simple configuration choice.
 
-Visual result
-~~~~~~~~~~~~~
+Visual result SubEnsemble
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. image:: subensemble_comparison.png
    :width: 500px
    :align: center
    :alt: Accuracy comparison between full ensemble and SubEnsemble
 
-Summary
--------
+Summary (II)
+---------------
 
 In this example, probly was used to create both a full Ensemble and a SubEnsemble without retraining. The full Ensemble generally provides the highest accuracy and most reliable uncertainty, while the SubEnsemble offers reduced inference cost with still useful performance. This illustrates how deep ensembles :cite:`lakshminarayanan2017simple` can be adapted to practical deployment constraints using probly’s ensemble abstractions.
 
@@ -320,8 +323,8 @@ In this example, probly was used to create both a full Ensemble and a SubEnsembl
 3. MixedEnsemble with probly
 ============================
 
-What you will learn
--------------------
+What you will learn (III)
+--------------------------
 
 In this tutorial, you will learn how to build a ``MixedEnsemble`` using probly by combining different neural network architectures into a single probabilistic ensemble. You will compare it to a homogeneous ensemble and observe how model diversity may influence performance and robustness. This follows the general idea that heterogeneous ensembles can outperform homogeneous ones when models capture complementary inductive biases :cite:`opitz1999popular,jacobs1991adaptive`.
 
@@ -486,7 +489,7 @@ Visual result
    :align: center
    :alt: Accuracy comparison between homogeneous and mixed ensembles
 
-Summary
--------
+Summary (III)
+---------------
 
 In this example, you used probly to construct both a homogeneous ensemble and a ``MixedEnsemble`` combining different model types. The MixedEnsemble may capture complementary model behaviour and can therefore improve robustness and calibration in some settings :cite:`opitz1999popular,ovadia2019trust`. By providing a unified abstraction for homogeneous and heterogeneous ensembles, probly makes it straightforward to explore such design choices in practical applications.
