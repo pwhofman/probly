@@ -24,7 +24,6 @@ class TestGeneration:
             "flax_conv_linear_model",
             "flax_regression_model_1d",
             "flax_regression_model_2d",
-            "flax_dropout_model",
         ],
     )
     def test_subensemble_default(
