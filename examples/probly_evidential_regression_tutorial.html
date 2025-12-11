@@ -1,0 +1,744 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" />
+
+    <!-- Generated with Sphinx 8.2.3 and Furo 2024.08.06 -->
+        <title>Tutorial: Evidential Regression with Probly - probly 0.3.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=354aac6f" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=302659d7" />
+    <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f8f8f8;
+  --color-code-foreground: black;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #272822;
+  --color-code-foreground: #f8f8f2;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #272822;
+  --color-code-foreground: #f8f8f2;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">probly 0.3.1 documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><div class="sidebar-scroll"><a class="sidebar-brand" href="../index.html">
+  
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo only-light" src="../_static/logo/logo_light.png" alt="Light Logo"/>
+    <img class="sidebar-logo only-dark" src="../_static/logo/logo_dark.png" alt="Dark Logo"/>
+  </div>
+  
+  
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Content</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../methods.html">Implemented methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../references.html">References</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tutorials</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="fashionmnist_ood_ensemble.html">Out-of-Distribution Detection with an Ensemble</a></li>
+<li class="toctree-l1"><a class="reference internal" href="label_relaxation_calibration.html">Calibration with Label Relaxation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sklearn_selective_prediction.html">Using probly with scikit-learn</a></li>
+<li class="toctree-l1"><a class="reference internal" href="temperature_scaling_calibration.html">Calibration using Temperature Scaling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="train_bnn_classification.html">Bayesian Neural Networks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="train_evidential_classification.html">Evidential Model for Classification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="train_evidential_regression.html">Evidential Regression Model</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../api.html">API Reference</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of API Reference</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../api/probly.datasets.html">probly.datasets</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of probly.datasets</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api/probly.datasets.torch.html">probly.datasets.torch</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../api/probly.evaluation.html">probly.evaluation</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of probly.evaluation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api/probly.evaluation.metrics.html">probly.evaluation.metrics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/probly.evaluation.tasks.html">probly.evaluation.tasks</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../api/probly.layers.html">probly.layers</a><input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><div class="visually-hidden">Toggle navigation of probly.layers</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api/probly.layers.flax.html">probly.layers.flax</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/probly.layers.torch.html">probly.layers.torch</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../api/probly.plot.html">probly.plot</a><input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><div class="visually-hidden">Toggle navigation of probly.plot</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api/probly.plot.credal.html">probly.plot.credal</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../api/probly.predictor.html">probly.predictor</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../api/probly.quantification.html">probly.quantification</a><input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><div class="visually-hidden">Toggle navigation of probly.quantification</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api/probly.quantification.classification.html">probly.quantification.classification</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/probly.quantification.regression.html">probly.quantification.regression</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../api/probly.representation.html">probly.representation</a><input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle navigation of probly.representation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/probly.representation.credal_set.html">probly.representation.credal_set</a><input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of probly.representation.credal_set</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.representation.credal_set.credal_set.html">probly.representation.credal_set.credal_set</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.representation.credal_set.jax.html">probly.representation.credal_set.jax</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.representation.credal_set.torch.html">probly.representation.credal_set.torch</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../api/probly.representation.distribution.html">probly.representation.distribution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/probly.representation.representer.html">probly.representation.representer</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/probly.representation.sampling.html">probly.representation.sampling</a><input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><div class="visually-hidden">Toggle navigation of probly.representation.sampling</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.representation.sampling.flax_sampler.html">probly.representation.sampling.flax_sampler</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.representation.sampling.jax_sample.html">probly.representation.sampling.jax_sample</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.representation.sampling.sample.html">probly.representation.sampling.sample</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.representation.sampling.sampler.html">probly.representation.sampling.sampler</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.representation.sampling.torch_sample.html">probly.representation.sampling.torch_sample</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.representation.sampling.torch_sampler.html">probly.representation.sampling.torch_sampler</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../api/probly.train.html">probly.train</a><input class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" role="switch" type="checkbox"/><label for="toctree-checkbox-10"><div class="visually-hidden">Toggle navigation of probly.train</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/probly.train.bayesian.html">probly.train.bayesian</a><input class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" role="switch" type="checkbox"/><label for="toctree-checkbox-11"><div class="visually-hidden">Toggle navigation of probly.train.bayesian</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.train.bayesian.torch.html">probly.train.bayesian.torch</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/probly.train.calibration.html">probly.train.calibration</a><input class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" role="switch" type="checkbox"/><label for="toctree-checkbox-12"><div class="visually-hidden">Toggle navigation of probly.train.calibration</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.train.calibration.torch.html">probly.train.calibration.torch</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/probly.train.evidential.html">probly.train.evidential</a><input class="toctree-checkbox" id="toctree-checkbox-13" name="toctree-checkbox-13" role="switch" type="checkbox"/><label for="toctree-checkbox-13"><div class="visually-hidden">Toggle navigation of probly.train.evidential</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.train.evidential.torch.html">probly.train.evidential.torch</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../api/probly.transformation.html">probly.transformation</a><input class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" role="switch" type="checkbox"/><label for="toctree-checkbox-14"><div class="visually-hidden">Toggle navigation of probly.transformation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api/probly.transformation.bayesian.html">probly.transformation.bayesian</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/probly.transformation.dropconnect.html">probly.transformation.dropconnect</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/probly.transformation.dropout.html">probly.transformation.dropout</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/probly.transformation.ensemble.html">probly.transformation.ensemble</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/probly.transformation.evidential.html">probly.transformation.evidential</a><input class="toctree-checkbox" id="toctree-checkbox-15" name="toctree-checkbox-15" role="switch" type="checkbox"/><label for="toctree-checkbox-15"><div class="visually-hidden">Toggle navigation of probly.transformation.evidential</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../api/probly.transformation.evidential.classification.html">probly.transformation.evidential.classification</a><input class="toctree-checkbox" id="toctree-checkbox-16" name="toctree-checkbox-16" role="switch" type="checkbox"/><label for="toctree-checkbox-16"><div class="visually-hidden">Toggle navigation of probly.transformation.evidential.classification</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.transformation.evidential.classification.common.html">probly.transformation.evidential.classification.common</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.transformation.evidential.classification.torch.html">probly.transformation.evidential.classification.torch</a></li>
+</ul>
+</li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../api/probly.transformation.evidential.regression.html">probly.transformation.evidential.regression</a><input class="toctree-checkbox" id="toctree-checkbox-17" name="toctree-checkbox-17" role="switch" type="checkbox"/><label for="toctree-checkbox-17"><div class="visually-hidden">Toggle navigation of probly.transformation.evidential.regression</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.transformation.evidential.regression.common.html">probly.transformation.evidential.regression.common</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.transformation.evidential.regression.torch.html">probly.transformation.evidential.regression.torch</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../api/probly.traverse_nn.html">probly.traverse_nn</a><input class="toctree-checkbox" id="toctree-checkbox-18" name="toctree-checkbox-18" role="switch" type="checkbox"/><label for="toctree-checkbox-18"><div class="visually-hidden">Toggle navigation of probly.traverse_nn</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api/probly.traverse_nn.common.html">probly.traverse_nn.common</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/probly.traverse_nn.flax.html">probly.traverse_nn.flax</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/probly.traverse_nn.torch.html">probly.traverse_nn.torch</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../api/probly.utils.html">probly.utils</a><input class="toctree-checkbox" id="toctree-checkbox-19" name="toctree-checkbox-19" role="switch" type="checkbox"/><label for="toctree-checkbox-19"><div class="visually-hidden">Toggle navigation of probly.utils</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api/probly.utils.errors.html">probly.utils.errors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/probly.utils.probabilities.html">probly.utils.probabilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/probly.utils.sets.html">probly.utils.sets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/probly.utils.torch.html">probly.utils.torch</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributing to probly 🏔️</a></li>
+</ul>
+
+</div>
+</div><div style="text-align: center; margin-top: 1rem; margin-bottom: 1rem;">
+  <a href="https://github.com/pwhofman/probly" target="_blank" rel="noopener noreferrer" title="GitHub Repository">
+    <img src="../_static/github-mark.svg" alt="GitHub Logo" width="28" height="28" style="display: inline-block;">
+  </a>
+</div>
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          
+
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="tutorial-evidential-regression-with-probly">
+<h1>Tutorial: Evidential Regression with Probly<a class="headerlink" href="#tutorial-evidential-regression-with-probly" title="Link to this heading">¶</a></h1>
+<p>This notebook demonstrates how to use <code class="docutils literal notranslate"><span class="pre">probly</span></code> to transform a standard PyTorch Regression model into an Evidential Regression model capable of quantifying its own uncertainty.</p>
+<section id="what-is-evidential-regression">
+<h2>1. What is Evidential Regression?<a class="headerlink" href="#what-is-evidential-regression" title="Link to this heading">¶</a></h2>
+<p>In standard deep learning for regression, a model predicts a single point of value (e.g., <code class="docutils literal notranslate"><span class="pre">y</span> <span class="pre">=</span> <span class="pre">5.3</span></code>). This tells us nothing about the model’s confidence.</p>
+<p><strong>Evidential Regression</strong> is a method that reframes the problem. Instead of prediciting a single value, the model learns the parameters of a higher-order probability distribution (specifically, a <strong>Normal-Inverse-Gamma</strong> distribution).</p>
+<p>This distribution <em>itself</em> represents a probability distribution <em>over possible regression outputs</em>. From these parameters, we can directly calculate not only the predicted value (the mean) but also the model’s uncertainty.</p>
+</section>
+<section id="why-use-it-quantifying-uncertainty">
+<h2>2. Why Use it? Quantifying Uncertainty<a class="headerlink" href="#why-use-it-quantifying-uncertainty" title="Link to this heading">¶</a></h2>
+<p>The main advantage of this approach is its ability to distinguish between two types of uncertainty:</p>
+<ul class="simple">
+<li><p><strong>Aleatoric Uncertainty (Data Noise):</strong> The uncertainty inherent in the data itself (e.g. sensor noise, natural variation). This is uncertainty that <em>cannot</em> be reduced, even with more data.</p></li>
+<li><p><strong>Epistemic Uncertainty (Model Uncertainty):</strong> The uncertainty of the model due to a lack of training data. This uncertainty <em>can</em> be reduced by providing the model with more data in a specific region.</p></li>
+</ul>
+<p>A standard model can’t tell these apart. An evidential model can, which is crucial for safety-critical applications.</p>
+</section>
+<section id="how-it-s-used-making-a-base-model">
+<h2>3. How It’s Used: Making a Base Model<a class="headerlink" href="#how-it-s-used-making-a-base-model" title="Link to this heading">¶</a></h2>
+<p>Let’s start with a standard PyTorch model for a simple regression task. It takes one input feature and is designed to predict a single point value.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">nn</span><span class="p">,</span> <span class="n">optim</span>
+
+
+<span class="c1"># 1. The Base Model (a simple point-predictor)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SimpleRegressionModel</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes a deep regression model.&quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fc1</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">64</span><span class="p">)</span>  <span class="c1"># 1 input feature</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">activation</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fc2</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">64</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>  <span class="c1"># 1 output feature</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Forward pass of the model.&quot;&quot;&quot;</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">activation</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fc1</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fc2</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">x</span>
+
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">SimpleRegressionModel</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;--- The Base Model (Before) ---&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>--- The Base Model (Before) ---
+SimpleRegressionModel(
+  (fc1): Linear(in_features=1, out_features=64, bias=True)
+  (activation): ReLU()
+  (fc2): Linear(in_features=64, out_features=1, bias=True)
+)
+</pre></div>
+</div>
+</div>
+</div>
+<p>This model is a “point predictor”. For every input <code class="docutils literal notranslate"><span class="pre">x</span></code>, it returns exactly one input <code class="docutils literal notranslate"><span class="pre">y</span></code>.</p>
+<p><strong>The Problem:</strong> We have no idea <em>how certain</em> the model is about its prediction. If we ask it for a value far outside its training data, it will still just return a single number, no questions asked.</p>
+</section>
+<section id="the-probly-solution">
+<h2>4. The <code class="docutils literal notranslate"><span class="pre">probly</span></code> Solution<a class="headerlink" href="#the-probly-solution" title="Link to this heading">¶</a></h2>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># 2. Apply the `probly` Transformation</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">probly.transformation.evidential.regression</span><span class="w"> </span><span class="kn">import</span> <span class="n">evidential_regression</span>
+
+<span class="c1"># This is the single line that does all the work!</span>
+<span class="n">uncertainty_model</span> <span class="o">=</span> <span class="n">evidential_regression</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">--- The Transformed Model (After) ---&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">uncertainty_model</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>--- The Transformed Model (After) ---
+SimpleRegressionModel(
+  (fc1): Linear(in_features=1, out_features=64, bias=True)
+  (activation): ReLU()
+  (fc2): NormalInverseGammaLinear()
+)
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="what-happened">
+<h2>What happened?<a class="headerlink" href="#what-happened" title="Link to this heading">¶</a></h2>
+<p>As you can see, <code class="docutils literal notranslate"><span class="pre">probly</span></code> automatically modified the model. It used <code class="docutils literal notranslate"><span class="pre">pytraverse</span></code> to traverse the model <strong>backwards</strong> (<code class="docutils literal notranslate"><span class="pre">TRAVERSE_REVERSED:</span> <span class="pre">True</span></code>) and identified the <strong>last <code class="docutils literal notranslate"><span class="pre">nn.Linear</span></code> layer</strong>.</p>
+<p><strong>Before:</strong>
+<code class="docutils literal notranslate"><span class="pre">(fc2):</span> <span class="pre">nn.Linear(in_features=64,</span> <span class="pre">out_features=1)</span></code></p>
+<p><strong>After:</strong>
+<code class="docutils literal notranslate"><span class="pre">(fc2):</span> <span class="pre">NormalInverseGammaLinear()</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">probly</span></code> has swapped the layer! Although the printout doesn’t show the <code class="docutils literal notranslate"><span class="pre">in_features</span></code> or <code class="docutils literal notranslate"><span class="pre">out_features</span></code>, the <code class="docutils literal notranslate"><span class="pre">NormalInverseGammaLinear</span></code> layer was correctly initialized.</p>
+<p>This new layer no longer outputs a single value, but rather the <strong>four parameters (gamma, nu, alpha, beta)</strong> of a Normal-Inverse-Gamma distribution.</p>
+<p>These parameters allow us to calculate both <em>aletoric</em> (data-based) and <em>epistemic</em> (model-based) uncertainty.</p>
+</section>
+<section id="training-the-model">
+<h2>5. Training the Model<a class="headerlink" href="#training-the-model" title="Link to this heading">¶</a></h2>
+<p>Now we’ll train the <code class="docutils literal notranslate"><span class="pre">uncertainty_model</span></code>. We will use the $y=x^3$ benchmark example from the accompanying paper <a href="https://arxiv.org/abs/1910.02600" target="_blank">(Fig 3)</a> to demonstrate how the model learns to fit the data and quantify its uncertainty.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">nn</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">EvidentialNetwork</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Neural network for evidential regression outputs parameters.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">64</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes the evidential regression network.&quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">net</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">),</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">(),</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">hidden_size</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">),</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">(),</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">hidden_size</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span>  <span class="c1"># Output: gamma, nu, alpha, beta</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Forward pass to compute evidential parameters.&quot;&quot;&quot;</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">net</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">gamma</span> <span class="o">=</span> <span class="n">output</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">:</span><span class="mi">1</span><span class="p">]</span>  <span class="c1"># Predicted mean</span>
+        <span class="n">nu</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">output</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">:</span><span class="mi">2</span><span class="p">])</span>  <span class="c1"># Evidence for mean (always positive)</span>
+        <span class="n">alpha</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">output</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">:</span><span class="mi">3</span><span class="p">])</span> <span class="o">+</span> <span class="mf">1.0</span>  <span class="c1"># Evidence for variance (&gt;1)</span>
+        <span class="n">beta</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">output</span><span class="p">[:,</span> <span class="mi">3</span><span class="p">:</span><span class="mi">4</span><span class="p">])</span>  <span class="c1"># Scale parameter (always positive)</span>
+
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;gamma&quot;</span><span class="p">:</span> <span class="n">gamma</span><span class="p">,</span> <span class="s2">&quot;nu&quot;</span><span class="p">:</span> <span class="n">nu</span><span class="p">,</span> <span class="s2">&quot;alpha&quot;</span><span class="p">:</span> <span class="n">alpha</span><span class="p">,</span> <span class="s2">&quot;beta&quot;</span><span class="p">:</span> <span class="n">beta</span><span class="p">}</span>
+
+
+<span class="c1"># Generate training and test data matching the paper&#39;s setup</span>
+<span class="n">torch</span><span class="o">.</span><span class="n">manual_seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+<span class="n">X_train</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">800</span><span class="p">)</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">noise_std</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">3.0</span><span class="p">))</span>
+<span class="n">y_train</span> <span class="o">=</span> <span class="n">X_train</span><span class="o">**</span><span class="mi">3</span> <span class="o">+</span> <span class="n">noise_std</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">800</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+<span class="n">X_test</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">6</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">evidential_regression_loss</span><span class="p">(</span>
+    <span class="n">y_true</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+    <span class="n">lambda_reg</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.01</span><span class="p">,</span>
+    <span class="n">epsilon</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-6</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Evidential loss function combining NLL and regularization.&quot;&quot;&quot;</span>
+    <span class="n">gamma</span><span class="p">,</span> <span class="n">nu</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;gamma&quot;</span><span class="p">],</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;nu&quot;</span><span class="p">],</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;alpha&quot;</span><span class="p">],</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;beta&quot;</span><span class="p">]</span>
+
+    <span class="c1"># Calculate omega parameter from paper</span>
+    <span class="n">omega</span> <span class="o">=</span> <span class="mf">2.0</span> <span class="o">*</span> <span class="n">beta</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">nu</span><span class="p">)</span>
+
+    <span class="c1"># Negative Log Likelihood Loss (Equation 8)</span>
+    <span class="n">log_gamma_term</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">lgamma</span><span class="p">(</span><span class="n">alpha</span><span class="p">)</span> <span class="o">-</span> <span class="n">torch</span><span class="o">.</span><span class="n">lgamma</span><span class="p">(</span><span class="n">alpha</span> <span class="o">+</span> <span class="mf">0.5</span><span class="p">)</span>
+
+    <span class="c1"># Numerically stable computation</span>
+    <span class="n">log_nu</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">nu</span> <span class="o">+</span> <span class="n">epsilon</span><span class="p">)</span>
+    <span class="n">log_omega</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">omega</span> <span class="o">+</span> <span class="n">epsilon</span><span class="p">)</span>
+
+    <span class="n">squared_error</span> <span class="o">=</span> <span class="p">(</span><span class="n">y_true</span> <span class="o">-</span> <span class="n">gamma</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
+    <span class="n">log_term</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">squared_error</span> <span class="o">*</span> <span class="n">nu</span> <span class="o">+</span> <span class="n">omega</span> <span class="o">+</span> <span class="n">epsilon</span><span class="p">)</span>
+
+    <span class="n">l_nill</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">pi</span><span class="p">))</span> <span class="o">-</span> <span class="n">log_nu</span><span class="p">)</span>
+        <span class="o">-</span> <span class="n">alpha</span> <span class="o">*</span> <span class="n">log_omega</span>
+        <span class="o">+</span> <span class="p">(</span><span class="n">alpha</span> <span class="o">+</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">*</span> <span class="n">log_term</span>
+        <span class="o">+</span> <span class="n">log_gamma_term</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Regularization Loss (Equation 9)</span>
+    <span class="n">l_reg</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">y_true</span> <span class="o">-</span> <span class="n">gamma</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">nu</span> <span class="o">+</span> <span class="n">alpha</span><span class="p">)</span>
+
+    <span class="c1"># Total Loss (Equation 10)</span>
+    <span class="n">loss</span> <span class="o">=</span> <span class="n">l_nill</span> <span class="o">+</span> <span class="n">lambda_reg</span> <span class="o">*</span> <span class="n">l_reg</span>
+    <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">loss</span><span class="p">)</span>
+
+
+<span class="c1"># Initialize model and optimizer</span>
+<span class="n">uncertainty_model</span> <span class="o">=</span> <span class="n">EvidentialNetwork</span><span class="p">(</span><span class="n">hidden_size</span><span class="o">=</span><span class="mi">64</span><span class="p">)</span>
+<span class="n">optimizer</span> <span class="o">=</span> <span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">(</span><span class="n">uncertainty_model</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span> <span class="n">lr</span><span class="o">=</span><span class="mf">5e-4</span><span class="p">)</span>
+<span class="n">epochs</span> <span class="o">=</span> <span class="mi">8000</span>
+
+<span class="c1"># Training loop</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Starting model training...&quot;</span><span class="p">)</span>
+<span class="n">uncertainty_model</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">epochs</span><span class="p">):</span>
+    <span class="n">optimizer</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>
+
+    <span class="n">params</span> <span class="o">=</span> <span class="n">uncertainty_model</span><span class="p">(</span><span class="n">X_train</span><span class="p">)</span>
+    <span class="n">loss</span> <span class="o">=</span> <span class="n">evidential_regression_loss</span><span class="p">(</span><span class="n">y_train</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">lambda_reg</span><span class="o">=</span><span class="mf">0.02</span><span class="p">)</span>
+
+    <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+    <span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">epoch</span> <span class="o">%</span> <span class="mi">2000</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Epoch [</span><span class="si">{</span><span class="n">epoch</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">epochs</span><span class="si">}</span><span class="s2">], Loss: </span><span class="si">{</span><span class="n">loss</span><span class="o">.</span><span class="n">item</span><span class="p">()</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Training completed!&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Starting model training...
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch [0/8000], Loss: 10.1772
+Epoch [2000/8000], Loss: -0.3591
+Epoch [4000/8000], Loss: -0.3770
+Epoch [6000/8000], Loss: -0.3796
+Training completed!
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="the-result-visualizing-uncertainty">
+<h2>6. The Result: Visualizing Uncertainty<a class="headerlink" href="#the-result-visualizing-uncertainty" title="Link to this heading">¶</a></h2>
+<p>Now that the model is trained, we can plot the uncertainty.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Model evaluation and uncertainty quantification</span>
+<span class="n">uncertainty_model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+<span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+    <span class="n">params</span> <span class="o">=</span> <span class="n">uncertainty_model</span><span class="p">(</span><span class="n">X_test</span><span class="p">)</span>
+    <span class="n">gamma</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;gamma&quot;</span><span class="p">]</span>
+    <span class="n">nu</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;nu&quot;</span><span class="p">]</span>
+    <span class="n">alpha</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;alpha&quot;</span><span class="p">]</span>
+    <span class="n">beta</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;beta&quot;</span><span class="p">]</span>
+
+    <span class="n">mean_pred</span> <span class="o">=</span> <span class="n">gamma</span>
+
+    <span class="c1"># Uncertainty calculations with numerical stability</span>
+    <span class="n">epsilon</span> <span class="o">=</span> <span class="mf">1e-6</span>
+
+    <span class="c1"># Aleatoric uncertainty (data noise)</span>
+    <span class="n">aleatoric_unc</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">beta</span> <span class="o">/</span> <span class="p">(</span><span class="n">alpha</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">epsilon</span><span class="p">))</span>
+
+    <span class="c1"># Epistemic uncertainty (model uncertainty)</span>
+    <span class="n">epistemic_unc</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">beta</span> <span class="o">/</span> <span class="p">(</span><span class="n">nu</span> <span class="o">*</span> <span class="p">(</span><span class="n">alpha</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">epsilon</span><span class="p">)))</span>
+
+<span class="c1"># Create publication-quality plot</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+
+<span class="c1"># Ground truth function</span>
+<span class="n">x_gt</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">6</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)</span>
+<span class="n">y_gt</span> <span class="o">=</span> <span class="n">x_gt</span><span class="o">**</span><span class="mi">3</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_gt</span><span class="p">,</span> <span class="n">y_gt</span><span class="p">,</span> <span class="s2">&quot;--&quot;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;black&quot;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Ground Truth&quot;</span><span class="p">)</span>
+
+<span class="c1"># Training data points</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;black&quot;</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Noisy Training Data&quot;</span><span class="p">)</span>
+
+<span class="c1"># Model predictions</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">mean_pred</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;blue&quot;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Prediction&quot;</span><span class="p">)</span>
+
+<span class="c1"># Epistemic uncertainty (model uncertainty)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">fill_between</span><span class="p">(</span>
+    <span class="n">X_test</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span>
+    <span class="p">(</span><span class="n">mean_pred</span> <span class="o">-</span> <span class="n">epistemic_unc</span><span class="p">)</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span>
+    <span class="p">(</span><span class="n">mean_pred</span> <span class="o">+</span> <span class="n">epistemic_unc</span><span class="p">)</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span>
+    <span class="n">alpha</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span>
+    <span class="n">color</span><span class="o">=</span><span class="s2">&quot;orange&quot;</span><span class="p">,</span>
+    <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Epistemic Uncertainty&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Aleatoric uncertainty (data noise)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">fill_between</span><span class="p">(</span>
+    <span class="n">X_test</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span>
+    <span class="p">(</span><span class="n">mean_pred</span> <span class="o">-</span> <span class="n">aleatoric_unc</span><span class="p">)</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span>
+    <span class="p">(</span><span class="n">mean_pred</span> <span class="o">+</span> <span class="n">aleatoric_unc</span><span class="p">)</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span>
+    <span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span>
+    <span class="n">color</span><span class="o">=</span><span class="s2">&quot;blue&quot;</span><span class="p">,</span>
+    <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Aleatoric Uncertainty&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Plot styling for professional presentation</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Evidential Regression with Regularization&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">14</span><span class="p">,</span> <span class="n">pad</span><span class="o">=</span><span class="mi">15</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;Input (x)&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;Output (y)&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">frameon</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="s2">&quot;upper left&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="o">-</span><span class="mi">150</span><span class="p">,</span> <span class="mi">150</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="o">-</span><span class="mi">6</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
+
+<span class="c1"># Clean axis styling</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">spines</span><span class="p">[</span><span class="s2">&quot;top&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">spines</span><span class="p">[</span><span class="s2">&quot;right&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<img alt="../_images/519dd6f4026febae6da09f5a0827d0548a9373270637278a1d1779255bbfa1dc.png" src="../_images/519dd6f4026febae6da09f5a0827d0548a9373270637278a1d1779255bbfa1dc.png" />
+</div>
+</div>
+</section>
+<section id="conclusion">
+<h2>Conclusion<a class="headerlink" href="#conclusion" title="Link to this heading">¶</a></h2>
+<p>The plot clearly demonstrates that our <code class="docutils literal notranslate"><span class="pre">probly</span></code>-enhanced model has successfully learned both the underlying function and its own uncertainty.</p>
+<p>The model accurately captures the $y = x^3$ relationship (blue prediction line) while properly fitting the noisy training data. More importantly, it provides crucial uncertainty quantification:</p>
+<ul class="simple">
+<li><p><strong>Within Training Distribution</strong> (-4 ≤ x ≤ 4): The <strong>epistemic uncertainty (orange)</strong> remains low, indicating high model confidence in regions where it has seen training data.</p></li>
+<li><p><strong>Outside Training Distribution</strong> (x &lt; -4 and x &gt; 4): The <strong>epistemic uncertainty</strong> increases significantly, correctly signaling: “I have limited knowledge here and my predictions are uncertain.”</p></li>
+<li><p><strong>Consistent Data Noise</strong>: The <strong>aleatoric uncertainty (blue)</strong> remains relatively constant, properly capturing the inherent noise in the data that cannot be reduced.</p></li>
+</ul>
+<p>The key achievement is that <code class="docutils literal notranslate"><span class="pre">probly</span></code> enabled this sophisticated uncertainty-aware modeling with minimal code changes - transforming a standard regression model into an evidential one through a single transformation: <code class="docutils literal notranslate"><span class="pre">evidential_regression(model)</span></code>. This demonstrates how <code class="docutils literal notranslate"><span class="pre">probly</span></code> makes advanced uncertainty quantification accessible for practical deep learning applications.</p>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          
+          
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2025, probly team
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Tutorial: Evidential Regression with Probly</a><ul>
+<li><a class="reference internal" href="#what-is-evidential-regression">1. What is Evidential Regression?</a></li>
+<li><a class="reference internal" href="#why-use-it-quantifying-uncertainty">2. Why Use it? Quantifying Uncertainty</a></li>
+<li><a class="reference internal" href="#how-it-s-used-making-a-base-model">3. How It’s Used: Making a Base Model</a></li>
+<li><a class="reference internal" href="#the-probly-solution">4. The <code class="docutils literal notranslate"><span class="pre">probly</span></code> Solution</a></li>
+<li><a class="reference internal" href="#what-happened">What happened?</a></li>
+<li><a class="reference internal" href="#training-the-model">5. Training the Model</a></li>
+<li><a class="reference internal" href="#the-result-visualizing-uncertainty">6. The Result: Visualizing Uncertainty</a></li>
+<li><a class="reference internal" href="#conclusion">Conclusion</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../_static/documentation_options.js?v=4621528c"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/scripts/furo.js?v=5fa4622c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=ccdb6887"></script>
+    </body>
+</html>
