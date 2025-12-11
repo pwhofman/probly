@@ -243,8 +243,7 @@ def upper_entropy(probs: np.ndarray, base: float = 2, n_jobs: int | None = None)
     Args:
         probs: Probability distributions of shape (n_instances, n_samples, n_classes).
         base: Base of the logarithm. Defaults to 2.
-        n_jobs: Number of jobs for joblib.Parallel. Defaults to None. If None, no parallelization is used.
-                If set to -1, all available cores are used.
+        n_jobs: Number of jobs for joblib.Parallel. Defaults to None. If -1, all available cores are used.
 
     Returns:
         ue: Upper entropy values of shape (n_instances,).
@@ -282,8 +281,7 @@ def lower_entropy(probs: np.ndarray, base: float = 2, n_jobs: int | None = None)
     Args:
         probs: Probability distributions of shape (n_instances, n_samples, n_classes).
         base: Base of the logarithm. Defaults to 2.
-        n_jobs: Number of jobs for joblib.Parallel. Defaults to None. If None, no parallelization is used.
-                If set to -1, all available cores are used.
+        n_jobs: Number of jobs for joblib.Parallel. Defaults to None. If -1, all available cores are used.
 
     Returns:
         le: Lower entropy values of shape (n_instances,).
@@ -324,8 +322,7 @@ def upper_entropy_convex_hull(probs: np.ndarray, base: float = 2, n_jobs: int | 
     Args:
         probs: Probability distributions of shape (n_instances, n_samples, n_classes).
         base: Base of the logarithm. Defaults to 2.
-        n_jobs: Number of jobs for joblib.Parallel. Defaults to None. If None, no parallelization is used.
-                If set to -1, all available cores are used.
+        n_jobs: Number of jobs for joblib.Parallel. Defaults to None. If -1, all available cores are used.
 
     Returns:
         ue: Upper entropy values of shape (n_instances,).
@@ -363,8 +360,7 @@ def lower_entropy_convex_hull(probs: np.ndarray, base: float = 2, n_jobs: int | 
     Args:
         probs: Probability distributions of shape (n_instances, n_samples, n_classes).
         base: Base of the logarithm. Defaults to 2.
-        n_jobs: Number of jobs for joblib.Parallel. Defaults to None. If None, no parallelization is used.
-                If set to -1, all available cores are used.
+        n_jobs: Number of jobs for joblib.Parallel. Defaults to None. If -1, all available cores are used.
 
     Returns:
         le: Lower entropy values of shape (n_instances,).

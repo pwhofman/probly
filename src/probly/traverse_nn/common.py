@@ -39,12 +39,11 @@ def compose(
 
     Args:
         traverser: A custom traverser function to be composed with the NN traverser.
-        nn_traverser: The neural network traverser to use. Defaults to the module's
-            nn_traverser.
+        nn_traverser: The neural network traverser to use. Defaults to the module's nn_traverser.
         name: Optional name for the composed traverser.
 
     Returns:
-        A composed sequential traverser that applies NN traversal, custom traversal,
-        and layer counting in sequence.
+        A composed sequential traverser that applies NN traversal, custom traversal, and layer counting in sequence.
+
     """
     return t.sequential(nn_traverser, traverser, layer_count_traverser, name=name)

@@ -43,13 +43,11 @@ def coverage(preds: np.ndarray, targets: np.ndarray) -> float:
     """Compute the coverage of set-valued predictions described in :cite:`angelopoulosGentleIntroduction2021`.
 
     Args:
-        preds: The predictions as an array of shape `(n_instances, n_classes)` or
-               `(n_instances, n_samples, n_classes)`
-        targets: The targets as an array of shape `(n_instances,)` or
-                 `(n_instances, n_classes)`
+        preds: Predictions of shape (n_instances, n_classes) or (n_instances, n_samples, n_classes).
+        targets: Targets of shape (n_instances,) or (n_instances, n_classes).
 
     Returns:
-        cov: The coverage of the set-valued predictions
+        cov: The coverage of the set-valued predictions.
 
     """
     if preds.ndim == 2:
@@ -73,11 +71,10 @@ def efficiency(preds: np.ndarray) -> float:
     probabilities.
 
     Args:
-        preds: The predictions as an array of shape `(n_instances, n_classes)` or
-               of shape `(n_instances, n_samples, n_classes)`.
+        preds: Predictions of shape (n_instances, n_classes) or (n_instances, n_samples, n_classes).
 
     Returns:
-               eff: The efficiency of the set-valued predictions.
+        eff: The efficiency of the set-valued predictions.
 
     """
     if preds.ndim == 2:
@@ -128,8 +125,7 @@ def covered_efficiency(preds: np.ndarray, targets: np.ndarray) -> float:
     probabilities.
 
     Args:
-        preds: The predictions as an array of shape `(n_instances, n_classes)` or
-               of shape `(n_instances, n_samples, n_classes)`.
+        preds: Predictions of shape (n_instances, n_classes) or (n_instances, n_samples, n_classes).
         targets: The true labels as an array of shape (n_instances, n_classes).
 
     Returns:
@@ -155,8 +151,7 @@ def log_loss(probs: np.ndarray, targets: np.ndarray) -> float | np.ndarray:
 
     Args:
         probs: The predicted probabilities as an array of shape (n_instances, n_classes).
-        targets: The true labels as an array of shape (n_instances,). If None, the log loss is
-                 computed for all classes. This can be used for uncertainty quantification.
+        targets: True labels of shape (n_instances,). If None, loss is computed for all classes.
 
     Returns:
         loss: The log loss.
@@ -177,8 +172,7 @@ def brier_score(probs: np.ndarray, targets: np.ndarray) -> float | np.ndarray:
 
     Args:
         probs: The predicted probabilities as an array of shape (n_instances, n_classes).
-        targets: The true labels as an array of shape (n_instances,). If None, the Brier score is
-                 computed for all classes. This can be used for uncertainty quantification.
+        targets: True labels of shape (n_instances,). If None, score is computed for all classes.
 
     Returns:
         loss: The Brier score.
@@ -197,8 +191,7 @@ def zero_one_loss(probs: np.ndarray, targets: np.ndarray) -> float | np.ndarray:
 
     Args:
         probs: The predicted probabilities as an array of shape (n_instances, n_classes).
-        targets: The true labels as an array of shape (n_instances,). If None, the zero-one loss is
-                 computed for all classes. This can be used for uncertainty quantification.
+        targets: True labels of shape (n_instances,). If None, loss is computed for all classes.
 
     Returns:
         loss: The zero-one loss.
@@ -219,8 +212,7 @@ def spherical_score(probs: np.ndarray, targets: np.ndarray) -> float | np.ndarra
 
     Args:
         probs: The predicted probabilities as an array of shape (n_instances, n_classes).
-        targets: The true labels as an array of shape (n_instances,). If None, the spherical score is
-                 computed for all classes. This can be used for uncertainty quantification.
+        targets: True labels of shape (n_instances,). If None, score is computed for all classes.
 
     Returns:
         loss: The spherical score.
