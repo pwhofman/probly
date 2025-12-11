@@ -19,6 +19,7 @@ def expected_calibration_error(probs: np.ndarray, labels: np.ndarray, num_bins: 
 
     Returns:
         ece: The expected calibration error.
+
     """
     confs = np.max(probs, axis=1)
     preds = np.argmax(probs, axis=1)
@@ -43,8 +44,9 @@ def coverage(preds: np.ndarray, targets: np.ndarray) -> float:
 
     Args:
         preds: The predictions as an array of shape `(n_instances, n_classes)` or
-            `(n_instances, n_samples, n_classes)`
-        targets: The targets as an array of shape `(n_instances,)` or `(n_instances, n_classes)`
+               `(n_instances, n_samples, n_classes)`
+        targets: The targets as an array of shape `(n_instances,)` or
+                 `(n_instances, n_classes)`
 
     Returns:
         cov: The coverage of the set-valued predictions
@@ -72,10 +74,10 @@ def efficiency(preds: np.ndarray) -> float:
 
     Args:
         preds: The predictions as an array of shape `(n_instances, n_classes)` or
-            of shape `(n_instances, n_samples, n_classes)`.
+               of shape `(n_instances, n_samples, n_classes)`.
 
     Returns:
-        eff: The efficiency of the set-valued predictions.
+               eff: The efficiency of the set-valued predictions.
 
     """
     if preds.ndim == 2:
@@ -103,6 +105,7 @@ def coverage_convex_hull(probs: np.ndarray, targets: np.ndarray) -> float:
 
     Returns:
         cov: The coverage.
+
     """
     covered = 0
     n_extrema = probs.shape[1]
@@ -126,7 +129,7 @@ def covered_efficiency(preds: np.ndarray, targets: np.ndarray) -> float:
 
     Args:
         preds: The predictions as an array of shape `(n_instances, n_classes)` or
-            of shape `(n_instances, n_samples, n_classes)`.
+               of shape `(n_instances, n_samples, n_classes)`.
         targets: The true labels as an array of shape (n_instances, n_classes).
 
     Returns:
@@ -153,10 +156,11 @@ def log_loss(probs: np.ndarray, targets: np.ndarray) -> float | np.ndarray:
     Args:
         probs: The predicted probabilities as an array of shape (n_instances, n_classes).
         targets: The true labels as an array of shape (n_instances,). If None, the log loss is
-            computed for all classes. This can be used for uncertainty quantification.
+                 computed for all classes. This can be used for uncertainty quantification.
 
     Returns:
         loss: The log loss.
+
     """
     if targets is None:
         loss = -np.log(probs)
@@ -174,10 +178,11 @@ def brier_score(probs: np.ndarray, targets: np.ndarray) -> float | np.ndarray:
     Args:
         probs: The predicted probabilities as an array of shape (n_instances, n_classes).
         targets: The true labels as an array of shape (n_instances,). If None, the Brier score is
-            computed for all classes. This can be used for uncertainty quantification.
+                 computed for all classes. This can be used for uncertainty quantification.
 
     Returns:
         loss: The Brier score.
+
     """
     if targets is None:
         loss = 1 - 2 * probs + np.sum(probs**2, -1)[..., None]
@@ -193,10 +198,11 @@ def zero_one_loss(probs: np.ndarray, targets: np.ndarray) -> float | np.ndarray:
     Args:
         probs: The predicted probabilities as an array of shape (n_instances, n_classes).
         targets: The true labels as an array of shape (n_instances,). If None, the zero-one loss is
-            computed for all classes. This can be used for uncertainty quantification.
+                 computed for all classes. This can be used for uncertainty quantification.
 
     Returns:
         loss: The zero-one loss.
+
     """
     if targets is None:
         loss = probs != np.max(probs, axis=-1)[..., None]
@@ -214,10 +220,11 @@ def spherical_score(probs: np.ndarray, targets: np.ndarray) -> float | np.ndarra
     Args:
         probs: The predicted probabilities as an array of shape (n_instances, n_classes).
         targets: The true labels as an array of shape (n_instances,). If None, the spherical score is
-            computed for all classes. This can be used for uncertainty quantification.
+                 computed for all classes. This can be used for uncertainty quantification.
 
     Returns:
         loss: The spherical score.
+
     """
     if targets is None:
         loss = 1 - probs / np.sqrt(np.sum(probs**2, -1))[..., None]
