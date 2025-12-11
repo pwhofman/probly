@@ -121,7 +121,7 @@ overconfidence.
 
 An uncertainty representation describes the form in which a machine-learning model expresses not only its prediction but also its confidence in that prediction. Instead of returning a single label such as “cat,” an uncertainty-aware model produces additional information that reflects how sure or unsure it is about its output.
 
-Such representations can take many forms, including probability distributions, repeated stochastic samples, raw logits, or evidence values for higher-level distributions. In practice, they may appear as sets of sampled outputs, vectors of class probabilities, parameters of a distribution, or structured intervals. All of these formats serve the same purpose: they quantify how uncertain the model is about its own prediction. :citep:`sensoy2018evidential`
+Such representations can take many forms, including probability distributions, repeated stochastic samples, raw logits, or evidence values for higher-level distributions. In practice, they may appear as sets of sampled outputs, vectors of class probabilities, parameters of a distribution, or structured intervals. All of these formats serve the same purpose: they quantify how uncertain the model is about its own prediction. :cite:`sensoy2018evidential`
 
 2.2 Common Representation Types
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -136,8 +136,8 @@ Ensemble-based representations rely on several independently trained models whos
 
 **Evidential representations**
 
-Evidential representations work by predicting the parameters of a higher-order distribution rather than explicit samples. This allows the model to express both a belief and uncertainty about that belief through a single forward pass.  
-This family of methods is closely related to evidential deep learning as introduced by Sensoy et al. :citep:`sensoy2018evidential`.
+Evidential representations work by predicting the parameters of a higher-order distribution rather than explicit samples. This allows the model to express both a belief and uncertainty about that belief through a single forward pass.
+This family of methods is closely related to evidential deep learning as introduced by Sensoy et al. :cite:`sensoy2018evidential`.
 
 **Bayesian sampling representations**
 
