@@ -1,0 +1,757 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" />
+
+    <!-- Generated with Sphinx 8.2.3 and Furo 2024.08.06 -->
+        <title>An Introduction To Dropout As A Bayesian Aproximation With Probly - probly 0.3.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=354aac6f" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=302659d7" />
+    <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f8f8f8;
+  --color-code-foreground: black;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #272822;
+  --color-code-foreground: #f8f8f2;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #272822;
+  --color-code-foreground: #f8f8f2;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">probly 0.3.1 documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><div class="sidebar-scroll"><a class="sidebar-brand" href="../index.html">
+  
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo only-light" src="../_static/logo/logo_light.png" alt="Light Logo"/>
+    <img class="sidebar-logo only-dark" src="../_static/logo/logo_dark.png" alt="Dark Logo"/>
+  </div>
+  
+  
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Content</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../methods.html">Implemented methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../references.html">References</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tutorials</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="fashionmnist_ood_ensemble.html">Out-of-Distribution Detection with an Ensemble</a></li>
+<li class="toctree-l1"><a class="reference internal" href="label_relaxation_calibration.html">Calibration with Label Relaxation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sklearn_selective_prediction.html">Using probly with scikit-learn</a></li>
+<li class="toctree-l1"><a class="reference internal" href="temperature_scaling_calibration.html">Calibration using Temperature Scaling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="train_bnn_classification.html">Bayesian Neural Networks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="train_evidential_classification.html">Evidential Model for Classification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="train_evidential_regression.html">Evidential Regression Model</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../api.html">API Reference</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of API Reference</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../api/probly.datasets.html">probly.datasets</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of probly.datasets</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api/probly.datasets.torch.html">probly.datasets.torch</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../api/probly.evaluation.html">probly.evaluation</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of probly.evaluation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api/probly.evaluation.metrics.html">probly.evaluation.metrics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/probly.evaluation.tasks.html">probly.evaluation.tasks</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../api/probly.layers.html">probly.layers</a><input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><div class="visually-hidden">Toggle navigation of probly.layers</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api/probly.layers.flax.html">probly.layers.flax</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/probly.layers.torch.html">probly.layers.torch</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../api/probly.plot.html">probly.plot</a><input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><div class="visually-hidden">Toggle navigation of probly.plot</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api/probly.plot.credal.html">probly.plot.credal</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../api/probly.predictor.html">probly.predictor</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../api/probly.quantification.html">probly.quantification</a><input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><div class="visually-hidden">Toggle navigation of probly.quantification</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api/probly.quantification.classification.html">probly.quantification.classification</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/probly.quantification.regression.html">probly.quantification.regression</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../api/probly.representation.html">probly.representation</a><input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle navigation of probly.representation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/probly.representation.credal_set.html">probly.representation.credal_set</a><input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of probly.representation.credal_set</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.representation.credal_set.credal_set.html">probly.representation.credal_set.credal_set</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.representation.credal_set.jax.html">probly.representation.credal_set.jax</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.representation.credal_set.torch.html">probly.representation.credal_set.torch</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../api/probly.representation.distribution.html">probly.representation.distribution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/probly.representation.representer.html">probly.representation.representer</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/probly.representation.sampling.html">probly.representation.sampling</a><input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><div class="visually-hidden">Toggle navigation of probly.representation.sampling</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.representation.sampling.flax_sampler.html">probly.representation.sampling.flax_sampler</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.representation.sampling.jax_sample.html">probly.representation.sampling.jax_sample</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.representation.sampling.sample.html">probly.representation.sampling.sample</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.representation.sampling.sampler.html">probly.representation.sampling.sampler</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.representation.sampling.torch_sample.html">probly.representation.sampling.torch_sample</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.representation.sampling.torch_sampler.html">probly.representation.sampling.torch_sampler</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../api/probly.train.html">probly.train</a><input class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" role="switch" type="checkbox"/><label for="toctree-checkbox-10"><div class="visually-hidden">Toggle navigation of probly.train</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/probly.train.bayesian.html">probly.train.bayesian</a><input class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" role="switch" type="checkbox"/><label for="toctree-checkbox-11"><div class="visually-hidden">Toggle navigation of probly.train.bayesian</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.train.bayesian.torch.html">probly.train.bayesian.torch</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/probly.train.calibration.html">probly.train.calibration</a><input class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" role="switch" type="checkbox"/><label for="toctree-checkbox-12"><div class="visually-hidden">Toggle navigation of probly.train.calibration</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.train.calibration.torch.html">probly.train.calibration.torch</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/probly.train.evidential.html">probly.train.evidential</a><input class="toctree-checkbox" id="toctree-checkbox-13" name="toctree-checkbox-13" role="switch" type="checkbox"/><label for="toctree-checkbox-13"><div class="visually-hidden">Toggle navigation of probly.train.evidential</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.train.evidential.torch.html">probly.train.evidential.torch</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../api/probly.transformation.html">probly.transformation</a><input class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" role="switch" type="checkbox"/><label for="toctree-checkbox-14"><div class="visually-hidden">Toggle navigation of probly.transformation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api/probly.transformation.bayesian.html">probly.transformation.bayesian</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/probly.transformation.dropconnect.html">probly.transformation.dropconnect</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/probly.transformation.dropout.html">probly.transformation.dropout</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/probly.transformation.ensemble.html">probly.transformation.ensemble</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/probly.transformation.evidential.html">probly.transformation.evidential</a><input class="toctree-checkbox" id="toctree-checkbox-15" name="toctree-checkbox-15" role="switch" type="checkbox"/><label for="toctree-checkbox-15"><div class="visually-hidden">Toggle navigation of probly.transformation.evidential</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../api/probly.transformation.evidential.classification.html">probly.transformation.evidential.classification</a><input class="toctree-checkbox" id="toctree-checkbox-16" name="toctree-checkbox-16" role="switch" type="checkbox"/><label for="toctree-checkbox-16"><div class="visually-hidden">Toggle navigation of probly.transformation.evidential.classification</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.transformation.evidential.classification.common.html">probly.transformation.evidential.classification.common</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.transformation.evidential.classification.torch.html">probly.transformation.evidential.classification.torch</a></li>
+</ul>
+</li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../api/probly.transformation.evidential.regression.html">probly.transformation.evidential.regression</a><input class="toctree-checkbox" id="toctree-checkbox-17" name="toctree-checkbox-17" role="switch" type="checkbox"/><label for="toctree-checkbox-17"><div class="visually-hidden">Toggle navigation of probly.transformation.evidential.regression</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.transformation.evidential.regression.common.html">probly.transformation.evidential.regression.common</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.transformation.evidential.regression.torch.html">probly.transformation.evidential.regression.torch</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../api/probly.traverse_nn.html">probly.traverse_nn</a><input class="toctree-checkbox" id="toctree-checkbox-18" name="toctree-checkbox-18" role="switch" type="checkbox"/><label for="toctree-checkbox-18"><div class="visually-hidden">Toggle navigation of probly.traverse_nn</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api/probly.traverse_nn.common.html">probly.traverse_nn.common</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/probly.traverse_nn.flax.html">probly.traverse_nn.flax</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/probly.traverse_nn.torch.html">probly.traverse_nn.torch</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../api/probly.utils.html">probly.utils</a><input class="toctree-checkbox" id="toctree-checkbox-19" name="toctree-checkbox-19" role="switch" type="checkbox"/><label for="toctree-checkbox-19"><div class="visually-hidden">Toggle navigation of probly.utils</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api/probly.utils.errors.html">probly.utils.errors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/probly.utils.probabilities.html">probly.utils.probabilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/probly.utils.sets.html">probly.utils.sets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/probly.utils.torch.html">probly.utils.torch</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributing to probly 🏔️</a></li>
+</ul>
+
+</div>
+</div><div style="text-align: center; margin-top: 1rem; margin-bottom: 1rem;">
+  <a href="https://github.com/pwhofman/probly" target="_blank" rel="noopener noreferrer" title="GitHub Repository">
+    <img src="../_static/github-mark.svg" alt="GitHub Logo" width="28" height="28" style="display: inline-block;">
+  </a>
+</div>
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          
+
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="an-introduction-to-dropout-as-a-bayesian-aproximation-with-probly">
+<h1>An Introduction To Dropout As A Bayesian Aproximation With Probly<a class="headerlink" href="#an-introduction-to-dropout-as-a-bayesian-aproximation-with-probly" title="Link to this heading">¶</a></h1>
+<p>This Notebook aims to be a short introduction into Dropout and its use for uncertainty quantification in neural networks.</p>
+<section id="motivation-and-intuition">
+<h2>0. Motivation and Intuition<a class="headerlink" href="#motivation-and-intuition" title="Link to this heading">¶</a></h2>
+<p>When training a neural network, we often face a problem called “Overfitting”. This is where the model becomes so good at memorizing the training data, that it performs poorly on new data. This happens because the network learns to rely too much on specific neurons or patterns that don’t generalize.
+This is where the dropout operation comes in handy.</p>
+</section>
+<section id="what-is-dropout">
+<h2>1. What is Dropout?<a class="headerlink" href="#what-is-dropout" title="Link to this heading">¶</a></h2>
+<p>The idea is to insert layers into a model, that have a certain chance to “drop out” or disable neurons in that layer, thus creating a slightly different output every time the network makes a prediction.
+For our purposes we can use dropout, to evaluate how certain a model is about its inference.</p>
+<p><img alt="Dropout Image" src="https://www.baeldung.com/wp-content/uploads/sites/4/2020/05/2-1-2048x745-1.jpg" /></p>
+<p>As shown above, some of the neurons in the dropout layer have been deactivated, therefore we have a sub-model that will give us a different output than the original model for the same input.<br />
+Which neurons get deactivated will be decided by chance, every time we generate an output. That chance is called the dropout-rate and can be configured manually.</p>
+</section>
+<section id="dropout-and-model-confidence">
+<h2>2. Dropout and Model Confidence<a class="headerlink" href="#dropout-and-model-confidence" title="Link to this heading">¶</a></h2>
+<p>Usually dropout would not be used in inference but only in the training process, if you want to deal with overfitting. But we want to keep it active in the inference process, to calculate uncertainty.</p>
+<p>If we give the model the same input for several forward passes, we can look at how much the outputs of the model differ in certain points and with that information, we can make assumptions about the epistemic uncertainty of the model in that specific point. The less variance in the outputs for the same input, the less uncertainty and vice versa. This approach is often referred to as Monte Carlo Dropout.</p>
+<p>This Monte Carlo Dropout is an approximation to the behavior of a bayesian neural network, with the advantage of being significantly more efficient.</p>
+</section>
+<section id="how-can-probly-help">
+<h2>3. How can Probly help?<a class="headerlink" href="#how-can-probly-help" title="Link to this heading">¶</a></h2>
+<p>The dropout transformation in Probly takes a standard model and transforms it into a dropout-enabled model, that can be used to quantify uncertainty. This is achieved by traversing every layer in the regular model and prepending a dropout layer for every linear layer, except for the model’s first layer. This dropout-enabled model can then be extended to a Monte Carlo Dropout as explained above.</p>
+</section>
+<section id="implementation-of-dropout-with-probly">
+<h2>4. Implementation of Dropout with Probly<a class="headerlink" href="#implementation-of-dropout-with-probly" title="Link to this heading">¶</a></h2>
+<section id="using-probly-s-dropout-function-to-transform-a-model">
+<h3>4.1 Using Probly’s <code class="docutils literal notranslate"><span class="pre">dropout</span></code> function to transform a model<a class="headerlink" href="#using-probly-s-dropout-function-to-transform-a-model" title="Link to this heading">¶</a></h3>
+<p>Let’s implement a simple linear model in PyTorch!</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">nn</span>
+
+<span class="n">simple_model</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
+        <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+        <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+        <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+    <span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>Here we defined a simple model in torch that has three linear layers.</p>
+<p>At the moment we can’t make any statements about its epistemic uncertainty, but we can use dropout layers to enable us to do so.</p>
+<p>With Probly inserting the dropout layers becomes very easy,
+all we have to do is import the transformation function <code class="docutils literal notranslate"><span class="pre">dropout</span></code> and apply it to the model.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">probly.transformation</span><span class="w"> </span><span class="kn">import</span> <span class="n">dropout</span>
+
+<span class="n">dropout_model</span> <span class="o">=</span> <span class="n">dropout</span><span class="p">(</span><span class="n">simple_model</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>Now our simple model has been converted to a fully functional dropout model.</p>
+<p>We would expect that before every linear layer except for the first one a dropout layer has been added to the model, without changing anything else.</p>
+<p>We can subsequently print out the sturcture of our new Dropout-model to verify this:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">dropout_model</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Sequential(
+  (0): Linear(in_features=2, out_features=2, bias=True)
+  (1_0): Dropout(p=0.25, inplace=False)
+  (1_1): Linear(in_features=2, out_features=2, bias=True)
+  (2_0): Dropout(p=0.25, inplace=False)
+  (2_1): Linear(in_features=2, out_features=2, bias=True)
+)
+</pre></div>
+</div>
+</div>
+</div>
+<p>As you can see, probly took care of inserting the dropout layers with one simple function call.</p>
+</section>
+<section id="specifying-the-dropout-rate">
+<h3>4.2 Specifying the Dropout-rate<a class="headerlink" href="#specifying-the-dropout-rate" title="Link to this heading">¶</a></h3>
+<p>If we don’t specify a Dropout-rate when transforming our model, probly will give every dropout layer a standard probability of 0.25.</p>
+<p>To specify the Dropout-rate we can pass it as the second argument to the <code class="docutils literal notranslate"><span class="pre">dropout</span></code> function.</p>
+<p>Now let’s transform our model again with a custom probability.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">custom_dropout_rate</span> <span class="o">=</span> <span class="mf">0.5</span>
+<span class="n">dropout_model</span> <span class="o">=</span> <span class="n">dropout</span><span class="p">(</span><span class="n">simple_model</span><span class="p">,</span> <span class="n">custom_dropout_rate</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">dropout_model</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Sequential(
+  (0): Linear(in_features=2, out_features=2, bias=True)
+  (1_0): Dropout(p=0.5, inplace=False)
+  (1_1): Linear(in_features=2, out_features=2, bias=True)
+  (2_0): Dropout(p=0.5, inplace=False)
+  (2_1): Linear(in_features=2, out_features=2, bias=True)
+)
+</pre></div>
+</div>
+</div>
+</div>
+<p>As expected every dropout layer has the specified dropout-chance of 0.5.</p>
+</section>
+<section id="other-models">
+<h3>4.3 Other models…<a class="headerlink" href="#other-models" title="Link to this heading">¶</a></h3>
+<p>Naturally this also works for every other model that a dropout-transformation makes sense for.</p>
+<p>Let’s try it with a convolutional model next.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">conv_model</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
+        <span class="n">nn</span><span class="o">.</span><span class="n">Conv2d</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
+        <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">(),</span>
+        <span class="n">nn</span><span class="o">.</span><span class="n">Flatten</span><span class="p">(),</span>
+        <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+    <span class="p">)</span>
+
+<span class="n">dropout_conv_model</span> <span class="o">=</span> <span class="n">dropout</span><span class="p">(</span><span class="n">conv_model</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">dropout_conv_model</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Sequential(
+  (0): Conv2d(3, 5, kernel_size=(5, 5), stride=(1, 1))
+  (1): ReLU()
+  (2): Flatten(start_dim=1, end_dim=-1)
+  (3_0): Dropout(p=0.2, inplace=False)
+  (3_1): Linear(in_features=5, out_features=2, bias=True)
+)
+</pre></div>
+</div>
+</div>
+</div>
+<p>Like with our simple model, probly inserted the dropout layer into our convolutional model without us even needing to use a different function.</p>
+<p>As expected, the Dropout-layer is only added before the single linear layer.</p>
+</section>
+<section id="and-other-frameworks">
+<h3>4.4 And other Frameworks?<a class="headerlink" href="#and-other-frameworks" title="Link to this heading">¶</a></h3>
+<p>That’s cool and all, but what if we wanted to use a framework other than torch?</p>
+<p>No problem! Probly aims to be unbound by any specific framework or library, so lets see if we can transform some models implemented in flax.</p>
+<p>So lets implement a small linear model in flax…</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">flax</span><span class="w"> </span><span class="kn">import</span> <span class="n">nnx</span>
+
+<span class="n">flax_rngs</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="n">simple_model_flax</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
+        <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">flax_rngs</span><span class="p">),</span>
+        <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">flax_rngs</span><span class="p">),</span>
+        <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">flax_rngs</span><span class="p">),</span>
+    <span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>As before with torch, we defined a simple linear model with three linear layers in flax.<br />
+Now we can try transforming it with probly’s transformation function <code class="docutils literal notranslate"><span class="pre">dropout</span></code>…</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">dropout_model_flax</span> <span class="o">=</span> <span class="n">dropout</span><span class="p">(</span><span class="n">simple_model_flax</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>To confirm everything went as expected we create a short function that prints out the layers in a flax model without all the information that is unimportant to us right now.<br />
+It simply goes through the structure of the network and prints out what kind of layers are contained in it:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">print_layers</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">module</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">attr</span><span class="p">,</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot; &quot;</span> <span class="o">*</span> <span class="n">indent</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">attr</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">print_layers</span><span class="p">(</span><span class="n">attr</span><span class="p">,</span> <span class="n">indent</span> <span class="o">+</span> <span class="mi">2</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>And now we can look at the result of our transformation:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">print_layers</span><span class="p">(</span><span class="n">dropout_model_flax</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>layers: List
+  0: Linear
+  1: Dropout
+  2: Linear
+  3: Dropout
+  4: Linear
+</pre></div>
+</div>
+</div>
+</div>
+<p>Now let us try it one more time with a convolutional model implemented in flax.
+For that we just define a small convolutional model like we did in torch before:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">conv_model_flax</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
+        <span class="n">nnx</span><span class="o">.</span><span class="n">Conv</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span> <span class="n">rngs</span><span class="o">=</span><span class="n">flax_rngs</span><span class="p">),</span>
+        <span class="n">nnx</span><span class="o">.</span><span class="n">relu</span><span class="p">,</span>
+        <span class="n">nnx</span><span class="o">.</span><span class="n">flatten</span><span class="p">,</span>
+        <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">flax_rngs</span><span class="p">),</span>
+    <span class="p">)</span>
+
+<span class="n">dropout_conv_model_flax</span> <span class="o">=</span> <span class="n">dropout</span><span class="p">(</span><span class="n">conv_model_flax</span><span class="p">)</span>
+<span class="n">print_layers</span><span class="p">(</span><span class="n">dropout_conv_model_flax</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>layers: List
+  0: Conv
+  3: Dropout
+  4: Linear
+</pre></div>
+</div>
+</div>
+</div>
+<p>As anticipated, Probly can work with different kinds of models built with different frameworks without the need for seperate functions to handle their differences.
+Likewise we can specify the dropout-rate by passing it as the second argument.</p>
+</section>
+<section id="a-quick-look-at-some-output">
+<h3>4.5 A quick look at some output<a class="headerlink" href="#a-quick-look-at-some-output" title="Link to this heading">¶</a></h3>
+<p>At last we want to look at some output generated by a model implementing dropout as a bayesian aproximation for the quantification of uncertainty.</p>
+<p>Note that these examples are made with untrained models and are only intended to demonstrate what we could do with those transformed models.</p>
+<p>For our example we will implement a small model with torch and transform it:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">demo_model</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
+    <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+    <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">(),</span>
+    <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="p">)</span>
+
+<span class="n">demo_dropout_model</span> <span class="o">=</span> <span class="n">dropout</span><span class="p">(</span><span class="n">demo_model</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">demo_dropout_model</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Sequential(
+  (0): Linear(in_features=2, out_features=2, bias=True)
+  (1): ReLU()
+  (2_0): Dropout(p=0.3, inplace=False)
+  (2_1): Linear(in_features=2, out_features=1, bias=True)
+)
+</pre></div>
+</div>
+</div>
+</div>
+<p>Now that we have transformed our model we can proceed with:</p>
+<ol class="arabic simple">
+<li><p>Generating some random input for the model</p></li>
+<li><p>Setting the model to train since we want to keep the dropout layer active</p></li>
+<li><p>Analysing the output</p></li>
+</ol>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">randn</span><span class="p">,</span> <span class="n">no_grad</span>
+
+<span class="c1"># generates a random input for the model</span>
+<span class="nb">input</span> <span class="o">=</span> <span class="n">randn</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="n">output</span> <span class="o">=</span> <span class="p">[]</span>
+
+<span class="n">demo_dropout_model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+<span class="c1"># Set only dropout layers to train to keep them active</span>
+<span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">demo_dropout_model</span><span class="o">.</span><span class="n">modules</span><span class="p">():</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">nn</span><span class="o">.</span><span class="n">Dropout</span><span class="p">):</span>
+        <span class="n">m</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
+
+
+<span class="c1"># pass the input to the model for a few times</span>
+<span class="k">with</span> <span class="n">no_grad</span><span class="p">():</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">8</span><span class="p">):</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">demo_dropout_model</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span>
+        <span class="n">output</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">item</span><span class="p">())</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>[0.312858909368515, 0.27893561124801636, 0.27893561124801636, 0.312858909368515, 0.27893561124801636, 0.27893561124801636, 0.27893561124801636, 0.27893561124801636]
+</pre></div>
+</div>
+</div>
+</div>
+<p>We can see that the output is not always the same if we run this multiple times.<br />
+Now we will calculate the output variance with numpy:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="n">variance</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">var</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The output has a variance of </span><span class="si">{</span><span class="n">variance</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>The output has a variance of 0.0002157731541322927
+</pre></div>
+</div>
+</div>
+</div>
+<p>This variance is what gives us information about input uncertainty in that input point.</p>
+<p>You might ask why the variance in this example is so low. That is caused by the fact that we did not train the model in any shape or form and it is just “uniformly bad” at predicting anything.</p>
+<p>A quick training would probably suffice to generate a bigger variance.</p>
+<section id="this-concludes-the-introduction-to-probly-s-dropout-function">
+<h4>This concludes the introduction to probly’s Dropout function.<a class="headerlink" href="#this-concludes-the-introduction-to-probly-s-dropout-function" title="Link to this heading">¶</a></h4>
+</section>
+</section>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          
+          
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2025, probly team
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">An Introduction To Dropout As A Bayesian Aproximation With Probly</a><ul>
+<li><a class="reference internal" href="#motivation-and-intuition">0. Motivation and Intuition</a></li>
+<li><a class="reference internal" href="#what-is-dropout">1. What is Dropout?</a></li>
+<li><a class="reference internal" href="#dropout-and-model-confidence">2. Dropout and Model Confidence</a></li>
+<li><a class="reference internal" href="#how-can-probly-help">3. How can Probly help?</a></li>
+<li><a class="reference internal" href="#implementation-of-dropout-with-probly">4. Implementation of Dropout with Probly</a><ul>
+<li><a class="reference internal" href="#using-probly-s-dropout-function-to-transform-a-model">4.1 Using Probly’s <code class="docutils literal notranslate"><span class="pre">dropout</span></code> function to transform a model</a></li>
+<li><a class="reference internal" href="#specifying-the-dropout-rate">4.2 Specifying the Dropout-rate</a></li>
+<li><a class="reference internal" href="#other-models">4.3 Other models…</a></li>
+<li><a class="reference internal" href="#and-other-frameworks">4.4 And other Frameworks?</a></li>
+<li><a class="reference internal" href="#a-quick-look-at-some-output">4.5 A quick look at some output</a><ul>
+<li><a class="reference internal" href="#this-concludes-the-introduction-to-probly-s-dropout-function">This concludes the introduction to probly’s Dropout function.</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../_static/documentation_options.js?v=4621528c"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/scripts/furo.js?v=5fa4622c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=ccdb6887"></script>
+    </body>
+</html>
