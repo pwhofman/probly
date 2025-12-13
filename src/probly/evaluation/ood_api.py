@@ -10,9 +10,7 @@ from sklearn.metrics import precision_recall_curve, roc_curve
 from probly.evaluation.tasks import (
     out_of_distribution_detection_aupr,
     out_of_distribution_detection_auroc,
-    out_of_distribution_detection_fnr_at_95,
     out_of_distribution_detection_fnr_at_x_tpr,
-    out_of_distribution_detection_fpr_at_95_tpr,
     out_of_distribution_detection_fpr_at_x_tpr,
 )
 from probly.evaluation.types import (
@@ -29,8 +27,6 @@ if TYPE_CHECKING:
 STATIC_METRICS: dict[str, Callable[[np.ndarray, np.ndarray], float]] = {
     "auroc": out_of_distribution_detection_auroc,
     "aupr": out_of_distribution_detection_aupr,
-    "fnr@95": out_of_distribution_detection_fnr_at_95,
-    "fpr@95tpr": out_of_distribution_detection_fpr_at_95_tpr,
 }
 
 DYNAMIC_METRICS: dict[str, Callable[[np.ndarray, np.ndarray, float], float]] = {
