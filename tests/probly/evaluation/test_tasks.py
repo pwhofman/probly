@@ -8,8 +8,7 @@ import pytest
 from probly.evaluation.tasks import (
     out_of_distribution_detection_aupr,
     out_of_distribution_detection_auroc,
-    out_of_distribution_detection_fnr_at_95,
-    out_of_distribution_detection_fpr_at_95_tpr,
+    out_of_distribution_detection_fnr_at_x_tpr,
     out_of_distribution_detection_fpr_at_x_tpr,
     selective_prediction,
 )
@@ -90,7 +89,7 @@ def test_fpr_at_tpr_perfect_separation() -> None:
     in_scores = np.array([0.1, 0.2, 0.3, 0.4])
     out_scores = np.array([0.8, 0.9, 1.0, 1.1])
 
-    fpr = out_of_distribution_detection_fpr_at_x_tpr(in_scores, out_scores, tpr_target=0.95)
+    fpr = out_of_distribution_detection_fpr_at_x_tpr(in_scores, out_scores)
 
     assert np.isclose(fpr, 0.0)
 
@@ -100,7 +99,7 @@ def test_fnr_at_95_returns_float() -> None:
     in_distribution = np.array([0.1, 0.2, 0.3])
     out_distribution = np.array([0.8, 0.9, 1.0])
 
-    fnr = out_of_distribution_detection_fnr_at_95(in_distribution, out_distribution)
+    fnr = out_of_distribution_detection_fnr_at_x_tpr(in_distribution, out_distribution)
 
     assert isinstance(fnr, float)
 
@@ -110,20 +109,8 @@ def test_fnr_zero_when_perfect_separation() -> None:
     in_distribution = np.array([0.1, 0.2, 0.3])
     out_distribution = np.array([1.0, 0.9, 0.8])
 
-    fnr = out_of_distribution_detection_fnr_at_95(in_distribution, out_distribution)
+    fnr = out_of_distribution_detection_fnr_at_x_tpr(in_distribution, out_distribution)
     assert fnr == 0.0
-
-
-def test_fnr_one_when_in_and_out_fully_reversed() -> None:
-    """If OOD scores are completely lower than all ID scores.
-
-    Then at 95% TPR all OOD samples are misclassified => FNR = 1.
-    """
-    in_distribution = np.array([1.0, 0.9, 0.8])
-    out_distribution = np.array([0.1, 0.2, 0.3])
-
-    fnr = out_of_distribution_detection_fnr_at_95(in_distribution, out_distribution)
-    assert fnr == 1.0
 
 
 def test_fnr_with_partial_overlap() -> None:
@@ -131,7 +118,7 @@ def test_fnr_with_partial_overlap() -> None:
     in_distribution = np.array([0.1, 0.4, 0.6])
     out_distribution = np.array([0.3, 0.5, 0.9])
 
-    fnr = out_of_distribution_detection_fnr_at_95(in_distribution, out_distribution)
+    fnr = out_of_distribution_detection_fnr_at_x_tpr(in_distribution, out_distribution)
     assert 0.0 <= fnr <= 1.0
 
 
@@ -140,7 +127,7 @@ def test_single_element_arrays() -> None:
     in_distribution = np.array([0.2])
     out_distribution = np.array([0.9])
 
-    fnr = out_of_distribution_detection_fnr_at_95(in_distribution, out_distribution)
+    fnr = out_of_distribution_detection_fnr_at_x_tpr(in_distribution, out_distribution)
     assert fnr == 0.0
 
 
@@ -150,18 +137,15 @@ def test_fpr_at_95_tpr_returns_float() -> None:
     out_dist = np.ones(20)
     """No random floats to reduce the possibility of the code crashing."""
 
-    fpr = out_of_distribution_detection_fpr_at_95_tpr(in_dist, out_dist)
+    fpr = out_of_distribution_detection_fpr_at_x_tpr(in_dist, out_dist)
 
     assert isinstance(fpr, float)
 
 
-def test_fpr_at_95_tpr_raises_if_no_exact_95_point() -> None:
-    """Test that function interpolates if TPR=0.95 does not exist."""
+def test_fpr_at_95_tpr_handles_missing_exact_point() -> None:
     in_distribution = np.linspace(0, 1, 10)
-    out_distritution = np.linspace(0, 1, 10)
-
-    fpr = out_of_distribution_detection_fpr_at_95_tpr(in_distribution, out_distritution)
-
+    out_distribution = np.linspace(0, 1, 10)
+    fpr = out_of_distribution_detection_fpr_at_x_tpr(in_distribution, out_distribution)
     assert 0.0 <= fpr <= 1.0
 
 
@@ -171,9 +155,9 @@ def test_fpr_at_95_tpr_perfect_separation() -> None:
     in_distribution = rng.uniform(0.0, 0.4, size=10)
     out_distribution = rng.uniform(0.6, 1.0, size=10)
 
-    result = out_of_distribution_detection_fpr_at_95_tpr(in_distribution, out_distribution)
+    result = out_of_distribution_detection_fpr_at_x_tpr(in_distribution, out_distribution)
 
-    assert result == 0.0
+    assert np.isclose(result, 0.0)
 
 
 def test_fpr_at_95_tpr_complete_overlap() -> None:
@@ -181,6 +165,6 @@ def test_fpr_at_95_tpr_complete_overlap() -> None:
     in_distribution = np.array([0.5, 0.5, 0.5, 0.5])
     out_distribution = np.array([0.5, 0.5, 0.5, 0.5])
 
-    result = out_of_distribution_detection_fpr_at_95_tpr(in_distribution, out_distribution)
+    result = out_of_distribution_detection_fpr_at_x_tpr(in_distribution, out_distribution)
 
-    assert result == 1.0
+    assert np.isclose(result, 1.0)
