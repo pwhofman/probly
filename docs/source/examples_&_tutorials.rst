@@ -490,3 +490,42 @@ Summary (III)
 ---------------
 
 In this example, you used probly to construct both a homogeneous ensemble and a ``MixedEnsemble`` combining different model types. The MixedEnsemble may capture complementary model behaviour and can therefore improve robustness and calibration in some settings :cite:`opitz1999popular,ovadia2019trust`. By providing a unified abstraction for homogeneous and heterogeneous ensembles, probly makes it straightforward to explore such design choices in practical applications.
+
+Notebook Reference
+==================
+
+Here is a complete list of the interactive notebooks available in the repository.
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Transformations
+
+   notebooks/examples/dropout_transformation
+   notebooks/examples/dropconnect_transformation
+   notebooks/examples/bayesian_transformation
+   notebooks/examples/ensemble_transformation
+   notebooks/examples/evidential_regression_transformation
+   notebooks/examples/evidential_classification_transformation
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Utilities & Layers
+
+   notebooks/examples/utilities_and_layers/custom_loss_functions
+   notebooks/examples/utilities_and_layers/metrics
+   notebooks/examples/utilities_and_layers/probabilistic_layers
+   notebooks/examples/utilities_and_layers/utility_functions
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Evaluation
+
+   notebooks/examples/evaluation_and_quantification/calibration_metrics
+   notebooks/examples/evaluation_and_quantification/visualization_tools
+   notebooks/examples/evaluation_and_quantification/interpretation_techniques
+   notebooks/examples/fashionmnist_ood_ensemble
+   notebooks/examples/sklearn_selective_prediction
+   notebooks/examples/synthethic_regression_dropout
+   notebooks/examples/train_bnn_classification
+   notebooks/examples/train_evidential_classification
+   notebooks/examples/train_evidential_regression
