@@ -1,1 +1,1 @@
-"""Tests for the Bayesian transformation module."""
+"""Tests for the bayesian module."""
