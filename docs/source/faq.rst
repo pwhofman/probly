@@ -618,10 +618,10 @@ When reporting bugs or asking for help, include:
    **Issue:**
    Getting shape mismatch when using mutual_information with dropout predictions
 
-```rst
+
    **Code:**
 
-.. code-block::python
+.. code-block:: python
 
    import probly
    import torch
@@ -629,12 +629,14 @@ When reporting bugs or asking for help, include:
    model = torch.nn.Linear(10, 3)
    dropout_model = probly.transformation.dropout(model, p=0.5)
    # ... rest of minimal example
-```
+
 
    **Error:**
-```
+
+.. code-block:: text
+
    ValueError: Shape mismatch in mutual_information...
-```
+
 
 **Where to Get Help**
 
