@@ -8,7 +8,7 @@ with different frameworks, and debugging tips.
 
 If you cannot find an answer to your question here, please refer to the
 :doc:`core_concepts` section for conceptual background, the :doc:`main_components`
-section for detailed component descriptions, or the :doc:`examples_and_tutorials`
+section for detailed component descriptions, or the :doc:`examples_&_tutorials`
 section for practical demonstrations.
 
 1. Installation and Setup
@@ -21,7 +21,7 @@ section for practical demonstrations.
 If you are using an older Python version, you may encounter compatibility issues
 with dependencies or type hints. We recommend upgrading to Python 3.12 or later.
 
-For installation instructions, see :doc:`Installation`.
+For installation instructions, see :doc:`installation`.
 
 1.2 How do I install ``probly``?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -38,7 +38,7 @@ or
 
    uv add probly
 
-For more details, refer to the :doc:`Installation` section.
+For more details, refer to the :doc:`installation` section.
 
 1.3 Installation fails with dependency conflicts. What should I do?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -618,8 +618,11 @@ When reporting bugs or asking for help, include:
    **Issue:**
    Getting shape mismatch when using mutual_information with dropout predictions
 
+```rst
    **Code:**
-```python
+
+.. code-block::python
+
    import probly
    import torch
 
@@ -637,7 +640,7 @@ When reporting bugs or asking for help, include:
 
 * **GitHub Issues:** Report bugs and request features at https://github.com/pwhofman/probly/issues
 * **FAQ & Troubleshooting:** Check this document for common solutions
-* **Documentation:** Refer to :doc:`core_concepts`, :doc:`introduction`, and :doc:`examples_and_tutorials`
+* **Documentation:** Refer to :doc:`core_concepts`, :doc:`introduction`, and :doc:`examples_&_tutorials`
 * **Community:** Discuss with other users through the GitHub issue tracker
 
 8. Advanced Topics
@@ -687,7 +690,7 @@ For production deployment:
 For detailed usage examples, refer to:
 
 * The :doc:`introduction` section for workflow examples
-* The :doc:`Installation` section for quickstart code
+* The :doc:`installation` section for quickstart code
 * The notebooks in the ``notebooks/examples/`` directory of the repository
 
 9. Getting Help

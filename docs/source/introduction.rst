@@ -1,15 +1,15 @@
 Introduction
 ============
 
-This page gives a gentle, high-level overview of what ``probly`` is and why 
+This page gives a gentle, high-level overview of what ``probly`` is and why
 uncertainty is an important topic in modern machine learning :cite:`Hullermeier2021`. It is meant as
-a starting point for new users before they continue reading the rest of the User Guide, which 
+a starting point for new users before they continue reading the rest of the User Guide, which
 covers everything from installation and quickstart examples to core concepts, main components,
 advanced topics, and hands-on tutorials. The aim is to equip readers with the conceptual background needed
 to understand and apply the more detailed material presented in later sections.
 
 1. What is ``probly``?
----------------
+----------------------
 
 ``probly`` is a Python library for **uncertainty-aware machine learning**.
 
@@ -35,184 +35,184 @@ of it with a thin ``probly`` wrapper.
 1.1 The Problem: Overconfident Machine Learning Models
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Most machine learning models today are overconfident.  
-They output a single prediction such as a class label, a score, or a regression value,  
+Most machine learning models today are overconfident.
+They output a single prediction such as a class label, a score, or a regression value,
 but they do not tell us how uncertain they are about that prediction.
 
 This becomes a problem in practical applications :cite:`Hendrycks2017`:
 
-* A medical classifier might give the wrong diagnosis but still report a confident 0.98 probability.  
-* An autonomous vehicle might misinterpret a rare object because it has never seen anything similar before.  
+* A medical classifier might give the wrong diagnosis but still report a confident 0.98 probability.
+* An autonomous vehicle might misinterpret a rare object because it has never seen anything similar before.
 * A financial model may make predictions far outside the training distribution without realizing it.
 
-Standard ML tools such as PyTorch, TensorFlow, and scikit learn do not provide a unified way  
-to represent uncertainty. Each uncertainty method such as dropout :cite:`Gal2016`, ensembles :cite:`Lakshminarayanan2017`, Bayesian networks,  
-and evidential models uses different outputs, shapes, and conventions.  
+Standard ML tools such as PyTorch, TensorFlow, and scikit learn do not provide a unified way
+to represent uncertainty. Each uncertainty method such as dropout :cite:`Gal2016`, ensembles :cite:`Lakshminarayanan2017`, Bayesian networks,
+and evidential models uses different outputs, shapes, and conventions.
 This makes it difficult to compare or combine uncertainty methods.
 
 This is exactly the gap that ``probly`` fills.
 
 ``probly`` provides:
 
-* a common interface for different uncertainty methods  
-* a unified representation for uncertainty aware predictions  
-* tools to quantify uncertainty such as epistemic or aleatoric measures  
-* ready to use transformations that turn existing models into uncertainty aware models  
+* a common interface for different uncertainty methods
+* a unified representation for uncertainty aware predictions
+* tools to quantify uncertainty such as epistemic or aleatoric measures
+* ready to use transformations that turn existing models into uncertainty aware models
   without rewriting the training pipeline
 
-Instead of requiring users to pick one uncertainty method and redesign their entire training code,  
-``probly`` offers a consistent way to apply uncertainty methods across modern ML frameworks  
+Instead of requiring users to pick one uncertainty method and redesign their entire training code,
+``probly`` offers a consistent way to apply uncertainty methods across modern ML frameworks
 such as PyTorch, and Flax/JAX.
 
-In short, machine learning models are often overconfident and ``probly`` is designed to make  
+In short, machine learning models are often overconfident and ``probly`` is designed to make
 their uncertainty explicit, comparable, and usable.
 
 1.2 Why does Uncertainty Matter?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In many real world situations, the correctness of a prediction is not the only thing that matters.  
-We also want to understand how confident the model is in its output.  
+In many real world situations, the correctness of a prediction is not the only thing that matters.
+We also want to understand how confident the model is in its output.
 A prediction with low confidence should be treated very differently from the same prediction made with high confidence.
 
 Uncertainty awareness is important for several reasons:
 
-* It helps detect inputs that are very different from the training data, which is useful for out of distribution detection.  
-* It allows systems to decide when a model should answer and when it should ask for human help.  
-* It supports safer and more transparent decision making in fields such as medicine, finance, and autonomous systems.  
-* It makes model behavior easier to interpret and debug by showing where the model is unsure.  
+* It helps detect inputs that are very different from the training data, which is useful for out of distribution detection.
+* It allows systems to decide when a model should answer and when it should ask for human help.
+* It supports safer and more transparent decision making in fields such as medicine, finance, and autonomous systems.
+* It makes model behavior easier to interpret and debug by showing where the model is unsure.
 
-When a model communicates its uncertainty, users and downstream systems can make more careful choices.  
-A low confidence prediction might trigger a safety mechanism, a manual review, or a fallback strategy.  
+When a model communicates its uncertainty, users and downstream systems can make more careful choices.
+A low confidence prediction might trigger a safety mechanism, a manual review, or a fallback strategy.
 A high confidence prediction might allow the system to act automatically.
 
-Without uncertainty information, a model can appear confident even when it is wrong.  
+Without uncertainty information, a model can appear confident even when it is wrong.
 With uncertainty awareness, the model becomes more reliable, more transparent, and more useful in real world applications :cite:`Guo2017`.
 
 1.3 What Does ``probly`` Provide?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-``probly`` is designed to make uncertainty aware machine learning simple, practical, and consistent.  
-It provides a unified way to work with uncertainty so that users do not need to implement  
+``probly`` is designed to make uncertainty aware machine learning simple, practical, and consistent.
+It provides a unified way to work with uncertainty so that users do not need to implement
 multiple methods from scratch or worry about incompatible output formats.
 
 ``probly`` offers several core components:
 
-* Representations that describe uncertainty information in a clear and structured way  
-* Transformations that can turn standard models into uncertainty aware models with minimal changes  
-* Quantification tools that compute numerical measures of uncertainty  
-* Tasks that use uncertainty information for practical purposes such as out of distribution detection or selective prediction  
+* Representations that describe uncertainty information in a clear and structured way
+* Transformations that can turn standard models into uncertainty aware models with minimal changes
+* Quantification tools that compute numerical measures of uncertainty
+* Tasks that use uncertainty information for practical purposes such as out of distribution detection or selective prediction
 
-A key idea behind ``probly`` is that users should not be forced to adopt one specific uncertainty method.  
-Different models and different applications may require different approaches.  
+A key idea behind ``probly`` is that users should not be forced to adopt one specific uncertainty method.
+Different models and different applications may require different approaches.
 ``probly`` provides a common interface so that these methods can be used and compared in a consistent manner.
 
-Another important advantage is that ``probly`` integrates with modern machine learning frameworks  
-such as PyTorch, Flax JAX, and scikit learn.  
-This means that users can keep their existing training pipelines and add uncertainty awareness on top of them  
+Another important advantage is that ``probly`` integrates with modern machine learning frameworks
+such as PyTorch, Flax JAX, and scikit learn.
+This means that users can keep their existing training pipelines and add uncertainty awareness on top of them
 without rewriting their entire code.
 
-Overall, ``probly`` gives users the building blocks needed to make machine learning models more  
+Overall, ``probly`` gives users the building blocks needed to make machine learning models more
 transparent, reliable, and informative by exposing how confident the model is in its predictions.
 
 2. Key Ideas Behind ``probly``
 ------------------------------------------------------
 
-``probly`` is built around a few central ideas that make uncertainty aware machine learning easier to use.  
-Instead of treating uncertainty as something separate or difficult, ``probly`` organizes the process into  
+``probly`` is built around a few central ideas that make uncertainty aware machine learning easier to use.
+Instead of treating uncertainty as something separate or difficult, ``probly`` organizes the process into
 clear steps that work together and build on one another.
 
-These ideas form the foundation of the entire library.  
-They help users understand how uncertainty is represented, how it is created,  
+These ideas form the foundation of the entire library.
+They help users understand how uncertainty is represented, how it is created,
 and how it can be used to solve practical machine learning problems.
 
 The main ideas are:
 
-* Representations that describe uncertainty information  
-* Transformations that create uncertainty aware models  
-* Quantification tools that measure uncertainty  
-* Tasks that make use of uncertainty in real applications  
+* Representations that describe uncertainty information
+* Transformations that create uncertainty aware models
+* Quantification tools that measure uncertainty
+* Tasks that make use of uncertainty in real applications
 
 The following sections explain each of these ideas in more detail.
 
 2.1 Uncertainty Representations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-An uncertainty representation describes the information a model returns when it predicts with uncertainty.  
-Instead of giving a single output, the model provides additional information that shows how unsure it is.  
-This information can look different depending on the method, but ``probly`` provides one consistent way  
+An uncertainty representation describes the information a model returns when it predicts with uncertainty.
+Instead of giving a single output, the model provides additional information that shows how unsure it is.
+This information can look different depending on the method, but ``probly`` provides one consistent way
 to work with all of them.
 
-A representation is the structure that stores the uncertainty information.  
-It is the foundation that ``probly`` uses for everything that follows,  
+A representation is the structure that stores the uncertainty information.
+It is the foundation that ``probly`` uses for everything that follows,
 including quantification and downstream tasks.
 
-Different uncertainty methods create different types of representations.  
+Different uncertainty methods create different types of representations.
 Some examples include:
 
-* Multiple stochastic forward passes, which appear when using dropout  
-* Predictions from several independently trained models, which form an ensemble  
-* Parameters of a predictive distribution that come from evidential models  
-* Collections of outputs that describe a distribution of possible predictions  
+* Multiple stochastic forward passes, which appear when using dropout
+* Predictions from several independently trained models, which form an ensemble
+* Parameters of a predictive distribution that come from evidential models
+* Collections of outputs that describe a distribution of possible predictions
 
-Each method creates uncertainty in its own way, but ``probly`` unifies them  
-so they can all be handled through a single interface.  
-This makes it easier to compare methods, switch between them,  
+Each method creates uncertainty in its own way, but ``probly`` unifies them
+so they can all be handled through a single interface.
+This makes it easier to compare methods, switch between them,
 and build systems that use uncertainty consistently.
 
-The key idea behind uncertainty representations is simple.  
-They capture how the model behaves when it is unsure,  
+The key idea behind uncertainty representations is simple.
+They capture how the model behaves when it is unsure,
 and ``probly`` uses this representation as the base for all later steps.
 
 2.2 Uncertainty Transformations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-An uncertainty transformation changes how a model makes predictions so that it can express uncertainty.  
-Instead of building a new model from the beginning, the transformation wraps the existing model  
+An uncertainty transformation changes how a model makes predictions so that it can express uncertainty.
+Instead of building a new model from the beginning, the transformation wraps the existing model
 and makes it produce uncertainty information in addition to normal outputs.
 
-Transformations are one of the core ideas in ``probly`` . 
-They let users add uncertainty to their models without rewriting the training process.  
-The model can be trained exactly as usual.  
+Transformations are one of the core ideas in ``probly`` .
+They let users add uncertainty to their models without rewriting the training process.
+The model can be trained exactly as usual.
 The transformation then controls how the model behaves during prediction.
 
 Common examples of uncertainty transformations include:
 
-* Using dropout during prediction to generate multiple different outputs  
-* Combining predictions from several independently trained models in an ensemble  
-* Adding evidential layers that output distribution parameters instead of single values  
-* Sampling from probabilistic or stochastic layers to produce a range of predictions  
+* Using dropout during prediction to generate multiple different outputs
+* Combining predictions from several independently trained models in an ensemble
+* Adding evidential layers that output distribution parameters instead of single values
+* Sampling from probabilistic or stochastic layers to produce a range of predictions
 
-Even though each transformation works differently, ``probly`` treats all of them in a unified way.  
-The result of any transformation becomes a consistent uncertainty representation  
+Even though each transformation works differently, ``probly`` treats all of them in a unified way.
+The result of any transformation becomes a consistent uncertainty representation
 that ``probly`` can analyze, quantify, and use for downstream tasks.
 
-The idea behind uncertainty transformations is simple.  
-They modify the prediction behavior of a model so that uncertainty becomes visible.  
+The idea behind uncertainty transformations is simple.
+They modify the prediction behavior of a model so that uncertainty becomes visible.
 ``probly`` then provides all tools needed to work with this uncertainty in a reliable and practical way.
 
 2.3 Uncertainty Quantification
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Once a model has an uncertainty representation, the next step is to measure  
-how uncertain the model actually is.  
+Once a model has an uncertainty representation, the next step is to measure
+how uncertain the model actually is.
 This step is called uncertainty quantification.
 
-Quantification turns the raw uncertainty information into numerical values  
-that describe how confident or uncertain the model is about each prediction.  
-These values make uncertainty easy to interpret and compare across different models  
+Quantification turns the raw uncertainty information into numerical values
+that describe how confident or uncertain the model is about each prediction.
+These values make uncertainty easy to interpret and compare across different models
 and different uncertainty methods.
 
-``probly`` provides an unified set of tools for quantifying uncertainty.  
-This means users can switch between different uncertainty methods  
+``probly`` provides an unified set of tools for quantifying uncertainty.
+This means users can switch between different uncertainty methods
 without changing the way they compute uncertainty scores.
 
 Common examples of uncertainty quantities include:
 
-* epistemic uncertainty, which reflects what the model does not know  
-  for example because it has not seen similar data during training  
-* aleatoric uncertainty, which reflects noise or ambiguity in the data itself  
-* predictive entropy, which measures how spread out the predictions are  
-* mutual information, which separates model uncertainty from data uncertainty  
+* epistemic uncertainty, which reflects what the model does not know
+  for example because it has not seen similar data during training
+* aleatoric uncertainty, which reflects noise or ambiguity in the data itself
+* predictive entropy, which measures how spread out the predictions are
+* mutual information, which separates model uncertainty from data uncertainty
 
 **Epistemic Uncertainty**
 
@@ -230,16 +230,16 @@ Common examples of uncertainty quantities include:
 
 These quantities help answer practical questions such as:
 
-* How confident is the model in this prediction  
-* Is this input outside the model’s training distribution  
-* Should the system rely on the model or ask for human input  
+* How confident is the model in this prediction
+* Is this input outside the model’s training distribution
+* Should the system rely on the model or ask for human input
 
-``probly`` makes uncertainty quantification simple and consistent.  
-Regardless of whether the model uses dropout, ensembles, evidential methods,  
+``probly`` makes uncertainty quantification simple and consistent.
+Regardless of whether the model uses dropout, ensembles, evidential methods,
 or any other transformation, the uncertainty representation produced by ``probly``
 can be passed directly into its quantification tools.
 
-The key idea is that quantification turns uncertainty into meaningful numbers  
+The key idea is that quantification turns uncertainty into meaningful numbers
 that can be used in evaluation, decision making, or downstream tasks.
 
 2.4 Downstream Tasks
@@ -284,7 +284,7 @@ This part of your workflow remains completely unchanged.
 3.2 Apply an Uncertainty Transformation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Once your model is trained, you can apply any desired transformation from the ``probly.tansformation`` folder.
-You apply a transformation by passing your trained model to a high-level function. 
+You apply a transformation by passing your trained model to a high-level function.
 For example, to use Monte Carlo Dropout, you would call:
 
 .. code-block:: python
@@ -295,7 +295,7 @@ This single line of code performs a sophisticated operation:
 
 * It creates a deep copy of your original model, leaving it untouched.
 * It traverses the architecture of the new model.
-* It automatically finds all compatible layers (e.g., Linear layers) and inserts a Dropout layer 
+* It automatically finds all compatible layers (e.g., Linear layers) and inserts a Dropout layer
     immediately before them.
 
 The result is a new model object, ready to produce uncertainty-aware predictions.
@@ -303,8 +303,8 @@ The result is a new model object, ready to produce uncertainty-aware predictions
 
 3.3 Generate an Uncertainty Representation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-You now call this new, transformed model. 
-``probly`` runs inference multiple times behind the scenes (stochastic forward passes) and returns a 
+You now call this new, transformed model.
+``probly`` runs inference multiple times behind the scenes (stochastic forward passes) and returns a
 Representation object. This object acts as a container for the raw results. The most important data it
 holds is the collection of probability outputs from each forward pass.
 
@@ -314,16 +314,16 @@ holds is the collection of probability outputs from each forward pass.
 
    # The representation object contains the raw probability samples
    # (e.g., in a .probs attribute)
-   probs_array = representation.probs 
-   
+   probs_array = representation.probs
+
 This array has shape (num_samples, batch_size, num_classes) and contains all the stochastic outputs needed for quantification.
 
 
 
 3.4 Quantify the Uncertainty
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Finally, you pass the raw probability array from the representation object to one of ``probly`` 's 
-many Quantification functions. This distills the complex set of samples into a single, meaningful score. 
+Finally, you pass the raw probability array from the representation object to one of ``probly`` 's
+many Quantification functions. This distills the complex set of samples into a single, meaningful score.
 ``probly`` provides functions to measure different types of uncertainty:
 
 .. code-block:: python
@@ -338,8 +338,8 @@ These functions return concrete numerical scores that summarize the model's unce
 
 3.5 Use It for Downstream Tasks
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-With these concrete uncertainty scores, you can now perform valuable Downstream Tasks, 
-such as flagging out-of-distribution inputs or allowing the model to abstain when its 
+With these concrete uncertainty scores, you can now perform valuable Downstream Tasks,
+such as flagging out-of-distribution inputs or allowing the model to abstain when its
 model_uncertainty score is too high.
 
 4. A Simple Before/After Example
@@ -365,7 +365,7 @@ Even when the model is wrong, it may still output high confidence scores, leadin
 
 4.2 After ``probly``: Uncertainty-Aware Prediction
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-By applying probly, we transform the model to produce uncertainty-aware predictions.    
+By applying probly, we transform the model to produce uncertainty-aware predictions.
 
 .. code-block:: python
 
@@ -391,7 +391,7 @@ This additional information allows us to identify inputs where the model is unsu
 
 5. Supported Frameworks and Integrations
 ------------------------------------------------------
-``probly`` is designed to work seamlessly with popular machine learning frameworks, allowing you to integrate uncertainty awareness 
+``probly`` is designed to work seamlessly with popular machine learning frameworks, allowing you to integrate uncertainty awareness
 into your existing workflows without significant changes. The library currently supports the following frameworks:
 
 * PyTorch: Full support for wrapping PyTorch models and utilizing its layers for uncertainty transformations.
@@ -402,11 +402,11 @@ Future plans include expanding support to additional frameworks and libraries ba
 6. Summary
 ------------------------------------------------------
 
-``probly`` provides a practical, non-invasive way to make machine learning models uncertainty-aware. 
-It addresses the problem of overconfident models by offering a unified interface to represent, transform, and quantify uncertainty, and 
+``probly`` provides a practical, non-invasive way to make machine learning models uncertainty-aware.
+It addresses the problem of overconfident models by offering a unified interface to represent, transform, and quantify uncertainty, and
 by supporting downstream tasks such as out-of-distribution detection, selective prediction, calibration, and risk-aware decision making.
 Instead of replacing existing workflows, ``probly`` builds on top of them: you train your model as usual, apply an uncertainty
-transformation, obtain an uncertainty representation, and then compute meaningful uncertainty scores that can be used directly 
+transformation, obtain an uncertainty representation, and then compute meaningful uncertainty scores that can be used directly
 in applications. The before/after example illustrates how a standard overconfident model can be turned into one that not only predicts
 labels but also communicates how unsure it is. With support for popular frameworks like PyTorch and Flax/JAX,
 ``probly`` helps users build models that are not just accurate, but also safer, more transparent, and easier to trust in real-world
