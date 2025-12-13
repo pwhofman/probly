@@ -291,6 +291,7 @@ For example, to use Monte Carlo Dropout, you would call:
 
    # trained_model is your trained torch.nn.Module or flax.nnx.Module
    mc_dropout_model = probly.transformation.dropout(trained_model, p=0.5)
+
 This single line of code performs a sophisticated operation:
 
 * It creates a deep copy of your original model, leaving it untouched.
@@ -359,6 +360,7 @@ A standard, trained classifier produces a single, deterministic output. It has n
    # Example output
    # predicted_probs: tensor([[0.98, 0.01, 0.01],  # Very confident prediction
    #                          [0.60, 0.20, 0.20]]) # Less confident but no uncertainty info
+
 In this case, the model outputs a single probability distribution per input.
 However, it provides no information about its uncertainty.
 Even when the model is wrong, it may still output high confidence scores, leading to overconfident and potentially dangerous predictions.
