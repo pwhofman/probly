@@ -11,6 +11,49 @@ from torch.nn import init
 import torch.nn.functional as F
 
 
+class BatchEnsembleLinear(nn.Module):
+    """Implements a BatchEnsemble linear layer.
+
+    Attributes:
+        in_features : int, number of input features
+        out_features : int, number of output features
+        num_members : int, number of ensemble members
+    """
+
+    def __init__(self,
+                 base_layer: nn.Linear,
+                 num_members: int = 1
+    ) -> None:
+        """Initializes the BatchEnsemble linear layer.
+
+        Args:
+            base_layer: The original linear layer to be used.
+            num_members : int, number of ensemble members
+        """
+        super().__init__()
+        self.in_features = base_layer.in_features
+        self.out_features = base_layer.out_features
+        self.num_members = num_members
+
+        
+class BatchEnsembleConv2d(nn.Module):
+    """Implements a BatchEnsemble convolutional layer.
+
+    Attributes:
+        in_features : int, number of input features
+        out_features : int, number of output features
+        num_members : int, number of ensemble members
+    """
+
+    def __init__(self,
+                 base_layer: nn.Linear,
+                 num_members: int = 1
+    ) -> None:
+        raise NotImplementedError("BatchEnsembleConv2d is not implemented yet.")
+
+# ======================================================================================================================
+
+
 class BayesLinear(nn.Module):
     """Implements a Bayesian linear layer.
 
