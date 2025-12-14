@@ -1,1 +1,1 @@
-"""Tests for the dropconnect module."""
+"""Dropconnect transformation tests."""
