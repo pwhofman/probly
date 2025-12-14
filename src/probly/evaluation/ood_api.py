@@ -55,18 +55,27 @@ def parse_dynamic_metric(spec: str) -> tuple[str, float]:
     Examples:
         fpr@0.8
         fnr@95%
+        fpr -> default threshold is 0.95
+        fnr -> default threshold is 0.95
     """
     try:
-        base, t = spec.split("@")
-        base = base.lower().strip()
-        t = t.strip().lower()
+        spec = spec.lower().strip()
 
-        threshold = float(t[:-1]) / 100 if t.endswith("%") else float(t)
+        if "@" not in spec:
+            base = spec
+            threshold = 0.95
+        else:
+            base, t = spec.split("@")
+            base = base.lower().strip()
+            t = t.strip().lower()
+
+            threshold = float(t[:-1]) / 100 if t.endswith("%") else float(t)
+
         _validate_threshold(threshold)
         _validate_base_metric(base)
 
     except Exception as e:
-        msg = f"Invalid metric specification '{spec}'. Use e.g. 'fpr@0.8' or 'fnr@90%'."
+        msg = f"Invalid metric specification '{spec}'. Use e.g. 'fpr', 'fpr@0.8' or 'fnr@90%'."
         raise ValueError(msg) from e
     else:
         return base, threshold
@@ -114,16 +123,18 @@ def evaluate_ood(
 
         if metric_name_lower in STATIC_METRICS:
             results[metric_name] = STATIC_METRICS[metric_name_lower](in_s, out_s)
-            continue
 
-        if "@" in metric_name_lower:
+        elif metric_name_lower in DYNAMIC_METRICS or "@" in metric_name_lower:
             base, thr = parse_dynamic_metric(metric_name_lower)
             results[metric_name] = DYNAMIC_METRICS[base](in_s, out_s, thr)
-            continue
 
-        msg = f"Unknown metric '{metric_name}'. Available: {list(STATIC_METRICS.keys())} + dynamic metric@value."
-        raise ValueError(msg)
-
+        else:
+            msg = (
+                f"Unknown metric '{metric_name}'. "
+                f"Available: {list(STATIC_METRICS.keys())} "
+                " + dynamic metrics 'fpr', 'fnr' (optionally with @value)."
+            )
+            raise ValueError(msg)
     return results
 
 
