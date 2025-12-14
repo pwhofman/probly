@@ -19,34 +19,36 @@ if TYPE_CHECKING:
 
 def copy_imp_params(base: BaseEstimator, forest: BaseEstimator) -> list:
     """Copies the parameters of a DecisionTree that are important to create a RandomForest"""
-     
-    copied = []
-    base_params = base.get_params(deep=False)
-    forest_params = forest.get_params()
     
-    for x in forest_params:
-        if x in base_params:
-            copied.append(x)
+    if (base == DecisionTreeClassifier):
+        forest = RandomForestClassifier()
+    if (base == DecisionTreeRegressor):
+        forest = RandomForestRegressor()
+     
+    base_params = base.get_params(deep=False)
+    forest_params = forest.get_params(deep=False)
+    
+    copied = {k: v for k, v in base_params.items() if k in forest_params}
             
     return copied
 
-class RandomForests:
-    
-    @staticmethod
-    def generate_random_forest_classifier(obj: DecisionTreeClassifier
-                                          , num_members: int
-                                          , reset_params: bool) -> RandomForestClassifier:
+def sklearn_list_ensemble(base: BaseEstimator, num_members: int, reset_params: bool) -> list[BaseEstimator]:
+    """Generates a list of sklearn estimators bt copying the base model num_members times."""
+    return [base for _ in range(num_members)]
+
+def generate_sklearn_ensemble(obj: BaseEstimator, num_members: int, reset_params: bool) -> BaseEstimator:
+    if isinstance(obj, DecisionTreeClassifier):
         given_params = copy_imp_params(base=obj, forest=RandomForestClassifier())
-        
-        return RandomForestClassifier(**given_params, n_estimators=num_members)
+        forest = RandomForestClassifier(**given_params, n_estimators=num_members)
+    elif isinstance(obj, DecisionTreeRegressor):
+        given_params = copy_imp_params(base=obj, forest=RandomForestRegressor())
+        forest = RandomForestRegressor(**given_params, n_estimators=num_members)
+    elif isinstance(obj, BaseEstimator):
+        members = sklearn_list_ensemble(base=obj, num_members=num_members, reset_params=reset_params)
+        forest = members # type: ignore[assignment]
+    else:
+        raise TypeError(f"Cannot create sklearn ensemble for object of type {type(obj)}")
+    return forest
+
+register(BaseEstimator, generate_sklearn_ensemble)
     
-    @staticmethod
-    def generate_random_forest_regressor(base: DecisionTreeRegressor, num_members: int) -> RandomForestRegressor:
-        given_params = copy_imp_params(base=base, forest=RandomForestRegressor())
-        
-        return RandomForestRegressor(**given_params, n_estimators=num_members)
-    
-register(DecisionTreeClassifier, RandomForests.generate_random_forest_classifier)
-register(DecisionTreeRegressor, RandomForests.generate_random_forest_regressor)
-    
-        
