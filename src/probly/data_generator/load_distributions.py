@@ -1,9 +1,13 @@
+from __future__ import annotations
+
 import os
+
 import torch
+
+
 # Load data from a .pt file
 def load_distributions(load_path: str, device: Optional[str] = None, verbose: bool = True) -> Dict[str, Any]:
-    """
-    Load a tensor dictionary from a .pt file.
+    """Load a tensor dictionary from a .pt file.
 
     Parameters:
         load_path: Path to load from.
@@ -14,7 +18,6 @@ def load_distributions(load_path: str, device: Optional[str] = None, verbose: bo
     Returns:
         A tensor dictionary.
     """
-
     if not os.path.exists(load_path):
         raise FileNotFoundError(f"File not found: {load_path}")
 
@@ -33,9 +36,9 @@ def load_distributions(load_path: str, device: Optional[str] = None, verbose: bo
 if __name__ == "__main__":
     # 1. Create an example tensor dictionary
     tensor_dict = {
-        'softmax1': torch.rand(5),
-        'softmax2': torch.rand(5),
-        'softmax3': torch.rand(5),
+        "softmax1": torch.rand(5),
+        "softmax2": torch.rand(5),
+        "softmax3": torch.rand(5),
     }
 
     # 3. Load for verification

@@ -1,7 +1,14 @@
 # Save generated data as .pt format
-def save_distributions(tensor_dict: Dict[str, Any], save_path: str, create_dir: bool = False, verbose: bool = True) -> None:
-    """
-    Save a tensor dictionary as a .pt file.
+from __future__ import annotations
+
+
+def save_distributions(
+    tensor_dict: Dict[str, Any],
+    save_path: str,
+    create_dir: bool = False,
+    verbose: bool = True,
+) -> None:
+    """Save a tensor dictionary as a .pt file.
 
     Parameters:
         tensor_dict: A dictionary that contains tensors.
@@ -9,10 +16,9 @@ def save_distributions(tensor_dict: Dict[str, Any], save_path: str, create_dir: 
         create_dir:  Whether to automatically create the directory.
         verbose:     Whether to print detailed information.
     """
-
     # Check file suffix
-    if not (save_path.endswith('.pt') or save_path.endswith('.pth')):
-        save_path += '.pt'
+    if not (save_path.endswith(".pt") or save_path.endswith(".pth")):
+        save_path += ".pt"
 
     # Create directory (if needed)
     if create_dir:
@@ -26,7 +32,7 @@ def save_distributions(tensor_dict: Dict[str, Any], save_path: str, create_dir: 
         print("Dictionary overview:")
         total_size = 0
         for key, tensor in tensor_dict.items():
-            size_mb = tensor.element_size() * tensor.nelement() / (1024 ** 2)
+            size_mb = tensor.element_size() * tensor.nelement() / (1024**2)
             total_size += size_mb
             print(f"- {key}: {tuple(tensor.shape)}, {tensor.dtype}, {size_mb:.2f} MB")
         print(f"Total size: {total_size:.2f} MB")
@@ -35,12 +41,11 @@ def save_distributions(tensor_dict: Dict[str, Any], save_path: str, create_dir: 
 if __name__ == "__main__":
     # 1. Create an example tensor dictionary
     tensor_dict = {
-        'softmax1': torch.rand(5),
-        'softmax2': torch.rand(5),
-        'softmax3': torch.rand(5),
+        "softmax1": torch.rand(5),
+        "softmax2": torch.rand(5),
+        "softmax3": torch.rand(5),
     }
 
     # 2. Save using the helper function
-    save_path = 'basic_example.pt'
+    save_path = "basic_example.pt"
     save_distributions(tensor_dict, save_path)
-

@@ -1,4 +1,6 @@
 # command i use: pytest "c:\Users\ashhe\Desktop\Informatik mit integriertem Anwendungsfach\5.Semester\WP14 SEP Probly\PythonProjekte\probly\tests\probly\data_generator\test_first_order_generator.py" -q
+from __future__ import annotations
+
 import json
 from pathlib import Path
 
@@ -31,6 +33,7 @@ class DummyModel(torch.nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.linear(x)
 
+
 def test_save_and_load_with_meta(tmp_path: Path):
     d_in, n_classes, n = 2, 3, 5
     dataset = DummyDataset(n=n, d=d_in)
@@ -48,7 +51,7 @@ def test_save_and_load_with_meta(tmp_path: Path):
     gen.save_distributions(save_path, dists, meta=meta)
 
     # basic file integrity
-    with open(save_path, "r", encoding="utf-8") as f:
+    with open(save_path, encoding="utf-8") as f:
         obj = json.load(f)
     assert "distributions" in obj
     assert "meta" in obj
@@ -59,6 +62,7 @@ def test_save_and_load_with_meta(tmp_path: Path):
     assert loaded_meta.get("model_name") == "dummy"
     assert loaded_meta.get("note") == "unit-test"
     assert loaded_meta.get("classes") == n_classes
+
 
 def test_generator_init_and_run(tmp_path: Path):
     d_in, n_classes, n = 3, 4, 7
@@ -79,6 +83,7 @@ def test_generator_init_and_run(tmp_path: Path):
         # probabilities in [0,1] and sum approx 1
         assert all(0.0 <= p <= 1.0 for p in row)
         assert abs(sum(row) - 1.0) < 1e-4
+
 
 def test_first_order_dataset_and_dataloader_with_targets():
     # Base dataset yields (input, target)
@@ -110,6 +115,7 @@ def test_first_order_dataset_and_dataloader_with_targets():
     assert x.shape[0] == y.shape[0] == p.shape[0]
     assert p.shape[-1] == n_classes
 
+
 def test_generate_distributions_with_empty_dataset():
     dataset = DummyDataset(n=0, d=3)
     model = DummyModel(d_in=3, n_classes=2)
@@ -119,6 +125,7 @@ def test_generate_distributions_with_empty_dataset():
 
     assert isinstance(dists, dict)
     assert len(dists) == 0
+
 
 def test_get_posterior_distributions_returns_correct_structure():
     from torch import nn
@@ -175,6 +182,7 @@ def test_first_order_dataset_and_dataloader_input_only_no_labels():
     assert x_batch.shape[0] == p_batch.shape[0]
     assert p_batch.shape[-1] == n_classes
 
+
 def _train_one_model_with_soft_targets(loader, d_in: int, n_classes: int, steps: int = 30):
     model = DummyModel(d_in=d_in, n_classes=n_classes)
     opt = torch.optim.SGD(model.parameters(), lr=0.1)
@@ -198,6 +206,7 @@ def _train_one_model_with_soft_targets(loader, d_in: int, n_classes: int, steps:
         # Keep it simple: no separate phases or extra tracking
     return model, losses
 
+
 def _compute_coverage(pred_probs: torch.Tensor, gt_probs: torch.Tensor, epsilon: float = 0.15) -> float:
     """Simple epsilon-credal coverage: groundtruth distribution covered if
     L1 distance between predicted prob vector and groundtruth prob vector <= epsilon.
@@ -208,6 +217,7 @@ def _compute_coverage(pred_probs: torch.Tensor, gt_probs: torch.Tensor, epsilon:
     covered = (l1 <= epsilon).float()
     # covered = tensor of 0.0/1.0 covered.mean = mean over all samples(coveragerate as skalar tensor) covered.mean.item = skalartensor -> pythonfloat
     return covered.mean().item()
+
 
 def test_end_to_end_training_and_coverage_improves():
     torch.manual_seed(23)
@@ -253,7 +263,7 @@ def test_end_to_end_training_and_coverage_improves():
             "loss_initial": "first recorded training loss (KL divergence) at the start; higher means the student disagrees more with the distributions",
             "loss_final": "last recorded training loss; lower than initial indicates learning happened",
             "coverage_before": "baseline agreement rate using a naive uniform prediction vs teacher distributions, measured by L1 distance ≤ epsilon (e.g., 0.25)",
-            "coverage_after": "agreement rate after training using the students predictions; higher than before shows improvement"
+            "coverage_after": "agreement rate after training using the students predictions; higher than before shows improvement",
         },
         "n": n,
         "d_in": d_in,
@@ -261,7 +271,7 @@ def test_end_to_end_training_and_coverage_improves():
         "loss_initial": losses[0],
         "loss_final": losses[-1],
         "coverage_before": cov_before,
-        "coverage_after": cov_after
+        "coverage_after": cov_after,
     }
     log_path = datagen_dir / "run_summary.json"
     with open(log_path, "w", encoding="utf-8") as f:

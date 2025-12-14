@@ -1,22 +1,23 @@
-from typing import Dict, Any, Optional
+from __future__ import annotations
+
 import json
+from typing import Any
+
 import torch
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader, Dataset
 
 from .base_generator import BaseDataGenerator
 
 
 class PyTorchDataGenerator(BaseDataGenerator):
-    """
-    Data generator for PyTorch models.
-    """
+    """Data generator for PyTorch models."""
 
     def __init__(
         self,
         model: torch.nn.Module,
         dataset: Dataset,
         batch_size: int = 32,
-        device: Optional[str] = None,
+        device: str | None = None,
         num_workers: int = 0,
     ):
         super().__init__(model, dataset, batch_size, device)
@@ -33,12 +34,12 @@ class PyTorchDataGenerator(BaseDataGenerator):
             dataset,
             batch_size=batch_size,
             shuffle=False,
-            num_workers=num_workers
+            num_workers=num_workers,
         )
 
-        self.results: Dict[str, Any] = {}
+        self.results: dict[str, Any] = {}
 
-    def generate(self) -> Dict[str, Any]:
+    def generate(self) -> dict[str, Any]:
         print("Generating model statistics...")
 
         outputs_all = []
@@ -86,7 +87,7 @@ class PyTorchDataGenerator(BaseDataGenerator):
 
         return self.results
 
-    def _count(self, tensor: torch.Tensor) -> Dict[int, int]:
+    def _count(self, tensor: torch.Tensor) -> dict[int, int]:
         counts = {}
         for v in tensor.tolist():
             v = int(v)
@@ -105,9 +106,9 @@ class PyTorchDataGenerator(BaseDataGenerator):
         except Exception as e:
             print("Saving failed:", e)
 
-    def load(self, path: str) -> Dict[str, Any]:
+    def load(self, path: str) -> dict[str, Any]:
         try:
-            with open(path, "r") as f:
+            with open(path) as f:
                 self.results = json.load(f)
             print(f"Results loaded from {path}")
             return self.results
