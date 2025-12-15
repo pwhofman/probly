@@ -372,7 +372,7 @@ This is where the dropout operation comes in handy.</p>
 <p>The idea is to insert layers into a model, that have a certain chance to “drop out” or disable neurons in that layer, thus creating a slightly different output every time the network makes a prediction.
 For our purposes we can use dropout, to evaluate how certain a model is about its inference.</p>
 <p><img alt="Dropout Image" src="https://www.baeldung.com/wp-content/uploads/sites/4/2020/05/2-1-2048x745-1.jpg" /></p>
-<p>As shown above, some of the neurons in the dropout layer have been deactivated, therefore we have a sub-model that will give us a different output than the original model for the same input.<br />
+<p>As shown above, some of the neurons in the dropout layer have been deactivated, therefore we have a sub-model that will give us a different output than the original model for the same input.
 Which neurons get deactivated will be decided by chance, every time we generate an output. That chance is called the dropout-rate and can be configured manually.</p>
 </section>
 <section id="dropout-and-model-confidence">
@@ -395,10 +395,10 @@ Which neurons get deactivated will be decided by chance, every time we generate 
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">nn</span>
 
 <span class="n">simple_model</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
-        <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
-        <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
-        <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
-    <span class="p">)</span>
+    <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+    <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+    <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -474,11 +474,11 @@ all we have to do is import the transformation function <code class="docutils li
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">conv_model</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
-        <span class="n">nn</span><span class="o">.</span><span class="n">Conv2d</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
-        <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">(),</span>
-        <span class="n">nn</span><span class="o">.</span><span class="n">Flatten</span><span class="p">(),</span>
-        <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
-    <span class="p">)</span>
+    <span class="n">nn</span><span class="o">.</span><span class="n">Conv2d</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
+    <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">(),</span>
+    <span class="n">nn</span><span class="o">.</span><span class="n">Flatten</span><span class="p">(),</span>
+    <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+<span class="p">)</span>
 
 <span class="n">dropout_conv_model</span> <span class="o">=</span> <span class="n">dropout</span><span class="p">(</span><span class="n">conv_model</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">)</span>
 
@@ -513,15 +513,15 @@ all we have to do is import the transformation function <code class="docutils li
 <span class="n">flax_rngs</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 
 <span class="n">simple_model_flax</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
-        <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">flax_rngs</span><span class="p">),</span>
-        <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">flax_rngs</span><span class="p">),</span>
-        <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">flax_rngs</span><span class="p">),</span>
-    <span class="p">)</span>
+    <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">flax_rngs</span><span class="p">),</span>
+    <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">flax_rngs</span><span class="p">),</span>
+    <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">flax_rngs</span><span class="p">),</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
-<p>As before with torch, we defined a simple linear model with three linear layers in flax.<br />
+<p>As before with torch, we defined a simple linear model with three linear layers in flax.
 Now we can try transforming it with probly’s transformation function <code class="docutils literal notranslate"><span class="pre">dropout</span></code>…</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -530,11 +530,11 @@ Now we can try transforming it with probly’s transformation function <code cla
 </div>
 </div>
 </div>
-<p>To confirm everything went as expected we create a short function that prints out the layers in a flax model without all the information that is unimportant to us right now.<br />
+<p>To confirm everything went as expected we create a short function that prints out the layers in a flax model without all the information that is unimportant to us right now.
 It simply goes through the structure of the network and prints out what kind of layers are contained in it:</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">print_layers</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">print_layers</span><span class="p">(</span><span class="n">module</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span> <span class="n">indent</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">module</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">attr</span><span class="p">,</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot; &quot;</span> <span class="o">*</span> <span class="n">indent</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">attr</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
@@ -566,11 +566,11 @@ For that we just define a small convolutional model like we did in torch before:
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">conv_model_flax</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
-        <span class="n">nnx</span><span class="o">.</span><span class="n">Conv</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span> <span class="n">rngs</span><span class="o">=</span><span class="n">flax_rngs</span><span class="p">),</span>
-        <span class="n">nnx</span><span class="o">.</span><span class="n">relu</span><span class="p">,</span>
-        <span class="n">nnx</span><span class="o">.</span><span class="n">flatten</span><span class="p">,</span>
-        <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">flax_rngs</span><span class="p">),</span>
-    <span class="p">)</span>
+    <span class="n">nnx</span><span class="o">.</span><span class="n">Conv</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span> <span class="n">rngs</span><span class="o">=</span><span class="n">flax_rngs</span><span class="p">),</span>
+    <span class="n">nnx</span><span class="o">.</span><span class="n">relu</span><span class="p">,</span>
+    <span class="n">nnx</span><span class="o">.</span><span class="n">flatten</span><span class="p">,</span>
+    <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">flax_rngs</span><span class="p">),</span>
+<span class="p">)</span>
 
 <span class="n">dropout_conv_model_flax</span> <span class="o">=</span> <span class="n">dropout</span><span class="p">(</span><span class="n">conv_model_flax</span><span class="p">)</span>
 <span class="n">print_layers</span><span class="p">(</span><span class="n">dropout_conv_model_flax</span><span class="p">)</span>
@@ -599,7 +599,7 @@ Likewise we can specify the dropout-rate by passing it as the second argument.</
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">demo_model</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
     <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
     <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">(),</span>
-    <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
 <span class="p">)</span>
 
 <span class="n">demo_dropout_model</span> <span class="o">=</span> <span class="n">dropout</span><span class="p">(</span><span class="n">demo_model</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">)</span>
@@ -627,10 +627,10 @@ Likewise we can specify the dropout-rate by passing it as the second argument.</
 </ol>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">randn</span><span class="p">,</span> <span class="n">no_grad</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">no_grad</span><span class="p">,</span> <span class="n">randn</span>
 
 <span class="c1"># generates a random input for the model</span>
-<span class="nb">input</span> <span class="o">=</span> <span class="n">randn</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="n">inpt</span> <span class="o">=</span> <span class="n">randn</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
 <span class="n">output</span> <span class="o">=</span> <span class="p">[]</span>
 
 <span class="n">demo_dropout_model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
@@ -643,7 +643,7 @@ Likewise we can specify the dropout-rate by passing it as the second argument.</
 <span class="c1"># pass the input to the model for a few times</span>
 <span class="k">with</span> <span class="n">no_grad</span><span class="p">():</span>
     <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">8</span><span class="p">):</span>
-        <span class="n">x</span> <span class="o">=</span> <span class="n">demo_dropout_model</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">demo_dropout_model</span><span class="p">(</span><span class="n">inpt</span><span class="p">)</span>
         <span class="n">output</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">item</span><span class="p">())</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
@@ -651,12 +651,12 @@ Likewise we can specify the dropout-rate by passing it as the second argument.</
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>[0.312858909368515, 0.27893561124801636, 0.27893561124801636, 0.312858909368515, 0.27893561124801636, 0.27893561124801636, 0.27893561124801636, 0.27893561124801636]
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>[0.6801756620407104, 0.6801756620407104, 0.5830086469650269, 0.6801756620407104, 0.5830086469650269, 0.6801756620407104, 0.6801756620407104, 0.6801756620407104]
 </pre></div>
 </div>
 </div>
 </div>
-<p>We can see that the output is not always the same if we run this multiple times.<br />
+<p>We can see that the output is not always the same if we run this multiple times.
 Now we will calculate the output variance with numpy:</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -668,7 +668,7 @@ Now we will calculate the output variance with numpy:</p>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>The output has a variance of 0.0002157731541322927
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>The output has a variance of 0.001770267903509648
 </pre></div>
 </div>
 </div>
