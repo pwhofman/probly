@@ -9,14 +9,9 @@ import numpy as np
 if TYPE_CHECKING:
     import matplotlib.pyplot as plt
 
-try:
-    from probly.visualization.plot_2d import IntervalVisualizer
-    from probly.visualization.plot_3d import TernaryVisualizer
-    from probly.visualization.plot_multid import MultiVisualizer
-except ImportError as e:
-    print(  # noqa: T201
-        f"Warning: Modules could not be imported. Please ensure all plotting files are present. Error: {e}",
-    )
+from probly.visualization.plot_2d import IntervalVisualizer
+from probly.visualization.plot_3d import TernaryVisualizer
+from probly.visualization.plot_multid import MultiVisualizer
 
 
 def check_num_classes(input_data: np.ndarray) -> int:
