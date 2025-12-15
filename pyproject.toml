@@ -88,6 +88,7 @@ docs = [
     "sphinx-copybutton",        # Optional: Adds copy buttons to code blocks
     "sphinx-autodoc-typehints", # Optional: Show type hints in your API docs
     "sphinxcontrib-bibtex",     # Optional: For bibliography support
+    "ipython<8.38.0",           # for code execution in notebooks
 ]
 dev = [
     "ipykernel>=6.29.5",
