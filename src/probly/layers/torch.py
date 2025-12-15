@@ -15,27 +15,74 @@ class BatchEnsembleLinear(nn.Module):
     """Implements a BatchEnsemble linear layer.
 
     Attributes:
-        in_features : int, number of input features
-        out_features : int, number of output features
-        num_members : int, number of ensemble members
+        in_features (int): number of input features
+        out_features (int): number of output features
+        num_members (int): number of ensemble members
+        s_mean (float): mean of a normal distribution to initialize s
+        s_std (float): standard deviation of a normal distribution to initialize s
+        r_mean (float): mean of a normal distribution to initialize r
+        r_std (float): standard deviation of a normal distribution to initialize r
+        kaiming_slope (float): slope parameter for Kaiming initialization
     """
 
     def __init__(self,
                  base_layer: nn.Linear,
-                 num_members: int = 1
+                 num_members: int = 1,
+                 s_mean : float = 1.0,
+                 s_std : float = 0.01,
+                 r_mean : float = 1.0,
+                 r_std : float = 0.01,
+                 kaiming_slope : float = math.sqrt(5.0),
     ) -> None:
         """Initializes the BatchEnsemble linear layer.
 
         Args:
-            base_layer: The original linear layer to be used.
-            num_members : int, number of ensemble members
+            base_layer (nn.Linear): The original linear layer to be used.
+            num_members (int): number of ensemble members
         """
         super().__init__()
         self.in_features = base_layer.in_features
         self.out_features = base_layer.out_features
         self.num_members = num_members
 
-        
+        # Shared weight and bias
+        self.weight = nn.Parameter(torch.Tensor(self.out_features, self.in_features))
+        self.bias = nn.Parameter(torch.Tensor(self.out_features))
+
+        # Rank-one factors
+        self.s = nn.Parameter(torch.Tensor(self.num_members, self.in_features)) # dim: in_features x 1
+        self.r = nn.Parameter(torch.Tensor(self.num_members, self.out_features)) # dim: 1 x out_features
+       
+        nn.init.kaiming_uniform_(self.weight, a=kaiming_slope)
+        nn.init.zeros_(self.bias)
+        nn.init.normal_(self.r, r_mean, r_std)
+        nn.init.normal_(self.s, s_mean, s_std)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Forward pass of the BatchEnsemble Linear layer.
+
+        Args:
+            x (torch.Tensor): Input tensor of shape [B, in_features] or [E, B, in_features],
+                              where B is the batch size and E is the ensemble size.
+
+        Returns:
+            torch.Tensor: Output tensor of shape [E, B, out_features].
+        """
+
+        # TODO maybe use buffers for some parameters? r,s, and their mu and std?
+        if x.dim() == 2:
+            # First layer: add ensemble dimension
+            x = x.unsqueeze(0).expand(self.num_members, -1, -1)  # [E, B, in_features]
+        elif x.dim() == 3 and x.size(0) != self.num_members:
+            msg = f"Expected first dim={self.num_members}, got {x.size(0)}"
+            raise ValueError(msg)
+
+        x = x * self.s.unsqueeze(1)
+        y = F.linear(x, self.weight.t(), bias=None)
+        y = y * self.r.unsqueeze(1) + self.bias
+        return y
+
+
 class BatchEnsembleConv2d(nn.Module):
     """Implements a BatchEnsemble convolutional layer.
 
