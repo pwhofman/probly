@@ -78,7 +78,7 @@ def train_pn(
     id_loader: DataLoader,
     ood_loader: DataLoader,
 ) -> float:
-    """Train the model for one epoch using paired ID and OOD mini-batches."""
+    """Train the model for one epoch, using paired ID and OOD mini-batches."""
     device = "cpu"
     model.train()
 
