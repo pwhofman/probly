@@ -2,12 +2,8 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 import matplotlib.pyplot as plt
-
-if TYPE_CHECKING:
-    import numpy as np
+import numpy as np  # noqa: TC002
 
 from probly.visualization.input_handling import dispatch_plot
 

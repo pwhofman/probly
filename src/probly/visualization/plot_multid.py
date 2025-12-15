@@ -105,7 +105,7 @@ class MultiVisualizer:
         ax.set_ylim(0.0, 1.0)
         ax.set_varlabels(labels)
 
-        probs_flat = probs.flatten()
+        probs_flat = probs.sum(axis=0)
         max_class = np.argmax(probs_flat)
         ax.scatter(theta[max_class], probs_flat[max_class], s=80, color="red", label="MLE")
 
