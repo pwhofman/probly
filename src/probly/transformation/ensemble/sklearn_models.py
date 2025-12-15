@@ -52,7 +52,7 @@ def generate_sklearn_ensemble(obj: BaseEstimator, num_members: int, reset_params
         sklearn_ensemble = sklearn_list_ensemble(base=obj, num_members=num_members, reset_params=reset_params)
 
     else:
-        msg = "Cannot create sklearn ensemble for object of type {type(obj)}"
+        msg = f"Cannot create sklearn ensemble for object of type {type(obj)}"
         raise TypeError(msg)
     return sklearn_ensemble
 
