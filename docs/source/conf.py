@@ -42,7 +42,7 @@ extensions = [
     "sphinx.ext.mathjax",  # for math support
     "sphinx.ext.doctest",  # for testing code snippets in the docs
     "sphinx_copybutton",  # adds a copy button to code blocks
-    "sphinx.ext.autosectionlabel",  # for auto-generating section labels,
+    # '"sphinx.ext.autosectionlabel",  # for auto-generating section labels,
     "sphinxcontrib.bibtex",  # for bibliography support
 ]
 
