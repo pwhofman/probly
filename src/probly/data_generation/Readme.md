@@ -250,7 +250,7 @@ for model in ensemble_models:
 uncertainty = compute_ensemble_uncertainty(ensemble_dists)
 ```
 
-## ⚠️ Wichtige Hinweise
+##  Wichtige Hinweise
 
 ###  Best Practices
 
@@ -284,7 +284,7 @@ uncertainty = compute_ensemble_uncertainty(ensemble_dists)
 - Verwenden Sie `num_workers > 0` in DataLoadern (außer auf Windows)
 - Bei sehr großen Datasets: Generieren Sie in Chunks
 
-### 🐛 Häufige Probleme
+###  Häufige Probleme
 
 **Problem**: "Model must return a torch.Tensor"
 ```python
@@ -363,4 +363,4 @@ Teil des `probly` Projekts - siehe Haupt-Repository für Lizenzinformationen.
 
 ---
 
-**Hinweis**: Diese README deckt die Grundlagen ab. Für tiefergehende Informationen, siehe `docs/data_generation_guide.md`.
+**Hinweis**: Diese README deckt die Grundlagen ab. Für tiefergehende Informationen, siehe `data_generation_guide.md`.
