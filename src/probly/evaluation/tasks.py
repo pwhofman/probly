@@ -84,6 +84,8 @@ def out_of_distribution_detection_fpr_at_x_tpr(
 ) -> float:
     """Perform out-of-distribution detection using false positive rate (FPR) at a given true positive rate.
 
+    If no thresholds are specified, the default tpr_target is 0.95.
+
     This can be epistemic uncertainty, as is common, but also e.g. softmax confidence.
 
     Args:
@@ -126,6 +128,8 @@ def out_of_distribution_detection_fnr_at_x_tpr(
     tpr_target: float = 0.95,
 ) -> float:
     """Perform out-of-distribution detection using false negative rate at user given true positive rate.
+
+    If no thresholds are specified, the default tpr_target is 0.95.
 
     Args:
         in_distribution: in-distribution prediction functionals
