@@ -130,7 +130,7 @@ autosummary_generate = True
 autodoc_default_options = {
     "show-inheritance": True,
     "members": True,
-    "interited-members": True,
+    "inherited-members": True,
     "member-order": "groupwise",
     "special-members": "__call__",
     "undoc-members": True,
