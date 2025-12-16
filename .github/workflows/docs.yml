@@ -39,21 +39,6 @@ jobs:
           cp .github/CONTRIBUTING.md docs/source/contributing.md
           cp -r notebooks/examples/ docs/source/
 
-      # CODE QUALITY ASSURANCE
-      - name: Run Ruff Style and Linting Checks
-        run: |
-          uv run ruff check .
-          uv run ruff format --check .
-
-      - name: Run MyPy Static Type Check
-        run: |
-          uv run mypy src/
-
-      - name: Execute Unit Tests and Measure Coverage
-        run: |
-
-          uv run pytest --cov=src/probly --cov-report=xml
-
 
       # DOCUMENTATION BUILD AND INTEGRITY CHECKS
       - name: Build documentation with warnings as errors (Main Check)
