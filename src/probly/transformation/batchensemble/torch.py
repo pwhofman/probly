@@ -11,24 +11,28 @@ from .common import register
 
 def replace_torch_batchensemble_linear(
     obj: nn.Linear,
-    use_base_weights: bool,
-    posterior_std: float,
-    prior_mean: float,
-    prior_std: float,
+    num_members: int,
+    s_mean : float,
+    s_std : float,
+    r_mean : float,
+    r_std : float,
+    kaiming_slope : float
 ) -> BatchEnsembleLinear:
     """Replace a given layer by a BatchEnsembleLinear layer."""
-    return BatchEnsembleLinear(obj, use_base_weights, posterior_std, prior_mean, prior_std)
+    return BatchEnsembleLinear(obj, num_members, s_mean, s_std, r_mean, r_std, kaiming_slope)
 
 
 def replace_torch_batchensemble_conv2d(
     obj: nn.Conv2d,
-    use_base_weights: bool,
-    posterior_std: float,
-    prior_mean: float,
-    prior_std: float,
+    num_members: int,
+    s_mean : float,
+    s_std : float,
+    r_mean : float,
+    r_std : float,
+    kaiming_slope : float
 ) -> BatchEnsembleConv2d:
     """Replace a given layer by a BatchEnsembleConv2d layer."""
-    return BatchEnsembleConv2d(obj, use_base_weights, posterior_std, prior_mean, prior_std)
+    return BatchEnsembleConv2d(obj, num_members, s_mean, s_std, r_mean, r_std, kaiming_slope)
 
 
 register(nn.Linear, replace_torch_batchensemble_linear)
