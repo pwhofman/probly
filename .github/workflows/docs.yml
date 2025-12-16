@@ -25,7 +25,7 @@ jobs:
 
     strategy:
       matrix:
-        python-version: ["3.9", "3.14"]
+        python-version: ["3.14"]
 
     steps:
       - name: Checkout Repository
@@ -39,15 +39,12 @@ jobs:
           cache: 'uv'
 
       - name: Install Pandoc (for Markdown processing)
-
         run: sudo apt-get update && sudo apt-get install -y pandoc
 
       - name: Install dependencies (uv sync)
-
         run: uv sync --dev
 
       - name: Copy project files to docs/source folder
-
         run: |
           cp .github/CONTRIBUTING.md docs/source/contributing.md
           cp -r notebooks/examples/ docs/source/
