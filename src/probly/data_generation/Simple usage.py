@@ -1,5 +1,4 @@
-"""
-Einfaches Beispiel zur Verwendung des First-Order Data Generators
+"""Einfaches Beispiel zur Verwendung des First-Order Data Generators.
 
 Dieses Skript zeigt, wie man:
 1. Einen einfachen Datensatz und ein Modell erstellt
@@ -8,6 +7,8 @@ Dieses Skript zeigt, wie man:
 4. Mit FirstOrderDataset und DataLoader verwendet
 """
 
+from __future__ import annotations
+from typing import Any
 import torch
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
@@ -26,13 +27,14 @@ from probly.data_generator.first_order_generator import (
 # ============================================================================
 
 class SimpleDataset(Dataset):
-    """
-    Ein einfacher Beispiel-Datensatz für Demonstrationszwecke.
+    """Ein einfacher Beispiel-Datensatz für Demonstrationszwecke.
     
     Generiert zufällige Eingabevektoren und gibt diese mit Labels zurück.
     """
-    def __init__(self, n_samples=100, input_dim=10, n_classes=3):
-        """
+    
+    def __init__(self, n_samples: int = 100, input_dim: int = 10, n_classes: int = 3) -> None:
+        """Initialize dataset.
+        
         Args:
             n_samples: Anzahl der Samples im Datensatz
             input_dim: Dimension der Eingabevektoren
@@ -47,20 +49,22 @@ class SimpleDataset(Dataset):
         self.data = torch.randn(n_samples, input_dim)
         self.labels = torch.randint(0, n_classes, (n_samples,))
     
-    def __len__(self):
+    def __len__(self) -> int:
+        """Return dataset length."""
         return self.n_samples
     
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int) -> tuple[torch.Tensor, int]:
+        """Get item by index."""
         # Gibt (input, label) zurück
         return self.data[idx], self.labels[idx]
 
 
 class SimpleModel(nn.Module):
-    """
-    Ein einfaches neuronales Netzwerk für Klassifikation.
-    """
-    def __init__(self, input_dim=10, n_classes=3):
-        """
+    """Ein einfaches neuronales Netzwerk für Klassifikation."""
+    
+    def __init__(self, input_dim: int = 10, n_classes: int = 3) -> None:
+        """Initialize model.
+        
         Args:
             input_dim: Dimension der Eingabe
             n_classes: Anzahl der Ausgabeklassen
@@ -74,7 +78,8 @@ class SimpleModel(nn.Module):
             nn.Linear(32, n_classes)
         )
     
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Forward pass."""
         # Gibt Logits zurück (nicht Wahrscheinlichkeiten!)
         return self.network(x)
 
@@ -83,13 +88,13 @@ class SimpleModel(nn.Module):
 # 2. VERTEILUNGEN GENERIEREN
 # ============================================================================
 
-def generate_first_order_distributions():
-    """
-    Generiert First-Order Verteilungen aus einem Modell und Datensatz.
-    """
-    print("=" * 70)
-    print("SCHRITT 1: First-Order Verteilungen generieren")
-    print("=" * 70)
+def generate_first_order_distributions() -> tuple[
+    FirstOrderDataGenerator, dict[int, list[float]], SimpleDataset, int
+]:
+    """Generiert First-Order Verteilungen aus einem Modell und Datensatz."""
+    print("=" * 70)  # noqa: T201
+    print("SCHRITT 1: First-Order Verteilungen generieren")  # noqa: T201
+    print("=" * 70)  # noqa: T201
     
     # Parameter definieren
     n_samples = 100
@@ -97,20 +102,20 @@ def generate_first_order_distributions():
     n_classes = 3
     
     # Dataset erstellen
-    print(f"\n Erstelle Datensatz mit {n_samples} Samples...")
+    print(f"\nErstelle Datensatz mit {n_samples} Samples...")  # noqa: T201
     dataset = SimpleDataset(n_samples=n_samples, input_dim=input_dim, n_classes=n_classes)
     
     # Modell erstellen und initialisieren
-    print(f" Erstelle und initialisiere Modell...")
+    print("Erstelle und initialisiere Modell...")  # noqa: T201
     model = SimpleModel(input_dim=input_dim, n_classes=n_classes)
     model.eval()  # WICHTIG: Modell in Evaluationsmodus setzen!
     
     # Device auswählen
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    print(f" Verwende Device: {device}")
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    print(f"Verwende Device: {device}")  # noqa: T201
     
     # Generator initialisieren
-    print(f"\n⚙️  Initialisiere FirstOrderDataGenerator...")
+    print("\nInitialisiere FirstOrderDataGenerator...")  # noqa: T201
     generator = FirstOrderDataGenerator(
         model=model,
         device=device,
@@ -120,18 +125,18 @@ def generate_first_order_distributions():
     )
     
     # Verteilungen generieren
-    print(f"\n Generiere Verteilungen (mit Fortschrittsanzeige)...")
+    print("\nGeneriere Verteilungen (mit Fortschrittsanzeige)...")  # noqa: T201
     distributions = generator.generate_distributions(
         dataset,
         progress=True  # Zeigt Fortschritt an
     )
     
-    print(f"\n Erfolgreich {len(distributions)} Verteilungen generiert!")
+    print(f"\nErfolgreich {len(distributions)} Verteilungen generiert!")  # noqa: T201
     
     # Beispiel-Verteilung anzeigen
-    print(f"\n Beispiel-Verteilung für Sample 0:")
-    print(f"   Wahrscheinlichkeiten: {[f'{p:.4f}' for p in distributions[0]]}")
-    print(f"   Summe: {sum(distributions[0]):.6f} (sollte ≈ 1.0 sein)")
+    print("\nBeispiel-Verteilung für Sample 0:")  # noqa: T201
+    print(f"   Wahrscheinlichkeiten: {[f'{p:.4f}' for p in distributions[0]]}")  # noqa: T201
+    print(f"   Summe: {sum(distributions[0]):.6f} (sollte ≈ 1.0 sein)")  # noqa: T201
     
     return generator, distributions, dataset, n_classes
 
@@ -140,13 +145,15 @@ def generate_first_order_distributions():
 # 3. VERTEILUNGEN SPEICHERN UND LADEN
 # ============================================================================
 
-def save_and_load_distributions(generator, distributions, n_classes):
-    """
-    Demonstriert das Speichern und Laden von Verteilungen.
-    """
-    print("\n" + "=" * 70)
-    print("SCHRITT 2: Verteilungen speichern und laden")
-    print("=" * 70)
+def save_and_load_distributions(
+    generator: FirstOrderDataGenerator,
+    distributions: dict[int, list[float]],
+    n_classes: int
+) -> tuple[dict[int, list[float]], dict[str, Any]]:
+    """Demonstriert das Speichern und Laden von Verteilungen."""
+    print("\n" + "=" * 70)  # noqa: T201
+    print("SCHRITT 2: Verteilungen speichern und laden")  # noqa: T201
+    print("=" * 70)  # noqa: T201
     
     # Pfad für Output-Datei
     output_dir = Path("output")
@@ -163,27 +170,27 @@ def save_and_load_distributions(generator, distributions, n_classes):
     }
     
     # Speichern
-    print(f"\n Speichere Verteilungen nach: {save_path}")
+    print(f"\nSpeichere Verteilungen nach: {save_path}")  # noqa: T201
     generator.save_distributions(
         path=save_path,
         distributions=distributions,
-        meta=metadata
+        meta=metadata,
     )
-    print(f" Erfolgreich gespeichert!")
+    print("Erfolgreich gespeichert!")  # noqa: T201
     
     # Laden
-    print(f"\n📂 Lade Verteilungen von: {save_path}")
+    print(f"\nLade Verteilungen von: {save_path}")  # noqa: T201
     loaded_distributions, loaded_metadata = generator.load_distributions(save_path)
     
-    print(f" Erfolgreich geladen!")
-    print(f"\n Metadaten:")
+    print("Erfolgreich geladen!")  # noqa: T201
+    print("\nMetadaten:")  # noqa: T201
     for key, value in loaded_metadata.items():
-        print(f"   - {key}: {value}")
+        print(f"   - {key}: {value}")  # noqa: T201
     
     # Verifizierung
-    print(f"\n Verifizierung:")
-    print(f"   - Anzahl Verteilungen: {len(loaded_distributions)}")
-    print(f"   - Originale == Geladene: {distributions == loaded_distributions}")
+    print("\nVerifizierung:")  # noqa: T201
+    print(f"   - Anzahl Verteilungen: {len(loaded_distributions)}")  # noqa: T201
+    print(f"   - Originale == Geladene: {distributions == loaded_distributions}")  # noqa: T201
     
     return loaded_distributions, loaded_metadata
 
@@ -192,39 +199,40 @@ def save_and_load_distributions(generator, distributions, n_classes):
 # 4. FIRSTORDERDATASET VERWENDEN
 # ============================================================================
 
-def use_first_order_dataset(dataset, distributions):
-    """
-    Zeigt die Verwendung von FirstOrderDataset.
-    """
-    print("\n" + "=" * 70)
-    print("SCHRITT 3: FirstOrderDataset verwenden")
-    print("=" * 70)
+def use_first_order_dataset(
+    dataset: SimpleDataset,
+    distributions: dict[int, list[float]]
+) -> FirstOrderDataset:
+    """Zeigt die Verwendung von FirstOrderDataset."""
+    print("\n" + "=" * 70)  # noqa: T201
+    print("SCHRITT 3: FirstOrderDataset verwenden")  # noqa: T201
+    print("=" * 70)  # noqa: T201
     
     # FirstOrderDataset erstellen
-    print(f"\n Erstelle FirstOrderDataset...")
+    print("\nErstelle FirstOrderDataset...")  # noqa: T201
     fo_dataset = FirstOrderDataset(
         base_dataset=dataset,
         distributions=distributions
     )
     
-    print(f" Dataset erstellt mit {len(fo_dataset)} Samples")
+    print(f"Dataset erstellt mit {len(fo_dataset)} Samples")  # noqa: T201
     
     # Ein Sample abrufen
-    print(f"\n Sample 0 abrufen:")
+    print("\nSample 0 abrufen:")  # noqa: T201
     sample = fo_dataset[0]
     
     # Sample kann (input, label, distribution) oder (input, distribution) sein
     if len(sample) == 3:
         input_tensor, label, distribution = sample
-        print(f"   - Input shape: {input_tensor.shape}")
-        print(f"   - Label: {label}")
-        print(f"   - Distribution shape: {distribution.shape}")
-        print(f"   - Distribution: {[f'{p:.4f}' for p in distribution.tolist()]}")
+        print(f"   - Input shape: {input_tensor.shape}")  # noqa: T201
+        print(f"   - Label: {label}")  # noqa: T201
+        print(f"   - Distribution shape: {distribution.shape}")  # noqa: T201
+        print(f"   - Distribution: {[f'{p:.4f}' for p in distribution.tolist()]}")  # noqa: T201
     else:
         input_tensor, distribution = sample
-        print(f"   - Input shape: {input_tensor.shape}")
-        print(f"   - Distribution shape: {distribution.shape}")
-        print(f"   - Distribution: {[f'{p:.4f}' for p in distribution.tolist()]}")
+        print(f"   - Input shape: {input_tensor.shape}")  # noqa: T201
+        print(f"   - Distribution shape: {distribution.shape}")  # noqa: T201
+        print(f"   - Distribution: {[f'{p:.4f}' for p in distribution.tolist()]}")  # noqa: T201
     
     return fo_dataset
 
@@ -233,16 +241,17 @@ def use_first_order_dataset(dataset, distributions):
 # 5. DATALOADER MIT FIRST-ORDER VERTEILUNGEN
 # ============================================================================
 
-def use_dataloader_with_distributions(dataset, distributions):
-    """
-    Demonstriert die Verwendung eines DataLoaders mit First-Order Verteilungen.
-    """
-    print("\n" + "=" * 70)
-    print("SCHRITT 4: DataLoader mit First-Order Verteilungen")
-    print("=" * 70)
+def use_dataloader_with_distributions(
+    dataset: SimpleDataset,
+    distributions: dict[int, list[float]]
+) -> DataLoader:
+    """Demonstriert die Verwendung eines DataLoaders mit First-Order Verteilungen."""
+    print("\n" + "=" * 70)  # noqa: T201
+    print("SCHRITT 4: DataLoader mit First-Order Verteilungen")  # noqa: T201
+    print("=" * 70)  # noqa: T201
     
     # DataLoader erstellen
-    print(f"\n Erstelle DataLoader mit batch_size=16...")
+    print("\nErstelle DataLoader mit batch_size=16...")  # noqa: T201
     fo_loader = output_fo_dataloader(
         base_dataset=dataset,
         distributions=distributions,
@@ -252,30 +261,30 @@ def use_dataloader_with_distributions(dataset, distributions):
         pin_memory=False
     )
     
-    print(f" DataLoader erstellt!")
+    print("DataLoader erstellt!")  # noqa: T201
     
     # Ersten Batch abrufen
-    print(f"\n Rufe ersten Batch ab...")
+    print("\nRufe ersten Batch ab...")  # noqa: T201
     batch = next(iter(fo_loader))
     
     if len(batch) == 3:
         inputs, labels, distributions_batch = batch
-        print(f"   - Inputs shape: {inputs.shape}")
-        print(f"   - Labels shape: {labels.shape}")
-        print(f"   - Distributions shape: {distributions_batch.shape}")
+        print(f"   - Inputs shape: {inputs.shape}")  # noqa: T201
+        print(f"   - Labels shape: {labels.shape}")  # noqa: T201
+        print(f"   - Distributions shape: {distributions_batch.shape}")  # noqa: T201
     else:
         inputs, distributions_batch = batch
-        print(f"   - Inputs shape: {inputs.shape}")
-        print(f"   - Distributions shape: {distributions_batch.shape}")
+        print(f"   - Inputs shape: {inputs.shape}")  # noqa: T201
+        print(f"   - Distributions shape: {distributions_batch.shape}")  # noqa: T201
     
     # Zeige wie man über den Loader iteriert
-    print(f"\n Iteriere über alle Batches...")
+    print("\nIteriere über alle Batches...")  # noqa: T201
     for batch_idx, batch in enumerate(fo_loader):
         if batch_idx == 0:
-            print(f"   Batch {batch_idx}: {len(batch)} Tensoren")
+            print(f"   Batch {batch_idx}: {len(batch)} Tensoren")  # noqa: T201
     
     total_batches = len(fo_loader)
-    print(f"   ... (insgesamt {total_batches} Batches)")
+    print(f"   ... (insgesamt {total_batches} Batches)")  # noqa: T201
     
     return fo_loader
 
@@ -284,24 +293,27 @@ def use_dataloader_with_distributions(dataset, distributions):
 # 6. TRAINING MIT SOFT TARGETS (BONUS)
 # ============================================================================
 
-def train_with_soft_targets(fo_loader, input_dim, n_classes, epochs=3):
-    """
-    Zeigt ein einfaches Training mit First-Order Verteilungen als Soft Targets.
-    """
-    print("\n" + "=" * 70)
-    print("SCHRITT 5: Training mit Soft Targets (Bonus)")
-    print("=" * 70)
+def train_with_soft_targets(
+    fo_loader: DataLoader,
+    input_dim: int,
+    n_classes: int,
+    epochs: int = 3
+) -> nn.Module:
+    """Zeigt ein einfaches Training mit First-Order Verteilungen als Soft Targets."""
+    print("\n" + "=" * 70)  # noqa: T201
+    print("SCHRITT 5: Training mit Soft Targets (Bonus)")  # noqa: T201
+    print("=" * 70)  # noqa: T201
     
     # Student-Modell erstellen
-    print(f"\n🎓 Erstelle Student-Modell...")
+    print("\nErstelle Student-Modell...")  # noqa: T201
     student_model = SimpleModel(input_dim=input_dim, n_classes=n_classes)
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    device = "cuda" if torch.cuda.is_available() else "cpu"
     student_model = student_model.to(device)
     
     # Optimizer
     optimizer = torch.optim.Adam(student_model.parameters(), lr=0.001)
     
-    print(f"⚙️  Training für {epochs} Epochen...")
+    print(f"Training für {epochs} Epochen...")  # noqa: T201
     
     for epoch in range(epochs):
         student_model.train()
@@ -311,7 +323,7 @@ def train_with_soft_targets(fo_loader, input_dim, n_classes, epochs=3):
         for batch in fo_loader:
             # Batch entpacken
             if len(batch) == 3:
-                inputs, labels, target_distributions = batch
+                inputs, _labels, target_distributions = batch
             else:
                 inputs, target_distributions = batch
             
@@ -339,9 +351,9 @@ def train_with_soft_targets(fo_loader, input_dim, n_classes, epochs=3):
             n_batches += 1
         
         avg_loss = epoch_loss / n_batches
-        print(f"   Epoch {epoch + 1}/{epochs} - Durchschnittlicher Loss: {avg_loss:.4f}")
+        print(f"   Epoch {epoch + 1}/{epochs} - Durchschnittlicher Loss: {avg_loss:.4f}")  # noqa: T201
     
-    print(f"\n Training abgeschlossen!")
+    print("\nTraining abgeschlossen!")  # noqa: T201
     
     return student_model
 
@@ -350,54 +362,52 @@ def train_with_soft_targets(fo_loader, input_dim, n_classes, epochs=3):
 # MAIN FUNKTION
 # ============================================================================
 
-def main():
-    """
-    Hauptfunktion die alle Schritte ausführt.
-    """
-    print("\n" + "=" * 70)
-    print(" First-Order Data Generator - Einfaches Beispiel")
-    print("=" * 70)
+def main() -> None:
+    """Hauptfunktion die alle Schritte ausführt."""
+    print("\n" + "=" * 70)  # noqa: T201
+    print("First-Order Data Generator - Einfaches Beispiel")  # noqa: T201
+    print("=" * 70)  # noqa: T201
     
     # Schritt 1: Verteilungen generieren
     generator, distributions, dataset, n_classes = generate_first_order_distributions()
     
     # Schritt 2: Speichern und Laden
-    loaded_distributions, metadata = save_and_load_distributions(
+    loaded_distributions, _metadata = save_and_load_distributions(
         generator, distributions, n_classes
     )
     
     # Schritt 3: FirstOrderDataset verwenden
-    fo_dataset = use_first_order_dataset(dataset, loaded_distributions)
+    _fo_dataset = use_first_order_dataset(dataset, loaded_distributions)
     
     # Schritt 4: DataLoader verwenden
     fo_loader = use_dataloader_with_distributions(dataset, loaded_distributions)
     
     # Schritt 5: Training (optional)
-    print("\n" + "=" * 70)
-    print("🎓 Möchten Sie ein kurzes Training demonstrieren? (Optional)")
-    print("=" * 70)
-    print("Hinweis: Dies zeigt, wie man mit den generierten Verteilungen")
-    print("         als 'Soft Targets' trainieren kann.")
+    print("\n" + "=" * 70)  # noqa: T201
+    print("Möchten Sie ein kurzes Training demonstrieren? (Optional)")  # noqa: T201
+    print("=" * 70)  # noqa: T201
+    print("Hinweis: Dies zeigt, wie man mit den generierten Verteilungen")  # noqa: T201
+    print("         als 'Soft Targets' trainieren kann.")  # noqa: T201
     
     # Für das Beispiel trainieren wir einfach
-    student_model = train_with_soft_targets(
+    _student_model = train_with_soft_targets(
         fo_loader, 
         input_dim=10, 
         n_classes=n_classes, 
         epochs=2
     )
     
-    print("\n" + "=" * 70)
-    print(" Beispiel erfolgreich abgeschlossen!")
-    print("=" * 70)
-    print("\nZusammenfassung:")
-    print(f"  ✓ {len(distributions)} Verteilungen generiert")
-    print(f"  ✓ Verteilungen gespeichert und geladen")
-    print(f"  ✓ FirstOrderDataset erstellt")
-    print(f"  ✓ DataLoader verwendet")
-    print(f"  ✓ Student-Modell trainiert")
-    print("\n Weitere Informationen: Siehe docs/data_generation_guide.md")
-    print("=" * 70 + "\n")
+    print("\n" + "=" * 70)  # noqa: T201
+    print("Beispiel erfolgreich abgeschlossen!")  # noqa: T201
+    print("=" * 70)  # noqa: T201
+    print("\nZusammenfassung:")  # noqa: T201
+    print(f"  {len(distributions)} Verteilungen generiert")  # noqa: T201
+    print("  Verteilungen gespeichert und geladen")  # noqa: T201
+    print("  FirstOrderDataset erstellt")  # noqa: T201
+    print("  DataLoader verwendet")  # noqa: T201
+    print("  Student-Modell trainiert")  # noqa: T201
+    print("\nWeitere Informationen: Siehe docs/data_generation_guide.md")  # noqa: T201
+    print("=" * 70 + "\n")  # noqa: T201
 
 
 if __name__ == "__main__":
