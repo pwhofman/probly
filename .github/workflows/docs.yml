@@ -2,20 +2,10 @@ name: CI Documentation Check
 
 # TRIGGERING AND ENVIRONMENT SETUP
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'docs/**'
-      - 'src/**'
-      - '.github/workflows/docs-check.yml'
   pull_request:
-    branches:
-      - main
-    paths:
-      - 'docs/**'
-      - 'src/**'
-      - '.github/workflows/docs-check.yml'
+    push:
+        branches: [main]
+    workflow_dispatch:
 
 jobs:
   docs_build_check:
