@@ -1,16 +1,38 @@
-import tensorflow as tf
+"""Temperature scaling calibration model using TensorFlow."""
+
+from __future__ import annotations
+
 import numpy as np
-from typing import Union
+import tensorflow as tf
 
 
 class TemperatureScaling(tf.keras.Model):
+    """Applies temperature scaling to a trained tensorflow (Keras) model.
+
+    This model wraps an existing classifier and calibrates its
+    logits using a learned temperature parameter.
+    """
 
     def __init__(self, model: tf.keras.Model) -> None:
+        """Initialize the temperature scaling wrapper.
+
+        Args:
+            model (tf.keras.Model): Trained TensorFlow model to calibrate.
+        """
         super().__init__()
         self.model = model
         self.temperature = tf.Variable(1.0, dtype=tf.float32, trainable=True)
 
     def call(self, inputs: tf.Tensor, training: bool = False) -> tf.Tensor:
+        """Forward pass with temperature scaling applied.
+
+        Args:
+            inputs: Input tensor to the wrapped model.
+            training: Whether the model is in training mode.
+
+        Returns:
+            Scaled logits tensor.
+        """
         logits = self.model(inputs, training=training)
         return logits / self.temperature
 
@@ -20,41 +42,60 @@ class TemperatureScaling(tf.keras.Model):
         val_labels: tf.Tensor,
         epochs: int = 1000,
         learning_rate: float = 0.01,
-    ) -> "TemperatureScaling":
+    ) -> TemperatureScaling:
+        """Optimize the temperature parameter using validation data.
+
+        Args:
+            val_x: Validation input features.
+            val_labels: Validation labels.
+            epochs: retrain numbers.
+            learning_rate: how fast it learns.
+        """
         logits = self.model(val_x, training=False)
         labels = val_labels
 
         optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
 
-        for epoch in range(epochs):
+        for _epoch in range(epochs):
             with tf.GradientTape() as tape:
                 scaled_logits = logits / self.temperature
                 loss = tf.reduce_mean(
                     tf.keras.losses.sparse_categorical_crossentropy(
-                        labels, scaled_logits, from_logits=True
-                    )
+                        labels,
+                        scaled_logits,
+                        from_logits=True,
+                    ),
                 )
             grads = tape.gradient(loss, [self.temperature])
-            optimizer.apply_gradients(zip(grads, [self.temperature]))
+            optimizer.apply_gradients(zip(grads, [self.temperature], strict=False))
             if tf.abs(grads[0]) < 1e-6:
                 break
-
-        print(f"Optimal Temperature: {self.temperature.numpy():.3f}")
         return self
 
-    def predict(self, x: tf.Tensor, softed: bool = True) -> Union[tf.Tensor, np.ndarray]:
+    def predict(self, x: tf.Tensor, softed: bool = True) -> tf.Tensor | np.ndarray:
+        """Make predictions using the calibrated model with optional temperature scaling.
+
+        Args:
+            x (tf.Tensor): Input data for which predictions are to be made.
+            softed (bool, optional): If True, return probabilities using softmax;
+                                    if False, return scaled logits. Defaults to True.
+
+        Returns:
+            tf.Tensor or np.ndarray: Softmax probabilities if `softed` is True,
+                                    otherwise the logits scaled by temperature.
+        """
         logits = self.model(x, training=False)
         scaled_logits = logits / self.temperature
         if softed:
             probs = tf.nn.softmax(scaled_logits, axis=-1)
-            return probs 
-        return scaled_logits 
+            return probs
+        return scaled_logits
 
 
 def expected_calibration_error(
     probs: np.ndarray,
     labels: np.ndarray,
-    num_bins: int = 10
+    num_bins: int = 10,
 ) -> float:
     """Compute the expected calibration error (ECE)."""
     confs = np.max(probs, axis=1)
