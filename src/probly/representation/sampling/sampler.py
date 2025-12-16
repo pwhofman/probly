@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable
-from typing import Any, Literal, TypeVar, Unpack
+from typing import Any, Literal, Unpack
 
 from probly.lazy_types import FLAX_MODULE, TORCH_MODULE
 from probly.predictor import Predictor, predict
