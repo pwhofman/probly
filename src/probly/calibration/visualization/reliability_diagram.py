@@ -51,7 +51,8 @@ def compute_reliability_diagram(probabilities: np.ndarray, labels: np.ndarray, n
 
     return diagram
 
-def plot_reliability_diagram(diagram: dict, title: str = "Model Calibration") -> tuple[plt.figure, plt.axes] :
+
+def plot_reliability_diagram(diagram: dict, title: str = "Model Calibration") -> tuple[plt.figure, plt.axes]:
     """Plots the diagram calculated with `compute_reliability_diagram`.
 
     Args:
@@ -62,9 +63,8 @@ def plot_reliability_diagram(diagram: dict, title: str = "Model Calibration") ->
         fig: The matplotlib figure
         ax: The matplotlib axis
     """
-
     n_bins = diagram["n_bins"]
-    accs  = np.array(diagram["bin_accuracies"], dtype=float)
+    accs = np.array(diagram["bin_accuracies"], dtype=float)
     confs = np.array(diagram["bin_confidences"], dtype=float)
 
     edges = np.linspace(0.0, 1.0, n_bins + 1)
@@ -85,28 +85,32 @@ def plot_reliability_diagram(diagram: dict, title: str = "Model Calibration") ->
 
     # Blue bars
     ax.bar(
-        lefts, accs,
-        width=width, align="edge",
-        color="#1f77b4",        
-        edgecolor="black",   
+        lefts,
+        accs,
+        width=width,
+        align="edge",
+        color="#1f77b4",
+        edgecolor="black",
         linewidth=1.2,
-        label="Outputs"
+        label="Outputs",
     )
 
     gap = np.abs(accs - confs)
     bottom = np.minimum(accs, confs)
 
-    #Red bars
+    # Red bars
     ax.bar(
-        lefts, gap,
+        lefts,
+        gap,
         bottom=bottom,
-        width=width, align="edge",
-        facecolor="red",      
+        width=width,
+        align="edge",
+        facecolor="red",
         edgecolor="red",
         linewidth=1.0,
-        hatch="/",            
+        hatch="/",
         alpha=0.30,
-        label="Calibration gap"
+        label="Calibration gap",
     )
 
     ax.legend()
