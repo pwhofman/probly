@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from torch.utils.data import DataLoader
 
 
-def unified_evidential_trainn(
+def unified_evidential_train_class(
     mode: str,
     model: nn.Module,
     dataloader: DataLoader,
@@ -125,7 +125,7 @@ def train_pn(
     return total_loss
 
 
-def unified_loss(
+def unified_evidential_train_reg(
     y: torch.Tensor,
     mu: torch.Tensor,
     kappa: torch.Tensor,
