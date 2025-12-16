@@ -1,11 +1,10 @@
-"""
-First-Order Data Generator für Unsicherheitsquantifizierung / First-Order Data Generator for Uncertainty Quantification.
+"""First-Order Data Generator for Uncertainty Quantification.
 
-Dieses Modul stellt Werkzeuge zur Generierung approximativer bedingter Wahrscheinlichkeitsverteilungen
-p(Y|X) aus vortrainierten Modellen bereit.
+Dieses Modul stellt Werkzeuge zur Generierung approximativer bedingter
+Wahrscheinlichkeitsverteilungen p(Y|X) aus vortrainierten Modellen bereit.
 
-This module provides tools for generating approximate conditional probability distributions
-p(Y|X) from pre-trained models.
+This module provides tools for generating approximate conditional probability
+distributions p(Y|X) from pre-trained models.
 
 Classes:
     FirstOrderDataGenerator: Hauptklasse zur Generierung von First-Order Verteilungen
