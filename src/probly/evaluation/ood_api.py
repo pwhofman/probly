@@ -142,6 +142,7 @@ def visualize_ood(
     in_distribution: np.ndarray | list[float],
     out_distribution: np.ndarray | list[float],
     invert_scores: bool = True,
+    plot_types: list[str] | None = None,
 ) -> dict[str, Figure]:
     """Generate visualization plots for OOD evaluation.
 
@@ -156,10 +157,17 @@ def visualize_ood(
         If True (default), assumes scores are 'Confidence' (High = ID).
         They will be inverted (1.0 - score) for metrics where OOD is the positive class.
         If False, assumes scores are 'Anomaly Scores' (High = OOD).
+    plot_types : list[str], optional
+        List of specific plots to return (e.g. ['roc', 'hist', 'pr']).
+        If None, all plots are generated.
 
     Returns:
-        Dict containing matplotlib Figures: 'roc', 'pr', 'hist'.
+        Dict containing matplotlib Figures for the requested plots.
     """
+    available_plots = {"hist", "roc", "pr"}
+
+    requested_plots = available_plots if plot_types is None else set(plot_types).intersection(available_plots)
+
     id_s = np.asarray(in_distribution)
     ood_s = np.asarray(out_distribution)
 
@@ -171,15 +179,22 @@ def visualize_ood(
         scalars = {"auroc": scalars, "aupr": 0.0, "fpr@95tpr": 0.0}
 
     # 2. Prepare Data for Curves (Requires sklearn)
-    # -> We need to construct labels and scores manually for the curves
-    labels = np.concatenate([np.zeros(len(id_s)), np.ones(len(ood_s))])
-    all_scores = np.concatenate([id_s, ood_s])
 
-    preds = 1.0 - all_scores if invert_scores else all_scores
+    fpr, tpr = None, None
+    precision, recall = None, None
 
-    # Compute curve arrays
-    fpr, tpr, _ = roc_curve(labels, preds)
-    precision, recall, _ = precision_recall_curve(labels, preds)
+    if "roc" in requested_plots or "pr" in requested_plots:
+        labels = np.concatenate([np.zeros(len(id_s)), np.ones(len(ood_s))])
+        all_scores = np.concatenate([id_s, ood_s])
+
+        preds = 1.0 - all_scores if invert_scores else all_scores
+
+        # Compute curve arrays conditionally
+        if "roc" in requested_plots:
+            fpr, tpr, _ = roc_curve(labels, preds)
+
+        if "pr" in requested_plots:
+            precision, recall, _ = precision_recall_curve(labels, preds)
 
     # 3. -> Result Object from types.
     result_data = OodEvaluationResult(
@@ -195,10 +210,15 @@ def visualize_ood(
     )
 
     # 4.Generate Plots as figures.
-    figures = {
-        "hist": plot_histogram(result_data),
-        "roc": plot_roc_curve(result_data),
-        "pr": plot_pr_curve(result_data),
-    }
+    figures = {}
+
+    if "hist" in requested_plots:
+        figures["hist"] = plot_histogram(result_data)
+
+    if "roc" in requested_plots:
+        figures["roc"] = plot_roc_curve(result_data)
+
+    if "pr" in requested_plots:
+        figures["pr"] = plot_pr_curve(result_data)
 
     return figures
