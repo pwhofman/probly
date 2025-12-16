@@ -5,7 +5,12 @@ from __future__ import annotations
 __all__ = [
     "BLACK",
     "BLUE",
+    "FILL_ALPHA",
+    "HULL_EDGE",
+    "HULL_EDGE_WIDTH",
+    "HULL_FACE",
     "LINES",
+    "LINE_WIDTH",
     "NEUTRAL",
     "RED",
     "get_sign_color",
@@ -16,9 +21,10 @@ BLUE: str = "#1e88e5"
 BLACK: str = "#000000"
 NEUTRAL: str = "#ffffff"
 LINES: str = "#cccccc"
+FILL_ALPHA: float = 0.25
+LINE_WIDTH: float = 2
 HULL_EDGE: str = BLUE
 HULL_FACE: str = BLUE
-HULL_FACE_ALPHA: float = 0.25
 HULL_EDGE_WIDTH: float = 2.0
 
 
