@@ -167,7 +167,6 @@ class DCICDataset(torch.utils.data.Dataset):
 
         Returns:
             int, The number of instances in the dataset.
-
         """
         return len(self.data)
 
@@ -179,7 +178,6 @@ class DCICDataset(torch.utils.data.Dataset):
 
         Returns:
             (image, target): tuple[torch.Tensor, torch.Tensor], The image and label within the dataset.
-
         """
         image = self.data[index]
         if self.transform:
