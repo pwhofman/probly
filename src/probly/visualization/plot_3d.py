@@ -131,13 +131,51 @@ class TernaryVisualizer:
         ax.scatter(coords[:, 0], coords[:, 1], **scatter_kwargs)
 
         ax.set_title(title, pad=20, y=-0.2)
-
+        if example_point is None:
+            example_point = probs.mean(axis=0)
         # Optionally draw convex hull
         if plot_hull:
             self.plot_convex_hull(probs, ax=ax)
 
         return ax
+    # def plot_prob_axes(
+    #         self,
+    #         points: np.ndarray,
+    #         ax: plt.Axes = None,
+    #         color: str= "red",
+    # ) -> plt.Axes:
+    #     a = 0.2
+    #     b = 0.3
+    #     c = 0.5
+    #     example_point = np.array([a,b,c])
+    #     plt.plot()
+    def draw_a_projection_line(
+        point: np.ndarray,
+        ax: plt.Axes,
+    ) -> None:
+        """
+        Draw a line from a ternary point (a,b,c) to (a,0,0).
 
+        Args:
+            point: array-like of shape (3,) with (a,b,c)
+            ax: matplotlib Axes to draw on
+        """
+        # Ausgangspunkt
+        a, b, c = point
+
+        # Zielpunkt im Simplex
+        target = np.array([a, 0.0, 0.0])
+
+        # In 2D-Koordinaten umrechnen
+        x_start, y_start = probs_to_coords_3d(point)
+        x_end, y_end = probs_to_coords_3d(target)
+
+        # Linie zeichnen
+        ax.plot(
+            [x_start, x_end],
+            [y_start, y_end],
+            linestyle="--",
+        )
     def plot_convex_hull(
         self,
         probs: np.ndarray,
