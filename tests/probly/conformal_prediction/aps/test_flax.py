@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 import pytest
 
 pytest.importorskip("flax")
-from flax import linen as nn
+
+from flax import nnx
 import jax
 import jax.numpy as jnp
 import numpy as np
@@ -49,53 +48,50 @@ class TestFlaxAPS:
     """Tests for FlaxAPS class."""
 
     @pytest.fixture
-    def model_and_params(self) -> tuple[nn.Module, dict[str, Any]]:
-        """Create a simple Flax model with parameters."""
+    def simple_nnx_model(self) -> nnx.Module:
+        """Create a simple Flax model."""
 
-        class SimpleModel(nn.Module):
-            output_dim: int = 3
+        class SimpleNNXModel(nnx.Module):
+            def __init__(self, din: int, dout: int, *, rngs: nnx.Rngs) -> None:
+                """Initialize model layers."""
+                super().__init__()
+                self.dense = nnx.Linear(din, dout, rngs=rngs)
 
-            @nn.compact
-            def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
-                return nn.Dense(self.output_dim)(x)
+            def __call__(self, x: jax.Array) -> jax.Array:
+                """Forward pass."""
+                return self.dense(x)
 
-        model = SimpleModel()
-        rng_key = jax.random.PRNGKey(42)
+        rngs = nnx.Rngs(42)
+        model = SimpleNNXModel(din=10, dout=3, rngs=rngs)
 
-        # Initialize with correct input shape
-        dummy_input = jnp.ones((1, 10), dtype=jnp.float32)
-        variables = model.init(rng_key, dummy_input)
-        params = variables["params"]
-
-        return model, params
+        return model
 
     @pytest.fixture
     def test_data(self) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.int32]]:
         """Create test data."""
         return create_test_data(n_samples=50, n_features=10, n_classes=3)
 
-    def test_initialization(self, model_and_params: tuple[nn.Module, dict[str, Any]]) -> None:
+    def test_initialization(self, simple_nnx_model: nnx.Module) -> None:
         """Test that FlaxAPS initializes correctly."""
-        model, params = model_and_params
+        model = simple_nnx_model
 
         # Test different rng_key types
-        predictor_int = FlaxAPS(model, params, rng_key=42)
+        predictor_int = FlaxAPS(model, rng_key=42)
         assert predictor_int.rng is not None
 
-        predictor_key = FlaxAPS(model, params, rng_key=jax.random.PRNGKey(123))
+        predictor_key = FlaxAPS(model, rng_key=jax.random.PRNGKey(123))
         assert predictor_key.rng is not None
 
-        predictor_none = FlaxAPS(model, params, rng_key=None)
+        predictor_none = FlaxAPS(model, rng_key=None)
         assert predictor_none.rng is not None
 
         # Check attributes
         assert predictor_int.flax_model is model
-        assert predictor_int.params is params
 
-    def test_forward_pass_shapes(self, model_and_params: tuple[nn.Module, dict[str, Any]]) -> None:
+    def test_forward_pass_shapes(self, simple_nnx_model: nnx.Module) -> None:
         """Test that forward pass returns correct shapes."""
-        model, params = model_and_params
-        predictor = FlaxAPS(model, params)
+        model = simple_nnx_model
+        predictor = FlaxAPS(model)
 
         rng = np.random.default_rng(42)
 
@@ -119,10 +115,10 @@ class TestFlaxAPS:
             rtol=1e-5,
         )
 
-    def test_output_types(self, model_and_params: tuple[nn.Module, dict[str, Any]]) -> None:
+    def test_output_types(self, simple_nnx_model: nnx.Module) -> None:
         """Test that outputs have correct dtypes."""
-        model, params = model_and_params
-        predictor = FlaxAPS(model, params)
+        model = simple_nnx_model
+        predictor = FlaxAPS(model)
 
         rng = np.random.default_rng(42)
 
@@ -133,10 +129,10 @@ class TestFlaxAPS:
         assert isinstance(probs_jit, jnp.ndarray), f"Expected jnp.ndarray, got {type(probs_jit)}"
         assert probs_jit.dtype == jnp.float32, f"Expected float32, got {probs_jit.dtype}"
 
-    def test_edge_case_shapes(self, model_and_params: tuple[nn.Module, dict[str, Any]]) -> None:
+    def test_edge_case_shapes(self, simple_nnx_model: nnx.Module) -> None:
         """Test edge cases for input shapes."""
-        model, params = model_and_params
-        predictor = FlaxAPS(model, params)
+        model = simple_nnx_model
+        predictor = FlaxAPS(model)
 
         rng = np.random.default_rng(42)
 
@@ -152,14 +148,14 @@ class TestFlaxAPS:
 
     def test_compute_nonconformity(
         self,
-        model_and_params: tuple[nn.Module, dict[str, Any]],
+        simple_nnx_model: nnx.Module,
         test_data: tuple[npt.NDArray[np.float32], npt.NDArray[np.int32]],
     ) -> None:
         """Test nonconformity score computation."""
         x_data, y_data = test_data
-        model, params = model_and_params
+        model = simple_nnx_model
 
-        predictor = FlaxAPS(model, params)
+        predictor = FlaxAPS(model)
 
         # Test with a subset of data
         x_subset = x_data[:10]
@@ -182,14 +178,14 @@ class TestFlaxAPS:
 
     def test_calibration(
         self,
-        model_and_params: tuple[nn.Module, dict[str, Any]],
+        simple_nnx_model: nnx.Module,
         test_data: tuple[npt.NDArray[np.float32], npt.NDArray[np.int32]],
     ) -> None:
         """Test calibration process."""
         x_data, y_data = test_data
-        model, params = model_and_params
+        model = simple_nnx_model
 
-        predictor = FlaxAPS(model, params)
+        predictor = FlaxAPS(model)
 
         # Split data for calibration
         split_idx = 30
@@ -211,28 +207,28 @@ class TestFlaxAPS:
 
     def test_prediction_before_calibration_fails(
         self,
-        model_and_params: tuple[nn.Module, dict[str, Any]],
+        simple_nnx_model: nnx.Module,
         test_data: tuple[npt.NDArray[np.float32], npt.NDArray[np.int32]],
     ) -> None:
         """Test that predict() fails before calibration."""
         x_data, _ = test_data
-        model, params = model_and_params
+        model = simple_nnx_model
 
-        predictor = FlaxAPS(model, params)
+        predictor = FlaxAPS(model)
 
         with pytest.raises(ValueError, match="Call calibrate"):
             predictor.predict(x_data[:5], 0.1)
 
     def test_prediction_after_calibration(
         self,
-        model_and_params: tuple[nn.Module, dict[str, Any]],
+        simple_nnx_model: nnx.Module,
         test_data: tuple[npt.NDArray[np.float32], npt.NDArray[np.int32]],
     ) -> None:
         """Test prediction after calibration with different scenarios."""
-        model, params = model_and_params
+        model = simple_nnx_model
         x_data, y_data = test_data
 
-        predictor = FlaxAPS(model, params)
+        predictor = FlaxAPS(model)
 
         # Test normal prediction
         x_cal = x_data[:30]
@@ -257,14 +253,14 @@ class TestFlaxAPS:
 
     def test_jit_predict(
         self,
-        model_and_params: tuple[nn.Module, dict[str, Any]],
+        simple_nnx_model: nnx.Module,
         test_data: tuple[npt.NDArray[np.float32], npt.NDArray[np.int32]],
     ) -> None:
         """Test JIT-compiled prediction."""
         x_data, _ = test_data
-        model, params = model_and_params
+        model = simple_nnx_model
 
-        predictor = FlaxAPS(model, params)
+        predictor = FlaxAPS(model)
 
         # Convert to JAX array
         x_jax = jnp.array(x_data[:5], dtype=jnp.float32)
@@ -282,17 +278,17 @@ class TestFlaxAPS:
 
     def test_str_representation(
         self,
-        model_and_params: tuple[nn.Module, dict[str, Any]],
+        simple_nnx_model: nnx.Module,
     ) -> None:
         """Test string representation."""
-        model, params = model_and_params
+        model = simple_nnx_model
 
-        predictor = FlaxAPS(model, params)
+        predictor = FlaxAPS(model)
 
         # Before calibration
         repr_str = str(predictor)
         assert "FlaxAPS" in repr_str
-        assert "SimpleModel" in repr_str
+        assert "SimpleNNXModel" in repr_str
         assert "not calibrated" in repr_str
 
         # After calibration
@@ -306,14 +302,14 @@ class TestFlaxAPS:
 
     def test_fit_with_split(
         self,
-        model_and_params: tuple[nn.Module, dict[str, Any]],
+        simple_nnx_model: nnx.Module,
         test_data: tuple[npt.NDArray[np.float32], npt.NDArray[np.int32]],
     ) -> None:
         """Test that fit_with_split method works from parent class."""
         x_data, y_data = test_data
-        model, params = model_and_params
+        model = simple_nnx_model
 
-        predictor = FlaxAPS(model, params)
+        predictor = FlaxAPS(model)
 
         # Use fit_with_split from parent class
         x_train, y_train = predictor.fit_with_split(
@@ -344,32 +340,31 @@ class TestFlaxAPSwithIris:
         return x, y
 
     @pytest.fixture
-    def iris_model_and_params(self) -> tuple[nn.Module, dict[str, Any]]:
+    def iris_nnx_model(self) -> nnx.Module:
         """Create a simple Iris model."""
 
-        class IrisModel(nn.Module):
-            num_classes: int = 3
+        class IrisModel(nnx.Module):
+            def __init__(self, *, rngs: nnx.Rngs) -> None:
+                """Initialize irismodel with nnx."""
+                super().__init__()
+                self.dense1 = nnx.Linear(4, 10, rngs=rngs)
+                self.dense2 = nnx.Linear(10, 3, rngs=rngs)
 
-            @nn.compact
-            def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
-                x = nn.Dense(10)(x)
-                x = nn.relu(x)
-                x = nn.Dense(self.num_classes)(x)
-                return x
+            def __call__(self, x: jax.Array) -> jax.Array:
+                x = jax.nn.relu(self.dense1(x))
+                return self.dense2(x)
 
-        model = IrisModel()
-        rng_key = jax.random.PRNGKey(42)
-        params = FlaxAPS.initialize_model(model, input_shape=(4,), rng_key=rng_key)
-        return model, params
+        rngs = nnx.Rngs(42)
+        return IrisModel(rngs=rngs)
 
     def test_iris_dataset_basic(
         self,
         iris_data: tuple[npt.NDArray[np.float32], npt.NDArray[np.int32]],
-        iris_model_and_params: tuple[nn.Module, dict[str, Any]],
+        iris_nnx_model: nnx.Module,
     ) -> None:
         """Basic test with Iris dataset."""
         x, y = iris_data
-        model, params = iris_model_and_params
+        model = iris_nnx_model
 
         # Split data for calibration
         x_train, x_test, y_train, y_test = train_test_split(
@@ -390,7 +385,7 @@ class TestFlaxAPSwithIris:
         )
 
         # Create predictor
-        predictor = FlaxAPS(model, params, rng_key=42)
+        predictor = FlaxAPS(model, rng_key=42)
 
         # Calibrate
         threshold = predictor.calibrate(x_cal, y_cal, significance_level=0.1)
@@ -401,7 +396,7 @@ class TestFlaxAPSwithIris:
         assert 0 <= threshold <= 1
 
         # Predict on test set
-        prediction_sets = predictor.predict(x_test, _significance_level=0.1)
+        prediction_sets = predictor.predict(x_test, 0.1)
 
         # Check predictions
         assert len(prediction_sets) == len(x_test)
@@ -423,20 +418,21 @@ class TestFlaxAPSwithIris:
         """Test that coverage guarantee holds on Iris dataset."""
         x, y = iris_data
 
-        # Create model
-        class SimpleModel(nn.Module):
-            @nn.compact
-            def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
-                x = nn.Dense(8)(x)
-                x = nn.relu(x)
-                return nn.Dense(3)(x)
-
-        model = SimpleModel()
-
         # Test multiple random splits for robustness
         for seed in [42, 123, 456]:
-            rng_key = jax.random.PRNGKey(seed)
-            params = FlaxAPS.initialize_model(model, (4,), rng_key)
+            # Create model
+            class SimpleModel(nnx.Module):
+                def __init__(self, *, rngs: nnx.Rngs) -> None:
+                    super().__init__()
+                    self.dense1 = nnx.Linear(4, 8, rngs=rngs)
+                    self.dense2 = nnx.Linear(8, 3, rngs=rngs)
+
+                def __call__(self, x: jax.Array) -> jax.Array:
+                    x = jax.nn.relu(self.dense1(x))
+                    return self.dense2(x)
+
+            rngs = nnx.Rngs(seed)
+            model = SimpleModel(rngs=rngs)
 
             # Split data
             x_train, x_test, y_train, y_test = train_test_split(
@@ -457,11 +453,11 @@ class TestFlaxAPSwithIris:
             )
 
             # Create and calibrate predictor
-            predictor = FlaxAPS(model, params, rng_key=seed)
+            predictor = FlaxAPS(model, rng_key=seed)
             predictor.calibrate(x_cal, y_cal, significance_level=0.1)
 
             # Predict
-            prediction_sets = predictor.predict(x_test, _significance_level=0.1)
+            prediction_sets = predictor.predict(x_test, 0.1)
 
             # Calculate coverage
             coverage = calculate_coverage(prediction_sets, y_test)

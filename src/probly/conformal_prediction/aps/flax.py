@@ -5,9 +5,17 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, cast
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Callable, Sequence
 
-    import flax.linen as nn
+    from flax import nnx
+
+    class CallableModule(nnx.Module):
+        """Callable Flax module type hint."""
+
+        def __call__(self, x: jax.Array) -> jax.Array:
+            """Forward pass of the module."""
+            ...
+
 
 import jax
 import jax.numpy as jnp
@@ -23,37 +31,31 @@ class FlaxAPS(ConformalPredictor):
 
     def __init__(
         self,
-        model: nn.Module,
-        params: dict[str, Any],
+        model: nnx.Module,
         rng_key: jax.Array | int | None = None,
     ) -> None:
         """Initialize Flax APS predictor."""
 
         # Create wrapper for PredictiveModel protocol
         class FlaxModelWrapper:
-            def __init__(
-                self,
-                flax_model: nn.Module,
-                flax_params: dict[str, Any],
-            ) -> None:
-                self.flax_model = flax_model
-                self.flax_params = flax_params
+            def __init__(self, flax_nnx_model: nnx.Module) -> None:
+                self.flax_model = flax_nnx_model
 
             def predict(self, x: Sequence[Any]) -> npt.NDArray[np.floating]:
                 """Convert input to probabilities."""
                 # Ensure input is float32 for JAX
                 x_array = jnp.asarray(x, dtype=jnp.float32)
-                logits = self.flax_model.apply({"params": self.flax_params}, x_array)
+                model_callable = cast("Callable[[jax.Array], jax.Array]", self.flax_model)
+                logits = model_callable(x_array)
                 probs = jax.nn.softmax(logits, axis=-1)
                 # Return as float32 numpy array
                 return np.asarray(probs, dtype=np.float32)
 
         # Initialize base class with wrapper
-        super().__init__(model=FlaxModelWrapper(model, params), nonconformity_func=None)
+        super().__init__(model=FlaxModelWrapper(model), nonconformity_func=None)
 
-        # Store Flax components
-        self.flax_model = model
-        self.params = params
+        # Store Flax model
+        self.flax_model = cast("Callable[[jax.Array], jax.Array]", model)
 
         # Handle random key
         if isinstance(rng_key, int):
@@ -104,7 +106,7 @@ class FlaxAPS(ConformalPredictor):
         x_jax = jnp.asarray(x, dtype=jnp.float32)
 
         # Get probabilities
-        logits = self.flax_model.apply({"params": self.params}, x_jax)
+        logits = self.flax_model(x_jax)
         probs = jax.nn.softmax(logits, axis=-1)
         probs_np = np.asarray(probs, dtype=np.float32)
 
@@ -156,31 +158,11 @@ class FlaxAPS(ConformalPredictor):
         """
 
         @jax.jit
-        def predict_fn(params: dict[str, Any], x_input: jnp.ndarray) -> jnp.ndarray:
-            logits = self.flax_model.apply({"params": params}, x_input)
+        def predict_fn(x_input: jnp.ndarray) -> jnp.ndarray:
+            logits = self.flax_model(x_input)
             return jax.nn.softmax(logits, axis=-1)
 
-        return predict_fn(self.params, x)
-
-    @staticmethod
-    def initialize_model(
-        model: nn.Module,
-        input_shape: tuple[int, ...],
-        rng_key: jax.Array,
-    ) -> dict[str, Any]:
-        """Initialize model parameters.
-
-        Args:
-            model: Flax model
-            input_shape: Shape of input data
-            rng_key: Random key for initialization
-
-        Returns:
-            Model parameters
-        """
-        dummy_input = jnp.zeros((1, *input_shape), dtype=jnp.float32)
-        variables = model.init(rng_key, dummy_input)
-        return cast("dict[str, Any]", variables["params"])
+        return cast("jnp.ndarray", predict_fn(x))
 
     def __str__(self) -> str:
         """String representation."""
