@@ -10,7 +10,6 @@ import numpy as np
 from lazy_dispatch.singledispatch import lazydispatch
 from probly.lazy_types import JAX_ARRAY, TORCH_TENSOR
 
-T = TypeVar("T")
 
 
 class Sample[T](ABC):
