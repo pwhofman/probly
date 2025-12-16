@@ -54,6 +54,9 @@ changelog = "https://github.com/pwhofman/probly/blob/main/CHANGELOG.md"
 
 
 [dependency-groups]
+tensorflow = [
+    "tensorflow==2.20.0"
+]
 torch = [
     "torch>=2.0.0",
     "torchvision",
