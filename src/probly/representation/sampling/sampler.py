@@ -13,10 +13,6 @@ from pytraverse import CLONE, GlobalVariable, lazydispatch_traverser, traverse_w
 
 from .sample import Sample, create_sample
 
-In = TypeVar("In")
-KwIn = TypeVar("KwIn")
-Out = TypeVar("Out")
-
 type SamplingStrategy = Literal["sequential"]
 
 
