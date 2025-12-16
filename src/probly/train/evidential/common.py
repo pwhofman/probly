@@ -29,11 +29,25 @@ def unified_evidential_trainn(
 ) -> None:
     """Demonstration of a unified evidential training function."""
     model = model.to(device)  # moves the model to the correct device (GPU or CPU)
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    if flow is not None:
+        flow = flow.to(device)
+
+    if mode == "PostNet":
+        if flow is None:
+            msg = "PostNet mode requires a flow module."
+            raise ValueError(msg)
+        optimizer = torch.optim.Adam(
+            list(model.parameters()) + list(flow.parameters()),
+            lr=lr,
+        )
+    else:
+        optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
     # repeats the training function for a defined number of epochs
     for epoch in range(epochs):
         model.train()  # call of train important for models like dropout
+        if flow is not None and mode == "PostNet":
+            flow.train()
         total_loss = 0.0  # track total_loss to calculate average loss per epoch
 
         for x, y in dataloader:
