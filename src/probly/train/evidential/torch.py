@@ -11,6 +11,8 @@ from torch.nn import functional as F
 from torch.special import digamma, gammaln
 
 if TYPE_CHECKING:
+    from torch.utils.data import DataLoader
+
     from probly.layers.evidential import torch as t
 
 
@@ -862,3 +864,56 @@ class DirichletPriorNetworks(nn.Module):
             total_loss = total_loss + kl_ood
 
         return total_loss
+
+
+def train_pn(
+    model: nn.Module,
+    optimizer: torch.optim.Optimizer,
+    id_loader: DataLoader,
+    ood_loader: DataLoader,
+) -> float:
+    """Train the model for one epoch, using paired ID and OOD mini-batches."""
+    device = "cpu"
+    model.train()
+
+    total_loss = 0.0
+
+    ood_iter = iter(ood_loader)
+
+    model.train()  # call of train important for models like dropout
+
+    for x_in_raw, y_in_raw in id_loader:
+        try:
+            x_ood_raw, _ = next(ood_iter)
+        except StopIteration:
+            ood_iter = iter(ood_loader)
+            x_ood_raw, _ = next(ood_iter)
+
+        x_in = x_in_raw.to(device)
+        y_in = y_in_raw.to(device)
+        x_ood = x_ood_raw.to(device)
+
+        optimizer.zero_grad()
+
+        # In-distribution forward pass
+        alpha_in = model(x_in)
+        alpha_target_in = make_in_domain_target_alpha(y_in)
+        kl_in = kl_dirichlet(alpha_target_in, alpha_in).mean()
+
+        # Optional cross-entropy for classification stability
+        probs_in = predictive_probs(alpha_in)
+        ce_term = F.nll_loss(torch.log(probs_in + 1e-8), y_in)
+
+        # OOD forward pass
+        alpha_ood = model(x_ood)
+        alpha_target_ood = make_ood_target_alpha(x_ood.size(0))
+        kl_ood = kl_dirichlet(alpha_target_ood, alpha_ood).mean()
+
+        # Total loss
+        loss = kl_in + kl_ood + 0.1 * ce_term
+        loss.backward()
+        optimizer.step()
+
+        total_loss += loss.item()
+
+    return total_loss
