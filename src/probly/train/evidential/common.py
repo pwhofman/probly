@@ -49,7 +49,6 @@ def unified_evidential_train_class(  # noqa: C901, PLR0912
         total_loss = 0.0  # track total_loss to calculate average loss per epoch
 
         for x, y in dataloader:
-            # handle both cases: distributions (CIFAR10H original) or integer labels (fallback)
             x = x.to(device)  # noqa: PLW2901
             y = y.to(device)  # noqa: PLW2901
 
@@ -61,12 +60,12 @@ def unified_evidential_train_class(  # noqa: C901, PLR0912
                 alpha, _, _ = outputs
                 loss = loss_fn(alpha, y)
             elif mode == "EDL":
-                loss = loss_fn(outputs, y)  # calculate the evidential loss
+                loss = loss_fn(outputs, y)
             elif mode == "PrNet":
                 total_loss = train_pn(model, optimizer, dataloader, oodloader)
                 break
             elif mode == "IRD":
-                x_adv = x + 0.01 * torch.randn_like(x)  # oder FGSM
+                x_adv = x + 0.01 * torch.randn_like(x)
                 alpha = outputs
                 alpha_adv = model(x_adv)
                 y_oh = nn.functional.one_hot(y, num_classes=outputs.shape[1]).float()
@@ -78,7 +77,7 @@ def unified_evidential_train_class(  # noqa: C901, PLR0912
             loss.backward()  # backpropagation
             optimizer.step()  # updates model-parameters
 
-            total_loss += loss.item()  # add-up the loss of this epoch ontop of our total loss till then
+            total_loss += loss.item()  # add-up the loss of this epoch ontop of our total loss
 
         avg_loss = total_loss / len(dataloader)  # calculate average loss per epoch across all batches
         print(f"Epoch [{epoch + 1}/{epochs}] - Loss: {avg_loss:.4f}")  # noqa: T201
