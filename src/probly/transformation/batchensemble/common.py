@@ -39,6 +39,11 @@ def register(cls: LazyType, traverser: RegisteredLooseTraverser) -> None:
         traverser=traverser,
         vars={
             "num_members": NUM_MEMBERS,
+            "s_mean": S_MEAN,
+            "s_std": S_STD,
+            "r_mean": R_MEAN,
+            "r_std": R_STD,
+            "kaiming_slope": KAIMING_SLOPE,
         },
     )
 
