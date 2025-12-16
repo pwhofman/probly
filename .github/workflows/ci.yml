@@ -137,6 +137,12 @@ jobs:
         name: Code Quality Assurance
         runs-on: ubuntu-latest
         steps:
+        -   uses: actions/checkout@v5
+        -   name: Set up Python and uv
+            uses: astral-sh/setup-uv@v7
+            with:
+                python-version: "3.12"
+                enable-cache: true
         -   name: Run Ruff Style and Linting Checks
             run: |
                uv run ruff check .
