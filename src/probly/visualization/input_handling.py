@@ -42,21 +42,24 @@ def check_shape(input_data: np.ndarray) -> np.ndarray:
     input_data or Error Message.
     """
     msg1 = "Input must be a NumPy Array."
-    msg2 = "Input must be at least 2D."
-    msg3 = "The probabilities of each class must sum to 1."
-    msg4 = "All probabilities must be positive."
+    msg2 = "Input must not be empty."
+    msg3 = "Input must be at least 2D."
+    msg4 = "The probabilities of each class must sum to 1."
+    msg5 = "All probabilities must be positive."
 
     # Validates that input_data is either a 2D or 3D NumPy Array.
     if not isinstance(input_data, np.ndarray):
         raise TypeError(msg1)
-    if input_data.ndim < 2:
+    if input_data.size == 0:
         raise ValueError(msg2)
+    if input_data.ndim < 2:
+        raise ValueError(msg3)
 
     # Validates the input probabilities.
     if not np.allclose(input_data.sum(axis=-1), 1):
-        raise ValueError(msg3)
-    if (input_data < 0).any():
         raise ValueError(msg4)
+    if (input_data < 0).any():
+        raise ValueError(msg5)
     return input_data
 
 
