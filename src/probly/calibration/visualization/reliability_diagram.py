@@ -51,8 +51,7 @@ def compute_reliability_diagram(probabilities: np.ndarray, labels: np.ndarray, n
 
     return diagram
 
-
-def plot_reliability_diagram(diagram: dict, title: str = "Model Calibration") -> tuple[plt.figure, plt.axes]:
+def plot_reliability_diagram(diagram: dict, title: str = "Model Calibration") -> tuple[plt.figure, plt.axes] :
     """Plots the diagram calculated with `compute_reliability_diagram`.
 
     Args:
@@ -61,22 +60,54 @@ def plot_reliability_diagram(diagram: dict, title: str = "Model Calibration") ->
 
     Returns:
         fig: The matplotlib figure
-        axis: The matplotlib axis
+        ax: The matplotlib axis
     """
+
     n_bins = diagram["n_bins"]
-    x = np.linspace(0.0, 1.0, n_bins + 1)
+    accs  = np.array(diagram["bin_accuracies"], dtype=float)
+    confs = np.array(diagram["bin_confidences"], dtype=float)
 
-    fig, axis = plt.subplots()
+    edges = np.linspace(0.0, 1.0, n_bins + 1)
+    lefts = edges[:-1]
+    width = edges[1] - edges[0]
 
-    axis.set_title(title)
-    axis.set_xlabel("Confidence")
-    axis.set_ylabel("Accuracy")
-    axis.set_axisbelow(True)
-    axis.grid(True, linestyle="--")
-    axis.plot(x, x, "k--")
+    fig, ax = plt.subplots()
+    ax.set_title(title)
+    ax.set_xlabel("Confidence")
+    ax.set_ylabel("Accuracy")
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
+    ax.grid(True, linestyle="--", alpha=0.4)
+    ax.set_axisbelow(True)
 
-    accuracies = diagram["bin_accuracies"]
-    for b, acc in zip(x, accuracies, strict=False):
-        axis.bar(b, acc, 1 / n_bins, align="edge", linewidth=1.0, edgecolor="#004f8f", color="#008cff")
+    # Perfect calibration line
+    ax.plot([0, 1], [0, 1], "k--", linewidth=1)
 
-    return fig, axis
+    # Blue bars
+    ax.bar(
+        lefts, accs,
+        width=width, align="edge",
+        color="#1f77b4",        
+        edgecolor="black",   
+        linewidth=1.2,
+        label="Outputs"
+    )
+
+    gap = np.abs(accs - confs)
+    bottom = np.minimum(accs, confs)
+
+    #Red bars
+    ax.bar(
+        lefts, gap,
+        bottom=bottom,
+        width=width, align="edge",
+        facecolor="red",      
+        edgecolor="red",
+        linewidth=1.0,
+        hatch="/",            
+        alpha=0.30,
+        label="Calibration gap"
+    )
+
+    ax.legend()
+    return fig, ax
