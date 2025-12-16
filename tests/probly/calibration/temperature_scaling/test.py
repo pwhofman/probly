@@ -1,17 +1,19 @@
-from probly.calibration.temperature_scaling.temperature_scaling_tensorflow import TemperatureScaling
+from __future__ import annotations
+
 import tensorflow as tf
-import numpy as np
-import pytest
+
+from probly.calibration.temperature_scaling.temperature_scaling_tensorflow import TemperatureScaling
 
 
 class DummyLogitsModel(tf.keras.Model):
     """Simple deterministic model returning fixed logits."""
-    def call(self, inputs, training=False):
+
+    def call(self, inputs: tf.Tensor, _training: bool = False) -> tf.Tensor:
         batch_size = tf.shape(inputs)[0]
         return tf.tile(tf.constant([[1.0, 2.0, 3.0]]), [batch_size, 1])
 
 
-def test_call_applies_temperature_scaling():
+def test_call_applies_temperature_scaling() -> None:
     base_model = DummyLogitsModel()
     temp_model = TemperatureScaling(base_model)
 
@@ -20,12 +22,11 @@ def test_call_applies_temperature_scaling():
     x = tf.zeros((2, 4))
     scaled_logits = temp_model(x)
 
-    expected = tf.constant([[0.5, 1.0, 1.5],
-                            [0.5, 1.0, 1.5]])
+    expected = tf.constant([[0.5, 1.0, 1.5], [0.5, 1.0, 1.5]])
     tf.debugging.assert_near(scaled_logits, expected, atol=1e-6)
 
 
-def test_predict_softmax_output():
+def test_predict_softmax_output() -> None:
     base_model = DummyLogitsModel()
     temp_model = TemperatureScaling(base_model)
 
@@ -41,7 +42,7 @@ def test_predict_softmax_output():
     assert tf.reduce_all(probs <= 1.0)
 
 
-def test_predict_logits_output():
+def test_predict_logits_output() -> None:
     base_model = DummyLogitsModel()
     temp_model = TemperatureScaling(base_model)
 
@@ -53,7 +54,7 @@ def test_predict_logits_output():
     tf.debugging.assert_near(logits, expected, atol=1e-6)
 
 
-def test_set_temperature_updates_value():
+def test_set_temperature_updates_value() -> None:
     base_model = DummyLogitsModel()
     temp_model = TemperatureScaling(base_model)
 
@@ -71,7 +72,3 @@ def test_set_temperature_updates_value():
 
     updated_temp = temp_model.temperature.numpy()
     assert initial_temp != updated_temp
-
-
-
-
