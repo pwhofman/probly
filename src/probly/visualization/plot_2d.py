@@ -30,6 +30,8 @@ class IntervalVisualizer:
         probs: np.ndarray,
         labels: list[str],
         title: str = "Interval Plot (2 Classes)",
+        mle_flag: bool = True,
+        credal_flag: bool = True,
         ax: plt.Axes = None,
     ) -> plt.Axes:
         """Plot the interval plot.
@@ -38,6 +40,8 @@ class IntervalVisualizer:
         probs: probability vector for 2 classes.
         labels: labels for the interval plot.
         title: Fixed Title for the plot.
+        mle_flag: Flag to indicate whether median of probabilities is shown.
+        credal_flag: Flag to indicate whether min/max interval is shown.
         ax: matplotlib axes.Axes.
 
         returns: plot.
@@ -45,17 +49,22 @@ class IntervalVisualizer:
         coords = np.array([self.probs_to_coords_2d(p) for p in probs])
 
         if ax is None:
-            fig, ax = plt.subplots(figsize=(6, 1))
+            fig, ax = plt.subplots(figsize=(6, 4))
 
         y_marg = np.array([0.1, -0.1])
 
         plt.plot([0, 1], [0, 0], color="black", linewidth=2, zorder=0)
 
-        coord_max = np.max(coords[:, 0])
-        coord_min = np.min(coords[:, 0])
-        ax.fill_betweenx(y_marg, coord_max, coord_min, color="purple", alpha=0.5, zorder=2)
+        if mle_flag:
+            mle = np.mean(coords[:, 0])
+            ax.scatter(mle, 0, color="red", s=50, zorder=5, label="MLE")
 
-        ax.scatter(coords[:, 0], coords[:, 1], color="green", zorder=1, label="Probabilities")
+        if credal_flag:
+            coord_max = np.max(coords[:, 0])
+            coord_min = np.min(coords[:, 0])
+            ax.fill_betweenx(y_marg, coord_max, coord_min, color="purple", alpha=0.5, zorder=2)
+
+        ax.scatter(coords[:, 0], coords[:, 1], color="green", zorder=3, label="Probabilities")
 
         ax.axis("off")
         ax.set_ylim((-0.2, 0.2))
