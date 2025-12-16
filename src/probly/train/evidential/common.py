@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from torch.utils.data import DataLoader
 
 
-def unified_evidential_train_class(
+def unified_evidential_train_class(  # noqa: C901, PLR0912
     mode: str,
     model: nn.Module,
     dataloader: DataLoader,
