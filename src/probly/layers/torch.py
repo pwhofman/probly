@@ -94,7 +94,12 @@ class BatchEnsembleConv2d(nn.Module):
 
     def __init__(self,
                  base_layer: nn.Linear,
-                 num_members: int = 1
+                 num_members: int = 1,
+                 s_mean : float = 1.0,
+                 s_std : float = 0.01,
+                 r_mean : float = 1.0,
+                 r_std : float = 0.01,
+                 kaiming_slope : float = math.sqrt(5.0)
     ) -> None:
         raise NotImplementedError("BatchEnsembleConv2d is not implemented yet.")
 
