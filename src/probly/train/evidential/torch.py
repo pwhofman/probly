@@ -11,7 +11,7 @@ from torch.nn import functional as F
 from torch.special import digamma, gammaln
 
 if TYPE_CHECKING:
-    from probly.layers import torch as t
+    from probly.layers.evidential import torch as t
 
 
 def normal_wishart_log_prob(
