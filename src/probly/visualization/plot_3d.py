@@ -97,7 +97,7 @@ class TernaryVisualizer:
 
         verts = np.array([v1, v2, v3])  # noqa: F841
         # tick_values are set in a way that they won't interfere at the edges
-        tick_values = np.linspace(0.1, 0.90, 11)
+        tick_values = np.linspace(0.0, 1.0, 11)
         tick_length = 0.01
         label_offset = -0.05
 
@@ -106,7 +106,7 @@ class TernaryVisualizer:
             normal = np.array([-edge_vec[1], edge_vec[0]])
             normal = normal / np.linalg.norm(normal)
 
-            for t in tick_values:
+            for t in tick_values[1:-1]:
                 pos = lerp(p, q, t)
 
                 tick_start = pos - normal * (tick_length / 2)
@@ -126,8 +126,8 @@ class TernaryVisualizer:
                     fontsize=8,
                 )
         ax.set_aspect("equal", "box")
-        ax.set_xlim(0.0, 1.0)
-        ax.set_ylim(0.0, np.sqrt(3) / 2)
+        ax.set_xlim(-0.1, 1.1)
+        ax.set_ylim(-0.1, np.sqrt(3) / 2)
 
         # Scatter points
         ax.scatter(coords[:, 0], coords[:, 1], **scatter_kwargs)
