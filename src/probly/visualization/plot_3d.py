@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.spatial import ConvexHull
 
+import probly.visualization.config as cfg
+
 
 class TernaryVisualizer:
     """Class to collect all the geometric plots."""
@@ -88,7 +90,7 @@ class TernaryVisualizer:
         triangle_x = [v1[0], v2[0], v3[0], v1[0]]
         triangle_y = [v1[1], v2[1], v3[1], v1[1]]
 
-        ax.plot(triangle_x, triangle_y, color="black")
+        ax.plot(triangle_x, triangle_y, color=cfg.BLACK)
         ax.axis("off")
 
         self.label_corners_and_vertices(ax, v1, v2, v3, labels)
@@ -112,7 +114,7 @@ class TernaryVisualizer:
                 ax.plot(
                     [tick_start[0], tick_end[0]],
                     [tick_start[1], tick_end[1]],
-                    color="black",
+                    color=cfg.BLACK,
                 )
                 label_pos = pos + normal * label_offset
                 ax.text(
@@ -124,8 +126,8 @@ class TernaryVisualizer:
                     fontsize=8,
                 )
         ax.set_aspect("equal", "box")
-        ax.set_xlim(-0.1, 1.1)
-        ax.set_ylim(-0.1, np.sqrt(3) / 2)
+        ax.set_xlim(0.0, 1.0)
+        ax.set_ylim(0.0, np.sqrt(3) / 2)
 
         # Scatter points
         ax.scatter(coords[:, 0], coords[:, 1], **scatter_kwargs)
@@ -142,10 +144,6 @@ class TernaryVisualizer:
         self,
         probs: np.ndarray,
         ax: plt.Axes = None,
-        facecolor: str = "lightgreen",
-        alpha: float = 0.4,
-        edgecolor: str = "green",
-        linewidth: float = 2.0,
     ) -> plt.Axes:
         """Draw the convex hull around the points.
 
@@ -174,12 +172,12 @@ class TernaryVisualizer:
 
         if len(unique) == 1:
             # Single point — no hull possible
-            ax.scatter(unique[:, 0], unique[:, 1], color="green", s=80)
+            ax.scatter(unique[:, 0], unique[:, 1], color=cfg.RED, s=80)
             return ax
 
         if len(unique) == 2:
             # Two distinct points — hull is a line segment
-            ax.plot(unique[:, 0], unique[:, 1], color=edgecolor, linewidth=linewidth)
+            ax.plot(unique[:, 0], unique[:, 1], color=cfg.HULL_EDGE, linewidth=cfg.LINE_WIDTH)
             return ax
 
         # Try to compute convex hull
@@ -191,10 +189,10 @@ class TernaryVisualizer:
             poly = plt.Polygon(
                 hull_pts,
                 closed=True,
-                facecolor=facecolor,
-                edgecolor=edgecolor,
-                alpha=alpha,
-                linewidth=linewidth,
+                facecolor=cfg.HULL_FACE,
+                edgecolor=cfg.HULL_EDGE,
+                alpha=cfg.FILL_ALPHA,
+                linewidth=cfg.LINE_WIDTH,
             )
             ax.add_patch(poly)
 
@@ -206,8 +204,8 @@ class TernaryVisualizer:
             ax.plot(
                 [coords[i, 0], coords[j, 0]],
                 [coords[i, 1], coords[j, 1]],
-                color=edgecolor,
-                linewidth=linewidth,
+                color=cfg.HULL_EDGE,
+                linewidth=cfg.LINE_WIDTH,
             )
 
         return ax
