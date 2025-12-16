@@ -6,7 +6,7 @@ from probly.lazy_types import FLAX_MODULE, TORCH_MODULE
 
 from . import common
 
-subensemble = common.batchensemble
+batchensemble = common.batchensemble
 register = common.register
 
 
