@@ -134,6 +134,9 @@ jobs:
     # CODE QUALITY ASSURANCE
     # ----------------------------------------------------------------------------------------------
     code_quality_assurance:
+        name: Code Quality Assurance
+        runs-on: ubuntu-latest
+        steps:
         -   name: Run Ruff Style and Linting Checks
             run: |
                uv run ruff check .
