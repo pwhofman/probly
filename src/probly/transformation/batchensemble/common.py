@@ -5,11 +5,6 @@ from __future__ import annotations
 import math
 from typing import TYPE_CHECKING
 
-from lazy_dispatch import lazydispatch
-from probly.transformation.subensemble.common import subensemble_generator
-from __future__ import annotations
-
-from typing import TYPE_CHECKING
 
 from probly.traverse_nn import nn_compose
 from pytraverse import CLONE, GlobalVariable, lazydispatch_traverser, traverse
@@ -18,8 +13,6 @@ if TYPE_CHECKING:
     from lazy_dispatch.isinstance import LazyType
     from probly.predictor import Predictor
     from pytraverse.composition import RegisteredLooseTraverser
-
-import math
 
    
 NUM_MEMBERS = GlobalVariable[bool]("USE_BASE_WEIGHTS", default=1)
