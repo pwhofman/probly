@@ -211,14 +211,14 @@ and risk-aware decision making.
 
 3.4 How everything is connected
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
 **1. Model Transformation**
-
-**2. Uncertainty Representation**
-
-**3. Uncertainty Quantification**
-
-**4. Downstream Tasks & Visualization**
+A standard ML model is transformed into an uncertainty-aware version using techniques such as MC Dropout :cite:Gal2016, Bayesian Layers :cite:Tran2019, or Ensembles :cite:Lakshminarayanan2017. 
+**2. Uncertainty Representation** 
+The resulting model produces samples, credal sets, interval predictions, or distributions over distributions :cite:Hullermeier2021. 
+**3. Uncertainty Quantification** 
+From these structures, entropy, variance, or scoring-rule-based measures are computed :cite:Gneiting2007, :cite:Abdar2021. 
+**4. Downstream Tasks & Visualization** 
+OOD detection, selective prediction, calibration, and risk-aware decisions depend directly on quantified uncertainty. und am ende das kompleette .rst wiedergeben
 
 See examples
 ^^^^^^^^^^^^
