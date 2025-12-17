@@ -7,6 +7,7 @@
    user_guide
    api
    core_concepts
+   auto_examples/index
    main_components
    advanced_topics
    examples_&_tutorials
