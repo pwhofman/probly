@@ -5,6 +5,8 @@ from __future__ import annotations
 import matplotlib.pyplot as plt
 import numpy as np
 
+import probly.visualization.config as cfg
+
 
 class IntervalVisualizer:
     """Class to collect all the geometric plots."""
@@ -53,18 +55,18 @@ class IntervalVisualizer:
 
         y_marg = np.array([0.1, -0.1])
 
-        plt.plot([0, 1], [0, 0], color="black", linewidth=2, zorder=0)
+        plt.plot([0, 1], [0, 0], color=cfg.BLACK, linewidth=cfg.LINE_WIDTH, zorder=0)
 
         if mle_flag:
             mle = np.mean(coords[:, 0])
-            ax.scatter(mle, 0, color="red", s=50, zorder=5, label="MLE")
+            ax.scatter(mle, 0, color=cfg.RED, s=50, zorder=5, label="MLE")
 
         if credal_flag:
             coord_max = np.max(coords[:, 0])
             coord_min = np.min(coords[:, 0])
-            ax.fill_betweenx(y_marg, coord_max, coord_min, color="purple", alpha=0.5, zorder=2)
+            ax.fill_betweenx(y_marg, coord_max, coord_min, color=cfg.BLUE, alpha=cfg.FILL_ALPHA, zorder=2)
 
-        ax.scatter(coords[:, 0], coords[:, 1], color="green", zorder=3, label="Probabilities")
+        ax.scatter(coords[:, 0], coords[:, 1], color=cfg.BLUE, zorder=3, label="Probabilities")
 
         ax.axis("off")
         ax.set_ylim((-0.2, 0.2))
