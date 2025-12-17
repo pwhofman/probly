@@ -78,6 +78,27 @@ sphinx_gallery_conf = {
     # Tell Sphinx-Gallery which modules are "yours" for cross-referencing.
     "doc_module": ("probly",),
     "reference_url": {"probly": None},
+    # Keep a stable order for the gallery index + any embedded mini-galleries.
+    # This avoids the default behavior where mini-galleries sort alphabetically
+    # by file path (which can differ from the main gallery ordering).
+    "minigallery_sort_order": lambda filename: (
+        {
+            "plot_gallery_smoke_test.py": 0,
+            "plot_create_sample_dispatch.py": 1,
+            "plot_using_predict_protocol.py": 2,
+            "plot_samples_with_array_sample.py": 3,
+        }.get(os.path.basename(str(filename)), 10_000),
+        os.path.basename(str(filename)),
+    ),
+    "within_subsection_order": lambda filename: (
+        {
+            "plot_gallery_smoke_test.py": 0,
+            "plot_create_sample_dispatch.py": 1,
+            "plot_using_predict_protocol.py": 2,
+            "plot_samples_with_array_sample.py": 3,
+        }.get(os.path.basename(str(filename)), 10_000),
+        os.path.basename(str(filename)),
+    ),
     # Conventional prefix used by Sphinx-Gallery.
     "filename_pattern": r"plot_",
     # Avoid executing examples during doc builds by default (keeps docs lightweight and
