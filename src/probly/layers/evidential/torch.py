@@ -475,3 +475,33 @@ class NatPNClassifier(nn.Module):
         alpha = self.alpha_prior.unsqueeze(0) + evidence  # [B, C]
 
         return alpha, z, log_pz
+
+
+class EvidentialRegression(nn.Module):
+    """Evidential regression model.
+
+    Outputs parameters of a 1D Normal-Inverse-Gamma / Normal-Gamma:
+    mu, kappa, alpha, beta.
+    """
+
+    def init(self) -> None:
+        """Initialize MLP architecture for evidential regression."""
+        super().init()
+        self.layers = nn.Sequential(
+            nn.Linear(1, 64),
+            nn.ReLU(),
+            nn.Linear(64, 64),
+            nn.ReLU(),
+            nn.Linear(64, 4),
+        )
+
+    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        """Return mu, kappa, alpha, beta parameters for the predictive NIG."""
+        out = self.layers(x)
+
+        mu = out[:, 0:1]
+        kappa = F.softplus(out[:, 1:2])  # ≥ 0
+        alpha = F.softplus(out[:, 2:3]) + 1.0  # > 1
+        beta = F.softplus(out[:, 3:4])  # > 0
+
+        return mu, kappa, alpha, beta
