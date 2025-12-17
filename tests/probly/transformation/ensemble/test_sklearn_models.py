@@ -5,9 +5,12 @@ from __future__ import annotations
 import pytest
 
 from probly.transformation import ensemble
+from probly.transformation.ensemble.common import ensemble_generator
+from probly.predictor import Predictor
 
 pytest.importorskip("sklearn")
 from sklearn.base import BaseEstimator
+from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 
 
@@ -50,6 +53,23 @@ class TestModelGeneration:
 
         for member in ensemble_list:
             assert isinstance(member, type(model))
+            
+    def test_unregistered_type_raises(dummy_predictor: Predictor) -> None:
+        """No ensemble generator is registered for type, NotImplementedError must occur."""
+        base = dummy_predictor
+        with pytest.raises(
+            NotImplementedError,
+            match=f"No ensemble generator is registered for type {type(base)}",
+        ):
+            ensemble_generator(dummy_predictor)
+            
+    def test_list_ensemble_independence(self) -> None:
+        """Stellt sicher, dass Modelle in der Liste unabhängig sind."""
+        model = LogisticRegression(random_state=42)
+        ensemble_list = ensemble(model, num_members=3, reset_params=False)
+        
+        assert ensemble_list[0] is not ensemble_list[1]
+        assert ensemble_list[1] is not ensemble_list[2]
 
 
 class TestResetParams:
