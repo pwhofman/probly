@@ -16,10 +16,9 @@ def replace_torch_batchensemble_linear(
     s_std : float,
     r_mean : float,
     r_std : float,
-    kaiming_slope : float
 ) -> BatchEnsembleLinear:
     """Replace a given layer by a BatchEnsembleLinear layer."""
-    return BatchEnsembleLinear(obj, num_members, s_mean, s_std, r_mean, r_std, kaiming_slope)
+    return BatchEnsembleLinear(obj, num_members, s_mean, s_std, r_mean, r_std)
 
 
 def replace_torch_batchensemble_conv2d(
@@ -29,10 +28,9 @@ def replace_torch_batchensemble_conv2d(
     s_std : float,
     r_mean : float,
     r_std : float,
-    kaiming_slope : float
 ) -> BatchEnsembleConv2d:
     """Replace a given layer by a BatchEnsembleConv2d layer."""
-    return BatchEnsembleConv2d(obj, num_members, s_mean, s_std, r_mean, r_std, kaiming_slope)
+    return BatchEnsembleConv2d(obj, num_members, s_mean, s_std, r_mean, r_std)
 
 
 register(nn.Linear, replace_torch_batchensemble_linear)
