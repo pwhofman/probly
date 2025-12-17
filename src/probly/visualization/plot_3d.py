@@ -70,6 +70,7 @@ class TernaryVisualizer:
         scatter_kwargs: keyword arguments passed to scatter_kwargs.
         ax: matplotlib axes.Axes to plot on.
         plot_hull: bool defaulted to true, which optionally draws a convex hull.
+        plot_minmax: bool defaulted to true, which optionally draws upper and lower probability envelopes.
 
         returns: Ternary plot with scattered points.
         """
@@ -266,8 +267,8 @@ class TernaryVisualizer:
         linewidth: float = 1.5,
         alpha: float = 0.7,
     ) -> None:
-        """
-        Draw a line of constant probability p[index] = value.
+        """Draw a line of constant probability p[index] = value.
+
         The line is parallel to the edge opposite the corresponding vertex.
         """
         if value <= 0 or value >= 1:
@@ -309,8 +310,8 @@ class TernaryVisualizer:
         ax: plt.Axes,
         colors: tuple[str, str] = ("red", "blue"),
     ) -> None:
-        """
-        Draw min/max probability lines for each class.
+        """Draw min/max probability lines for each class.
+
         Up to 6 lines total (min & max for 3 classes).
         """
         p_min = probs.min(axis=0)
@@ -331,4 +332,3 @@ class TernaryVisualizer:
                 color=colors[1],
                 linestyle="-.",
             )
-
