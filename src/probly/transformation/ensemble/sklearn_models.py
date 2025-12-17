@@ -13,12 +13,7 @@ def copy_imp_params(base: BaseEstimator, forest: BaseEstimator, reset_params: bo
     """Copies the parameters of a DecisionTree that are important to create a RandomForest."""
     if reset_params:
         base.__setattr__("random_state", None)
-
-    if base == DecisionTreeClassifier:
-        forest = RandomForestClassifier()
-    elif base == DecisionTreeRegressor:
-        forest = RandomForestRegressor()
-
+    
     base_params = base.get_params(deep=False)
     forest_params = forest.get_params(deep=False)
 
