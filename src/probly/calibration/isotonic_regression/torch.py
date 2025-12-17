@@ -83,7 +83,7 @@ class IsotonicRegressionCalibrator:
                 raise RuntimeError(calibrator_none_message)
 
             # Case Multiclass model
-            if isinstance(self.calibrator, list):
+            if len(self.calibrator) >= 2:
                 probabilities = softmax(logits, dim=1).cpu().numpy()
                 calibrated_probs = np.vstack(
                     [iso.predict(probabilities[:, c]) for c, iso in zip(self.classes_, self.calibrator, strict=False)],
