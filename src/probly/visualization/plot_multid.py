@@ -107,9 +107,9 @@ class MultiVisualizer:
         ax.set_ylim(0.0, 1.0)
         ax.set_varlabels(labels)
 
-        probs_flat = probs.flatten()
-        max_class = np.argmax(probs_flat)
-        ax.scatter(theta[max_class], probs_flat[max_class], s=80, color=cfg.RED, label="MLE")
+        mean_probs = probs.mean(axis=0)
+        max_class = np.argmax(mean_probs)
+        ax.scatter(theta[max_class], mean_probs[max_class], s=80, color=cfg.RED, label="MLE")
 
         lower = probs.min(axis=0)
         upper = probs.max(axis=0)
@@ -125,7 +125,7 @@ class MultiVisualizer:
             label="Credal band (lower-upper)",
         )
 
-        ax.plot(theta_c, lower_c, linestyle="--", linewidth=1.5, label="Lower bound")
+        ax.plot(theta_c, lower_c, linestyle=cfg.MIN_MAX_LINESTYLE_1, linewidth=1.5, label="Lower bound")
         ax.plot(theta_c, upper_c, linestyle="-", linewidth=1.5, label="Upper bound")
 
         ax.set_title(f"Spider Plot ({n_classes} Classes)", pad=20)
