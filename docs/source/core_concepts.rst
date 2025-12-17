@@ -257,7 +257,7 @@ Credal sets, distributional ambiguity, and pessimistic/robust reasoning are tool
 risk-sensitive decisions :cite:`Augustin2014`, :cite:`Hullermeier2021`.
 
 .. list-table::
-   :widths: 40 60
+   :widths: 250px
 
    * - .. image:: Credal_Set.png
           :width: 100%
