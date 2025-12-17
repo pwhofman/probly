@@ -264,7 +264,9 @@ risk-sensitive decisions :cite:`Augustin2014`, :cite:`Hullermeier2021`.
      - The figure shows three complementary ways to represent uncertainty within the probability simplex:
 
        **top:** a credal set capturing all admissible distributions  
+
        **middle:** discrete samples describing a distribution over distributions  
+
        **bottom:** a continuous density reflecting epistemic uncertainty through entropy.
 
 
