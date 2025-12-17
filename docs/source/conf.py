@@ -49,7 +49,21 @@ extensions = [
 ]
 
 templates_path = ["_templates"]
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+exclude_patterns = [
+    "_build",
+    "Thumbs.db",
+    ".DS_Store",
+    # Sphinx-Gallery generates companion files (e.g. .ipynb/.zip) next to the .rst.
+    # With myst-nb enabled, Sphinx may accidentally prefer the .ipynb as the source
+    # document, which results in "no outputs" (because we set nb_execution_mode="off").
+    # Excluding these ensures the rendered pages come from the Sphinx-Gallery .rst.
+    "auto_examples/*.ipynb",
+    "auto_examples/*.py",
+    "auto_examples/*.zip",
+    "auto_examples/*.json",
+    "auto_examples/*.db",
+    "auto_examples/*.md5",
+]
 bibtex_bibfiles = ["references.bib"]
 bibtex_default_style = "alpha"
 nb_execution_mode = "off"  # don't run notebooks when building the docs
