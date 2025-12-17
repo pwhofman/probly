@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import torch
-from torch import Tensor, device as TorchDevice, nn
+from torch import Tensor, nn
 
 from probly.calibration.histogram_binning.common import register_histogram_factory
 from probly.calibration.template import CalibratorBaseTorch  # type: ignore  # noqa: PGH003
@@ -12,9 +12,8 @@ from probly.calibration.template import CalibratorBaseTorch  # type: ignore  # n
 class HistogramBinning(CalibratorBaseTorch):
     """Calibrator that uses histogram binning."""
 
-    def __init__(self, base_model: nn.Module, device: TorchDevice, n_bins: int = 10) -> None:
+    def __init__(self, n_bins: int = 10) -> None:
         """Create a histogram binning calibrator."""
-        super().__init__(base_model, device)
         self.n_bins = n_bins
         self.bin_start = 0.0
         self.bin_width = 0.0
