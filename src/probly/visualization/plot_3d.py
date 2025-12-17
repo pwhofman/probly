@@ -153,7 +153,7 @@ class TernaryVisualizer:
         # hard coded demo
         example = np.array([0.25, 0.55, 0.20])
         x, y = self.probs_to_coords_3d(example)
-        ax.scatter([x], [y], color="red", s=30, zorder=5)
+        ax.scatter([x], [y], color=cfg.RED, s=30, zorder=5)
 
         a, b, c = example
 
@@ -168,17 +168,17 @@ class TernaryVisualizer:
             x1, y1 = self.probs_to_coords_3d(p)
             x2, y2 = self.probs_to_coords_3d(q)
             xm, ym = (x1 + x2) / 2.0, (y1 + y2) / 2.0
-            txt = ax.text(xm, ym, text, ha="center", va="center", color="white", fontsize=fontsize, zorder=6)
-            txt.set_path_effects([PathEffects.withStroke(linewidth=2, foreground="black")])
+            txt = ax.text(xm, ym, text, ha="center", va="center", color=cfg.WHITE, fontsize=fontsize, zorder=6)
+            txt.set_path_effects([PathEffects.withStroke(linewidth=2, foreground=cfg.BLACK)])
 
         p_ac = np.array([a, 0.0, 1.0 - a])
-        seg(example, p_ac, color="blue", lw=1, alpha=1.0)
+        seg(example, p_ac, color=cfg.BLUE, lw=1, alpha=1.0)
         mid_lable(example, p_ac, f"a={a:.2f}")
         p_ba = np.array([1.0 - b, b, 0.0])
-        seg(p_ba, example, color="blue", lw=1, alpha=1.0)
+        seg(p_ba, example, color=cfg.BLUE, lw=1, alpha=1.0)
         mid_lable(p_ba, example, f"b={b:.2f}")
         p_cb = np.array([0.0, 1.0 - c, c])
-        seg(example, p_cb, color="blue", lw=1, alpha=1.0)
+        seg(example, p_cb, color=cfg.BLUE, lw=1, alpha=1.0)
         mid_lable(example, p_cb, f"c={c:.2f}")
 
     def plot_convex_hull(

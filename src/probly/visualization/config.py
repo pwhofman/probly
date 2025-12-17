@@ -11,15 +11,15 @@ __all__ = [
     "HULL_FACE",
     "LINES",
     "LINE_WIDTH",
-    "NEUTRAL",
     "RED",
+    "WHITE",
     "get_sign_color",
 ]
 
 RED: str = "#ff0d57"
 BLUE: str = "#1e88e5"
 BLACK: str = "#000000"
-NEUTRAL: str = "#ffffff"
+WHITE: str = "#ffffff"
 LINES: str = "#cccccc"
 FILL_ALPHA: float = 0.25
 LINE_WIDTH: float = 2
