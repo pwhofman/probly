@@ -11,6 +11,7 @@
    main_components
    advanced_topics
    examples_&_tutorials
+   auto_examples/index
    methods
    contributing
    references

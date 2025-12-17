@@ -83,6 +83,7 @@ lint = [
 ]
 docs = [
     "sphinx>=8.0.0",
+    "sphinx-gallery",
     "furo",                     # Beautiful modern theme (or use sphinx-rtd-theme)
     "myst-nb",                  # Optional: Jupyter Notebook support
     "sphinx-copybutton",        # Optional: Adds copy buttons to code blocks

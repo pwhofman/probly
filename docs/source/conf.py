@@ -38,6 +38,7 @@ extensions = [
     "sphinx.ext.napoleon",  # for Google-style docstrings
     "sphinx.ext.duration",  # optional, show the duration of the build
     "myst_nb",  # for jupyter notebook support, also includes myst_parser
+    "sphinx_gallery.gen_gallery",  # for an examples gallery generated from scripts
     "sphinx.ext.intersphinx",  # for linking to other projects' docs
     "sphinx.ext.mathjax",  # for math support
     "sphinx.ext.doctest",  # for testing code snippets in the docs
@@ -51,6 +52,20 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 bibtex_bibfiles = ["references.bib"]
 bibtex_default_style = "alpha"
 nb_execution_mode = "off"  # don't run notebooks when building the docs
+
+sphinx_gallery_conf = {
+    # Keep example scripts at repo root so they can be used outside docs as well.
+    "examples_dirs": "examples",
+    # Sphinx-Gallery writes generated .rst and thumbnails here (relative to this conf.py).
+    "gallery_dirs": "auto_examples",
+    # Conventional prefix used by Sphinx-Gallery.
+    "filename_pattern": r"plot_",
+    # Avoid executing examples during doc builds by default (keeps docs lightweight and
+    # avoids requiring optional ML deps like torch).
+    "plot_gallery": False,
+    # Don't clutter the sidebar with download links unless you want them.
+    "download_all_examples": False,
+}
 
 intersphinx_mapping = {
     "python3": ("https://docs.python.org/3", None),
@@ -130,7 +145,7 @@ autosummary_generate = False
 autodoc_default_options = {
     "show-inheritance": True,
     "members": True,
-    "interited-members": True,
+    "inherited-members": True,
     "member-order": "groupwise",
     "special-members": "__call__",
     "undoc-members": True,
