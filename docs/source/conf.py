@@ -56,7 +56,7 @@ nb_execution_mode = "off"  # don't run notebooks when building the docs
 
 sphinx_gallery_conf = {
     # Keep example scripts at repo root so they can be used outside docs as well.
-    "examples_dirs": "../../examples",
+    "examples_dirs": os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "examples")),
     # Sphinx-Gallery writes generated .rst and thumbnails here (relative to this conf.py).
     "gallery_dirs": "auto_examples",
     # Enables backreference pages, which power the `.. minigallery:: some.object` directive.
@@ -70,7 +70,7 @@ sphinx_gallery_conf = {
     # avoids requiring optional ML deps like torch).
     "plot_gallery": False,
     # Use a project asset as the default thumbnail when examples aren't executed.
-    "default_thumb_file": "_static/logo/logo_light.png",
+     "default_thumb_file": os.path.join(os.path.dirname(__file__), "_static", "logo", "logo_light.png"),
     # Don't clutter the sidebar with download links unless you want them.
     "download_all_examples": False,
 }
