@@ -224,7 +224,7 @@ class TernaryVisualizer:
 
         if len(unique) == 2:
             # Two distinct points — hull is a line segment
-            ax.plot(unique[:, 0], unique[:, 1], color=cfg.HULL_EDGE, linewidth=cfg.LINE_WIDTH)
+            ax.plot(unique[:, 0], unique[:, 1], color=cfg.HULL_EDGE, linewidth=cfg.HULL_LINE_WIDTH)
             return ax
 
         # Try to compute convex hull
@@ -239,7 +239,7 @@ class TernaryVisualizer:
                 facecolor=cfg.HULL_FACE,
                 edgecolor=cfg.HULL_EDGE,
                 alpha=cfg.FILL_ALPHA,
-                linewidth=cfg.LINE_WIDTH,
+                linewidth=cfg.HULL_LINE_WIDTH,
             )
             ax.add_patch(poly)
 
@@ -252,7 +252,7 @@ class TernaryVisualizer:
                 [coords[i, 0], coords[j, 0]],
                 [coords[i, 1], coords[j, 1]],
                 color=cfg.HULL_EDGE,
-                linewidth=cfg.LINE_WIDTH,
+                linewidth=cfg.HULL_LINE_WIDTH,
             )
         self.draw_prob_line(ax)
         return ax
@@ -264,8 +264,6 @@ class TernaryVisualizer:
         value: float,
         color: str = "red",
         linestyle: str = "--",
-        linewidth: float = 1.5,
-        alpha: float = 0.7,
     ) -> None:
         """Draw a line of constant probability p[index] = value.
 
@@ -300,15 +298,14 @@ class TernaryVisualizer:
             [y1, y2],
             color=color,
             linestyle=linestyle,
-            linewidth=linewidth,
-            alpha=alpha,
+            linewidth=cfg.MIN_MAX_LINE_WIDTH,
+            alpha=cfg.MIN_MAX_ALPHA,
         )
 
     def plot_minmax_lines(
         self,
         probs: np.ndarray,
         ax: plt.Axes,
-        colors: tuple[str, str] = ("red", "blue"),
     ) -> None:
         """Draw min/max probability lines for each class.
 
@@ -322,13 +319,13 @@ class TernaryVisualizer:
                 ax=ax,
                 index=i,
                 value=p_min[i],
-                color=colors[0],
-                linestyle="--",
+                color=cfg.RED,
+                linestyle=cfg.MIN_MAX_LINESTYLE_1,
             )
             self._draw_constant_probability_line(
                 ax=ax,
                 index=i,
                 value=p_max[i],
-                color=colors[1],
-                linestyle="-.",
+                color=cfg.BLUE,
+                linestyle=cfg.MIN_MAX_LINESTYLE_2,
             )

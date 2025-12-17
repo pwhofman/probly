@@ -55,7 +55,7 @@ class IntervalVisualizer:
 
         y_marg = np.array([0.1, -0.1])
 
-        plt.plot([0, 1], [0, 0], color=cfg.BLACK, linewidth=cfg.LINE_WIDTH, zorder=0)
+        plt.plot([0, 1], [0, 0], color=cfg.BLACK, linewidth=cfg.HULL_LINE_WIDTH, zorder=0)
 
         if mle_flag:
             mle = np.mean(coords[:, 0])
@@ -95,7 +95,7 @@ class IntervalVisualizer:
             normal = np.array([-edge_vec[1], edge_vec[0]])
             normal = normal / np.linalg.norm(normal)
 
-            for t in tick_values:
+            for t in tick_values[1:-1]:
                 pos = lerp(p, q, t)
 
                 tick_start = pos - normal * (tick_length / 2)
@@ -103,7 +103,7 @@ class IntervalVisualizer:
                 ax.plot(
                     [tick_start[0], tick_end[0]],
                     [tick_start[1], tick_end[1]],
-                    color="black",
+                    color=cfg.BLACK,
                 )
                 label_pos = pos + normal * label_offset
                 ax.text(
