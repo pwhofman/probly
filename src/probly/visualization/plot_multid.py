@@ -92,6 +92,10 @@ class MultiVisualizer:
         labels: labels for the classes.
         ax: Axes on which to create the radar chart.
         """
+        msg1 = "At least one dataset must be provided."
+        if probs.size == 0:
+            raise ValueError(msg1)
+
         n_classes = probs.shape[-1]
 
         # Use the factory from spider.py
