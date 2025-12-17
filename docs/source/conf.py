@@ -47,16 +47,17 @@ extensions = [
 ]
 
 suppress_warnings = [
-    'toc.not_included',        # Already added
-    'autodoc.import_object',   # Failed module imports
-    'ref.ref',                 # Undefined reference labels  
-    'ref.doc',                 # Unknown documents
-    'ref.python',              # Ambiguous cross-references
-    'misc.highlighting_failure', # Pygments lexer issues
-    'myst.header',             # Header level issues in notebooks
-    'autosummary',              # Failed autosummary imports
-    'toc.not_readable',         # Nonexisting toctree documents
-    'docutils',                 # Docutils formatting warnings
+    'toc.not_included',
+    'autodoc.import_object',
+    'autodoc',
+    'ref.ref',
+    'ref.doc',
+    'ref.python',
+    'misc.highlighting_failure',
+    'myst.header',
+    'autosummary',
+    'toc.not_readable',
+    'docutils',
 ]
 
 templates_path = ["_templates"]
@@ -140,10 +141,19 @@ html_show_sourcelink = False  # to remove button next to dark mode showing sourc
 
 # -- Autodoc ---------------------------------------------------------------------------------------
 autosummary_generate = False
+
+autodoc_mock_imports = [
+    "torch",
+    "torchvision",
+    "jax",
+    "flax",
+    "optax",
+]
+
 autodoc_default_options = {
     "show-inheritance": True,
     "members": True,
-    "interited-members": True,
+    "inherited-members": True,
     "member-order": "groupwise",
     "special-members": "__call__",
     "undoc-members": True,
