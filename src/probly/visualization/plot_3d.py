@@ -157,17 +157,21 @@ class TernaryVisualizer:
             x1, y1 = self.probs_to_coords_3d(p)
             x2, y2 = self.probs_to_coords_3d(q)
             ax.plot([x1, x2], [y1, y2], color=color, linewidth=lw, alpha=alpha, zorder=5)
+        def mid_lable(p: np.ndarray, q: np.ndarray, text: str, *, fontsize: int = 9) -> None:
+            x1, y1 = self.probs_to_coords_3d(p)
+            x2, y2 = self.probs_to_coords_3d(q)
+            xm, ym = (x1 + x2) / 2.0, (y1 + y2) / 2.0
+            ax.text(xm, ym, text, ha="center", va="center", fontsize=fontsize, zorder=7)
 
         p_ac = np.array([a, 0.0, 1.0 - a])
         seg(example, p_ac, color="blue", lw=2.5, alpha=1.0)
-
+        mid_lable(example, p_ac, f"a={a:.2f}")
         p_ba = np.array([1.0 - b, b, 0.0])
-        p_bc = np.array([0.0, b, 1.0 - b])
         seg(p_ba, example, color="blue", lw=2.5, alpha=0.8)
-
-        p_ca = np.array([1.0 - c, 0.0, c])
+        mid_lable(p_ba, example, f"b={b:.2f}")
         p_cb = np.array([0.0, 1.0 - c, c])
         seg(example, p_cb, color="blue", lw=2.5, alpha=0.6)
+        mid_lable(example, p_cb, f"c={c:.2f}")
 
     def plot_convex_hull(
         self,
