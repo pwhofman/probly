@@ -6,7 +6,7 @@ import pytest
 import torch as th
 from torch import nn
 
-from probly.layers.torch import NormalInverseGammaLinear
+from probly.layers.evidential.torch import NormalInverseGammaLinear
 from probly.transformation.evidential.regression import evidential_regression
 from tests.probly.torch_utils import count_layers
 

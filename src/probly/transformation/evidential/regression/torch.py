@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 from torch import nn
 
-from probly.layers.torch import NormalInverseGammaLinear
+from probly.layers.evidential.torch import NormalInverseGammaLinear
 from probly.transformation.evidential.regression.common import REPLACED_LAST_LINEAR, register
 
 if TYPE_CHECKING:
