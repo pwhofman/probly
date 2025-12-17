@@ -257,10 +257,10 @@ Credal sets, distributional ambiguity, and pessimistic/robust reasoning are tool
 risk-sensitive decisions :cite:`Augustin2014`, :cite:`Hullermeier2021`.
 
 .. list-table::
-   :widths: 250px
-
+   :widths: 40 60
+ 
    * - .. image:: Credal_Set.png
-          :width: 100%
+          :width: 60%
      - The figure shows three complementary ways to represent uncertainty within the probability simplex:
 
        **top:** a credal set capturing all admissible distributions  
