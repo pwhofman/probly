@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import math
 from typing import TYPE_CHECKING
 
 
@@ -20,7 +19,6 @@ S_MEAN = GlobalVariable[float]("S_MEAN", default=1.0)
 S_STD = GlobalVariable[float]("S_STD", default=0.01)
 R_MEAN = GlobalVariable[float]("R_MEAN", default=1.0)
 R_STD = GlobalVariable[float]("R_STD", default=0.01)
-KAIMING_SLOPE = GlobalVariable[float]("KAIMING_SLOPE", default=math.sqrt(5))
 
 batchensemble_traverser = lazydispatch_traverser[object](name="batchensemble_traverser")
 
@@ -36,7 +34,6 @@ def register(cls: LazyType, traverser: RegisteredLooseTraverser) -> None:
             "s_std": S_STD,
             "r_mean": R_MEAN,
             "r_std": R_STD,
-            "kaiming_slope": KAIMING_SLOPE,
         },
     )
 
@@ -47,7 +44,6 @@ def batchensemble[T: Predictor](
     s_std: float = S_STD.default,
     r_mean: float = R_MEAN.default,
     r_std: float = R_STD.default,
-    kaiming_slope: float = KAIMING_SLOPE.default,
 ) -> T:
     """Create a Batchensemble predictor from a base predictor.
 
@@ -77,7 +73,6 @@ def batchensemble[T: Predictor](
         )
         raise ValueError(msg)
     # TODO maybe check that the mean of r and s should be greater than zero. 
-    # some constraints on the kaiming slope?
     
     return traverse(
         base,
@@ -88,7 +83,6 @@ def batchensemble[T: Predictor](
             S_STD: s_std,
             R_MEAN: r_mean,
             R_STD: r_std,
-            KAIMING_SLOPE: kaiming_slope,
             CLONE: True,
         },
     )
