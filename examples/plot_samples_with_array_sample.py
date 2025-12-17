@@ -3,7 +3,7 @@
 Working with samples (`ArraySample`)
 ====================================
 
-Probly represents repeated stochastic predictions as a "sample". For NumPy-like data,
+``probly`` represents repeated stochastic predictions as a "sample". For NumPy-like data,
 the concrete implementation is :class:`probly.representation.sampling.sample.ArraySample`.
 
 This example shows:

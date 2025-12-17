@@ -3,7 +3,7 @@
 Using the generic `predict()`
 =============================
 
-Probly defines a small protocol for "predictors" and a generic
+``probly`` defines a small protocol for "predictors" and a generic
 :func:`probly.predictor.predict` helper.
 
 This can be useful when you want to dispatch behavior based on the predictor type,
@@ -30,4 +30,3 @@ class ThresholdPredictor:
 x = np.array([-0.5, 0.0, 0.2, 2.0])
 preds = predict(ThresholdPredictor(threshold=0.1), x)
 print("preds:", preds)
-

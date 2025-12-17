@@ -1,0 +1,5 @@
+/* Sphinx-Gallery */
+/* Use "Output:" instead of the default "Out:" label for captured stdout. */
+.sphx-glr-script-out::before {
+  content: "Output:";
+}
