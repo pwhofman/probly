@@ -95,7 +95,7 @@ class TernaryVisualizer:
 
         verts = np.array([v1, v2, v3])  # noqa: F841
         # tick_values are set in a way that they won't interfere at the edges
-        tick_values = np.linspace(0.1, 0.90, 11)
+        tick_values = np.linspace(0.0, 1.0, 11)[1:-1]
         tick_length = 0.01
         label_offset = -0.05
 
@@ -131,51 +131,54 @@ class TernaryVisualizer:
         ax.scatter(coords[:, 0], coords[:, 1], **scatter_kwargs)
 
         ax.set_title(title, pad=20, y=-0.2)
-        if example_point is None:
-            example_point = probs.mean(axis=0)
-        # Optionally draw convex hull
+
         if plot_hull:
             self.plot_convex_hull(probs, ax=ax)
 
         return ax
-    # def plot_prob_axes(
-    #         self,
-    #         points: np.ndarray,
-    #         ax: plt.Axes = None,
-    #         color: str= "red",
-    # ) -> plt.Axes:
-    #     a = 0.2
-    #     b = 0.3
-    #     c = 0.5
-    #     example_point = np.array([a,b,c])
-    #     plt.plot()
-    def draw_a_projection_line(
-        point: np.ndarray,
-        ax: plt.Axes,
-    ) -> None:
+    def draw_prob_line(self, ax: plt.Axes) -> None:
+        """Mini demo: draw probability 'axes' (isolin es) through one fixed example point.
+
+        Draws the three isolines through (a,b,c):
+        - constant a (parallel to BC)
+        - constant b (parallel to AC)
+        - constant c (parallel to AB)
+
+        This function is self-contained (hard-coded example point).
         """
-        Draw a line from a ternary point (a,b,c) to (a,0,0).
+        # --- hard-coded demo point (must sum to 1.0) ---
+        example = np.array([0.25, 0.55, 0.20])  # (a,b,c)
+        x, y = self.probs_to_coords_3d(example)
+        ax.scatter([x], [y], color="red", s=60, zorder=5)
+        a, b, c = example
+        if not np.isclose(a + b + c, 1.0):
+            raise ValueError(f"Example point must sum to 1. Got {a+b+c}.")
 
-        Args:
-            point: array-like of shape (3,) with (a,b,c)
-            ax: matplotlib Axes to draw on
-        """
-        # Ausgangspunkt
-        a, b, c = point
+        # Convert example to 2D and mark it
+        xe, ye = self.probs_to_coords_3d(example)
+        ax.scatter([xe], [ye], color="red", s=60, zorder=6, label="Example point")
 
-        # Zielpunkt im Simplex
-        target = np.array([a, 0.0, 0.0])
+        # --- helper to draw a segment between two ternary points ---
+        def seg(p: np.ndarray, q: np.ndarray, *, color: str, lw: float = 2.0, alpha: float = 1.0) -> None:
+            x1, y1 = self.probs_to_coords_3d(p)
+            x2, y2 = self.probs_to_coords_3d(q)
+            ax.plot([x1, x2], [y1, y2], color=color, linewidth=lw, alpha=alpha, zorder=5)
 
-        # In 2D-Koordinaten umrechnen
-        x_start, y_start = probs_to_coords_3d(point)
-        x_end, y_end = probs_to_coords_3d(target)
+        # 1) constant a line: endpoints on AB (c=0) and AC (b=0)
+        p_ab = np.array([a, 1.0 - a, 0.0])
+        p_ac = np.array([a, 0.0, 1.0 - a])
+        seg(p_ab, p_ac, color="blue", lw=2.5, alpha=1.0)
 
-        # Linie zeichnen
-        ax.plot(
-            [x_start, x_end],
-            [y_start, y_end],
-            linestyle="--",
-        )
+        # 2) constant b line: endpoints on AB (c=0) and BC (a=0)
+        p_ba = np.array([1.0 - b, b, 0.0])
+        p_bc = np.array([0.0, b, 1.0 - b])
+        seg(p_ba, p_bc, color="blue", lw=2.5, alpha=0.8)
+
+        # 3) constant c line: endpoints on AC (b=0) and BC (a=0)
+        p_ca = np.array([1.0 - c, 0.0, c])
+        p_cb = np.array([0.0, 1.0 - c, c])
+        seg(p_ca, p_cb, color="blue", lw=2.5, alpha=0.6)
+
     def plot_convex_hull(
         self,
         probs: np.ndarray,
@@ -247,5 +250,5 @@ class TernaryVisualizer:
                 color=edgecolor,
                 linewidth=linewidth,
             )
-
+        self.draw_prob_line(ax)
         return ax
