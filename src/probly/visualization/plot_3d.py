@@ -137,47 +137,37 @@ class TernaryVisualizer:
 
         return ax
     def draw_prob_line(self, ax: plt.Axes) -> None:
-        """Mini demo: draw probability 'axes' (isolin es) through one fixed example point.
+        """Mini demo: draw probability axes through one fixed example point.
 
         Draws the three isolines through (a,b,c):
         - constant a (parallel to BC)
         - constant b (parallel to AC)
         - constant c (parallel to AB)
 
-        This function is self-contained (hard-coded example point).
         """
-        # --- hard-coded demo point (must sum to 1.0) ---
-        example = np.array([0.25, 0.55, 0.20])  # (a,b,c)
+        #hard coded demo
+        example = np.array([0.25, 0.55, 0.20])
         x, y = self.probs_to_coords_3d(example)
         ax.scatter([x], [y], color="red", s=60, zorder=5)
+
         a, b, c = example
-        if not np.isclose(a + b + c, 1.0):
-            raise ValueError(f"Example point must sum to 1. Got {a+b+c}.")
 
-        # Convert example to 2D and mark it
-        xe, ye = self.probs_to_coords_3d(example)
-        ax.scatter([xe], [ye], color="red", s=60, zorder=6, label="Example point")
-
-        # --- helper to draw a segment between two ternary points ---
+        # helper to draw lines
         def seg(p: np.ndarray, q: np.ndarray, *, color: str, lw: float = 2.0, alpha: float = 1.0) -> None:
             x1, y1 = self.probs_to_coords_3d(p)
             x2, y2 = self.probs_to_coords_3d(q)
             ax.plot([x1, x2], [y1, y2], color=color, linewidth=lw, alpha=alpha, zorder=5)
 
-        # 1) constant a line: endpoints on AB (c=0) and AC (b=0)
-        p_ab = np.array([a, 1.0 - a, 0.0])
         p_ac = np.array([a, 0.0, 1.0 - a])
-        seg(p_ab, p_ac, color="blue", lw=2.5, alpha=1.0)
+        seg(example, p_ac, color="blue", lw=2.5, alpha=1.0)
 
-        # 2) constant b line: endpoints on AB (c=0) and BC (a=0)
         p_ba = np.array([1.0 - b, b, 0.0])
         p_bc = np.array([0.0, b, 1.0 - b])
-        seg(p_ba, p_bc, color="blue", lw=2.5, alpha=0.8)
+        seg(p_ba, example, color="blue", lw=2.5, alpha=0.8)
 
-        # 3) constant c line: endpoints on AC (b=0) and BC (a=0)
         p_ca = np.array([1.0 - c, 0.0, c])
         p_cb = np.array([0.0, 1.0 - c, c])
-        seg(p_ca, p_cb, color="blue", lw=2.5, alpha=0.6)
+        seg(example, p_cb, color="blue", lw=2.5, alpha=0.6)
 
     def plot_convex_hull(
         self,
