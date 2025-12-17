@@ -260,7 +260,7 @@ risk-sensitive decisions :cite:`Augustin2014`, :cite:`Hullermeier2021`.
    :widths: 30 70
  
    * - .. image:: Credal_Set.png
-          :scale: 60%
+          :scale: 30%
      - The figure shows three complementary ways to represent uncertainty within the probability simplex:
 
        **top:** a credal set capturing all admissible distributions  
