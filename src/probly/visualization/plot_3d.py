@@ -55,6 +55,7 @@ class TernaryVisualizer:
         title: str = "Ternary Plot (3 Classes)",
         ax: plt.Axes = None,
         plot_hull: bool = True,
+        plot_minmax: bool = True,
         **scatter_kwargs: object,
     ) -> plt.Axes:
         """Plot ternary scatter points.
@@ -136,6 +137,10 @@ class TernaryVisualizer:
         if plot_hull:
             self.plot_convex_hull(probs, ax=ax)
 
+        # Optionally draw second order max/min envelope lines
+        if plot_minmax:
+            self.plot_minmax_lines(probs, ax=ax)
+
         return ax
 
     def plot_convex_hull(
@@ -211,3 +216,80 @@ class TernaryVisualizer:
             )
 
         return ax
+
+    def _draw_constant_probability_line(
+        self,
+        ax: plt.Axes,
+        index: int,
+        value: float,
+        color: str = "red",
+        linestyle: str = "--",
+        linewidth: float = 1.5,
+        alpha: float = 0.7,
+    ) -> None:
+        """
+        Draw a line of constant probability p[index] = value.
+        The line is parallel to the edge opposite the corresponding vertex.
+        """
+        if value <= 0 or value >= 1:
+            return  # Degenerate, coincides with triangle boundary
+
+        # Remaining mass for the other two components
+        remaining = 1.0 - value
+
+        # Two extreme endpoints
+        p_start = np.zeros(3)
+        p_end = np.zeros(3)
+
+        p_start[index] = value
+        p_end[index] = value
+
+        other = [i for i in range(3) if i != index]
+
+        p_start[other[0]] = remaining
+        p_start[other[1]] = 0.0
+
+        p_end[other[0]] = 0.0
+        p_end[other[1]] = remaining
+
+        x1, y1 = self.probs_to_coords_3d(p_start)
+        x2, y2 = self.probs_to_coords_3d(p_end)
+
+        ax.plot(
+            [x1, x2],
+            [y1, y2],
+            color=color,
+            linestyle=linestyle,
+            linewidth=linewidth,
+            alpha=alpha,
+        )
+
+    def plot_minmax_lines(
+        self,
+        probs: np.ndarray,
+        ax: plt.Axes,
+        colors: tuple[str, str] = ("red", "blue"),
+    ) -> None:
+        """
+        Draw min/max probability lines for each class.
+        Up to 6 lines total (min & max for 3 classes).
+        """
+        p_min = probs.min(axis=0)
+        p_max = probs.max(axis=0)
+
+        for i in range(3):
+            self._draw_constant_probability_line(
+                ax=ax,
+                index=i,
+                value=p_min[i],
+                color=colors[0],
+                linestyle="--",
+            )
+            self._draw_constant_probability_line(
+                ax=ax,
+                index=i,
+                value=p_max[i],
+                color=colors[1],
+                linestyle="-.",
+            )
+
