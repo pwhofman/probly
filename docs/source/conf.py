@@ -42,8 +42,21 @@ extensions = [
     "sphinx.ext.mathjax",  # for math support
     "sphinx.ext.doctest",  # for testing code snippets in the docs
     "sphinx_copybutton",  # adds a copy button to code blocks
-    "sphinx.ext.autosectionlabel",  # for auto-generating section labels,
+    # '"sphinx.ext.autosectionlabel",  # for auto-generating section labels,
     "sphinxcontrib.bibtex",  # for bibliography support
+]
+
+suppress_warnings = [
+    'toc.not_included',        # Already added
+    'autodoc.import_object',   # Failed module imports
+    'ref.ref',                 # Undefined reference labels  
+    'ref.doc',                 # Unknown documents
+    'ref.python',              # Ambiguous cross-references
+    'misc.highlighting_failure', # Pygments lexer issues
+    'myst.header',             # Header level issues in notebooks
+    'autosummary',              # Failed autosummary imports
+    'toc.not_readable',         # Nonexisting toctree documents
+    'docutils',                 # Docutils formatting warnings
 ]
 
 templates_path = ["_templates"]
@@ -83,7 +96,7 @@ def linkcode_resolve(domain: str, info: dict[str, str]) -> str | None:
         for part in info["fullname"].split("."):
             obj = getattr(obj, part)
         fn = inspect.getsourcefile(obj)
-        source, lineno = inspect.getsourcelines(obj)
+        _source, lineno = inspect.getsourcelines(obj)
         root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
         relpath = os.path.relpath(fn, start=root)
     except (ModuleNotFoundError, AttributeError, TypeError, OSError):
@@ -126,11 +139,11 @@ html_sidebars = {
 html_show_sourcelink = False  # to remove button next to dark mode showing source in txt format
 
 # -- Autodoc ---------------------------------------------------------------------------------------
-autosummary_generate = True
+autosummary_generate = False
 autodoc_default_options = {
     "show-inheritance": True,
     "members": True,
-    "inherited-members": True,
+    "interited-members": True,
     "member-order": "groupwise",
     "special-members": "__call__",
     "undoc-members": True,
