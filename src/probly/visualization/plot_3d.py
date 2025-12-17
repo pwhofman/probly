@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import matplotlib.patheffects as PathEffects
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.spatial import ConvexHull
@@ -134,11 +135,51 @@ class TernaryVisualizer:
 
         ax.set_title(title, pad=20, y=-0.2)
 
-        # Optionally draw convex hull
         if plot_hull:
             self.plot_convex_hull(probs, ax=ax)
 
         return ax
+
+    def draw_prob_line(self, ax: plt.Axes) -> None:
+        """Mini demo: draw probability axes through one fixed example point.
+
+        Args:
+        ax: Axes to draw on
+        Draws the three isolines through (a,b,c):
+        - constant a (parallel to BC)
+        - constant b (parallel to AC)
+        - constant c (parallel to AB).
+        """
+        # hard coded demo
+        example = np.array([0.25, 0.55, 0.20])
+        x, y = self.probs_to_coords_3d(example)
+        ax.scatter([x], [y], color="red", s=30, zorder=5)
+
+        a, b, c = example
+
+        # helper to draw lines
+        def seg(p: np.ndarray, q: np.ndarray, *, color: str, lw: float = 2.0, alpha: float = 1.0) -> None:
+            x1, y1 = self.probs_to_coords_3d(p)
+            x2, y2 = self.probs_to_coords_3d(q)
+            ax.plot([x1, x2], [y1, y2], color=color, linewidth=lw, alpha=alpha, zorder=4)
+
+        # helper to draw text with border
+        def mid_lable(p: np.ndarray, q: np.ndarray, text: str, *, fontsize: int = 9) -> None:
+            x1, y1 = self.probs_to_coords_3d(p)
+            x2, y2 = self.probs_to_coords_3d(q)
+            xm, ym = (x1 + x2) / 2.0, (y1 + y2) / 2.0
+            txt = ax.text(xm, ym, text, ha="center", va="center", color="white", fontsize=fontsize, zorder=6)
+            txt.set_path_effects([PathEffects.withStroke(linewidth=2, foreground="black")])
+
+        p_ac = np.array([a, 0.0, 1.0 - a])
+        seg(example, p_ac, color="blue", lw=1, alpha=1.0)
+        mid_lable(example, p_ac, f"a={a:.2f}")
+        p_ba = np.array([1.0 - b, b, 0.0])
+        seg(p_ba, example, color="blue", lw=1, alpha=1.0)
+        mid_lable(p_ba, example, f"b={b:.2f}")
+        p_cb = np.array([0.0, 1.0 - c, c])
+        seg(example, p_cb, color="blue", lw=1, alpha=1.0)
+        mid_lable(example, p_cb, f"c={c:.2f}")
 
     def plot_convex_hull(
         self,
@@ -207,5 +248,5 @@ class TernaryVisualizer:
                 color=cfg.HULL_EDGE,
                 linewidth=cfg.LINE_WIDTH,
             )
-
+        self.draw_prob_line(ax)
         return ax
