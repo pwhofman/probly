@@ -5,10 +5,12 @@ from __future__ import annotations
 import pytest
 from sklearn.isotonic import IsotonicRegression
 import torch
-from torch import nn
+from torch import Tensor, nn
 from torch.utils.data import DataLoader, TensorDataset
 
 from probly.calibration.isotonic_regression.torch import IsotonicRegressionCalibrator
+
+SetupReturnType = tuple[nn.Sequential, nn.Sequential, Tensor, DataLoader, DataLoader]
 
 
 @pytest.fixture
@@ -17,14 +19,16 @@ def binary_torch_model() -> nn.Module:
         nn.Linear(10, 2),
     )
 
+
 @pytest.fixture
 def multiclass_torch_model() -> nn.Module:
     return nn.Sequential(
         nn.Linear(10, 4),
     )
 
+
 @pytest.fixture
-def setup(binary_torch_model: nn.Sequential, multiclass_torch_model: nn.Sequential):
+def setup(binary_torch_model: nn.Sequential, multiclass_torch_model: nn.Sequential) -> SetupReturnType:
     device = torch.device("cpu")
     base_model_multiclass = multiclass_torch_model.to(device)
     base_model_binary = binary_torch_model.to(device)
@@ -38,7 +42,8 @@ def setup(binary_torch_model: nn.Sequential, multiclass_torch_model: nn.Sequenti
 
     return base_model_multiclass, base_model_binary, inputs, loader_multiclass, loader_binary
 
-def test_fit_binary(setup):
+
+def test_fit_binary(setup: SetupReturnType) -> None:
     _, base_model_binary, _, _, calibration_set = setup
 
     ir_calibrator = IsotonicRegressionCalibrator(base_model_binary, torch.device("cpu"))
@@ -50,7 +55,8 @@ def test_fit_binary(setup):
     assert len(ir_calibrator.calibrator) == 1
     assert isinstance(ir_calibrator.calibrator[0], IsotonicRegression)
 
-def test_predict_binary(setup):
+
+def test_predict_binary(setup: SetupReturnType) -> None:
     _, base_model_binary, inputs, _, calibration_set = setup
 
     ir_calibrator = IsotonicRegressionCalibrator(base_model_binary, torch.device("cpu"))
@@ -63,7 +69,8 @@ def test_predict_binary(setup):
     row_sums = probs_calibrated.sum(dim=1)
     assert torch.allclose(row_sums, torch.ones_like(row_sums))
 
-def test_fit_multiclass(setup):
+
+def test_fit_multiclass(setup: SetupReturnType) -> None:
     base_model_multiclass, _, _, calibration_set, _ = setup
 
     ir_calibrator = IsotonicRegressionCalibrator(base_model_multiclass, torch.device("cpu"))
@@ -77,7 +84,8 @@ def test_fit_multiclass(setup):
     for c in ir_calibrator.calibrator:
         assert isinstance(c, IsotonicRegression)
 
-def test_predict_multiclass(setup):
+
+def test_predict_multiclass(setup: SetupReturnType) -> None:
     base_model_multiclass, _, inputs, calibration_set, _ = setup
 
     ir_calibrator = IsotonicRegressionCalibrator(base_model_multiclass, torch.device("cpu"))
