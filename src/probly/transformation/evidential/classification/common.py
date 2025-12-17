@@ -26,7 +26,7 @@ def register(cls: LazyType, appender: Callable) -> None:
 
 
 def evidential_classification[T: Predictor](base: T) -> T:
-    """Create an evidential classification predictor from a base predictor.
+    """Create an evidential classification predictor from a base predictor based on :cite:`sensoyEvidentialDeep2018`.
 
     Args:
         base: Predictor, The base model to be used for evidential classification.

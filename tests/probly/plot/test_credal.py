@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
@@ -29,6 +31,6 @@ def test_credal_set_plot() -> None:
     probs = np.array([[1 / 3, 1 / 3, 1 / 3], [1 / 3, 1 / 3, 1 / 3]])
     with pytest.raises(
         ValueError,
-        match="The set of vertices is empty. Please check the probabilities in the credal set.",
+        match=re.escape("The set of vertices is empty. Please check the probabilities in the credal set."),
     ):
         credal_set_plot(probs)

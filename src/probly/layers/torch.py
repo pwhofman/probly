@@ -12,7 +12,7 @@ import torch.nn.functional as F
 
 
 class BayesLinear(nn.Module):
-    """Implements a Bayesian linear layer.
+    """Implements a Bayesian linear layer based on :cite:`blundellWeightUncertainty2015`.
 
     Attributes:
         in_features: int, number of input features
@@ -129,8 +129,8 @@ class BayesLinear(nn.Module):
         """Reset the parameters of the Bayesian conv2d layer.
 
         Setting a=sqrt(5) in kaiming_uniform is the same as initializing with
-        uniform(-1/sqrt(k), 1/sqrt(k)), where k = weight.size(1) * prod(*kernel_size)
-        For more details see: https://github.com/pytorch/pytorch/issues/15314#issuecomment-477448573
+        uniform(-1/sqrt(k), 1/sqrt(k)), where ``k = weight.size(1) * prod(*kernel_size)``
+        For more details see: https://github.com/pytorch/pytorch/issues/15314
         """
         init.kaiming_uniform_(self.weight_mu, a=math.sqrt(5))
         if self.bias is not False:
@@ -165,7 +165,7 @@ class BayesLinear(nn.Module):
 
 
 class BayesConv2d(nn.Module):
-    """Implementation of a Bayesian convolutional layer.
+    """Implementation of a Bayesian convolutional layer based on :cite:`blundellWeightUncertainty2015`.
 
     Attributes:
         in_channels: int, number of input channels
@@ -313,8 +313,8 @@ class BayesConv2d(nn.Module):
         """Reset the parameters of the Bayesian conv2d layer.
 
         Setting a=sqrt(5) in kaiming_uniform is the same as initializing with
-        uniform(-1/sqrt(k), 1/sqrt(k)), where k = weight.size(1) * prod(*kernel_size)
-        For more details see: https://github.com/pytorch/pytorch/issues/15314#issuecomment-477448573
+        uniform(-1/sqrt(k), 1/sqrt(k)), where ``k = weight.size(1) * prod(*kernel_size)``
+        For more details see: https://github.com/pytorch/pytorch/issues/15314
         """
         init.kaiming_uniform_(self.weight_mu, a=math.sqrt(5))
         if self.bias is not False:
@@ -385,7 +385,7 @@ def _inverse_softplus(x: torch.Tensor) -> torch.Tensor:
 
 
 class DropConnectLinear(nn.Module):
-    """Custom Linear layer with DropConnect applied to weights during training.
+    """Custom Linear layer with DropConnect applied to weights during training based on :cite:`aminiDeepEvidential2020`.
 
     Attributes:
         in_features: int, number of input features.
@@ -436,7 +436,7 @@ class DropConnectLinear(nn.Module):
 
 
 class NormalInverseGammaLinear(nn.Module):
-    """Custom Linear layer modeling the parameters of a normal-inverse-gamma-distribution.
+    """Custom Linear layer for the normal-inverse-gamma-distribution based on :cite:`aminiDeepEvidential2020`.
 
     Attributes:
         gamma: torch.Tensor, shape (out_features, in_features), the mean of the normal distribution.

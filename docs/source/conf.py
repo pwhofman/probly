@@ -11,11 +11,11 @@ import inspect
 import os
 import sys
 
-import probly
-
 # -- Path setup --------------------------------------------------------------
 sys.path.insert(0, os.path.abspath("../../src"))
 sys.path.insert(0, os.path.abspath("../../examples"))
+
+import probly
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
@@ -42,7 +42,7 @@ extensions = [
     "sphinx.ext.mathjax",  # for math support
     "sphinx.ext.doctest",  # for testing code snippets in the docs
     "sphinx_copybutton",  # adds a copy button to code blocks
-    "sphinx.ext.autosectionlabel",  # for auto-generating section labels,
+    # '"sphinx.ext.autosectionlabel",  # for auto-generating section labels,
     "sphinxcontrib.bibtex",  # for bibliography support
 ]
 
@@ -83,7 +83,7 @@ def linkcode_resolve(domain: str, info: dict[str, str]) -> str | None:
         for part in info["fullname"].split("."):
             obj = getattr(obj, part)
         fn = inspect.getsourcefile(obj)
-        source, lineno = inspect.getsourcelines(obj)
+        _source, lineno = inspect.getsourcelines(obj)
         root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
         relpath = os.path.relpath(fn, start=root)
     except (ModuleNotFoundError, AttributeError, TypeError, OSError):
@@ -126,10 +126,11 @@ html_sidebars = {
 html_show_sourcelink = False  # to remove button next to dark mode showing source in txt format
 
 # -- Autodoc ---------------------------------------------------------------------------------------
-autosummary_generate = True
+autosummary_generate = False
 autodoc_default_options = {
     "show-inheritance": True,
     "members": True,
+    "interited-members": True,
     "member-order": "groupwise",
     "special-members": "__call__",
     "undoc-members": True,
@@ -145,3 +146,10 @@ autodoc_typehints = "both"  # to show type hints in the docstring
 # Ignore >>> when copying code
 copybutton_prompt_text = r">>> |\.\.\. "
 copybutton_prompt_is_regexp = True
+
+linkcheck_ignore = [
+    r"https://doi.org/10.1142/S0218488500000253",
+    r"https://www.worldscientific.com/.*",
+    r"https://doi.org/10.1080/03081070500473490",
+    r"https://www.tandfonline.com/.*",
+]
