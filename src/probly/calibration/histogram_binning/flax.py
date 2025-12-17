@@ -4,15 +4,17 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from flax import linen as nn
 import jax.numpy as jnp
 
+from probly.calibration.histogram_binning.common import register_histogram_factory
 from probly.calibration.template import CalibratorBaseFlax
 
 if TYPE_CHECKING:
-    from flax import linen as nn
     from jax import Array
 
 
+# histogram binnig
 class HistogramBinningFlax(CalibratorBaseFlax):
     """Calibrator that uses histogram binning."""
 
@@ -97,3 +99,6 @@ class HistogramBinningFlax(CalibratorBaseFlax):
         calibrated = self.bin_probs[bin_indices]
 
         return calibrated
+
+
+register_histogram_factory(nn.Module)(HistogramBinningFlax)

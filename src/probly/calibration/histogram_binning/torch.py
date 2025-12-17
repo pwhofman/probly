@@ -5,7 +5,8 @@ from __future__ import annotations
 import torch
 from torch import Tensor, device as TorchDevice, nn
 
-from probly.calibration.template import CalibratorBaseTorch
+from probly.calibration.histogram_binning.common import register_histogram_factory
+from probly.calibration.template import CalibratorBaseTorch  # type: ignore  # noqa: PGH003
 
 
 class HistogramBinning(CalibratorBaseTorch):
@@ -17,7 +18,7 @@ class HistogramBinning(CalibratorBaseTorch):
         self.n_bins = n_bins
         self.bin_start = 0.0
         self.bin_width = 0.0
-        self.bin_probs: Tensor | None = None
+        self.bin_probs: Tensor | None = None  # type: ignore  # noqa: PGH003
 
     def fit(self, calibration_set: Tensor, truth_labels: Tensor) -> HistogramBinning:
         """Fit the histogram binning calibrator."""
@@ -72,3 +73,6 @@ class HistogramBinning(CalibratorBaseTorch):
             calibrated.append(self.bin_probs[bin_id])
 
         return Tensor(calibrated)
+
+
+register_histogram_factory(nn.Module)(HistogramBinning)
