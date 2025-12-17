@@ -68,7 +68,7 @@ sphinx_gallery_conf = {
     "filename_pattern": r"plot_",
     # Avoid executing examples during doc builds by default (keeps docs lightweight and
     # avoids requiring optional ML deps like torch).
-    "plot_gallery": False,
+    "plot_gallery": True,
     # Use a project asset as the default thumbnail when examples aren't executed.
      "default_thumb_file": os.path.join(os.path.dirname(__file__), "_static", "logo", "logo_light.png"),
     # Don't clutter the sidebar with download links unless you want them.
