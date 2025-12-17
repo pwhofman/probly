@@ -39,6 +39,7 @@ extensions = [
     "sphinx.ext.duration",  # optional, show the duration of the build
     "myst_nb",  # for jupyter notebook support, also includes myst_parser
     "sphinx_gallery.gen_gallery",  # for an examples gallery generated from scripts
+    "sphinx_gallery.load_style",  # load default CSS for galleries + mini galleries
     "sphinx.ext.intersphinx",  # for linking to other projects' docs
     "sphinx.ext.mathjax",  # for math support
     "sphinx.ext.doctest",  # for testing code snippets in the docs
@@ -55,14 +56,21 @@ nb_execution_mode = "off"  # don't run notebooks when building the docs
 
 sphinx_gallery_conf = {
     # Keep example scripts at repo root so they can be used outside docs as well.
-    "examples_dirs": "examples",
+    "examples_dirs": "../../examples",
     # Sphinx-Gallery writes generated .rst and thumbnails here (relative to this conf.py).
     "gallery_dirs": "auto_examples",
+    # Enables backreference pages, which power the `.. minigallery:: some.object` directive.
+    "backreferences_dir": "generated/backreferences",
+    # Tell Sphinx-Gallery which modules are "yours" for cross-referencing.
+    "doc_module": ("probly",),
+    "reference_url": {"probly": None},
     # Conventional prefix used by Sphinx-Gallery.
     "filename_pattern": r"plot_",
     # Avoid executing examples during doc builds by default (keeps docs lightweight and
     # avoids requiring optional ML deps like torch).
     "plot_gallery": False,
+    # Use a project asset as the default thumbnail when examples aren't executed.
+    "default_thumb_file": "_static/logo/logo_light.png",
     # Don't clutter the sidebar with download links unless you want them.
     "download_all_examples": False,
 }
