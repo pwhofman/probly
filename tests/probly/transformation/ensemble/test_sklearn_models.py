@@ -54,7 +54,7 @@ class TestModelGeneration:
         for member in ensemble_list:
             assert isinstance(member, type(model))
             
-    def test_unregistered_type_raises(dummy_predictor: Predictor) -> None:
+    def test_unregistered_type_raises(self, dummy_predictor: Predictor) -> None:
         """No ensemble generator is registered for type, NotImplementedError must occur."""
         base = dummy_predictor
         with pytest.raises(
