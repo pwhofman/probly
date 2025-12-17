@@ -1,9 +1,8 @@
-"""Shared subensemble implementation."""
+"""Shared BatchEnsemble implementation."""
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-
 
 from probly.traverse_nn import nn_compose
 from pytraverse import CLONE, GlobalVariable, lazydispatch_traverser, traverse
@@ -13,8 +12,8 @@ if TYPE_CHECKING:
     from probly.predictor import Predictor
     from pytraverse.composition import RegisteredLooseTraverser
 
-   
-NUM_MEMBERS = GlobalVariable[bool]("USE_BASE_WEIGHTS", default=1)
+
+NUM_MEMBERS = GlobalVariable[int]("NUM_MEMBERS", default=1)
 S_MEAN = GlobalVariable[float]("S_MEAN", default=1.0)
 S_STD = GlobalVariable[float]("S_STD", default=0.01)
 R_MEAN = GlobalVariable[float]("R_MEAN", default=1.0)
@@ -37,6 +36,7 @@ def register(cls: LazyType, traverser: RegisteredLooseTraverser) -> None:
         },
     )
 
+
 def batchensemble[T: Predictor](
     base: T,
     num_members: int,
@@ -50,6 +50,11 @@ def batchensemble[T: Predictor](
     Args:
         base: Predictor, The model to be used as backbone or to create the backbone and heads.
         num_members: int, The number of members in the batchensemble.
+        TODO @<jnpippert>: add arg descriptions. # noqa: TD003
+        r_mean: float, .
+        r_std: float, .
+        s_mean: float, .
+        s_std: float, .
 
     Returns:
         Predictor, The batchensemble predictor.
@@ -62,8 +67,7 @@ def batchensemble[T: Predictor](
         raise ValueError(msg)
     if not s_std > 0:
         msg = (
-            "The initial standard deviation of the input modulation s must be greater than 0, "
-            f"but got {s_std} instead."
+            f"The initial standard deviation of the input modulation s must be greater than 0, but got {s_std} instead."
         )
         raise ValueError(msg)
     if not r_std > 0:
@@ -72,8 +76,8 @@ def batchensemble[T: Predictor](
             f"but got {r_std} instead."
         )
         raise ValueError(msg)
-    # TODO maybe check that the mean of r and s should be greater than zero. 
-    
+    # TODO @<jnpippert>: maybe check that the mean of r and s should be greater than zero. # noqa: TD003
+
     return traverse(
         base,
         nn_compose(batchensemble_traverser),

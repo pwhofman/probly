@@ -23,13 +23,14 @@ class BatchEnsembleLinear(nn.Module):
         r (torch.Tensor): rank-one factor for output features
     """
 
-    def __init__(self,
-                 base_layer: nn.Linear,
-                 num_members: int = 1,
-                 s_mean : float = 1.0,
-                 s_std : float = 0.01,
-                 r_mean : float = 1.0,
-                 r_std : float = 0.01,
+    def __init__(
+        self,
+        base_layer: nn.Linear,
+        num_members: int = 1,
+        s_mean: float = 1.0,
+        s_std: float = 0.01,
+        r_mean: float = 1.0,
+        r_std: float = 0.01,
     ) -> None:
         """Initializes the BatchEnsemble linear layer.
 
@@ -46,7 +47,7 @@ class BatchEnsembleLinear(nn.Module):
         self.out_features = base_layer.out_features
         self.num_members = num_members
 
-        # TODO add arg use_base_weights?
+        # TODO @<jnpippert>: add arg use_base_weights? # noqa: TD003
         self.weight = nn.Parameter(base_layer.weight.detach().clone())
 
         if base_layer.bias is not None:
@@ -60,7 +61,6 @@ class BatchEnsembleLinear(nn.Module):
         nn.init.normal_(self.s, s_mean, s_std)
         nn.init.normal_(self.r, r_mean, r_std)
 
-
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward pass of the BatchEnsemble linear layer.
 
@@ -71,8 +71,7 @@ class BatchEnsembleLinear(nn.Module):
         Returns:
             torch.Tensor: Output tensor of shape [E, B, out_features].
         """
-
-        # TODO maybe use buffers for some parameters? r,s, and their mu and std?
+        # TODO @<jnpippert>: maybe use buffers for some parameters? r,s, and their mu and std? # noqa: TD003
         if x.dim() == 2:
             # If this is the first layer, expand to ensemble dimension
             x = x.unsqueeze(0).expand(self.num_members, -1, -1)
@@ -82,7 +81,7 @@ class BatchEnsembleLinear(nn.Module):
 
         x *= self.s.unsqueeze(1)
         y = F.linear(x, self.weight, bias=None)
-        y *= self.r.unsqueeze(1) 
+        y *= self.r.unsqueeze(1)
         y += self.bias
         return y
 
@@ -97,14 +96,15 @@ class BatchEnsembleConv2d(nn.Module):
     """
 
     def __init__(
-    self,
-    base_layer: nn.Conv2d,
-    num_members: int = 1,
-    s_mean: float = 1.0,
-    s_std: float = 0.01,
-    r_mean: float = 1.0,
-    r_std: float = 0.01,
-) -> None:
+        self,
+        base_layer: nn.Conv2d,
+        num_members: int = 1,
+        s_mean: float = 1.0,
+        s_std: float = 0.01,
+        r_mean: float = 1.0,
+        r_std: float = 0.01,
+    ) -> None:
+        """TODO @<jnpippert>: docstring."""
         super().__init__()
 
         self.in_channels = base_layer.in_channels
@@ -117,7 +117,7 @@ class BatchEnsembleConv2d(nn.Module):
 
         self.num_members = num_members
 
-        # TODO add arg use_base_weights?
+        # TODO @<jnpippert>: add arg use_base_weights? # noqa: TD003
         self.weight = nn.Parameter(base_layer.weight.detach().clone())
 
         if base_layer.bias is not None:
@@ -131,22 +131,19 @@ class BatchEnsembleConv2d(nn.Module):
         nn.init.normal_(self.s, s_mean, s_std)
         nn.init.normal_(self.r, r_mean, r_std)
 
-
-    def forward(self, x : torch.Tensor) -> torch.Tensor:
-        """
-        TODO docstring
-        """
-
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """TODO @<jnpippert>: docstring."""
         if x.dim() == 4:
             # If this is the first layer, expand to ensemble dimension
             x = x.unsqueeze(0).expand(self.num_members, -1, -1, -1, -1)
         elif x.dim() == 5 and x.size(0) != self.num_members:
-            raise ValueError(f"Expected ensemble dim {self.num_members}, got {x.size(0)}")
+            msg = f"Expected ensemble dim {self.num_members}, got {x.size(0)}"
+            raise ValueError(msg)
 
-        x *= self.s[:, None, :, None, None]  
-        E, B, C, H, W = x.shape
-        x = x.reshape(E * B, C, H, W)
-        
+        x *= self.s[:, None, :, None, None]
+        e, b, c, h, w = x.shape
+        x = x.reshape(e * b, c, h, w)
+
         y = F.conv2d(
             x,
             self.weight,
@@ -156,11 +153,11 @@ class BatchEnsembleConv2d(nn.Module):
             dilation=self.dilation,
             groups=self.groups,
         )
-        _, C, H, W = y.shape
-        y = y.view(E, B, C, H, W)
+        _, c, h, w = y.shape
+        y = y.view(e, b, c, h, w)
         y *= self.r[:, None, :, None, None]
         y += self.bias[None, None, :, None, None]
-        
+
         return y
 
 
