@@ -709,161 +709,42 @@ class IRDLoss(nn.Module):
         return lp_term + self.lam * reg_term - self.gamma * entropy_term
 
 
-class DirichletPriorNetworks(nn.Module):
-    """Implementation of Dirichlet Prior Networks: cite:`malininPredictiveUncertaintyEstimation2018`.
+def dirichlet_prior_networks_loss(
+    alpha_pred: torch.Tensor,
+    y: torch.Tensor,
+    alpha_ood: torch.Tensor | None = None,
+    *,
+    ce_weight: float = 0.1,
+    num_classes: int | None = None,
+) -> torch.Tensor:
+    """Implementation of loss-function from Dirichlet Prior Networks: cite:`malininPredictiveUncertaintyEstimation2018`.
 
     This class implements the Prior Networks framework with dual training on
     in-distribution (ID) and out-of-distribution (OOD) data using KL divergence
     between target and predicted Dirichlet distributions.
     """
+    num_classes = num_classes or alpha_pred.shape[1]
 
-    def __init__(
-        self,
-        alpha0_in: float = 100.0,
-        alpha0_ood: float = 10.0,
-        label_smoothing: float = 0.01,
-        ce_weight: float = 0.1,
-    ) -> None:
-        """Initialize an instance of the DirichletPriorNetworks class.
+    # In-distribution loss: KL(target_sharp || predicted)
+    alpha_target_in = make_in_domain_target_alpha(y)
+    kl_in = kl_dirichlet(alpha_target_in, alpha_pred).mean()
 
-        Args:
-            alpha0_in: float, precision for in-distribution Dirichlet targets
-                (higher = sharper distribution, default: 100.0)
-            alpha0_ood: float, precision for OOD Dirichlet targets
-                (lower = flatter distribution, default: 10.0)
-            label_smoothing: float, label smoothing factor for numerical stability
-                (default: 0.01)
-            ce_weight: float, weight for cross-entropy regularization term
-                (default: 0.1)
-        """
-        super().__init__()
-        self.alpha0_in = alpha0_in
-        self.alpha0_ood = alpha0_ood
-        self.label_smoothing = label_smoothing
-        self.ce_weight = ce_weight
+    # Cross-entropy term for classification stability
+    probs_in = predictive_probs(alpha_pred)
+    ce_term = F.nll_loss(torch.log(probs_in + 1e-8), y)
 
-    def _kl_dirichlet(
-        self,
-        alpha_target: torch.Tensor,
-        alpha_pred: torch.Tensor,
-    ) -> torch.Tensor:
-        """Compute KL divergence between target and predicted Dirichlet distributions.
+    loss = kl_in + ce_weight * ce_term
 
-        KL(Dir(alpha_target) || Dir(alpha_pred)) computed per batch element.
-
-        Args:
-            alpha_target: torch.Tensor of shape (B, K), target Dirichlet parameters
-            alpha_pred: torch.Tensor of shape (B, K), predicted Dirichlet parameters
-        Returns:
-            torch.Tensor of shape (B,), KL divergence per sample
-        """
-        from torch.special import gammaln  # noqa: PLC0415
-
-        alpha_p0 = alpha_target.sum(dim=-1, keepdim=True)
-        alpha_q0 = alpha_pred.sum(dim=-1, keepdim=True)
-
-        term1 = gammaln(alpha_p0) - gammaln(alpha_q0)
-        term2 = (gammaln(alpha_pred) - gammaln(alpha_target)).sum(dim=-1, keepdim=True)
-        term3 = ((alpha_target - alpha_pred) * (torch.digamma(alpha_target) - torch.digamma(alpha_p0))).sum(
-            dim=-1,
-            keepdim=True,
+    # OOD loss: KL(target_flat || predicted)
+    if alpha_ood is not None:
+        alpha_target_ood = make_ood_target_alpha(
+            batch_size=alpha_ood.size(0),
+            num_classes=num_classes,
         )
+        kl_ood = kl_dirichlet(alpha_target_ood, alpha_ood).mean()
+        loss = loss + kl_ood
 
-        return (term1 + term2 + term3).squeeze(-1)
-
-    def _make_in_domain_target_alpha(
-        self,
-        y: torch.Tensor,
-        num_classes: int,
-    ) -> torch.Tensor:
-        """Construct sharp Dirichlet targets for in-distribution samples.
-
-        Args:
-            y: torch.Tensor of shape (B,), class labels
-            num_classes: int, number of classes
-        Returns:
-            torch.Tensor of shape (B, num_classes), target alpha for ID
-        """
-        batch_size = y.size(0)
-
-        # Smoothed one-hot encoding
-        mu = torch.full(
-            (batch_size, num_classes),
-            self.label_smoothing / (num_classes - 1),
-            device=y.device,
-        )
-        mu[torch.arange(batch_size, device=y.device), y] = 1.0 - self.label_smoothing
-
-        return mu * self.alpha0_in
-
-    def _make_ood_target_alpha(
-        self,
-        batch_size: int,
-        num_classes: int,
-        device: torch.device,
-    ) -> torch.Tensor:
-        """Construct flat Dirichlet targets for out-of-distribution samples.
-
-        Args:
-            batch_size: int, batch size
-            num_classes: int, number of classes
-            device: torch.device, device to create tensor on
-        Returns:
-            torch.Tensor of shape (batch_size, num_classes), target alpha for OOD
-        """
-        mu = torch.full(
-            (batch_size, num_classes),
-            1.0 / num_classes,
-            device=device,
-        )
-        return mu * self.alpha0_ood
-
-    def forward(
-        self,
-        alpha_pred: torch.Tensor,
-        y: torch.Tensor,
-        alpha_ood: torch.Tensor | None = None,
-    ) -> torch.Tensor:
-        """Forward pass computing the Prior Networks loss.
-
-        Combines KL divergence for ID and OOD samples with optional
-        cross-entropy regularization.
-
-        Args:
-            alpha_pred: torch.Tensor of shape (B, K), predicted Dirichlet
-                parameters for in-distribution samples
-            y: torch.Tensor of shape (B,), class labels for ID samples
-            alpha_ood: torch.Tensor of shape (B_ood, K), optional predicted
-                Dirichlet parameters for OOD samples
-        Returns:
-            torch.Tensor, scalar loss value
-        """
-        num_classes = alpha_pred.shape[1]
-        device = alpha_pred.device
-
-        # In-distribution loss: KL(target_sharp || predicted)
-        alpha_target_in = self._make_in_domain_target_alpha(y, num_classes)
-        kl_in = self._kl_dirichlet(alpha_target_in, alpha_pred).mean()
-
-        # Cross-entropy term for classification stability
-        alpha0_in = alpha_pred.sum(dim=-1, keepdim=True)
-        probs_in = alpha_pred / alpha0_in
-        ce_term = F.nll_loss(torch.log(probs_in + 1e-8), y)
-
-        # Total loss with ID and optional OOD components
-        total_loss = kl_in + self.ce_weight * ce_term
-
-        # OOD loss: KL(target_flat || predicted)
-        if alpha_ood is not None:
-            alpha_target_ood = self._make_ood_target_alpha(
-                alpha_ood.shape[0],
-                num_classes,
-                device,
-            )
-            kl_ood = self._kl_dirichlet(alpha_target_ood, alpha_ood).mean()
-            total_loss = total_loss + kl_ood
-
-        return total_loss
+    return loss
 
 
 def train_pn(

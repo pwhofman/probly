@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 import torch
 from torch import nn
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 
 def unified_evidential_train_class(  # noqa: C901, PLR0912
-    mode: str,
+    mode: Literal["PostNet", "NatPostNet", "EDL", "PrNet", "IRD"],
     model: nn.Module,
     dataloader: DataLoader,
     loss_fn: torch.Tensor = None,
@@ -25,7 +25,48 @@ def unified_evidential_train_class(  # noqa: C901, PLR0912
     lr: float = 1e-3,
     device: str = "cpu",
 ) -> None:
-    """Demonstration of a unified evidential training function."""
+    """Trains a given Neural Network using different learning approaches, depending on the approach of a selected paper.
+
+    Args:
+        mode:
+            Identifier of the paper-based training approach to be used.
+            Must be one of:
+            "PostNet", "NatPostNet", "EDL", "PrNet", or "IRD".
+
+        model:
+            The neural network to be trained.
+
+        dataloader:
+            Pytorch.Dataloader providing the In-Distributtion training samples and corresponding labels.
+
+        loss_fn:
+            Loss functions used for training. The inputs of each loss-functions depends on the selected mode
+
+        oodloader:
+            Pytorch.Dataloader providing the Out-Of-Distributtion training samples and corresponding labels.
+            This is only required for certain modes such as "PrNet"
+
+        flow:
+            Optional normalizing flow module used by posterior network-based methods like "PostNet"
+
+        class_count:
+            Tensor containing the number of samples per class.
+
+        epochs:
+            Number of training epochs.
+
+        lr:
+            Learning rate used by the optimizer.
+
+        device:
+            Device on which the model is trained
+            (e.g. "cpu" or "cuda")
+
+    Returns:
+        None.
+        The function performs training of the provided model and does not return a value.
+        But prints the total-losses per Epoch.
+    """
     model = model.to(device)  # moves the model to the correct device (GPU or CPU)
     if flow is not None:
         flow = flow.to(device)
