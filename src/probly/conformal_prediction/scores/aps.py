@@ -1,141 +1,92 @@
-"""includes: class APSScore:
-
-def calibration_non_conformity.
-
-def predict_non_conformity.
-
-def calculate_nonconformity_score (from aps/common.py)
-"""
-
-# clean version maybe
-# probly/conformal_prediction/scores/aps.py
-# -----------------------------------------
-# AUS: aps/common.py::calculate_nonconformity_score (true-label-Version) [file:14]
-# AUS: aps/torch.py::_compute_nonconformity, predict-Schleife [file:15]
-# AUS: aps/flax.py::_compute_nonconformity, _create_prediction_sets [file:13]
-# NEU: aps_scores_all_labels + APSScore (Score-Interface)
+"""APS score implementation for conformal prediction."""
 
 from __future__ import annotations
 
-from collections.abc import Sequence
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from probly.conformal_prediction.methods.common import PredictiveModel
 
 import numpy as np
-import numpy.typing as npt
 
 from .common import Score
+
+
+def aps_scores_all_labels(
+    probabilities: np.ndarray,
+) -> np.ndarray:
+    """Compute APS scores for all labels using cumulative probabilities."""
+    probs = np.asarray(probabilities, dtype=float)
+
+    # sort indices for descending probabilities
+    srt_idx = np.argsort(-probs, axis=1)
+    # sorted (negative) probabilities in descending order
+    srt_probs = np.sort(-probs, axis=1)
+    csum = -srt_probs.cumsum(axis=1)  # cumulative sum of original probs
+
+    # scatter cumulative sums back to original label positions
+    scores = np.zeros_like(probs, dtype=float)
+    np.put_along_axis(scores, srt_idx, csum, axis=1)
+
+    return scores
 
 
 def calculate_nonconformity_score(
     probabilities: np.ndarray,
     labels: np.ndarray,
 ) -> np.ndarray:
-    """True-label APS Nonconformity-Scores (wie bisher in aps/common.py). [file:14]
-
-    Parameters
-    ----------
-    probabilities : np.ndarray
-        Predicted probabilities of shape (n_samples, n_classes).
-    labels : np.ndarray
-        True labels of shape (n_samples).
-
-    Returns:
-    -------
-    np.ndarray
-        Non-conformity scores of shape (n_samples).
-    """
-    n_samples = probabilities.shape[0]
-    scores = np.zeros(n_samples)
-
-    for i in range(n_samples):
-        probs = probabilities[i]
-        sorted_items = sorted([(-probs[j], j) for j in range(len(probs))])
-        # Get descending sorted probabilities
-        sorted_indices = [idx for (_, idx) in sorted_items]
-        sorted_probs = probs[sorted_indices]
-        cumulative_probs = np.cumsum(sorted_probs)
-
-        # find pos of true label in sorted order
-        # will fail if labels[i] is out of bounds, but is expected
-        true_label_pos = sorted_indices.index(labels[i])
-        scores[i] = cumulative_probs[true_label_pos].item()
-
-    return scores
-
-
-# from aps/common.py (must be corrected according to alireza)
-# changed to aps_scores_all_labels(probabilities)
-def aps_scores_all_labels(
-    probabilities: npt.NDArray[np.floating],
-) -> npt.NDArray[np.floating]:
-    """APS-Scores für alle Labels (n_instances x n_labels).
-
-    Erweiterung von calculate_nonconformity_score auf alle Klassen.
-    AUS: aps/common.py-Logik + Idee aus aps/flax._create_prediction_sets. [file:14][file:13]
-    """
-    n_samples, n_classes = probabilities.shape
-    scores = np.zeros((n_samples, n_classes), dtype=float)
-
-    for i in range(n_samples):
-        probs = probabilities[i]
-        sorted_items = sorted([(-probs[j], j) for j in range(n_classes)])
-        sorted_indices = [idx for (_, idx) in sorted_items]
-        sorted_probs = probs[sorted_indices]
-        cumulative_probs = np.cumsum(sorted_probs)
-
-        # Score für jede Klasse = kumulative Wahrscheinlichkeit bis zu dieser Klasse
-        for pos, cls in enumerate(sorted_indices):
-            scores[i, cls] = cumulative_probs[pos]
-
-    return scores
+    """Compute true-label APS nonconformity scores."""
+    all_scores = aps_scores_all_labels(probabilities)
+    labels = np.asarray(labels, dtype=int)
+    n = labels.shape[0]
+    return all_scores[np.arange(n), labels]
 
 
 def create_aps_prediction_sets(
-    probs: npt.NDArray[np.floating],
+    probs: np.ndarray,
     threshold: float,
-) -> npt.NDArray[np.bool_]:
-    """Erzeuge APS-Prediction-Sets als 0/1-Matrix aus Wahrscheinlichkeiten.
+) -> np.ndarray:
+    """Build APS prediction sets as a binary mask.
 
-    Kombiniert die Logik aus:
-    - aps/torch.py::predict (Sortieren, kumulativ, <= threshold) [file:15]
-    - aps/flax.py::_create_prediction_sets (immer min. ein Label) [file:13]
+    For each sample, classes are added in order of probability until
+    the cumulative probability passes the threshold. At least one
+    class is always selected.
     """
-    n_samples, n_classes = probs.shape
-    prediction_sets = np.zeros((n_samples, n_classes), dtype=bool)
+    probs = np.asarray(probs, dtype=float)
 
-    for i in range(n_samples):
-        sample_probs = probs[i]
+    # sort indices per sample in descending probability order
+    sorted_idx = np.argsort(probs, axis=1)[:, ::-1]
+    sorted_probs = np.take_along_axis(probs, sorted_idx, axis=1)
+    cumsum = np.cumsum(sorted_probs, axis=1)
 
-        # Sort indices by probability (descending)
-        sorted_indices = np.argsort(sample_probs)[::-1]
-        sorted_probs = sample_probs[sorted_indices]
+    # boolean mask: included while cumulative <= threshold
+    include_mask = cumsum <= threshold
 
-        cumulative = 0.0
-        current_indices: list[int] = []
+    # ensure at least one label per row
+    all_false = ~include_mask.any(axis=1)
+    if np.any(all_false):
+        # force the top-probability label to be included
+        include_mask[all_false, 0] = True
 
-        for idx, prob in zip(sorted_indices, sorted_probs, strict=False):
-            current_indices.append(int(idx))
-            cumulative += float(prob)
-            # klassische APS-Regel: cumulative > threshold -> stoppen
-            if cumulative > threshold:
-                break
-
-        # Always include at least one class
-        if not current_indices:
-            current_indices = [int(sorted_indices[0])]
-
-        prediction_sets[i, current_indices] = True
+    # scatter mask back to original class indices
+    prediction_sets = np.zeros_like(include_mask, dtype=bool)
+    np.put_along_axis(prediction_sets, sorted_idx, include_mask, axis=1)
 
     return prediction_sets
 
 
 class APSScore(Score):
-    """APS Nonconformity-Score, backend-agnostisch (arbeitet mit numpy-Probas).
+    """APS nonconformity score based on model probabilities.
 
-    model: Wrapper mit predict(x) -> np.ndarray der Form (n_samples, n_classes).
+    The wrapped model is expected to implement
+    predict(x: Sequence[Any]) -> np.ndarray of shape (n_samples, n_classes)
+    returning class probabilities.
     """
 
-    def __init__(self, model: Any) -> None:
+    def __init__(self, model: PredictiveModel) -> None:
+        """Initialize the APS score with a predictive model."""
         self.model = model
 
     def calibration_nonconformity(
@@ -143,26 +94,19 @@ class APSScore(Score):
         x_cal: Sequence[Any],
         y_cal: Sequence[Any],
     ) -> np.ndarray:
-        """True-label-Scores für Kalibrierung.
-
-        Nutzt aps_scores_all_labels, nimmt daraus die Scores für das wahre Label.
-        Entspricht inhaltlich eurem alten _compute_nonconformity in Torch/Flax. [file:15][file:13]
-        """
-        probabilities = self.model.predict(x_cal)  # (n,k)
-        all_scores = aps_scores_all_labels(probabilities)
+        """Compute true-label calibration scores."""
+        probabilities = self.model.predict(x_cal)
         y_array = np.asarray(y_cal, dtype=int)
-        n = len(y_array)
-        return all_scores[np.arange(n), y_array]
+        return calculate_nonconformity_score(probabilities, y_array)
 
     def predict_nonconformity(
         self,
         x_test: Sequence[Any],
     ) -> np.ndarray:
-        """Score-Matrix (n_instances x n_labels), wie vom Experten gefordert.
+        """Compute APS scores for all labels on test data.
 
-        In der einfachsten Version verwenden wir direkt aps_scores_all_labels.
-        Alternativ könnt ihr hier auch schon eine 0/1-Matrix zurückgeben und
-        die Mengenbildung in SplitConformalPredictor entsprechend anpassen.
+        Returns a (n_samples, n_classes) score matrix that can be
+        thresholded by the conformal predictor to build prediction sets.
         """
         probabilities = self.model.predict(x_test)
         return aps_scores_all_labels(probabilities)
