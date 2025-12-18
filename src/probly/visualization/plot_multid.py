@@ -126,7 +126,7 @@ class MultiVisualizer:
         )
 
         ax.plot(theta_c, lower_c, linestyle=cfg.MIN_MAX_LINESTYLE_1, linewidth=1.5, label="Lower bound")
-        ax.plot(theta_c, upper_c, linestyle="-", linewidth=1.5, label="Upper bound")
+        ax.plot(theta_c, upper_c, linewidth=1.5, label="Upper bound")
 
         ax.set_title(f"Spider Plot ({n_classes} Classes)", pad=20)
         ax.legend(loc="upper right", bbox_to_anchor=(1.3, 1.1))
