@@ -1,60 +1,52 @@
-"""common structures for CP scores."""
-# probly/conformal_prediction/scores/common.py
-# -------------------------------------------
-# AUS: aps/common.py::calculate_quantile [file:14]
-# NEU: Score-Interface für APS, LAC, RAPS, ...
+"""Common structures for conformal prediction scores."""
 
 from __future__ import annotations
 
-from collections.abc import Sequence
-from typing import Any, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 import numpy as np
+import numpy.typing as npt
 
 
 class Score(Protocol):
-    """Abstrakte Schnittstelle für Nonconformity-Scores.
+    """Interface for nonconformity scores used in split conformal prediction.
 
-    Jeder Score (APS, LAC, RAPS, ...) muss diese beiden Methoden implementieren.
-    - calibration_nonconformity: wird in der Kalibrierungsphase aufgerufen.
-    - predict_nonconformity: wird in der Testphase aufgerufen und soll
-      eine Score-Matrix (n_instances x n_labels) liefern.
+    Each score (APS, LAC, RAPS, ...) must implement:
+    - calibration_nonconformity: used on calibration data.
+    - predict_nonconformity: used on test data, must return a score matrix
+      of shape (n_instances, n_labels).
     """
 
     def calibration_nonconformity(
         self,
         x_cal: Sequence[Any],
         y_cal: Sequence[Any],
-    ) -> np.ndarray: ...
-
-    # Rückgabe: 1D-Array mit Scores pro Instanz (true-label-Scores)
+    ) -> npt.NDArray[np.floating]:
+        """Return 1D array of nonconformity scores for calibration instances."""
 
     def predict_nonconformity(
         self,
         x_test: Sequence[Any],
-    ) -> np.ndarray: ...
-
-    # Rückgabe: 2D-Array (n_instances, n_labels) mit Scores für alle Labels
+    ) -> npt.NDArray[np.floating]:
+        """Return 2D score matrix of shape (n_instances, n_labels)."""
 
 
 def calculate_quantile(scores: np.ndarray, alpha: float) -> float:
-    """Berechne das (1 - alpha)-Quantil der Nonconformity-Scores.
+    """Calculate the quantile for conformal prediction.
 
-    AUS: aps/common.py::calculate_quantile [file:14]
-
-    Parameters
-    ----------
+    Parameters:
     scores : np.ndarray
-        Nonconformity-Scores der Kalibrierungsinstanzen.
+            Non-conformity scores
     alpha : float
-        Signifikanzniveau (target coverage = 1 - alpha).
+            Significance level (target coverage is 1-alpha)
 
     Returns:
-    -------
-    float
-        (1 - alpha)-Quantil der Scores.
+    float (The (1-alpha)-quantile of the scores)
     """
     n = len(scores)
     q_level = np.ceil((n + 1) * (1 - alpha)) / n
     q_level = min(q_level, 1.0)  # ensure within [0, 1]
-    return float(np.quantile(scores, q_level, method="lower"))
+    return float(np.quantile(scores, q_level, method="inverted_cdf"))
