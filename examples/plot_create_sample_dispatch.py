@@ -11,10 +11,14 @@ For example:
 - lists of NumPy arrays become an :class:`~probly.representation.sampling.sample.ArraySample`
 - lists of Python scalars become an :class:`~probly.representation.sampling.sample.ArraySample`
 - other objects fall back to :class:`~probly.representation.sampling.sample.ListSample`
+
+This example also renders a tiny plot to show the average class probabilities for the
+first instance in the sample (just to make sure gallery execution is visibly working).
 """
 
 from __future__ import annotations
 
+import matplotlib.pyplot as plt
 import numpy as np
 
 from probly.representation.sampling.sample import create_sample
@@ -29,3 +33,15 @@ sample = create_sample(samples)
 
 print("sample type:", type(sample).__name__)
 print("mean:", sample.mean())
+
+# Visualize the mean probabilities for the first instance.
+mean = sample.mean()
+classes = np.arange(mean.shape[1])
+plt.figure(figsize=(4, 2.5))
+plt.bar(classes, mean[0], color="#6c8cd5")
+plt.xticks(classes)
+plt.ylim(0, 1)
+plt.xlabel("Class index")
+plt.ylabel("Mean probability")
+plt.title("Mean probabilities for instance 0")
+plt.tight_layout()
