@@ -70,13 +70,18 @@ def batchensemble[T: Predictor](
             f"The initial standard deviation of the input modulation s must be greater than 0, but got {s_std} instead."
         )
         raise ValueError(msg)
+    if not s_mean > 0:
+        msg = f"The initial mean of the output modulation r must be greater than 0, but got {s_mean} instead."
+        raise ValueError(msg)
     if not r_std > 0:
         msg = (
             "The initial standard deviation of the output modulation r must be greater than 0, "
             f"but got {r_std} instead."
         )
         raise ValueError(msg)
-    # TODO @<jnpippert>: maybe check that the mean of r and s should be greater than zero. # noqa: TD003
+    if not r_mean > 0:
+        msg = f"The initial mean of the output modulation r must be greater than 0, but got {r_mean} instead."
+        raise ValueError(msg)
 
     return traverse(
         base,
