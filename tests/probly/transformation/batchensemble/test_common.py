@@ -30,7 +30,6 @@ class TestInvalidArgs:
         with pytest.raises(ValueError, match=msg):
             batchensemble(dummy_predictor, num_members=num_members, s_std=s_std)
 
-    @pytest.mark.skip(reason="not implemented yet")
     def test_s_mean(self, dummy_predictor: ValidPredictor) -> None:
         num_members = 2
         s_mean = -0.1
@@ -48,7 +47,6 @@ class TestInvalidArgs:
         with pytest.raises(ValueError, match=msg):
             batchensemble(dummy_predictor, num_members=num_members, r_std=r_std)
 
-    @pytest.mark.skip(reason="not implemented yet")
     def test_r_mean(self, dummy_predictor: ValidPredictor) -> None:
         num_members = 2
         r_mean = -0.1
