@@ -15,18 +15,20 @@ class BatchEnsembleLinear(nn.Module):
     """Implements a BatchEnsemble linear layer.
 
     Attributes:
-        in_features (int): number of input features
-        out_features (int): number of output features
-        weight (torch.Tensor): shared weight matrix
-        bias (torch.Tensor): shared bias vector
-        s (torch.Tensor): rank-one factor for input features
-        r (torch.Tensor): rank-one factor for output features
+        in_features: int, number of input features
+        out_features: int, number of output features
+        num_members: int, number of batch ensemble members
+        weight: torch.Tensor, shared weight matrix
+        bias: torch.Tensor, shared bias vector
+        s: torch.Tensor, rank-one factor for input features
+        r: torch.Tensor, rank-one factor for output features
     """
 
     def __init__(
         self,
         base_layer: nn.Linear,
         num_members: int = 1,
+        use_base_weights: bool = False,
         s_mean: float = 1.0,
         s_std: float = 0.01,
         r_mean: float = 1.0,
@@ -37,6 +39,7 @@ class BatchEnsembleLinear(nn.Module):
         Args:
             base_layer (nn.Linear): The original linear layer to be used.
             num_members (int): number of ensemble members
+            use_base_weights (bool): Whether to use the weights of the base layer as prior means. Default is False.
             s_mean (float): mean of a normal distribution to initialize s
             s_std (float): standard deviation of a normal distribution to initialize s
             r_mean (float): mean of a normal distribution to initialize r
@@ -47,8 +50,10 @@ class BatchEnsembleLinear(nn.Module):
         self.out_features = base_layer.out_features
         self.num_members = num_members
 
-        # TODO @<jnpippert>: add arg use_base_weights? # noqa: TD003
-        self.weight = nn.Parameter(base_layer.weight.detach().clone())
+        if use_base_weights:
+            self.weight = nn.Parameter(base_layer.weight.detach().clone())
+        else:
+            self.weight = nn.Parameter(torch.empty((self.out_features, self.in_features)))
 
         if base_layer.bias is not None:
             self.bias = nn.Parameter(base_layer.bias.detach().clone())
@@ -65,8 +70,8 @@ class BatchEnsembleLinear(nn.Module):
         """Forward pass of the BatchEnsemble linear layer.
 
         Args:
-            x (torch.Tensor): Input tensor of shape [B, in_features] or [E, B, in_features],
-                              where B is the batch size and E is the ensemble size.
+            x: torch.Tensor, Input tensor of shape [B, in_features] or [E, B, in_features],
+                            where B is the batch size and E is the ensemble size.
 
         Returns:
             torch.Tensor: Output tensor of shape [E, B, out_features].
@@ -90,21 +95,41 @@ class BatchEnsembleConv2d(nn.Module):
     """Implements a BatchEnsemble convolutional layer.
 
     Attributes:
-        in_features: int, number of input features
-        out_features: int, number of output features
-        bias: bool, whether to use a bias term
+        in_channels: int, number of input channels
+        out_channels: int, number of output channels
+        kernel_size: int or tuple, size of the convolutional kernel
+        stride: int or tuple, stride of the convolution
+        padding: int or tuple, padding of the convolution
+        dilation: int or tuple, dilation of the convolution
+        groups: int, number of groups for grouped convolution
+        num_members: int, number of batch ensemble members
+        weight: torch.Tensor, shared weight matrix
+        bias: torch.Tensor, shared bias vector
+        s: torch.Tensor, rank-one factor for input features
+        r: torch.Tensor, rank-one factor for output features
     """
 
     def __init__(
         self,
         base_layer: nn.Conv2d,
         num_members: int = 1,
+        use_base_weights: bool = False,
         s_mean: float = 1.0,
         s_std: float = 0.01,
         r_mean: float = 1.0,
         r_std: float = 0.01,
     ) -> None:
-        """TODO @<jnpippert>: docstring."""
+        """Initializes the BatchEnsemble linear layer.
+
+        Args:
+            base_layer (nn.Linear): The original linear layer to be used.
+            num_members (int): number of ensemble members
+            use_base_weights (bool): Whether to use the weights of the base layer as prior means. Default is False.
+            s_mean (float): mean of a normal distribution to initialize s
+            s_std (float): standard deviation of a normal distribution to initialize s
+            r_mean (float): mean of a normal distribution to initialize r
+            r_std (float): standard deviation of a normal distribution to initialize r
+        """
         super().__init__()
 
         self.in_channels = base_layer.in_channels
@@ -117,8 +142,12 @@ class BatchEnsembleConv2d(nn.Module):
 
         self.num_members = num_members
 
-        # TODO @<jnpippert>: add arg use_base_weights? # noqa: TD003
-        self.weight = nn.Parameter(base_layer.weight.detach().clone())
+        if use_base_weights:
+            self.weight = nn.Parameter(base_layer.weight.detach().clone())
+        else:
+            self.weight = nn.Parameter(
+                torch.empty((self.out_channels, self.in_channels // self.groups, *self.kernel_size)),
+            )
 
         if base_layer.bias is not None:
             self.bias = nn.Parameter(base_layer.bias.detach().clone())
@@ -132,7 +161,15 @@ class BatchEnsembleConv2d(nn.Module):
         nn.init.normal_(self.r, r_mean, r_std)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """TODO @<jnpippert>: docstring."""
+        """Forward pass of the BatchEnsemble conv2d layer.
+        
+        Args:
+            x: torch.Tensor, Input tensor of shape [B, in_channels, H, W] or [E, B, in_channels, H, W],
+                            where B is the batch size, E is the ensemble size, H is height, and W is width.
+
+        Returns:
+            torch.Tensor: Output tensor of shape [E, B, out_channels, H_out, W_out].
+        """
         if x.dim() == 4:
             # If this is the first layer, expand to ensemble dimension
             x = x.unsqueeze(0).expand(self.num_members, -1, -1, -1, -1)
