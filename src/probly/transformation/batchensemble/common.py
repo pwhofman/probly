@@ -47,40 +47,46 @@ def batchensemble[T: Predictor](
 ) -> T:
     """Create a Batchensemble predictor from a base predictor.
 
+    It calls a traverser to replace all linear and convolutional layers by their BatchEnsemble
+    counterparts.
+
     Args:
-        base: Predictor, The model to be used as backbone or to create the backbone and heads.
-        num_members: int, The number of members in the batchensemble.
-        TODO @<jnpippert>: add arg descriptions. # noqa: TD003
-        r_mean: float, .
-        r_std: float, .
-        s_mean: float, .
-        s_std: float, .
+        base: Predictor, The model in which the layers will be replaced by BatchEnsemble layers.
+        num_members: int, The number of members in the BatchEnsemble.
+        s_mean: float, The mean of the input modulation s, drawn from `nn.init._normal(s_mean, s_std)`.
+        s_std: float, The standard deviation of the input modulation s, drawn from `nn.init._normal(s_mean, s_std)`.
+        r_mean: float, The mean of the output modulation r, drawn from `nn.init._normal(r_mean, r_std)`.
+        r_std: float, The standard deviation of the output modulation r, drawn from `nn.init._normal(r_mean, r_std)`.
 
     Returns:
-        Predictor, The batchensemble predictor.
+        Predictor, The BatchEnsemble predictor.
 
     Raises:
         ValueError: If `num_members` is not a positive integer.
+        ValueError: If `s_std` is not greater than 0.
+        ValueError: If `s_mean` is not greater than 0.
+        ValueError: If `r_std` is not greater than 0.
+        ValueError: If `r_mean` is not greater than 0.
     """
     if num_members < 1:
         msg = f"num_members must be a positive integer, got {num_members}."
+        raise ValueError(msg)
+    if not s_mean > 0:
+        msg = f"The initial mean of the input modulation s must be greater than 0, but got {s_mean} instead."
         raise ValueError(msg)
     if not s_std > 0:
         msg = (
             f"The initial standard deviation of the input modulation s must be greater than 0, but got {s_std} instead."
         )
         raise ValueError(msg)
-    if not s_mean > 0:
-        msg = f"The initial mean of the output modulation r must be greater than 0, but got {s_mean} instead."
+    if not r_mean > 0:
+        msg = f"The initial mean of the output modulation r must be greater than 0, but got {r_mean} instead."
         raise ValueError(msg)
     if not r_std > 0:
         msg = (
             "The initial standard deviation of the output modulation r must be greater than 0, "
             f"but got {r_std} instead."
         )
-        raise ValueError(msg)
-    if not r_mean > 0:
-        msg = f"The initial mean of the output modulation r must be greater than 0, but got {r_mean} instead."
         raise ValueError(msg)
 
     return traverse(
