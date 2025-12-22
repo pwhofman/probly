@@ -1,152 +1,171 @@
-"""Tests for Flax DropConnect transformation."""
+"""Test for flax dropconnect models."""
 
 from __future__ import annotations
 
 import pytest
 
-from probly.layers.flax import DropConnectDense
-from probly.transformation.dropconnect import dropconnect
-from tests.probly.flax_utils import count_layers
-
 flax = pytest.importorskip("flax")
-
 from flax import nnx  # noqa: E402
+
+from probly.layers.flax import DropConnectLinear  # noqa: E402
+from probly.transformation import dropconnect  # noqa: E402
+from tests.probly.flax_utils import count_layers  # noqa: E402
 
 
 class TestNetworkArchitectures:
-    """Structure tests for different network architectures with DropConnect."""
+    """Test class for different network architectures."""
 
-    def test_linear_network_starts_with_linear(
-        self,
-        flax_model_small_2d_2d: nnx.Sequential,
-    ) -> None:
-        """If the network's first layer is Linear, DropConnect should *skip the first layer*
-        and replace all subsequent Linear layers with DropConnectLinear.
+    def test_linear_network_with_first_linear(self, flax_model_small_2d_2d: nnx.Sequential) -> None:
+        """Tests if a model replaces linear layers correctly with DropConnectLinear layers.
+
+        This function verifies that:
+        - Linear layers are replaced by DropConnectLinear layers, except for the first layer.
+        - The structure of the model remains unchanged except for the replaced layers.
+        - Only the specified probability parameter is applied in dropconnect modifications.
+        It performs counts and asserts to ensure the modified model adheres to expectations.
+        Parameters:
+            flax_model_small_2d_2d: The flax model to be tested, specified as a sequential model.
+
+        Raises:
+            AssertionError If the structure of the model differs in an unexpected manner or if the layers are not
+            replaced correctly.
         """
         p = 0.5
         model = dropconnect(flax_model_small_2d_2d, p)
 
-        # original counts
-        linear_orig = count_layers(flax_model_small_2d_2d, nnx.Linear)
-        seq_orig = count_layers(flax_model_small_2d_2d, nnx.Sequential)
+        # count number of nnx.Linear layers in original model
+        count_linear_original = count_layers(flax_model_small_2d_2d, nnx.Linear)
+        # count number of DropConnectLinear layers in original model
+        count_dropconnect_original = count_layers(flax_model_small_2d_2d, DropConnectLinear)
+        # count number of nnx.Sequential layers in original model
+        count_sequential_original = count_layers(flax_model_small_2d_2d, nnx.Sequential)
 
-        # modified counts
-        linear_mod = count_layers(model, nnx.Linear)
-        dc_mod = count_layers(model, DropConnectDense)
-        seq_mod = count_layers(model, nnx.Sequential)
+        # count number of nnx.Linear layers in modified model
+        count_linear_modified = count_layers(model, nnx.Linear)
+        # count number of DropConnectLinear layers in modified model
+        count_dropconnect_modified = count_layers(model, DropConnectLinear)
+        # count number of nnx.Sequential layers in modified model
+        count_sequential_modified = count_layers(model, nnx.Sequential)
 
-        # structure unchanged except Linear→DropConnectLinear replacements
+        # check that the model is modified by replacing Linear layers with DropConnectLinear
         assert model is not None
         assert isinstance(model, type(flax_model_small_2d_2d))
-        # first Linear remains, rest replaced
-        assert dc_mod == max(0, linear_orig - 1)
-        assert linear_mod == min(1, linear_orig)
-        # Sequential container count unchanged
-        assert seq_orig == seq_mod
+        assert (count_linear_original - 1) == count_dropconnect_modified
+        assert count_linear_original == count_linear_modified + count_dropconnect_modified
+        assert count_dropconnect_original == 0
+        assert count_sequential_original == count_sequential_modified
 
-    def test_conv_then_linear_network(
-        self,
-        flax_conv_linear_model: nnx.Sequential,
-    ) -> None:
-        """If the first layer is NOT Linear (e.g., Conv2d), *all* Linear layers
-        should be replaced by DropConnectLinear.
+    def test_convolutional_network(self, flax_conv_linear_model: nnx.Sequential) -> None:
+        """Tests the convolutional neural network modification with DropConnectLinear layers.
+
+        This function evaluates whether the given convolutional neural network model
+        has been correctly modified to replace linear layers with DropConnectLinear layers
+        without altering the number of other components such as sequential or convolutional layers.
+        Parameters:
+            flax_conv_linear_model: The original convolutional neural network model to be tested.
+
+        Raises:
+            AssertionError: If the modified model deviates in structure other than
+            the replacement of linear layers or does not meet the expected constraints.
         """
         p = 0.5
         model = dropconnect(flax_conv_linear_model, p)
 
-        # original counts
-        linear_orig = count_layers(flax_conv_linear_model, nnx.Linear)
-        conv_orig = count_layers(flax_conv_linear_model, nnx.Conv)
-        seq_orig = count_layers(flax_conv_linear_model, nnx.Sequential)
+        # count number of nnx.Linear layers in original model
+        count_linear_original = count_layers(flax_conv_linear_model, nnx.Linear)
+        # count number of DropConnectLinear layers in original model
+        count_dropconnect_original = count_layers(flax_conv_linear_model, DropConnectLinear)
+        # count number of nnx.Sequential layers in original model
+        count_sequential_original = count_layers(flax_conv_linear_model, nnx.Sequential)
+        # count number of nnx.Conv layers in original model
+        count_conv_original = count_layers(flax_conv_linear_model, nnx.Conv)
 
-        # modified counts
-        linear_mod = count_layers(model, nnx.Linear)
-        dc_mod = count_layers(model, DropConnectDense)
-        conv_mod = count_layers(model, nnx.Conv)
-        seq_mod = count_layers(model, nnx.Sequential)
+        # count number of nnx.Linear layers in modified model
+        count_linear_modified = count_layers(model, nnx.Linear)
+        # count number of DropConnectLinear layers in modified model
+        count_dropconnect_modified = count_layers(model, DropConnectLinear)
+        # count number of nnx.Sequential layers in modified model
+        count_sequential_modified = count_layers(model, nnx.Sequential)
+        # count number of nnx.Conv layers in modified model
+        count_conv_modified = count_layers(model, nnx.Conv)
 
-        # all linears replaced; convs and containers unchanged
+        # check that the model is modified by replacing Linear layers with DropConnectLinear
+        assert model is not None
         assert isinstance(model, type(flax_conv_linear_model))
-        assert dc_mod == linear_orig
-        assert linear_mod == 0
-        assert conv_mod == conv_orig
-        assert seq_mod == seq_mod
+        assert count_linear_original == count_dropconnect_modified
+        assert count_linear_original == count_linear_modified + count_dropconnect_modified
+        assert count_dropconnect_original == 0
+        assert count_sequential_original == count_sequential_modified
+        assert count_conv_original == count_conv_modified
 
-    def test_custom_network_keeps_type(self, flax_custom_model: nnx.Module) -> None:
-        """Tests that transformation preserves the top-level model type.
-
-        This function verifies that after applying DropConnect transformation,
-        the custom model maintains its original type and is not wrapped in
-        a Sequential container.
-
-        Parameters:
-            flax_custom_model: A custom Flax model (not Sequential).
-
-        Raises:
-            AssertionError: If the model type is changed after transformation.
-        """
+    def test_custom_network(self, flax_custom_model: nnx.Module) -> None:
+        """Tests the custom neural network modification with DropConnectLinear layers."""
         p = 0.5
         model = dropconnect(flax_custom_model, p)
 
-        # Check that after applying DropConnect, the top-level model type is unchanged
-        assert model is not None
+        # check if model type is correct
         assert isinstance(model, type(flax_custom_model))
         assert not isinstance(model, nnx.Sequential)
+
+    @pytest.mark.skip(reason="Not yet implemented in probly")
+    def test_dropconnect_model(self, flax_dropconnect_model: nnx.Sequential) -> None:
+        """Tests the custom neural network modification with DropConnectLinear layers."""
+        p = 0.2
+        model = dropconnect(flax_dropconnect_model, p)
+
+        # count number of nnx.Linear layers in original model
+        count_linear_original = count_layers(flax_dropconnect_model, nnx.Linear)
+        # count number of DropConnectLinear layers in original model
+        count_dropconnect_original = count_layers(flax_dropconnect_model, DropConnectLinear)
+        # count number of DropConnectLinear layers in modified model
+        count_dropconnect_modified = count_layers(model, DropConnectLinear)
+
+        # check that model has no duplicate dropconnect layers
+        assert count_dropconnect_original == 1
+        assert count_linear_original == 2
+        assert (count_linear_original - 1) == count_dropconnect_modified
+
+        # check p value in dropconnect layer
+        for m in model.iter_modules():
+            if isinstance(m, DropConnectLinear):
+                assert m.p == p
 
 
 class TestPValues:
     """Test class for p-value tests."""
 
-    def test_p_value_in_linear_first_model(
-        self,
-        flax_model_small_2d_2d: nnx.Sequential,
-    ) -> None:
-        """Tests the DropConnect layer's p-value in a linear neural network model.
+    def test_linear_network_p_value(self, flax_model_small_2d_2d: nnx.Sequential) -> None:
+        """Tests the DropConnectLinear layer's p-value in a given neural network model.
 
-        This function verifies that DropConnectDense layers inside the provided
-        neural network model have the expected p-value after applying the
-        dropconnect transformation. The p-value represents the probability of
-        dropping a weight connection during training.
-
+        This function verifies that a DropConnectLinear layer inside the provided neural network
+        model has the expected p-value after applying the dropconnect transformation. The
+        p-value represents the probability of a connection being dropped during training.
         Parameters:
-            flax_model_small_2d_2d: The Flax model to be tested.
-
+            flax_model_small_2d_2d: The torch model to be tested for integration
         Raises:
-            AssertionError: If the p-value in a DropConnectDense layer does not
-                match the expected value.
+            AssertionError: If the p-value in a DropConnectLinear layer does not match the expected value.
         """
-        p = 0.3
+        p = 0.5
         model = dropconnect(flax_model_small_2d_2d, p)
 
-        # Check p value in DropConnectDense layers
-        for _, m in model.iter_modules():
-            if isinstance(m, DropConnectDense):
-                # DropConnectDense exposes .p
+        # check p value in dropconnect layer
+        for m in model.iter_modules():
+            if isinstance(m, DropConnectLinear):
                 assert m.p == p
 
-    def test_p_value_in_conv_model(
-        self,
-        flax_conv_linear_model: nnx.Sequential,
-    ) -> None:
-        """Tests the DropConnect layer's p-value in a convolutional model.
+    def test_conv_network_p_value(self, flax_conv_linear_model: nnx.Sequential) -> None:
+        """Tests whether the DropConnectLinear layer in the convolutional model has the correct probability value.
 
-        This function verifies that DropConnectDense layers in a convolutional
-        neural network have the correct probability value after applying the
-        dropconnect transformation.
-
-        Parameters:
-            flax_conv_linear_model: A sequential model containing convolutional
-                and linear layers.
+        Arguments:
+            flax_conv_linear_model: A sequential model containing convolutional and linear layers.
 
         Raises:
-            AssertionError: If the probability value in any DropConnectDense layer
-                does not match the expected value.
+            AssertionError: If the probability value in any DropConnectLinear layer does not match the expected value.
         """
         p = 0.2
         model = dropconnect(flax_conv_linear_model, p)
 
-        # Check p value in DropConnectDense layers
-        for _, m in model.iter_modules():
-            if isinstance(m, DropConnectDense):
-                # DropConnectDense exposes .p
+        # check p value in dropconnect layer
+        for m in model.iter_modules():
+            if isinstance(m, DropConnectLinear):
                 assert m.p == p

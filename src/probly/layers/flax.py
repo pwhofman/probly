@@ -1,20 +1,27 @@
-"""Flax layer implementations."""
+"""flax layer implementation."""
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from flax import nnx
+from flax.nnx import rnglib
+from flax.nnx.module import first_from
 import jax
+from jax import lax, random
+import jax.numpy as jnp
 
-if TYPE_CHECKING:
-    from flax.nnx import rnglib
 
-
-class DropConnectDense(nnx.Module):
+class DropConnectLinear(nnx.Module):
     """Custom Linear layer with DropConnect applied to weights during training.
 
-    This implementation follows the Flax nnx.Dropconnect design pattern.
+    Attributes:
+        weight: nnx.Param, weight matrix of shape.
+        bias: nnx.Param, bias vector of shape.
+        rate: float, the dropconnect probability.
+        deterministic: bool, if false the inputs are masked, whereas if true, no mask
+            is applied and the inputs are returned as is.
+        rng_collection: str, the rng collection name to use when requesting a rng key.
+        rngs: nnx.Rngs or nnx.RngStream or None, rng key.
+
     """
 
     def __init__(
@@ -22,66 +29,99 @@ class DropConnectDense(nnx.Module):
         base_layer: nnx.Linear,
         rate: float = 0.25,
         *,
-        rng_collection: str = "dropout",
-        rngs: rnglib.Rngs | rnglib.RngStream | jax.Array | None = None,
+        rng_collection: str = "dropconnect",
+        rngs: rnglib.Rngs | rnglib.RngStream | None = None,
     ) -> None:
-        """Initialize DropConnectDense layer.
+        """Initialize a DropConnectLinear layer based on a given linear base layer.
 
         Args:
-            base_layer: The base Linear layer to apply DropConnect to.
-            rate: The probability of dropping an individual weight connection.
-            rng_collection: The RNG collection name for sampling randomness.
-            rngs: Optional RNG state. Can be Rngs, RngStream, or None.
+            base_layer: nnx.Linear, The original linear layer to be wrapped.
+            rate: float, the dropconnect probability.
+            rng_collection: str, rng collection name to use when requesting a rng key.
+            rngs: nnx.Rngs or nn.RngStream or None, rng key.
         """
-        self.rngs = rngs
-        self.rng_collection = rng_collection
-        self.in_features = base_layer.kernel.shape[0]
-        self.out_features = base_layer.kernel.shape[1]
+        self.weight = base_layer.kernel
+        self.bias = base_layer.bias if base_layer.bias is not None else None
         self.rate = rate
+        self.rng_collection = rng_collection
 
-        self.weight = base_layer.kernel.T
-        self.bias = base_layer.bias if base_layer.use_bias else None
+        if isinstance(rngs, rnglib.Rngs):
+            self.rngs = rngs[self.rng_collection].fork()
+        elif isinstance(rngs, rnglib.RngStream):
+            self.rngs = rngs.fork()
+        elif rngs is None:
+            self.rngs = nnx.data(None)
+        else:
+            msg = f"rngs must be a RNGS, RngStream or None, but got {type(rngs)}."
+            raise TypeError(msg)
 
     def __call__(
         self,
-        x: jax.Array,
+        inputs: jax.Array,
         *,
         deterministic: bool = False,
         rngs: rnglib.Rngs | rnglib.RngStream | jax.Array | None = None,
     ) -> jax.Array:
-        """Apply DropConnect to the forward pass.
+        """Forward pass of the DropConnectLinear layer.
 
         Args:
-            x: Input array.
-            deterministic: If True, disable dropout (use expected value).
-            rngs: Optional RNG state for this call. Overrides constructor rngs.
+           inputs: jax.Array, input data that should be randomly masked.
+           deterministic: bool, if false the inputs are masked, whereas if true, no mask
+            is applied and the inputs are returned as is.
+           rngs: nnx.Rngs, nnx.RngStream or jax.Array, optional key used to generate the dropconnect mask.
 
         Returns:
-            Output array after applying DropConnect.
+            jax.Array, layer output.
         """
-        if not deterministic:
-            # Use call-time rngs if provided, otherwise fall back to constructor rngs
-            rng_source = rngs if rngs is not None else self.rngs
+        self.deterministic = deterministic
 
-            if rng_source is None:
-                msg = "RNGs must be provided either at construction or call time"
-                raise ValueError(msg)
+        deterministic = first_from(
+            deterministic,
+            self.deterministic,
+            error_msg="""No `deterministic` argument was provided to DropConnect
+                as either a __call__ argument or class attribute.""",
+        )
 
-            # Get the appropriate key based on rng_source type
-            key = getattr(rng_source, self.rng_collection)() if isinstance(rng_source, nnx.Rngs) else rng_source
+        if (self.rate == 0.0) or deterministic:
+            return inputs
 
-            mask = jax.random.uniform(key, shape=self.weight.value.shape) > self.rate
-            weight = self.weight.value * mask
+        # Prevent gradient NaNs in 1.0 edge-case.
+        if self.rate == 1.0:
+            out = inputs @ jnp.zeros_like(self.weight.value)
+            return out if self.bias is None else out + self.bias
+
+        rngs = first_from(
+            rngs,
+            self.rngs,
+            error_msg="""`deterministic` is False, but no `rngs` argument was provided
+                to DropConnect as either a __call__ argument or class atribute.""",
+        )
+
+        if isinstance(rngs, rnglib.Rngs):
+            key = rngs[self.rng_collection]()
+        elif isinstance(rngs, rnglib.RngStream):
+            key = rngs()
+        elif isinstance(rngs, jax.Array):
+            key = rngs
         else:
-            weight = self.weight.value * (1.0 - self.rate)
+            msg = f"rngs must be Rngs, RngStream or jax.Array, but got {type(rngs)}."
+            raise TypeError(msg)
 
-        y = x @ weight.T
+        keep_prob = 1.0 - self.rate
+        mask = random.bernoulli(key, p=keep_prob, shape=self.weight.value.shape)
+        masked_weight = lax.select(mask, self.weight.value / keep_prob, jnp.zeros_like(self.weight.value))
+
+        out = inputs @ masked_weight
         if self.bias is not None:
-            y = y + self.bias.value
+            out = out + self.bias.value
+        return out
 
-        return y
+    def __repr__(self) -> str:
+        """Return a string representation of the layer including its class name and key attributes."""
+        return f"{self.__class__.__name__}({self.extra_repr()})"
 
-    @property
-    def p(self) -> float:
-        """Backward compatibility."""
-        return self.rate
+    def extra_repr(self) -> str:
+        """Expose description of in- and out-features of this layer."""
+        in_features = self.weight.value.shape[0]
+        out_features = self.weight.value.shape[1]
+        return f"in_features={in_features}, out_features={out_features}, bias={self.bias is not None}"
