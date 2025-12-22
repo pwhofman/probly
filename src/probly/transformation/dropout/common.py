@@ -23,7 +23,7 @@ def register(cls: LazyType, traverser: RegisteredLooseTraverser) -> None:
 
 
 def dropout[T: Predictor](base: T, p: float = 0.25) -> T:
-    """Create a Dropout predictor from a base predictor.
+    """Create a Dropout predictor from a base predictor based on :cite:`galDropoutBayesian2016`.
 
     Args:
         base: Predictor, The base model to be used for dropout.

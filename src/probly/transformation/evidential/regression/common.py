@@ -27,7 +27,7 @@ def register(cls: LazyType, traverser: RegisteredLooseTraverser) -> None:
 
 
 def evidential_regression[T: Predictor](base: T) -> T:
-    """Create an evidential regression predictor from a base predictor.
+    """Create an evidential regression predictor from a base predictor based on :cite:`aminiDeepEvidential2020`.
 
     Args:
         base: Predictor, The base model to be used for evidential regression.

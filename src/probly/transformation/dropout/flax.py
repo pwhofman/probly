@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 
 def prepend_flax_dropout(obj: Callable, p: float) -> Sequential:
-    """Prepend a Dropout layer before the given layer."""
+    """Prepend a Dropout layer before the given layer based on :cite:`galDropoutBayesian2016`."""
     return Sequential(Dropout(p), obj)
 
 

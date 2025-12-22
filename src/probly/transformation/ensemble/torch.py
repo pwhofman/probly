@@ -32,7 +32,7 @@ def generate_torch_ensemble(
     num_members: int,
     reset_params: bool = True,
 ) -> nn.ModuleList:
-    """Build a torch ensemble by copying the base model num_members times, resetting the parameters of each member."""
+    """Build a torch ensemble based on :cite:`lakshminarayananSimpleScalable2017`."""
     if reset_params:
         return nn.ModuleList([_reset_copy(obj) for _ in range(num_members)])
     return nn.ModuleList([_copy(obj) for _ in range(num_members)])

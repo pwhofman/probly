@@ -23,7 +23,7 @@ def register(cls: LazyType, traverser: RegisteredLooseTraverser) -> None:
 
 
 def dropconnect[T: Predictor](base: T, p: float = 0.25) -> T:
-    """Create a DropConnect predictor from a base predictor.
+    """Create a DropConnect predictor from a base predictor based on :cite:`mobinyDropConnectEffective2019`.
 
     Args:
         base: The base model to be used for dropout.

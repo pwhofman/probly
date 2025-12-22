@@ -9,6 +9,7 @@ def differential_entropy_gaussian(sigma2: float | np.ndarray, base: float = 2) -
     """Compute the differential entropy of a Gaussian distribution given the variance.
 
     https://en.wikipedia.org/wiki/Differential_entropy
+
     Args:
         sigma2: float or numpy.ndarray shape (n_instances,), variance of the Gaussian distribution
         base: float, base of the logarithm
@@ -28,6 +29,7 @@ def kl_divergence_gaussian(
     """Compute the KL-divergence between two Gaussian distributions.
 
     https://en.wikipedia.org/wiki/Kullback-Leibler_divergence#Examples
+
     Args:
         mu1: float or numpy.ndarray shape (n_instances,), mean of the first Gaussian distribution
         sigma21: float or numpy.ndarray shape (n_instances,), variance of the first Gaussian distribution

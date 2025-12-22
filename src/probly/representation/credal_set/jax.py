@@ -10,7 +10,7 @@ from probly.representation.sampling.jax_sample import JaxArraySample
 
 @credal_set_from_sample.register(JaxArraySample)
 class JaxArrayCredalSet(CredalSet[jax.Array]):
-    """A credal set implementation for torch tensors."""
+    """A credal set implementation for torch tensors based on :cite:`nguyenCredalEnsembling2025`."""
 
     def __init__(self, sample: JaxArraySample) -> None:
         """Initialize the torch tensor credal set."""

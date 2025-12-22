@@ -23,7 +23,7 @@ def kl_divergence_traverser(
     obj: BayesLinear | BayesConv2d,
     state: State,
 ) -> TraverserResult[BayesLinear | BayesConv2d]:
-    """Traverser to compute the KL divergence of a Bayesian layer."""
+    """Traverser to compute the KL divergence of a Bayesian layer based on :cite:`galDropoutBayesian2016`."""
     state[KL_DIVERGENCE] += obj.kl_divergence
     return obj, state
 

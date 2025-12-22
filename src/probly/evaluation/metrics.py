@@ -19,6 +19,7 @@ def expected_calibration_error(probs: np.ndarray, labels: np.ndarray, num_bins: 
 
     Returns:
         ece: The expected calibration error.
+
     """
     confs = np.max(probs, axis=1)
     preds = np.argmax(probs, axis=1)
@@ -39,15 +40,14 @@ def expected_calibration_error(probs: np.ndarray, labels: np.ndarray, num_bins: 
 
 
 def coverage(preds: np.ndarray, targets: np.ndarray) -> float:
-    """Compute the coverage of set-valued predictions.
+    """Compute the coverage of set-valued predictions described in :cite:`angelopoulosGentleIntroduction2021`.
 
     Args:
-        preds: The predictions as an array of shape `(n_instances, n_classes)` or
-            `(n_instances, n_samples, n_classes)`
-        targets: The targets as an array of shape `(n_instances,)` or `(n_instances, n_classes)`
+        preds: Predictions of shape (n_instances, n_classes) or (n_instances, n_samples, n_classes).
+        targets: Targets of shape (n_instances,) or (n_instances, n_classes).
 
     Returns:
-        cov: The coverage of the set-valued predictions
+        cov: The coverage of the set-valued predictions.
 
     """
     if preds.ndim == 2:
@@ -64,15 +64,14 @@ def coverage(preds: np.ndarray, targets: np.ndarray) -> float:
 
 
 def efficiency(preds: np.ndarray) -> float:
-    """Compute the efficiency of set-valued predictions.
+    """Compute the efficiency of set-valued predictions described in :cite:`angelopoulosGentleIntroduction2021`.
 
     In the case of a set over classes this is the mean of the number of classes in the set. In the
     case of a credal set, this is computed by the mean difference between the upper and lower
     probabilities.
 
     Args:
-        preds: The predictions as an array of shape `(n_instances, n_classes)` or
-            of shape `(n_instances, n_samples, n_classes)`.
+        preds: Predictions of shape (n_instances, n_classes) or (n_instances, n_samples, n_classes).
 
     Returns:
         eff: The efficiency of the set-valued predictions.
@@ -91,7 +90,7 @@ def efficiency(preds: np.ndarray) -> float:
 
 
 def coverage_convex_hull(probs: np.ndarray, targets: np.ndarray) -> float:
-    """Compute the coverage given the credal set defined by the convex hull of the predicted probabilities.
+    """Compute credal set coverage via convex hull :cite:`nguyenCredalEnsembling2025`.
 
     The coverage is defined as the proportion of instances whose true distribution is contained in the convex hull.
     This is computed using linear programming by checking whether the target distribution can be expressed as
@@ -103,6 +102,7 @@ def coverage_convex_hull(probs: np.ndarray, targets: np.ndarray) -> float:
 
     Returns:
         cov: The coverage.
+
     """
     covered = 0
     n_extrema = probs.shape[1]
@@ -125,8 +125,7 @@ def covered_efficiency(preds: np.ndarray, targets: np.ndarray) -> float:
     probabilities.
 
     Args:
-        preds: The predictions as an array of shape `(n_instances, n_classes)` or
-            of shape `(n_instances, n_samples, n_classes)`.
+        preds: Predictions of shape (n_instances, n_classes) or (n_instances, n_samples, n_classes).
         targets: The true labels as an array of shape (n_instances, n_classes).
 
     Returns:
@@ -152,11 +151,11 @@ def log_loss(probs: np.ndarray, targets: np.ndarray) -> float | np.ndarray:
 
     Args:
         probs: The predicted probabilities as an array of shape (n_instances, n_classes).
-        targets: The true labels as an array of shape (n_instances,). If None, the log loss is
-            computed for all classes. This can be used for uncertainty quantification.
+        targets: True labels of shape (n_instances,). If None, loss is computed for all classes.
 
     Returns:
         loss: The log loss.
+
     """
     if targets is None:
         loss = -np.log(probs)
@@ -173,11 +172,11 @@ def brier_score(probs: np.ndarray, targets: np.ndarray) -> float | np.ndarray:
 
     Args:
         probs: The predicted probabilities as an array of shape (n_instances, n_classes).
-        targets: The true labels as an array of shape (n_instances,). If None, the Brier score is
-            computed for all classes. This can be used for uncertainty quantification.
+        targets: True labels of shape (n_instances,). If None, score is computed for all classes.
 
     Returns:
         loss: The Brier score.
+
     """
     if targets is None:
         loss = 1 - 2 * probs + np.sum(probs**2, -1)[..., None]
@@ -192,11 +191,11 @@ def zero_one_loss(probs: np.ndarray, targets: np.ndarray) -> float | np.ndarray:
 
     Args:
         probs: The predicted probabilities as an array of shape (n_instances, n_classes).
-        targets: The true labels as an array of shape (n_instances,). If None, the zero-one loss is
-            computed for all classes. This can be used for uncertainty quantification.
+        targets: True labels of shape (n_instances,). If None, loss is computed for all classes.
 
     Returns:
         loss: The zero-one loss.
+
     """
     if targets is None:
         loss = probs != np.max(probs, axis=-1)[..., None]
@@ -213,11 +212,11 @@ def spherical_score(probs: np.ndarray, targets: np.ndarray) -> float | np.ndarra
 
     Args:
         probs: The predicted probabilities as an array of shape (n_instances, n_classes).
-        targets: The true labels as an array of shape (n_instances,). If None, the spherical score is
-            computed for all classes. This can be used for uncertainty quantification.
+        targets: True labels of shape (n_instances,). If None, score is computed for all classes.
 
     Returns:
         loss: The spherical score.
+
     """
     if targets is None:
         loss = 1 - probs / np.sqrt(np.sum(probs**2, -1))[..., None]

@@ -41,7 +41,7 @@ def bayesian[T: Predictor](
     prior_mean: float = PRIOR_MEAN.default,
     prior_std: float = PRIOR_STD.default,
 ) -> T:
-    """Create a Bayesian predictor from a base predictor.
+    """Create a Bayesian predictor from a base predictor based on :cite:`blundellWeightUncertainty2015`.
 
     Args:
         base: The base model to be used for the Bayesian neural network.

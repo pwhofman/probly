@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable
-from typing import Any, Literal, Unpack
+from typing import Any, Literal, TypeVar, Unpack
 
 from probly.lazy_types import FLAX_MODULE, TORCH_MODULE
 from probly.predictor import Predictor, predict
@@ -12,6 +12,10 @@ from probly.traverse_nn import nn_compose
 from pytraverse import CLONE, GlobalVariable, lazydispatch_traverser, traverse_with_state
 
 from .sample import Sample, create_sample
+
+In = TypeVar("In")
+KwIn = TypeVar("KwIn")
+Out = TypeVar("Out")
 
 type SamplingStrategy = Literal["sequential"]
 
@@ -105,7 +109,7 @@ class Sampler[In, KwIn, Out](Representer[In, KwIn, Out]):
 
 
 class EnsembleSampler[In, KwIn, Out](Representer[In, KwIn, Iterable[Out]]):
-    """A sampler that creates representations from ensemble predictions."""
+    """Sampler creates representations from ensemble predictions based on :cite:`lakshminarayananSimpleScalable2017`."""
 
     sample_factory: Callable[[Iterable[Out]], Sample[Out]]
 
