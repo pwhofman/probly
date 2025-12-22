@@ -17,10 +17,19 @@ class HistogramBinning(CalibratorBaseTorch):
         self.n_bins = n_bins
         self.bin_start = 0.0
         self.bin_width = 0.0
-        self.bin_probs: Tensor | None = None  # type: ignore  # noqa: PGH003
+        self.is_fitted = False
+        self.bin_probs: Tensor | None = None
 
     def fit(self, calibration_set: Tensor, truth_labels: Tensor) -> HistogramBinning:
         """Fit the histogram binning calibrator."""
+        if calibration_set.shape[0] != truth_labels.shape[0]:
+            msg = "calibration_set and truth_labels must have the same length"
+            raise ValueError(msg)
+
+        if calibration_set.shape[0] == 0:
+            msg = "calibration_set must not be empty"
+            raise ValueError(msg)
+
         min_pre = calibration_set.min().item()
         max_pre = calibration_set.max().item()
         bin_width = (max_pre - min_pre) / self.n_bins
