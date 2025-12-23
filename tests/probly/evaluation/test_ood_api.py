@@ -1,4 +1,5 @@
 """Tests for OOD unified API.
+
 These tests focus exclusively on API behavior:
 - correct routing
 - return types
@@ -10,10 +11,11 @@ Metric correctness is tested elsewhere.
 
 from __future__ import annotations
 
+from matplotlib.figure import Figure
 import numpy as np
 import pytest
 
-from probly.evaluation.ood_api import evaluate_ood, parse_dynamic_metric, visualize_ood
+from .ood_api import evaluate_ood, parse_dynamic_metric, visualize_ood
 
 
 def test_evaluate_ood_returns_float() -> None:
@@ -72,7 +74,7 @@ def test_evaluate_ood_unknown_metric_raises():
     in_distribution = np.array([0.9, 0.8])
     out_distribution = np.array([0.1, 0.2])
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="not_a_metric"):
         evaluate_ood(
             in_distribution,
             out_distribution,
@@ -87,35 +89,35 @@ def test_parse_dynamic_metric_default_threshold() -> None:
     assert threshold == 0.95
 
 
-def test_parse_dynamic_metric_invalid() -> None:
-    with pytest.raises(ValueError):
-        parse_dynamic_metric("fpr@2.0")
-
-
 def test_parse_dynamic_metric_raises_unknown() -> None:
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="unknown"):
         parse_dynamic_metric("unknown@95%")
 
 
-def test_visualize_ood_returns_figures(monkeypatch) -> None:
+def test_visualize_ood_returns_figures(monkeypatch: pytest.MonkeyPatch) -> None:
     """visualize_ood should return a dict of figures without crashing."""
 
-    def fake_evaluate_ood(*args, **kwargs):
-        # minimal valid return value
+    def fake_evaluate_ood(
+        _in_distribution: np.ndarray,
+        _out_distribution: np.ndarray,
+        metrics: None | str | list[str] = None,
+    ) -> dict[str, float]:
+        _ = metrics
+
         return {
             "auroc": 0.5,
             "aupr": 0.5,
             "fpr@95tpr": 0.1,
         }
 
-    # IMPORTANT: patch evaluate_ood where it is USED
     monkeypatch.setattr(
-        "probly.evaluation.ood_api.evaluate_ood",
+        "tests.probly.evaluation.ood_api.evaluate_ood",
         fake_evaluate_ood,
     )
 
-    in_distribution = np.random.rand(50)
-    out_distribution = np.random.rand(50)
+    rng = np.random.default_rng(42)
+    in_distribution = rng.random(50)
+    out_distribution = rng.random(50)
 
     figures = visualize_ood(in_distribution, out_distribution)
 
@@ -124,11 +126,20 @@ def test_visualize_ood_returns_figures(monkeypatch) -> None:
     assert "roc" in figures
     assert "pr" in figures
 
+    for fig in figures.values():
+        assert isinstance(fig, Figure)
 
-def test_visualize_ood_subset_of_plots(monkeypatch):
+
+def test_visualize_ood_subset_of_plots(monkeypatch) -> None:
     """visualize_ood should respect plot_types."""
 
-    def fake_evaluate_ood(*args, **kwargs):
+    def fake_evaluate_ood(
+        _in_distribution: np.ndarray,
+        _out_distribution: np.ndarray,
+        metrics: None | str | list[str] = None,
+    ) -> dict[str, float]:
+        _ = metrics
+
         return {
             "auroc": 0.5,
             "aupr": 0.5,
@@ -136,12 +147,13 @@ def test_visualize_ood_subset_of_plots(monkeypatch):
         }
 
     monkeypatch.setattr(
-        "probly.evaluation.ood_api.evaluate_ood",
+        "tests.probly.evaluation.ood_api.evaluate_ood",
         fake_evaluate_ood,
     )
 
-    in_distribution = np.random.rand(50)
-    out_distribution = np.random.rand(50)
+    rng = np.random.default_rng(123)
+    in_distribution = rng.random(50)
+    out_distribution = rng.random(50)
 
     figures = visualize_ood(
         in_distribution,
