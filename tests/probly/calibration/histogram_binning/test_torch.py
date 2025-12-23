@@ -110,5 +110,4 @@ class TestNetworkArchitectures:
         calibrated_probs = calibrator.predict(test_predictions)
 
         expected_probs = torch.tensor([0.0, 1.0, 0.5, 1.0])
-        assert torch.allclose(calibrated_probs, expected_probs), ("Calibrated probabilities do not match expected "
-        "values")
+        assert torch.allclose(calibrated_probs, expected_probs), "Calibrated probabilities do not match expected values"

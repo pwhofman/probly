@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 class HistogramBinningFlax(CalibratorBaseFlax):
     """Calibrator that uses histogram binning."""
 
-    def __init__(self, base_model: nn.Module, params: dict, n_bins: int = 10) -> None:
+    def __init__(self, n_bins: int = 10) -> None:
         """Create a histogram binning calibrator.
 
         Args:
@@ -26,22 +26,22 @@ class HistogramBinningFlax(CalibratorBaseFlax):
             params: Model parameters
             n_bins: Number of bins for histogram
         """
-        super().__init__(base_model, params)
         self.n_bins = n_bins
         self.bin_start = 0.0
         self.bin_width = 0.0
+        self.is_fitted = False
         self.bin_probs: Array | None = None
 
     def fit(self, calibration_set: Array, truth_labels: Array) -> HistogramBinningFlax:
-        """Fit the histogram binning calibrator.
+        """Fit the histogram binning calibrator."""
+        if calibration_set.shape[0] != truth_labels.shape[0]:
+            msg = "calibration_set and truth_labels must have the same length"
+            raise ValueError(msg)
 
-        Args:
-            calibration_set: Predictions from the model
-            truth_labels: Ground truth labels
+        if calibration_set.shape[0] == 0:
+            msg = "calibration_set must not be empty"
+            raise ValueError(msg)
 
-        Returns:
-            Self with fitted parameters
-        """
         min_pre = float(jnp.min(calibration_set))
         max_pre = float(jnp.max(calibration_set))
         bin_width = (max_pre - min_pre) / self.n_bins
@@ -76,17 +76,14 @@ class HistogramBinningFlax(CalibratorBaseFlax):
 
         self.bin_start = min_pre
         self.bin_width = bin_width
+        self.is_fitted = True
         return self
 
     def predict(self, predictions: Array) -> Array:
-        """Return calibrated probabilities for input predictions.
-
-        Args:
-            predictions: Model predictions to calibrate
-
-        Returns:
-            Calibrated probabilities
-        """
+        """Return calibrated probabilities for input predictions."""
+        if not self.is_fitted:
+            msg = "Calibrator must be fitted before Calibration"
+            raise ValueError(msg)
         if self.bin_probs is None:
             msg = "HistogramBinning is not fitted"
             raise RuntimeError(msg)
