@@ -1,7 +1,4 @@
-"""init for scores."""
-# probly/conformal_prediction/scores/__init__.py
-# ----------------------------------------------
-# Re-export der wichtigen Score-Klassen und des Score-Interfaces.
+"""Init for scores."""
 
 from .aps import APSScore, calculate_nonconformity_score as aps_calculate_nonconformity_score
 from .common import Score, calculate_quantile

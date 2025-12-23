@@ -1,19 +1,4 @@
-"""includes: class LACScore:
-
-def calibration_non_conformity.
-
-def predict_non_conformity.
-"""
-
-# clean version maybe
-
-# probly/conformal_prediction/scores/lac.py
-# ----------------------------------------
-# AUS: lac/common.py::calculate_non_conformity_score, calculate_local_weights,
-#      calculate_weighted_quantile, accretive_completion, LAC.predict [file:16]
-# AUS: lac/torch.py::predict (Threshold-Logik, Accretive) [file:12]
-# AUS: lac/flax.py::predict (Threshold-Logik, Accretive) [file:11]
-# NEU: LACScore + all-label-Scores
+"""Common functions for LAC Nonconformity-Scores."""
 
 from __future__ import annotations
 
@@ -23,13 +8,37 @@ from typing import Any
 import numpy as np
 import numpy.typing as npt
 
+from lazy_dispatch import lazydispatch
+from lazy_dispatch.isinstance import LazyType
+
 from .common import Score
 
-# --------- Nonconformity / Quantile / Weights --------- #
+
+@lazydispatch
+def lac_score_func(probs: Any) -> npt.NDArray[np.floating]:
+    """LAC Nonconformity-Scores für numpy arrays."""
+    lac_scores = 1.0 - probs
+    return lac_scores  # shape: (n_samples, n_classes)
+
+
+def register(cls: LazyType, func: Callable) -> None:
+    """Register a class which can be used for APS score computation."""
+    lac_score_func.register(cls=cls, func=func)
+
+
+def calculate_non_conformity_scores_all_labels(
+    probabilities: npt.NDArray[np.floating],
+) -> npt.NDArray[np.floating]:
+    """LAC Nonconformity-Scores für alle Labels.
+
+    Erweiterung von calculate_non_conformity_score_true_label auf alle Klassen.
+    s(x, y) = 1 - p(y | x) für jede Klasse y.
+    """
+    return 1.0 - probabilities  # shape: (n_samples, n_classes)
 
 
 def calculate_non_conformity_score_true_label(
-    probas: npt.NDArray[np.floating],
+    probabilities: npt.NDArray[np.floating],
     y_indices: npt.NDArray[np.integer],
 ) -> npt.NDArray[np.floating]:
     """Compute LAC Non-Conformity Scores für das wahre Label.
@@ -39,20 +48,9 @@ def calculate_non_conformity_score_true_label(
     s(x, y_true) = 1 - p(y_true | x)
     """
     n_samples = len(y_indices)
-    true_class_probas = probas[np.arange(n_samples), y_indices]
-    scores = 1.0 - true_class_probas
+    true_class_probs = probabilities[np.arange(n_samples), y_indices]
+    scores = 1.0 - true_class_probs
     return scores
-
-
-def calculate_non_conformity_scores_all_labels(
-    probas: npt.NDArray[np.floating],
-) -> npt.NDArray[np.floating]:
-    """LAC Nonconformity-Scores für alle Labels.
-
-    Erweiterung von calculate_non_conformity_score_true_label auf alle Klassen.
-    s(x, y) = 1 - p(y | x) für jede Klasse y.
-    """
-    return 1.0 - probas  # shape: (n_samples, n_classes)
 
 
 def calculate_local_weights(
@@ -93,9 +91,6 @@ def calculate_weighted_quantile(
     return float(np.interp(quantile, weighted_quantiles, values))
 
 
-# --------- Accretive Completion --------- #
-
-
 def accretive_completion(
     prediction_sets: npt.NDArray[np.bool_],
     scores: npt.NDArray[np.floating],
@@ -123,11 +118,8 @@ def accretive_completion(
     return completed_sets
 
 
-# --------- Helper: Sets aus Probas --------- #
-
-
 def create_lac_prediction_sets(
-    probas: npt.NDArray[np.floating],
+    probabilities: npt.NDArray[np.floating],
     threshold: float,
     use_accretive: bool = True,
 ) -> npt.NDArray[np.bool_]:
@@ -140,19 +132,16 @@ def create_lac_prediction_sets(
     """
     # Score <= t <=> 1 - p <= t <=> p >= 1 - t
     prob_threshold = 1.0 - threshold
-    prediction_sets = probas >= prob_threshold  # bool (n_samples, n_classes)
+    prediction_sets = probabilities >= prob_threshold  # bool (n_samples, n_classes)
 
     if use_accretive:
-        prediction_sets = accretive_completion(prediction_sets, probas)
+        prediction_sets = accretive_completion(prediction_sets, probabilities)
 
     return prediction_sets
 
 
-# --------- Score-Klasse --------- #
-
-
 class LACScore(Score):
-    """LAC Nonconformity-Score, backend-agnostisch (arbeitet mit numpy-Probas).
+    """LAC Nonconformity-Score, backend-agnostisch (arbeitet mit numpy-Probs).
 
     - model: Wrapper mit predict(x) -> np.ndarray (n_samples, n_classes),
       z.B. TorchModelWrapper oder FlaxWrapper.
@@ -170,18 +159,25 @@ class LACScore(Score):
 
         Entspricht inhaltlich _compute_nonconformity aus LAC.common/Flax/Torch. [file:16][file:11][file:12]
         """
-        probas = self.model.predict(x_cal)  # (n,k)
+        probs = self.model.predict(x_cal)
         y_indices = np.asarray(y_cal, dtype=int)
-        return calculate_non_conformity_score_true_label(probas, y_indices)
 
-    def predict_nonconformity(
-        self,
-        x_test: Sequence[Any],
-    ) -> np.ndarray:
-        """Score-Matrix (n_instances x n_labels) für LAC.
+        all_scores = lac_score_func(probs)
 
-        Wie im Expertenfeedback: Scores für alle Labels.
-        s(x,y) = 1 - p(y|x).
-        """
-        probas = self.model.predict(x_test)  # (n,k)
-        return calculate_non_conformity_scores_all_labels(probas)
+        # convert to NumPy for indexing
+        if not isinstance(all_scores, np.ndarray):
+            all_scores = np.asarray(all_scores)
+
+        n_samples = len(y_indices)
+        return all_scores[np.arange(n_samples), y_indices]
+
+    def predict_nonconformity(self, x_test: Sequence[Any]) -> np.ndarray:
+        probs = self.model.predict(x_test)
+
+        all_scores = lac_score_func(probs)
+
+        # convert to NumPy for return
+        if not isinstance(all_scores, np.ndarray):
+            all_scores = np.asarray(all_scores)
+
+        return all_scores

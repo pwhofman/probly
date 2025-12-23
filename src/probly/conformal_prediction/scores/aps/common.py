@@ -1,17 +1,32 @@
-"""APS score implementation for conformal prediction."""
-
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from probly.conformal_prediction.methods.common import PredictiveModel
-
 import numpy as np
 
-from .common import Score
+from lazy_dispatch import lazydispatch
+from lazy_dispatch.isinstance import LazyType
+
+from ..common import Score
+
+
+@lazydispatch
+def aps_score_func(probs: Any) -> Any:
+    """Compute APS scores for numpy arrays."""
+    sorted_probs = np.sort(probs, axis=1)[:, ::-1]
+    cumsum_probs = np.cumsum(sorted_probs, axis=1)
+    ranks = np.arange(1, probs.shape[1] + 1)
+    aps_scores = np.sum(cumsum_probs / ranks, axis=1)
+    return aps_scores
+
+
+def register(cls: LazyType, func: Callable) -> None:
+    """Register a class which can be used for APS score computation."""
+    aps_score_func.register(cls=cls, func=func)
 
 
 def aps_scores_all_labels(
@@ -30,51 +45,15 @@ def aps_scores_all_labels(
     scores = np.zeros_like(probs, dtype=float)
     np.put_along_axis(scores, srt_idx, csum, axis=1)
 
-    return scores
+    return aps_score_func(probs)
 
 
-def calculate_nonconformity_score(
-    probabilities: np.ndarray,
-    labels: np.ndarray,
-) -> np.ndarray:
+def calculate_nonconformity_score(probabilities: np.ndarray, labels: np.ndarray) -> np.ndarray:
     """Compute true-label APS nonconformity scores."""
     all_scores = aps_scores_all_labels(probabilities)
     labels = np.asarray(labels, dtype=int)
     n = labels.shape[0]
-    return all_scores[np.arange(n), labels]
-
-
-def create_aps_prediction_sets(
-    probs: np.ndarray,
-    threshold: float,
-) -> np.ndarray:
-    """Build APS prediction sets as a binary mask.
-
-    For each sample, classes are added in order of probability until
-    the cumulative probability passes the threshold. At least one
-    class is always selected.
-    """
-    probs = np.asarray(probs, dtype=float)
-
-    # sort indices per sample in descending probability order
-    sorted_idx = np.argsort(probs, axis=1)[:, ::-1]
-    sorted_probs = np.take_along_axis(probs, sorted_idx, axis=1)
-    cumsum = np.cumsum(sorted_probs, axis=1)
-
-    # boolean mask: included while cumulative <= threshold
-    include_mask = cumsum <= threshold
-
-    # ensure at least one label per row
-    all_false = ~include_mask.any(axis=1)
-    if np.any(all_false):
-        # force the top-probability label to be included
-        include_mask[all_false, 0] = True
-
-    # scatter mask back to original class indices
-    prediction_sets = np.zeros_like(include_mask, dtype=bool)
-    np.put_along_axis(prediction_sets, sorted_idx, include_mask, axis=1)
-
-    return prediction_sets
+    return aps_score_func(probs)[np.arange(len(labels)), labels]
 
 
 class APSScore(Score):
@@ -95,9 +74,16 @@ class APSScore(Score):
         y_cal: Sequence[Any],
     ) -> np.ndarray:
         """Compute true-label calibration scores."""
-        probabilities = self.model.predict(x_cal)
+        probs = self.model.predict(x_cal)
+        all_scores = aps_score_func(probs)
+
+        # convert to NumPy
+        if not isinstance(all_scores, np.ndarray):
+            all_scores = np.asarray(all_scores)
+
         y_array = np.asarray(y_cal, dtype=int)
-        return calculate_nonconformity_score(probabilities, y_array)
+        n = y_array.shape[0]
+        return calculate_nonconformity_score(probs, labels)
 
     def predict_nonconformity(
         self,
@@ -108,5 +94,11 @@ class APSScore(Score):
         Returns a (n_samples, n_classes) score matrix that can be
         thresholded by the conformal predictor to build prediction sets.
         """
-        probabilities = self.model.predict(x_test)
-        return aps_scores_all_labels(probabilities)
+        probs = self.model.predict(x_test)
+        all_scores = aps_score_func(probs)
+
+        # convert to NumPy
+        if not isinstance(all_scores, np.ndarray):
+            all_scores = np.asarray(all_scores)
+
+        return aps_score_func(probs)
