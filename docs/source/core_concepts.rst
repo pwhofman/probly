@@ -18,10 +18,12 @@ Mini gallery (quick links)
 These are short, focused example pages that are relevant to this topic.
 
 .. minigallery::
+   :add-heading:
+
    sphx_glr_auto_examples_plot_epistemic_vs_aleatoric.py
    sphx_glr_auto_examples_plot_uncertainty_quantification.py
    sphx_glr_auto_examples_plot_selective_prediction.py
-   :add-heading:
+
 
 In standard machine learning pipelines a model outputs a **single prediction**
 a class label, a probability, or a regression value. However this number does
