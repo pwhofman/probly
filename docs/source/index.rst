@@ -15,3 +15,12 @@
    contributing
    references
    faq
+
+Mini gallery
+============
+
+.. minigallery::
+   sphx_glr_auto_examples_plot_epistemic_vs_aleatoric.py
+   sphx_glr_auto_examples_plot_uncertainty_quantification.py
+   sphx_glr_auto_examples_plot_selective_prediction.py
+   :add-heading:
