@@ -303,9 +303,4 @@ From these structures, entropy, variance, or scoring-rule-based measures are com
 OOD detection, selective prediction, calibration, and risk-aware decisions depend
 directly on quantified uncertainty.
 
-See examples
-^^^^^^^^^^^^
 
-- :ref:`sphx_glr_auto_examples_plot_epistemic_vs_aleatoric.py`
-- :ref:`sphx_glr_auto_examples_plot_uncertainty_quantification.py`
-- :ref:`sphx_glr_auto_examples_plot_selective_prediction.py`
