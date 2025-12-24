@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import operator
 from functools import reduce, singledispatch, update_wrapper
+import operator
 from typing import TYPE_CHECKING, Any, get_args, overload
 
 from lazy_dispatch.isinstance import (
