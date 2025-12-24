@@ -34,7 +34,13 @@ class ArrayCredalSet[T](CredalSet[T]):
     """A credal set of predictions stored in a numpy array."""
 
     def __init__(self, sample: ArraySample) -> None:
-        """Initialize the array credal set."""
+        """Initialize the array credal set.
+
+        Args:
+             sample: The sample input, which must be a
+             :py:class:`~probly.representation.sampling.sample.ArraySample`.
+
+        """
         self.array: np.ndarray = sample.array
 
     def lower(self) -> T:

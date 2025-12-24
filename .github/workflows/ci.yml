@@ -129,3 +129,29 @@ jobs:
                 with:
                     token: ${{ secrets.CODECOV_TOKEN }}
                     fail_ci_if_error: true
+
+    # ----------------------------------------------------------------------------------------------
+    # CODE QUALITY ASSURANCE
+    # ----------------------------------------------------------------------------------------------
+    code_quality_assurance:
+        name: Code Quality Assurance
+        runs-on: ubuntu-latest
+        steps:
+        -   uses: actions/checkout@v5
+        -   name: Set up Python and uv
+            uses: astral-sh/setup-uv@v7
+            with:
+                python-version: "3.12"
+                enable-cache: true
+        -   name: Run Ruff Style and Linting Checks
+            run: |
+               uv run ruff check .
+               uv run ruff format --check .
+
+        -   name: Run MyPy Static Type Check
+            run: |
+               uv run mypy src/
+
+        -   name: Execute Unit Tests and Measure Coverage
+            run: |
+               uv run pytest --cov=src/probly --cov-report=xml

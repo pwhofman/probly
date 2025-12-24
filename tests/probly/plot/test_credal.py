@@ -29,6 +29,6 @@ def test_credal_set_plot() -> None:
     probs = np.array([[1 / 3, 1 / 3, 1 / 3], [1 / 3, 1 / 3, 1 / 3]])
     with pytest.raises(
         ValueError,
-        match="The set of vertices is empty. Please check the probabilities in the credal set.",
+        match=r"The set of vertices is empty. Please check the probabilities in the credal set.",
     ):
         credal_set_plot(probs)
