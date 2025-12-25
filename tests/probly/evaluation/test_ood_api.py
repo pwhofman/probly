@@ -15,7 +15,7 @@ from matplotlib.figure import Figure
 import numpy as np
 import pytest
 
-from .ood_api import evaluate_ood, parse_dynamic_metric, visualize_ood
+from probly.evaluation.ood_api import evaluate_ood, parse_dynamic_metric, visualize_ood
 
 
 def test_evaluate_ood_returns_float() -> None:
@@ -27,7 +27,7 @@ def test_evaluate_ood_returns_float() -> None:
     assert isinstance(result, float)
 
 
-def test_evaluate_ood_single_metric_string_returns_float():
+def test_evaluate_ood_single_metric_string_returns_float() -> None:
     in_distribution = np.array([0.9, 0.8, 0.95])
     out_distribution = np.array([0.1, 0.2, 0.05])
 
@@ -40,7 +40,7 @@ def test_evaluate_ood_single_metric_string_returns_float():
     assert isinstance(result, float)
 
 
-def test_evaluate_ood_multiple_metrics_returns_dict():
+def test_evaluate_ood_multiple_metrics_returns_dict() -> None:
     in_distribution = np.array([0.9, 0.8, 0.95])
     out_distribution = np.array([0.1, 0.2, 0.05])
 
@@ -55,7 +55,7 @@ def test_evaluate_ood_multiple_metrics_returns_dict():
     assert "aupr" in result
 
 
-def test_evaluate_ood_all_metrics_returns_dict():
+def test_evaluate_ood_all_metrics_returns_dict() -> None:
     in_distribution = np.array([0.9, 0.8, 0.95])
     out_distribution = np.array([0.1, 0.2, 0.05])
 
@@ -70,7 +70,7 @@ def test_evaluate_ood_all_metrics_returns_dict():
     assert "aupr" in result
 
 
-def test_evaluate_ood_unknown_metric_raises():
+def test_evaluate_ood_unknown_metric_raises() -> None:
     in_distribution = np.array([0.9, 0.8])
     out_distribution = np.array([0.1, 0.2])
 
@@ -111,7 +111,7 @@ def test_visualize_ood_returns_figures(monkeypatch: pytest.MonkeyPatch) -> None:
         }
 
     monkeypatch.setattr(
-        "tests.probly.evaluation.ood_api.evaluate_ood",
+        "probly.evaluation.ood_api.evaluate_ood",
         fake_evaluate_ood,
     )
 
@@ -130,7 +130,7 @@ def test_visualize_ood_returns_figures(monkeypatch: pytest.MonkeyPatch) -> None:
         assert isinstance(fig, Figure)
 
 
-def test_visualize_ood_subset_of_plots(monkeypatch) -> None:
+def test_visualize_ood_subset_of_plots(monkeypatch: pytest.MonkeyPatch) -> None:
     """visualize_ood should respect plot_types."""
 
     def fake_evaluate_ood(
@@ -147,7 +147,7 @@ def test_visualize_ood_subset_of_plots(monkeypatch) -> None:
         }
 
     monkeypatch.setattr(
-        "tests.probly.evaluation.ood_api.evaluate_ood",
+        "probly.evaluation.ood_api.evaluate_ood",
         fake_evaluate_ood,
     )
 
