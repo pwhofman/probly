@@ -89,3 +89,4 @@ plt.ylabel("y")
 plt.title("Epistemic vs Aleatoric Uncertainty")
 plt.tight_layout()
 plt.show()
+
