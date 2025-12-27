@@ -70,8 +70,10 @@ nb_execution_mode = "off"  # don't run notebooks when building the docs
 
 sphinx_gallery_conf = {
     # Keep example scripts at repo root so they can be used outside docs as well.
-    "examples_dirs": os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "examples")),
-     os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "cc_examples")),
+   "examples_dirs": [
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "examples")),
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "cc_examples")),
+],
     # Sphinx-Gallery writes generated .rst and thumbnails here (relative to this conf.py).
     "gallery_dirs": [
     "auto_examples",
