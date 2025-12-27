@@ -121,7 +121,7 @@ sphinx_gallery_conf = {
      "default_thumb_file": os.path.join(os.path.dirname(__file__), "_static", "logo", "logo_light.png"),
     # Don't clutter the sidebar with download links unless you want them.
     "download_all_examples": False,
-}
+}}
 
 intersphinx_mapping = {
     "python3": ("https://docs.python.org/3", None),
