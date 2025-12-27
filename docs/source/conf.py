@@ -75,10 +75,8 @@ sphinx_gallery_conf = {
     os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "cc_examples")),
 ],
     # Sphinx-Gallery writes generated .rst and thumbnails here (relative to this conf.py).
-    "gallery_dirs": [
-    "auto_examples",
-    "auto_cc_examples",
-],
+   "gallery_dirs": "auto_examples",
+
     # Enables backreference pages, which power the `.. minigallery:: some.object` directive.
     "backreferences_dir": "generated/backreferences",
     # Tell Sphinx-Gallery which modules are "yours" for cross-referencing.
