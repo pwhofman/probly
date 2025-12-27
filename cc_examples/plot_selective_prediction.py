@@ -1,15 +1,8 @@
 """
-Selective Prediction
-====================
+Selective prediction
+=================================
 
-This example demonstrates the idea of *selective prediction*.
-
-Selective prediction allows a model to **abstain** from making predictions
-when it is uncertain. Instead of always predicting, the model only produces
-outputs for inputs where its confidence exceeds a given threshold.
-
-This approach is useful in safety-critical applications, where it is better
-to say *"I don't know"* than to make an unreliable prediction.
+This is a minimal Sphinx-Gallery example.
 """
 
 import numpy as np
@@ -84,3 +77,4 @@ plt.title("Selective Prediction with Abstention")
 plt.legend()
 plt.tight_layout()
 plt.show()
+
