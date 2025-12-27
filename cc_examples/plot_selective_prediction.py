@@ -1,8 +1,11 @@
 """
-Selective prediction
-=================================
+Selective Prediction
+====================
 
-This is a minimal Sphinx-Gallery example.
+This example demonstrates *selective prediction* (abstention).
+
+A model outputs a prediction only when its confidence is above a chosen
+threshold; otherwise it rejects the sample.
 """
 
 import numpy as np
@@ -77,4 +80,5 @@ plt.title("Selective Prediction with Abstention")
 plt.legend()
 plt.tight_layout()
 plt.show()
+
 
