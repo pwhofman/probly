@@ -148,13 +148,13 @@ if CC_EXAMPLES_DIR.exists():
     _gallery_dirs.append("auto_cc_examples")
 
 sphinx_gallery_conf = {
-    # absolute Pfade sind ok; sphinx-gallery kommt damit stabil klar
-    "examples_dirs": _examples_dirs,
-    "gallery_dirs": _gallery_dirs,
+    "examples_dirs": "../examples",
+    "gallery_dirs": "auto_examples",
     "filename_pattern": r".*\.py",
     "within_subsection_order": FileNameSortKey,
     "download_all_examples": False,
     "default_gallery_intro": """
+    "abort_on_example_error": True,
 .. _example_gallery:
 
 Example Gallery
