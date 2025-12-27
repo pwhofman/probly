@@ -1,18 +1,8 @@
 """
 Uncertainty Quantification
-==========================
+=================================
 
-This example provides a compact demonstration of *uncertainty quantification* (UQ)
-for a regression task.
-
-We illustrate two common uncertainty components:
-
-- **Predictive mean**: the expected model output
-- **Predictive uncertainty**: an uncertainty band around the mean
-
-In practice, predictive uncertainty can be estimated with methods such as
-ensembles, Bayesian models, or Monte Carlo dropout. Here, we simulate this
-by sampling multiple noisy model predictions.
+This is a minimal Sphinx-Gallery example.
 """
 
 import numpy as np
@@ -81,3 +71,4 @@ plt.title("Uncertainty Quantification (Simulated Predictive Distribution)")
 plt.legend()
 plt.tight_layout()
 plt.show()
+
