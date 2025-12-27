@@ -2,14 +2,7 @@
 Epistemic vs Aleatoric Uncertainty
 =================================
 
-This example demonstrates the conceptual difference between
-*epistemic* (model) uncertainty and *aleatoric* (data) uncertainty.
-
-- **Aleatoric uncertainty** comes from noise inherent in the data
-- **Epistemic uncertainty** comes from lack of knowledge about the model
-
-In practice, epistemic uncertainty can often be reduced by collecting
-more data, while aleatoric uncertainty cannot.
+This is a minimal Sphinx-Gallery example.
 """
 
 import numpy as np
@@ -89,4 +82,5 @@ plt.ylabel("y")
 plt.title("Epistemic vs Aleatoric Uncertainty")
 plt.tight_layout()
 plt.show()
+
 
