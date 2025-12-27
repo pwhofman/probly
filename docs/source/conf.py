@@ -1,30 +1,25 @@
 """Configuration file for the Sphinx documentation builder."""
 
+# Configuration file for the Sphinx documentation builder.
+#
+# For the full list of built-in configuration values, see the documentation:
+# https://www.sphinx-doc.org/en/master/usage/configuration.html
 from __future__ import annotations
 
 import importlib
 import inspect
 import os
 import sys
-from pathlib import Path
+
+# -- Path setup --------------------------------------------------------------
+sys.path.insert(0, os.path.abspath("../../src"))
+sys.path.insert(0, os.path.abspath("../../examples"))
 
 import probly
 
-# -- Path setup --------------------------------------------------------------
-# docs/conf.py -> Projektwurzel: ../../
-DOCS_DIR = Path(__file__).resolve().parent
-ROOT_DIR = DOCS_DIR.parent.parent
-
-SRC_DIR = ROOT_DIR / "src"
-EXAMPLES_DIR = ROOT_DIR / "examples"
-CC_EXAMPLES_DIR = ROOT_DIR / "cc_examples"
-
-sys.path.insert(0, str(SRC_DIR))
-sys.path.insert(0, str(EXAMPLES_DIR))
-if CC_EXAMPLES_DIR.exists():
-    sys.path.insert(0, str(CC_EXAMPLES_DIR))
-
 # -- Project information -----------------------------------------------------
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
+
 project = "probly"
 copyright = "2025, probly team"  # noqa: A001
 author = "probly team"
@@ -32,29 +27,92 @@ release = probly.__version__
 version = probly.__version__
 
 # -- General configuration ---------------------------------------------------
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
+
 extensions = [
-    "sphinx.ext.autodoc",
-    "sphinx.ext.autosummary",
-    "sphinx_autodoc_typehints",
-    # "sphinx.ext.linkcode",  # optional
-    "sphinx.ext.viewcode",
-    "sphinx.ext.napoleon",
-    "sphinx.ext.duration",
-    "myst_nb",
-    "sphinx.ext.intersphinx",
-    "sphinx.ext.mathjax",
-    "sphinx.ext.doctest",
-    "sphinx_copybutton",
-    "sphinx.ext.autosectionlabel",
-    "sphinxcontrib.bibtex",
-    "sphinx_gallery.gen_gallery",
+    "sphinx.ext.autodoc",  # generates API documentation from docstrings
+    "sphinx.ext.autosummary",  # generates .rst files for each module
+    "sphinx_autodoc_typehints",  # optional, nice for type hints in docs
+    # "sphinx.ext.linkcode",  # adds [source] links to code that link to GitHub. Use when repo is public.  # noqa: E501, ERA001
+    "sphinx.ext.viewcode",  # adds [source] links to code that link to the source code in the docs.
+    "sphinx.ext.napoleon",  # for Google-style docstrings
+    "sphinx.ext.duration",  # optional, show the duration of the build
+    "myst_nb",  # for jupyter notebook support, also includes myst_parser
+    "sphinx_gallery.gen_gallery",  # for an examples gallery generated from scripts
+    "sphinx_gallery.load_style",  # load default CSS for galleries + mini galleries
+    "sphinx.ext.intersphinx",  # for linking to other projects' docs
+    "sphinx.ext.mathjax",  # for math support
+    "sphinx.ext.doctest",  # for testing code snippets in the docs
+    "sphinx_copybutton",  # adds a copy button to code blocks
+    # '"sphinx.ext.autosectionlabel",  # for auto-generating section labels,
+    "sphinxcontrib.bibtex",  # for bibliography support
 ]
 
 templates_path = ["_templates"]
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+exclude_patterns = [
+    "_build",
+    "Thumbs.db",
+    ".DS_Store",
+    # Sphinx-Gallery generates companion files (e.g. .ipynb/.zip) next to the .rst.
+    # With myst-nb enabled, Sphinx may accidentally prefer the .ipynb as the source
+    # document, which results in "no outputs" (because we set nb_execution_mode="off").
+    # Excluding these ensures the rendered pages come from the Sphinx-Gallery .rst.
+    "auto_examples/*.ipynb",
+    "auto_examples/*.py",
+    "auto_examples/*.zip",
+    "auto_examples/*.json",
+    "auto_examples/*.db",
+    "auto_examples/*.md5",
+]
 bibtex_bibfiles = ["references.bib"]
 bibtex_default_style = "alpha"
-nb_execution_mode = "off"
+nb_execution_mode = "off"  # don't run notebooks when building the docs
+
+sphinx_gallery_conf = {
+    # Keep example scripts at repo root so they can be used outside docs as well.
+    "examples_dirs": os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "examples")),
+     os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "cc_examples")),
+    # Sphinx-Gallery writes generated .rst and thumbnails here (relative to this conf.py).
+    "gallery_dirs": [
+    "auto_examples",
+    "auto_cc_examples",
+],
+    # Enables backreference pages, which power the `.. minigallery:: some.object` directive.
+    "backreferences_dir": "generated/backreferences",
+    # Tell Sphinx-Gallery which modules are "yours" for cross-referencing.
+    "doc_module": ("probly",),
+    "reference_url": {"probly": None},
+    # Keep a stable order for the gallery index + any embedded mini-galleries.
+    # This avoids the default behavior where mini-galleries sort alphabetically
+    # by file path (which can differ from the main gallery ordering).
+    "minigallery_sort_order": lambda filename: (
+        {
+            "plot_gallery_smoke_test.py": 0,
+            "plot_create_sample_dispatch.py": 1,
+            "plot_using_predict_protocol.py": 2,
+            "plot_samples_with_array_sample.py": 3,
+        }.get(os.path.basename(str(filename)), 10_000),
+        os.path.basename(str(filename)),
+    ),
+    "within_subsection_order": lambda filename: (
+        {
+            "plot_gallery_smoke_test.py": 0,
+            "plot_create_sample_dispatch.py": 1,
+            "plot_using_predict_protocol.py": 2,
+            "plot_samples_with_array_sample.py": 3,
+        }.get(os.path.basename(str(filename)), 10_000),
+        os.path.basename(str(filename)),
+    ),
+    # Conventional prefix used by Sphinx-Gallery.
+    "filename_pattern": r"plot_",
+    # Avoid executing examples during doc builds by default (keeps docs lightweight and
+    # avoids requiring optional ML deps like torch).
+    "plot_gallery": True,
+    # Use a project asset as the default thumbnail when examples aren't executed.
+     "default_thumb_file": os.path.join(os.path.dirname(__file__), "_static", "logo", "logo_light.png"),
+    # Don't clutter the sidebar with download links unless you want them.
+    "download_all_examples": False,
+}
 
 intersphinx_mapping = {
     "python3": ("https://docs.python.org/3", None),
@@ -67,8 +125,18 @@ intersphinx_mapping = {
 
 
 def linkcode_resolve(domain: str, info: dict[str, str]) -> str | None:
-    """Resolve the link to the source code in GitHub."""
-    if domain != "py" or not info.get("module"):
+    """Resolve the link to the source code in GitHub.
+
+    This function is required by sphinx.ext.linkcode and is used to generate links to the source code on GitHub.
+
+    Args:
+        domain (str): The domain of the object.
+        info (dict[str, str]): The information about the object.
+
+    Returns:
+        str | None: The URL to the source code or None if not found.
+    """
+    if domain != "py" or not info["module"]:
         return None
 
     try:
@@ -78,23 +146,27 @@ def linkcode_resolve(domain: str, info: dict[str, str]) -> str | None:
             obj = getattr(obj, part)
         fn = inspect.getsourcefile(obj)
         _source, lineno = inspect.getsourcelines(obj)
-        if not fn:
-            return None
-        relpath = os.path.relpath(fn, start=str(ROOT_DIR))
+        root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+        relpath = os.path.relpath(fn, start=root)
     except (ModuleNotFoundError, AttributeError, TypeError, OSError):
         return None
 
     base = "https://github.com/pwhofman/probly"
     tag = "v0.2.0-pre-alpha" if version == "0.2.0" else f"v{version}"
+
     return f"{base}/blob/{tag}/{relpath}#L{lineno}"
 
 
 # -- Options for HTML output -------------------------------------------------
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 html_theme = "furo"
 html_static_path = ["_static"]
-html_css_files = ["css/custom.css"]
+html_css_files = [
+    "css/custom.css",
+]
+# TODO(pwhofman): add favicon Issue: https://github.com/pwhofman/probly/issues/95
+# html_favicon = "_static/logo/"  # noqa: ERA001
 pygments_dark_style = "monokai"
-
 html_theme_options = {
     "sidebar_hide_name": True,
     "light_logo": "logo/logo_light.png",
@@ -109,58 +181,37 @@ html_sidebars = {
         "sidebar/navigation.html",
         "sidebar/ethical-ads.html",
         "sidebar/scroll-end.html",
-        "sidebar/footer.html",
+        "sidebar/footer.html",  # to get the github link in the footer of the sidebar
     ],
 }
 
-html_show_sourcelink = False
+html_show_sourcelink = False  # to remove button next to dark mode showing source in txt format
 
-
-# -- Autodoc -----------------------------------------------------------------
-autosummary_generate = True
+# -- Autodoc ---------------------------------------------------------------------------------------
+autosummary_generate = False
 autodoc_default_options = {
     "show-inheritance": True,
     "members": True,
+    "inherited-members": True,
     "member-order": "groupwise",
     "special-members": "__call__",
     "undoc-members": True,
     "exclude-members": "__weakref__",
 }
 autoclass_content = "class"
+# TODO(pwhofman): maybe set this to True, Issue https://github.com/pwhofman/probly/issues/94
 autodoc_inherit_docstrings = False
-autodoc_typehints = "both"
 
+autodoc_typehints = "both"  # to show type hints in the docstring
 
-# -- Copy Paste Button -------------------------------------------------------
+# -- Copy Paste Button -----------------------------------------------------------------------------
+# Ignore >>> when copying code
 copybutton_prompt_text = r">>> |\.\.\. "
 copybutton_prompt_is_regexp = True
 
-
-# -- Sphinx Gallery ----------------------------------------------------------
-from sphinx_gallery.sorting import FileNameSortKey  # noqa: E402
-
-# Beispiele sammeln (cc_examples optional)
-_examples_dirs: list[str] = [str(EXAMPLES_DIR)]
-_gallery_dirs: list[str] = ["auto_examples"]
-
-if CC_EXAMPLES_DIR.exists():
-    _examples_dirs.append(str(CC_EXAMPLES_DIR))
-    _gallery_dirs.append("auto_cc_examples")
-
-sphinx_gallery_conf = {
-    "examples_dirs": "../examples",
-    "gallery_dirs": "auto_examples",
-    "filename_pattern": r".*\.py",
-    "within_subsection_order": FileNameSortKey,
-    "download_all_examples": False,
-    "default_gallery_intro": """
-    "abort_on_example_error": True,
-.. _example_gallery:
-
-Example Gallery
-===============
-
-This section contains runnable examples generated with **Sphinx-Gallery**.
-""",
-}
-
+linkcheck_ignore = [
+    r"https://doi.org/10.1142/S0218488500000253",
+    r"https://www.worldscientific.com/.*",
+    r"https://doi.org/10.1080/03081070500473490",
+    r"https://www.tandfonline.com/.*",
+]
