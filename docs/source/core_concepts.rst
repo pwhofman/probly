@@ -16,13 +16,12 @@ Mini gallery (quick links)
 =========================
 
 These are short, focused example pages that are relevant to this topic.
-
 .. minigallery::
-   :add-heading:
-
-   sphx_glr_plot_epistemic_vs_aleatoric.py
-   sphx_glr_plot_uncertainty_quantification.py
-   sphx_glr_plot_selective_prediction.py
+   ../../cc_examples/plot_epistemic_vs_aleatoric.py
+   ../../cc_examples/plot_uncertainty_quantification.py
+   ../../cc_examples/plot_selective_prediction.py
+   :add-heading: Related examples
+   :heading-level: 3
 
 
 In standard machine learning pipelines a model outputs a **single prediction**
