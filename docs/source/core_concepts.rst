@@ -20,12 +20,13 @@ These are short, focused example pages that are relevant to this topic.
 .. minigallery:: ../../cc_examples/plot_epistemic_vs_aleatoric.py ../../cc_examples/plot_uncertainty_quantification.py ../../cc_examples/plot_selective_prediction.py
    :add-heading: Related examples
    :heading-level: 3
-   
+
 .. toctree::
    :maxdepth: 1
    :glob:
 
    ../auto_examples/cc_examples/plot_*
+   
 .. toctree::
    :hidden:
 

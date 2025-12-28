@@ -33,18 +33,15 @@ version = probly.__version__
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
-    "sphinx_autodoc_typehints",
     "sphinx.ext.viewcode",
     "sphinx.ext.napoleon",
     "sphinx.ext.duration",
-    "myst_nb",
     "sphinx_gallery.gen_gallery",
     "sphinx_gallery.load_style",
     "sphinx.ext.intersphinx",
     "sphinx.ext.mathjax",
     "sphinx.ext.doctest",
     "sphinx_copybutton",
-    "sphinxcontrib.bibtex",
 ]
 
 templates_path = ["_templates"]
