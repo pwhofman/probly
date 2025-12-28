@@ -20,14 +20,19 @@ These are short, focused example pages that are relevant to this topic.
 .. minigallery:: ../../cc_examples/plot_epistemic_vs_aleatoric.py ../../cc_examples/plot_uncertainty_quantification.py ../../cc_examples/plot_selective_prediction.py
    :add-heading: Related examples
    :heading-level: 3
-
+   
 .. toctree::
    :maxdepth: 1
+   :glob:
 
-   ../auto_examples/cc_examples/plot_epistemic_vs_aleatoric
-   ../auto_examples/cc_examples/plot_selective_prediction
-   ../auto_examples/cc_examples/plot_uncertainty_quantification
-   
+   ../auto_examples/cc_examples/plot_*
+.. toctree::
+   :hidden:
+
+   generate_synthetic_classification_data
+   apply_selective_prediction
+   plot_selective_prediction_behavior
+
 In standard machine learning pipelines a model outputs a **single prediction**
 a class label, a probability, or a regression value. However this number does
 not tell us **how confident** the model actually is.

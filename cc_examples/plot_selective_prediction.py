@@ -1,7 +1,6 @@
-<<<<<<< Updated upstream
 """
 Selective Prediction
-====================
+=================================
 
 This example demonstrates *selective prediction* (abstention).
 
@@ -13,12 +12,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-# %%
-# Generate synthetic classification data
-# --------------------------------------
-#
-# We simulate a binary classification problem with probabilistic outputs.
-
 rng = np.random.default_rng(0)
 
 X = np.linspace(-3, 3, 300)
@@ -28,23 +21,10 @@ true_prob = 1 / (1 + np.exp(-X))  # sigmoid-shaped ground-truth probability
 predicted_prob = true_prob + rng.normal(0, 0.1, size=len(X))
 predicted_prob = np.clip(predicted_prob, 0, 1)
 
-
-# %%
-# Apply selective prediction
-# --------------------------
-#
-# We define a confidence threshold. Predictions below this threshold
-# are rejected (abstention).
-
 confidence_threshold = 0.7
 
 accepted_mask = predicted_prob >= confidence_threshold
 rejected_mask = ~accepted_mask
-
-
-# %%
-# Plot selective prediction behavior
-# ----------------------------------
 
 plt.figure(figsize=(8, 4))
 
@@ -81,42 +61,3 @@ plt.title("Selective Prediction with Abstention")
 plt.legend()
 plt.tight_layout()
 plt.show()
-
-
-=======
-"""
-Selective Prediction
-====================
-
-This example demonstrates *selective prediction* (abstention).
-
-A model outputs a prediction only when its confidence is above a chosen
-threshold; otherwise it rejects the sample.
-"""
-
-import numpy as np
-import matplotlib.pyplot as plt
-
-# Data
-X = np.linspace(0, 10, 100)
-y_pred = np.sin(X)
-uncertainty = 0.1 + 0.4 * np.abs(np.cos(X))
-
-# Selection threshold
-threshold = 0.3
-accepted = uncertainty < threshold
-rejected = ~accepted
-
-# Plot
-plt.figure(figsize=(8, 4))
-plt.scatter(X[accepted], y_pred[accepted], label="Accepted predictions")
-plt.scatter(X[rejected], y_pred[rejected], label="Rejected predictions", alpha=0.4)
-
-plt.axhline(threshold, color="gray", linestyle="--", label="Uncertainty threshold")
-plt.legend()
-plt.title("Selective Prediction based on Uncertainty")
-plt.xlabel("x")
-plt.ylabel("Prediction")
-plt.tight_layout()
-plt.show()
->>>>>>> Stashed changes

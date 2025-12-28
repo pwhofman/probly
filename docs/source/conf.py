@@ -1,4 +1,4 @@
-"""Configuration file for the Sphinx documentation builder."""
+﻿"""Configuration file for the Sphinx documentation builder."""
 
 from __future__ import annotations
 
@@ -6,18 +6,26 @@ import importlib
 import inspect
 import os
 import sys
-
-# -- Path setup --------------------------------------------------------------
-sys.path.insert(0, os.path.abspath("../../src"))
-sys.path.insert(0, os.path.abspath("../../examples"))
-sys.path.insert(0, os.path.abspath("../../cc_examples"))
+from pathlib import Path
 
 import probly
 
+# -- Paths -------------------------------------------------------------------
+# conf.py lives in:  .../probly/docs/source/conf.py
+DOCS_SOURCE_DIR = Path(__file__).resolve().parent          # .../docs/source
+DOCS_DIR = DOCS_SOURCE_DIR.parent                         # .../docs
+REPO_ROOT = DOCS_DIR.parent                               # .../probly
+
+# Add package + example dirs to Python path
+sys.path.insert(0, str(REPO_ROOT / "src"))
+sys.path.insert(0, str(REPO_ROOT / "examples"))
+sys.path.insert(0, str(REPO_ROOT / "cc_examples"))
+
 # -- Project information -----------------------------------------------------
 project = "probly"
-copyright = "2025, probly team"  # noqa: A001
 author = "probly team"
+copyright = "2025, probly team"  # noqa: A001
+
 release = probly.__version__
 version = probly.__version__
 
@@ -40,96 +48,52 @@ extensions = [
 ]
 
 templates_path = ["_templates"]
+
 exclude_patterns = [
     "_build",
     "Thumbs.db",
     ".DS_Store",
+    # Ignore generated artifacts if they end up in the source tree
     "auto_examples/*.ipynb",
     "auto_examples/*.py",
     "auto_examples/*.zip",
     "auto_examples/*.json",
     "auto_examples/*.db",
     "auto_examples/*.md5",
-    "auto_cc_examples/*.ipynb",
-    "auto_cc_examples/*.py",
-    "auto_cc_examples/*.zip",
-    "auto_cc_examples/*.json",
-    "auto_cc_examples/*.db",
-    "auto_cc_examples/*.md5",
 ]
 
-bibtex_bibfiles = ["references.bib"]
-bibtex_default_style = "alpha"
+# Notebooks: don't execute during docs build
 nb_execution_mode = "off"
 
-# Keep example scripts at repo root so they can be used outside docs as well.
+# Bibliography
+bibtex_bibfiles = ["references.bib"]
+bibtex_default_style = "alpha"
+
+# -- Sphinx-Gallery ----------------------------------------------------------
+# Two galleries:
+# - REPO_ROOT/examples     -> docs/source/auto_examples/examples
+# - REPO_ROOT/cc_examples  -> docs/source/auto_examples/cc_examples
 sphinx_gallery_conf = {
-<<<<<<< Updated upstream
-    # Keep example scripts at repo root so they can be used outside docs as well.
-=======
->>>>>>> Stashed changes
     "examples_dirs": [
-        os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "examples")),
-        os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "cc_examples")),
+        str(REPO_ROOT / "examples"),
+        str(REPO_ROOT / "cc_examples"),
     ],
-<<<<<<< Updated upstream
-
-    # Sphinx-Gallery writes generated .rst and thumbnails here (relative to this conf.py).
-    "gallery_dirs": "auto_examples",
-
-    # Enables backreference pages, which power the `.. minigallery:: some.object` directive.
-    "backreferences_dir": "generated/backreferences",
-    "doc_module": ("probly",),
-    "reference_url": {"probly": No_
-
-    # Sphinx-Gallery writes generated .rst and thumbnails here (relative to this conf.py).
-   "gallery_dirs": "auto_examples",
-
-    # Enables backreference pages, which power the `.. minigallery:: some.object` directive.
-    "backreferences_dir": "generated/backreferences",
-    # Tell Sphinx-Gallery which modules are "yours" for cross-referencing.
-=======
     "gallery_dirs": [
-        "auto_examples",
-        "auto_cc_examples",
+        "auto_examples/examples",
+        "auto_examples/cc_examples",
     ],
-
-    # backreferences are required for .. minigallery::
-    # Use separate backrefs per gallery to avoid collisions.
-    "backreferences_dir": 
-        "generated/backreferences_examples",
-
->>>>>>> Stashed changes
+    "backreferences_dir": "generated/backreferences",
     "doc_module": ("probly",),
     "reference_url": {"probly": None},
-
-    "minigallery_sort_order": lambda filename: (
-        {
-            "plot_gallery_smoke_test.py": 0,
-            "plot_create_sample_dispatch.py": 1,
-            "plot_using_predict_protocol.py": 2,
-            "plot_samples_with_array_sample.py": 3,
-        }.get(os.path.basename(str(filename)), 10_000),
-        os.path.basename(str(filename)),
-    ),
-    "within_subsection_order": lambda filename: (
-        {
-            "plot_gallery_smoke_test.py": 0,
-            "plot_create_sample_dispatch.py": 1,
-            "plot_using_predict_protocol.py": 2,
-            "plot_samples_with_array_sample.py": 3,
-        }.get(os.path.basename(str(filename)), 10_000),
-        os.path.basename(str(filename)),
-    ),
-
-    "filename_pattern": r"plot_",
+    "filename_pattern": r"plot_.*\.py",
     "plot_gallery": True,
-    "default_thumb_file": os.path.join(
-        os.path.dirname(__file__), "_static", "logo", "logo_light.png"
-    ),
     "download_all_examples": False,
+    # Don’t kill the whole build if one example errors
+    "abort_on_example_error": False,
+    "default_thumb_file": str(DOCS_DIR / "_static" / "logo" / "logo_light.png"),
 }
 
+# -- Intersphinx -------------------------------------------------------------
 intersphinx_mapping = {
     "python3": ("https://docs.python.org/3", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
@@ -139,33 +103,30 @@ intersphinx_mapping = {
     "torch": ("https://pytorch.org/docs/stable/", None),
 }
 
-
+# -- Linkcode (optional) -----------------------------------------------------
 def linkcode_resolve(domain: str, info: dict[str, str]) -> str | None:
-    if domain != "py" or not info["module"]:
+    if domain != "py" or not info.get("module"):
         return None
-
     try:
         module = importlib.import_module(info["module"])
         obj = module
         for part in info["fullname"].split("."):
             obj = getattr(obj, part)
         fn = inspect.getsourcefile(obj)
-        _source, lineno = inspect.getsourcelines(obj)
-        root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-        relpath = os.path.relpath(fn, start=root)
+        _src, lineno = inspect.getsourcelines(obj)
+        if fn is None:
+            return None
+        relpath = os.path.relpath(fn, start=str(REPO_ROOT))
     except (ModuleNotFoundError, AttributeError, TypeError, OSError):
         return None
 
-    base = "https://github.com/pwhofman/probly"
-    tag = "v0.2.0-pre-alpha" if version == "0.2.0" else f"v{version}"
-    return f"{base}/blob/{tag}/{relpath}#L{lineno}"
+    base = "https://github.com/n-teGruppe/probly"
+    branch = "sphinx_gallery"
+    return f"{base}/blob/{branch}/{relpath}#L{lineno}"
 
-
-# -- Options for HTML output -------------------------------------------------
+# -- HTML output -------------------------------------------------------------
 html_theme = "furo"
-html_theme_options = {
-    "show_toc_level": 2,
-}
+
 html_static_path = ["_static"]
 html_css_files = ["css/custom.css"]
 pygments_dark_style = "monokai"
@@ -190,7 +151,7 @@ html_sidebars = {
 
 html_show_sourcelink = False
 
-# -- Autodoc ----------------------------------------------------------------
+# -- Autodoc -----------------------------------------------------------------
 autosummary_generate = False
 autodoc_default_options = {
     "show-inheritance": True,
@@ -205,10 +166,11 @@ autoclass_content = "class"
 autodoc_inherit_docstrings = False
 autodoc_typehints = "both"
 
-# -- Copy Paste Button -------------------------------------------------------
+# -- Copybutton --------------------------------------------------------------
 copybutton_prompt_text = r">>> |\.\.\. "
 copybutton_prompt_is_regexp = True
 
+# -- Linkcheck ---------------------------------------------------------------
 linkcheck_ignore = [
     r"https://doi.org/10.1142/S0218488500000253",
     r"https://www.worldscientific.com/.*",
