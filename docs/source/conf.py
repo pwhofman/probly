@@ -1,9 +1,5 @@
 """Configuration file for the Sphinx documentation builder."""
 
-# Configuration file for the Sphinx documentation builder.
-#
-# For the full list of built-in configuration values, see the documentation:
-# https://www.sphinx-doc.org/en/master/usage/configuration.html
 from __future__ import annotations
 
 import importlib
@@ -15,11 +11,10 @@ import sys
 sys.path.insert(0, os.path.abspath("../../src"))
 sys.path.insert(0, os.path.abspath("../../examples"))
 sys.path.insert(0, os.path.abspath("../../cc_examples"))
+
 import probly
 
 # -- Project information -----------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
-
 project = "probly"
 copyright = "2025, probly team"  # noqa: A001
 author = "probly team"
@@ -27,25 +22,21 @@ release = probly.__version__
 version = probly.__version__
 
 # -- General configuration ---------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
-
 extensions = [
-    "sphinx.ext.autodoc",  # generates API documentation from docstrings
-    "sphinx.ext.autosummary",  # generates .rst files for each module
-    "sphinx_autodoc_typehints",  # optional, nice for type hints in docs
-    # "sphinx.ext.linkcode",  # adds [source] links to code that link to GitHub. Use when repo is public.  # noqa: E501, ERA001
-    "sphinx.ext.viewcode",  # adds [source] links to code that link to the source code in the docs.
-    "sphinx.ext.napoleon",  # for Google-style docstrings
-    "sphinx.ext.duration",  # optional, show the duration of the build
-    "myst_nb",  # for jupyter notebook support, also includes myst_parser
-    "sphinx_gallery.gen_gallery",  # for an examples gallery generated from scripts
-    "sphinx_gallery.load_style",  # load default CSS for galleries + mini galleries
-    "sphinx.ext.intersphinx",  # for linking to other projects' docs
-    "sphinx.ext.mathjax",  # for math support
-    "sphinx.ext.doctest",  # for testing code snippets in the docs
-    "sphinx_copybutton",  # adds a copy button to code blocks
-    # '"sphinx.ext.autosectionlabel",  # for auto-generating section labels,
-    "sphinxcontrib.bibtex",  # for bibliography support
+    "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
+    "sphinx_autodoc_typehints",
+    "sphinx.ext.viewcode",
+    "sphinx.ext.napoleon",
+    "sphinx.ext.duration",
+    "myst_nb",
+    "sphinx_gallery.gen_gallery",
+    "sphinx_gallery.load_style",
+    "sphinx.ext.intersphinx",
+    "sphinx.ext.mathjax",
+    "sphinx.ext.doctest",
+    "sphinx_copybutton",
+    "sphinxcontrib.bibtex",
 ]
 
 templates_path = ["_templates"]
@@ -53,27 +44,35 @@ exclude_patterns = [
     "_build",
     "Thumbs.db",
     ".DS_Store",
-    # Sphinx-Gallery generates companion files (e.g. .ipynb/.zip) next to the .rst.
-    # With myst-nb enabled, Sphinx may accidentally prefer the .ipynb as the source
-    # document, which results in "no outputs" (because we set nb_execution_mode="off").
-    # Excluding these ensures the rendered pages come from the Sphinx-Gallery .rst.
     "auto_examples/*.ipynb",
     "auto_examples/*.py",
     "auto_examples/*.zip",
     "auto_examples/*.json",
     "auto_examples/*.db",
     "auto_examples/*.md5",
+    "auto_cc_examples/*.ipynb",
+    "auto_cc_examples/*.py",
+    "auto_cc_examples/*.zip",
+    "auto_cc_examples/*.json",
+    "auto_cc_examples/*.db",
+    "auto_cc_examples/*.md5",
 ]
+
 bibtex_bibfiles = ["references.bib"]
 bibtex_default_style = "alpha"
-nb_execution_mode = "off"  # don't run notebooks when building the docs
+nb_execution_mode = "off"
 
+# Keep example scripts at repo root so they can be used outside docs as well.
 sphinx_gallery_conf = {
+<<<<<<< Updated upstream
     # Keep example scripts at repo root so they can be used outside docs as well.
+=======
+>>>>>>> Stashed changes
     "examples_dirs": [
         os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "examples")),
         os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "cc_examples")),
     ],
+<<<<<<< Updated upstream
 
     # Sphinx-Gallery writes generated .rst and thumbnails here (relative to this conf.py).
     "gallery_dirs": "auto_examples",
@@ -89,11 +88,21 @@ sphinx_gallery_conf = {
     # Enables backreference pages, which power the `.. minigallery:: some.object` directive.
     "backreferences_dir": "generated/backreferences",
     # Tell Sphinx-Gallery which modules are "yours" for cross-referencing.
+=======
+    "gallery_dirs": [
+        "auto_examples",
+        "auto_cc_examples",
+    ],
+
+    # backreferences are required for .. minigallery::
+    # Use separate backrefs per gallery to avoid collisions.
+    "backreferences_dir": 
+        "generated/backreferences_examples",
+
+>>>>>>> Stashed changes
     "doc_module": ("probly",),
     "reference_url": {"probly": None},
-    # Keep a stable order for the gallery index + any embedded mini-galleries.
-    # This avoids the default behavior where mini-galleries sort alphabetically
-    # by file path (which can differ from the main gallery ordering).
+
     "minigallery_sort_order": lambda filename: (
         {
             "plot_gallery_smoke_test.py": 0,
@@ -112,14 +121,12 @@ sphinx_gallery_conf = {
         }.get(os.path.basename(str(filename)), 10_000),
         os.path.basename(str(filename)),
     ),
-    # Conventional prefix used by Sphinx-Gallery.
+
     "filename_pattern": r"plot_",
-    # Avoid executing examples during doc builds by default (keeps docs lightweight and
-    # avoids requiring optional ML deps like torch).
     "plot_gallery": True,
-    # Use a project asset as the default thumbnail when examples aren't executed.
-     "default_thumb_file": os.path.join(os.path.dirname(__file__), "_static", "logo", "logo_light.png"),
-    # Don't clutter the sidebar with download links unless you want them.
+    "default_thumb_file": os.path.join(
+        os.path.dirname(__file__), "_static", "logo", "logo_light.png"
+    ),
     "download_all_examples": False,
 }
 
@@ -134,17 +141,6 @@ intersphinx_mapping = {
 
 
 def linkcode_resolve(domain: str, info: dict[str, str]) -> str | None:
-    """Resolve the link to the source code in GitHub.
-
-    This function is required by sphinx.ext.linkcode and is used to generate links to the source code on GitHub.
-
-    Args:
-        domain (str): The domain of the object.
-        info (dict[str, str]): The information about the object.
-
-    Returns:
-        str | None: The URL to the source code or None if not found.
-    """
     if domain != "py" or not info["module"]:
         return None
 
@@ -162,20 +158,18 @@ def linkcode_resolve(domain: str, info: dict[str, str]) -> str | None:
 
     base = "https://github.com/pwhofman/probly"
     tag = "v0.2.0-pre-alpha" if version == "0.2.0" else f"v{version}"
-
     return f"{base}/blob/{tag}/{relpath}#L{lineno}"
 
 
 # -- Options for HTML output -------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 html_theme = "furo"
+html_theme_options = {
+    "show_toc_level": 2,
+}
 html_static_path = ["_static"]
-html_css_files = [
-    "css/custom.css",
-]
-# TODO(pwhofman): add favicon Issue: https://github.com/pwhofman/probly/issues/95
-# html_favicon = "_static/logo/"  # noqa: ERA001
+html_css_files = ["css/custom.css"]
 pygments_dark_style = "monokai"
+
 html_theme_options = {
     "sidebar_hide_name": True,
     "light_logo": "logo/logo_light.png",
@@ -190,13 +184,13 @@ html_sidebars = {
         "sidebar/navigation.html",
         "sidebar/ethical-ads.html",
         "sidebar/scroll-end.html",
-        "sidebar/footer.html",  # to get the github link in the footer of the sidebar
+        "sidebar/footer.html",
     ],
 }
 
-html_show_sourcelink = False  # to remove button next to dark mode showing source in txt format
+html_show_sourcelink = False
 
-# -- Autodoc ---------------------------------------------------------------------------------------
+# -- Autodoc ----------------------------------------------------------------
 autosummary_generate = False
 autodoc_default_options = {
     "show-inheritance": True,
@@ -208,13 +202,10 @@ autodoc_default_options = {
     "exclude-members": "__weakref__",
 }
 autoclass_content = "class"
-# TODO(pwhofman): maybe set this to True, Issue https://github.com/pwhofman/probly/issues/94
 autodoc_inherit_docstrings = False
+autodoc_typehints = "both"
 
-autodoc_typehints = "both"  # to show type hints in the docstring
-
-# -- Copy Paste Button -----------------------------------------------------------------------------
-# Ignore >>> when copying code
+# -- Copy Paste Button -------------------------------------------------------
 copybutton_prompt_text = r">>> |\.\.\. "
 copybutton_prompt_is_regexp = True
 
