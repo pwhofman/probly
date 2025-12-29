@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 
 # too many staments in one function rightmow but will be fixed via use of single-dispatch
-def unified_evidential_train_class(  # noqa: C901, PLR0912, PLR0915
+def unified_evidential_train(  # noqa: C901, PLR0912, PLR0915
     mode: Literal["PostNet", "NatPostNet", "EDL", "PrNet", "IRD", "DER", "RPN"],
     model: nn.Module,
     dataloader: DataLoader,
