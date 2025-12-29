@@ -66,24 +66,29 @@ def make_ood_target_alpha(
     return mu * alpha0
 
 
-def kl_dirichlet(alpha_p: Tensor, alpha_q: Tensor) -> Tensor:
+def kl_dirichlet(prior_alpha: Tensor, posterior_alpha: Tensor) -> Tensor:
     """Compute KL(Dir(alpha_p) || Dir(alpha_q)) for each batch item.
 
     Args:
-        alpha_p: Prior Dirichlet parameters.
-        alpha_q: Posterior Dirichlet parameters.
+        prior_alpha: Prior Dirichlet parameters.
+        posterior_alpha: Posterior Dirichlet parameters.
 
     Returns:
         KL divergence [B].
     """
-    alpha_p0 = alpha_p.sum(dim=-1, keepdim=True)
-    alpha_q0 = alpha_q.sum(dim=-1, keepdim=True)
+    prior_alpha_sum = prior_alpha.sum(dim=-1, keepdim=True)
+    posterior_alpha_sum = posterior_alpha.sum(dim=-1, keepdim=True)
 
-    term1 = gammaln(alpha_p0) - gammaln(alpha_q0)
-    term2 = (gammaln(alpha_q) - gammaln(alpha_p)).sum(dim=-1, keepdim=True)
-    term3 = ((alpha_p - alpha_q) * (digamma(alpha_p) - digamma(alpha_p0))).sum(dim=-1, keepdim=True)
+    normalization_term = gammaln(prior_alpha_sum) - gammaln(posterior_alpha_sum)
+    log_gamma_ratio_term = (gammaln(posterior_alpha) - gammaln(prior_alpha)).sum(dim=-1, keepdim=True)
+    digamma_expectation_term = (
+        (prior_alpha - posterior_alpha) * (digamma(prior_alpha) - digamma(prior_alpha_sum))
+    ).sum(
+        dim=-1,
+        keepdim=True,
+    )
 
-    return (term1 + term2 + term3).squeeze(-1)
+    return (normalization_term + log_gamma_ratio_term + digamma_expectation_term).squeeze(-1)
 
 
 def predictive_probs(alpha: Tensor) -> Tensor:
