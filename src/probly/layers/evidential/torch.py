@@ -484,9 +484,9 @@ class EvidentialRegression(nn.Module):
     mu, kappa, alpha, beta.
     """
 
-    def init(self) -> None:
+    def __init__(self) -> None:
         """Initialize MLP architecture for evidential regression."""
-        super().init()
+        super().__init__()
         self.layers = nn.Sequential(
             nn.Linear(1, 64),
             nn.ReLU(),

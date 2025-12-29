@@ -7,14 +7,15 @@ from typing import TYPE_CHECKING, Literal
 import torch
 from torch import nn
 
-from probly.train.evidential.torch import der_loss, rpn_ng_kl, rpn_prior, train_pn
+from probly.train.evidential.torch import der_loss, train_pn, train_rpn_regression
 
 if TYPE_CHECKING:
     from torch.utils.data import DataLoader
 
 
-def unified_evidential_train_class(  # noqa: C901, PLR0912
-    mode: Literal["PostNet", "NatPostNet", "EDL", "PrNet", "IRD"],
+# too many staments in one function rightmow but will be fixed via use of single-dispatch
+def unified_evidential_train_class(  # noqa: C901, PLR0912, PLR0915
+    mode: Literal["PostNet", "NatPostNet", "EDL", "PrNet", "IRD", "DER", "RPN"],
     model: nn.Module,
     dataloader: DataLoader,
     loss_fn: torch.Tensor = None,
@@ -31,7 +32,7 @@ def unified_evidential_train_class(  # noqa: C901, PLR0912
         mode:
             Identifier of the paper-based training approach to be used.
             Must be one of:
-            "PostNet", "NatPostNet", "EDL", "PrNet", or "IRD".
+            "PostNet", "NatPostNet", "EDL", "PrNet", "IRD", "DER" or "RPN".
 
         model:
             The neural network to be trained.
@@ -103,7 +104,9 @@ def unified_evidential_train_class(  # noqa: C901, PLR0912
             elif mode == "EDL":
                 loss = loss_fn(outputs, y)
             elif mode == "PrNet":
-                total_loss = train_pn(model, optimizer, dataloader, oodloader)
+                loss = train_pn(model, optimizer, dataloader, oodloader)
+                total_loss += loss
+                optimizer.step()
                 break
             elif mode == "IRD":
                 x_adv = x + 0.01 * torch.randn_like(x)
@@ -111,6 +114,14 @@ def unified_evidential_train_class(  # noqa: C901, PLR0912
                 alpha_adv = model(x_adv)
                 y_oh = nn.functional.one_hot(y, num_classes=outputs.shape[1]).float()
                 loss = loss_fn(alpha, y_oh, adversarial_alpha=alpha_adv)
+            elif mode == "DER":
+                mu, kappa, alpha, beta = outputs
+                loss = der_loss(y, mu, kappa, alpha, beta)
+            elif mode == "RPN":
+                loss = train_rpn_regression(model, optimizer, dataloader, oodloader)
+                total_loss += loss
+                optimizer.step()
+                break
             else:
                 msg = "Enter valid mode"
                 raise ValueError(msg)
@@ -122,54 +133,3 @@ def unified_evidential_train_class(  # noqa: C901, PLR0912
 
         avg_loss = total_loss / len(dataloader)  # calculate average loss per epoch across all batches
         print(f"Epoch [{epoch + 1}/{epochs}] - Loss: {avg_loss:.4f}")  # noqa: T201
-
-
-def unified_evidential_train_reg(
-    y: torch.Tensor,
-    mu: torch.Tensor,
-    kappa: torch.Tensor,
-    alpha: torch.Tensor,
-    beta: torch.Tensor,
-    is_ood: torch.Tensor,
-    lam_der: float = 0.01,
-    lam_rpn: float = 1.0,
-) -> torch.Tensor:
-    """Compute unified DER + RPN loss.
-
-    Deep Evidential Regression is applied to in-distribution samples, while a
-    Normal-Gamma KL divergence (RPN) is applied to out-of-distribution samples.
-    """
-    is_ood_bool = is_ood.bool()
-    id_mask = ~is_ood_bool
-    ood_mask = is_ood_bool
-
-    device = y.device
-    loss_id = torch.tensor(0.0, device=device)
-    loss_ood = torch.tensor(0.0, device=device)
-
-    if id_mask.any():
-        loss_id = der_loss(
-            y[id_mask],
-            mu[id_mask],
-            kappa[id_mask],
-            alpha[id_mask],
-            beta[id_mask],
-            lam=lam_der,
-        )
-
-    if ood_mask.any():
-        shape = mu[ood_mask].shape
-        mu0, kappa0, alpha0, beta0 = rpn_prior(shape, device)
-
-        loss_ood = rpn_ng_kl(
-            mu[ood_mask],
-            kappa[ood_mask],
-            alpha[ood_mask],
-            beta[ood_mask],
-            mu0,
-            kappa0,
-            alpha0,
-            beta0,
-        )
-
-    return loss_id + lam_rpn * loss_ood

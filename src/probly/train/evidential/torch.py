@@ -798,3 +798,58 @@ def train_pn(
         total_loss += loss.item()
 
     return total_loss
+
+
+def train_rpn_regression(
+    model: nn.Module,
+    optimizer: torch.optim.Optimizer,
+    id_loader: DataLoader,
+    ood_loader: DataLoader,
+    device: str = "cpu",
+    lambda_ood: float = 0.1,
+) -> float:
+    """Train the model for one epoch, using paired ID and OOD mini-batches."""
+    model.train()
+    total_loss = 0.0
+
+    ood_iter = iter(ood_loader)
+
+    for x_id, _ in id_loader:
+        try:
+            x_ood, _ = next(ood_iter)
+        except StopIteration:
+            ood_iter = iter(ood_loader)
+            x_ood, _ = next(ood_iter)
+
+        x_id = x_id.to(device)  # noqa: PLW2901
+        x_ood = x_ood.to(device)
+
+        optimizer.zero_grad()
+
+        # ID forward
+        mu, kappa, alpha, beta = model(x_id)
+        mu0, k0, a0, b0 = rpn_prior(mu.shape, device)
+
+        kl_id = rpn_ng_kl(mu, kappa, alpha, beta, mu0, k0, a0, b0).mean()
+
+        # OOD forward
+        mu_ood, k_ood, a_ood, b_ood = model(x_ood)
+
+        kl_ood = rpn_ng_kl(
+            mu0,
+            k0,
+            a0,
+            b0,
+            mu_ood,
+            k_ood,
+            a_ood,
+            b_ood,
+        ).mean()
+
+        loss = kl_id + lambda_ood * kl_ood
+        loss.backward()
+        optimizer.step()
+
+        total_loss += loss.item()
+
+    return total_loss
