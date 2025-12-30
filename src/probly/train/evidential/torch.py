@@ -752,6 +752,42 @@ def dirichlet_prior_networks_loss(
     return loss
 
 
+def pn_loss(model: nn.Module, x_in: torch.Tensor, y_in: torch.Tensor, x_ood: torch.Tensor) -> torch.Tensor:
+    """Compute the paired ID+OOD loss for one training step.
+
+    This loss is meant to be called inside your training loop after you already sampled
+    one in-distribution (ID) mini-batch and one out-of-distribution (OOD) mini-batch.
+
+    Inputs:
+      model:  nn.Module
+          The network that maps inputs to Dirichlet concentration parameters (alpha).
+      x_in:   torch.Tensor
+          ID inputs for the current step, shape (B, ...) on the same device as the model.
+      y_in:   torch.Tensor
+          ID labels for the current step, shape (B,) with class indices (dtype long).
+      x_ood:  torch.Tensor
+          OOD inputs for the current step, shape (B_ood, ...) on the same device as the model.
+
+    Output:
+      torch.Tensor
+          A scalar loss tensor (suitable for loss.backward()).
+    """
+    # ID forward
+    alpha_in = model(x_in)
+    alpha_target_in = make_in_domain_target_alpha(y_in).to(alpha_in.device)
+    kl_in = kl_dirichlet(alpha_target_in, alpha_in).mean()
+
+    probs_in = predictive_probs(alpha_in)
+    ce_term = F.nll_loss(torch.log(probs_in + 1e-8), y_in)
+
+    # OOD forward
+    alpha_ood = model(x_ood)
+    alpha_target_ood = make_ood_target_alpha(x_ood.size(0)).to(alpha_ood.device)
+    kl_ood = kl_dirichlet(alpha_target_ood, alpha_ood).mean()
+
+    return kl_in + kl_ood + 0.1 * ce_term
+
+
 def train_pn(
     model: nn.Module,
     optimizer: torch.optim.Optimizer,

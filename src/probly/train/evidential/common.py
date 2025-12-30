@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Literal
 import torch
 from torch import nn
 
-from probly.train.evidential.torch import der_loss, train_pn, train_rpn_regression
+from probly.train.evidential.torch import der_loss, pn_loss, train_rpn_regression
 
 if TYPE_CHECKING:
     from torch.utils.data import DataLoader
@@ -90,9 +90,9 @@ def unified_evidential_train(  # noqa: C901, PLR0912, PLR0915
             flow.train()
         total_loss = 0.0  # track total_loss to calculate average loss per epoch
 
-        for x, y in dataloader:
-            x = x.to(device)  # noqa: PLW2901
-            y = y.to(device)  # noqa: PLW2901
+        for x_raw, y_raw in dataloader:
+            x = x_raw.to(device)
+            y = y_raw.to(device)
 
             optimizer.zero_grad()  # clears old gradients
             outputs = model(x)  # computes model-outputs
@@ -104,10 +104,17 @@ def unified_evidential_train(  # noqa: C901, PLR0912, PLR0915
             elif mode == "EDL":
                 loss = loss_fn(outputs, y)
             elif mode == "PrNet":
-                loss = train_pn(model, optimizer, dataloader, oodloader)
-                total_loss += loss
-                optimizer.step()
-                break
+                ood_iter = iter(oodloader)
+
+                try:
+                    x_ood_raw, _ = next(ood_iter)
+                except StopIteration:
+                    ood_iter = iter(oodloader)
+                    x_ood_raw, _ = next(ood_iter)
+
+                x_ood = x_ood_raw.to(device)
+
+                loss = pn_loss(model, x, y, x_ood)
             elif mode == "IRD":
                 x_adv = x + 0.01 * torch.randn_like(x)
                 alpha = outputs
