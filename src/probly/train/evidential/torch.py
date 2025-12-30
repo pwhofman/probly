@@ -11,8 +11,6 @@ from torch.nn import functional as F
 from torch.special import digamma, gammaln
 
 if TYPE_CHECKING:
-    from torch.utils.data import DataLoader
-
     from probly.layers.evidential import torch as t
 
 
@@ -564,7 +562,7 @@ def rpn_prior(
     device: torch.device,
 ) -> tuple[Tensor, Tensor, Tensor, Tensor]:
     """Return zero-evidence Normal-Gamma prior parameters for RPN KL."""
-    eps = 1e-6
+    eps = 1e-3
     mu0 = torch.zeros(shape, device=device)
     kappa0 = torch.ones(shape, device=device) * eps
     alpha0 = torch.ones(shape, device=device) * (1.0 + eps)
@@ -785,112 +783,45 @@ def pn_loss(model: nn.Module, x_in: torch.Tensor, y_in: torch.Tensor, x_ood: tor
     alpha_target_ood = make_ood_target_alpha(x_ood.size(0)).to(alpha_ood.device)
     kl_ood = kl_dirichlet(alpha_target_ood, alpha_ood).mean()
 
-    return kl_in + kl_ood + 0.1 * ce_term
+    loss = kl_in + kl_ood + 0.1 * ce_term
+
+    return loss
 
 
-def train_pn(
+def rpn_loss(
     model: nn.Module,
-    optimizer: torch.optim.Optimizer,
-    id_loader: DataLoader,
-    ood_loader: DataLoader,
-) -> float:
-    """Train the model for one epoch, using paired ID and OOD mini-batches."""
-    device = "cpu"
-    model.train()
+    x_id: Tensor,
+    y_id: Tensor,
+    x_ood: Tensor,
+    lam_der: float = 0.01,
+    lam_rpn: float = 50.0,
+) -> Tensor:
+    """Regression Prior Network style loss (Malinin & Gales-ish behavior) for one step with paired ID and OOD batches.
 
-    total_loss = 0.0
+    Inputs:
+      model: returns (mu, kappa, alpha, beta) for each x
+      x_id:  ID inputs (B_id, ...)
+      y_id:  ID targets (B_id, 1) or (B_id,) compatible with der_loss
+      x_ood: OOD inputs (B_ood, ...)
 
-    ood_iter = iter(ood_loader)
+    Loss:
+      - ID term: DER loss (Student-t NLL + evidence regularizer)
+          der_loss(y_id, mu_id, kappa_id, alpha_id, beta_id, lam=lam_der)
+      - OOD term: push predicted NIG back to the RPN prior via KL(pred || prior)
+          rpn_ng_kl(mu_ood, kappa_ood, alpha_ood, beta_ood, mu0, k0, a0, b0)
 
-    model.train()  # call of train important for models like dropout
+      total = loss_id + lam_rpn * loss_ood
+    """
+    # --- ID forward + supervised DER ---
+    mu_id, kappa_id, alpha_id, beta_id = model(x_id)
+    loss_id = der_loss(y_id, mu_id, kappa_id, alpha_id, beta_id, lam=lam_der)
 
-    for x_in_raw, y_in_raw in id_loader:
-        try:
-            x_ood_raw, _ = next(ood_iter)
-        except StopIteration:
-            ood_iter = iter(ood_loader)
-            x_ood_raw, _ = next(ood_iter)
+    # --- OOD forward + KL to prior (revert to prior / be uninformative) ---
+    mu_ood, kappa_ood, alpha_ood, beta_ood = model(x_ood)
+    mu0, k0, a0, b0 = rpn_prior(mu_ood.shape, mu_ood.device)
 
-        x_in = x_in_raw.to(device)
-        y_in = y_in_raw.to(device)
-        x_ood = x_ood_raw.to(device)
+    loss_ood = rpn_ng_kl(mu_ood, kappa_ood, alpha_ood, beta_ood, mu0, k0, a0, b0)
 
-        optimizer.zero_grad()
+    loss = loss_id + lam_rpn * loss_ood
 
-        # In-distribution forward pass
-        alpha_in = model(x_in)
-        alpha_target_in = make_in_domain_target_alpha(y_in)
-        kl_in = kl_dirichlet(alpha_target_in, alpha_in).mean()
-
-        # Optional cross-entropy for classification stability
-        probs_in = predictive_probs(alpha_in)
-        ce_term = F.nll_loss(torch.log(probs_in + 1e-8), y_in)
-
-        # OOD forward pass
-        alpha_ood = model(x_ood)
-        alpha_target_ood = make_ood_target_alpha(x_ood.size(0))
-        kl_ood = kl_dirichlet(alpha_target_ood, alpha_ood).mean()
-
-        # Total loss
-        loss = kl_in + kl_ood + 0.1 * ce_term
-        loss.backward()
-        optimizer.step()
-
-        total_loss += loss.item()
-
-    return total_loss
-
-
-def train_rpn_regression(
-    model: nn.Module,
-    optimizer: torch.optim.Optimizer,
-    id_loader: DataLoader,
-    ood_loader: DataLoader,
-    device: str = "cpu",
-    lambda_ood: float = 0.1,
-) -> float:
-    """Train the model for one epoch, using paired ID and OOD mini-batches."""
-    model.train()
-    total_loss = 0.0
-
-    ood_iter = iter(ood_loader)
-
-    for x_id, _ in id_loader:
-        try:
-            x_ood, _ = next(ood_iter)
-        except StopIteration:
-            ood_iter = iter(ood_loader)
-            x_ood, _ = next(ood_iter)
-
-        x_id = x_id.to(device)  # noqa: PLW2901
-        x_ood = x_ood.to(device)
-
-        optimizer.zero_grad()
-
-        # ID forward
-        mu, kappa, alpha, beta = model(x_id)
-        mu0, k0, a0, b0 = rpn_prior(mu.shape, device)
-
-        kl_id = rpn_ng_kl(mu, kappa, alpha, beta, mu0, k0, a0, b0).mean()
-
-        # OOD forward
-        mu_ood, k_ood, a_ood, b_ood = model(x_ood)
-
-        kl_ood = rpn_ng_kl(
-            mu0,
-            k0,
-            a0,
-            b0,
-            mu_ood,
-            k_ood,
-            a_ood,
-            b_ood,
-        ).mean()
-
-        loss = kl_id + lambda_ood * kl_ood
-        loss.backward()
-        optimizer.step()
-
-        total_loss += loss.item()
-
-    return total_loss
+    return loss

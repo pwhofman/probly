@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Literal
 import torch
 from torch import nn
 
-from probly.train.evidential.torch import der_loss, pn_loss, train_rpn_regression
+from probly.train.evidential.torch import der_loss, pn_loss, rpn_loss
 
 if TYPE_CHECKING:
     from torch.utils.data import DataLoader
@@ -125,10 +125,17 @@ def unified_evidential_train(  # noqa: C901, PLR0912, PLR0915
                 mu, kappa, alpha, beta = outputs
                 loss = der_loss(y, mu, kappa, alpha, beta)
             elif mode == "RPN":
-                loss = train_rpn_regression(model, optimizer, dataloader, oodloader)
-                total_loss += loss
-                optimizer.step()
-                break
+                ood_iter = iter(oodloader)
+
+                try:
+                    x_ood_raw, _ = next(ood_iter)
+                except StopIteration:
+                    ood_iter = iter(oodloader)
+                    x_ood_raw, _ = next(ood_iter)
+
+                x_ood = x_ood_raw.to(device)
+
+                loss = rpn_loss(model, x, y, x_ood)
             else:
                 msg = "Enter valid mode"
                 raise ValueError(msg)
