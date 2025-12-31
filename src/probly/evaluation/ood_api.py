@@ -204,7 +204,7 @@ def evaluate_ood(
     Returns:
     dict[str, float]
         Dictionary mapping metric names to values.
-        For backward compatibility, if metrics is None or "auroc",
+        If metrics is None or "auroc",
         the dict contains only the "auroc" entry.
     """
     in_s = np.asarray(in_distribution)
