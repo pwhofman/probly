@@ -5,14 +5,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import numpy as np
+import sklearn.metrics as sm
 from sklearn.metrics import precision_recall_curve, roc_curve
 
-from probly.evaluation.tasks import (
-    out_of_distribution_detection_aupr,
-    out_of_distribution_detection_auroc,
-    out_of_distribution_detection_fnr_at_x_tpr,
-    out_of_distribution_detection_fpr_at_x_tpr,
-)
 from probly.evaluation.types import (
     OodEvaluationResult,
 )
@@ -22,6 +17,112 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
     from matplotlib.figure import Figure
+
+
+def out_of_distribution_detection_auroc(in_distribution: np.ndarray, out_distribution: np.ndarray) -> float:
+    """Perform out-of-distribution detection using prediction functionals from id and ood data.
+
+    This can be epistemic uncertainty, as is common, but also e.g. softmax confidence.
+
+    Args:
+        in_distribution: in-distribution prediction functionals
+        out_distribution: out-of-distribution prediction functionals
+    Returns:
+        auroc: float, area under the roc curve
+
+    """
+    preds = np.concatenate((in_distribution, out_distribution))
+    labels = np.concatenate((np.zeros(len(in_distribution)), np.ones(len(out_distribution))))
+    auroc = sm.roc_auc_score(labels, preds)
+    return float(auroc)
+
+
+def out_of_distribution_detection_aupr(in_distribution: np.ndarray, out_distribution: np.ndarray) -> float:
+    """Perform out-of-distribution detection using AUPR (Area Under the Precision-Recall Curve).
+
+    This metric evaluates how well the model distinguishes between in- and out-of-distribution samples,
+    focusing more on positive class (OOD) precision and recall.
+
+    Args:
+        in_distribution: in-distribution prediction functionals
+        out_distribution: out-of-distribution prediction functionals
+
+    Returns:
+        aupr: float, area under the precision-recall curve
+    """
+    preds = np.concatenate((in_distribution, out_distribution))
+    labels = np.concatenate((np.zeros(len(in_distribution)), np.ones(len(out_distribution))))
+    aupr = sm.average_precision_score(labels, preds)
+    return float(aupr)
+
+
+def out_of_distribution_detection_fpr_at_x_tpr(
+    in_distribution: np.ndarray,
+    out_distribution: np.ndarray,
+    tpr_target: float = 0.95,
+) -> float:
+    """Perform out-of-distribution detection using false positive rate (FPR) at a given true positive rate.
+
+    If no thresholds are specified, the default tpr_target is 0.95.
+
+    This can be epistemic uncertainty, as is common, but also e.g. softmax confidence.
+
+    Args:
+        in_distribution: numpy.ndarray, scores for in-distribution samples
+        out_distribution: numpy.ndarray, scores for out-of-distribution samples
+        tpr_target: target TPR value in [0, 1], e.g. 0.95
+
+    Returns:
+        fpr_at_target: float, FPR at the first threshold where TPR >= tpr_target
+
+    Notes:
+        - Assumes that larger scores correspond to the positive class
+          (out-of-distribution).
+        - If tpr_target cannot be reached, a ValueError is raised.
+    """
+    if not 0.0 < tpr_target <= 1.0:
+        msg = f"tpr_target must be in the interval (0, 1], got {tpr_target}."
+        raise ValueError(msg)
+
+    preds = np.concatenate((in_distribution, out_distribution))
+    labels = np.concatenate(
+        (np.zeros(len(in_distribution)), np.ones(len(out_distribution))),
+    )
+
+    fpr, tpr, _ = sm.roc_curve(labels, preds)
+
+    idxs = np.where(tpr >= tpr_target)[0]
+    if len(idxs) == 0:
+        msg = f"Could not achieve TPR >= {tpr_target:.3f} with given scores."
+        raise ValueError(msg)
+
+    first_idx = idxs[0]
+    fpr_at_target = fpr[first_idx]
+    return float(fpr_at_target)
+
+
+def out_of_distribution_detection_fnr_at_x_tpr(
+    in_distribution: np.ndarray,
+    out_distribution: np.ndarray,
+    tpr_target: float = 0.95,
+) -> float:
+    """Perform out-of-distribution detection using false negative rate at user given true positive rate.
+
+    If no thresholds are specified, the default tpr_target is 0.95.
+
+    Args:
+        in_distribution: in-distribution prediction functionals
+        out_distribution: out-of-distribution prediction functionals
+        tpr_target: target TPR value in [0, 1], e.g. 0.95
+
+    Returns:
+        fnr@X: float, FNR at the first threshold where TPR >= tpr_target
+    """
+    preds = np.concatenate((in_distribution, out_distribution))
+    labels = np.concatenate((np.zeros(len(in_distribution)), np.ones(len(out_distribution))))
+    _, tpr, _ = sm.roc_curve(labels, preds)
+    idx = np.where(tpr >= tpr_target)[0]
+    return float(1.0 - tpr[idx[0]]) if len(idx) else 1.0
 
 
 STATIC_METRICS: dict[str, Callable[[np.ndarray, np.ndarray], float]] = {
@@ -84,8 +185,8 @@ def parse_dynamic_metric(spec: str) -> tuple[str, float]:
 def evaluate_ood(
     in_distribution: np.ndarray | list[float],
     out_distribution: np.ndarray | list[float],
-    metrics: None | str | list[str] = None,
-) -> float | dict[str, float]:
+    metrics: str | list[str] | None = None,
+) -> dict[str, float]:
     """Unified OOD evaluation API.
 
     Provides backward compatibility while supporting multiple metrics.
@@ -101,19 +202,23 @@ def evaluate_ood(
         - list: Returns dict with specified metrics
 
     Returns:
-    float or dict
-        - If metrics is None or "auroc": returns single AUROC float
-        - Otherwise: returns dict with metric names as keys
+    dict[str, float]
+        Dictionary mapping metric names to values.
+        If metrics is None or "auroc",
+        the dict contains only the "auroc" entry.
     """
     in_s = np.asarray(in_distribution)
     out_s = np.asarray(out_distribution)
 
-    if metrics is None or metrics == "auroc":
-        return STATIC_METRICS["auroc"](in_s, out_s)
+    if metrics is None:
+        return {"auroc": STATIC_METRICS["auroc"](in_s, out_s)}
 
     if isinstance(metrics, str):
-        metric_list = [*list(STATIC_METRICS.keys()), "fpr", "fnr"] if metrics == "all" else [metrics]
+        if metrics == "auroc":
+            return {"auroc": STATIC_METRICS["auroc"](in_s, out_s)}
+        metric_list = [*STATIC_METRICS.keys(), "fpr", "fnr"] if metrics == "all" else [metrics]
     else:
+        # metrics is a list list[str]
         metric_list = list(metrics)
 
     results: dict[str, float] = {}

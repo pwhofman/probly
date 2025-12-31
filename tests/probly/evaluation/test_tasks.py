@@ -5,11 +5,13 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from probly.evaluation.tasks import (
+from probly.evaluation.ood_api import (
     out_of_distribution_detection_aupr,
     out_of_distribution_detection_auroc,
     out_of_distribution_detection_fnr_at_x_tpr,
     out_of_distribution_detection_fpr_at_x_tpr,
+)
+from probly.evaluation.tasks import (
     selective_prediction,
 )
 
