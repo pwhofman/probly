@@ -18,16 +18,17 @@ import pytest
 from probly.evaluation.ood_api import evaluate_ood, parse_dynamic_metric, visualize_ood
 
 
-def test_evaluate_ood_returns_float() -> None:
+def test_evaluate_ood_default_returns_dict_auroc() -> None:
     in_distribution = np.array([0.9, 0.8, 0.95])
-    out_distributuion = np.array([0.1, 0.2, 0.05])
+    out_distribution = np.array([0.1, 0.2, 0.05])
 
-    result = evaluate_ood(in_distribution, out_distributuion)
+    result = evaluate_ood(in_distribution, out_distribution)
 
-    assert isinstance(result, float)
+    assert isinstance(result, dict)
+    assert set(result.keys()) == {"auroc"}
 
 
-def test_evaluate_ood_single_metric_string_returns_float() -> None:
+def test_evaluate_ood_single_metric_string_returns_dict() -> None:
     in_distribution = np.array([0.9, 0.8, 0.95])
     out_distribution = np.array([0.1, 0.2, 0.05])
 
@@ -37,25 +38,11 @@ def test_evaluate_ood_single_metric_string_returns_float() -> None:
         metrics="auroc",
     )
 
-    assert isinstance(result, float)
-
-
-def test_evaluate_ood_multiple_metrics_returns_dict() -> None:
-    in_distribution = np.array([0.9, 0.8, 0.95])
-    out_distribution = np.array([0.1, 0.2, 0.05])
-
-    result = evaluate_ood(
-        in_distribution,
-        out_distribution,
-        metrics=["auroc", "aupr"],
-    )
-
     assert isinstance(result, dict)
-    assert "auroc" in result
-    assert "aupr" in result
+    assert set(result.keys()) == {"auroc"}
 
 
-def test_evaluate_ood_all_metrics_returns_dict() -> None:
+def test_evaluate_ood_all_metrics_includes_static_and_dynamic() -> None:
     in_distribution = np.array([0.9, 0.8, 0.95])
     out_distribution = np.array([0.1, 0.2, 0.05])
 
@@ -68,6 +55,8 @@ def test_evaluate_ood_all_metrics_returns_dict() -> None:
     assert isinstance(result, dict)
     assert "auroc" in result
     assert "aupr" in result
+    assert any(k.startswith("fpr") for k in result)
+    assert any(k.startswith("fnr") for k in result)
 
 
 def test_evaluate_ood_unknown_metric_raises() -> None:
