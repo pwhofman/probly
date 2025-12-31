@@ -185,8 +185,8 @@ def parse_dynamic_metric(spec: str) -> tuple[str, float]:
 def evaluate_ood(
     in_distribution: np.ndarray | list[float],
     out_distribution: np.ndarray | list[float],
-    metrics: None | str | list[str] = None,
-) -> float | dict[str, float]:
+    metrics: str | list[str] | None = None,
+) -> dict[str, float]:
     """Unified OOD evaluation API.
 
     Provides backward compatibility while supporting multiple metrics.
@@ -202,19 +202,23 @@ def evaluate_ood(
         - list: Returns dict with specified metrics
 
     Returns:
-    float or dict
-        - If metrics is None or "auroc": returns single AUROC float
-        - Otherwise: returns dict with metric names as keys
+    dict[str, float]
+        Dictionary mapping metric names to values.
+        For backward compatibility, if metrics is None or "auroc",
+        the dict contains only the "auroc" entry.
     """
     in_s = np.asarray(in_distribution)
     out_s = np.asarray(out_distribution)
 
-    if metrics is None or metrics == "auroc":
-        return STATIC_METRICS["auroc"](in_s, out_s)
+    if metrics is None:
+        return {"auroc": STATIC_METRICS["auroc"](in_s, out_s)}
 
     if isinstance(metrics, str):
-        metric_list = [*list(STATIC_METRICS.keys()), "fpr", "fnr"] if metrics == "all" else [metrics]
+        if metrics == "auroc":
+            return {"auroc": STATIC_METRICS["auroc"](in_s, out_s)}
+        metric_list = [*STATIC_METRICS.keys(), "fpr", "fnr"] if metrics == "all" else [metrics]
     else:
+        # metrics is a list list[str]
         metric_list = list(metrics)
 
     results: dict[str, float] = {}
