@@ -59,7 +59,7 @@ class BayesLinear(nn.Module):
         if not use_base_weights:
             self.weight_mu = nn.Parameter(torch.empty((self.out_features, self.in_features)))
         else:
-            self.weight_mu = nn.Parameter(cast("torch.Tensor", base_layer.weight.data))
+            self.weight_mu = nn.Parameter(base_layer.weight.data)
         self.weight_rho = nn.Parameter(torch.full((self.out_features, self.in_features), rho))
 
         # prior weights
@@ -71,7 +71,7 @@ class BayesLinear(nn.Module):
         else:
             self.register_buffer(
                 "weight_prior_mu",
-                cast("torch.Tensor", base_layer.weight.data),
+                base_layer.weight.data,
             )
         self.register_buffer(
             "weight_prior_sigma",
@@ -83,7 +83,7 @@ class BayesLinear(nn.Module):
             if not use_base_weights:
                 self.bias_mu = nn.Parameter(torch.empty((self.out_features,)))
             else:
-                self.bias_mu = nn.Parameter(cast("torch.Tensor", base_layer.bias.data))
+                self.bias_mu = nn.Parameter(base_layer.bias.data)
             self.bias_rho = nn.Parameter(
                 torch.full((self.out_features,), rho),
             )
@@ -97,7 +97,7 @@ class BayesLinear(nn.Module):
             else:
                 self.register_buffer(
                     "bias_prior_mu",
-                    cast("torch.Tensor", base_layer.bias.data),
+                    base_layer.bias.data,
                 )
             self.register_buffer(
                 "bias_prior_sigma",
@@ -134,7 +134,6 @@ class BayesLinear(nn.Module):
         """
         init.kaiming_uniform_(self.weight_mu, a=math.sqrt(5))
         if self.bias is not False:
-            fan_in: torch.Tensor
             fan_in, _ = init._calculate_fan_in_and_fan_out(  # noqa: SLF001
                 self.weight_mu,
             )
@@ -224,7 +223,7 @@ class BayesConv2d(nn.Module):
                 torch.empty((self.out_channels, self.in_channels // self.groups, *self.kernel_size)),
             )
         else:
-            self.weight_mu = nn.Parameter(cast("torch.Tensor", base_layer.weight.data))
+            self.weight_mu = nn.Parameter(base_layer.weight.data)
         self.weight_rho = nn.Parameter(
             torch.full((self.out_channels, self.in_channels // self.groups, *self.kernel_size), rho),
         )
@@ -241,7 +240,7 @@ class BayesConv2d(nn.Module):
         else:
             self.register_buffer(
                 "weight_prior_mu",
-                cast("torch.Tensor", base_layer.weight.data),
+                base_layer.weight.data,
             )
 
         self.register_buffer(
@@ -254,7 +253,7 @@ class BayesConv2d(nn.Module):
             if not use_base_weights:
                 self.bias_mu = nn.Parameter(torch.empty((self.out_channels,)))
             else:
-                self.bias_mu = nn.Parameter(cast("torch.Tensor", base_layer.bias.data))
+                self.bias_mu = nn.Parameter(base_layer.bias.data if base_layer.bias is not None else torch.empty((self.out_channels,)))
             self.bias_rho = nn.Parameter(torch.full((self.out_channels,), rho))
 
             # prior bias
@@ -266,7 +265,7 @@ class BayesConv2d(nn.Module):
             else:
                 self.register_buffer(
                     "bias_prior_mu",
-                    cast("torch.Tensor", base_layer.bias.data),
+                    base_layer.bias.data if base_layer.bias is not None else torch.full((self.out_channels,), prior_mean),
                 )
             self.register_buffer(
                 "bias_prior_sigma",
@@ -341,7 +340,7 @@ class BayesConv2d(nn.Module):
                 _kl_divergence_gaussian(
                     self.bias_mu,
                     torch.log1p(torch.exp(self.bias_rho)) ** 2,
-                    cast("torch.Tensor", self.bias_prior_mu),
+                    cast("torch.Tensor", self.bias_prior_mu), 
                     cast("torch.Tensor", self.bias_prior_sigma) ** 2,
                 ),
             )
@@ -451,7 +450,7 @@ class NormalInverseGammaLinear(nn.Module):
 
     """
 
-    def __init__(self, in_features: int, out_features: int, device: torch.device = None, *, bias: bool = True) -> None:
+    def __init__(self, in_features: int, out_features: int, device: torch.device | None = None, *, bias: bool = True) -> None:
         """Initialize an instance of the NormalInverseGammaLinear layer.
 
         Args:

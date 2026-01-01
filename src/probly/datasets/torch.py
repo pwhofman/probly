@@ -169,7 +169,7 @@ class DCICDataset(torch.utils.data.Dataset):
         """
         return len(self.data)
 
-    def __getitem__(self, index: int) -> tuple[torch.Tensor, torch.Tensor]:
+    def __getitem__(self, index: int) -> tuple[Any, torch.Tensor]:
         """Returned indexed item in the dataset.
 
         Args:
