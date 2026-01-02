@@ -270,11 +270,11 @@ class TestAPSScoreTorch:
         # with randomization enabled, scores should be different
         assert not bool(np.array_equal(scores_no_rand, scores_with_rand))
 
-        # both should be in valid range
+        # both should be in valid range (allow tolerance for float32 precision)
         assert bool(np.all(scores_no_rand >= 0))
-        assert bool(np.all(scores_no_rand <= 1))
+        assert bool(np.all(scores_no_rand <= 1 + 1e-6))
         assert bool(np.all(scores_with_rand >= 0))
-        assert bool(np.all(scores_with_rand <= 1))
+        assert bool(np.all(scores_with_rand <= 1 + 1e-6))
 
     def test_torch_model_forward_pass_shapes(self, simple_model: nn.Module) -> None:
         """Test that PyTorch model forward pass returns correct shapes."""

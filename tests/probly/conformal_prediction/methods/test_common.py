@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Sequence
-from typing import Any
-
 import pytest
 
 pytest.importorskip("flax")
 pytest.importorskip("jax")
+
+from collections.abc import Callable, Sequence
+from typing import Any
 
 import numpy as np
 import numpy.typing as npt
