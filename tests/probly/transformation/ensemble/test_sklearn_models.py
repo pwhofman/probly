@@ -64,7 +64,7 @@ class TestModelGeneration:
             ensemble_generator(dummy_predictor)
 
     def test_list_ensemble_independence(self) -> None:
-        """Stellt sicher, dass Modelle in der Liste unabhängig sind."""
+        """Assures that models in list are independent."""
         model = LogisticRegression(random_state=42)
         ensemble_list = ensemble(model, num_members=3, reset_params=False)
 
