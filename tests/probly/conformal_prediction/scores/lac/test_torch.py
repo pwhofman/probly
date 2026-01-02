@@ -151,26 +151,49 @@ def test_lacscore_in_split_predictor() -> None:
     assert not np.any(prediction_sets[:, 2])  # None should include class 2
 
 
-def test_lacscore_with_accretive_completion() -> None:
-    """Test LACScore with accretive completion."""
-    # Create a model that gives very low probabilities
-    # This might cause empty prediction sets without accretive completion
-    model = MockTorchModel(true_prob=0.1)  # Very low probability
-
-    # Test WITHOUT accretive completion
+def test_lacscore_accretive_completion_comparison() -> None:
+    """Test that accretive completion prevents empty prediction sets."""
+    # create a model that gives very low probabilities for all classes
+    # this can cause empty prediction sets without accretive completion
+    model = MockTorchModel(true_prob=0.1)  # very low true class probability
     score = LACScore(model=model)
-    _predictor_no_accretive = SplitConformalPredictor(
+
+    rng = np.random.default_rng(42)
+    x_cal = rng.random((50, 5), dtype=np.float32)
+    y_cal = rng.integers(0, 3, size=50)
+
+    # Test without accretive completion
+    predictor_no_accretive = SplitConformalPredictor(
         model=model,
         score=score,
         use_accretive=False,
     )
+    predictor_no_accretive.calibrate(x_cal, y_cal, alpha=0.1)
+    x_test = rng.random((20, 5), dtype=np.float32)
+    sets_no_accretive = predictor_no_accretive.predict(x_test, alpha=0.1)
 
-    # Test WITH accretive completion
-    _predictor_with_accretive = SplitConformalPredictor(
+    # Test with accretive completion
+    predictor_with_accretive = SplitConformalPredictor(
         model=model,
         score=score,
         use_accretive=True,
     )
+    predictor_with_accretive.calibrate(x_cal, y_cal, alpha=0.1)
+    sets_with_accretive = predictor_with_accretive.predict(x_test, alpha=0.1)
+
+    # without accretive: might have empty sets
+    set_sizes_no_accretive = np.sum(sets_no_accretive, axis=1)
+    has_empty_sets = np.any(set_sizes_no_accretive == 0)
+
+    # with accretive: all sets should be non-empty
+    set_sizes_with_accretive = np.sum(sets_with_accretive, axis=1)
+    assert np.all(set_sizes_with_accretive >= 1), "accretive completion should prevent empty sets"
+
+    # if there were empty sets without accretive, verify accretive fixed them
+    if has_empty_sets:
+        assert set_sizes_with_accretive.min() > set_sizes_no_accretive.min(), (
+            "accretive should add elements to empty sets"
+        )
 
 
 def test_lacscore_edge_case_single_sample() -> None:

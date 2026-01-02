@@ -18,6 +18,7 @@ pytest.importorskip("jax")
 from flax import nnx
 from flax.core import FrozenDict
 import jax
+from jax import Array
 import jax.numpy as jnp
 import numpy as np
 import optax
@@ -31,7 +32,7 @@ class SimpleFlaxModel(nnx.Module):
         self.dense1 = nnx.Linear(4, 16, rngs=nnx.Rngs(0))
         self.dense2 = nnx.Linear(16, 3, rngs=nnx.Rngs(0))
 
-    def __call__(self, x: jax.Array) -> jax.Array:
+    def __call__(self, x: Array) -> Array:
         """Forward pass."""
         x = self.dense1(x)
         x = jax.nn.relu(x)
@@ -47,7 +48,7 @@ class FlaxPredictor:
         self.model = model
         self.params = params
 
-    def __call__(self, x: Any) -> jax.Array:  # noqa: ANN401
+    def __call__(self, x: Any) -> Array:  # noqa: ANN401
         """Call the model and return probabilities."""
         if isinstance(x, np.ndarray):
             x_array = jnp.array(x, dtype=jnp.float32)
@@ -56,9 +57,9 @@ class FlaxPredictor:
 
         output = self.model(x_array)  # type: ignore[operator]
         logits = output[0] if isinstance(output, tuple) else output
-        return cast(jax.Array, logits)
+        return cast(Array, logits)
 
-    def predict(self, x: Any) -> jax.Array:  # noqa: ANN401
+    def predict(self, x: Any) -> Array:  # noqa: ANN401
         """Alias for __call__."""
         return self.__call__(x)
 
@@ -200,7 +201,7 @@ def test_lacscore_with_trained_flax_model() -> None:
     y_train_jax = jnp.array(y_train, dtype=jnp.int32)
 
     @jax.jit
-    def loss_fn(params: nnx.State, state: nnx.State, x: jax.Array, y: jax.Array) -> jax.Array:
+    def loss_fn(params: nnx.State, state: nnx.State, x: Array, y: Array) -> Array:
         """Compute cross-entropy loss."""
         model_test: SimpleFlaxModel = nnx.merge(params, state)  # type: ignore[arg-type]
         output = model_test(x)
@@ -218,9 +219,9 @@ def test_lacscore_with_trained_flax_model() -> None:
         params: nnx.State,
         state: nnx.State,
         opt_state: Any,  # noqa: ANN401
-        x: jax.Array,
-        y: jax.Array,
-    ) -> tuple[nnx.State, Any, jax.Array]:
+        x: Array,
+        y: Array,
+    ) -> tuple[nnx.State, Any, Array]:
         """Single training step with gradient updates."""
         loss, grads = jax.value_and_grad(loss_fn)(params, state, x, y)
         updates, new_opt_state = tx.update(grads, opt_state)
@@ -320,7 +321,7 @@ def test_lacscore_iris_coverage_guarantee() -> None:
     y_train_jax = jnp.array(y_train, dtype=jnp.int32)
 
     @jax.jit
-    def loss_fn(params: nnx.State, state: nnx.State, x: jax.Array, y: jax.Array) -> jax.Array:
+    def loss_fn(params: nnx.State, state: nnx.State, x: Array, y: Array) -> Array:
         """Compute cross-entropy loss."""
         model_test: SimpleFlaxModel = nnx.merge(params, state)  # type: ignore[arg-type]
         output = model_test(x)
@@ -338,9 +339,9 @@ def test_lacscore_iris_coverage_guarantee() -> None:
         params: nnx.State,
         state: nnx.State,
         opt_state: Any,  # noqa: ANN401
-        x: jax.Array,
-        y: jax.Array,
-    ) -> tuple[nnx.State, Any, jax.Array]:
+        x: Array,
+        y: Array,
+    ) -> tuple[nnx.State, Any, Array]:
         """Single training step with gradient updates."""
         loss, grads = jax.value_and_grad(loss_fn)(params, state, x, y)
         updates, new_opt_state = tx.update(grads, opt_state)
@@ -434,7 +435,7 @@ def test_lacscore_iris_multiple_seeds() -> None:
         y_train_jax = jnp.array(y_train, dtype=jnp.int32)
 
         @jax.jit
-        def loss_fn(params: nnx.State, state: nnx.State, x: jax.Array, y: jax.Array) -> jax.Array:
+        def loss_fn(params: nnx.State, state: nnx.State, x: Array, y: Array) -> Array:
             """Compute cross-entropy loss."""
             model_test: SimpleFlaxModel = nnx.merge(params, state)  # type: ignore[arg-type]
             output = model_test(x)
@@ -452,9 +453,9 @@ def test_lacscore_iris_multiple_seeds() -> None:
             params: nnx.State,
             state: nnx.State,
             opt_state: Any,  # noqa: ANN401
-            x: jax.Array,
-            y: jax.Array,
-        ) -> tuple[nnx.State, Any, jax.Array]:
+            x: Array,
+            y: Array,
+        ) -> tuple[nnx.State, Any, Array]:
             """Single training step with gradient updates."""
             loss, grads = jax.value_and_grad(loss_fn)(params, state, x, y)
             updates, new_opt_state = tx_local.update(grads, opt_state)

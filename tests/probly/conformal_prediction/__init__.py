@@ -10,7 +10,6 @@ from probly.conformal_prediction.methods import SplitConformalPredictor, predict
 import probly.conformal_prediction.methods.common
 import probly.conformal_prediction.methods.split
 from probly.conformal_prediction.scores import Score
-import probly.conformal_prediction.scores.aps.common
 from probly.conformal_prediction.scores.aps.common import APSScore, aps_score_func
 import probly.conformal_prediction.scores.common
 from probly.conformal_prediction.scores.lac import LACScore, accretive_completion, lac_score_func
@@ -67,6 +66,9 @@ def test_module_structure() -> None:
 
 def test_type_checking_imports() -> None:
     """Test that TYPE_CHECKING imports don't break runtime."""
-    # import everything to make sure no runtime errors occur
-    # if we get here without errors, TYPE_CHECKING works correctly
-    assert True
+    # verify that the module imported successfully with TYPE_CHECKING imports
+    assert cp.__name__ == "probly.conformal_prediction"
+    assert hasattr(cp, "ConformalPredictor")
+    assert hasattr(cp, "methods")
+    assert hasattr(cp, "scores")
+    assert hasattr(cp, "utils")

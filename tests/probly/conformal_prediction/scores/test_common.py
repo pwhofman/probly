@@ -92,8 +92,8 @@ def test_score_protocol_type_hints() -> None:
 
     assert isinstance(cal_result, np.ndarray)
     assert isinstance(pred_result, np.ndarray)
-    assert cal_result.dtype == np.floating
-    assert pred_result.dtype == np.floating
+    assert np.issubdtype(cal_result.dtype, np.floating)
+    assert np.issubdtype(pred_result.dtype, np.floating)
 
 
 def test_score_protocol_output_shapes() -> None:

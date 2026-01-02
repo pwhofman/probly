@@ -19,6 +19,7 @@ pytest.importorskip("jax")
 
 from flax import nnx
 from flax.core import FrozenDict
+import jax
 from jax import Array
 import jax.numpy as jnp
 
@@ -34,7 +35,7 @@ class SimpleFlaxModel(nnx.Module):
     def __call__(self, x: Array) -> Array:
         """Forward pass."""
         x = self.dense1(x)
-        x = nnx.relu(x)
+        x = jax.nn.relu(x)
         x = self.dense2(x)  # 3 output classes
         return x
 
@@ -56,7 +57,7 @@ class FlaxPredictor:
 
         output = self.model(x_array)  # type: ignore[operator]
         logits = output[0] if isinstance(output, tuple) else output
-        return nnx.softmax(logits, axis=-1)
+        return jax.nn.softmax(logits, axis=-1)
 
     def predict(self, x: Any) -> Array:  # noqa: ANN401
         """Alias for __call__."""
@@ -301,7 +302,7 @@ class TestAPSScoreFlax:
             def __call__(self, x: Array) -> Array:
                 """Forward pass."""
                 x = self.dense1(x)
-                x = nnx.relu(x)
+                x = jax.nn.relu(x)
                 x = self.dense2(x)
                 return x
 
@@ -376,7 +377,7 @@ class TestAPSScoreFlax:
                 def __call__(self, x: Array) -> Array:
                     """Forward pass."""
                     x = self.dense1(x)
-                    x = nnx.relu(x)
+                    x = jax.nn.relu(x)
                     x = self.dense2(x)
                     return x
 
