@@ -5,19 +5,25 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Protocol
 
+import torch
+import torch.nn.functional as F
+
+from lazy_dispatch import lazydispatch
+
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
 
     import numpy as np
     import numpy.typing as npt
 
-from flax import nnx
-import jax
-import jax.numpy as jnp
-import torch
-import torch.nn.functional as F
+try:
+    from flax import nnx
+    import jax
+    import jax.numpy as jnp
 
-from lazy_dispatch import lazydispatch
+    HAS_JAX = True
+except ImportError:
+    HAS_JAX = False
 
 
 @lazydispatch
