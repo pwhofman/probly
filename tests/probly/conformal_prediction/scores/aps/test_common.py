@@ -17,7 +17,7 @@ class MockModel:
     def __init__(self, probs: npt.NDArray[np.floating] | None = None) -> None:
         """Initialize mock model with optional probabilities."""
         # default probabilities if none provided
-        self.probs: npt.NDArray[np.floating] = probs or np.array([[0.33, 0.33, 0.33]])
+        self.probs: npt.NDArray[np.floating] = probs if probs is not None else np.array([[0.33, 0.33, 0.33]])
 
     def predict(self, x: Sequence[Any]) -> npt.NDArray[np.floating]:
         """Return probabilities for testing."""
@@ -103,7 +103,7 @@ def test_apsscore_provided_probs() -> None:
     x_test = np.array([[1, 2], [3, 4]])
     provided_probs = np.array([[0.8, 0.1, 0.1], [0.2, 0.6, 0.2]])
 
-    # test with provided probabilities
+    # Test with provided probabilities
     scores_with_probs = score.predict_nonconformity(x_test, probs=provided_probs)
 
     # without provided probs, uses model's probs
@@ -113,3 +113,148 @@ def test_apsscore_provided_probs() -> None:
     assert not np.allclose(scores_with_probs, scores_without_probs)
     assert scores_with_probs.shape == (2, 3)
     assert scores_without_probs.shape == (2, 3)
+
+
+def test_aps_score_func_edge_case_single_sample() -> None:
+    """Test aps_score_func with single sample."""
+    probs = np.array([[0.5, 0.3, 0.2]])
+    scores: npt.NDArray[np.floating] = aps_score_func(probs)
+
+    assert scores.shape == (1, 3), f"Expected shape (1, 3), got {scores.shape}"
+    assert np.all(scores >= 0)
+    assert np.all(scores <= 1)
+
+
+def test_aps_score_func_edge_case_large_batch() -> None:
+    """Test aps_score_func with large batch."""
+    rng = np.random.default_rng(42)
+    probs = rng.dirichlet([1, 1, 1], size=1000).astype(np.float32)
+    scores: npt.NDArray[np.floating] = aps_score_func(probs)
+
+    assert scores.shape == (1000, 3), f"Expected shape (1000, 3), got {scores.shape}"
+    assert bool(np.all(scores >= 0))
+    # Allow small tolerance for float32 precision errors in cumsum
+    assert bool(np.all(scores <= 1.0 + 1e-6))
+
+
+def test_aps_score_func_output_types() -> None:
+    """Test aps_score_func returns correct types."""
+    probs = np.array([[0.5, 0.3, 0.2]])
+    scores: npt.NDArray[np.floating] = aps_score_func(probs)
+
+    assert isinstance(scores, np.ndarray), f"Expected np.ndarray, got {type(scores)}"
+    assert scores.dtype in [np.float32, np.float64], f"Expected float dtype, got {scores.dtype}"
+
+
+def test_aps_score_func_boundary_conditions() -> None:
+    """Test aps_score_func with boundary probability distributions."""
+    # Test with uniform probabilities
+    probs_uniform = np.array([[0.33, 0.33, 0.34]])
+    scores_uniform: npt.NDArray[np.floating] = aps_score_func(probs_uniform)
+    assert scores_uniform.shape == (1, 3)
+    assert np.all(scores_uniform >= 0)
+    assert np.all(scores_uniform <= 1)
+
+    # Test with concentrated probabilities (one class has high prob)
+    probs_concentrated = np.array([[0.9, 0.05, 0.05]])
+    scores_concentrated: npt.NDArray[np.floating] = aps_score_func(probs_concentrated)
+    assert scores_concentrated.shape == (1, 3)
+    assert np.all(scores_concentrated >= 0)
+    assert np.all(scores_concentrated <= 1)
+
+    # Test with one class having probability 1
+    probs_extreme = np.array([[1.0, 0.0, 0.0]])
+    scores_extreme: npt.NDArray[np.floating] = aps_score_func(probs_extreme)
+    assert scores_extreme.shape == (1, 3)
+    assert np.all(scores_extreme >= 0)
+    assert np.all(scores_extreme <= 1)
+
+
+def test_apsscore_randomization_reproducibility() -> None:
+    """Test APSScore randomization with same seed produces same results."""
+    model = MockModel()
+    score1 = APSScore(model, randomize=True, random_state=42)
+    score2 = APSScore(model, randomize=True, random_state=42)
+
+    x_cal = np.array([[1, 2], [3, 4], [5, 6]])
+    y_cal = np.array([0, 1, 2])
+
+    scores1 = score1.calibration_nonconformity(x_cal, y_cal)
+    scores2 = score2.calibration_nonconformity(x_cal, y_cal)
+
+    assert np.allclose(scores1, scores2), "same seed should produce same results"
+
+    # different seed should produce different results
+    score3 = APSScore(model, randomize=True, random_state=123)
+    scores3 = score3.calibration_nonconformity(x_cal, y_cal)
+
+    assert not np.allclose(scores1, scores3), "different seeds should produce different results"
+
+
+def test_apsscore_with_and_without_randomization_comparison() -> None:
+    """Compare APSScore with and without randomization."""
+    model = MockModel()
+    score_no_rand = APSScore(model, randomize=False, random_state=42)
+    score_with_rand = APSScore(model, randomize=True, random_state=42)
+
+    x_cal = np.array([[1, 2], [3, 4], [5, 6]])
+    y_cal = np.array([0, 1, 2])
+
+    scores_no_rand = score_no_rand.calibration_nonconformity(x_cal, y_cal)
+    scores_with_rand = score_with_rand.calibration_nonconformity(x_cal, y_cal)
+
+    # with randomization enabled, scores should generally be different
+    assert not np.array_equal(scores_no_rand, scores_with_rand)
+
+    # both should be in valid range
+    assert np.all(scores_no_rand >= 0)
+    assert np.all(scores_no_rand <= 1)
+    assert np.all(scores_with_rand >= 0)
+    assert np.all(scores_with_rand <= 1)
+
+
+def test_apsscore_prediction_output_types() -> None:
+    """Test APSScore prediction output types and shapes."""
+    model = MockModel()
+    score = APSScore(model, randomize=False, random_state=42)
+
+    x_test = np.array([[1, 2], [3, 4]])
+    prediction_scores = score.predict_nonconformity(x_test)
+
+    assert isinstance(prediction_scores, np.ndarray), f"Expected np.ndarray, got {type(prediction_scores)}"
+    assert prediction_scores.dtype in [np.float32, np.float64], f"Expected float dtype, got {prediction_scores.dtype}"
+    assert prediction_scores.shape == (2, 3), f"Expected shape (2, 3), got {prediction_scores.shape}"
+
+
+def test_aps_score_func_multiple_classes() -> None:
+    """Test aps_score_func with different numbers of classes."""
+    # Test with 2 classes
+    probs_2 = np.array([[0.6, 0.4]])
+    scores_2: npt.NDArray[np.floating] = aps_score_func(probs_2)
+    assert scores_2.shape == (1, 2)
+
+    # Test with 5 classes
+    probs_5 = np.array([[0.2, 0.2, 0.2, 0.2, 0.2]])
+    scores_5: npt.NDArray[np.floating] = aps_score_func(probs_5)
+    assert scores_5.shape == (1, 5)
+
+    # Test with 10 classes
+    probs_10 = np.ones((1, 10)) / 10
+    scores_10: npt.NDArray[np.floating] = aps_score_func(probs_10)
+    assert scores_10.shape == (1, 10)
+
+
+def test_apsscore_with_different_label_values() -> None:
+    """Test APSScore with different label values."""
+    model = MockModel(probs=np.array([[0.33, 0.33, 0.34], [0.25, 0.5, 0.25]]))
+    score = APSScore(model, randomize=False, random_state=42)
+
+    x_cal = np.array([[1, 2], [3, 4]])
+    # different label values
+    y_cal = np.array([0, 2])
+
+    calibration_scores = score.calibration_nonconformity(x_cal, y_cal)
+
+    assert calibration_scores.shape == (2,)
+    assert np.all(calibration_scores >= 0)
+    assert np.all(calibration_scores <= 1)

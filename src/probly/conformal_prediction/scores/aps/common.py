@@ -10,12 +10,6 @@ if TYPE_CHECKING:
     from lazy_dispatch.isinstance import LazyType
 
 import numpy as np
-
-try:
-    import torch
-except ImportError:
-    torch = None  # type: ignore[assignment]
-
 import numpy.typing as npt
 
 from lazy_dispatch import lazydispatch

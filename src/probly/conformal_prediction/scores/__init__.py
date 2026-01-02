@@ -1,6 +1,8 @@
 """Conformal Prediction scores module imports."""
 
+from .aps.common import APSScore, aps_score_func
 from .common import Score
+from .lac.common import LACScore, accretive_completion, lac_score_func
 
 __all__ = [
     "APSScore",
