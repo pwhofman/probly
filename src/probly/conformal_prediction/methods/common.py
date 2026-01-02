@@ -11,7 +11,6 @@ if TYPE_CHECKING:
     import numpy as np
     import numpy.typing as npt
 
-
 from flax import nnx
 import jax
 import jax.numpy as jnp

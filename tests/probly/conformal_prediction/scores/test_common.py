@@ -67,22 +67,22 @@ def test_score_protocol_with_probs() -> None:
     x_test = [[1, 2]]
     probs = np.array([[0.8, 0.1, 0.1]])
 
-    # Should work with or without probs
+    # should work with or without probs
     scores_with_probs = score.predict_nonconformity(x_test, probs=probs)
     scores_without_probs = score.predict_nonconformity(x_test)
 
     assert scores_with_probs.shape == (1, 3)
     assert scores_without_probs.shape == (1, 3)
-    # Our mock ignores probs, so both should be same
+    # our mock ignores probs, so both should be same
     assert np.array_equal(scores_with_probs, scores_without_probs)
 
 
 def test_score_protocol_type_hints() -> None:
     """Test that Score protocol has correct type hints."""
-    # This is more of a type checking test
+    # this is more of a type checking test
     score: Score = MockScore()
 
-    # These should all type-check correctly
+    # these should all type-check correctly
     x_cal: Sequence[Any] = [[1], [2]]
     y_cal: Sequence[Any] = [0, 1]
     x_test: Sequence[Any] = [[3], [4]]
@@ -94,6 +94,19 @@ def test_score_protocol_type_hints() -> None:
     assert isinstance(pred_result, np.ndarray)
     assert cal_result.dtype == np.floating
     assert pred_result.dtype == np.floating
+
+
+def test_score_protocol_output_shapes() -> None:
+    """Test Score protocol expected output shapes."""
+    score = MockScore()
+
+    # Calibration should return 1D array
+    cal_scores = score.calibration_nonconformity([[1, 2]] * 5, [0] * 5)
+    assert cal_scores.shape == (5,)
+
+    # Prediction should return 2D array
+    pred_scores = score.predict_nonconformity([[1, 2]] * 10)
+    assert pred_scores.shape == (10, 3)
 
 
 def test_score_inheritance() -> None:
@@ -121,7 +134,7 @@ def test_score_inheritance() -> None:
 
     score = CustomScore()
 
-    # Should implement all required methods
+    # should implement all required methods
     cal_scores = score.calibration_nonconformity([], [])
     assert cal_scores.shape == (3,)
 
