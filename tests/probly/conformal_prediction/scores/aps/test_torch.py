@@ -120,7 +120,7 @@ class TestAPSScoreTorch:
 
         assert predictor.is_calibrated
         assert predictor.threshold == threshold
-        assert 0 <= threshold <= 1
+        assert 0 <= threshold <= 1 + 1e-6  # Allow tolerance for float32 precision
 
         # predict
         x_test = rng.random((10, 5), dtype=np.float32)
@@ -214,7 +214,7 @@ class TestAPSScoreTorch:
         threshold = predictor.calibrate(x_calib_scaled, y_calib, alpha=0.1)
 
         assert predictor.is_calibrated
-        assert 0 <= threshold <= 1
+        assert 0 <= threshold <= 1 + 1e-6  # Allow tolerance for float32 precision
 
         # predict
         prediction_sets = predictor.predict(x_test_scaled, alpha=0.1)
@@ -373,7 +373,7 @@ class TestAPSScoreTorch:
             threshold = predictor.calibrate(x_calib_scaled, y_calib, alpha=0.1)
 
             assert predictor.is_calibrated
-            assert 0 <= threshold <= 1
+            assert 0 <= threshold <= 1 + 1e-6  # Allow tolerance for float32 precision
 
             # predict
             prediction_sets = predictor.predict(x_test_scaled, alpha=0.1)

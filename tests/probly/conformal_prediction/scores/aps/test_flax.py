@@ -178,7 +178,7 @@ class TestAPSScoreFlax:
         threshold = cp_predictor.calibrate(x_cal, y_cal, alpha=0.1)
 
         assert cp_predictor.is_calibrated
-        assert 0 <= threshold <= 1
+        assert 0 <= threshold <= 1 + 1e-6  # Allow tolerance for float32 precision
 
         # predict
         x_test = rng.random((10, 10), dtype=np.float32)
@@ -226,11 +226,11 @@ class TestAPSScoreFlax:
         # with randomization enabled, scores should be different
         assert not np.array_equal(scores_no_rand, scores_with_rand)
 
-        # both should be in valid range
-        assert np.all(scores_no_rand >= 0)
-        assert np.all(scores_no_rand <= 1)
-        assert np.all(scores_with_rand >= 0)
-        assert np.all(scores_with_rand <= 1)
+        # both should be in valid range (allow tolerance for float32 precision)
+        assert bool(np.all(scores_no_rand <= 1 + 1e-6))
+        assert bool(np.all(scores_no_rand >= 0))
+        assert bool(np.all(scores_with_rand <= 1 + 1e-6))
+        assert bool(np.all(scores_with_rand >= 0))
 
     def test_with_split_conformal(self, flax_predictor: FlaxPredictor) -> None:
         """Test integration with split conformal."""
@@ -316,7 +316,7 @@ class TestAPSScoreFlax:
         threshold = predictor.calibrate(x_calib_scaled, y_calib, alpha=0.1)
 
         assert predictor.is_calibrated
-        assert 0 <= threshold <= 1
+        assert 0 <= threshold <= 1 + 1e-6  # Allow tolerance for float32 precision
 
         # predict
         prediction_sets = predictor.predict(x_test_scaled, alpha=0.1)
@@ -390,7 +390,7 @@ class TestAPSScoreFlax:
             threshold = predictor.calibrate(x_calib_scaled, y_calib, alpha=0.1)
 
             assert predictor.is_calibrated
-            assert 0 <= threshold <= 1
+            assert 0 <= threshold <= 1 + 1e-6  # Allow tolerance for float32 precision
 
             # predict
             prediction_sets = predictor.predict(x_test_scaled, alpha=0.1)

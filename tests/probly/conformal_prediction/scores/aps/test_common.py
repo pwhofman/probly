@@ -122,7 +122,7 @@ def test_aps_score_func_edge_case_single_sample() -> None:
 
     assert scores.shape == (1, 3), f"Expected shape (1, 3), got {scores.shape}"
     assert np.all(scores >= 0)
-    assert np.all(scores <= 1)
+    assert bool(np.all(scores <= 1 + 1e-6))
 
 
 def test_aps_score_func_edge_case_large_batch() -> None:
@@ -153,21 +153,21 @@ def test_aps_score_func_boundary_conditions() -> None:
     scores_uniform: npt.NDArray[np.floating] = aps_score_func(probs_uniform)
     assert scores_uniform.shape == (1, 3)
     assert np.all(scores_uniform >= 0)
-    assert np.all(scores_uniform <= 1)
+    assert bool(np.all(scores_uniform <= 1 + 1e-6))
 
     # Test with concentrated probabilities (one class has high prob)
     probs_concentrated = np.array([[0.9, 0.05, 0.05]])
     scores_concentrated: npt.NDArray[np.floating] = aps_score_func(probs_concentrated)
     assert scores_concentrated.shape == (1, 3)
     assert np.all(scores_concentrated >= 0)
-    assert np.all(scores_concentrated <= 1)
+    assert bool(np.all(scores_concentrated <= 1 + 1e-6))
 
     # Test with one class having probability 1
     probs_extreme = np.array([[1.0, 0.0, 0.0]])
     scores_extreme: npt.NDArray[np.floating] = aps_score_func(probs_extreme)
     assert scores_extreme.shape == (1, 3)
     assert np.all(scores_extreme >= 0)
-    assert np.all(scores_extreme <= 1)
+    assert bool(np.all(scores_extreme <= 1 + 1e-6))
 
 
 def test_apsscore_randomization_reproducibility() -> None:
@@ -206,11 +206,11 @@ def test_apsscore_with_and_without_randomization_comparison() -> None:
     # with randomization enabled, scores should generally be different
     assert not np.array_equal(scores_no_rand, scores_with_rand)
 
-    # both should be in valid range
+    # both should be in valid range (allow tolerance for float32 precision)
     assert np.all(scores_no_rand >= 0)
-    assert np.all(scores_no_rand <= 1)
+    assert bool(np.all(scores_no_rand <= 1 + 1e-6))
     assert np.all(scores_with_rand >= 0)
-    assert np.all(scores_with_rand <= 1)
+    assert bool(np.all(scores_with_rand <= 1 + 1e-6))
 
 
 def test_apsscore_prediction_output_types() -> None:

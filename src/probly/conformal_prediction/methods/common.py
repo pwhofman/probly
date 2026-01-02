@@ -16,15 +16,6 @@ if TYPE_CHECKING:
     import numpy as np
     import numpy.typing as npt
 
-try:
-    from flax import nnx
-    import jax
-    import jax.numpy as jnp
-
-    HAS_JAX = True
-except ImportError:
-    HAS_JAX = False
-
 
 @lazydispatch
 def predict_probs[T](model: Predictor, x: T) -> T:
@@ -78,30 +69,41 @@ def predict_probs_torch(model: torch.nn.Module, x: Sequence[Any]) -> torch.Tenso
     return probs
 
 
-@predict_probs.register(nnx.Module)
-def predict_probs_flax(model: nnx.Module, x: Any) -> jnp.ndarray:  # noqa: ANN401
-    """Predict probabilities for Flax NNX models."""
-    if not hasattr(x, "shape"):
-        x = jnp.asarray(x)
+def _register_flax_models() -> None:
+    """Register Flax NNX models for predict_probs (imports only if flax available)."""
+    try:
+        from flax import nnx  # noqa: PLC0415
+        import jax  # noqa: PLC0415
+        import jax.numpy as jnp  # noqa: PLC0415
 
-    if callable(model):
-        logits = model(x)
-    elif hasattr(model, "apply"):
-        logits = model.apply(x)
-    else:
-        msg = "Model must be callable or expose apply()."
-        raise TypeError(msg)
+        @predict_probs.register(nnx.Module)
+        def predict_probs_flax(model: nnx.Module, x: Any) -> jnp.ndarray:  # noqa: ANN401
+            """Predict probabilities for Flax NNX models."""
+            if not hasattr(x, "shape"):
+                x = jnp.asarray(x)
 
-    # handle tuple outputs (some models return tuples)
-    if isinstance(logits, tuple):
-        logits = logits[0]
+            if callable(model):
+                logits = model(x)
+            elif hasattr(model, "apply"):
+                logits = model.apply(x)
+            else:
+                msg = "Model must be callable or expose apply()."
+                raise TypeError(msg)
 
-    # convert to probabilities
-    probs = (
-        jax.nn.softmax(logits, axis=-1) if logits.ndim > 1 and logits.shape[1] > 1 else jax.nn.sigmoid(logits)
-    )  # for binary classification
+            if isinstance(logits, tuple):
+                logits = logits[0]
 
-    return probs
+            # use softmax for multiclass, sigmoid for binary
+            probs = (
+                jax.nn.softmax(logits, axis=-1) if logits.ndim > 1 and logits.shape[1] > 1 else jax.nn.sigmoid(logits)
+            )
+
+            return probs
+    except ImportError:
+        pass  # flax not available, skip registration
+
+
+_register_flax_models()
 
 
 class Predictor(Protocol):

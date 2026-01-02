@@ -265,7 +265,7 @@ def test_lacscore_with_trained_flax_model() -> None:
     threshold = cp_predictor.calibrate(x_calib.astype(np.float32), y_calib, alpha=0.1)
 
     assert cp_predictor.is_calibrated
-    assert 0 <= threshold <= 1
+    assert 0 <= threshold <= 1 + 1e-6  # Allow tolerance for float32 precision
 
     # predict
     prediction_sets = cp_predictor.predict(x_test.astype(np.float32), alpha=0.1)

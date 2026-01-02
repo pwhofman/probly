@@ -87,7 +87,7 @@ class APSScore:
     def predict_nonconformity(
         self,
         x_test: Sequence[Any],
-        probs: Any = None,  # noqa: ANN401
+        probs: npt.NDArray[np.floating] | None = None,
     ) -> npt.NDArray[np.floating]:
         """Compute scores for all labels."""
         if probs is None:

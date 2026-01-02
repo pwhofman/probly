@@ -19,7 +19,7 @@ from probly.conformal_prediction.methods.common import Predictor, predict_probs
 @lazydispatch
 def lac_score_func[T](probs: T) -> npt.NDArray[np.floating]:
     """LAC Nonconformity-Scores for numpy arrays."""
-    # Simple calculation works for Numpy, Torch and JAX arrays
+    # convert to numpy array
     probs_np = np.asarray(probs, dtype=float)
     lac_scores = 1.0 - probs_np
     return lac_scores  # shape: (n_samples, n_classes)
@@ -76,7 +76,7 @@ class LACScore:
         self,
         x_cal: Sequence[Any],
         y_cal: Sequence[Any],
-        probs: Any = None,  # noqa: ANN401
+        probs: npt.NDArray[np.floating] | None = None,
     ) -> npt.NDArray[np.floating]:
         """Compute true-label calibration scores."""
         # get probabilities from model
@@ -97,7 +97,7 @@ class LACScore:
     def predict_nonconformity(
         self,
         x_test: Sequence[Any],
-        probs: Any = None,  # noqa: ANN401
+        probs: npt.NDArray[np.floating] | None = None,
     ) -> npt.NDArray[np.floating]:
         """Compute LAC scores for all labels on test data."""
         # predict
