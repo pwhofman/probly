@@ -30,5 +30,6 @@ class Score(Protocol):
     def predict_nonconformity(
         self,
         x_test: Sequence[Any],
+        probs: Any = None,  # noqa: ANN401
     ) -> npt.NDArray[np.floating]:
         """Return 2D score matrix of shape (n_instances, n_labels)."""

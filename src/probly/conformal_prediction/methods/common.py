@@ -1,115 +1,150 @@
-"""common utilities for CP."""
+"""Common utilities for CP and LazyDispatch Prediction."""
 
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Protocol
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
 
-import numpy as np
-import numpy.typing as npt
+    import numpy as np
+    import numpy.typing as npt
+
+from flax import nnx
+import jax
+import jax.numpy as jnp
+import torch
+import torch.nn.functional as F
+
+from lazy_dispatch import lazydispatch
 
 
-class PredictiveModel(Protocol):
+@lazydispatch
+def predict_probs[T](model: Predictor, x: T) -> T:
+    """Universal probability prediction function.
+
+    Args:
+        model: The model to use for prediction.
+        x: Input data for which to predict probabilities.
+
+    Returns:
+        ArrayLike: Predicted probabilities.
+    """
+    # fallback for scikit-learn-like models
+    if hasattr(model, "predict_probs"):
+        return model.predict_probs(x)  # type: ignore[no-any-return]
+
+    # fallback for other models (that only have predict)
+    if hasattr(model, "predict"):
+        return model.predict(x)  # type: ignore[no-any-return]
+
+    msg = f"Model type {type(model)} is not supported directly. Please register it via @predict_probs.register"
+    raise TypeError(msg)
+
+
+@predict_probs.register(torch.nn.Module)
+def predict_probs_torch(model: torch.nn.Module, x: Sequence[Any]) -> torch.Tensor:
+    """Handler for PyTorch models: stays on GPU (Tensor)."""
+    # decide device
+
+    try:
+        device = next(model.parameters()).device
+    except StopIteration:
+        device = torch.device("cpu")
+
+    # convert input to tensor on correct device
+    x_tensor = x.to(device) if isinstance(x, torch.Tensor) else torch.as_tensor(x, dtype=torch.float32, device=device)
+
+    # set model to evaluation mode and disable gradient calculation
+    model.eval()
+    with torch.no_grad():
+        logits = model(x_tensor)
+
+        # fix tuple outputs
+        if isinstance(logits, tuple):
+            logits = logits[0]
+
+        # use softmax for multiclass, sigmoid for binary
+        # binary classification or flat output -> sigmoid
+        probs = F.softmax(logits, dim=1) if logits.ndim > 1 and logits.shape[1] > 1 else torch.sigmoid(logits)
+
+    return probs
+
+
+@predict_probs.register(nnx.Module)
+def predict_probs_flax(model: nnx.Module, x: Any) -> jnp.ndarray:  # noqa: ANN401
+    """Predict probabilities for Flax NNX models."""
+    if not hasattr(x, "shape"):
+        x = jnp.asarray(x)
+
+    if callable(model):
+        logits = model(x)
+    elif hasattr(model, "apply"):
+        logits = model.apply(x)
+    else:
+        msg = "Model must be callable or expose apply()."
+        raise TypeError(msg)
+
+    # handle tuple outputs (some models return tuples)
+    if isinstance(logits, tuple):
+        logits = logits[0]
+
+    # convert to probabilities
+    probs = (
+        jax.nn.softmax(logits, axis=-1) if logits.ndim > 1 and logits.shape[1] > 1 else jax.nn.sigmoid(logits)
+    )  # for binary classification
+
+    return probs
+
+
+class Predictor(Protocol):
     """Protocol for models used with ConformalPredictor."""
 
-    def predict(self, x: Sequence[Any]) -> npt.NDArray[np.floating]:
-        """Predict method signature for conformal models."""
+    def __call__(self, x: Sequence[Any]) -> Sequence[Any]:
+        """Callable method signature for conformal models."""
 
 
-class ConformalPredictor:
-    """base class for Conformal Prediction."""
+class ConformalPredictor(ABC):
+    """Base class for Conformal Prediction."""
 
     def __init__(
         self,
-        model: PredictiveModel,
+        model: Predictor,
         nonconformity_func: Callable[..., npt.NDArray[np.floating]] | None = None,
     ) -> None:
-        """Initialze the Conformal Predictor."""
+        """Initialize the Conformal Predictor."""
         self.model = model
         self.conformity_func = nonconformity_func
-        """saves the ML model and nonconformity function"""
+
+        # saves the ML-model and nonconformity function
         self.nonconformity_scores: npt.NDArray[np.floating] | None = None
         self.threshold: float | None = None
         self.is_calibrated: bool = False
 
+    @abstractmethod
+    def predict(self, x_test: Sequence[Any], alpha: float) -> npt.NDArray[np.bool_]:
+        """Generate prediction sets as boolean matrix (n_samples, n_classes) at given significance level.
+
+        Args:
+            x_test (Sequence[Any]): Test input data.
+            alpha (float): Significance level for prediction sets.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def calibrate(self, x_cal: Sequence[Any], y_cal: Sequence[Any], alpha: float) -> float:
+        """Virtual method to calibrate the calibration set.
+
+        Args:
+            x_cal (Sequence[Any]): Calibration input data.
+            y_cal (Sequence[Any]): Calibration labels.
+            alpha (float): The significance level.
+        """
+        raise NotImplementedError
+
     def __str__(self) -> str:
-        """Str representation of the class."""
+        """String representation of the class."""
         model_name = self.model.__class__.__name__
         status = "calibrated" if self.is_calibrated else "not calibrated"
         return f"{self.__class__.__name__}(model={model_name}, status={status})"
-
-
-class SplitConformal:
-    """Utility to split data into training and calibration sets."""
-
-    def __init__(
-        self,
-        calibration_ratio: float = 0.3,
-        random_state: int | None = None,
-    ) -> None:
-        """Initialize the SplitConformal helper.
-
-        Args:
-            calibration_ratio: Fraction of samples used for calibration.
-            random_state: Seed for reproducible random splits.
-        """
-        self.calibration_ratio = calibration_ratio
-        self.random_state = random_state
-        self.rng = np.random.default_rng(random_state)
-
-        self.train_indices: npt.NDArray[np.int_] | None = None
-        self.cal_indices: npt.NDArray[np.int_] | None = None
-
-    def split(
-        self,
-        x: npt.NDArray[Any],
-        y: npt.NDArray[Any],
-        calibration_ratio: float | None = None,
-    ) -> tuple[npt.NDArray[Any], npt.NDArray[Any], npt.NDArray[Any], npt.NDArray[Any]]:
-        """Split data into training and calibration sets."""
-        ratio = calibration_ratio if calibration_ratio is not None else self.calibration_ratio
-
-        if not 0 < ratio < 1:
-            msg = f"calibration_ratio must be in (0, 1), got {ratio}"
-            raise ValueError(msg)
-
-        if len(x) < 2:
-            msg = f"Need at least 2 samples, got {len(x)}"
-            raise ValueError(msg)
-
-        if len(x) != len(y):
-            msg = f"x and y must have the same length. Got x: {len(x)}, y: {len(y)}"
-            raise ValueError(msg)
-
-        x = np.asarray(x)
-        y = np.asarray(y)
-
-        n_samples = len(x)
-        indices = np.arange(n_samples)
-        shuffled = self.rng.permutation(indices)
-
-        split_idx = int(n_samples * (1.0 - ratio))
-        self.train_indices = shuffled[:split_idx]
-        self.cal_indices = shuffled[split_idx:]
-
-        return (
-            x[self.train_indices],
-            y[self.train_indices],
-            x[self.cal_indices],
-            y[self.cal_indices],
-        )
-
-    def __str__(self) -> str:
-        """String representation with basic split information."""
-        if self.train_indices is None or self.cal_indices is None:
-            return f"SplitConformal(ratio={self.calibration_ratio}, random_state={self.random_state})"
-
-        n_train = len(self.train_indices)
-        n_cal = len(self.cal_indices)
-        ratio_actual = n_cal / (n_train + n_cal)
-        return (
-            f"SplitConformal: {n_train} train, {n_cal} calibration "
-            f"(ratio={ratio_actual:.3f}, target={self.calibration_ratio})"
-        )

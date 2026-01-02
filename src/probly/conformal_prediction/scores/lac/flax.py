@@ -1,18 +1,17 @@
-"""Flax for LAC."""
+"""Flax/JAX implementation for LAC scores."""
 
 from __future__ import annotations
 
-from typing import Any
+from jax import Array
 
-import numpy.typing as npt
+from .common import register
 
 
-def lac_jax(probs: Any) -> npt.NDArray[np.floating]:
-    """Compute APS scores for JAX arrays."""
+def lac_score_jax(probs: Array) -> Array:
+    """Compute LAC scores for JAX arrays."""
     lac_scores = 1.0 - probs
     return lac_scores  # shape: (n_samples, n_classes)
 
 
-from .common import register
-
-register("jax.numpy.ndarray", lac_jax)
+register(Array, lac_score_jax)
+register("jaxlib.xla_extension.ArrayImpl", lac_score_jax)

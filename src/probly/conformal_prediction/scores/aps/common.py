@@ -1,104 +1,112 @@
+"""APS Score implementation with optional Randomization (U-term)."""
+
 from __future__ import annotations
 
-from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Callable, Sequence
+
+    from lazy_dispatch.isinstance import LazyType
 
 import numpy as np
 
-from lazy_dispatch import lazydispatch
-from lazy_dispatch.isinstance import LazyType
+try:
+    import torch
+except ImportError:
+    torch = None  # type: ignore[assignment]
 
-from ..common import Score
+import numpy.typing as npt
+
+from lazy_dispatch import lazydispatch
+from probly.conformal_prediction.methods.common import Predictor, predict_probs
 
 
 @lazydispatch
-def aps_score_func(probs: Any) -> Any:
-    """Compute APS scores for numpy arrays."""
-    sorted_probs = np.sort(probs, axis=1)[:, ::-1]
-    cumsum_probs = np.cumsum(sorted_probs, axis=1)
-    ranks = np.arange(1, probs.shape[1] + 1)
-    aps_scores = np.sum(cumsum_probs / ranks, axis=1)
-    return aps_scores
+def aps_score_func[T](probs: T) -> npt.NDArray[np.floating]:
+    """APS Nonconformity-Scores for numpy arrays."""
+    probs_np = np.asarray(probs)
+
+    # sorting indices for descending probabilities
+    srt_idx = np.argsort(-probs_np, axis=1)
+
+    # get sorted probabilities
+    srt_probs = np.take_along_axis(probs_np, srt_idx, axis=1)
+
+    # calculate cumulative sums
+    cumsum = np.cumsum(srt_probs, axis=1)
+
+    # sort back to original positions without in-place writes (JAX-safe)
+    inv_idx = np.argsort(srt_idx, axis=1)
+    scores = np.take_along_axis(cumsum, inv_idx, axis=1)
+
+    return scores
 
 
 def register(cls: LazyType, func: Callable) -> None:
-    """Register a class which can be used for APS score computation."""
+    """Register a implementation for a specific type."""
     aps_score_func.register(cls=cls, func=func)
 
 
-def aps_scores_all_labels(
-    probabilities: np.ndarray,
-) -> np.ndarray:
-    """Compute APS scores for all labels using cumulative probabilities."""
-    probs = np.asarray(probabilities, dtype=float)
+class APSScore:
+    """Adaptive Prediction Sets (APS) nonconformity score."""
 
-    # sort indices for descending probabilities
-    srt_idx = np.argsort(-probs, axis=1)
-    # sorted (negative) probabilities in descending order
-    srt_probs = np.sort(-probs, axis=1)
-    csum = -srt_probs.cumsum(axis=1)  # cumulative sum of original probs
-
-    # scatter cumulative sums back to original label positions
-    scores = np.zeros_like(probs, dtype=float)
-    np.put_along_axis(scores, srt_idx, csum, axis=1)
-
-    return aps_score_func(probs)
-
-
-def calculate_nonconformity_score(probabilities: np.ndarray, labels: np.ndarray) -> np.ndarray:
-    """Compute true-label APS nonconformity scores."""
-    all_scores = aps_scores_all_labels(probabilities)
-    labels = np.asarray(labels, dtype=int)
-    n = labels.shape[0]
-    return aps_score_func(probs)[np.arange(len(labels)), labels]
-
-
-class APSScore(Score):
-    """APS nonconformity score based on model probabilities.
-
-    The wrapped model is expected to implement
-    predict(x: Sequence[Any]) -> np.ndarray of shape (n_samples, n_classes)
-    returning class probabilities.
-    """
-
-    def __init__(self, model: PredictiveModel) -> None:
-        """Initialize the APS score with a predictive model."""
+    def __init__(
+        self,
+        model: Predictor,
+        randomize: bool = True,
+        random_state: int | None = None,
+    ) -> None:
+        """Initialize APS score with optional randomization."""
         self.model = model
+        self.randomize = randomize
+        self.rng = np.random.default_rng(random_state)
 
     def calibration_nonconformity(
         self,
         x_cal: Sequence[Any],
         y_cal: Sequence[Any],
-    ) -> np.ndarray:
-        """Compute true-label calibration scores."""
-        probs = self.model.predict(x_cal)
-        all_scores = aps_score_func(probs)
+    ) -> npt.NDArray[np.floating]:
+        """Compute calibration scores."""
+        # get probabilities from model
+        probs: npt.NDArray[np.floating] = predict_probs(self.model, x_cal)
+        # get aps scores for all labels
+        all_scores: npt.NDArray[np.floating] = aps_score_func(probs)
 
-        # convert to NumPy
-        if not isinstance(all_scores, np.ndarray):
-            all_scores = np.asarray(all_scores)
+        # convert to numpy arrays
+        scores_np = np.asarray(all_scores, dtype=float)  # (n, K)
+        probs_np = np.asarray(probs, dtype=float)  # (n, K)
+        labels_np = np.asarray(y_cal, dtype=int)  # (n,)
 
-        y_array = np.asarray(y_cal, dtype=int)
-        n = y_array.shape[0]
-        return calculate_nonconformity_score(probs, labels)
+        # extract scores for true labels
+        idx = np.arange(len(labels_np))
+        nonconformity: npt.NDArray[np.floating] = scores_np[idx, labels_np]
+
+        # randomization if enabled
+        if self.randomize:
+            u = self.rng.random(size=len(labels_np))
+            true_probs = probs_np[idx, labels_np]
+            nonconformity = nonconformity - (u * true_probs)
+
+        return nonconformity
 
     def predict_nonconformity(
         self,
         x_test: Sequence[Any],
-    ) -> np.ndarray:
-        """Compute APS scores for all labels on test data.
+        probs: Any = None,  # noqa: ANN401
+    ) -> npt.NDArray[np.floating]:
+        """Compute scores for all labels."""
+        if probs is None:
+            probs = predict_probs(self.model, x_test)
 
-        Returns a (n_samples, n_classes) score matrix that can be
-        thresholded by the conformal predictor to build prediction sets.
-        """
-        probs = self.model.predict(x_test)
-        all_scores = aps_score_func(probs)
+        # get aps scores for all labels
+        scores: npt.NDArray[np.floating] = aps_score_func(probs)
+        scores_np = np.asarray(scores, dtype=float)
 
-        # convert to NumPy
-        if not isinstance(all_scores, np.ndarray):
-            all_scores = np.asarray(all_scores)
+        # randomization if enabled
+        if self.randomize:
+            probs_np = np.asarray(probs, dtype=float)
+            u = self.rng.random(size=(scores_np.shape[0], 1))
+            scores_np = scores_np - (u * probs_np)
 
-        return aps_score_func(probs)
+        return scores_np

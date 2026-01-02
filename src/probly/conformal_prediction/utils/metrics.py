@@ -1,11 +1,6 @@
-"""includes:
-empirical coverage, avg.set.size.
-"""
+"""Utility functions for evaluating conformal prediction metrics."""
 
 from __future__ import annotations
-
-from collections.abc import Sequence
-from typing import Any
 
 import numpy as np
 import numpy.typing as npt
@@ -13,7 +8,7 @@ import numpy.typing as npt
 
 def empirical_coverage(
     prediction_sets: npt.NDArray[np.bool_],
-    true_labels: Sequence[Any],
+    true_labels: npt.NDArray[np.integer],
 ) -> float:
     """Compute empirical coverage of prediction sets.
 
@@ -29,13 +24,12 @@ def empirical_coverage(
     correct_inclusion = 0
 
     for i in range(n_instances):
-        true_label = true_labels[i]
-        if true_label < prediction_sets.shape[1]:  # assuming labels are 0-indexed
-            if prediction_sets[i, true_label]:
-                correct_inclusion += 1
+        true_label = int(true_labels[i])
+        if 0 <= true_label < prediction_sets.shape[1] and prediction_sets[i, true_label]:
+            correct_inclusion += 1  # assuming labels are 0-indexed
 
     coverage = correct_inclusion / n_instances
-    return coverage
+    return float(coverage)
 
 
 def average_set_size(
@@ -53,4 +47,4 @@ def average_set_size(
     n_instances = prediction_sets.shape[0]
     total_size = np.sum(prediction_sets)
     avg_size = total_size / n_instances
-    return avg_size
+    return float(avg_size)
