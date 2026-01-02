@@ -359,11 +359,30 @@ class TestAPSScoreTorch:
 
             # scale features
             scaler = StandardScaler()
-            x_calib_scaled = scaler.fit_transform(x_calib).astype(np.float32)
+            x_train_scaled = scaler.fit_transform(x_train).astype(np.float32)
+            x_calib_scaled = scaler.transform(x_calib).astype(np.float32)
             x_test_scaled = scaler.transform(x_test).astype(np.float32)
 
             # create model with specific seed
+            torch.manual_seed(seed)  # for reproducibility
             model = SimpleNet(input_dim=4, output_dim=3)
+
+            # simple training
+            model.train()
+            criterion = nn.CrossEntropyLoss()
+            optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+
+            x_train_tensor = torch.tensor(x_train_scaled)
+            y_train_tensor = torch.tensor(y_train, dtype=torch.long)
+
+            for _ in range(200):  # train longer for more stable coverage
+                optimizer.zero_grad()
+                outputs = model(x_train_tensor)
+                loss = criterion(outputs, y_train_tensor)
+                loss.backward()
+                optimizer.step()
+
+            model.eval()  # set model to evaluation mode
 
             # create score and predictor
             score = APSScore(model=model, randomize=False, random_state=seed)
@@ -373,7 +392,7 @@ class TestAPSScoreTorch:
             threshold = predictor.calibrate(x_calib_scaled, y_calib, alpha=0.1)
 
             assert predictor.is_calibrated
-            assert 0 <= threshold <= 1 + 1e-6  # Allow tolerance for float32 precision
+            assert 0 <= threshold <= 1 + 1e-6
 
             # predict
             prediction_sets = predictor.predict(x_test_scaled, alpha=0.1)
@@ -381,12 +400,8 @@ class TestAPSScoreTorch:
             assert prediction_sets.shape == (len(x_test), 3)
 
             # calculate coverage
-            covered = 0
-            for i, true_label in enumerate(y_test):
-                if prediction_sets[i, true_label]:
-                    covered += 1
-
+            covered = sum(prediction_sets[i, true_label] for i, true_label in enumerate(y_test))
             coverage = covered / len(y_test)
 
-            # coverage should be >= 0.9 (1 - alpha), with some tolerance
+            # coverage should be near 1 - alpha; allow slack for finite-sample variation
             assert coverage >= 0.85, f"Coverage too low with seed {seed}: {coverage:.3f}"
