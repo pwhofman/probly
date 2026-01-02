@@ -11,6 +11,10 @@ if TYPE_CHECKING:
     import numpy as np
     import numpy.typing as npt
 
+import pytest
+
+pytest.importorskip("flax")
+
 from flax import nnx
 import jax
 import jax.numpy as jnp
