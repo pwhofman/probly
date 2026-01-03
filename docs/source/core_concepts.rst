@@ -24,13 +24,6 @@ These are short, focused example pages that are relevant to this topic.
    :add-heading: Related examples
    :heading-level: 3
 
-.. toctree::
-   :hidden:
-
-   generate_synthetic_classification_data
-   apply_selective_prediction
-   plot_selective_prediction_behavior
-
 In standard machine learning pipelines a model outputs a **single prediction**
 a class label, a probability, or a regression value. However this number does
 not tell us **how confident** the model actually is.

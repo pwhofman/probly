@@ -14,3 +14,6 @@
    examples/train_evidential_classification
    examples/train_evidential_regression
    methods
+   generate_synthetic_classification_data
+   apply_selective_prediction
+   plot_selective_prediction_behavior

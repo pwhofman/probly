@@ -11,7 +11,6 @@
    advanced_topics
    examples_&_tutorials
    auto_examples/index
-   auto_examples/cc_examples/index
    methods
    contributing
    references
