@@ -118,6 +118,18 @@ transparent, reliable, and informative by exposing how confident the model is in
 ------------------------------------------------------
 
 ``probly`` is built around a few central ideas that make uncertainty aware machine learning easier to use.
+
+Quick visual demos
+------------------
+
+Before you dive deeper, here are two ultra-light examples (executed via Sphinx-Gallery) that
+show uncertainty and a simple decision rule at a glance.
+
+.. minigallery::
+   ../../examples/plot_intro_uncertainty_glimpse.py
+   ../../examples/plot_intro_threshold_decision.py
+   :add-heading: Tiny starter examples
+   :heading-level: 3
 Instead of treating uncertainty as something separate or difficult, ``probly`` organizes the process into
 clear steps that work together and build on one another.
 
