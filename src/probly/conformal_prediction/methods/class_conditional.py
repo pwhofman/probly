@@ -1,1 +1,0 @@
-"""Mondrian CP."""
