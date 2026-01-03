@@ -12,17 +12,14 @@ structured and unified way.
 1.1 What Is Uncertainty?
 
 ^^^^^^^^^^^^^^^^^^^^^^^^
-Mini gallery (quick links)
-=========================
+Related examples
+================
 
-These are short, focused example pages that are relevant to this topic.
+Short, focused examples for the concepts in this section:
 
-.. minigallery::
-   ../../cc_examples/plot_epistemic_vs_aleatoric.py
-   ../../cc_examples/plot_uncertainty_quantification.py
-   ../../cc_examples/plot_selective_prediction.py
-   :add-heading: Related examples
-   :heading-level: 3
+- :doc:`Epistemic vs Aleatoric Uncertainty </auto_examples/cc_examples/plot_epistemic_vs_aleatoric>`
+- :doc:`Uncertainty Quantification </auto_examples/cc_examples/plot_uncertainty_quantification>`
+- :doc:`Selective Prediction </auto_examples/cc_examples/plot_selective_prediction>`
 
 In standard machine learning pipelines a model outputs a **single prediction**
 a class label, a probability, or a regression value. However this number does
