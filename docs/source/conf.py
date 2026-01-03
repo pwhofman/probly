@@ -57,6 +57,12 @@ exclude_patterns = [
     "auto_examples/*.json",
     "auto_examples/*.db",
     "auto_examples/*.md5",
+    "auto_examples/cc_examples/*.ipynb",
+    "auto_examples/cc_examples/*.py",
+    "auto_examples/cc_examples/*.zip",
+    "auto_examples/cc_examples/*.json",
+    "auto_examples/cc_examples/*.db",
+    "auto_examples/cc_examples/*.md5",
 ]
 
 # Notebooks: don't execute during docs build
