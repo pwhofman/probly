@@ -169,28 +169,28 @@ unconstrained space connected by well-defined forward and inverse transforms.
 
 Beyond this minimal interface, good transformations follow several design principles:
 
-- **local and self-contained**
+- **Local and self-contained**
 
   All logic that enforces a particular constraint should live inside the transformation. The rest
   of the model should not need to know which reparameterisation is used internally. This mirrors
   how libraries like Stan and NumPyro encapsulate constraints as self-contained objects that define
   where parameters are valid :cite:`numpyroTransforms2019,stanConstraintTransforms2025`.
 
-- **clearly documented domain and range**
+- **Clearly documented domain and range**
 
   It should be obvious which inputs are valid, what shapes are expected, and which constraints the
   outputs satisfy. NumPyro’s documentation describes constraint objects as representing regions over
   which a variable is valid and can be optimised :cite:`numpyroTransforms2019`. Documenting domains and ranges for custom
   transformations in ``probly`` serves the same purpose.
 
-- **numerically stable**
+- **Numerically stable**
 
   The implementation should avoid unnecessary overflow, underflow, or extreme gradients. Stan’s
   documentation on constraint transforms highlights numerical issues arising from floating-point
   arithmetic and the need for careful treatment of boundaries and Jacobian terms :cite:`stanConstraintTransforms2025`. In practice, this often means using stable variants of mathematical formulas,
   adding small epsilons, or applying safe clipping near boundaries.
 
-- **composable**
+- **Composable**
 
   Whenever possible, transformations should work well in combination with others. TensorFlow
   Probability, for example, provides composition utilities such as ``Chain`` to build complex
