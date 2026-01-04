@@ -68,6 +68,17 @@ You can think of a transformation as an adapter between “nice for the optimise
 parameterisations also make it easier to reason about how epistemic and aleatoric uncertainty are
 represented in the model :cite:`Hullermeier2021`.
 
+The diagram below :cite:`Hullermeier2021` contrasts approximation uncertainty inside a hypothesis
+space with model uncertainty relative to the broader function space. It is a handy reminder that
+transformations often sit between what a model can express and what the optimiser explores.
+
+.. figure:: /_static/logo/transformation.png
+   :alt: Illustration of approximation vs. model uncertainty and predictors
+   :width: 80%
+
+   Illustration of approximation (within the hypothesis space) versus model uncertainty (within the
+   larger function space) for predictors :math:`\\hat{h}`, :math:`h^*`, and :math:`f^*`.
+
 2.2 When to implement your own?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -489,6 +500,19 @@ In practice, a model is “large” when one or more of these become real limits
   A model can also feel large because the **data** are large. If the full
   dataset does not fit in RAM, you have to switch to streaming or mini-batches
   instead of loading everything at once :cite:`tyagiScalingDeepLearning2025`.
+
+The illustration :cite:`Hullermeier2021` below shows a Gaussian-process fit with very few observations
+(left) versus many observations (right). The predictive uncertainty band
+shrinks as data grow, which is exactly why large-data workflows need careful
+memory and batching strategies: you want the benefits of more data without
+running out of compute.
+
+.. figure:: /_static/logo/large_models.png
+   :alt: Gaussian-process predictive uncertainty shrinking with more observations
+   :width: 85%
+
+   Predictive mean (orange) and uncertainty band narrowing as the number of
+   observations increases (dashed line is the true function).
 
 - **Runtime and cost**
 
