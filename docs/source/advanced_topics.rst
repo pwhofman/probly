@@ -17,8 +17,8 @@ This chapter explains:
 
 Before reading this chapter, the reader should already be familiar with:
 
-- the concepts introduced in Core Concepts,
-- the basic workflows described in Main Components,
+- the concepts introduced in :ref:`core_concepts`,
+- the basic workflows described in :doc:`Main Components <main_components>`,
 - foundational ideas such as uncertainty representations, transformations, and inference.
 
 For clarity, this chapter follows the same notation conventions used throughout the ``probly`` documentation.
