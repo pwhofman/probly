@@ -12,7 +12,7 @@ This chapter explains:
 - what “advanced” means in the context of ``probly``,
 - when you should read this chapter (recommended after Core Concepts and Main Components).
 
-1.2 Prerequisites & notation
+1.2 Prerequisites & Notation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Before reading this chapter, the reader should already be familiar with:
@@ -23,7 +23,7 @@ Before reading this chapter, the reader should already be familiar with:
 
 For clarity, this chapter follows the same notation conventions used throughout the ``probly`` documentation.
 
-1.3 Typical advanced use cases
+1.3 Typical Advanced Use Cases
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This chapter is intended for scenarios where users go beyond simple examples, such as:
@@ -132,7 +132,7 @@ operations, or ad-hoc post-processing steps just to keep parameters valid, that 
 a strong signal that a dedicated custom transformation would make the model
 cleaner, more robust, and easier to maintain.
 
-2.3 API & design principles
+2.3 API & Design Principles
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Custom transformations in ``probly`` should follow a **small and predictable interface**. Similar
@@ -310,7 +310,7 @@ inference stability when replacing an ``exp`` transformation with ``softplus`` f
 multiple inputs, coupled constraints, or additional structure, and similar patterns appear across
 modern probabilistic programming frameworks.
 
-2.5 Advanced patterns
+2.5 Advanced Patterns
 ~~~~~~~~~~~~~~~~~~~~~
 
 Once you are comfortable with basic custom transformations, ``probly`` allows for more advanced
@@ -376,7 +376,7 @@ principles are useful:
 In practice, this means treating any random choices inside a transformation as part of the
 probabilistic model, not as hidden side effects.
 
-2.6 Testing & debugging
+2.6 Testing & Debugging
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 Well-tested transformations are crucial for trustworthy models. Because transformations sit
@@ -499,7 +499,7 @@ For this chapter, we call a model “large” whenever memory, data handling, or
 runtime force you to think about structure and efficiency, instead of just
 writing the most direct version of the model.
 
-3.2 Model structuring strategies
+3.2 Model Structuring Strategies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 As models and datasets grow, **code structure** becomes as important as the
@@ -536,7 +536,7 @@ Good structure does not make the model mathematically simpler, but it makes it
 much easier to find bugs, add new ideas, and run larger experiments without
 getting lost.
 
-3.3 Memory management
+3.3 Memory Management
 ~~~~~~~~~~~~~~~~~~~~~
 
 For small toy examples, you can often ignore memory and just run the model. As
@@ -585,7 +585,7 @@ A simple rule of thumb is:
 - profile your code to see whether the main cost is in the model, the data
   pipeline, or device transfers :cite:`tyagiScalingDeepLearning2025`.
 
-3.4 Scalability features in ``probly``
+3.4 Scalability Features in ``probly``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Even with good batching and streaming, some models will still push the limits
@@ -768,7 +768,7 @@ The goal is not to cover every possible setup, but to give you an idea of how
 ``probly`` can fit into a larger system and what to watch out for at the
 boundaries.
 
-4.1 General integration concepts
+4.1 General Integration Concepts
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 When you connect ``probly`` with other frameworks, three questions come up over
@@ -843,7 +843,7 @@ There is no scikit-learn adapter in the library. ``scikit-learn`` is only used f
 
 Once the wrapper follows the estimator rules, you can use it in ``Pipeline`` and grid search.
 
-4.5 Interoperability best practices
+4.5 Interoperability Best Practices
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - **Device management:** Decide CPU vs GPU per component; move a batch once; avoid hidden transfers.
@@ -855,7 +855,7 @@ Once the wrapper follows the estimator rules, you can use it in ``Pipeline`` and
 5. Performance & Computational Efficiency
 -----------------------------------------
 
-5.1 Understanding performance bottlenecks
+5.1 Understanding Performance Bottlenecks
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 When a model feels “slow”, the first step is to understand **where the time is
@@ -884,7 +884,7 @@ A simple routine that works well in practice:
 You do not need perfect measurements – just enough to see where the main time
 sink is.
 
-5.2 Profiling your ``probly`` code
+5.2 Profiling your ``probly`` Code
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Profiling your code can stay very simple. In many cases, it is enough to:
@@ -911,7 +911,7 @@ The goal is not to optimise every line. You just want to answer questions like:
 
 Once you know that, it is much easier to decide what to change.
 
-5.3 Algorithmic improvements
+5.3 Algorithmic Improvements
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Before you tweak low-level details, it often helps more to change the
@@ -935,7 +935,7 @@ Before you tweak low-level details, it often helps more to change the
 Many “performance problems” disappear once the model and inference method are a
 good match for the task.
 
-5.4 Vectorisation & parallelisation
+5.4 Vectorisation & Parallelisation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Low-level speed usually comes from **doing more work per call**, not from
@@ -961,7 +961,7 @@ You can combine this with **parallelisation**:
 More parallelism is not always better: if each task is tiny, the overhead of
 starting and syncing workers can outweigh any speedup.
 
-5.5 Reproducibility & randomness
+5.5 Reproducibility & Randomness
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Randomness is central to probabilistic modelling but can make performance
@@ -983,7 +983,7 @@ Good reproducibility is not just “nice for papers”; it makes performance tun
 much easier, because you know that changes in runtime or metrics are due to
 your code changes, not random noise.
 
-5.6 Performance checklist
+5.6 Performance Checklist
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Before you launch a big and expensive run, a quick checklist can save a lot of
@@ -1020,7 +1020,7 @@ and far more likely to understand what your large ``probly`` runs are doing.
 6. Advanced Usage Patterns & Recipes
 ------------------------------------
 
-6.1 Common advanced modeling patterns
+6.1 Common Advanced Modeling Patterns
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This section sketches a few “advanced” modelling patterns you will often see in
@@ -1081,7 +1081,7 @@ More advanced time-series models often mix ideas from hierarchies (e.g. many
 related series, like many stores over time) and mixtures (e.g. different
 behavioural regimes).
 
-6.2 Reusable templates
+6.2 Reusable Templates
 ~~~~~~~~~~~~~~~~~~~~~~
 
 As your models become more complex, it helps to recognise **reusable templates**:
@@ -1107,7 +1107,7 @@ By reusing such templates, you:
 - make it easier for other people (or future you) to understand and extend your
   models.
 
-6.3 Pointers to examples
+6.3 Pointers to Examples
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 To make these patterns easier to learn, it is useful to connect each idea to at
@@ -1127,7 +1127,7 @@ For each advanced pattern in this chapter, there is at least one worked example 
 7. Summary
 ----------
 
-7.1 Key takeaways
+7.1 Key Takeaways
 ~~~~~~~~~~~~~~~~~
 
 This chapter pulled together the “advanced” parts of working with ``probly``. Here are the
