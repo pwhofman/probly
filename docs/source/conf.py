@@ -74,16 +74,14 @@ bibtex_bibfiles = ["references.bib"]
 bibtex_default_style = "alpha"
 
 # -- Sphinx-Gallery ----------------------------------------------------------
-# Two galleries:
-# - REPO_ROOT/examples     -> docs/source/auto_examples/examples
-# - REPO_ROOT/cc_examples  -> docs/source/auto_examples/cc_examples
+# Two galleries rendered into auto_examples/ and its cc_examples subfolder.
 sphinx_gallery_conf = {
     "examples_dirs": [
         str(REPO_ROOT / "examples"),
         str(REPO_ROOT / "cc_examples"),
     ],
     "gallery_dirs": [
-        "auto_examples/examples",
+        "auto_examples",
         "auto_examples/cc_examples",
     ],
     "backreferences_dir": "generated/backreferences",
