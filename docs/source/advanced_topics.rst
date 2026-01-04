@@ -626,6 +626,20 @@ Typical configuration “knobs” in a ``probly`` project include:
 - deciding which dimension to batch over (data vs. chains),
 - choosing between a slow, very transparent debug mode and a fast, compiled mode.
 
+Example: JIT-compile a log-likelihood once and reuse it across batches (JAX backend):
+
+.. code-block:: python
+
+    import jax
+    import jax.numpy as jnp
+
+    def log_likelihood(params, batch):
+        preds = model_forward(params, batch["x"])  # your network forward
+        return jnp.sum(batch["log_prob_fn"](preds, batch["y"]))
+
+    fast_log_likelihood = jax.jit(log_likelihood)
+    value = fast_log_likelihood(params, batch)
+
 3.5 Case study: scaling up a small example
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
