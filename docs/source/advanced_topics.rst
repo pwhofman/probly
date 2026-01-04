@@ -17,7 +17,7 @@ This chapter explains:
 
 Before reading this chapter, the reader should already be familiar with:
 
-- the concepts introduced in :ref:`core_concepts`,
+- the concepts introduced in :doc:`core_concepts`,
 - the basic workflows described in :doc:`Main Components <main_components>`,
 - foundational ideas such as uncertainty representations, transformations, and inference.
 
@@ -36,7 +36,7 @@ These use cases often require a deeper understanding of transformations, scalabi
 
 .. seealso::
 
-    For background material, see :ref:`core_concepts`.
+    For background material, see :doc:`core_concepts`.
 
     For the main building blocks of ``probly``, like the main transformations, utilities & layers, and evaluation tools, see :doc:`Main Components <main_components>`.
 
