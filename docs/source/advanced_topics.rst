@@ -10,7 +10,7 @@ Advanced Topics
 This chapter explains:
 
 - what “advanced” means in the context of ``probly``,
-- when you should read this chapter (recommended after Core Concepts and Main Components).
+- when you should read this chapter (recommended after :doc:`core_concepts` and :doc:`Main Components <main_components>`).
 
 1.2 Prerequisites & Notation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
