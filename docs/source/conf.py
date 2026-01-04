@@ -42,6 +42,7 @@ extensions = [
     "sphinx.ext.mathjax",
     "sphinx.ext.doctest",
     "sphinx_copybutton",
+    "sphinxcontrib.bibtex",
 ]
 
 templates_path = ["_templates"]
