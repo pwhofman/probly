@@ -161,7 +161,7 @@ Step 6: Visualize uncertainty
 
 Visualizing both the predictive mean and the associated uncertainty (e.g. as error bars or shaded regions) can help you identify ambiguous or out-of-distribution samples :cite:`kendall2017uncertainties,ovadia2019trust`.
 
-.. image:: mc_dropout_example.png
+.. image:: /_static/mc_dropout_example.png
    :width: 550px
    :align: center
    :alt: Monte Carlo Dropout uncertainty visualization
@@ -306,7 +306,7 @@ The idea of using partial ensembles or subnetworks to control computational budg
 Visual result SubEnsemble
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. image:: subensemble_comparison.png
+.. image:: /_static/subensemble_comparison.png
    :width: 500px
    :align: center
    :alt: Accuracy comparison between full ensemble and SubEnsemble
@@ -481,7 +481,7 @@ Beyond accuracy, you could also compare calibration and robustness under distrib
 Visual result
 -------------
 
-.. image:: mixed_ensemble_comparison.png
+.. image:: /_static/mixed_ensemble_comparison.png
    :width: 500px
    :align: center
    :alt: Accuracy comparison between homogeneous and mixed ensembles

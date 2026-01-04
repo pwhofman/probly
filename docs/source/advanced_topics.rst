@@ -72,7 +72,7 @@ The diagram below :cite:`Hullermeier2021` contrasts approximation uncertainty in
 space with model uncertainty relative to the broader function space. It is a handy reminder that
 transformations often sit between what a model can express and what the optimiser explores.
 
-.. figure:: /_static/logo/transformation.png
+.. figure:: /_static/transformation.png
    :alt: Illustration of approximation vs. model uncertainty and predictors
    :width: 80%
 
@@ -507,7 +507,7 @@ shrinks as data grow, which is exactly why large-data workflows need careful
 memory and batching strategies: you want the benefits of more data without
 running out of compute.
 
-.. figure:: /_static/logo/large_models.png
+.. figure:: /_static/large_models.png
    :alt: Gaussian-process predictive uncertainty shrinking with more observations
    :width: 85%
 
