@@ -132,16 +132,16 @@ Tiny starter examples
 
     <div class="sphx-glr-thumbnails">
       <div class="sphx-glr-thumbcontainer" tooltip="Quick glimpse of repeated stochastic predictions.">
-        <a class="reference internal" href="/auto_examples/plot_intro_uncertainty_glimpse.html">
-          <img alt="" src="/_images/sphx_glr_plot_intro_uncertainty_glimpse_thumb.png">
-          <div class="sphx-glr-thumbnail-title">Hello, uncertainty (glimpse)</div>
+        <a class="reference internal" href="auto_examples/plot_intro_uncertainty_glimpse.html">
+          <img alt="" src="_images/sphx_glr_plot_intro_uncertainty_glimpse_thumb.png">
         </a>
+        <p class="caption"><span class="caption-text">Hello, uncertainty (glimpse)</span></p>
       </div>
       <div class="sphx-glr-thumbcontainer" tooltip="Simple threshold-based decision sketch.">
-        <a class="reference internal" href="/auto_examples/plot_intro_threshold_decision.html">
-          <img alt="" src="/_images/sphx_glr_plot_intro_threshold_decision_thumb.png">
-          <div class="sphx-glr-thumbnail-title">Threshold-based decision sketch</div>
+        <a class="reference internal" href="auto_examples/plot_intro_threshold_decision.html">
+          <img alt="" src="_images/sphx_glr_plot_intro_threshold_decision_thumb.png">
         </a>
+        <p class="caption"><span class="caption-text">Threshold-based decision sketch</span></p>
       </div>
     </div>
 

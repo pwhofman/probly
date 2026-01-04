@@ -20,28 +20,28 @@ Related examples
 
     <div class="sphx-glr-thumbnails">
       <div class="sphx-glr-thumbcontainer" tooltip="Smoke test for the gallery setup.">
-        <a class="reference internal" href="/auto_examples/plot_gallery_smoke_test.html">
-          <img alt="" src="/_images/sphx_glr_plot_gallery_smoke_test_thumb.png">
-          <div class="sphx-glr-thumbnail-title">Sphinx-Gallery smoke test</div>
+        <a class="reference internal" href="auto_examples/plot_gallery_smoke_test.html">
+          <img alt="" src="_images/sphx_glr_plot_gallery_smoke_test_thumb.png">
         </a>
+        <p class="caption"><span class="caption-text">Sphinx-Gallery smoke test</span></p>
       </div>
       <div class="sphx-glr-thumbcontainer" tooltip="ArraySample usage for repeated stochastic predictions.">
-        <a class="reference internal" href="/auto_examples/plot_samples_with_array_sample.html">
-          <img alt="" src="/_images/sphx_glr_plot_samples_with_array_sample_thumb.png">
-          <div class="sphx-glr-thumbnail-title">Working with samples (<cite>ArraySample</cite>)</div>
+        <a class="reference internal" href="auto_examples/plot_samples_with_array_sample.html">
+          <img alt="" src="_images/sphx_glr_plot_samples_with_array_sample_thumb.png">
         </a>
+        <p class="caption"><span class="caption-text">Working with samples (<cite>ArraySample</cite>)</span></p>
       </div>
       <div class="sphx-glr-thumbcontainer" tooltip="Dispatcher for automatic sample construction.">
-        <a class="reference internal" href="/auto_examples/plot_create_sample_dispatch.html">
-          <img alt="" src="/_images/sphx_glr_plot_create_sample_dispatch_thumb.png">
-          <div class="sphx-glr-thumbnail-title">Automatic sample construction (dispatcher)</div>
+        <a class="reference internal" href="auto_examples/plot_create_sample_dispatch.html">
+          <img alt="" src="_images/sphx_glr_plot_create_sample_dispatch_thumb.png">
         </a>
+        <p class="caption"><span class="caption-text">Automatic sample construction (dispatcher)</span></p>
       </div>
       <div class="sphx-glr-thumbcontainer" tooltip="Generic predict() protocol usage.">
-        <a class="reference internal" href="/auto_examples/plot_using_predict_protocol.html">
-          <img alt="" src="/_images/sphx_glr_plot_using_predict_protocol_thumb.png">
-          <div class="sphx-glr-thumbnail-title">Using the generic predict()</div>
+        <a class="reference internal" href="auto_examples/plot_using_predict_protocol.html">
+          <img alt="" src="_images/sphx_glr_plot_using_predict_protocol_thumb.png">
         </a>
+        <p class="caption"><span class="caption-text">Using the generic predict()</span></p>
       </div>
     </div>
 
