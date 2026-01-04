@@ -16,10 +16,34 @@ to the topics on this page.
 Related examples
 ----------------
 
-- :doc:`Sphinx-Gallery smoke test </auto_examples/plot_gallery_smoke_test>`
-- :doc:`Working with samples (<cite>ArraySample</cite>) </auto_examples/plot_samples_with_array_sample>`
-- :doc:`Automatic sample construction (dispatcher) </auto_examples/plot_create_sample_dispatch>`
-- :doc:`Using the generic predict() </auto_examples/plot_using_predict_protocol>`
+.. raw:: html
+
+    <div class="sphx-glr-thumbnails">
+      <div class="sphx-glr-thumbcontainer" tooltip="Smoke test for the gallery setup.">
+        <a class="reference internal" href="/auto_examples/plot_gallery_smoke_test.html">
+          <img alt="" src="/_images/sphx_glr_plot_gallery_smoke_test_thumb.png">
+          <div class="sphx-glr-thumbnail-title">Sphinx-Gallery smoke test</div>
+        </a>
+      </div>
+      <div class="sphx-glr-thumbcontainer" tooltip="ArraySample usage for repeated stochastic predictions.">
+        <a class="reference internal" href="/auto_examples/plot_samples_with_array_sample.html">
+          <img alt="" src="/_images/sphx_glr_plot_samples_with_array_sample_thumb.png">
+          <div class="sphx-glr-thumbnail-title">Working with samples (<cite>ArraySample</cite>)</div>
+        </a>
+      </div>
+      <div class="sphx-glr-thumbcontainer" tooltip="Dispatcher for automatic sample construction.">
+        <a class="reference internal" href="/auto_examples/plot_create_sample_dispatch.html">
+          <img alt="" src="/_images/sphx_glr_plot_create_sample_dispatch_thumb.png">
+          <div class="sphx-glr-thumbnail-title">Automatic sample construction (dispatcher)</div>
+        </a>
+      </div>
+      <div class="sphx-glr-thumbcontainer" tooltip="Generic predict() protocol usage.">
+        <a class="reference internal" href="/auto_examples/plot_using_predict_protocol.html">
+          <img alt="" src="/_images/sphx_glr_plot_using_predict_protocol_thumb.png">
+          <div class="sphx-glr-thumbnail-title">Using the generic predict()</div>
+        </a>
+      </div>
+    </div>
 
 
 1. Uncertainty estimation with Dropout on MNIST

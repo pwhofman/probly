@@ -17,9 +17,28 @@ Related examples
 
 Short, focused examples for the concepts in this section:
 
-- :doc:`Epistemic vs Aleatoric Uncertainty </auto_examples/cc_examples/plot_epistemic_vs_aleatoric>`
-- :doc:`Uncertainty Quantification </auto_examples/cc_examples/plot_uncertainty_quantification>`
-- :doc:`Selective Prediction </auto_examples/cc_examples/plot_selective_prediction>`
+.. raw:: html
+
+    <div class="sphx-glr-thumbnails">
+      <div class="sphx-glr-thumbcontainer" tooltip="Difference between epistemic and aleatoric uncertainty.">
+        <a class="reference internal" href="/auto_examples/cc_examples/plot_epistemic_vs_aleatoric.html">
+          <img alt="" src="/_images/sphx_glr_plot_epistemic_vs_aleatoric_thumb1.png">
+          <div class="sphx-glr-thumbnail-title">Epistemic vs Aleatoric Uncertainty</div>
+        </a>
+      </div>
+      <div class="sphx-glr-thumbcontainer" tooltip="Simple form of predictive uncertainty quantification.">
+        <a class="reference internal" href="/auto_examples/cc_examples/plot_uncertainty_quantification.html">
+          <img alt="" src="/_images/sphx_glr_plot_uncertainty_quantification_thumb1.png">
+          <div class="sphx-glr-thumbnail-title">Uncertainty Quantification</div>
+        </a>
+      </div>
+      <div class="sphx-glr-thumbcontainer" tooltip="Demonstrates selective prediction (abstention).">
+        <a class="reference internal" href="/auto_examples/cc_examples/plot_selective_prediction.html">
+          <img alt="" src="/_images/sphx_glr_plot_selective_prediction_thumb1.png">
+          <div class="sphx-glr-thumbnail-title">Selective Prediction</div>
+        </a>
+      </div>
+    </div>
 
 In standard machine learning pipelines a model outputs a **single prediction**
 a class label, a probability, or a regression value. However this number does
