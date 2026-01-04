@@ -39,14 +39,14 @@ def test_aps_score_func_basic() -> None:
         ],
     )
 
-    scores: npt.NDArray[np.floating] = aps_score_func(probs)
+    all_scores: npt.NDArray[np.floating] = aps_score_func(probs)
 
-    assert scores.shape == (2, 3)
-    assert np.all(scores >= 0)
-    assert np.all(scores <= 1)
+    assert all_scores.shape == (2, 3)
+    assert np.all(all_scores >= 0)
+    assert np.all(all_scores <= 1)
 
     expected_first = np.array([0.5, 0.8, 1.0])
-    assert np.allclose(scores[0], expected_first, atol=1e-10)
+    assert np.allclose(all_scores[0], expected_first, atol=1e-10)
 
 
 def test_apsscore_calibration() -> None:
@@ -118,56 +118,56 @@ def test_apsscore_provided_probs() -> None:
 def test_aps_score_func_edge_case_single_sample() -> None:
     """Test aps_score_func with single sample."""
     probs = np.array([[0.5, 0.3, 0.2]])
-    scores: npt.NDArray[np.floating] = aps_score_func(probs)
+    all_scores: npt.NDArray[np.floating] = aps_score_func(probs)
 
-    assert scores.shape == (1, 3), f"Expected shape (1, 3), got {scores.shape}"
-    assert np.all(scores >= 0)
-    assert bool(np.all(scores <= 1 + 1e-6))
+    assert all_scores.shape == (1, 3), f"Expected shape (1, 3), got {all_scores.shape}"
+    assert np.all(all_scores >= 0)
+    assert bool(np.all(all_scores <= 1 + 1e-6))
 
 
 def test_aps_score_func_edge_case_large_batch() -> None:
     """Test aps_score_func with large batch."""
     rng = np.random.default_rng(42)
     probs = rng.dirichlet([1, 1, 1], size=1000).astype(np.float32)
-    scores: npt.NDArray[np.floating] = aps_score_func(probs)
+    all_scores: npt.NDArray[np.floating] = aps_score_func(probs)
 
-    assert scores.shape == (1000, 3), f"Expected shape (1000, 3), got {scores.shape}"
-    assert bool(np.all(scores >= 0))
+    assert all_scores.shape == (1000, 3), f"Expected shape (1000, 3), got {all_scores.shape}"
+    assert bool(np.all(all_scores >= 0))
     # Allow small tolerance for float32 precision errors in cumsum
-    assert bool(np.all(scores <= 1.0 + 1e-6))
+    assert bool(np.all(all_scores <= 1.0 + 1e-6))
 
 
 def test_aps_score_func_output_types() -> None:
     """Test aps_score_func returns correct types."""
     probs = np.array([[0.5, 0.3, 0.2]])
-    scores: npt.NDArray[np.floating] = aps_score_func(probs)
+    all_scores: npt.NDArray[np.floating] = aps_score_func(probs)
 
-    assert isinstance(scores, np.ndarray), f"Expected np.ndarray, got {type(scores)}"
-    assert scores.dtype in [np.float32, np.float64], f"Expected float dtype, got {scores.dtype}"
+    assert isinstance(all_scores, np.ndarray), f"Expected np.ndarray, got {type(all_scores)}"
+    assert all_scores.dtype in [np.float32, np.float64], f"Expected float dtype, got {all_scores.dtype}"
 
 
 def test_aps_score_func_boundary_conditions() -> None:
     """Test aps_score_func with boundary probability distributions."""
     # Test with uniform probabilities
     probs_uniform = np.array([[0.33, 0.33, 0.34]])
-    scores_uniform: npt.NDArray[np.floating] = aps_score_func(probs_uniform)
-    assert scores_uniform.shape == (1, 3)
-    assert np.all(scores_uniform >= 0)
-    assert bool(np.all(scores_uniform <= 1 + 1e-6))
+    all_scores_uniform: npt.NDArray[np.floating] = aps_score_func(probs_uniform)
+    assert all_scores_uniform.shape == (1, 3)
+    assert np.all(all_scores_uniform >= 0)
+    assert bool(np.all(all_scores_uniform <= 1 + 1e-6))
 
     # Test with concentrated probabilities (one class has high prob)
     probs_concentrated = np.array([[0.9, 0.05, 0.05]])
-    scores_concentrated: npt.NDArray[np.floating] = aps_score_func(probs_concentrated)
-    assert scores_concentrated.shape == (1, 3)
-    assert np.all(scores_concentrated >= 0)
-    assert bool(np.all(scores_concentrated <= 1 + 1e-6))
+    all_scores_concentrated: npt.NDArray[np.floating] = aps_score_func(probs_concentrated)
+    assert all_scores_concentrated.shape == (1, 3)
+    assert np.all(all_scores_concentrated >= 0)
+    assert bool(np.all(all_scores_concentrated <= 1 + 1e-6))
 
     # Test with one class having probability 1
     probs_extreme = np.array([[1.0, 0.0, 0.0]])
-    scores_extreme: npt.NDArray[np.floating] = aps_score_func(probs_extreme)
-    assert scores_extreme.shape == (1, 3)
-    assert np.all(scores_extreme >= 0)
-    assert bool(np.all(scores_extreme <= 1 + 1e-6))
+    all_scores_extreme: npt.NDArray[np.floating] = aps_score_func(probs_extreme)
+    assert all_scores_extreme.shape == (1, 3)
+    assert np.all(all_scores_extreme >= 0)
+    assert bool(np.all(all_scores_extreme <= 1 + 1e-6))
 
 
 def test_apsscore_randomization_reproducibility() -> None:
@@ -230,18 +230,18 @@ def test_aps_score_func_multiple_classes() -> None:
     """Test aps_score_func with different numbers of classes."""
     # Test with 2 classes
     probs_2 = np.array([[0.6, 0.4]])
-    scores_2: npt.NDArray[np.floating] = aps_score_func(probs_2)
-    assert scores_2.shape == (1, 2)
+    all_scores_2: npt.NDArray[np.floating] = aps_score_func(probs_2)
+    assert all_scores_2.shape == (1, 2)
 
     # Test with 5 classes
     probs_5 = np.array([[0.2, 0.2, 0.2, 0.2, 0.2]])
-    scores_5: npt.NDArray[np.floating] = aps_score_func(probs_5)
-    assert scores_5.shape == (1, 5)
+    all_scores_5: npt.NDArray[np.floating] = aps_score_func(probs_5)
+    assert all_scores_5.shape == (1, 5)
 
     # Test with 10 classes
     probs_10 = np.ones((1, 10)) / 10
-    scores_10: npt.NDArray[np.floating] = aps_score_func(probs_10)
-    assert scores_10.shape == (1, 10)
+    all_scores_10: npt.NDArray[np.floating] = aps_score_func(probs_10)
+    assert all_scores_10.shape == (1, 10)
 
 
 def test_apsscore_with_different_label_values() -> None:

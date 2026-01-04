@@ -19,8 +19,14 @@ def empirical_coverage(
 
     Returns:
         Empirical coverage as a float.
+
+    Raises:
+        ValueError: If the number of instances in prediction_sets and true_labels do not match.
     """
     n_instances = prediction_sets.shape[0]
+    if len(true_labels) != n_instances:
+        msg = f"Shape mismatch: prediction_sets has {n_instances} instances but true_labels has {len(true_labels)}"
+        raise ValueError(msg)
     correct_inclusion = 0
 
     for i in range(n_instances):

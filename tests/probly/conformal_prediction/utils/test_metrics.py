@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import contextlib
-
 import numpy as np
 import pytest
 
@@ -164,6 +162,12 @@ def test_metrics_shape_validation() -> None:
     prediction_sets = np.array([[True, False], [False, True]], dtype=bool)
     labels_wrong = np.array([0, 1, 2])  # wrong shape
 
-    # empirical coverage should raise an error
-    with contextlib.suppress(ValueError):
+    # empirical coverage should raise an error on shape mismatch
+    with pytest.raises(
+        ValueError,
+        match=(
+            f"Shape mismatch: prediction_sets has {prediction_sets.shape[0]} "
+            f"instances but true_labels has {len(labels_wrong)}"
+        ),
+    ):
         empirical_coverage(prediction_sets, labels_wrong)
