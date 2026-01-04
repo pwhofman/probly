@@ -240,6 +240,30 @@ The concrete class and method names in a custom transformation depend on the tra
 class used by ``probly``, but the conceptual structure is always the same: a forward map, an
 inverse map, and (when required) the corresponding Jacobian terms.
 
+A minimal, self-contained stub that follows this pattern (using NumPy for
+numerics) looks like:
+
+.. code-block:: python
+
+    import numpy as np
+
+    class PositiveTransform:
+        """Maps R -> (0, inf) with stable forward/inverse."""
+
+        def forward(self, x):
+            return np.logaddexp(0.0, x)  # softplus
+
+        def inverse(self, y, eps=1e-8):
+            y = np.maximum(y, eps)
+            return np.log(np.exp(y) - 1.0 + eps)
+
+        def log_abs_det_jacobian(self, x):
+            return -np.logaddexp(0.0, -x)  # log(softplus'(x))
+
+    transform = PositiveTransform()
+    unconstrained = np.array([-1.0, 0.0, 1.0])
+    constrained = transform.forward(unconstrained)
+
 **Registration / configuration**
 
 Once implemented, the transformation must be **registered** so that ``probly`` can find and use it.
@@ -377,6 +401,17 @@ break this property.
 Similarly, you can test constrained values by applying inverse then forward. Systematic
 deviations in either direction usually indicate mistakes in the formulas, inconsistencies in
 broadcasting, or shape mismatches between forward and inverse.
+
+For the ``PositiveTransform`` stub above, a minimal round-trip test is:
+
+.. code-block:: python
+
+    import numpy as np
+
+    xs = np.linspace(-5, 5, 7)
+    ys = transform.forward(xs)
+    xs_back = transform.inverse(ys)
+    np.testing.assert_allclose(xs_back, xs, rtol=1e-5, atol=1e-6)
 
 **Numerical stability checks**
 
