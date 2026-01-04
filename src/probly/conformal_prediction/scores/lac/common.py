@@ -26,7 +26,7 @@ def lac_score_func[T](probs: T) -> npt.NDArray[np.floating]:
 
 
 def register(cls: LazyType, func: Callable) -> None:
-    """Register a class which can be used for APS score computation."""
+    """Register a class which can be used for LAC score computation."""
     lac_score_func.register(cls=cls, func=func)
 
 
@@ -80,7 +80,8 @@ class LACScore:
     ) -> npt.NDArray[np.floating]:
         """Compute true-label calibration scores."""
         # get probabilities from model
-        probs = predict_probs(self.model, x_cal)
+        if probs is None:
+            probs = predict_probs(self.model, x_cal)
         # get lac scores for all labels
         all_scores: npt.NDArray[np.floating] = lac_score_func(probs)
 
@@ -104,8 +105,8 @@ class LACScore:
         if probs is None:
             probs = predict_probs(self.model, x_test)
 
-        # compute scores (1 - p)
-        scores: npt.NDArray[np.floating] = lac_score_func(probs)  # shape: (n_samples, n_classes)
-        scores_np = np.asarray(scores, dtype=float)
+        # compute all scores (1 - p)
+        all_scores: npt.NDArray[np.floating] = lac_score_func(probs)  # shape: (n_samples, n_classes)
+        scores_np = np.asarray(all_scores, dtype=float)
 
         return scores_np

@@ -28,12 +28,11 @@ def aps_score_func[T](probs: T) -> npt.NDArray[np.floating]:
     srt_probs = np.take_along_axis(probs_np, srt_idx, axis=1)
 
     # calculate cumulative sums
-    cumsum = np.cumsum(srt_probs, axis=1)
+    cumsum_probs = np.cumsum(srt_probs, axis=1)
 
     # sort back to original positions without in-place writes (JAX-safe)
     inv_idx = np.argsort(srt_idx, axis=1)
-    scores = np.take_along_axis(cumsum, inv_idx, axis=1)
-
+    scores = np.take_along_axis(cumsum_probs, inv_idx, axis=1)
     return scores
 
 
@@ -90,12 +89,13 @@ class APSScore:
         probs: npt.NDArray[np.floating] | None = None,
     ) -> npt.NDArray[np.floating]:
         """Compute scores for all labels."""
+        # predict
         if probs is None:
             probs = predict_probs(self.model, x_test)
 
         # get aps scores for all labels
-        scores: npt.NDArray[np.floating] = aps_score_func(probs)
-        scores_np = np.asarray(scores, dtype=float)
+        all_scores: npt.NDArray[np.floating] = aps_score_func(probs)
+        scores_np = np.asarray(all_scores, dtype=float)
 
         # randomization if enabled
         if self.randomize:

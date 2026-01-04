@@ -1,4 +1,4 @@
-"""Tests for APS quantile calculation utilities."""
+"""Tests for quantile calculation utilities."""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ def test_calculate_quantile() -> None:
 
 
 def test_calculate_weighted_quantile() -> None:
-    """Test standard quantile calculation."""
+    """Test weighted quantile calculation."""
     values = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
     q = calculate_weighted_quantile(values, 0.5, sample_weight=None)
     assert q == 3.0
