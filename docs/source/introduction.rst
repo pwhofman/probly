@@ -125,11 +125,11 @@ Quick visual demos
 Before you dive deeper, here are two ultra-light examples (executed via Sphinx-Gallery) that
 show uncertainty and a simple decision rule at a glance.
 
-.. minigallery::
-   ../../examples/plot_intro_uncertainty_glimpse.py
-   ../../examples/plot_intro_threshold_decision.py
-   :add-heading: Tiny starter examples
-   :heading-level: 3
+Tiny starter examples
+~~~~~~~~~~~~~~~~~~~~~
+
+- :doc:`Hello, uncertainty (glimpse) </auto_examples/plot_intro_uncertainty_glimpse>`
+- :doc:`Threshold-based decision sketch </auto_examples/plot_intro_threshold_decision>`
 Instead of treating uncertainty as something separate or difficult, ``probly`` organizes the process into
 clear steps that work together and build on one another.
 
