@@ -19,26 +19,11 @@ Short, focused examples for the concepts in this section:
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbnails">
-      <div class="sphx-glr-thumbcontainer" tooltip="Difference between epistemic and aleatoric uncertainty.">
-        <a class="reference internal" href="auto_examples/cc_examples/plot_epistemic_vs_aleatoric.html">
-          <img alt="" src="_images/sphx_glr_plot_epistemic_vs_aleatoric_thumb1.png">
-        </a>
-        <p class="caption"><span class="caption-text">Epistemic vs Aleatoric Uncertainty</span></p>
-      </div>
-      <div class="sphx-glr-thumbcontainer" tooltip="Simple form of predictive uncertainty quantification.">
-        <a class="reference internal" href="auto_examples/cc_examples/plot_uncertainty_quantification.html">
-          <img alt="" src="_images/sphx_glr_plot_uncertainty_quantification_thumb1.png">
-        </a>
-        <p class="caption"><span class="caption-text">Uncertainty Quantification</span></p>
-      </div>
-      <div class="sphx-glr-thumbcontainer" tooltip="Demonstrates selective prediction (abstention).">
-        <a class="reference internal" href="auto_examples/cc_examples/plot_selective_prediction.html">
-          <img alt="" src="_images/sphx_glr_plot_selective_prediction_thumb1.png">
-        </a>
-        <p class="caption"><span class="caption-text">Selective Prediction</span></p>
-      </div>
-    </div>
+    <ul class="simple">
+      <li><a class="reference internal" href="auto_examples/cc_examples/plot_epistemic_vs_aleatoric.html">Epistemic vs Aleatoric Uncertainty</a></li>
+      <li><a class="reference internal" href="auto_examples/cc_examples/plot_uncertainty_quantification.html">Uncertainty Quantification</a></li>
+      <li><a class="reference internal" href="auto_examples/cc_examples/plot_selective_prediction.html">Selective Prediction</a></li>
+    </ul>
 
 In standard machine learning pipelines a model outputs a **single prediction**
 a class label, a probability, or a regression value. However this number does
