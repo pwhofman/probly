@@ -9,21 +9,18 @@ arises in real-world problems, and why handling it correctly is essential for
 building trustworthy models. Probly provides tools to work with uncertainty in a
 structured and unified way.
 
+Mini gallery (quick links)
+-------------------------
+Short, focused examples for the concepts in this section:
+
+.. minigallery::
+   ../../examples/plot_epistemic_vs_aleatoric.py
+   ../../examples/plot_uncertainty_quantification.py
+   ../../examples/plot_selective_prediction.py
+
 1.1 What Is Uncertainty?
 
 ^^^^^^^^^^^^^^^^^^^^^^^^
-Related examples
-================
-
-Short, focused examples for the concepts in this section:
-
-.. raw:: html
-
-    <ul class="simple">
-      <li><a class="reference internal" href="auto_examples/cc_examples/plot_epistemic_vs_aleatoric.html">Epistemic vs Aleatoric Uncertainty</a></li>
-      <li><a class="reference internal" href="auto_examples/cc_examples/plot_uncertainty_quantification.html">Uncertainty Quantification</a></li>
-      <li><a class="reference internal" href="auto_examples/cc_examples/plot_selective_prediction.html">Selective Prediction</a></li>
-    </ul>
 
 In standard machine learning pipelines a model outputs a **single prediction**
 a class label, a probability, or a regression value. However this number does
