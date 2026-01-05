@@ -8,6 +8,7 @@ API Reference
    probly
 
 .. automodule:: probly
+   :noindex:
    :members:
    :undoc-members:
    :show-inheritance:
