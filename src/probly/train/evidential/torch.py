@@ -238,13 +238,14 @@ class RPNDistillationLoss(nn.Module):
 
         return torch.stack(losses).mean()
 
+
 def postnet_loss(
     z: Tensor,
     y: Tensor,
     flow: t.BatchedRadialFlowDensity,
     class_counts: Tensor,
     entropy_weight: float = 1e-5,
-    ) -> torch.Tensor:
+) -> torch.Tensor:
     """Posterior Networks (PostNet) loss."""
     log_dens = flow.log_prob(z)  # [B,C]
     dens = log_dens.exp()
@@ -261,6 +262,7 @@ def postnet_loss(
 
     loss = (expected_ce - entropy_weight * entropy).mean()
     return loss, alpha
+
 
 def lp_fn(alpha: torch.Tensor, y: torch.Tensor, p: float = 2.0) -> torch.Tensor:
     """Compute the Lp calibration loss (upper bound Fi).
