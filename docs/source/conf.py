@@ -57,6 +57,7 @@ suppress_warnings = [
     "autosummary",  # Failed autosummary imports
     "toc.not_readable",  # Nonexisting toctree documents
     "docutils",  # Docutils formatting warnings
+    "sphinx_autodoc_typehints.forward_reference",
 ]
 
 templates_path = ["_templates"]
