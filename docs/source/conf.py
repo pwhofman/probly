@@ -32,7 +32,6 @@ version = probly.__version__
 extensions = [
     "sphinx.ext.autodoc",  # generates API documentation from docstrings
     "sphinx.ext.autosummary",  # generates .rst files for each module
-    "sphinx_autodoc_typehints",  # optional, nice for type hints in docs
     # "sphinx.ext.linkcode",  # adds [source] links to code that link to GitHub. Use when repo is public.  # noqa: E501, ERA001
     "sphinx.ext.viewcode",  # adds [source] links to code that link to the source code in the docs.
     "sphinx.ext.napoleon",  # for Google-style docstrings
@@ -57,7 +56,6 @@ suppress_warnings = [
     "autosummary",  # Failed autosummary imports
     "toc.not_readable",  # Nonexisting toctree documents
     "docutils",  # Docutils formatting warnings
-    "sphinx_autodoc_typehints.forward_reference",
 ]
 
 templates_path = ["_templates"]
@@ -154,7 +152,7 @@ autoclass_content = "class"
 # TODO(pwhofman): maybe set this to True, Issue https://github.com/pwhofman/probly/issues/94
 autodoc_inherit_docstrings = False
 
-autodoc_typehints = "both"  # to show type hints in the docstring
+autodoc_typehints = "description"  # put typehints in the description instead of the signature
 
 # -- Copy Paste Button -----------------------------------------------------------------------------
 # Ignore >>> when copying code
