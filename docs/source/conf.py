@@ -45,19 +45,6 @@ extensions = [
     "sphinxcontrib.bibtex",  # for bibliography support
 ]
 
-suppress_warnings = [
-    "toc.not_included",  # Already added
-    "autodoc.import_object",  # Failed module imports
-    "ref.ref",  # Undefined reference labels
-    "ref.doc",  # Unknown documents
-    "ref.python",  # Ambiguous cross-references
-    "misc.highlighting_failure",  # Pygments lexer issues
-    "myst.header",  # Header level issues in notebooks
-    "autosummary",  # Failed autosummary imports
-    "toc.not_readable",  # Nonexisting toctree documents
-    "docutils",  # Docutils formatting warnings
-]
-
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 bibtex_bibfiles = ["references.bib"]
