@@ -105,7 +105,7 @@ class Sampler[In, KwIn, Out](Representer[In, KwIn, Out]):
 
 
 class EnsembleSampler[In, KwIn, Out](Representer[In, KwIn, Iterable[Out]]):
-    """A sampler that creates representations from ensemble predictions."""
+    """Sampler creates representations from ensemble predictions based on :cite:`lakshminarayananSimpleScalable2017`."""
 
     sample_factory: Callable[[Iterable[Out]], Sample[Out]]
 

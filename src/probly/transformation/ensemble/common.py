@@ -26,7 +26,7 @@ def register(cls: LazyType, generator: Callable) -> None:
 
 
 def ensemble[T: Predictor](base: T, num_members: int, reset_params: bool = True) -> T:
-    """Create an ensemble predictor from a base predictor.
+    """Create an ensemble predictor from a base predictor based on :cite:`lakshminarayananSimpleScalable2017`.
 
     Args:
         base: Predictor, The base model to be used for the ensemble.

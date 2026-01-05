@@ -12,7 +12,7 @@ import torch.nn.functional as F
 
 
 class BayesLinear(nn.Module):
-    """Implements a Bayesian linear layer.
+    """Implements a Bayesian linear layer based on :cite:`blundellWeightUncertainty2015`.
 
     Attributes:
         in_features: int, number of input features
@@ -164,7 +164,7 @@ class BayesLinear(nn.Module):
 
 
 class BayesConv2d(nn.Module):
-    """Implementation of a Bayesian convolutional layer.
+    """Implementation of a Bayesian convolutional layer based on :cite:`blundellWeightUncertainty2015`.
 
     Attributes:
         in_channels: int, number of input channels
@@ -384,7 +384,7 @@ def _inverse_softplus(x: torch.Tensor) -> torch.Tensor:
 
 
 class DropConnectLinear(nn.Module):
-    """Custom Linear layer with DropConnect applied to weights during training.
+    """Custom Linear layer with DropConnect applied to weights during training based on :cite:`aminiDeepEvidential2020`.
 
     Attributes:
         in_features: int, number of input features.
@@ -435,7 +435,7 @@ class DropConnectLinear(nn.Module):
 
 
 class NormalInverseGammaLinear(nn.Module):
-    """Custom Linear layer modeling the parameters of a normal-inverse-gamma-distribution.
+    """Custom Linear layer for the normal-inverse-gamma-distribution based on :cite:`aminiDeepEvidential2020`.
 
     Attributes:
         gamma: torch.Tensor, shape (out_features, in_features), the mean of the normal distribution.

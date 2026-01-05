@@ -1,0 +1,42 @@
+
+
+Examples using ``probly.predictor.predict``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+.. start-sphx-glr-thumbnails
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbnails">
+
+.. thumbnail-parent-div-open
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="probly defines a small protocol for &quot;predictors&quot; and a generic probly.predictor.predict helper.">
+
+.. only:: html
+
+  .. image:: /auto_examples/images/thumb/sphx_glr_plot_using_predict_protocol_thumb.png
+    :alt:
+
+  :doc:`/auto_examples/plot_using_predict_protocol`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Using the generic predict()</div>
+    </div>
+
+
+.. only:: not html
+
+ * :doc:`/auto_examples/plot_using_predict_protocol`
+
+.. thumbnail-parent-div-close
+
+.. raw:: html
+
+    </div>
+
