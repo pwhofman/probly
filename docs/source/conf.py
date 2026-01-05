@@ -47,21 +47,21 @@ extensions = [
 ]
 
 suppress_warnings = [
-    'toc.not_included',
-    'autodoc.import_object',
-    'autodoc',
-    'ref.ref',
-    'ref.doc',
-    'ref.python',
-    'misc.highlighting_failure',
-    'myst.header',
-    'autosummary',
-    'toc.not_readable',
-    'docutils',
+    "toc.not_included",
+    "autodoc.import_object",
+    "autodoc",
+    "ref.ref",
+    "ref.doc",
+    "ref.python",
+    "misc.highlighting_failure",
+    "myst.header",
+    "autosummary",
+    "toc.not_readable",
+    "docutils",
 ]
 
 templates_path = ["_templates"]
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "**/*.ipynb", "**/*.py", "**/*.json", "**/*.zip", "**/*.md5"]
 bibtex_bibfiles = ["references.bib"]
 bibtex_default_style = "alpha"
 nb_execution_mode = "off"  # don't run notebooks when building the docs
