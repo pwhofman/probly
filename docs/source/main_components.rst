@@ -1,3 +1,5 @@
+.. _main_components:
+
 ****************
 Main Components
 ****************
@@ -32,7 +34,7 @@ Dropout-based uncertainty leverages the interpretation of dropout as approximate
 By enabling dropout at test time (Monte Carlo Dropout), you can generate multiple stochastic forward passes
 to estimate model uncertainty.
 
-:doc:`Dropout Transformation </notebooks/examples/dropout_transformation>`
+:ref:`dropout-transformation`
 
 1.2 DropConnect
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -40,7 +42,7 @@ to estimate model uncertainty.
 DropConnect extends dropout by randomly dropping weights instead of activations, often providing improved
 uncertainty estimates while maintaining computational efficiency.
 
-:doc:`DropConnect Transformation </notebooks/examples/dropconnect_transformation>`
+:ref:`dropconnect-transformation`
 
 1.3 Bayesian
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -49,7 +51,7 @@ The Bayesian transformation converts deterministic weights to probabilistic dist
 principled Bayesian neural networks. This approach provides theoretically grounded uncertainty estimates but
 at increased computational cost.
 
-:doc:`Bayesian Transformation </notebooks/examples/bayesian_transformation>`
+:ref:`bayesian-transformation`
 
 1.4 Ensemble
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -58,7 +60,7 @@ Ensemble transformations create multiple independent models trained on different
 different initializations. By aggregating predictions across ensemble members, you obtain diverse uncertainty
 estimates that often perform well in practice.
 
-:doc:`Ensemble Transformation </notebooks/examples/ensemble_transformation>`
+:ref:`ensemble-transformation`
 
 1.5 Evidential
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -71,7 +73,7 @@ providing a principled framework for capturing aleatoric and epistemic uncertain
 For regression tasks, evidential regression learns a Normal-Inverse-Gamma distribution, allowing the model
 to estimate both prediction uncertainty and the uncertainty in that uncertainty estimate.
 
-:doc:`Evidential Regression Transformation </notebooks/examples/evidential_regression_transformation>`
+:ref:`evidential-regression-transformation`
 
 
 1.5.2 Evidential Classification
@@ -79,7 +81,7 @@ to estimate both prediction uncertainty and the uncertainty in that uncertainty 
 For classification, evidential classification learns a Dirichlet distribution over class probabilities,
 enabling sophisticated uncertainty quantification for multi-class prediction tasks.
 
-:doc:`Evidential Classification Transformation </notebooks/examples/evidential_classification_transformation>`
+:ref:`evidential-classification-transformation`
 
 
 2. Utilities and Layers
@@ -92,20 +94,20 @@ with probabilistic outputs and enable end-to-end uncertainty-aware workflows.
 
 **Key utilities include:**
 
-- :doc:`Custom Loss Functions </notebooks/examples/utilities_and_layers/custom_loss_functions>`: 
+- :ref:`custom-loss-functions`:
 Tailored loss functions that properly account for
 uncertainty in predictions. These include negative log-likelihood variants, evidential loss functions,and calibration-aware losses that ensure your model
 learns meaningful uncertainty estimates.
 
-- :doc:`Metrics </notebooks/examples/utilities_and_layers/metrics>`: 
+- :ref:`metrics`:
 Specialized metrics to evaluate not only prediction accuracy but also the
 quality of uncertainty estimates, including calibration error, sharpness, and proper scoring rules.
 
-- :doc:`Probabilistic Layers </notebooks/examples/utilities_and_layers/probabilistic_layers>`:
+- :ref:`probabilistic-layers`:
 Drop-in replacements for standard layers (Linear, Conv2D, etc.)
 that incorporate stochasticity,enabling Bayesian inference within your models.
 
--  :doc:`Utility Functions </notebooks/examples/utilities_and_layers/utility_functions>`:
+-  :ref:`utility-functions`:
 Helper functions for extracting mean and variance from model outputs,
 computing prediction intervals, and formatting probabilistic predictions for downstream tasks.
 
@@ -125,15 +127,15 @@ validating that uncertainty is meaningful, and making informed decisions based o
 
 **Key evaluation tools include:**
 
-- :doc:`Calibration Metrics </notebooks/examples/evaluation_and_quantification/calibration_metrics>`:
+- :ref:`calibration-metrics`:
 Tools to assess how well uncertainty estimates correspond to actual prediction errors. This includes expected calibration error (ECE), maximum calibration error (MCE),
 and negative log-likelihood metrics.
 
-- :doc:`Visualization Tools </notebooks/examples/evaluation_and_quantification/visualization_tools>`:
+- :ref:`visualization-tools`:
 Methods to visualize uncertainty in predictions
 through confidence bands, prediction interval plots, and uncertainty heatmaps, aiding in qualitative interpretation and model debugging.
 
-- :doc:`Interpretation Techniques </notebooks/examples/evaluation_and_quantification/interpretation_techniques>`: 
+- :ref:`interpretation-techniques`:
 Approaches to decompose uncertaintyinto aleatoric (data) and epistemic (model) components,identify which inputs drive uncertainty, and understand the sources and implications of uncertainty in
 model outputs.
 

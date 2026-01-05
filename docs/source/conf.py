@@ -42,9 +42,27 @@ extensions = [
     "sphinx.ext.mathjax",  # for math support
     "sphinx.ext.doctest",  # for testing code snippets in the docs
     "sphinx_copybutton",  # adds a copy button to code blocks
-    # '"sphinx.ext.autosectionlabel",  # for auto-generating section labels,
+    "sphinx.ext.autosectionlabel",  # for auto-generating section labels,
     "sphinxcontrib.bibtex",  # for bibliography support
 ]
+
+myst_enable_extensions = [
+    "colon_fence",
+]
+myst_nb_output_stderr = "show"  # show stderr output in notebooks
+nb_render_markdown = True  # render markdown cells in notebooks
+autosectionlabel_prefix_document = True  # to avoid duplicate labels across different documents
+
+autosummary_ignore_module_all = True  # Ignore __all__ in modules
+autosummary_ignore_module = [
+    "probly.representation.credal_set",
+    "probly.representation.sampling",
+    "probly.transformation.bayesian",
+    "probly.transformation.dropconnect",
+    "probly.transformation.dropout",
+    "probly.transformation.ensemble",
+]
+
 
 suppress_warnings = [
     "toc.not_included",
@@ -59,6 +77,7 @@ suppress_warnings = [
     "toc.not_readable",
     "docutils",
 ]
+
 
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "**/*.ipynb", "**/*.py", "**/*.json", "**/*.zip", "**/*.md5"]
