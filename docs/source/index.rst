@@ -4,8 +4,6 @@
 
    introduction
    installation
-   user_guide
-   api
    core_concepts
    main_components
    advanced_topics
