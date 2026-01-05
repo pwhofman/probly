@@ -76,12 +76,16 @@ def normalize_input(input_data: np.ndarray) -> np.ndarray:
 def dispatch_plot(
     input_data: np.ndarray,
     labels: list[str] | None = None,
+    title: str | None = None,
+    choice: str | None = None,
 ) -> plt.Axes:
     """Selects and executes the correct plotting function based on class count.
 
     Args:
         input_data: Probabilities vector.
         labels: List of labels corresponding to the classes.
+        title: Manages custom or predefined title.
+        choice: Allows either "MLE", "Credal", "Probability" or None.
     """
     # Validates input.
     input_data = check_shape(input_data)
@@ -99,15 +103,35 @@ def dispatch_plot(
         msg = f"Number of labels ({len(labels)}) must match number of classes ({n_classes})."
         raise ValueError(msg)
 
+    if title is None:
+        title = f"Credal Plot ({n_classes} Classes)"
+
+    match choice:
+        case None:
+            mle_flag = True
+            credal_flag = True
+        case "MLE":
+            mle_flag = True
+            credal_flag = False
+        case "Credal":
+            mle_flag = False
+            credal_flag = True
+        case "Probability":
+            mle_flag = False
+            credal_flag = False
+        case _:
+            msgchoice = "Choice must be MLE, Credal, Probability or None."
+            raise ValueError(msgchoice)
+
     # Depending on number of classes chooses correct plotting function.
     if n_classes == 2:
         viz = IntervalVisualizer()
-        return viz.interval_plot(points, labels=labels)
+        return viz.interval_plot(points, labels=labels, title=title, mle_flag=mle_flag, credal_flag=credal_flag)
 
     if n_classes == 3:
         ter = TernaryVisualizer()
-        ax = ter.ternary_plot(points, labels=labels)
+        ax = ter.ternary_plot(points, labels=labels, title=title, mle_flag=mle_flag, credal_flag=credal_flag)
         return ax
 
     multi = MultiVisualizer()
-    return multi.spider_plot(points, labels=labels)
+    return multi.spider_plot(points, labels=labels, title=title, mle_flag=mle_flag, credal_flag=credal_flag)

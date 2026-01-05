@@ -31,9 +31,9 @@ class IntervalVisualizer:
         self,
         probs: np.ndarray,
         labels: list[str],
-        title: str = "Interval Plot (2 Classes)",
-        mle_flag: bool = True,
-        credal_flag: bool = True,
+        title: str,
+        mle_flag: bool,
+        credal_flag: bool,
         ax: plt.Axes = None,
     ) -> plt.Axes:
         """Plot the interval plot.
@@ -41,6 +41,7 @@ class IntervalVisualizer:
         Args:
         probs: probability vector for 2 classes.
         labels: labels for the interval plot.
+        title: title of the plot.
         title: Fixed Title for the plot.
         mle_flag: Flag to indicate whether median of probabilities is shown.
         credal_flag: Flag to indicate whether min/max interval is shown.
@@ -64,7 +65,15 @@ class IntervalVisualizer:
         if credal_flag:
             coord_max = np.max(coords[:, 0])
             coord_min = np.min(coords[:, 0])
-            ax.fill_betweenx(y_marg, coord_max, coord_min, color=cfg.BLUE, alpha=cfg.FILL_ALPHA, zorder=2)
+            ax.fill_betweenx(
+                y_marg,
+                coord_max,
+                coord_min,
+                color=cfg.BLUE,
+                alpha=cfg.FILL_ALPHA,
+                zorder=2,
+                label="Credal-band",
+            )
 
         ax.scatter(coords[:, 0], coords[:, 1], color=cfg.BLUE, zorder=3, label="Probabilities")
 
