@@ -105,66 +105,67 @@ def predictive_probs(alpha: Tensor) -> Tensor:
 # EVIDENTIAL LOSSES
 # ============================================================================
 
+
 def evidential_log_loss(inputs: Tensor, targets: Tensor) -> Tensor:
-        """Evidential Log Loss from Sensoy et al. (2018)."""
-        alphas = inputs + 1.0
-        strengths = alphas.sum(dim=1)
-        return torch.mean(torch.log(strengths) - torch.log(alphas[torch.arange(targets.size(0)), targets]))
+    """Evidential Log Loss from Sensoy et al. (2018)."""
+    alphas = inputs + 1.0
+    strengths = alphas.sum(dim=1)
+    return torch.mean(torch.log(strengths) - torch.log(alphas[torch.arange(targets.size(0)), targets]))
 
 
 def evidential_ce_loss(inputs: Tensor, targets: Tensor) -> Tensor:
-        """Evidential Cross Entropy Loss."""
-        alphas = inputs + 1.0
-        strengths = alphas.sum(dim=1)
-        return torch.mean(torch.digamma(strengths) - torch.digamma(alphas[torch.arange(targets.size(0)), targets]))
+    """Evidential Cross Entropy Loss."""
+    alphas = inputs + 1.0
+    strengths = alphas.sum(dim=1)
+    return torch.mean(torch.digamma(strengths) - torch.digamma(alphas[torch.arange(targets.size(0)), targets]))
 
 
 def evidential_mse_loss(inputs: Tensor, targets: Tensor) -> Tensor:
-        """Evidential Mean Squared Error Loss."""
-        alphas = inputs + 1.0
-        strengths = alphas.sum(dim=1)
-        y = F.one_hot(targets, inputs.size(1))
-        p = alphas / strengths[:, None]
+    """Evidential Mean Squared Error Loss."""
+    alphas = inputs + 1.0
+    strengths = alphas.sum(dim=1)
+    y = F.one_hot(targets, inputs.size(1))
+    p = alphas / strengths[:, None]
 
-        err = (y - p) ** 2
-        var = p * (1 - p) / (strengths[:, None] + 1)
+    err = (y - p) ** 2
+    var = p * (1 - p) / (strengths[:, None] + 1)
 
-        return torch.mean(torch.sum(err + var, dim=1))
+    return torch.mean(torch.sum(err + var, dim=1))
 
 
 def evidential_kl_divergence(inputs: Tensor, targets: Tensor) -> Tensor:
-        """Evidential KL Divergence Loss."""
-        alphas = inputs + 1.0
-        y = F.one_hot(targets, inputs.size(1))
-        alphas_tilde = y + (1 - y) * alphas
-        strengths_tilde = alphas_tilde.sum(dim=1)
+    """Evidential KL Divergence Loss."""
+    alphas = inputs + 1.0
+    y = F.one_hot(targets, inputs.size(1))
+    alphas_tilde = y + (1 - y) * alphas
+    strengths_tilde = alphas_tilde.sum(dim=1)
 
-        k = torch.full((inputs.size(0),), inputs.size(1), device=inputs.device)
+    k = torch.full((inputs.size(0),), inputs.size(1), device=inputs.device)
 
-        first = torch.lgamma(strengths_tilde) - torch.lgamma(k) - torch.sum(torch.lgamma(alphas_tilde), dim=1)
-        second = torch.sum(
-            (alphas_tilde - 1) * (torch.digamma(alphas_tilde) - torch.digamma(strengths_tilde[:, None])),
-            dim=1,
-        )
+    first = torch.lgamma(strengths_tilde) - torch.lgamma(k) - torch.sum(torch.lgamma(alphas_tilde), dim=1)
+    second = torch.sum(
+        (alphas_tilde - 1) * (torch.digamma(alphas_tilde) - torch.digamma(strengths_tilde[:, None])),
+        dim=1,
+    )
 
-        return torch.mean(first + second)
+    return torch.mean(first + second)
 
 
 def evidential_nignll_loss(inputs: dict[str, Tensor], targets: Tensor) -> Tensor:
-        """Evidence-based NIG regression loss."""
-        omega = 2 * inputs["beta"] * (1 + inputs["nu"])
-        return (
-            0.5 * torch.log(torch.pi / inputs["nu"])
-            - inputs["alpha"] * torch.log(omega)
-            + (inputs["alpha"] + 0.5) * torch.log((targets - inputs["gamma"]) ** 2 * inputs["nu"] + omega)
-            + torch.lgamma(inputs["alpha"])
-            - torch.lgamma(inputs["alpha"] + 0.5)
-        ).mean()
+    """Evidence-based NIG regression loss."""
+    omega = 2 * inputs["beta"] * (1 + inputs["nu"])
+    return (
+        0.5 * torch.log(torch.pi / inputs["nu"])
+        - inputs["alpha"] * torch.log(omega)
+        + (inputs["alpha"] + 0.5) * torch.log((targets - inputs["gamma"]) ** 2 * inputs["nu"] + omega)
+        + torch.lgamma(inputs["alpha"])
+        - torch.lgamma(inputs["alpha"] + 0.5)
+    ).mean()
 
 
 def evidential_regression_regularization(inputs: dict[str, Tensor], targets: Tensor) -> Tensor:
-        """Regularization term for evidential regression."""
-        return (torch.abs(targets - inputs["gamma"]) * (2 * inputs["nu"] + inputs["alpha"])).mean()
+    """Regularization term for evidential regression."""
+    return (torch.abs(targets - inputs["gamma"]) * (2 * inputs["nu"] + inputs["alpha"])).mean()
 
 
 # ========================================================================================|
@@ -173,19 +174,19 @@ def evidential_regression_regularization(inputs: dict[str, Tensor], targets: Ten
 
 
 def rpn_distillation_loss(
-        rpn_params: tuple[Tensor, Tensor, Tensor, Tensor],
-        mus: list[Tensor],
-        variances: list[Tensor],
-    ) -> Tensor:
-        """Regression Prior Network (RPN) distillation loss."""
-        m, l_precision, kappa, nu = rpn_params
-        losses: list[Tensor] = []
+    rpn_params: tuple[Tensor, Tensor, Tensor, Tensor],
+    mus: list[Tensor],
+    variances: list[Tensor],
+) -> Tensor:
+    """Regression Prior Network (RPN) distillation loss."""
+    m, l_precision, kappa, nu = rpn_params
+    losses: list[Tensor] = []
 
-        for mu_k, var_k in zip(mus, variances, strict=False):
-            logp = normal_wishart_log_prob(m, l_precision, kappa, nu, mu_k, var_k)
-            losses.append(-logp.mean())
+    for mu_k, var_k in zip(mus, variances, strict=False):
+        logp = normal_wishart_log_prob(m, l_precision, kappa, nu, mu_k, var_k)
+        losses.append(-logp.mean())
 
-        return torch.stack(losses).mean()
+    return torch.stack(losses).mean()
 
 
 def postnet_loss(
@@ -524,7 +525,7 @@ def ird_loss(
     adversarial_alpha: torch.Tensor | None = None,
     p: float = 2.0,
     lam: float = 0.15,
-    gamma: float= 1.0,
+    gamma: float = 1.0,
 ) -> torch.Tensor:
     """Implementation of the Information-Robust Dirichlet Loss :cite:`tsiligkaridisInformationRobustDirichlet2019`.
 
@@ -597,7 +598,6 @@ def ird_loss(
         entropy = term1 + term2 - term3
 
         return entropy.sum()
-
 
     """Forward pass of the Information-Robust Dirichlet Loss.
 
