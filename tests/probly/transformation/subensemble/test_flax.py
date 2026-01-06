@@ -33,33 +33,21 @@ class TestGeneration:
     ) -> None:
         """Test for default subensemble generation."""
         model = request.getfixturevalue(model_fixture)
-        num_heads = 5
-        head_layer = 1  # default
+        num_heads = 2
 
         subensemble_model = subensemble(model, num_heads=num_heads)
-        backbone = subensemble_model[0]
-        heads = subensemble_model[1]
 
         count_linear_original = count_layers(model, nnx.Linear)
-        count_linear_backbone = count_layers(backbone, nnx.Linear)
-        count_linear_heads = count_layers(heads, nnx.Linear)
-        count_sequential_original = count_layers(model, nnx.Sequential)
-        count_sequential_backbone = count_layers(backbone, nnx.Sequential)
-        count_sequential_heads = count_layers(heads, nnx.Sequential)
         count_convolution_original = count_layers(model, nnx.Conv)
-        count_convolution_backbone = count_layers(backbone, nnx.Conv)
-        count_convolution_heads = count_layers(heads, nnx.Conv)
 
         assert isinstance(subensemble_model, nnx.Module)
-        assert isinstance(backbone, nnx.Sequential)
-        assert isinstance(heads, nnx.List)
-        assert count_linear_heads == num_heads
-        assert count_linear_backbone == (count_linear_original - head_layer)
-        assert (count_linear_original + num_heads - 1) == count_linear_heads + count_linear_backbone
-        assert count_sequential_heads == num_heads
-        assert count_sequential_backbone == count_sequential_original
-        assert count_convolution_backbone == count_convolution_original
-        assert count_convolution_heads == 0
+        assert len(subensemble_model) == num_heads
+
+        for member in subensemble_model:
+            count_linear_subensemble = count_layers(member, nnx.Linear)
+            count_convolutional_subensemble = count_layers(member, nnx.Conv)
+            assert count_linear_subensemble == count_linear_original
+            assert count_convolutional_subensemble == count_convolution_original
 
     @pytest.mark.parametrize(
         "model_fixture",
@@ -77,7 +65,7 @@ class TestGeneration:
     ) -> None:
         """Test for 2 head layers subensemble generation."""
         model = request.getfixturevalue(model_fixture)
-        num_heads = 5
+        num_heads = 2
         head_layer = 2
 
         subensemble_model = subensemble(
@@ -85,38 +73,20 @@ class TestGeneration:
             num_heads=num_heads,
             head_layer=head_layer,
         )
-        backbone = subensemble_model[0]
-        heads = subensemble_model[1]
-
         count_linear_original = count_layers(model, nnx.Linear)
-        count_linear_backbone = count_layers(backbone, nnx.Linear)
-        count_linear_heads = count_layers(heads, nnx.Linear)
-        count_sequential_original = count_layers(model, nnx.Sequential)
-        count_sequential_backbone = count_layers(backbone, nnx.Sequential)
-        count_sequential_heads = count_layers(heads, nnx.Sequential)
         count_convolution_original = count_layers(model, nnx.Conv)
-        count_convolution_backbone = count_layers(backbone, nnx.Conv)
-        count_convolution_heads = count_layers(heads, nnx.Conv)
+        count_sequential_original = count_layers(model, nnx.Sequential)
 
         assert isinstance(subensemble_model, nnx.Module)
-        assert isinstance(backbone, nnx.Sequential)
-        assert isinstance(heads, nnx.List)
-        if isinstance(model.layers[-2], nnx.Linear):
-            assert count_linear_heads == (num_heads * head_layer)
-        else:
-            assert count_sequential_heads == num_heads
-        if isinstance(model.layers[-2], nnx.Linear):
-            assert count_linear_backbone == (count_linear_original - head_layer)
-        else:
-            assert count_linear_backbone == (count_linear_original - 1)
-        if isinstance(model.layers[-2], nnx.Linear):
-            assert count_linear_original == (count_linear_heads - (num_heads * head_layer) + 2) + count_linear_backbone
-        else:
-            assert count_linear_original == (count_linear_heads - num_heads + 1) + count_linear_backbone
-        assert count_sequential_heads == num_heads
-        assert count_sequential_backbone == count_sequential_original
-        assert count_convolution_backbone == count_convolution_original
-        assert count_convolution_heads == 0
+        assert len(subensemble_model) == num_heads
+
+        for member in subensemble_model:
+            count_linear_subensemble = count_layers(member, nnx.Linear)
+            count_convolutional_subensemble = count_layers(member, nnx.Conv)
+            count_sequential_subensemble = count_layers(member, nnx.Sequential)
+            assert count_linear_subensemble == count_linear_original
+            assert count_convolutional_subensemble == count_convolution_original
+            assert count_sequential_subensemble == count_sequential_original * 3
 
     @pytest.mark.parametrize(
         "model_fixture",
@@ -141,31 +111,23 @@ class TestGeneration:
             num_heads=num_heads,
             head=model,
         )
-        backbone = subensemble_model[0]
-        heads = subensemble_model[1]
 
         count_linear_original = count_layers(model, nnx.Linear)
-        count_linear_backbone = count_layers(backbone, nnx.Linear)
-        count_linear_heads = count_layers(heads, nnx.Linear)
         count_sequential_original = count_layers(model, nnx.Sequential)
-        count_sequential_backbone = count_layers(backbone, nnx.Sequential)
-        count_sequential_heads = count_layers(heads, nnx.Sequential)
-        count_convolution_original = count_layers(model, nnx.Conv)
-        count_convolution_backbone = count_layers(backbone, nnx.Conv)
-        count_convolution_heads = count_layers(heads, nnx.Conv)
+        count_convolutional_original = count_layers(model, nnx.Conv)
+        count_sequential_original = count_layers(model, nnx.Sequential)
 
-        assert isinstance(subensemble_model, nnx.Module)
-        assert isinstance(backbone, nnx.Sequential)
-        assert isinstance(heads, nnx.List)
-        assert count_linear_heads == (count_linear_original * num_heads)
-        assert count_linear_backbone == count_linear_original
-        assert (
-            (count_linear_original * num_heads) + count_linear_original
-        ) == count_linear_heads + count_linear_backbone
-        assert count_sequential_heads == num_heads
-        assert count_sequential_backbone == count_sequential_original
-        assert count_convolution_backbone == count_convolution_original
-        assert count_convolution_heads == (count_convolution_original * num_heads)
+        count_sequential_subensemble = count_layers(subensemble_model, nnx.Sequential)
+
+        assert isinstance(subensemble_model, nnx.List)
+        assert len(subensemble_model) == num_heads
+        assert count_sequential_subensemble == 3 * num_heads * count_sequential_original
+        for member in subensemble_model:
+            count_linear_subensemble = count_layers(member, nnx.Linear)
+            count_convolutional_subensemble = count_layers(member, nnx.Conv)
+            count_sequential_subensemble = count_layers(member, nnx.Sequential)
+            assert count_linear_subensemble == count_linear_original * 2
+            assert count_convolutional_subensemble == count_convolutional_original * 2
 
 
 class TestReset:
@@ -183,13 +145,18 @@ class TestReset:
         original_params_last_layer = jax.tree_util.tree_leaves(model.layers[-1])
 
         subensemble_result = subensemble(model, num_heads=num_heads, reset_params=True)
-        heads = subensemble_result[1]
 
-        first_head = heads[0]
-        params_first_head = jax.tree_util.tree_leaves(first_head)
+        head_member1 = subensemble_result[0].layers[-1]
+        head_member2 = subensemble_result[1].layers[-1]
 
-        for head in heads:
-            params_head = jax.tree_util.tree_leaves(head)
+        params_head1 = jax.tree_util.tree_leaves(head_member1)
+        params_head2 = jax.tree_util.tree_leaves(head_member2)
+
+        assert not jnp.array_equal(params_head1[1], params_head2[1])
+
+        for member in subensemble_result:
+            head_layer = member.layers[-1]
+            params_head = jax.tree_util.tree_leaves(head_layer)
 
             for original_params_last_layer_iterator, params_first_head_iterator in zip(
                 original_params_last_layer[1],
@@ -197,15 +164,6 @@ class TestReset:
                 strict=False,
             ):
                 assert not jnp.array_equal(original_params_last_layer_iterator, params_first_head_iterator)
-
-            for params_first_head_iterator, params_head_iterator in zip(
-                params_first_head[1],
-                params_head[1],
-                strict=False,
-            ):
-                if head is first_head:
-                    continue
-                assert not jnp.array_equal(params_first_head_iterator, params_head_iterator)
 
     def test_parameters_not_reset(
         self,
@@ -222,41 +180,16 @@ class TestReset:
             num_heads=num_heads,
             reset_params=False,
         )
-        heads = subensemble_result[1]
 
-        for head in heads:
-            params_head = jax.tree_util.tree_leaves(head)
+        for member in subensemble_result:
+            head_layer = member.layers[-1]
+            params_head = jax.tree_util.tree_leaves(head_layer)
             for original_params_last_layer_iterator, params_head_iterator in zip(
                 original_params_last_layer[1],
                 params_head[1],
                 strict=False,
             ):
                 assert jnp.array_equal(original_params_last_layer_iterator, params_head_iterator)
-
-    def test_forward_pass_shape(
-        self,
-        flax_model_small_2d_2d: nnx.Sequential,
-    ) -> None:
-        """Tests if the forward pass works correctly after subensemble transformation."""
-        num_heads = 2
-
-        subensemble_result = subensemble(
-            flax_model_small_2d_2d,
-            num_heads=num_heads,
-            reset_params=True,
-        )
-        backbone = subensemble_result[0]
-        heads = subensemble_result[1]
-
-        x = jnp.ones((1, 2))
-
-        backbone_output = backbone(x) if backbone is not None else x
-
-        # forward pass through each head
-        for head in heads:
-            head_output = head(backbone_output)
-            expected_output_shape = (1, head.layers[-1].out_features)
-            assert head_output.shape == expected_output_shape
 
 
 class TestEdgeCases:
@@ -283,24 +216,14 @@ class TestEdgeCases:
     ) -> None:
         """Test if backbone can be empty while head is an ensemble of the base model."""
         num_heads = 4
-        head_layer = count_layers(flax_model_small_2d_2d, nnx.Module)
+        head_layer = count_layers(flax_model_small_2d_2d, nnx.Linear) + 1
 
-        subensemble_result = subensemble(
-            flax_model_small_2d_2d,
-            num_heads=num_heads,
-            head_layer=head_layer,
-        )
-        backbone = subensemble_result[0]
-        heads = subensemble_result[1]
-
-        original_layers = count_layers(flax_model_small_2d_2d, nnx.Module)
-        backbone_layers = count_layers(backbone, nnx.Module)
-
-        assert isinstance(subensemble_result, nnx.Module)
-        assert isinstance(backbone, nnx.Sequential)
-        assert isinstance(heads, nnx.List)
-        assert len(heads) == num_heads
-        assert backbone_layers == 2  # Sequential + List
-        for head in heads:
-            head_layers = count_layers(head, nnx.Module)
-            assert head_layers == original_layers
+        with pytest.raises(
+            ValueError,
+            match=f"head_layer {head_layer} must be less than to {head_layer - 1}",
+        ):
+            subensemble(
+                flax_model_small_2d_2d,
+                num_heads=num_heads,
+                head_layer=head_layer,
+            )

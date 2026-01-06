@@ -10,10 +10,20 @@ from pytraverse import CLONE, singledispatch_traverser, traverse
 from .common import register
 
 reset_traverser = singledispatch_traverser[nnx.Module](name="reset_traverser")
+subensemble_traverser = singledispatch_traverser[nnx.Module](name="subensemble_traverser")
+
+
+@subensemble_traverser.register
+def _(obj: nnx.Module) -> nnx.List[nnx.Module]:
+    children = nnx.List()
+    for _, child in obj.iter_modules():
+        if hasattr(child, "in_features"):  # type: ignore[attr-defined]
+            children.append(child)
+    return children
 
 
 @reset_traverser.register
-def _(obj: nnx.Module) -> nnx.Module:
+def _(obj: nnx.Module) -> nnx.Module:  # type: ignore[call-arg]
     if hasattr(obj, "reset_parameters"):
         obj.reset_parameters()  # type: ignore[operator]
     return obj
@@ -42,10 +52,18 @@ def generate_flax_subensemble(
     - using an obj as shared backbone, copying the head model num_heads times.
     Resets the parameters of each head.
     """
+    layers = [m for m in traverse(obj, nn_compose(subensemble_traverser)) if isinstance(m, nnx.Module)]
+
+    if head_layer > len(layers):
+        msg = f"head_layer {head_layer} must be less than to {len(layers)}"
+        raise ValueError(msg)
+
     # no head
     if head is None:
-        head = nnx.Sequential(*obj.layers[-head_layer:])
-        obj = nnx.Sequential(*obj.layers[:-head_layer])
+        backbone = nnx.Sequential(*layers[:-head_layer])
+        head = nnx.Sequential(*layers[-head_layer:])
+    else:
+        backbone = obj
 
     # obj and head
     if reset_params:
@@ -53,7 +71,21 @@ def generate_flax_subensemble(
     else:
         heads = nnx.List([_copy(head) for _ in range(num_heads)])
 
-    return nnx.List([obj, heads])
+    # freeze backbone
+    backbone.eval()
+
+    backbone_layers = [m for m in traverse(backbone, subensemble_traverser) if isinstance(m, nnx.Module)]
+
+    subensemble = nnx.List(
+        [
+            nnx.Sequential(
+                nnx.Sequential(*backbone_layers),
+                nnx.Sequential(*[m for m in traverse(h, subensemble_traverser) if isinstance(m, nnx.Module)]),
+            )
+            for h in heads
+        ],
+    )
+    return subensemble
 
 
 register(nnx.Module, generate_flax_subensemble)
