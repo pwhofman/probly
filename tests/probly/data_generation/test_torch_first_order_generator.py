@@ -1,4 +1,3 @@
-# command i use: pytest "c:\Users\ashhe\Desktop\Informatik mit integriertem Anwendungsfach\5.Semester\WP14 SEP Probly\PythonProjekte\probly\tests\probly\data_generator\test_first_order_generator.py" -q
 from __future__ import annotations
 
 import json
@@ -7,10 +6,10 @@ from pathlib import Path
 import torch
 from torch.utils.data import Dataset
 
-from probly.data_generator.first_order_generator import (
+from probly.data_generation.torch_first_order_generator import (
     FirstOrderDataGenerator,
     FirstOrderDataset,
-    output_fo_dataloader,
+    output_dataloader,
 )
 
 
@@ -42,26 +41,27 @@ def test_save_and_load_with_meta(tmp_path: Path):
     gen = FirstOrderDataGenerator(model=model, device="cpu", batch_size=4, output_mode="logits", model_name="dummy")
     dists = gen.generate_distributions(dataset, progress=False)
 
-    # Persist file into repository under src/probly/data_generator
-    repo_root = Path(__file__).resolve().parents[3]
-    save_path = repo_root / "src" / "probly" / "data_generator" / "first_order_dists.json"
-    save_path.parent.mkdir(parents=True, exist_ok=True)
-    meta = {"note": "unit-test", "classes": n_classes}
-
-    gen.save_distributions(save_path, dists, meta=meta)
-
-    # basic file integrity
-    with open(save_path, encoding="utf-8") as f:
-        obj = json.load(f)
-    assert "distributions" in obj
-    assert "meta" in obj
-
-    loaded_dists, loaded_meta = gen.load_distributions(save_path)
-
-    assert loaded_dists == dists
-    assert loaded_meta.get("model_name") == "dummy"
-    assert loaded_meta.get("note") == "unit-test"
-    assert loaded_meta.get("classes") == n_classes
+    # Deactivated to avoid writing test artifacts to disk:
+    # # Persist file into repository under src/probly/data_generation
+    # repo_root = Path(__file__).resolve().parents[3]
+    # save_path = repo_root / "src" / "probly" / "data_generation" / "first_order_dists.json"
+    # save_path.parent.mkdir(parents=True, exist_ok=True)
+    # meta = {"note": "unit-test", "classes": n_classes}
+    #
+    # gen.save_distributions(save_path, dists, meta=meta)
+    #
+    # # basic file integrity
+    # with open(save_path, encoding="utf-8") as f:
+    #     obj = json.load(f)
+    # assert "distributions" in obj
+    # assert "meta" in obj
+    #
+    # loaded_dists, loaded_meta = gen.load_distributions(save_path)
+    #
+    # assert loaded_dists == dists
+    # assert loaded_meta.get("model_name") == "dummy"
+    # assert loaded_meta.get("note") == "unit-test"
+    # assert loaded_meta.get("classes") == n_classes
 
 
 def test_generator_init_and_run(tmp_path: Path):
@@ -108,7 +108,7 @@ def test_first_order_dataset_and_dataloader_with_targets():
         assert torch.isclose(p.sum(), torch.tensor(1.0), atol=1e-4)
 
     # DataLoader integration
-    loader = output_fo_dataloader(dataset, dists, batch_size=4, shuffle=False)
+    loader = output_dataloader(dataset, dists, batch_size=4, shuffle=False)
     batch = next(iter(loader))
     x, y, p = batch
     assert isinstance(x, torch.Tensor) and isinstance(y, torch.Tensor) and isinstance(p, torch.Tensor)
@@ -176,7 +176,7 @@ def test_first_order_dataset_and_dataloader_input_only_no_labels():
     assert p.shape[-1] == n_classes
 
     # DataLoader
-    loader = output_fo_dataloader(dataset, dists, batch_size=5, shuffle=False)
+    loader = output_dataloader(dataset, dists, batch_size=5, shuffle=False)
     x_batch, p_batch = next(iter(loader))
     assert isinstance(x_batch, torch.Tensor) and isinstance(p_batch, torch.Tensor)
     assert x_batch.shape[0] == p_batch.shape[0]
@@ -231,17 +231,18 @@ def test_end_to_end_training_and_coverage_improves():
     dists = gen.generate_distributions(dataset, progress=False)
 
     # Build DataLoader for training student model using the generated distributions
-    loader = output_fo_dataloader(dataset, dists, batch_size=16, shuffle=True)
+    loader = output_dataloader(dataset, dists, batch_size=16, shuffle=True)
 
     # Train student; record initial and final loss
     student, losses = _train_one_model_with_soft_targets(loader, d_in=d_in, n_classes=n_classes, steps=15)
     assert len(losses) > 2
     assert losses[0] > losses[-1]  # training signal present
 
-    # Visual feedback: save model and a small JSON run log
-    repo_root = Path(__file__).resolve().parents[3]
-    datagen_dir = repo_root / "src" / "probly" / "data_generator"
-    datagen_dir.mkdir(parents=True, exist_ok=True)
+    # Deactivated to avoid writing run logs during tests:
+    # # Visual feedback: save model and a small JSON run log
+    # repo_root = Path(__file__).resolve().parents[3]
+    # datagen_dir = repo_root / "src" / "probly" / "data_generation"
+    # datagen_dir.mkdir(parents=True, exist_ok=True)
 
     # Evaluate coverage: compare student softmax to teacher distributions
     # Build tensors aligned with index order
@@ -255,29 +256,29 @@ def test_end_to_end_training_and_coverage_improves():
     cov_after = _compute_coverage(student_probs, teacher_probs, epsilon=0.25)
 
     # Write run summary JSON for verification
-    run_log = {
-        "run_summary_docs": {
-            "n": "number of samples in the dataset used",
-            "d_in": "input feature dimension",
-            "n_classes": "number of output classes",
-            "loss_initial": "first recorded training loss (KL divergence) at the start; higher means the student disagrees more with the distributions",
-            "loss_final": "last recorded training loss; lower than initial indicates learning happened",
-            "coverage_before": "baseline agreement rate using a naive uniform prediction vs teacher distributions, measured by L1 distance ≤ epsilon (e.g., 0.25)",
-            "coverage_after": "agreement rate after training using the students predictions; higher than before shows improvement",
-        },
-        "n": n,
-        "d_in": d_in,
-        "n_classes": n_classes,
-        "loss_initial": losses[0],
-        "loss_final": losses[-1],
-        "coverage_before": cov_before,
-        "coverage_after": cov_after,
-    }
-    log_path = datagen_dir / "run_summary.json"
-    with open(log_path, "w", encoding="utf-8") as f:
-        json.dump(run_log, f, ensure_ascii=False, indent=2)
-    # Minimal console cue
-    print(f"Saved run log to: {log_path}")
+    # run_log = {
+    #     "run_summary_docs": {
+    #         "n": "number of samples in the dataset used",
+    #         "d_in": "input feature dimension",
+    #         "n_classes": "number of output classes",
+    #         "loss_initial": "first recorded training loss (KL divergence) at the start; higher means the student disagrees more with the distributions",
+    #         "loss_final": "last recorded training loss; lower than initial indicates learning happened",
+    #         "coverage_before": "baseline agreement rate using a naive uniform prediction vs teacher distributions, measured by L1 distance ≤ epsilon (e.g., 0.25)",
+    #         "coverage_after": "agreement rate after training using the students predictions; higher than before shows improvement",
+    #     },
+    #     "n": n,
+    #     "d_in": d_in,
+    #     "n_classes": n_classes,
+    #     "loss_initial": losses[0],
+    #     "loss_final": losses[-1],
+    #     "coverage_before": cov_before,
+    #     "coverage_after": cov_after,
+    # }
+    # log_path = datagen_dir / "run_summary.json"
+    # with open(log_path, "w", encoding="utf-8") as f:
+    #     json.dump(run_log, f, ensure_ascii=False, indent=2)
+    # # Minimal console cue
+    # print(f"Saved run log to: {log_path}")
 
     # Coverage should improve after training
     assert cov_after >= cov_before

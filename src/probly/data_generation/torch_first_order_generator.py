@@ -1,4 +1,4 @@
-"""Full First-Order data generator."""
+"""Torch FirstOrder data generator."""
 
 from __future__ import annotations
 
@@ -62,7 +62,7 @@ class FirstOrderDataGenerator:
         Optional string identifier. (saved with metadata)
     """
 
-    model: Callable[..., Any]
+    model: torch.nn.Module | Callable[..., Any]
     device: str = "cpu"
     batch_size: int = 64
     output_mode: str = "auto"  # your options: 'auto' | 'logits' | 'probs'
@@ -85,16 +85,25 @@ class FirstOrderDataGenerator:
         if self.output_transform is not None:
             return self.output_transform(outputs)
 
-        mode = self.output_mode.lower()
+        mode = (self.output_mode or "auto").lower()
         if mode == "probs":
             return outputs
         if mode == "logits":
             return F.softmax(outputs, dim=-1)
-        # auto
-        return outputs if _is_probabilities(outputs) else F.softmax(outputs, dim=-1)
+        if mode == "auto":
+            return outputs if _is_probabilities(outputs) else F.softmax(outputs, dim=-1)
+        msg = f"Invalid output_mode '{self.output_mode}'. Expected one of: 'auto', 'logits', 'probs'."
+        raise ValueError(msg)
 
     def prepares_batch_inp(self, sample: object) -> object:
-        """Prepare model input from dataset sample."""
+        """Extract the model input from a dataset sample or batch.
+
+        Behavior:
+        - If input_getter is provided use it.
+        - If the sample/batch is a tuple or list like (inputs, labels, ...),
+          return the first element (inputs).
+        - Otherwise return the sample as-is.
+        """
         if self.input_getter is not None:
             return self.input_getter(sample)
         if isinstance(sample, (list, tuple)) and len(sample) >= 1:
@@ -102,13 +111,8 @@ class FirstOrderDataGenerator:
         return sample
 
     def extract_input(self, sample: object) -> object:
-        """Extract model input from dataset sample."""
-        if self.input_getter is not None:
-            return self.input_getter(sample)
-        # Default conventions: either (input, target) or input only
-        if isinstance(sample, (list, tuple)) and len(sample) >= 1:
-            return sample[0]
-        return sample
+        """Deprecated name use prepares_batch_inp() instead."""
+        return self.prepares_batch_inp(sample)
 
     @torch.no_grad()
     def generate_distributions(
@@ -141,9 +145,14 @@ class FirstOrderDataGenerator:
             dataset_len = len(dataset)
             loader = torch.utils.data.DataLoader(dataset, batch_size=self.batch_size, shuffle=False)
 
-        self.model = self.model.to(self.device) if hasattr(self.model, "to") else self.model
-        if hasattr(self.model, "eval"):
+        if isinstance(self.model, torch.nn.Module):
+            self.model = self.model.to(self.device)
             self.model.eval()
+        else:
+            warnings.warn(
+                "[FirstOrderDataGenerator] model is not a torch.nn.Module; skipping .to()/.eval().",
+                stacklevel=2,
+            )
 
         distributions: dict[int, list[float]] = {}
         start_idx = 0
@@ -189,12 +198,13 @@ class FirstOrderDataGenerator:
         return distributions
 
     def get_posterior_distributions(self) -> dict[str, dict[str, torch.Tensor]]:
-        """Extracts μ and ρ from all BayesLinear layers — issue #241.
+        """Extracts u and p from all BayesLinear layers — issue #241.
+
         Returns dict compatible with future torch.save/load.
         """
         distributions: dict[str, dict[str, torch.Tensor]] = {}
-
-        for name, param in self.model.named_parameters():
+        model_mod = cast("torch.nn.Module", self.model)
+        for name, param in model_mod.named_parameters():
             if name.endswith("_mu"):
                 base_name = name[:-3]
                 distributions.setdefault(base_name, {})
@@ -263,21 +273,13 @@ class FirstOrderDataset(Dataset):
         self.distributions: dict[int, list[float]] = {int(k): list(v) for k, v in distributions.items()}
         self.input_getter = input_getter
 
-        # Soft check only if base_dataset supports length (__len__).
-        try:
-            n = len(base_dataset)
-            if len(self.distributions) != n:
-                warnings.warn(
-                    (
-                        f"[FirstOrderDataset] distributions count {len(self.distributions)} "
-                        f"does not match dataset length {n}."
-                    ),
-                    stacklevel=2,
-                )
-        except TypeError:
-            # Dataset doesnt support len(base_dataset) (no __len__).
+        n = len(base_dataset)
+        if len(self.distributions) != n:
             warnings.warn(
-                "[FirstOrderDataset] base_dataset has no length? ; validation being skipped.",
+                (
+                    f"[FirstOrderDataset] distributions count {len(self.distributions)} "
+                    f"does not match dataset length {n}."
+                ),
                 stacklevel=2,
             )
 
@@ -309,7 +311,7 @@ class FirstOrderDataset(Dataset):
         return inp, dist_tensor
 
 
-def output_fo_dataloader(
+def output_dataloader(
     base_dataset: Dataset,
     distributions: Mapping[int, Iterable[float]],
     *,
@@ -328,3 +330,89 @@ def output_fo_dataloader(
         num_workers=num_workers,
         pin_memory=pin_memory,
     )
+
+
+def save_distributions_pt(
+    tensor_dict: dict[str, Any],
+    save_path: str,
+    *,
+    create_dir: bool = False,
+    verbose: bool = True,
+) -> None:
+    """Save a dictionary of tensors as a .pt/.pth file using torch.save.
+
+    Parameters
+    ----------
+    tensor_dict:
+        Mapping of names to tensors to serialize.
+    save_path:
+        Target path. If it does not end with .pt or .pth, .pt will be appended.
+    create_dir:
+        Whether to create the parent directory automatically.
+    verbose:
+        When True, prints a short summary including per-tensor shapes and total size.
+    """
+    path = Path(save_path)
+    if not path.suffix.endswith((".pt", ".pth")):
+        path = path.with_suffix(".pt")
+
+    if create_dir:
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+    torch.save(tensor_dict, path)
+
+    if verbose:
+        logger.info("Tensor dict has been saved to: %s", str(path))
+        logger.info("Dictionary overview:")
+        total_size = 0.0
+        for key, tensor in tensor_dict.items():
+            if isinstance(tensor, torch.Tensor):
+                size_mb = tensor.element_size() * tensor.nelement() / (1024**2)
+                total_size += size_mb
+                logger.info("- %s: %s, %s, %.2f MB", key, tuple(tensor.shape), tensor.dtype, size_mb)
+            else:
+                logger.info("- %s: non-tensor value of type %s", key, type(tensor).__name__)
+        logger.info("Total size (tensor entries): %.2f MB", total_size)
+
+
+def load_distributions_pt(
+    load_path: str,
+    *,
+    device: str | None = None,
+    verbose: bool = True,
+) -> dict[str, Any]:
+    """Load a tensor dictionary from a .pt/.pth file using torch.load.
+
+    Parameters
+    ----------
+    load_path:
+        Path to the saved tensor dictionary (.pt or .pth).
+    device:
+        Target device for loaded tensors (e.g., 'cpu', 'cuda:0').
+        When None, keeps original device information.
+    verbose:
+        When True, prints a short summary of the loaded contents.
+    """
+    path = Path(load_path)
+    if not path.exists():
+        msg = f"File not found: {path}"
+        raise FileNotFoundError(msg)
+
+    tensor_dict = cast("dict[str, Any]", torch.load(path, map_location=device))
+
+    if verbose:
+        logger.info("Tensor dict has been loaded from %s", str(path))
+        logger.info("Loaded contents overview:")
+        for key, tensor in tensor_dict.items():
+            if isinstance(tensor, torch.Tensor):
+                logger.info(
+                    "- %s: %s, %s, device: %s",
+                    key,
+                    tuple(tensor.shape),
+                    tensor.dtype,
+                    str(tensor.device),
+                )
+            else:
+                logger.info("- %s: non-tensor value of type %s", key, type(tensor).__name__)
+
+    return tensor_dict
