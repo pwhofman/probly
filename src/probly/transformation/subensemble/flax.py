@@ -52,7 +52,7 @@ def generate_flax_subensemble(
     - using an obj as shared backbone, copying the head model num_heads times.
     Resets the parameters of each head.
     """
-    layers = [m for m in traverse(obj, nn_compose(subensemble_traverser)) if isinstance(m, nnx.Module)]
+    layers = [m for m in traverse(obj, subensemble_traverser) if isinstance(m, nnx.Module)]
 
     if head_layer > len(layers):
         msg = f"head_layer {head_layer} must be less than to {len(layers)}"
