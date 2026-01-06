@@ -46,10 +46,10 @@ class TernaryVisualizer:
         ax.text(v2[0] + 0.02, v2[1] - offset_x, c2, ha="left", va="top", fontsize=12)
         ax.text(v3[0], v3[1] + offset_x, c3, ha="center", va="bottom", fontsize=12)
 
-        edge_lable = "0.0 / 1.0"
-        ax.text(v1[0], v1[1], edge_lable, ha="right", va="top", fontsize=8)
-        ax.text(v2[0], v2[1], edge_lable, ha="left", va="top", fontsize=8)
-        ax.text(v3[0], v3[1], edge_lable, ha="center", va="bottom", fontsize=8)
+        edge_label = "0.0 / 1.0"
+        ax.text(v1[0], v1[1], edge_label, ha="right", va="top", fontsize=8)
+        ax.text(v2[0], v2[1], edge_label, ha="left", va="top", fontsize=8)
+        ax.text(v3[0], v3[1], edge_label, ha="center", va="bottom", fontsize=8)
 
     def ternary_plot(
         self,
