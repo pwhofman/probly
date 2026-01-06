@@ -42,7 +42,6 @@ class IntervalVisualizer:
         probs: probability vector for 2 classes.
         labels: labels for the interval plot.
         title: title of the plot.
-        title: Fixed Title for the plot.
         mle_flag: Flag to indicate whether median of probabilities is shown.
         credal_flag: Flag to indicate whether min/max interval is shown.
         ax: matplotlib axes.Axes.
