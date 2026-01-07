@@ -61,6 +61,7 @@ def make_ood_target_alpha(
         1.0 / num_classes,
         device="cpu",
     )
+
     return mu * alpha0
 
 
@@ -110,14 +111,20 @@ def evidential_log_loss(inputs: Tensor, targets: Tensor) -> Tensor:
     """Evidential Log Loss from Sensoy et al. (2018)."""
     alphas = inputs + 1.0
     strengths = alphas.sum(dim=1)
-    return torch.mean(torch.log(strengths) - torch.log(alphas[torch.arange(targets.size(0)), targets]))
+
+    loss = torch.mean(torch.log(strengths) - torch.log(alphas[torch.arange(targets.size(0)), targets]))
+
+    return loss
 
 
 def evidential_ce_loss(inputs: Tensor, targets: Tensor) -> Tensor:
     """Evidential Cross Entropy Loss."""
     alphas = inputs + 1.0
     strengths = alphas.sum(dim=1)
-    return torch.mean(torch.digamma(strengths) - torch.digamma(alphas[torch.arange(targets.size(0)), targets]))
+
+    loss = torch.mean(torch.digamma(strengths) - torch.digamma(alphas[torch.arange(targets.size(0)), targets]))
+
+    return loss
 
 
 def evidential_mse_loss(inputs: Tensor, targets: Tensor) -> Tensor:
@@ -130,7 +137,9 @@ def evidential_mse_loss(inputs: Tensor, targets: Tensor) -> Tensor:
     err = (y - p) ** 2
     var = p * (1 - p) / (strengths[:, None] + 1)
 
-    return torch.mean(torch.sum(err + var, dim=1))
+    loss = torch.mean(torch.sum(err + var, dim=1))
+
+    return loss
 
 
 def evidential_kl_divergence(inputs: Tensor, targets: Tensor) -> Tensor:
@@ -148,13 +157,15 @@ def evidential_kl_divergence(inputs: Tensor, targets: Tensor) -> Tensor:
         dim=1,
     )
 
-    return torch.mean(first + second)
+    loss = torch.mean(first + second)
+
+    return loss
 
 
 def evidential_nignll_loss(inputs: dict[str, Tensor], targets: Tensor) -> Tensor:
     """Evidence-based NIG regression loss."""
     omega = 2 * inputs["beta"] * (1 + inputs["nu"])
-    return (
+    loss = (
         0.5 * torch.log(torch.pi / inputs["nu"])
         - inputs["alpha"] * torch.log(omega)
         + (inputs["alpha"] + 0.5) * torch.log((targets - inputs["gamma"]) ** 2 * inputs["nu"] + omega)
@@ -162,10 +173,14 @@ def evidential_nignll_loss(inputs: dict[str, Tensor], targets: Tensor) -> Tensor
         - torch.lgamma(inputs["alpha"] + 0.5)
     ).mean()
 
+    return loss
+
 
 def evidential_regression_regularization(inputs: dict[str, Tensor], targets: Tensor) -> Tensor:
     """Regularization term for evidential regression."""
-    return (torch.abs(targets - inputs["gamma"]) * (2 * inputs["nu"] + inputs["alpha"])).mean()
+    loss = (torch.abs(targets - inputs["gamma"]) * (2 * inputs["nu"] + inputs["alpha"])).mean()
+
+    return loss
 
 
 # ========================================================================================|
@@ -186,7 +201,9 @@ def rpn_distillation_loss(
         logp = normal_wishart_log_prob(m, l_precision, kappa, nu, mu_k, var_k)
         losses.append(-logp.mean())
 
-    return torch.stack(losses).mean()
+    loss = torch.stack(losses).mean()
+
+    return loss
 
 
 def postnet_loss(
@@ -211,6 +228,7 @@ def postnet_loss(
     entropy = Dirichlet(alpha).entropy()
 
     loss = (expected_ce - entropy_weight * entropy).mean()
+
     return loss, alpha
 
 
@@ -267,7 +285,9 @@ def lp_fn(alpha: torch.Tensor, y: torch.Tensor, p: float = 2.0) -> torch.Tensor:
     # apply ^(1/p)  # noqa: ERA001
     fi = torch.exp(torch.log(e_sum + 1e-8) / p).squeeze(1)  # (B,)
 
-    return fi.sum()
+    loss = fi.sum()
+
+    return loss
 
 
 def regularization_fn(alpha: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
@@ -310,7 +330,9 @@ def regularization_fn(alpha: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     term = 0.5 * diff_sq * (trigamma_alpha - trigamma_alpha0) * mask
 
     # Sum over classes and batch
-    return torch.sum(term)
+    loss = torch.sum(term)
+
+    return loss
 
 
 def dirichlet_entropy(alpha: torch.Tensor) -> torch.Tensor:
@@ -345,7 +367,9 @@ def dirichlet_entropy(alpha: torch.Tensor) -> torch.Tensor:
     term3 = ((alpha - 1) * digamma(alpha)).sum(dim=-1)
     entropy = term1 + term2 - term3
 
-    return entropy.sum()
+    loss = entropy.sum()
+
+    return loss
 
 
 def loss_ird(  # noqa: D417
@@ -445,6 +469,7 @@ def natpn_loss(
     entropy = dir_dist.entropy()  # [B]
 
     loss = (expected_nll - entropy_weight * entropy).mean()
+
     return loss
 
 
@@ -471,7 +496,9 @@ def der_loss(
     evidence = 2.0 * kappa + alpha
     reg = torch.abs(y - mu) * evidence
 
-    return (lnll + lam * reg).mean()
+    loss = (lnll + lam * reg).mean()
+
+    return loss
 
 
 def rpn_prior(
@@ -484,7 +511,10 @@ def rpn_prior(
     kappa0 = torch.ones(shape, device=device) * eps
     alpha0 = torch.ones(shape, device=device) * (1.0 + eps)
     beta0 = torch.ones(shape, device=device) * eps
-    return mu0, kappa0, alpha0, beta0
+
+    loss = (mu0, kappa0, alpha0, beta0)
+
+    return loss
 
 
 def rpn_ng_kl(
@@ -516,104 +546,9 @@ def rpn_ng_kl(
         - (beta - beta0) * (alpha / beta)
     )
 
-    return (term_mu + term_kappa + term_gamma).mean()
+    loss = (term_mu + term_kappa + term_gamma).mean()
 
-
-def ird_loss(
-    alpha: torch.Tensor,
-    y: torch.Tensor,
-    adversarial_alpha: torch.Tensor | None = None,
-    p: float = 2.0,
-    lam: float = 0.15,
-    gamma: float = 1.0,
-) -> torch.Tensor:
-    """Implementation of the Information-Robust Dirichlet Loss :cite:`tsiligkaridisInformationRobustDirichlet2019`.
-
-    This loss function combines three terms:
-    1. Calibration term (Lp loss) using beta function expectations
-    2. Regularization term penalizing high alpha values for incorrect classes
-    3. Adversarial entropy penalty for out-of-distribution robustness
-    """
-
-    def _lp_fn(alpha: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-        """Compute the Lp calibration loss (upper bound Fi).
-
-        Args:
-            alpha: Dirichlet concentration parameters, shape (B, K)
-            y: One-hot encoded labels, shape (B, K)
-
-        Returns:
-            Scalar loss summed over batch
-        """
-
-        def log_b(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
-            return torch.lgamma(a) + torch.lgamma(b) - torch.lgamma(a + b)
-
-        alpha0 = alpha.sum(dim=1, keepdim=True)
-        alpha_c = (alpha * y).sum(dim=1, keepdim=True)
-
-        log_e1 = log_b(alpha0 - alpha_c + p, alpha_c) - log_b(alpha0 - alpha_c, alpha_c)
-        e1 = torch.exp(log_e1)  # Expected value of (1 - p_c)^p
-        log_ep = log_b(alpha + p, alpha0 - alpha) - log_b(alpha, alpha0 - alpha)
-        ep = torch.exp(log_ep) * (1 - y)  # Per-class expected values E[p_j^p]
-        e_sum = e1 + ep.sum(dim=1, keepdim=True)  # E_sum = E1 + sum of incorrect class terms
-        fi = torch.exp(torch.log(e_sum + 1e-8) / p).squeeze(1)
-
-        return fi.sum()
-
-    def _regularization_fn(alpha: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-        """Compute the regularization term using trigamma functions.
-
-        Args:
-            alpha: Dirichlet concentration parameters, shape (B, K)
-            y: One-hot encoded labels, shape (B, K)
-
-        Returns:
-            Scalar regularization loss.
-        """
-        alpha_tilde = alpha * (1 - y) + y
-        alpha_tilde_0 = torch.sum(alpha_tilde, dim=1, keepdim=True)
-        trigamma_alpha = torch.polygamma(1, alpha_tilde)
-        trigamma_alpha0 = torch.polygamma(1, alpha_tilde_0)
-        diff_sq = (alpha_tilde - 1.0) ** 2  # (alpha_tilde - 1)^2 term, only for incorrect classes
-        mask = 1 - y
-        term = 0.5 * diff_sq * (trigamma_alpha - trigamma_alpha0) * mask
-
-        return torch.sum(term)
-
-    def _dirichlet_entropy(alpha: torch.Tensor) -> torch.Tensor:
-        """Compute Dirichlet entropy for adversarial robustness.
-
-        Args:
-            alpha: Dirichlet concentration parameters, shape (B, K)
-
-        Returns:
-            Scalar entropy summed over batch
-        """
-        alpha0 = alpha.sum(dim=-1)
-        log_b = torch.lgamma(alpha).sum(dim=-1) - torch.lgamma(alpha0)
-        term1 = log_b
-        term2 = (alpha0 - alpha.size(-1)) * torch.digamma(alpha0)
-        term3 = ((alpha - 1) * torch.digamma(alpha)).sum(dim=-1)
-        entropy = term1 + term2 - term3
-
-        return entropy.sum()
-
-    """Forward pass of the Information-Robust Dirichlet Loss.
-
-    Args:
-        alpha: torch.Tensor of shape (B, K) containing Dirichlet parameters
-        y: torch.Tensor of shape (B,K)
-        adversarial_alpha: torch.Tensor of shape (B_a, K)
-
-    Returns:
-        loss: torch.Tensor, scalar loss value
-    """
-    lp_term = _lp_fn(alpha, y)
-    reg_term = _regularization_fn(alpha, y)
-    entropy_term = _dirichlet_entropy(adversarial_alpha) if adversarial_alpha is not None else 0.0
-
-    return lp_term + lam * reg_term - gamma * entropy_term
+    return loss
 
 
 def dirichlet_prior_networks_loss(
