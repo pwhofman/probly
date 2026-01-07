@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import json
-from pathlib import Path
+from collections.abc import Iterable
 
 import torch
+from torch import nn
 from torch.utils.data import Dataset
 
 from probly.data_generation.torch_first_order_generator import (
@@ -11,21 +11,26 @@ from probly.data_generation.torch_first_order_generator import (
     FirstOrderDataset,
     output_dataloader,
 )
+from probly.transformation.bayesian import bayesian
 
 
 class DummyDataset(Dataset):
-    def __init__(self, n=5, d=3):
+    def __init__(self, n: int = 5, d: int = 3) -> None:
+        """Initialize a dataset of random normal inputs."""
         self.X = torch.randn(n, d)
 
-    def __len__(self):
-        return self.X.shape[0]
+    def __len__(self) -> int:
+        """Return number of samples in the dataset."""
+        return int(self.X.shape[0])
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int) -> tuple[torch.Tensor, int]:
+        """Return (input, target) for the sample at index idx."""
         return self.X[idx], 0  # (input, target) convention
 
 
 class DummyModel(torch.nn.Module):
-    def __init__(self, d_in: int, n_classes: int):
+    def __init__(self, d_in: int, n_classes: int) -> None:
+        """Simple linear classifier model."""
         super().__init__()
         self.linear = torch.nn.Linear(d_in, n_classes)
 
@@ -33,38 +38,20 @@ class DummyModel(torch.nn.Module):
         return self.linear(x)
 
 
-def test_save_and_load_with_meta(tmp_path: Path):
+def test_save_and_load_with_meta() -> None:
     d_in, n_classes, n = 2, 3, 5
     dataset = DummyDataset(n=n, d=d_in)
     model = DummyModel(d_in=d_in, n_classes=n_classes)
 
     gen = FirstOrderDataGenerator(model=model, device="cpu", batch_size=4, output_mode="logits", model_name="dummy")
     dists = gen.generate_distributions(dataset, progress=False)
+    # Use variable to avoid lint warning
+    assert isinstance(dists, dict)
 
-    # Deactivated to avoid writing test artifacts to disk:
-    # # Persist file into repository under src/probly/data_generation
-    # repo_root = Path(__file__).resolve().parents[3]
-    # save_path = repo_root / "src" / "probly" / "data_generation" / "first_order_dists.json"
-    # save_path.parent.mkdir(parents=True, exist_ok=True)
-    # meta = {"note": "unit-test", "classes": n_classes}
-    #
-    # gen.save_distributions(save_path, dists, meta=meta)
-    #
-    # # basic file integrity
-    # with open(save_path, encoding="utf-8") as f:
-    #     obj = json.load(f)
-    # assert "distributions" in obj
-    # assert "meta" in obj
-    #
-    # loaded_dists, loaded_meta = gen.load_distributions(save_path)
-    #
-    # assert loaded_dists == dists
-    # assert loaded_meta.get("model_name") == "dummy"
-    # assert loaded_meta.get("note") == "unit-test"
-    # assert loaded_meta.get("classes") == n_classes
+    # Persistence-related checks intentionally omitted in tests.
 
 
-def test_generator_init_and_run(tmp_path: Path):
+def test_generator_init_and_run() -> None:
     d_in, n_classes, n = 3, 4, 7
     dataset = DummyDataset(n=n, d=d_in)
     model = DummyModel(d_in=d_in, n_classes=n_classes)
@@ -85,7 +72,7 @@ def test_generator_init_and_run(tmp_path: Path):
         assert abs(sum(row) - 1.0) < 1e-4
 
 
-def test_first_order_dataset_and_dataloader_with_targets():
+def test_first_order_dataset_and_dataloader_with_targets() -> None:
     # Base dataset yields (input, target)
     d_in, n_classes, n = 4, 5, 10
     dataset = DummyDataset(n=n, d=d_in)
@@ -111,12 +98,14 @@ def test_first_order_dataset_and_dataloader_with_targets():
     loader = output_dataloader(dataset, dists, batch_size=4, shuffle=False)
     batch = next(iter(loader))
     x, y, p = batch
-    assert isinstance(x, torch.Tensor) and isinstance(y, torch.Tensor) and isinstance(p, torch.Tensor)
+    assert isinstance(x, torch.Tensor)
+    assert isinstance(y, torch.Tensor)
+    assert isinstance(p, torch.Tensor)
     assert x.shape[0] == y.shape[0] == p.shape[0]
     assert p.shape[-1] == n_classes
 
 
-def test_generate_distributions_with_empty_dataset():
+def test_generate_distributions_with_empty_dataset() -> None:
     dataset = DummyDataset(n=0, d=3)
     model = DummyModel(d_in=3, n_classes=2)
     gen = FirstOrderDataGenerator(model=model, device="cpu", batch_size=2, output_mode="logits")
@@ -127,11 +116,7 @@ def test_generate_distributions_with_empty_dataset():
     assert len(dists) == 0
 
 
-def test_get_posterior_distributions_returns_correct_structure():
-    from torch import nn
-
-    from probly.transformation.bayesian import bayesian
-
+def test_get_posterior_distributions_returns_correct_structure() -> None:
     plain_model = nn.Linear(10, 4)
     bayesian_model = bayesian(plain_model)
 
@@ -139,24 +124,29 @@ def test_get_posterior_distributions_returns_correct_structure():
     dists = gen.get_posterior_distributions()
 
     assert isinstance(dists, dict)
-    assert "weight" in dists and "bias" in dists
-    assert "mu" in dists["weight"] and "rho" in dists["weight"]
+    assert "weight" in dists
+    assert "bias" in dists
+    assert "mu" in dists["weight"]
+    assert "rho" in dists["weight"]
     assert dists["weight"]["mu"].shape == (4, 10)
     assert dists["bias"]["mu"].shape == (4,)
 
 
 class InputOnlyDataset(Dataset):
-    def __init__(self, n=6, d=3):
+    def __init__(self, n: int = 6, d: int = 3) -> None:
+        """Dataset emitting inputs only."""
         self.X = torch.randn(n, d)
 
-    def __len__(self):
-        return self.X.shape[0]
+    def __len__(self) -> int:
+        """Return number of samples in the dataset."""
+        return int(self.X.shape[0])
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int) -> torch.Tensor:
+        """Return input vector for the sample at index idx."""
         return self.X[idx]  # input only
 
 
-def test_first_order_dataset_and_dataloader_input_only_no_labels():
+def test_first_order_dataset_and_dataloader_input_only_no_labels() -> None:
     # Base dataset yields input only
     d_in, n_classes, n = 3, 4, 12
     dataset = InputOnlyDataset(n=n, d=d_in)
@@ -178,16 +168,27 @@ def test_first_order_dataset_and_dataloader_input_only_no_labels():
     # DataLoader
     loader = output_dataloader(dataset, dists, batch_size=5, shuffle=False)
     x_batch, p_batch = next(iter(loader))
-    assert isinstance(x_batch, torch.Tensor) and isinstance(p_batch, torch.Tensor)
+    assert isinstance(x_batch, torch.Tensor)
+    assert isinstance(p_batch, torch.Tensor)
     assert x_batch.shape[0] == p_batch.shape[0]
     assert p_batch.shape[-1] == n_classes
 
 
-def _train_one_model_with_soft_targets(loader, d_in: int, n_classes: int, steps: int = 30):
+BatchWithLabel = tuple[torch.Tensor, torch.Tensor, torch.Tensor]
+BatchInputOnly = tuple[torch.Tensor, torch.Tensor]
+TorchBatch = BatchWithLabel | BatchInputOnly
+
+
+def _train_one_model_with_soft_targets(
+    loader: Iterable[TorchBatch],
+    d_in: int,
+    n_classes: int,
+    steps: int = 30,
+) -> tuple[DummyModel, list[float]]:
     model = DummyModel(d_in=d_in, n_classes=n_classes)
     opt = torch.optim.SGD(model.parameters(), lr=0.1)
     losses = []
-    for step in range(steps):
+    for _step in range(steps):
         for batch in loader:
             if len(batch) == 3:
                 x, _, p = batch
@@ -208,18 +209,19 @@ def _train_one_model_with_soft_targets(loader, d_in: int, n_classes: int, steps:
 
 
 def _compute_coverage(pred_probs: torch.Tensor, gt_probs: torch.Tensor, epsilon: float = 0.15) -> float:
-    """Simple epsilon-credal coverage: groundtruth distribution covered if
-    L1 distance between predicted prob vector and groundtruth prob vector <= epsilon.
+    """Simple epsilon-credal coverage.
+
+    Ground-truth distribution is covered if the L1 distance between
+    predicted and ground-truth probability vectors is <= epsilon.
     Returns coverage rate in [0,1].
     """
     # pred_probs, gt_probs: [N, C] (gt = ground-truth)
     l1 = torch.sum(torch.abs(pred_probs - gt_probs), dim=-1)
     covered = (l1 <= epsilon).float()
-    # covered = tensor of 0.0/1.0 covered.mean = mean over all samples(coveragerate as skalar tensor) covered.mean.item = skalartensor -> pythonfloat
-    return covered.mean().item()
+    return float(covered.mean().item())
 
 
-def test_end_to_end_training_and_coverage_improves():
+def test_end_to_end_training_and_coverage_improves() -> None:
     torch.manual_seed(23)
 
     # Setup dataset and teacher model to generate groundtruth distributions
@@ -238,47 +240,16 @@ def test_end_to_end_training_and_coverage_improves():
     assert len(losses) > 2
     assert losses[0] > losses[-1]  # training signal present
 
-    # Deactivated to avoid writing run logs during tests:
-    # # Visual feedback: save model and a small JSON run log
-    # repo_root = Path(__file__).resolve().parents[3]
-    # datagen_dir = repo_root / "src" / "probly" / "data_generation"
-    # datagen_dir.mkdir(parents=True, exist_ok=True)
-
     # Evaluate coverage: compare student softmax to teacher distributions
     # Build tensors aligned with index order
-    X = torch.stack([dataset[i][0] for i in range(n)], dim=0)
+    x_inputs = torch.stack([dataset[i][0] for i in range(n)], dim=0)
     with torch.no_grad():
-        student_logits = student(X)
+        student_logits = student(x_inputs)
         student_probs = torch.softmax(student_logits, dim=-1)
         teacher_probs = torch.tensor([dists[i] for i in range(n)], dtype=torch.float32)
 
     cov_before = _compute_coverage(torch.softmax(torch.zeros_like(student_logits), dim=-1), teacher_probs, epsilon=0.25)
     cov_after = _compute_coverage(student_probs, teacher_probs, epsilon=0.25)
-
-    # Write run summary JSON for verification
-    # run_log = {
-    #     "run_summary_docs": {
-    #         "n": "number of samples in the dataset used",
-    #         "d_in": "input feature dimension",
-    #         "n_classes": "number of output classes",
-    #         "loss_initial": "first recorded training loss (KL divergence) at the start; higher means the student disagrees more with the distributions",
-    #         "loss_final": "last recorded training loss; lower than initial indicates learning happened",
-    #         "coverage_before": "baseline agreement rate using a naive uniform prediction vs teacher distributions, measured by L1 distance ≤ epsilon (e.g., 0.25)",
-    #         "coverage_after": "agreement rate after training using the students predictions; higher than before shows improvement",
-    #     },
-    #     "n": n,
-    #     "d_in": d_in,
-    #     "n_classes": n_classes,
-    #     "loss_initial": losses[0],
-    #     "loss_final": losses[-1],
-    #     "coverage_before": cov_before,
-    #     "coverage_after": cov_after,
-    # }
-    # log_path = datagen_dir / "run_summary.json"
-    # with open(log_path, "w", encoding="utf-8") as f:
-    #     json.dump(run_log, f, ensure_ascii=False, indent=2)
-    # # Minimal console cue
-    # print(f"Saved run log to: {log_path}")
 
     # Coverage should improve after training
     assert cov_after >= cov_before
