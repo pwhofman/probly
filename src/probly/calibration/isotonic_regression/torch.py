@@ -15,14 +15,16 @@ if TYPE_CHECKING:
 class IsotonicRegressionCalibrator:
     """Class for the isotonic regression calibration."""
 
-    def __init__(self, base_model: nn.Module) -> None:
+    def __init__(self, base_model: nn.Module, use_logits: bool) -> None:
         """Set up the wrapper.
 
         Args:
             base_model: The base model to calibrate
+            use_logits: A switch allowing to return logits or probabilities
 
         """
         self.model = base_model
+        self.use_logits = use_logits
         self.calibrator: list[IsotonicRegression] = []
 
     def fit(self, calibration_set: DataLoader) -> None:
@@ -32,6 +34,8 @@ class IsotonicRegressionCalibrator:
             calibration_set: The set that should be used for the calibration
 
         """
+        self.calibrator = []
+
         # get logits for calibration data
         logits_and_labels = self._extract_logits_and_labels(calibration_set)
         logits_cal = logits_and_labels[0]
@@ -46,19 +50,35 @@ class IsotonicRegressionCalibrator:
             labels_bin = (labels_cal == pos_label).float()
 
             scores = self._get_binary_scores(logits_cal)
-            probabilities = sigmoid(scores).cpu()
 
-            iso_reg = IsotonicRegression(y_min=0.0, y_max=1.0, out_of_bounds="clip")
-            iso_reg.fit(probabilities.numpy(), labels_bin.numpy())
-            self.calibrator = [iso_reg]
-
-        else:
-            probabilities = softmax(logits_cal, dim=1).cpu().numpy()
-
-            for c in self.classes_:
+            if self.use_logits:
                 iso_reg = IsotonicRegression(y_min=0.0, y_max=1.0, out_of_bounds="clip")
-                iso_reg.fit(probabilities[:, c], (labels_cal == c).numpy())
-                self.calibrator.append(iso_reg)
+                iso_reg.fit(scores.cpu().numpy(), labels_bin.cpu().numpy())
+                self.calibrator = [iso_reg]
+
+            else:
+                probabilities = sigmoid(scores).cpu()
+
+                iso_reg = IsotonicRegression(y_min=0.0, y_max=1.0, out_of_bounds="clip")
+                iso_reg.fit(probabilities.numpy(), labels_bin.cpu().numpy())
+                self.calibrator = [iso_reg]
+
+        elif num_classes > 2:
+            if self.use_logits:
+                for c in self.classes_:
+                    iso_reg = IsotonicRegression(y_min=0.0, y_max=1.0, out_of_bounds="clip")
+                    scores_c = logits_cal[:, c].cpu().numpy()
+                    targets_c = (labels_cal == c).cpu().numpy().astype(np.int64)
+                    iso_reg.fit(scores_c, targets_c)
+                    self.calibrator.append(iso_reg)
+
+            else:
+                probabilities = softmax(logits_cal, dim=1).cpu().numpy()
+
+                for c in self.classes_:
+                    iso_reg = IsotonicRegression(y_min=0.0, y_max=1.0, out_of_bounds="clip")
+                    iso_reg.fit(probabilities[:, c], (labels_cal == c).cpu().numpy())
+                    self.calibrator.append(iso_reg)
 
     def predict(self, x: Tensor) -> Tensor:
         """Make calibrated predictions on the input x.
@@ -75,26 +95,28 @@ class IsotonicRegressionCalibrator:
         with no_grad():
             logits = self.model(x)
 
-            if self.calibrator is None:
+            if len(self.calibrator) == 0:
                 calibrator_none_message = "Calibrator has not been fitted yet. Call fit method first."
                 raise RuntimeError(calibrator_none_message)
 
             # Case Multiclass model
             if len(self.calibrator) >= 2:
-                probabilities = softmax(logits, dim=1).cpu().numpy()
-                calibrated_probs = np.vstack(
-                    [iso.predict(probabilities[:, c]) for c, iso in zip(self.classes_, self.calibrator, strict=False)],
+                s = logits.cpu().numpy() if self.use_logits else softmax(logits, dim=1).cpu().numpy()
+
+                calibrated = np.vstack(
+                    [iso.predict(s[:, c]) for c, iso in zip(self.classes_, self.calibrator, strict=False)],
                 ).T
 
-                calibrated_probs = calibrated_probs / calibrated_probs.sum(axis=1, keepdims=True)
-                return as_tensor(calibrated_probs, device=x.device, dtype=logits.dtype)
+                calibrated = calibrated / calibrated.sum(axis=1, keepdims=True)
+                return as_tensor(calibrated, device=x.device, dtype=logits.dtype)
 
             # Case Binary Model
             scores = self._get_binary_scores(logits)
-            probabilities = sigmoid(scores).cpu().numpy()
-            calibrated_probs = self.calibrator[0].predict(probabilities)
-            calibrated_probs = np.stack([1 - calibrated_probs, calibrated_probs], axis=1)
-            return as_tensor(calibrated_probs, device=x.device, dtype=logits.dtype)
+            s = scores.cpu().numpy() if self.use_logits else sigmoid(scores).cpu().numpy()
+
+            calibrated = self.calibrator[0].predict(s)
+            calibrated = np.stack([1 - calibrated, calibrated], axis=1)
+            return as_tensor(calibrated, device=x.device, dtype=logits.dtype)
 
     def _extract_logits_and_labels(self, dataset: DataLoader) -> tuple[Tensor, Tensor]:
         """Returns the logits and labels for a dataset as a tuple (logits, labels)."""
