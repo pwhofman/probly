@@ -7,8 +7,6 @@ from typing import TYPE_CHECKING, Literal
 import torch
 from torch import nn
 
-from probly.train.evidential.torch import der_loss, pn_loss, rpn_loss
-
 if TYPE_CHECKING:
     from torch.utils.data import DataLoader
 
@@ -114,7 +112,7 @@ def unified_evidential_train(  # noqa: C901, PLR0912, PLR0915
 
                 x_ood = x_ood_raw.to(device)
 
-                loss = pn_loss(model, x, y, x_ood)
+                loss = loss_fn(model, x, y, x_ood)
             elif mode == "IRD":
                 x_adv = x + 0.01 * torch.randn_like(x)
                 alpha = outputs
@@ -123,7 +121,7 @@ def unified_evidential_train(  # noqa: C901, PLR0912, PLR0915
                 loss = loss_fn(alpha, y_oh, adversarial_alpha=alpha_adv)
             elif mode == "DER":
                 mu, kappa, alpha, beta = outputs
-                loss = der_loss(y, mu, kappa, alpha, beta)
+                loss = loss_fn(y, mu, kappa, alpha, beta)
             elif mode == "RPN":
                 ood_iter = iter(oodloader)
 
@@ -135,9 +133,9 @@ def unified_evidential_train(  # noqa: C901, PLR0912, PLR0915
 
                 x_ood = x_ood_raw.to(device)
 
-                loss = rpn_loss(model, x, y, x_ood)
+                loss = loss_fn(model, x, y, x_ood)
             else:
-                msg = "Enter valid mode"
+                msg = 'Enter a valid mode ["PostNet", "NatPostNet", "EDL", "PrNet", "IRD", "DER", "RPN"]'
                 raise ValueError(msg)
 
             loss.backward()  # backpropagation

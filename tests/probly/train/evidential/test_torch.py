@@ -2,8 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from probly.predictor import Predictor
-from probly.train.evidential.torch import (
+from probly.losses.evidential.torch import (
     evidential_ce_loss,
     evidential_kl_divergence,
     evidential_log_loss,
@@ -11,6 +10,7 @@ from probly.train.evidential.torch import (
     evidential_nignll_loss,
     evidential_regression_regularization,
 )
+from probly.predictor import Predictor
 from probly.transformation import evidential_regression
 from tests.probly.torch_utils import validate_loss
 
