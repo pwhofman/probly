@@ -17,9 +17,6 @@ import pytest
 from probly.evaluation.ood import evaluate_ood, parse_dynamic_metric
 
 
-# ---------------------------------------------------------------------
-# evaluate_ood: return types / backward compatibility
-# ---------------------------------------------------------------------
 def test_evaluate_ood_default_returns_float_auroc() -> None:
     in_distribution = np.array([0.1, 0.2, 0.3])
     out_distribution = np.array([0.8, 0.9, 1.0])
@@ -72,9 +69,6 @@ def test_evaluate_ood_unknown_metric_raises() -> None:
         evaluate_ood(in_distribution, out_distribution, metrics=["not_a_metric"])
 
 
-# ---------------------------------------------------------------------
-# parse_dynamic_metric: supported formats + errors
-# ---------------------------------------------------------------------
 def test_parse_dynamic_metric_valid_specs() -> None:
     assert parse_dynamic_metric("fpr@0.8") == ("fpr", 0.8)
     assert parse_dynamic_metric("fnr@95%") == ("fnr", 0.95)
@@ -82,7 +76,6 @@ def test_parse_dynamic_metric_valid_specs() -> None:
 
 
 def test_parse_dynamic_metric_raises_without_at() -> None:
-    # In the new API, dynamic metrics must be specified as "metric@threshold".
     with pytest.raises(ValueError):
         parse_dynamic_metric("fpr")
 
@@ -103,9 +96,6 @@ def test_parse_dynamic_metric_raises_invalid_threshold() -> None:
         parse_dynamic_metric("fpr@xx")
 
 
-# ---------------------------------------------------------------------
-# evaluate_ood: dynamic metric dispatch
-# ---------------------------------------------------------------------
 def test_evaluate_ood_dynamic_metrics_return_dict() -> None:
     rng = np.random.default_rng(42)
     in_distribution = rng.random(50)
