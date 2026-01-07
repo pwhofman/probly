@@ -4,10 +4,22 @@
 Examples and Tutorials
 ##########################
 
-This section contains practical, end-to-end examples that demonstrate how ``probly`` can be used in real applications. Each tutorial provides a guided workflow from start to finish, including model transformation, execution and interpretation of the results. The examples also directly correspond to the advanced modeling patterns discussed in :doc:`Advanced Topics <advanced_topics>`
-, providing at least one worked example for concepts such as uncertainty-aware transformations, ensemble methods, and mixed-model workflows. They are self-contained and can be adapted to individual projects and datasets.
+This section contains practical, end-to-end examples that demonstrate how ``probly`` can be used in real applications. Each tutorial provides a guided workflow from start to finish, including model transformation, execution and interpretation of the results. The examples also directly correspond to the advanced modeling patterns discussed in :doc:`Advanced Topics <advanced_topics>`, providing at least one worked example for concepts such as uncertainty-aware transformations, ensemble methods, and mixed-model workflows. They are self-contained and can be adapted to individual projects and datasets.
 
-Users who are new to probly are encouraged to begin with the introductory Dropout example before exploring ensemble-based methods and more advanced uncertainty-aware workflows.
+In addition to demonstrating *how* to run each method, the tutorials highlight *why* a given probabilistic pattern is useful in practice. In particular, they connect implementation details (e.g. sampling counts, member counts, aggregation choices) to deployment-relevant trade-offs such as latency, calibration quality, and robustness under distribution shift. Where relevant, the examples point to common evaluation practices (e.g. calibration metrics, uncertainty summaries, and qualitative visualization) that are expanded further in the notebooks listed at the end of this page.
+
+Users who are new to probly are encouraged to begin with the introductory Dropout example before exploring ensemble-based methods and more advanced uncertainty-aware workflows. This recommended order mirrors the progression in :doc:`Advanced Topics <advanced_topics>` from single-model uncertainty approximations to scalable and heterogeneous ensemble workflows.
+
+Quick guidance
+--------------
+
+The following rules of thumb can help you choose an example:
+
+* **Need uncertainty with minimal code changes?** Start with Monte Carlo Dropout (Tutorial 1).
+* **Need stronger uncertainty estimates and better calibration?** Use deep ensembles (Tutorial 2).
+* **Need robustness through architectural diversity?** Use MixedEnsemble (Tutorial 3).
+* **Need evaluation and interpretation tools?** See the notebooks under *Evaluation* below.
+
 
 1. Uncertainty estimation with Dropout on MNIST
 ===============================================
@@ -17,7 +29,12 @@ What you will learn (I)
 
 In this tutorial, you will learn how to use ``probly`` to make a standard neural network uncertainty-aware with the Dropout transformation. You start from a conventional PyTorch model trained on MNIST and then apply probly so that Dropout remains active during inference. By running multiple stochastic forward passes, you obtain a distribution of predictions and estimate predictive uncertainty.
 
-This workflow is conceptually based on treating Dropout as a Bayesian approximation in deep neural networks, as proposed by Gal and Ghahramani :cite:`gal2016dropout`, and follows the standard deep learning setup described in :cite:`lecun1998gradient,goodfellow2016deep`.
+This workflow is conceptually based on treating Dropout as a Bayesian approximation in deep neural networks, as proposed by Gal and Ghahramani :cite:`gal2016dropout`, and follows the standard deep learning setup described in :cite:`lecun1998gradient,goodfellow2016deep`. Within the taxonomy in :doc:`Advanced Topics <advanced_topics>`, this tutorial demonstrates an uncertainty-aware *transformation* that converts a deterministic model into a stochastic predictor at inference time without requiring architectural changes.
+
+Practical scope
+~~~~~~~~~~~~~~~
+
+Monte Carlo Dropout is a useful baseline when you want uncertainty estimates while keeping training and model definition unchanged. It is particularly attractive in prototyping and in scenarios where maintaining a single model artifact is operationally simpler than managing multiple ensemble members. However, because the uncertainty signal is tied to the dropout approximation, it is often beneficial to compare it against ensemble-based approaches for high-stakes use cases (see Tutorial 2).
 
 
 Prerequisites
@@ -29,7 +46,7 @@ This example requires Python 3.8 or later and the packages ``probly``, ``torch``
 
    pip install probly torch torchvision
 
-The use of PyTorch and torchvision for MNIST follows standard practice in modern deep learning workflows, as also outlined in :cite:`goodfellow2016deep`.
+The use of PyTorch and torchvision for MNIST follows standard practice in modern deep learning workflows, as also outlined in :cite:`goodfellow2016deep`. The tutorial code is intentionally minimal and compatible with standard PyTorch conventions so that it can be adapted to custom datasets, custom models, and GPU/CPU execution with few changes.
 
 
 Step 1: Load the MNIST dataset
@@ -53,7 +70,7 @@ In this step, you load the MNIST dataset, a canonical benchmark for handwritten 
    train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
    test_loader = DataLoader(test_dataset, batch_size=128, shuffle=False)
 
-By wrapping MNIST with ``DataLoader`` and using ``ToTensor()``, you obtain batched tensors suitable for GPU-accelerated training. This setup is standard for supervised image classification tasks :cite:`goodfellow2016deep`.
+By wrapping MNIST with ``DataLoader`` and using ``ToTensor()``, you obtain batched tensors suitable for GPU-accelerated training. This setup is standard for supervised image classification tasks :cite:`goodfellow2016deep`. Keeping the data pipeline simple makes it easier to attribute changes in predictive behaviour to the uncertainty method itself rather than to preprocessing differences, which is recommended when validating uncertainty-aware components.
 
 
 Step 2: Define a base convolutional model
@@ -84,7 +101,7 @@ Here, you define a simple convolutional neural network (CNN) with two convolutio
 
    model = SimpleCNN().to(device)
 
-The network is deliberately compact, keeping training quick while still being expressive enough to benefit from uncertainty estimation techniques discussed in Bayesian deep learning :cite:`bishop2006pattern,gal2016dropout`.
+The network is deliberately compact, keeping training quick while still being expressive enough to benefit from uncertainty estimation techniques discussed in Bayesian deep learning :cite:`bishop2006pattern,gal2016dropout`. In practice, the same transformation pattern can be applied to larger architectures (e.g. ResNets) as long as the model contains Dropout layers or a Dropout-like transformation is inserted.
 
 
 Step 3: Train the model briefly
@@ -109,7 +126,7 @@ You now train the CNN using the Adam optimizer and the cross-entropy loss, which
            loss.backward()
            optimizer.step()
 
-A single training epoch is sufficient for demonstration purposes. In practice, you would typically train longer for higher accuracy, but the uncertainty-aware part of the pipeline is independent of the exact training duration.
+A single training epoch is sufficient for demonstration purposes. In practice, you would typically train longer for higher accuracy, but the uncertainty-aware part of the pipeline is independent of the exact training duration. When comparing uncertainty methods, it is often useful to hold training constant and vary only the uncertainty mechanism, especially when evaluating calibration and robustness.
 
 
 Step 4: Apply probly’s Dropout transformation
@@ -124,6 +141,8 @@ The crucial step is to transform the trained model into an uncertainty-aware mod
    prob_model = dropout(model, p=0.5, enable_at_eval=True)
 
 This setup follows the Monte Carlo Dropout (MC Dropout) interpretation, where Dropout is treated as a variational approximation to a Bayesian neural network :cite:`gal2016dropout`. The probability ``p=0.5`` controls the amount of stochasticity, i.e. how strongly the model’s predictions will vary across stochastic forward passes.
+
+In practice, the dropout probability should be treated as a modelling choice: larger values typically increase predictive variability but may also degrade accuracy. For deployment, it can be tuned jointly with the number of Monte Carlo samples to match latency budgets and uncertainty quality targets, as discussed in :doc:`Advanced Topics <advanced_topics>`.
 
 
 Step 5: Perform Monte Carlo inference
@@ -157,11 +176,13 @@ You now perform multiple stochastic forward passes to obtain a Monte Carlo estim
 
 The function ``mc_predict`` implements the Monte Carlo estimator by repeatedly sampling from the implicit model posterior induced by Dropout. The resulting uncertainty estimates are particularly useful under distribution shift and for downstream decision making :cite:`ovadia2019trust`.
 
+For practical use, the number of samples should be chosen based on the stability of the uncertainty estimate and the allowed inference cost. Small values can be sufficient for qualitative ranking of uncertainty, while more samples provide smoother estimates that are better suited for thresholding and selective prediction workflows.
+
 
 Step 6: Visualize uncertainty
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Visualizing both the predictive mean and the associated uncertainty (e.g. as error bars or shaded regions) can help you identify ambiguous or out-of-distribution samples :cite:`kendall2017uncertainties,ovadia2019trust`.
+Visualizing both the predictive mean and the associated uncertainty (e.g. as error bars or shaded regions) can help you identify ambiguous or out-of-distribution samples :cite:`kendall2017uncertainties,ovadia2019trust`. For a more systematic analysis, you can combine such visualizations with quantitative calibration metrics and selective prediction evaluation, which are covered in the evaluation notebooks referenced below.
 
 .. image:: /_static/mc_dropout_example.png
    :width: 550px
@@ -171,7 +192,9 @@ Visualizing both the predictive mean and the associated uncertainty (e.g. as err
 Summary (I)
 -------------
 
-In this example,``probly`` was used to transform a standard neural network into an uncertainty-aware model. Dropout remains active during inference and multiple forward passes allow you to obtain predictive uncertainty without modifying the original architecture. This approach builds on the MC Dropout framework for approximate Bayesian inference in deep networks :cite:`gal2016dropout` and follows standard best practices in deep learning :cite:`goodfellow2016deep,bishop2006pattern`.
+In this example, ``probly`` was used to transform a standard neural network into an uncertainty-aware model. Dropout remains active during inference and multiple forward passes allow you to obtain predictive uncertainty without modifying the original architecture. This approach builds on the MC Dropout framework for approximate Bayesian inference in deep networks :cite:`gal2016dropout` and follows standard best practices in deep learning :cite:`goodfellow2016deep,bishop2006pattern`.
+
+As a next step, you can compare these uncertainty estimates against deep ensemble methods (Tutorial 2), which often provide stronger calibration and robustness at the cost of increased compute and model management overhead.
 
 
 2. Creating a SubEnsemble with probly
@@ -182,6 +205,12 @@ What you will learn (II)
 
 In this tutorial, you will learn how to construct an ensemble using probly and how to derive a smaller ``SubEnsemble`` without retraining. This allows you to trade inference speed for accuracy and predictive uncertainty quality in a controlled way. The design follows the deep ensemble methodology of Lakshminarayanan et al. :cite:`lakshminarayanan2017simple` and classical ensemble learning ideas :cite:`dietterich2000ensemble`.
 
+In the terminology of :doc:`Advanced Topics <advanced_topics>`, this tutorial demonstrates an *ensemble workflow* with an explicit deployment knob: you can reduce computational cost at inference time by selecting a subset of already-trained members, while still retaining many benefits of ensembling.
+
+When to use SubEnsembles
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Sub-ensembles are useful when you want a single training run to support multiple deployment targets. For example, you may evaluate and calibrate uncertainty with a larger ensemble offline, while serving predictions with a smaller subset online under tight latency constraints. This pattern can also be used for adaptive inference policies, where the number of members evaluated depends on the current uncertainty or on an application-specific budget.
 
 Step 1: Define a simple base model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -218,7 +247,7 @@ You first define a small multilayer perceptron (MLP) that will serve as the base
        def forward(self, x):
            return self.net(x)
 
-The shared base model architecture ensures that differences between ensemble members arise primarily from random initialization and stochastic optimization, which is essential for diverse deep ensembles :cite:`fort2019deep`.
+The shared base model architecture ensures that differences between ensemble members arise primarily from random initialization and stochastic optimization, which is essential for diverse deep ensembles :cite:`fort2019deep`. In practice, ensemble diversity can also be increased using different data orderings, augmentations, training durations, or hyperparameters, but this tutorial focuses on the simplest and most common setup.
 
 
 Step 2: Create an Ensemble with probly
@@ -234,7 +263,7 @@ You now instantiate multiple independent copies of the base model and wrap them 
    members = [SmallMLP().to(device) for _ in range(num_members)]
    ensemble = Ensemble(members)
 
-This construction corresponds to the **deep ensemble** paradigm :cite:`lakshminarayanan2017simple`, where several independently trained networks are combined to obtain improved accuracy and better-calibrated uncertainty estimates compared to a single model.
+This construction corresponds to the **deep ensemble** paradigm :cite:`lakshminarayanan2017simple`, where several independently trained networks are combined to obtain improved accuracy and better-calibrated uncertainty estimates compared to a single model. Deep ensembles are frequently used as a strong baseline for predictive uncertainty because they often perform well even under distribution shift :cite:`ovadia2019trust`.
 
 
 Step 3: Train ensemble members
@@ -287,7 +316,7 @@ The ensemble prediction is obtained by aggregating individual member predictions
    full_acc = evaluate(ensemble, test_loader)
    print("Ensemble accuracy:", full_acc)
 
-In probly, the ``Ensemble`` abstraction takes care of combining member outputs internally, making it straightforward to compare an ensemble to a single model in terms of accuracy and uncertainty.
+In probly, the ``Ensemble`` abstraction takes care of combining member outputs internally, making it straightforward to compare an ensemble to a single model in terms of accuracy and uncertainty. For deeper analysis, consider tracking not only accuracy but also calibration error, predictive entropy, and selective prediction curves (see the evaluation notebooks below).
 
 
 Step 5: Create and evaluate a SubEnsemble
@@ -305,6 +334,8 @@ Using the trained ensemble, you can construct a ``SubEnsemble`` that uses only a
 
 The idea of using partial ensembles or subnetworks to control computational budget is related to recent work on training independent subnetworks for robust predictions :cite:`havasi2021training` and subsampling strategies for efficient uncertainty estimation :cite:`cunningham2020ensemble`. With probly, this pattern becomes a simple configuration choice.
 
+A common deployment strategy is to select a sub-ensemble size that matches a target latency budget and then calibrate decision thresholds (e.g. for abstention) using the uncertainty statistics produced by that chosen subset. This aligns with the deployment-oriented guidance in :doc:`Advanced Topics <advanced_topics>`.
+
 Visual result SubEnsemble
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -318,6 +349,8 @@ Summary (II)
 
 In this example, probly was used to create both a full Ensemble and a SubEnsemble without retraining. The full Ensemble generally provides the highest accuracy and most reliable uncertainty, while the SubEnsemble offers reduced inference cost with still useful performance. This illustrates how deep ensembles :cite:`lakshminarayanan2017simple` can be adapted to practical deployment constraints using probly’s ensemble abstractions.
 
+For applications where architectural diversity is important (e.g. to reduce correlated failures), consider using a heterogeneous or mixed ensemble as shown in Tutorial 3.
+
 
 3. MixedEnsemble with probly
 ============================
@@ -326,6 +359,8 @@ What you will learn (III)
 --------------------------
 
 In this tutorial, you will learn how to build a ``MixedEnsemble`` using probly by combining different neural network architectures into a single probabilistic ensemble. You will compare it to a homogeneous ensemble and observe how model diversity may influence performance and robustness. This follows the general idea that heterogeneous ensembles can outperform homogeneous ones when models capture complementary inductive biases :cite:`opitz1999popular,jacobs1991adaptive`.
+
+In the :doc:`Advanced Topics <advanced_topics>` chapter, this corresponds to a *mixed-model workflow* in which diversity is introduced intentionally at the architecture level. Such designs can be useful when different model families capture different aspects of the data, leading to complementary error patterns and potentially improved robustness.
 
 
 Step 1: Prepare data
@@ -396,7 +431,7 @@ You now define two different architectures: a small CNN and a small MLP. The CNN
        def forward(self, x):
            return self.net(x)
 
-The architectural diversity is the main driver of improved robustness in heterogeneous ensembles :cite:`opitz1999popular`, since different architectures often fail on different inputs.
+The architectural diversity is the main driver of improved robustness in heterogeneous ensembles :cite:`opitz1999popular`, since different architectures often fail on different inputs. In practical applications, mixed ensembles can also be formed from different backbones, different feature extractors, or models trained with different inductive biases (e.g. different augmentations or objectives), depending on what types of diversity are most relevant.
 
 
 Step 3: Create Ensemble and MixedEnsemble
@@ -419,6 +454,8 @@ You first construct a homogeneous ensemble consisting only of CNNs, and then a `
    mixed_ensemble = MixedEnsemble(mixed_members)
 
 This setup mirrors the idea of mixtures of experts :cite:`jacobs1991adaptive` and modern large-scale sparse ensembles :cite:`shazeer2017outrageously`, but in a simplified form where probly handles the aggregation of member predictions without a separate gating network.
+
+In practice, MixedEnsembles are most beneficial when different architectures provide genuinely complementary behavior. If the members are too similar, the ensemble may behave similarly to a homogeneous ensemble. Conversely, if one architecture is systematically weaker, it can reduce the overall average performance unless member selection or weighting is adjusted (a topic discussed in :doc:`Advanced Topics <advanced_topics>`).
 
 
 Step 4: Train all members
@@ -448,7 +485,7 @@ All ensemble members, both in the homogeneous CNN ensemble as well as the mixed 
    for m in mixed_members:
        train(m, train_loader, epochs=1)
 
-Independent training encourages diversity in the learned decision boundaries, which is critical for ensemble performance under distribution shift :cite:`opitz1999popular,ovadia2019trust`.
+Independent training encourages diversity in the learned decision boundaries, which is critical for ensemble performance under distribution shift :cite:`opitz1999popular,ovadia2019trust`. For mixed ensembles, diversity arises not only from random initialization but also from architectural differences, which can reduce correlated errors across members.
 
 
 Step 5: Evaluate both ensembles
@@ -477,7 +514,7 @@ Finally, you evaluate both the homogeneous CNN ensemble and the MixedEnsemble on
    print("Homogeneous CNN Ensemble accuracy:", acc_cnn)
    print("MixedEnsemble accuracy:", acc_mixed)
 
-Beyond accuracy, you could also compare calibration and robustness under distribution shift, as suggested by Ovadia et al. :cite:`ovadia2019trust`. Mixed ensembles often exhibit different failure modes than homogeneous ones, which can be beneficial in safety-critical applications.
+Beyond accuracy, you could also compare calibration and robustness under distribution shift, as suggested by Ovadia et al. :cite:`ovadia2019trust`. Mixed ensembles often exhibit different failure modes than homogeneous ones, which can be beneficial in safety-critical applications. For evaluation recipes and plotting utilities, see the notebooks in the *Evaluation* section below.
 
 
 Visual result
@@ -492,6 +529,9 @@ Summary (III)
 ---------------
 
 In this example, you used probly to construct both a homogeneous ensemble and a ``MixedEnsemble`` combining different model types. The MixedEnsemble may capture complementary model behaviour and can therefore improve robustness and calibration in some settings :cite:`opitz1999popular,ovadia2019trust`. By providing a unified abstraction for homogeneous and heterogeneous ensembles, probly makes it straightforward to explore such design choices in practical applications.
+
+Together with the previous tutorials, this demonstrates a common progression in uncertainty-aware modeling: starting with single-model approximations (MC Dropout), moving to deep ensembles, and then extending ensembles with architectural heterogeneity to improve robustness and reduce correlated failures.
+
 
 Notebook Reference
 ==================
@@ -531,3 +571,4 @@ Here is a complete list of the interactive notebooks available in the repository
    notebooks/examples/train_bnn_classification
    notebooks/examples/train_evidential_classification
    notebooks/examples/train_evidential_regression
+
