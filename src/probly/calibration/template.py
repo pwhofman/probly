@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Self
 
 if TYPE_CHECKING:
-    from flax import linen
+    from flax import nnx
     from jax import Array
     from torch import Tensor, device as TorchDevice, nn
 
@@ -41,7 +41,7 @@ class CalibratorBaseTorch(ABC):
 class CalibratorBaseFlax(ABC):
     """Abstract base class for calibrators with Flax."""
 
-    def __init__(self, base_model: linen.Module, params: dict) -> None:
+    def __init__(self, base_model: nnx.Module, params: dict) -> None:
         """Create a calibrator.
 
         Args:

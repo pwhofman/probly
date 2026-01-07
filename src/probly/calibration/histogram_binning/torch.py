@@ -83,4 +83,4 @@ class HistogramBinning(CalibratorBaseTorch):
         return Tensor(calibrated)
 
 
-register_histogram_factory(nn.Module)(HistogramBinning)
+register_histogram_factory(nn.Module, HistogramBinning)

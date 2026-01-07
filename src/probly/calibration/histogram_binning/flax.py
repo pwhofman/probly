@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from flax import linen as nn
+from flax import nnx
 import jax.numpy as jnp
 
 from probly.calibration.histogram_binning.common import register_histogram_factory
@@ -98,4 +98,4 @@ class HistogramBinningFlax(CalibratorBaseFlax):
         return calibrated
 
 
-register_histogram_factory(nn.Module)(HistogramBinningFlax)
+register_histogram_factory(nnx.Module, HistogramBinningFlax)
