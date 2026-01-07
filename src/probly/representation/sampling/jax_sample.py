@@ -16,14 +16,14 @@ class JaxArraySample(Sample[jax.Array]):
         """Initialize the JAX array sample."""
         self.array = jnp.stack(samples).transpose(1, 0, 2)  # we use the convention [instances, samples, classes]
 
-    def mean(self) -> jax.Array:
+    def sample_mean(self) -> jax.Array:
         """Compute the mean of the sample."""
         return jnp.mean(self.array, axis=1)
 
-    def std(self, ddof: int = 1) -> jax.Array:
+    def sample_std(self, ddof: int = 1) -> jax.Array:
         """Compute the standard deviation of the sample."""
         return jnp.std(self.array, axis=1, ddof=ddof)
 
-    def var(self, ddof: int = 1) -> jax.Array:
+    def sample_var(self, ddof: int = 1) -> jax.Array:
         """Compute the variance of the sample."""
         return jnp.var(self.array, axis=1, ddof=ddof)
