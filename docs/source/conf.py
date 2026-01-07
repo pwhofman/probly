@@ -60,7 +60,17 @@ suppress_warnings = [
 ]
 
 templates_path = ["_templates"]
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "**/*.ipynb", "**/*.py", "**/*.json", "**/*.zip", "**/*.md5"]
+exclude_patterns = [
+    "_build",
+    "Thumbs.db",
+    ".DS_Store",
+    "**/*.ipynb",
+    "**/*.py",
+    "**/*.json",
+    "**/*.zip",
+    "**/*.md5",
+    "generated/**",
+]
 bibtex_bibfiles = ["references.bib"]
 bibtex_default_style = "alpha"
 nb_execution_mode = "off"  # don't run notebooks when building the docs
@@ -150,6 +160,8 @@ autodoc_default_options = {
     "exclude-members": "__weakref__",
 }
 autoclass_content = "class"
+# Prevent documenting imported members from package __init__ files (they are shortcuts)
+autosummary_imported_members = False
 # TODO(pwhofman): maybe set this to True, Issue https://github.com/pwhofman/probly/issues/94
 autodoc_inherit_docstrings = False
 
