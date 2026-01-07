@@ -32,7 +32,6 @@ version = probly.__version__
 extensions = [
     "sphinx.ext.autodoc",  # generates API documentation from docstrings
     "sphinx.ext.autosummary",  # generates .rst files for each module
-    "sphinx_autodoc_typehints",  # optional, nice for type hints in docs
     # "sphinx.ext.linkcode",  # adds [source] links to code that link to GitHub. Use when repo is public.  # noqa: E501, ERA001
     "sphinx.ext.viewcode",  # adds [source] links to code that link to the source code in the docs.
     "sphinx.ext.napoleon",  # for Google-style docstrings
@@ -80,7 +79,17 @@ suppress_warnings = [
 
 
 templates_path = ["_templates"]
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "**/*.ipynb", "**/*.py", "**/*.json", "**/*.zip", "**/*.md5"]
+exclude_patterns = [
+    "_build",
+    "Thumbs.db",
+    ".DS_Store",
+    "**/*.ipynb",
+    "**/*.py",
+    "**/*.json",
+    "**/*.zip",
+    "**/*.md5",
+    "generated/**",
+]
 bibtex_bibfiles = ["references.bib"]
 bibtex_default_style = "alpha"
 nb_execution_mode = "off"  # don't run notebooks when building the docs
@@ -160,15 +169,6 @@ html_show_sourcelink = False  # to remove button next to dark mode showing sourc
 
 # -- Autodoc ---------------------------------------------------------------------------------------
 autosummary_generate = False
-
-autodoc_mock_imports = [
-    "torch",
-    "torchvision",
-    "jax",
-    "flax",
-    "optax",
-]
-
 autodoc_default_options = {
     "show-inheritance": True,
     "members": True,
@@ -179,10 +179,12 @@ autodoc_default_options = {
     "exclude-members": "__weakref__",
 }
 autoclass_content = "class"
+# Prevent documenting imported members from package __init__ files (they are shortcuts)
+autosummary_imported_members = False
 # TODO(pwhofman): maybe set this to True, Issue https://github.com/pwhofman/probly/issues/94
 autodoc_inherit_docstrings = False
 
-autodoc_typehints = "both"  # to show type hints in the docstring
+autodoc_typehints = "description"  # put typehints in the description instead of the signature
 
 # -- Copy Paste Button -----------------------------------------------------------------------------
 # Ignore >>> when copying code
