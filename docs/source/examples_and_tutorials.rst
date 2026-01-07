@@ -30,6 +30,7 @@ What you will learn (I)
 In this tutorial, you will learn how to use ``probly`` to make a standard neural network uncertainty-aware with the Dropout transformation. You start from a conventional PyTorch model trained on MNIST and then apply ``probly`` so that Dropout remains active during inference. By running multiple stochastic forward passes, you obtain a distribution of predictions and estimate predictive uncertainty.
 
 This workflow is conceptually based on treating Dropout as a Bayesian approximation in deep neural networks, as proposed by Gal and Ghahramani :cite:`gal2016dropout`, and follows the standard deep learning setup described in :cite:`lecun1998gradient,goodfellow2016deep`.
+From the perspective of :doc:Advanced Topics <advanced_topics>, this example demonstrates a transformation-based uncertainty method: the training procedure remains unchanged, but the inference-time behavior becomes stochastic, enabling approximate Bayesian inference through repeated forward passes.
 
 
 Prerequisites
@@ -135,7 +136,7 @@ The crucial step is to transform the trained model into an uncertainty-aware mod
 
    prob_model = dropout(model, p=0.5, enable_at_eval=True)
 
-This setup follows the Monte Carlo Dropout (MC Dropout) interpretation, where Dropout is treated as a variational approximation to a Bayesian neural network :cite:`gal2016dropout`. The probability ``p=0.5`` controls the amount of stochasticity, i.e. how strongly the model’s predictions will vary across stochastic forward passes.
+This setup follows the Monte Carlo Dropout (MC Dropout) interpretation, where Dropout is treated as a variational approximation to a Bayesian neural network :cite:`gal2016dropout`. The probability ``p=0.5`` controls the amount of stochasticity, i.e. how strongly the model’s predictions will vary across stochastic forward passes. In practical settings, both the dropout rate p and the number of Monte Carlo samples act as tuning knobs. Higher stochasticity or more samples can yield more stable uncertainty estimates, but at the cost of increased variance in predictions or increased inference time. These cost–quality trade-offs are discussed in more detail in :doc:Advanced Topics <advanced_topics>.
 
 
 Step 5: Perform Monte Carlo inference
@@ -192,7 +193,7 @@ In this example, ``probly`` was used to transform a standard neural network into
 What you will learn (II)
 ----------------------------
 
-In this tutorial, you will learn how to construct an ensemble using ``probly`` and how to derive a smaller ``SubEnsemble`` without retraining. This allows you to trade inference speed for accuracy and predictive uncertainty quality in a controlled way. The design follows the deep ensemble methodology of Lakshminarayanan et al. :cite:`lakshminarayanan2017simple` and classical ensemble learning ideas :cite:`dietterich2000ensemble`.
+In this tutorial, you will learn how to construct an ensemble using ``probly`` and how to derive a smaller ``SubEnsemble`` without retraining. This allows you to trade inference speed for accuracy and predictive uncertainty quality in a controlled way. The design follows the deep ensemble methodology of Lakshminarayanan et al. :cite:`lakshminarayanan2017simple` and classical ensemble learning ideas :cite:`dietterich2000ensemble`. In :doc:Advanced Topics <advanced_topics>, ensembles are presented as a widely used practical baseline for uncertainty estimation, often improving calibration and robustness compared to single-model approximations. This tutorial also introduces an explicit deployment-oriented pattern: using a smaller SubEnsemble to trade compute for accuracy and uncertainty quality without retraining.
 
 
 Step 1: Define a simple base model
@@ -337,7 +338,7 @@ In this example, ``probly`` was used to create both a full Ensemble and a SubEns
 What you will learn (III)
 --------------------------
 
-In this tutorial, you will learn how to build a ``MixedEnsemble`` using ``probly`` by combining different neural network architectures into a single probabilistic ensemble. You will compare it to a homogeneous ensemble and observe how model diversity may influence performance and robustness. This follows the general idea that heterogeneous ensembles can outperform homogeneous ones when models capture complementary inductive biases :cite:`opitz1999popular,jacobs1991adaptive`.
+In this tutorial, you will learn how to build a ``MixedEnsemble`` using ``probly`` by combining different neural network architectures into a single probabilistic ensemble. You will compare it to a homogeneous ensemble and observe how model diversity may influence performance and robustness. This follows the general idea that heterogeneous ensembles can outperform homogeneous ones when models capture complementary inductive biases :cite:`opitz1999popular,jacobs1991adaptive`. This tutorial corresponds to a mixed-model workflow in :doc:Advanced Topics <advanced_topics>, where diversity is introduced intentionally at the architecture level. Such heterogeneity can reduce correlated errors and lead to different failure modes across members, which may improve robustness under distribution shift.
 
 
 Step 1: Prepare data
