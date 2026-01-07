@@ -10,6 +10,6 @@ probly.representation.credal\_set
    :toctree:
    :recursive:
 
-   credal_set
-   jax
-   torch
+   array
+   array_functions
+   common

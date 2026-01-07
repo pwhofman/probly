@@ -246,14 +246,18 @@
 </li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="api/probly.representation.html">probly.representation</a><input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle navigation of probly.representation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l3 has-children"><a class="reference internal" href="api/probly.representation.credal_set.html">probly.representation.credal_set</a><input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of probly.representation.credal_set</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
-<li class="toctree-l4"><a class="reference internal" href="api/probly.representation.credal_set.credal_set.html">probly.representation.credal_set.credal_set</a></li>
-<li class="toctree-l4"><a class="reference internal" href="api/probly.representation.credal_set.jax.html">probly.representation.credal_set.jax</a></li>
-<li class="toctree-l4"><a class="reference internal" href="api/probly.representation.credal_set.torch.html">probly.representation.credal_set.torch</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/probly.representation.credal_set.array.html">probly.representation.credal_set.array</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/probly.representation.credal_set.array_functions.html">probly.representation.credal_set.array_functions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/probly.representation.credal_set.common.html">probly.representation.credal_set.common</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="api/probly.representation.distribution.html">probly.representation.distribution</a></li>
 <li class="toctree-l3"><a class="reference internal" href="api/probly.representation.representer.html">probly.representation.representer</a></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="api/probly.representation.sampling.html">probly.representation.sampling</a><input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><div class="visually-hidden">Toggle navigation of probly.representation.sampling</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="api/probly.representation.sampling.array_sample.html">probly.representation.sampling.array_sample</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/probly.representation.sampling.array_sample_axis_tracking.html">probly.representation.sampling.array_sample_axis_tracking</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/probly.representation.sampling.array_sample_functions.html">probly.representation.sampling.array_sample_functions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/probly.representation.sampling.common_sample.html">probly.representation.sampling.common_sample</a></li>
 <li class="toctree-l4"><a class="reference internal" href="api/probly.representation.sampling.flax_sampler.html">probly.representation.sampling.flax_sampler</a></li>
 <li class="toctree-l4"><a class="reference internal" href="api/probly.representation.sampling.jax_sample.html">probly.representation.sampling.jax_sample</a></li>
 <li class="toctree-l4"><a class="reference internal" href="api/probly.representation.sampling.sample.html">probly.representation.sampling.sample</a></li>
@@ -309,6 +313,7 @@
 <li class="toctree-l3"><a class="reference internal" href="api/probly.utils.errors.html">probly.utils.errors</a></li>
 <li class="toctree-l3"><a class="reference internal" href="api/probly.utils.probabilities.html">probly.utils.probabilities</a></li>
 <li class="toctree-l3"><a class="reference internal" href="api/probly.utils.sets.html">probly.utils.sets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/probly.utils.switchdispatch.html">probly.utils.switchdispatch</a></li>
 <li class="toctree-l3"><a class="reference internal" href="api/probly.utils.torch.html">probly.utils.torch</a></li>
 </ul>
 </li>
@@ -369,7 +374,17 @@
         <ul>
           <li><a href="api/probly.predictor.html#probly.predictor.Predictor.__call__">(probly.predictor.Predictor method)</a>
 </li>
+          <li><a href="api/probly.representation.sampling.common_sample.html#probly.representation.sampling.common_sample.SampleFactory.__call__">(probly.representation.sampling.common_sample.SampleFactory method)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.sample.html#probly.representation.sampling.sample.SampleFactory.__call__">(probly.representation.sampling.sample.SampleFactory method)</a>
+</li>
+          <li><a href="api/probly.utils.html#probly.utils.switchdispatch.__call__">(probly.utils.switchdispatch method)</a>, <a href="api/probly.utils.switchdispatch.html#probly.utils.switchdispatch.__call__">[1]</a>
+</li>
         </ul></li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="api/probly.utils.switchdispatch.html#probly.utils.switchdispatch.__init__">__init__() (probly.utils.switchdispatch method)</a>
+</li>
     </ul></td>
   </tr></table>
 </section>
@@ -388,17 +403,63 @@
           <li><a href="api/probly.train.calibration.torch.html#probly.train.calibration.torch.LabelRelaxationLoss.alpha">(probly.train.calibration.torch.LabelRelaxationLoss attribute)</a>
 </li>
         </ul></li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="api/probly.layers.torch.html#probly.layers.torch.NormalInverseGammaLinear.alpha_bias">alpha_bias (probly.layers.torch.NormalInverseGammaLinear attribute)</a>
 </li>
         <li><a href="api/probly.transformation.evidential.classification.torch.html#probly.transformation.evidential.classification.torch.append_activation_torch">append_activation_torch() (in module probly.transformation.evidential.classification.torch)</a>
 </li>
-        <li><a href="api/probly.representation.credal_set.credal_set.html#probly.representation.credal_set.credal_set.ArrayCredalSet">ArrayCredalSet (class in probly.representation.credal_set.credal_set)</a>
+        <li><a href="api/probly.representation.credal_set.array.html#probly.representation.credal_set.array.ArrayDiscreteCredalSet.array">array (probly.representation.credal_set.array.ArrayDiscreteCredalSet attribute)</a>
+
+        <ul>
+          <li><a href="api/probly.representation.credal_set.html#probly.representation.credal_set.ArrayDiscreteCredalSet.array">(probly.representation.credal_set.ArrayDiscreteCredalSet attribute)</a>
 </li>
+          <li><a href="api/probly.representation.sampling.array_sample.html#probly.representation.sampling.array_sample.ArraySample.array">(probly.representation.sampling.array_sample.ArraySample attribute)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.html#probly.representation.sampling.ArraySample.array">(probly.representation.sampling.ArraySample attribute)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.sample.html#probly.representation.sampling.sample.ArraySample.array">(probly.representation.sampling.sample.ArraySample attribute)</a>
+</li>
+        </ul></li>
+        <li><a href="api/probly.representation.sampling.array_sample_functions.html#probly.representation.sampling.array_sample_functions.array_apply_along_axis_function">array_apply_along_axis_function() (in module probly.representation.sampling.array_sample_functions)</a>
+</li>
+        <li><a href="api/probly.representation.sampling.array_sample_functions.html#probly.representation.sampling.array_sample_functions.array_expand_dims_function">array_expand_dims_function() (in module probly.representation.sampling.array_sample_functions)</a>
+</li>
+        <li><a href="api/probly.representation.sampling.array_sample_functions.html#probly.representation.sampling.array_sample_functions.array_function_override">array_function_override() (in module probly.representation.sampling.array_sample_functions)</a>
+</li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="api/probly.representation.sampling.array_sample_functions.html#probly.representation.sampling.array_sample_functions.array_matrix_transpose">array_matrix_transpose() (in module probly.representation.sampling.array_sample_functions)</a>
+</li>
+        <li><a href="api/probly.representation.sampling.array_sample_functions.html#probly.representation.sampling.array_sample_functions.array_reduction_function">array_reduction_function() (in module probly.representation.sampling.array_sample_functions)</a>
+</li>
+        <li><a href="api/probly.representation.sampling.array_sample_functions.html#probly.representation.sampling.array_sample_functions.array_reshape_function">array_reshape_function() (in module probly.representation.sampling.array_sample_functions)</a>
+</li>
+        <li><a href="api/probly.representation.sampling.array_sample_functions.html#probly.representation.sampling.array_sample_functions.array_sample_axis_preserving_function">array_sample_axis_preserving_function() (in module probly.representation.sampling.array_sample_functions)</a>
+</li>
+        <li><a href="api/probly.representation.sampling.array_sample_functions.html#probly.representation.sampling.array_sample_functions.array_sample_internals">array_sample_internals() (in module probly.representation.sampling.array_sample_functions)</a>
+</li>
+        <li><a href="api/probly.representation.sampling.array_sample_functions.html#probly.representation.sampling.array_sample_functions.array_squeeze_function">array_squeeze_function() (in module probly.representation.sampling.array_sample_functions)</a>
+</li>
+        <li><a href="api/probly.representation.sampling.array_sample_functions.html#probly.representation.sampling.array_sample_functions.array_swapaxes_function">array_swapaxes_function() (in module probly.representation.sampling.array_sample_functions)</a>
+</li>
+        <li><a href="api/probly.representation.sampling.array_sample_functions.html#probly.representation.sampling.array_sample_functions.array_transpose">array_transpose() (in module probly.representation.sampling.array_sample_functions)</a>
+</li>
+        <li><a href="api/probly.representation.credal_set.html#probly.representation.credal_set.ArrayCategoricalCredalSet">ArrayCategoricalCredalSet (class in probly.representation.credal_set)</a>
+
+        <ul>
+          <li><a href="api/probly.representation.credal_set.array.html#probly.representation.credal_set.array.ArrayCategoricalCredalSet">(class in probly.representation.credal_set.array)</a>
+</li>
+        </ul></li>
+        <li><a href="api/probly.representation.credal_set.html#probly.representation.credal_set.ArrayDiscreteCredalSet">ArrayDiscreteCredalSet (class in probly.representation.credal_set)</a>
+
+        <ul>
+          <li><a href="api/probly.representation.credal_set.array.html#probly.representation.credal_set.array.ArrayDiscreteCredalSet">(class in probly.representation.credal_set.array)</a>
+</li>
+        </ul></li>
         <li><a href="api/probly.representation.sampling.html#probly.representation.sampling.ArraySample">ArraySample (class in probly.representation.sampling)</a>
 
         <ul>
+          <li><a href="api/probly.representation.sampling.array_sample.html#probly.representation.sampling.array_sample.ArraySample">(class in probly.representation.sampling.array_sample)</a>
+</li>
           <li><a href="api/probly.representation.sampling.sample.html#probly.representation.sampling.sample.ArraySample">(class in probly.representation.sampling.sample)</a>
 </li>
         </ul></li>
@@ -478,18 +539,62 @@
           <li><a href="api/probly.utils.sets.html#probly.utils.sets.capacity">(in module probly.utils.sets)</a>
 </li>
         </ul></li>
+        <li><a href="api/probly.representation.html#probly.representation.CategoricalCredalSet">CategoricalCredalSet (class in probly.representation)</a>
+
+        <ul>
+          <li><a href="api/probly.representation.credal_set.html#probly.representation.credal_set.CategoricalCredalSet">(class in probly.representation.credal_set)</a>
+</li>
+          <li><a href="api/probly.representation.credal_set.common.html#probly.representation.credal_set.common.CategoricalCredalSet">(class in probly.representation.credal_set.common)</a>
+</li>
+        </ul></li>
         <li><a href="api/probly.datasets.torch.html#probly.datasets.torch.CIFAR10H">CIFAR10H (class in probly.datasets.torch)</a>
 </li>
         <li><a href="api/probly.train.bayesian.torch.html#probly.train.bayesian.torch.collect_kl_divergence">collect_kl_divergence() (in module probly.train.bayesian.torch)</a>
 </li>
         <li><a href="api/probly.traverse_nn.common.html#probly.traverse_nn.common.compose">compose() (in module probly.traverse_nn.common)</a>
 </li>
+        <li><a href="api/probly.representation.html#probly.representation.Sample.concat">concat() (probly.representation.Sample method)</a>
+
+        <ul>
+          <li><a href="api/probly.representation.sampling.array_sample.html#probly.representation.sampling.array_sample.ArraySample.concat">(probly.representation.sampling.array_sample.ArraySample method)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.html#probly.representation.sampling.ArraySample.concat">(probly.representation.sampling.ArraySample method)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.common_sample.html#probly.representation.sampling.common_sample.ListSample.concat">(probly.representation.sampling.common_sample.ListSample method)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.common_sample.html#probly.representation.sampling.common_sample.Sample.concat">(probly.representation.sampling.common_sample.Sample method)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.html#probly.representation.sampling.ListSample.concat">(probly.representation.sampling.ListSample method)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.html#probly.representation.sampling.Sample.concat">(probly.representation.sampling.Sample method)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.sample.html#probly.representation.sampling.sample.ArraySample.concat">(probly.representation.sampling.sample.ArraySample method)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.sample.html#probly.representation.sampling.sample.ListSample.concat">(probly.representation.sampling.sample.ListSample method)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.sample.html#probly.representation.sampling.sample.Sample.concat">(probly.representation.sampling.sample.Sample method)</a>
+</li>
+        </ul></li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="api/probly.quantification.regression.html#probly.quantification.regression.conditional_differential_entropy">conditional_differential_entropy() (in module probly.quantification.regression)</a>
 </li>
         <li><a href="api/probly.quantification.classification.html#probly.quantification.classification.conditional_entropy">conditional_entropy() (in module probly.quantification.classification)</a>
 </li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="api/probly.representation.credal_set.common.html#probly.representation.credal_set.common.ConvexCredalSet">ConvexCredalSet (class in probly.representation.credal_set.common)</a>
+</li>
+        <li><a href="api/probly.representation.credal_set.array.html#probly.representation.credal_set.array.ArrayDiscreteCredalSet.copy">copy() (probly.representation.credal_set.array.ArrayDiscreteCredalSet method)</a>
+
+        <ul>
+          <li><a href="api/probly.representation.credal_set.html#probly.representation.credal_set.ArrayDiscreteCredalSet.copy">(probly.representation.credal_set.ArrayDiscreteCredalSet method)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.array_sample.html#probly.representation.sampling.array_sample.ArraySample.copy">(probly.representation.sampling.array_sample.ArraySample method)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.html#probly.representation.sampling.ArraySample.copy">(probly.representation.sampling.ArraySample method)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.sample.html#probly.representation.sampling.sample.ArraySample.copy">(probly.representation.sampling.sample.ArraySample method)</a>
+</li>
+        </ul></li>
         <li><a href="api/probly.datasets.torch.html#probly.datasets.torch.CIFAR10H.counts">counts (probly.datasets.torch.CIFAR10H attribute)</a>
 </li>
         <li><a href="api/probly.evaluation.metrics.html#probly.evaluation.metrics.coverage">coverage() (in module probly.evaluation.metrics)</a>
@@ -500,12 +605,10 @@
 </li>
         <li><a href="api/probly.plot.credal.html#probly.plot.credal.credal_set_plot">credal_set_plot() (in module probly.plot.credal)</a>
 </li>
-        <li><a href="api/probly.representation.html#probly.representation.CredalSet">CredalSet (class in probly.representation)</a>
+        <li><a href="api/probly.representation.credal_set.html#probly.representation.credal_set.CredalSet">CredalSet (class in probly.representation.credal_set)</a>
 
         <ul>
-          <li><a href="api/probly.representation.credal_set.html#probly.representation.credal_set.CredalSet">(class in probly.representation.credal_set)</a>
-</li>
-          <li><a href="api/probly.representation.credal_set.credal_set.html#probly.representation.credal_set.credal_set.CredalSet">(class in probly.representation.credal_set.credal_set)</a>
+          <li><a href="api/probly.representation.credal_set.common.html#probly.representation.credal_set.common.CredalSet">(class in probly.representation.credal_set.common)</a>
 </li>
         </ul></li>
     </ul></td>
@@ -522,15 +625,35 @@
 </li>
         <li><a href="api/probly.layers.flax.html#probly.layers.flax.DropConnectLinear.deterministic">deterministic (probly.layers.flax.DropConnectLinear attribute)</a>
 </li>
+        <li><a href="api/probly.representation.credal_set.array.html#probly.representation.credal_set.array.ArrayDiscreteCredalSet.device">device (probly.representation.credal_set.array.ArrayDiscreteCredalSet property)</a>
+
+        <ul>
+          <li><a href="api/probly.representation.credal_set.html#probly.representation.credal_set.ArrayDiscreteCredalSet.device">(probly.representation.credal_set.ArrayDiscreteCredalSet property)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.array_sample.html#probly.representation.sampling.array_sample.ArraySample.device">(probly.representation.sampling.array_sample.ArraySample property)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.html#probly.representation.sampling.ArraySample.device">(probly.representation.sampling.ArraySample property)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.sample.html#probly.representation.sampling.sample.ArraySample.device">(probly.representation.sampling.sample.ArraySample property)</a>
+</li>
+        </ul></li>
         <li><a href="api/probly.utils.html#probly.utils.differential_entropy_gaussian">differential_entropy_gaussian() (in module probly.utils)</a>
 
         <ul>
           <li><a href="api/probly.utils.probabilities.html#probly.utils.probabilities.differential_entropy_gaussian">(in module probly.utils.probabilities)</a>
 </li>
         </ul></li>
+        <li><a href="api/probly.layers.torch.html#probly.layers.torch.BayesConv2d.dilation">dilation (probly.layers.torch.BayesConv2d attribute)</a>
+</li>
+        <li><a href="api/probly.representation.credal_set.html#probly.representation.credal_set.DiscreteCredalSet">DiscreteCredalSet (class in probly.representation.credal_set)</a>
+
+        <ul>
+          <li><a href="api/probly.representation.credal_set.common.html#probly.representation.credal_set.common.DiscreteCredalSet">(class in probly.representation.credal_set.common)</a>
+</li>
+        </ul></li>
     </ul></td>
     <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="api/probly.layers.torch.html#probly.layers.torch.BayesConv2d.dilation">dilation (probly.layers.torch.BayesConv2d attribute)</a>
+        <li><a href="api/probly.representation.credal_set.common.html#probly.representation.credal_set.common.DistanceBasedCredalSet">DistanceBasedCredalSet (class in probly.representation.credal_set.common)</a>
 </li>
         <li><a href="api/probly.datasets.torch.html#probly.datasets.torch.ImageNetReaL.dists">dists (probly.datasets.torch.ImageNetReaL attribute)</a>
 </li>
@@ -544,6 +667,18 @@
         </ul></li>
         <li><a href="api/probly.transformation.dropout.html#probly.transformation.dropout">dropout() (in module probly.transformation)</a>, <a href="api/probly.transformation.html#probly.transformation.dropout">[1]</a>
 </li>
+        <li><a href="api/probly.representation.credal_set.array.html#probly.representation.credal_set.array.ArrayDiscreteCredalSet.dtype">dtype (probly.representation.credal_set.array.ArrayDiscreteCredalSet property)</a>
+
+        <ul>
+          <li><a href="api/probly.representation.credal_set.html#probly.representation.credal_set.ArrayDiscreteCredalSet.dtype">(probly.representation.credal_set.ArrayDiscreteCredalSet property)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.array_sample.html#probly.representation.sampling.array_sample.ArraySample.dtype">(probly.representation.sampling.array_sample.ArraySample property)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.html#probly.representation.sampling.ArraySample.dtype">(probly.representation.sampling.ArraySample property)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.sample.html#probly.representation.sampling.sample.ArraySample.dtype">(probly.representation.sampling.sample.ArraySample property)</a>
+</li>
+        </ul></li>
     </ul></td>
   </tr></table>
 </section>
@@ -656,6 +791,66 @@
           <li><a href="api/probly.train.evidential.torch.html#probly.train.evidential.torch.EvidentialRegressionRegularization.forward">(probly.train.evidential.torch.EvidentialRegressionRegularization method)</a>
 </li>
         </ul></li>
+        <li><a href="api/probly.representation.credal_set.array.html#probly.representation.credal_set.array.ArrayCategoricalCredalSet.from_array_sample">from_array_sample() (probly.representation.credal_set.array.ArrayCategoricalCredalSet class method)</a>
+
+        <ul>
+          <li><a href="api/probly.representation.credal_set.array.html#probly.representation.credal_set.array.ArrayDiscreteCredalSet.from_array_sample">(probly.representation.credal_set.array.ArrayDiscreteCredalSet class method)</a>
+</li>
+          <li><a href="api/probly.representation.credal_set.html#probly.representation.credal_set.ArrayCategoricalCredalSet.from_array_sample">(probly.representation.credal_set.ArrayCategoricalCredalSet class method)</a>
+</li>
+          <li><a href="api/probly.representation.credal_set.html#probly.representation.credal_set.ArrayDiscreteCredalSet.from_array_sample">(probly.representation.credal_set.ArrayDiscreteCredalSet class method)</a>
+</li>
+        </ul></li>
+        <li><a href="api/probly.representation.html#probly.representation.Sample.from_iterable">from_iterable() (probly.representation.Sample class method)</a>
+
+        <ul>
+          <li><a href="api/probly.representation.sampling.array_sample.html#probly.representation.sampling.array_sample.ArraySample.from_iterable">(probly.representation.sampling.array_sample.ArraySample class method)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.html#probly.representation.sampling.ArraySample.from_iterable">(probly.representation.sampling.ArraySample class method)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.common_sample.html#probly.representation.sampling.common_sample.ListSample.from_iterable">(probly.representation.sampling.common_sample.ListSample class method)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.common_sample.html#probly.representation.sampling.common_sample.Sample.from_iterable">(probly.representation.sampling.common_sample.Sample class method)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.html#probly.representation.sampling.ListSample.from_iterable">(probly.representation.sampling.ListSample class method)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.html#probly.representation.sampling.Sample.from_iterable">(probly.representation.sampling.Sample class method)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.sample.html#probly.representation.sampling.sample.ArraySample.from_iterable">(probly.representation.sampling.sample.ArraySample class method)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.sample.html#probly.representation.sampling.sample.ListSample.from_iterable">(probly.representation.sampling.sample.ListSample class method)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.sample.html#probly.representation.sampling.sample.Sample.from_iterable">(probly.representation.sampling.sample.Sample class method)</a>
+</li>
+        </ul></li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="api/probly.representation.html#probly.representation.CategoricalCredalSet.from_sample">from_sample() (probly.representation.CategoricalCredalSet class method)</a>
+
+        <ul>
+          <li><a href="api/probly.representation.credal_set.array.html#probly.representation.credal_set.array.ArrayCategoricalCredalSet.from_sample">(probly.representation.credal_set.array.ArrayCategoricalCredalSet class method)</a>
+</li>
+          <li><a href="api/probly.representation.credal_set.html#probly.representation.credal_set.ArrayCategoricalCredalSet.from_sample">(probly.representation.credal_set.ArrayCategoricalCredalSet class method)</a>
+</li>
+          <li><a href="api/probly.representation.credal_set.html#probly.representation.credal_set.CategoricalCredalSet.from_sample">(probly.representation.credal_set.CategoricalCredalSet class method)</a>
+</li>
+          <li><a href="api/probly.representation.credal_set.common.html#probly.representation.credal_set.common.CategoricalCredalSet.from_sample">(probly.representation.credal_set.common.CategoricalCredalSet class method)</a>
+</li>
+          <li><a href="api/probly.representation.html#probly.representation.Sample.from_sample">(probly.representation.Sample class method)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.array_sample.html#probly.representation.sampling.array_sample.ArraySample.from_sample">(probly.representation.sampling.array_sample.ArraySample class method)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.html#probly.representation.sampling.ArraySample.from_sample">(probly.representation.sampling.ArraySample class method)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.common_sample.html#probly.representation.sampling.common_sample.Sample.from_sample">(probly.representation.sampling.common_sample.Sample class method)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.html#probly.representation.sampling.Sample.from_sample">(probly.representation.sampling.Sample class method)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.sample.html#probly.representation.sampling.sample.ArraySample.from_sample">(probly.representation.sampling.sample.ArraySample class method)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.sample.html#probly.representation.sampling.sample.Sample.from_sample">(probly.representation.sampling.sample.Sample class method)</a>
+</li>
+        </ul></li>
     </ul></td>
   </tr></table>
 </section>
@@ -722,10 +917,6 @@
   <h2>J</h2>
   <table style="width: 100%" class="indextable genindextable"><tr>
     <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="api/probly.representation.credal_set.jax.html#probly.representation.credal_set.jax.JaxArrayCredalSet">JaxArrayCredalSet (class in probly.representation.credal_set.jax)</a>
-</li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="api/probly.representation.sampling.jax_sample.html#probly.representation.sampling.jax_sample.JaxArraySample">JaxArraySample (class in probly.representation.sampling.jax_sample)</a>
 </li>
     </ul></td>
@@ -769,27 +960,27 @@
         <li><a href="api/probly.representation.sampling.html#probly.representation.sampling.ListSample">ListSample (class in probly.representation.sampling)</a>
 
         <ul>
+          <li><a href="api/probly.representation.sampling.common_sample.html#probly.representation.sampling.common_sample.ListSample">(class in probly.representation.sampling.common_sample)</a>
+</li>
           <li><a href="api/probly.representation.sampling.sample.html#probly.representation.sampling.sample.ListSample">(class in probly.representation.sampling.sample)</a>
 </li>
         </ul></li>
         <li><a href="api/probly.evaluation.metrics.html#probly.evaluation.metrics.log_loss">log_loss() (in module probly.evaluation.metrics)</a>
 </li>
-        <li><a href="api/probly.representation.credal_set.credal_set.html#probly.representation.credal_set.credal_set.ArrayCredalSet.lower">lower() (probly.representation.credal_set.credal_set.ArrayCredalSet method)</a>
-
-        <ul>
-          <li><a href="api/probly.representation.credal_set.credal_set.html#probly.representation.credal_set.credal_set.CredalSet.lower">(probly.representation.credal_set.credal_set.CredalSet method)</a>
-</li>
-          <li><a href="api/probly.representation.credal_set.html#probly.representation.credal_set.CredalSet.lower">(probly.representation.credal_set.CredalSet method)</a>
-</li>
-          <li><a href="api/probly.representation.credal_set.jax.html#probly.representation.credal_set.jax.JaxArrayCredalSet.lower">(probly.representation.credal_set.jax.JaxArrayCredalSet method)</a>
-</li>
-          <li><a href="api/probly.representation.credal_set.torch.html#probly.representation.credal_set.torch.TorchTensorCredalSet.lower">(probly.representation.credal_set.torch.TorchTensorCredalSet method)</a>
-</li>
-          <li><a href="api/probly.representation.html#probly.representation.CredalSet.lower">(probly.representation.CredalSet method)</a>
-</li>
-        </ul></li>
     </ul></td>
     <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="api/probly.representation.html#probly.representation.CategoricalCredalSet.lower">lower() (probly.representation.CategoricalCredalSet method)</a>
+
+        <ul>
+          <li><a href="api/probly.representation.credal_set.array.html#probly.representation.credal_set.array.ArrayDiscreteCredalSet.lower">(probly.representation.credal_set.array.ArrayDiscreteCredalSet method)</a>
+</li>
+          <li><a href="api/probly.representation.credal_set.html#probly.representation.credal_set.ArrayDiscreteCredalSet.lower">(probly.representation.credal_set.ArrayDiscreteCredalSet method)</a>
+</li>
+          <li><a href="api/probly.representation.credal_set.html#probly.representation.credal_set.CategoricalCredalSet.lower">(probly.representation.credal_set.CategoricalCredalSet method)</a>
+</li>
+          <li><a href="api/probly.representation.credal_set.common.html#probly.representation.credal_set.common.CategoricalCredalSet.lower">(probly.representation.credal_set.common.CategoricalCredalSet method)</a>
+</li>
+        </ul></li>
         <li><a href="api/probly.quantification.classification.html#probly.quantification.classification.lower_entropy">lower_entropy() (in module probly.quantification.classification)</a>
 </li>
         <li><a href="api/probly.quantification.classification.html#probly.quantification.classification.lower_entropy_convex_hull">lower_entropy_convex_hull() (in module probly.quantification.classification)</a>
@@ -802,22 +993,6 @@
   <h2>M</h2>
   <table style="width: 100%" class="indextable genindextable"><tr>
     <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="api/probly.representation.html#probly.representation.Sample.mean">mean() (probly.representation.Sample method)</a>
-
-        <ul>
-          <li><a href="api/probly.representation.sampling.html#probly.representation.sampling.ArraySample.mean">(probly.representation.sampling.ArraySample method)</a>
-</li>
-          <li><a href="api/probly.representation.sampling.jax_sample.html#probly.representation.sampling.jax_sample.JaxArraySample.mean">(probly.representation.sampling.jax_sample.JaxArraySample method)</a>
-</li>
-          <li><a href="api/probly.representation.sampling.html#probly.representation.sampling.Sample.mean">(probly.representation.sampling.Sample method)</a>
-</li>
-          <li><a href="api/probly.representation.sampling.sample.html#probly.representation.sampling.sample.ArraySample.mean">(probly.representation.sampling.sample.ArraySample method)</a>
-</li>
-          <li><a href="api/probly.representation.sampling.sample.html#probly.representation.sampling.sample.Sample.mean">(probly.representation.sampling.sample.Sample method)</a>
-</li>
-          <li><a href="api/probly.representation.sampling.torch_sample.html#probly.representation.sampling.torch_sample.TorchTensorSample.mean">(probly.representation.sampling.torch_sample.TorchTensorSample method)</a>
-</li>
-        </ul></li>
         <li>
     module
 
@@ -856,17 +1031,25 @@
 </li>
           <li><a href="api/probly.representation.credal_set.html#module-probly.representation.credal_set">probly.representation.credal_set</a>
 </li>
-          <li><a href="api/probly.representation.credal_set.credal_set.html#module-probly.representation.credal_set.credal_set">probly.representation.credal_set.credal_set</a>
+          <li><a href="api/probly.representation.credal_set.array.html#module-probly.representation.credal_set.array">probly.representation.credal_set.array</a>
 </li>
-          <li><a href="api/probly.representation.credal_set.jax.html#module-probly.representation.credal_set.jax">probly.representation.credal_set.jax</a>
+          <li><a href="api/probly.representation.credal_set.array_functions.html#module-probly.representation.credal_set.array_functions">probly.representation.credal_set.array_functions</a>
 </li>
-          <li><a href="api/probly.representation.credal_set.torch.html#module-probly.representation.credal_set.torch">probly.representation.credal_set.torch</a>
+          <li><a href="api/probly.representation.credal_set.common.html#module-probly.representation.credal_set.common">probly.representation.credal_set.common</a>
 </li>
           <li><a href="api/probly.representation.distribution.html#module-probly.representation.distribution">probly.representation.distribution</a>
 </li>
           <li><a href="api/probly.representation.representer.html#module-probly.representation.representer">probly.representation.representer</a>
 </li>
           <li><a href="api/probly.representation.sampling.html#module-probly.representation.sampling">probly.representation.sampling</a>
+</li>
+          <li><a href="api/probly.representation.sampling.array_sample.html#module-probly.representation.sampling.array_sample">probly.representation.sampling.array_sample</a>
+</li>
+          <li><a href="api/probly.representation.sampling.array_sample_axis_tracking.html#module-probly.representation.sampling.array_sample_axis_tracking">probly.representation.sampling.array_sample_axis_tracking</a>
+</li>
+          <li><a href="api/probly.representation.sampling.array_sample_functions.html#module-probly.representation.sampling.array_sample_functions">probly.representation.sampling.array_sample_functions</a>
+</li>
+          <li><a href="api/probly.representation.sampling.common_sample.html#module-probly.representation.sampling.common_sample">probly.representation.sampling.common_sample</a>
 </li>
           <li><a href="api/probly.representation.sampling.flax_sampler.html#module-probly.representation.sampling.flax_sampler">probly.representation.sampling.flax_sampler</a>
 </li>
@@ -937,6 +1120,24 @@
           <li><a href="api/probly.utils.sets.html#probly.utils.sets.moebius">(in module probly.utils.sets)</a>
 </li>
         </ul></li>
+        <li><a href="api/probly.representation.sampling.array_sample.html#probly.representation.sampling.array_sample.ArraySample.move_sample_axis">move_sample_axis() (probly.representation.sampling.array_sample.ArraySample method)</a>
+
+        <ul>
+          <li><a href="api/probly.representation.sampling.html#probly.representation.sampling.ArraySample.move_sample_axis">(probly.representation.sampling.ArraySample method)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.sample.html#probly.representation.sampling.sample.ArraySample.move_sample_axis">(probly.representation.sampling.sample.ArraySample method)</a>
+</li>
+        </ul></li>
+        <li><a href="api/probly.representation.sampling.array_sample.html#probly.representation.sampling.array_sample.ArraySample.mT">mT (probly.representation.sampling.array_sample.ArraySample property)</a>
+
+        <ul>
+          <li><a href="api/probly.representation.sampling.html#probly.representation.sampling.ArraySample.mT">(probly.representation.sampling.ArraySample property)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.sample.html#probly.representation.sampling.sample.ArraySample.mT">(probly.representation.sampling.sample.ArraySample property)</a>
+</li>
+        </ul></li>
+        <li><a href="api/probly.utils.html#probly.utils.switchdispatch.multi_register">multi_register() (probly.utils.switchdispatch method)</a>, <a href="api/probly.utils.switchdispatch.html#probly.utils.switchdispatch.multi_register">[1]</a>
+</li>
         <li><a href="api/probly.quantification.classification.html#probly.quantification.classification.mutual_information">mutual_information() (in module probly.quantification.classification)</a>
 
         <ul>
@@ -951,12 +1152,24 @@
   <h2>N</h2>
   <table style="width: 100%" class="indextable genindextable"><tr>
     <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="api/probly.representation.credal_set.array.html#probly.representation.credal_set.array.ArrayDiscreteCredalSet.ndim">ndim (probly.representation.credal_set.array.ArrayDiscreteCredalSet property)</a>
+
+        <ul>
+          <li><a href="api/probly.representation.credal_set.html#probly.representation.credal_set.ArrayDiscreteCredalSet.ndim">(probly.representation.credal_set.ArrayDiscreteCredalSet property)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.array_sample.html#probly.representation.sampling.array_sample.ArraySample.ndim">(probly.representation.sampling.array_sample.ArraySample property)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.html#probly.representation.sampling.ArraySample.ndim">(probly.representation.sampling.ArraySample property)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.sample.html#probly.representation.sampling.sample.ArraySample.ndim">(probly.representation.sampling.sample.ArraySample property)</a>
+</li>
+        </ul></li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="api/probly.layers.torch.html#probly.layers.torch.NormalInverseGammaLinear">NormalInverseGammaLinear (class in probly.layers.torch)</a>
 </li>
         <li><a href="api/probly.layers.torch.html#probly.layers.torch.NormalInverseGammaLinear.nu">nu (probly.layers.torch.NormalInverseGammaLinear attribute)</a>
 </li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="api/probly.layers.torch.html#probly.layers.torch.NormalInverseGammaLinear.nu_bias">nu_bias (probly.layers.torch.NormalInverseGammaLinear attribute)</a>
 </li>
         <li><a href="api/probly.train.calibration.torch.html#probly.train.calibration.torch.ExpectedCalibrationError.num_bins">num_bins (probly.train.calibration.torch.ExpectedCalibrationError attribute)</a>
@@ -1023,6 +1236,8 @@
           <li><a href="api/probly.representation.sampling.sampler.html#probly.representation.sampling.sampler.Sampler.predictor">(probly.representation.sampling.sampler.Sampler attribute)</a>
 </li>
         </ul></li>
+        <li><a href="api/probly.representation.credal_set.common.html#probly.representation.credal_set.common.ProbabilityIntervals">ProbabilityIntervals (class in probly.representation.credal_set.common)</a>
+</li>
         <li>
     probly
 
@@ -1143,24 +1358,24 @@
 </li>
         </ul></li>
         <li>
-    probly.representation.credal_set.credal_set
+    probly.representation.credal_set.array
 
         <ul>
-          <li><a href="api/probly.representation.credal_set.credal_set.html#module-probly.representation.credal_set.credal_set">module</a>
+          <li><a href="api/probly.representation.credal_set.array.html#module-probly.representation.credal_set.array">module</a>
 </li>
         </ul></li>
         <li>
-    probly.representation.credal_set.jax
+    probly.representation.credal_set.array_functions
 
         <ul>
-          <li><a href="api/probly.representation.credal_set.jax.html#module-probly.representation.credal_set.jax">module</a>
+          <li><a href="api/probly.representation.credal_set.array_functions.html#module-probly.representation.credal_set.array_functions">module</a>
 </li>
         </ul></li>
         <li>
-    probly.representation.credal_set.torch
+    probly.representation.credal_set.common
 
         <ul>
-          <li><a href="api/probly.representation.credal_set.torch.html#module-probly.representation.credal_set.torch">module</a>
+          <li><a href="api/probly.representation.credal_set.common.html#module-probly.representation.credal_set.common">module</a>
 </li>
         </ul></li>
         <li>
@@ -1184,8 +1399,36 @@
           <li><a href="api/probly.representation.sampling.html#module-probly.representation.sampling">module</a>
 </li>
         </ul></li>
+        <li>
+    probly.representation.sampling.array_sample
+
+        <ul>
+          <li><a href="api/probly.representation.sampling.array_sample.html#module-probly.representation.sampling.array_sample">module</a>
+</li>
+        </ul></li>
+        <li>
+    probly.representation.sampling.array_sample_axis_tracking
+
+        <ul>
+          <li><a href="api/probly.representation.sampling.array_sample_axis_tracking.html#module-probly.representation.sampling.array_sample_axis_tracking">module</a>
+</li>
+        </ul></li>
     </ul></td>
     <td style="width: 33%; vertical-align: top;"><ul>
+        <li>
+    probly.representation.sampling.array_sample_functions
+
+        <ul>
+          <li><a href="api/probly.representation.sampling.array_sample_functions.html#module-probly.representation.sampling.array_sample_functions">module</a>
+</li>
+        </ul></li>
+        <li>
+    probly.representation.sampling.common_sample
+
+        <ul>
+          <li><a href="api/probly.representation.sampling.common_sample.html#module-probly.representation.sampling.common_sample">module</a>
+</li>
+        </ul></li>
         <li>
     probly.representation.sampling.flax_sampler
 
@@ -1423,6 +1666,8 @@
         <ul>
           <li><a href="api/probly.transformation.evidential.regression.common.html#probly.transformation.evidential.regression.common.register">(in module probly.transformation.evidential.regression.common)</a>
 </li>
+          <li><a href="api/probly.utils.html#probly.utils.switchdispatch.register">(probly.utils.switchdispatch method)</a>, <a href="api/probly.utils.switchdispatch.html#probly.utils.switchdispatch.register">[1]</a>
+</li>
         </ul></li>
         <li><a href="api/probly.representation.sampling.flax_sampler.html#probly.representation.sampling.flax_sampler.register_forced_train_mode">register_forced_train_mode() (in module probly.representation.sampling.flax_sampler)</a>
 
@@ -1467,11 +1712,23 @@
         <ul>
           <li><a href="api/probly.representation.sampling.html#probly.representation.sampling.Sample">(class in probly.representation.sampling)</a>
 </li>
+          <li><a href="api/probly.representation.sampling.common_sample.html#probly.representation.sampling.common_sample.Sample">(class in probly.representation.sampling.common_sample)</a>
+</li>
           <li><a href="api/probly.representation.sampling.sample.html#probly.representation.sampling.sample.Sample">(class in probly.representation.sampling.sample)</a>
 </li>
         </ul></li>
         <li><a href="api/probly.representation.sampling.sampler.html#probly.representation.sampling.sampler.EnsembleSampler.sample">sample() (probly.representation.sampling.sampler.EnsembleSampler method)</a>
 </li>
+        <li><a href="api/probly.representation.sampling.array_sample.html#probly.representation.sampling.array_sample.ArraySample.sample_axis">sample_axis (probly.representation.sampling.array_sample.ArraySample attribute)</a>
+
+        <ul>
+          <li><a href="api/probly.representation.sampling.html#probly.representation.sampling.ArraySample.sample_axis">(probly.representation.sampling.ArraySample attribute)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.common_sample.html#probly.representation.sampling.common_sample.SampleParams.sample_axis">(probly.representation.sampling.common_sample.SampleParams attribute)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.sample.html#probly.representation.sampling.sample.ArraySample.sample_axis">(probly.representation.sampling.sample.ArraySample attribute)</a>
+</li>
+        </ul></li>
         <li><a href="api/probly.representation.html#probly.representation.Sampler.sample_factory">sample_factory (probly.representation.Sampler attribute)</a>
 
         <ul>
@@ -1482,6 +1739,98 @@
           <li><a href="api/probly.representation.sampling.sampler.html#probly.representation.sampling.sampler.Sampler.sample_factory">(probly.representation.sampling.sampler.Sampler attribute)</a>
 </li>
         </ul></li>
+        <li><a href="api/probly.representation.html#probly.representation.Sample.sample_mean">sample_mean() (probly.representation.Sample method)</a>
+
+        <ul>
+          <li><a href="api/probly.representation.sampling.array_sample.html#probly.representation.sampling.array_sample.ArraySample.sample_mean">(probly.representation.sampling.array_sample.ArraySample method)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.html#probly.representation.sampling.ArraySample.sample_mean">(probly.representation.sampling.ArraySample method)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.common_sample.html#probly.representation.sampling.common_sample.Sample.sample_mean">(probly.representation.sampling.common_sample.Sample method)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.jax_sample.html#probly.representation.sampling.jax_sample.JaxArraySample.sample_mean">(probly.representation.sampling.jax_sample.JaxArraySample method)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.html#probly.representation.sampling.Sample.sample_mean">(probly.representation.sampling.Sample method)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.sample.html#probly.representation.sampling.sample.ArraySample.sample_mean">(probly.representation.sampling.sample.ArraySample method)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.sample.html#probly.representation.sampling.sample.Sample.sample_mean">(probly.representation.sampling.sample.Sample method)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.torch_sample.html#probly.representation.sampling.torch_sample.TorchTensorSample.sample_mean">(probly.representation.sampling.torch_sample.TorchTensorSample method)</a>
+</li>
+        </ul></li>
+        <li><a href="api/probly.representation.html#probly.representation.Sample.sample_size">sample_size (probly.representation.Sample property)</a>
+
+        <ul>
+          <li><a href="api/probly.representation.sampling.array_sample.html#probly.representation.sampling.array_sample.ArraySample.sample_size">(probly.representation.sampling.array_sample.ArraySample property)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.html#probly.representation.sampling.ArraySample.sample_size">(probly.representation.sampling.ArraySample property)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.common_sample.html#probly.representation.sampling.common_sample.ListSample.sample_size">(probly.representation.sampling.common_sample.ListSample property)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.common_sample.html#probly.representation.sampling.common_sample.Sample.sample_size">(probly.representation.sampling.common_sample.Sample property)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.html#probly.representation.sampling.ListSample.sample_size">(probly.representation.sampling.ListSample property)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.html#probly.representation.sampling.Sample.sample_size">(probly.representation.sampling.Sample property)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.sample.html#probly.representation.sampling.sample.ArraySample.sample_size">(probly.representation.sampling.sample.ArraySample property)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.sample.html#probly.representation.sampling.sample.ListSample.sample_size">(probly.representation.sampling.sample.ListSample property)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.sample.html#probly.representation.sampling.sample.Sample.sample_size">(probly.representation.sampling.sample.Sample property)</a>
+</li>
+        </ul></li>
+        <li><a href="api/probly.representation.html#probly.representation.Sample.sample_std">sample_std() (probly.representation.Sample method)</a>
+
+        <ul>
+          <li><a href="api/probly.representation.sampling.array_sample.html#probly.representation.sampling.array_sample.ArraySample.sample_std">(probly.representation.sampling.array_sample.ArraySample method)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.html#probly.representation.sampling.ArraySample.sample_std">(probly.representation.sampling.ArraySample method)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.common_sample.html#probly.representation.sampling.common_sample.Sample.sample_std">(probly.representation.sampling.common_sample.Sample method)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.jax_sample.html#probly.representation.sampling.jax_sample.JaxArraySample.sample_std">(probly.representation.sampling.jax_sample.JaxArraySample method)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.html#probly.representation.sampling.Sample.sample_std">(probly.representation.sampling.Sample method)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.sample.html#probly.representation.sampling.sample.ArraySample.sample_std">(probly.representation.sampling.sample.ArraySample method)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.sample.html#probly.representation.sampling.sample.Sample.sample_std">(probly.representation.sampling.sample.Sample method)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.torch_sample.html#probly.representation.sampling.torch_sample.TorchTensorSample.sample_std">(probly.representation.sampling.torch_sample.TorchTensorSample method)</a>
+</li>
+        </ul></li>
+        <li><a href="api/probly.representation.html#probly.representation.Sample.sample_var">sample_var() (probly.representation.Sample method)</a>
+
+        <ul>
+          <li><a href="api/probly.representation.sampling.array_sample.html#probly.representation.sampling.array_sample.ArraySample.sample_var">(probly.representation.sampling.array_sample.ArraySample method)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.html#probly.representation.sampling.ArraySample.sample_var">(probly.representation.sampling.ArraySample method)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.common_sample.html#probly.representation.sampling.common_sample.Sample.sample_var">(probly.representation.sampling.common_sample.Sample method)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.jax_sample.html#probly.representation.sampling.jax_sample.JaxArraySample.sample_var">(probly.representation.sampling.jax_sample.JaxArraySample method)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.html#probly.representation.sampling.Sample.sample_var">(probly.representation.sampling.Sample method)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.sample.html#probly.representation.sampling.sample.ArraySample.sample_var">(probly.representation.sampling.sample.ArraySample method)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.sample.html#probly.representation.sampling.sample.Sample.sample_var">(probly.representation.sampling.sample.Sample method)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.torch_sample.html#probly.representation.sampling.torch_sample.TorchTensorSample.sample_var">(probly.representation.sampling.torch_sample.TorchTensorSample method)</a>
+</li>
+        </ul></li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="api/probly.representation.sampling.common_sample.html#probly.representation.sampling.common_sample.SampleFactory">SampleFactory (class in probly.representation.sampling.common_sample)</a>
+
+        <ul>
+          <li><a href="api/probly.representation.sampling.sample.html#probly.representation.sampling.sample.SampleFactory">(class in probly.representation.sampling.sample)</a>
+</li>
+        </ul></li>
+        <li><a href="api/probly.representation.sampling.common_sample.html#probly.representation.sampling.common_sample.SampleParams">SampleParams (class in probly.representation.sampling.common_sample)</a>
+</li>
         <li><a href="api/probly.representation.html#probly.representation.Sampler">Sampler (class in probly.representation)</a>
 
         <ul>
@@ -1496,8 +1845,28 @@
           <li><a href="api/probly.representation.sampling.sampler.html#probly.representation.sampling.sampler.sampler_factory">(in module probly.representation.sampling.sampler)</a>
 </li>
         </ul></li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="api/probly.representation.html#probly.representation.Sample.samples">samples (probly.representation.Sample property)</a>
+
+        <ul>
+          <li><a href="api/probly.representation.sampling.array_sample.html#probly.representation.sampling.array_sample.ArraySample.samples">(probly.representation.sampling.array_sample.ArraySample property)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.html#probly.representation.sampling.ArraySample.samples">(probly.representation.sampling.ArraySample property)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.common_sample.html#probly.representation.sampling.common_sample.ListSample.samples">(probly.representation.sampling.common_sample.ListSample property)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.common_sample.html#probly.representation.sampling.common_sample.Sample.samples">(probly.representation.sampling.common_sample.Sample property)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.html#probly.representation.sampling.ListSample.samples">(probly.representation.sampling.ListSample property)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.html#probly.representation.sampling.Sample.samples">(probly.representation.sampling.Sample property)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.sample.html#probly.representation.sampling.sample.ArraySample.samples">(probly.representation.sampling.sample.ArraySample property)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.sample.html#probly.representation.sampling.sample.ListSample.samples">(probly.representation.sampling.sample.ListSample property)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.sample.html#probly.representation.sampling.sample.Sample.samples">(probly.representation.sampling.sample.Sample property)</a>
+</li>
+        </ul></li>
         <li><a href="api/probly.representation.html#probly.representation.Sampler.sampling_strategy">sampling_strategy (probly.representation.Sampler attribute)</a>
 
         <ul>
@@ -1508,27 +1877,35 @@
         </ul></li>
         <li><a href="api/probly.evaluation.tasks.html#probly.evaluation.tasks.selective_prediction">selective_prediction() (in module probly.evaluation.tasks)</a>
 </li>
-        <li><a href="api/probly.plot.credal.html#probly.plot.credal.simplex_plot">simplex_plot() (in module probly.plot.credal)</a>
-</li>
-        <li><a href="api/probly.evaluation.metrics.html#probly.evaluation.metrics.spherical_score">spherical_score() (in module probly.evaluation.metrics)</a>
-</li>
-        <li><a href="api/probly.representation.html#probly.representation.Sample.std">std() (probly.representation.Sample method)</a>
+        <li><a href="api/probly.representation.credal_set.array.html#probly.representation.credal_set.array.ArrayDiscreteCredalSet.shape">shape (probly.representation.credal_set.array.ArrayDiscreteCredalSet property)</a>
 
         <ul>
-          <li><a href="api/probly.representation.sampling.html#probly.representation.sampling.ArraySample.std">(probly.representation.sampling.ArraySample method)</a>
+          <li><a href="api/probly.representation.credal_set.html#probly.representation.credal_set.ArrayDiscreteCredalSet.shape">(probly.representation.credal_set.ArrayDiscreteCredalSet property)</a>
 </li>
-          <li><a href="api/probly.representation.sampling.jax_sample.html#probly.representation.sampling.jax_sample.JaxArraySample.std">(probly.representation.sampling.jax_sample.JaxArraySample method)</a>
+          <li><a href="api/probly.representation.sampling.array_sample.html#probly.representation.sampling.array_sample.ArraySample.shape">(probly.representation.sampling.array_sample.ArraySample property)</a>
 </li>
-          <li><a href="api/probly.representation.sampling.html#probly.representation.sampling.Sample.std">(probly.representation.sampling.Sample method)</a>
+          <li><a href="api/probly.representation.sampling.html#probly.representation.sampling.ArraySample.shape">(probly.representation.sampling.ArraySample property)</a>
 </li>
-          <li><a href="api/probly.representation.sampling.sample.html#probly.representation.sampling.sample.ArraySample.std">(probly.representation.sampling.sample.ArraySample method)</a>
-</li>
-          <li><a href="api/probly.representation.sampling.sample.html#probly.representation.sampling.sample.Sample.std">(probly.representation.sampling.sample.Sample method)</a>
-</li>
-          <li><a href="api/probly.representation.sampling.torch_sample.html#probly.representation.sampling.torch_sample.TorchTensorSample.std">(probly.representation.sampling.torch_sample.TorchTensorSample method)</a>
+          <li><a href="api/probly.representation.sampling.sample.html#probly.representation.sampling.sample.ArraySample.shape">(probly.representation.sampling.sample.ArraySample property)</a>
 </li>
         </ul></li>
+        <li><a href="api/probly.plot.credal.html#probly.plot.credal.simplex_plot">simplex_plot() (in module probly.plot.credal)</a>
+</li>
+        <li><a href="api/probly.representation.credal_set.common.html#probly.representation.credal_set.common.SingletonCredalSet">SingletonCredalSet (class in probly.representation.credal_set.common)</a>
+</li>
+        <li><a href="api/probly.representation.sampling.array_sample.html#probly.representation.sampling.array_sample.ArraySample.size">size (probly.representation.sampling.array_sample.ArraySample property)</a>
+
+        <ul>
+          <li><a href="api/probly.representation.sampling.html#probly.representation.sampling.ArraySample.size">(probly.representation.sampling.ArraySample property)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.sample.html#probly.representation.sampling.sample.ArraySample.size">(probly.representation.sampling.sample.ArraySample property)</a>
+</li>
+        </ul></li>
+        <li><a href="api/probly.evaluation.metrics.html#probly.evaluation.metrics.spherical_score">spherical_score() (in module probly.evaluation.metrics)</a>
+</li>
         <li><a href="api/probly.layers.torch.html#probly.layers.torch.BayesConv2d.stride">stride (probly.layers.torch.BayesConv2d attribute)</a>
+</li>
+        <li><a href="api/probly.utils.html#probly.utils.switchdispatch">switchdispatch (class in probly.utils)</a>, <a href="api/probly.utils.switchdispatch.html#probly.utils.switchdispatch">[1]</a>
 </li>
     </ul></td>
   </tr></table>
@@ -1538,6 +1915,14 @@
   <h2>T</h2>
   <table style="width: 100%" class="indextable genindextable"><tr>
     <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="api/probly.representation.sampling.array_sample.html#probly.representation.sampling.array_sample.ArraySample.T">T (probly.representation.sampling.array_sample.ArraySample property)</a>
+
+        <ul>
+          <li><a href="api/probly.representation.sampling.html#probly.representation.sampling.ArraySample.T">(probly.representation.sampling.ArraySample property)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.sample.html#probly.representation.sampling.sample.ArraySample.T">(probly.representation.sampling.sample.ArraySample property)</a>
+</li>
+        </ul></li>
         <li><a href="api/probly.datasets.torch.html#probly.datasets.torch.CIFAR10H.targets">targets (probly.datasets.torch.CIFAR10H attribute)</a>
 
         <ul>
@@ -1546,11 +1931,21 @@
         </ul></li>
         <li><a href="api/probly.utils.torch.html#probly.utils.torch.temperature_softmax">temperature_softmax() (in module probly.utils.torch)</a>
 </li>
+        <li><a href="api/probly.representation.credal_set.array.html#probly.representation.credal_set.array.ArrayDiscreteCredalSet.to_device">to_device() (probly.representation.credal_set.array.ArrayDiscreteCredalSet method)</a>
+
+        <ul>
+          <li><a href="api/probly.representation.credal_set.html#probly.representation.credal_set.ArrayDiscreteCredalSet.to_device">(probly.representation.credal_set.ArrayDiscreteCredalSet method)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.array_sample.html#probly.representation.sampling.array_sample.ArraySample.to_device">(probly.representation.sampling.array_sample.ArraySample method)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.html#probly.representation.sampling.ArraySample.to_device">(probly.representation.sampling.ArraySample method)</a>
+</li>
+          <li><a href="api/probly.representation.sampling.sample.html#probly.representation.sampling.sample.ArraySample.to_device">(probly.representation.sampling.sample.ArraySample method)</a>
+</li>
+        </ul></li>
         <li><a href="api/probly.utils.torch.html#probly.utils.torch.torch_collect_outputs">torch_collect_outputs() (in module probly.utils.torch)</a>
 </li>
         <li><a href="api/probly.utils.torch.html#probly.utils.torch.torch_reset_all_parameters">torch_reset_all_parameters() (in module probly.utils.torch)</a>
-</li>
-        <li><a href="api/probly.representation.credal_set.torch.html#probly.representation.credal_set.torch.TorchTensorCredalSet">TorchTensorCredalSet (class in probly.representation.credal_set.torch)</a>
 </li>
         <li><a href="api/probly.representation.sampling.torch_sample.html#probly.representation.sampling.torch_sample.TorchTensorSample">TorchTensorSample (class in probly.representation.sampling.torch_sample)</a>
 </li>
@@ -1568,12 +1963,28 @@
           <li><a href="api/probly.quantification.regression.html#probly.quantification.regression.total_variance">(in module probly.quantification.regression)</a>
 </li>
         </ul></li>
+        <li><a href="api/probly.representation.sampling.array_sample_axis_tracking.html#probly.representation.sampling.array_sample_axis_tracking.track_axis">track_axis() (in module probly.representation.sampling.array_sample_axis_tracking)</a>
+</li>
+        <li><a href="api/probly.representation.sampling.array_sample_functions.html#probly.representation.sampling.array_sample_functions.track_sample_axis_after_reduction">track_sample_axis_after_reduction() (in module probly.representation.sampling.array_sample_functions)</a>
+</li>
         <li><a href="api/probly.datasets.torch.html#probly.datasets.torch.DCICDataset.transform">transform (probly.datasets.torch.DCICDataset attribute)</a>
 </li>
         <li><a href="api/probly.datasets.torch.html#probly.datasets.torch.Treeversity1">Treeversity1 (class in probly.datasets.torch)</a>
 </li>
         <li><a href="api/probly.datasets.torch.html#probly.datasets.torch.Treeversity6">Treeversity6 (class in probly.datasets.torch)</a>
 </li>
+        <li><a href="api/probly.representation.html#probly.representation.CategoricalCredalSet.type">type (probly.representation.CategoricalCredalSet attribute)</a>
+
+        <ul>
+          <li><a href="api/probly.representation.credal_set.html#probly.representation.credal_set.CategoricalCredalSet.type">(probly.representation.credal_set.CategoricalCredalSet attribute)</a>
+</li>
+          <li><a href="api/probly.representation.credal_set.common.html#probly.representation.credal_set.common.CategoricalCredalSet.type">(probly.representation.credal_set.common.CategoricalCredalSet attribute)</a>
+</li>
+          <li><a href="api/probly.representation.credal_set.common.html#probly.representation.credal_set.common.CredalSet.type">(probly.representation.credal_set.common.CredalSet attribute)</a>
+</li>
+          <li><a href="api/probly.representation.credal_set.html#probly.representation.credal_set.CredalSet.type">(probly.representation.credal_set.CredalSet attribute)</a>
+</li>
+        </ul></li>
     </ul></td>
   </tr></table>
 </section>
@@ -1582,18 +1993,16 @@
   <h2>U</h2>
   <table style="width: 100%" class="indextable genindextable"><tr>
     <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="api/probly.representation.credal_set.credal_set.html#probly.representation.credal_set.credal_set.ArrayCredalSet.upper">upper() (probly.representation.credal_set.credal_set.ArrayCredalSet method)</a>
+        <li><a href="api/probly.representation.html#probly.representation.CategoricalCredalSet.upper">upper() (probly.representation.CategoricalCredalSet method)</a>
 
         <ul>
-          <li><a href="api/probly.representation.credal_set.credal_set.html#probly.representation.credal_set.credal_set.CredalSet.upper">(probly.representation.credal_set.credal_set.CredalSet method)</a>
+          <li><a href="api/probly.representation.credal_set.array.html#probly.representation.credal_set.array.ArrayDiscreteCredalSet.upper">(probly.representation.credal_set.array.ArrayDiscreteCredalSet method)</a>
 </li>
-          <li><a href="api/probly.representation.credal_set.html#probly.representation.credal_set.CredalSet.upper">(probly.representation.credal_set.CredalSet method)</a>
+          <li><a href="api/probly.representation.credal_set.html#probly.representation.credal_set.ArrayDiscreteCredalSet.upper">(probly.representation.credal_set.ArrayDiscreteCredalSet method)</a>
 </li>
-          <li><a href="api/probly.representation.credal_set.jax.html#probly.representation.credal_set.jax.JaxArrayCredalSet.upper">(probly.representation.credal_set.jax.JaxArrayCredalSet method)</a>
+          <li><a href="api/probly.representation.credal_set.html#probly.representation.credal_set.CategoricalCredalSet.upper">(probly.representation.credal_set.CategoricalCredalSet method)</a>
 </li>
-          <li><a href="api/probly.representation.credal_set.torch.html#probly.representation.credal_set.torch.TorchTensorCredalSet.upper">(probly.representation.credal_set.torch.TorchTensorCredalSet method)</a>
-</li>
-          <li><a href="api/probly.representation.html#probly.representation.CredalSet.upper">(probly.representation.CredalSet method)</a>
+          <li><a href="api/probly.representation.credal_set.common.html#probly.representation.credal_set.common.CategoricalCredalSet.upper">(probly.representation.credal_set.common.CategoricalCredalSet method)</a>
 </li>
         </ul></li>
     </ul></td>
@@ -1609,24 +2018,6 @@
 <section id="V" class="genindex-section">
   <h2>V</h2>
   <table style="width: 100%" class="indextable genindextable"><tr>
-    <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="api/probly.representation.html#probly.representation.Sample.var">var() (probly.representation.Sample method)</a>
-
-        <ul>
-          <li><a href="api/probly.representation.sampling.html#probly.representation.sampling.ArraySample.var">(probly.representation.sampling.ArraySample method)</a>
-</li>
-          <li><a href="api/probly.representation.sampling.jax_sample.html#probly.representation.sampling.jax_sample.JaxArraySample.var">(probly.representation.sampling.jax_sample.JaxArraySample method)</a>
-</li>
-          <li><a href="api/probly.representation.sampling.html#probly.representation.sampling.Sample.var">(probly.representation.sampling.Sample method)</a>
-</li>
-          <li><a href="api/probly.representation.sampling.sample.html#probly.representation.sampling.sample.ArraySample.var">(probly.representation.sampling.sample.ArraySample method)</a>
-</li>
-          <li><a href="api/probly.representation.sampling.sample.html#probly.representation.sampling.sample.Sample.var">(probly.representation.sampling.sample.Sample method)</a>
-</li>
-          <li><a href="api/probly.representation.sampling.torch_sample.html#probly.representation.sampling.torch_sample.TorchTensorSample.var">(probly.representation.sampling.torch_sample.TorchTensorSample method)</a>
-</li>
-        </ul></li>
-    </ul></td>
     <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="api/probly.quantification.classification.html#probly.quantification.classification.variance_conditional_expectation">variance_conditional_expectation() (in module probly.quantification.classification)</a>
 

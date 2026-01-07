@@ -1,0 +1,23 @@
+probly.representation.sampling.array\_sample\_functions
+=======================================================
+
+.. automodule:: probly.representation.sampling.array_sample_functions
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      array_apply_along_axis_function
+      array_expand_dims_function
+      array_function_override
+      array_matrix_transpose
+      array_reduction_function
+      array_reshape_function
+      array_sample_axis_preserving_function
+      array_sample_internals
+      array_squeeze_function
+      array_swapaxes_function
+      array_transpose
+      track_sample_axis_after_reduction
+   

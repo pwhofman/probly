@@ -3,10 +3,10 @@
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="probly.representation.credal_set.jax" href="probly.representation.credal_set.jax.html" /><link rel="prev" title="probly.representation.credal_set" href="probly.representation.credal_set.html" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="probly.representation.sampling.array_sample_functions" href="probly.representation.sampling.array_sample_functions.html" /><link rel="prev" title="probly.representation.sampling.array_sample" href="probly.representation.sampling.array_sample.html" />
 
     <!-- Generated with Sphinx 8.2.3 and Furo 2024.08.06 -->
-        <title>probly.representation.credal_set.credal_set - probly 0.3.1 documentation</title>
+        <title>probly.representation.sampling.array_sample_axis_tracking - probly 0.3.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=354aac6f" />
     <link rel="stylesheet" type="text/css" href="../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
@@ -247,15 +247,19 @@
 </ul>
 </li>
 <li class="toctree-l2 current has-children"><a class="reference internal" href="probly.representation.html">probly.representation</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle navigation of probly.representation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
-<li class="toctree-l3 current has-children"><a class="reference internal" href="probly.representation.credal_set.html">probly.representation.credal_set</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of probly.representation.credal_set</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
-<li class="toctree-l4 current current-page"><a class="current reference internal" href="#">probly.representation.credal_set.credal_set</a></li>
-<li class="toctree-l4"><a class="reference internal" href="probly.representation.credal_set.jax.html">probly.representation.credal_set.jax</a></li>
-<li class="toctree-l4"><a class="reference internal" href="probly.representation.credal_set.torch.html">probly.representation.credal_set.torch</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="probly.representation.credal_set.html">probly.representation.credal_set</a><input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of probly.representation.credal_set</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.credal_set.array.html">probly.representation.credal_set.array</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.credal_set.array_functions.html">probly.representation.credal_set.array_functions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.credal_set.common.html">probly.representation.credal_set.common</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="probly.representation.distribution.html">probly.representation.distribution</a></li>
 <li class="toctree-l3"><a class="reference internal" href="probly.representation.representer.html">probly.representation.representer</a></li>
-<li class="toctree-l3 has-children"><a class="reference internal" href="probly.representation.sampling.html">probly.representation.sampling</a><input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><div class="visually-hidden">Toggle navigation of probly.representation.sampling</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3 current has-children"><a class="reference internal" href="probly.representation.sampling.html">probly.representation.sampling</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><div class="visually-hidden">Toggle navigation of probly.representation.sampling</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.array_sample.html">probly.representation.sampling.array_sample</a></li>
+<li class="toctree-l4 current current-page"><a class="current reference internal" href="#">probly.representation.sampling.array_sample_axis_tracking</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.array_sample_functions.html">probly.representation.sampling.array_sample_functions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.common_sample.html">probly.representation.sampling.common_sample</a></li>
 <li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.flax_sampler.html">probly.representation.sampling.flax_sampler</a></li>
 <li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.jax_sample.html">probly.representation.sampling.jax_sample</a></li>
 <li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.sample.html">probly.representation.sampling.sample</a></li>
@@ -311,6 +315,7 @@
 <li class="toctree-l3"><a class="reference internal" href="probly.utils.errors.html">probly.utils.errors</a></li>
 <li class="toctree-l3"><a class="reference internal" href="probly.utils.probabilities.html">probly.utils.probabilities</a></li>
 <li class="toctree-l3"><a class="reference internal" href="probly.utils.sets.html">probly.utils.sets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="probly.utils.switchdispatch.html">probly.utils.switchdispatch</a></li>
 <li class="toctree-l3"><a class="reference internal" href="probly.utils.torch.html">probly.utils.torch</a></li>
 </ul>
 </li>
@@ -359,83 +364,40 @@
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="module-probly.representation.credal_set.credal_set">
-<span id="probly-representation-credal-set-credal-set"></span><h1>probly.representation.credal_set.credal_set<a class="headerlink" href="#module-probly.representation.credal_set.credal_set" title="Link to this heading">¶</a></h1>
-<p>Classes representing credal sets.</p>
-<p class="rubric">Classes</p>
+          <section id="module-probly.representation.sampling.array_sample_axis_tracking">
+<span id="probly-representation-sampling-array-sample-axis-tracking"></span><h1>probly.representation.sampling.array_sample_axis_tracking<a class="headerlink" href="#module-probly.representation.sampling.array_sample_axis_tracking" title="Link to this heading">¶</a></h1>
+<p>Implementation of axis tracking through NumPy-style indexing operations.</p>
+<p class="rubric">Functions</p>
 <div class="table-wrapper autosummary longtable docutils container">
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#probly.representation.credal_set.credal_set.ArrayCredalSet" title="probly.representation.credal_set.credal_set.ArrayCredalSet"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ArrayCredalSet</span></code></a>(sample)</p></td>
-<td><p>A credal set of predictions stored in a numpy array.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#probly.representation.credal_set.credal_set.CredalSet" title="probly.representation.credal_set.credal_set.CredalSet"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CredalSet</span></code></a>()</p></td>
-<td><p>Base class for credal sets.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#probly.representation.sampling.array_sample_axis_tracking.track_axis" title="probly.representation.sampling.array_sample_axis_tracking.track_axis"><code class="xref py py-obj docutils literal notranslate"><span class="pre">track_axis</span></code></a>(index, special_axis, ndim)</p></td>
+<td><p>Track the new position of a 'special' axis after a NumPy-style __getitem__ indexing operation.</p></td>
 </tr>
 </tbody>
 </table>
 </div>
-<dl class="py class">
-<dt class="sig sig-object py" id="probly.representation.credal_set.credal_set.ArrayCredalSet">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.credal_set.credal_set.</span></span><span class="sig-name descname"><span class="pre">ArrayCredalSet</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sample</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/credal_set/credal_set.html#ArrayCredalSet"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.credal_set.credal_set.ArrayCredalSet" title="Link to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#probly.representation.credal_set.credal_set.CredalSet" title="probly.representation.credal_set.credal_set.CredalSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">CredalSet</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Generic" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Generic</span></code></a></p>
-<p>A credal set of predictions stored in a numpy array.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>sample</strong> (<a class="reference internal" href="probly.representation.sampling.html#probly.representation.sampling.ArraySample" title="probly.representation.sampling.ArraySample"><em>ArraySample</em></a>)</p>
-</dd>
-</dl>
-<dl class="py method">
-<dt class="sig sig-object py" id="probly.representation.credal_set.credal_set.ArrayCredalSet.lower">
-<span class="sig-name descname"><span class="pre">lower</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/credal_set/credal_set.html#ArrayCredalSet.lower"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.credal_set.credal_set.ArrayCredalSet.lower" title="Link to this definition">¶</a></dt>
-<dd><p>Compute the lower envelope of the credal set.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="probly.representation.sampling.array_sample_axis_tracking.track_axis">
+<span class="sig-prename descclassname"><span class="pre">probly.representation.sampling.array_sample_axis_tracking.</span></span><span class="sig-name descname"><span class="pre">track_axis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">special_axis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ndim</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/sampling/array_sample_axis_tracking.html#track_axis"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.sampling.array_sample_axis_tracking.track_axis" title="Link to this definition">¶</a></dt>
+<dd><p>Track the new position of a ‘special’ axis after a NumPy-style __getitem__ indexing operation.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type">T</span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>index</strong> (<em>Index</em>) – The indexing object used in arr[index].
+Can be a slice, int, None, list, ndarray, ellipsis, or a tuple of such.</p></li>
+<li><p><strong>special_axis</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – Index of the axis to track (0-based) before indexing.</p></li>
+<li><p><strong>ndim</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – Number of dimensions of the array before indexing.</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The new axis index of the special axis after indexing, or None if the
+axis is removed (e.g., via integer indexing).</p>
 </dd>
 </dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="probly.representation.credal_set.credal_set.ArrayCredalSet.upper">
-<span class="sig-name descname"><span class="pre">upper</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/credal_set/credal_set.html#ArrayCredalSet.upper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.credal_set.credal_set.ArrayCredalSet.upper" title="Link to this definition">¶</a></dt>
-<dd><p>Compute the upper envelope of the credal set.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type">T</span></p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="probly.representation.credal_set.credal_set.CredalSet">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.credal_set.credal_set.</span></span><span class="sig-name descname"><span class="pre">CredalSet</span></span><a class="reference internal" href="../_modules/probly/representation/credal_set/credal_set.html#CredalSet"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.credal_set.credal_set.CredalSet" title="Link to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Generic" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Generic</span></code></a></p>
-<p>Base class for credal sets.</p>
-<dl class="py method">
-<dt class="sig sig-object py" id="probly.representation.credal_set.credal_set.CredalSet.lower">
-<span class="sig-name descname"><span class="pre">lower</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/credal_set/credal_set.html#CredalSet.lower"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.credal_set.credal_set.CredalSet.lower" title="Link to this definition">¶</a></dt>
-<dd><p>Compute the lower envelope of the credal set.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type">T</span></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="probly.representation.credal_set.credal_set.CredalSet.upper">
-<span class="sig-name descname"><span class="pre">upper</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/credal_set/credal_set.html#CredalSet.upper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.credal_set.credal_set.CredalSet.upper" title="Link to this definition">¶</a></dt>
-<dd><p>Compute the upper envelope of the credal set.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type">T</span></p>
-</dd>
-</dl>
-</dd></dl>
-
 </dd></dl>
 
 </section>
@@ -445,23 +407,23 @@
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="probly.representation.credal_set.jax.html">
+          <a class="next-page" href="probly.representation.sampling.array_sample_functions.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">probly.representation.credal_set.jax</div>
+                <div class="title">probly.representation.sampling.array_sample_functions</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="probly.representation.credal_set.html">
+          <a class="prev-page" href="probly.representation.sampling.array_sample.html">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">probly.representation.credal_set</div>
+                <div class="title">probly.representation.sampling.array_sample</div>
                 
               </div>
             </a>
@@ -495,17 +457,8 @@
         <div class="toc-tree-container">
           <div class="toc-tree">
             <ul>
-<li><a class="reference internal" href="#">probly.representation.credal_set.credal_set</a><ul>
-<li><a class="reference internal" href="#probly.representation.credal_set.credal_set.ArrayCredalSet"><code class="docutils literal notranslate"><span class="pre">ArrayCredalSet</span></code></a><ul>
-<li><a class="reference internal" href="#probly.representation.credal_set.credal_set.ArrayCredalSet.lower"><code class="docutils literal notranslate"><span class="pre">ArrayCredalSet.lower()</span></code></a></li>
-<li><a class="reference internal" href="#probly.representation.credal_set.credal_set.ArrayCredalSet.upper"><code class="docutils literal notranslate"><span class="pre">ArrayCredalSet.upper()</span></code></a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#probly.representation.credal_set.credal_set.CredalSet"><code class="docutils literal notranslate"><span class="pre">CredalSet</span></code></a><ul>
-<li><a class="reference internal" href="#probly.representation.credal_set.credal_set.CredalSet.lower"><code class="docutils literal notranslate"><span class="pre">CredalSet.lower()</span></code></a></li>
-<li><a class="reference internal" href="#probly.representation.credal_set.credal_set.CredalSet.upper"><code class="docutils literal notranslate"><span class="pre">CredalSet.upper()</span></code></a></li>
-</ul>
-</li>
+<li><a class="reference internal" href="#">probly.representation.sampling.array_sample_axis_tracking</a><ul>
+<li><a class="reference internal" href="#probly.representation.sampling.array_sample_axis_tracking.track_axis"><code class="docutils literal notranslate"><span class="pre">track_axis()</span></code></a></li>
 </ul>
 </li>
 </ul>

@@ -3,10 +3,10 @@
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="probly.representation.credal_set.torch" href="probly.representation.credal_set.torch.html" /><link rel="prev" title="probly.representation.credal_set.credal_set" href="probly.representation.credal_set.credal_set.html" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="probly.representation.credal_set.common" href="probly.representation.credal_set.common.html" /><link rel="prev" title="probly.representation.credal_set.array" href="probly.representation.credal_set.array.html" />
 
     <!-- Generated with Sphinx 8.2.3 and Furo 2024.08.06 -->
-        <title>probly.representation.credal_set.jax - probly 0.3.1 documentation</title>
+        <title>probly.representation.credal_set.array_functions - probly 0.3.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=354aac6f" />
     <link rel="stylesheet" type="text/css" href="../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
@@ -181,7 +181,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
         <div class="visually-hidden">Toggle table of contents sidebar</div>
         <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
       </label>
@@ -248,14 +248,18 @@
 </li>
 <li class="toctree-l2 current has-children"><a class="reference internal" href="probly.representation.html">probly.representation</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle navigation of probly.representation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
 <li class="toctree-l3 current has-children"><a class="reference internal" href="probly.representation.credal_set.html">probly.representation.credal_set</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of probly.representation.credal_set</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
-<li class="toctree-l4"><a class="reference internal" href="probly.representation.credal_set.credal_set.html">probly.representation.credal_set.credal_set</a></li>
-<li class="toctree-l4 current current-page"><a class="current reference internal" href="#">probly.representation.credal_set.jax</a></li>
-<li class="toctree-l4"><a class="reference internal" href="probly.representation.credal_set.torch.html">probly.representation.credal_set.torch</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.credal_set.array.html">probly.representation.credal_set.array</a></li>
+<li class="toctree-l4 current current-page"><a class="current reference internal" href="#">probly.representation.credal_set.array_functions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.credal_set.common.html">probly.representation.credal_set.common</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="probly.representation.distribution.html">probly.representation.distribution</a></li>
 <li class="toctree-l3"><a class="reference internal" href="probly.representation.representer.html">probly.representation.representer</a></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="probly.representation.sampling.html">probly.representation.sampling</a><input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><div class="visually-hidden">Toggle navigation of probly.representation.sampling</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.array_sample.html">probly.representation.sampling.array_sample</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.array_sample_axis_tracking.html">probly.representation.sampling.array_sample_axis_tracking</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.array_sample_functions.html">probly.representation.sampling.array_sample_functions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.common_sample.html">probly.representation.sampling.common_sample</a></li>
 <li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.flax_sampler.html">probly.representation.sampling.flax_sampler</a></li>
 <li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.jax_sample.html">probly.representation.sampling.jax_sample</a></li>
 <li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.sample.html">probly.representation.sampling.sample</a></li>
@@ -311,6 +315,7 @@
 <li class="toctree-l3"><a class="reference internal" href="probly.utils.errors.html">probly.utils.errors</a></li>
 <li class="toctree-l3"><a class="reference internal" href="probly.utils.probabilities.html">probly.utils.probabilities</a></li>
 <li class="toctree-l3"><a class="reference internal" href="probly.utils.sets.html">probly.utils.sets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="probly.utils.switchdispatch.html">probly.utils.switchdispatch</a></li>
 <li class="toctree-l3"><a class="reference internal" href="probly.utils.torch.html">probly.utils.torch</a></li>
 </ul>
 </li>
@@ -353,59 +358,15 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
             <div class="visually-hidden">Toggle table of contents sidebar</div>
             <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="module-probly.representation.credal_set.jax">
-<span id="probly-representation-credal-set-jax"></span><h1>probly.representation.credal_set.jax<a class="headerlink" href="#module-probly.representation.credal_set.jax" title="Link to this heading">¶</a></h1>
-<p>Torch credal set implementation.</p>
-<p class="rubric">Classes</p>
-<div class="table-wrapper autosummary longtable docutils container">
-<table class="autosummary longtable docutils align-default">
-<tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#probly.representation.credal_set.jax.JaxArrayCredalSet" title="probly.representation.credal_set.jax.JaxArrayCredalSet"><code class="xref py py-obj docutils literal notranslate"><span class="pre">JaxArrayCredalSet</span></code></a>(sample)</p></td>
-<td><p>A credal set implementation for torch tensors.</p></td>
-</tr>
-</tbody>
-</table>
-</div>
-<dl class="py class">
-<dt class="sig sig-object py" id="probly.representation.credal_set.jax.JaxArrayCredalSet">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.credal_set.jax.</span></span><span class="sig-name descname"><span class="pre">JaxArrayCredalSet</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sample</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/credal_set/jax.html#JaxArrayCredalSet"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.credal_set.jax.JaxArrayCredalSet" title="Link to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="probly.representation.credal_set.credal_set.html#probly.representation.credal_set.credal_set.CredalSet" title="probly.representation.credal_set.credal_set.CredalSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">CredalSet</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code>]</p>
-<p>A credal set implementation for torch tensors.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>sample</strong> (<a class="reference internal" href="probly.representation.sampling.jax_sample.html#probly.representation.sampling.jax_sample.JaxArraySample" title="probly.representation.sampling.jax_sample.JaxArraySample"><em>JaxArraySample</em></a>)</p>
-</dd>
-</dl>
-<dl class="py method">
-<dt class="sig sig-object py" id="probly.representation.credal_set.jax.JaxArrayCredalSet.lower">
-<span class="sig-name descname"><span class="pre">lower</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/credal_set/jax.html#JaxArrayCredalSet.lower"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.credal_set.jax.JaxArrayCredalSet.lower" title="Link to this definition">¶</a></dt>
-<dd><p>Compute the lower envelope of the credal set.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code></span></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="probly.representation.credal_set.jax.JaxArrayCredalSet.upper">
-<span class="sig-name descname"><span class="pre">upper</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/credal_set/jax.html#JaxArrayCredalSet.upper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.credal_set.jax.JaxArrayCredalSet.upper" title="Link to this definition">¶</a></dt>
-<dd><p>Compute the upper envelope of the credal set.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code></span></p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
+          <section id="module-probly.representation.credal_set.array_functions">
+<span id="probly-representation-credal-set-array-functions"></span><h1>probly.representation.credal_set.array_functions<a class="headerlink" href="#module-probly.representation.credal_set.array_functions" title="Link to this heading">¶</a></h1>
+<p>Numpy array functions for credal sets.</p>
 </section>
 
         </article>
@@ -413,23 +374,23 @@
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="probly.representation.credal_set.torch.html">
+          <a class="next-page" href="probly.representation.credal_set.common.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">probly.representation.credal_set.torch</div>
+                <div class="title">probly.representation.credal_set.common</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="probly.representation.credal_set.credal_set.html">
+          <a class="prev-page" href="probly.representation.credal_set.array.html">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">probly.representation.credal_set.credal_set</div>
+                <div class="title">probly.representation.credal_set.array</div>
                 
               </div>
             </a>
@@ -451,31 +412,8 @@
         
       </footer>
     </div>
-    <aside class="toc-drawer">
+    <aside class="toc-drawer no-toc">
       
-      
-      <div class="toc-sticky toc-scroll">
-        <div class="toc-title-container">
-          <span class="toc-title">
-            On this page
-          </span>
-        </div>
-        <div class="toc-tree-container">
-          <div class="toc-tree">
-            <ul>
-<li><a class="reference internal" href="#">probly.representation.credal_set.jax</a><ul>
-<li><a class="reference internal" href="#probly.representation.credal_set.jax.JaxArrayCredalSet"><code class="docutils literal notranslate"><span class="pre">JaxArrayCredalSet</span></code></a><ul>
-<li><a class="reference internal" href="#probly.representation.credal_set.jax.JaxArrayCredalSet.lower"><code class="docutils literal notranslate"><span class="pre">JaxArrayCredalSet.lower()</span></code></a></li>
-<li><a class="reference internal" href="#probly.representation.credal_set.jax.JaxArrayCredalSet.upper"><code class="docutils literal notranslate"><span class="pre">JaxArrayCredalSet.upper()</span></code></a></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-
-          </div>
-        </div>
-      </div>
       
       
     </aside>

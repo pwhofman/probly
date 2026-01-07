@@ -5,7 +5,7 @@
     <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../../../../genindex.html" /><link rel="search" title="Search" href="../../../../search.html" />
 
     <!-- Generated with Sphinx 8.2.3 and Furo 2024.08.06 -->
-        <title>probly.representation.credal_set.torch - probly 0.3.1 documentation</title>
+        <title>probly.representation.credal_set.array - probly 0.3.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/styles/furo.css?v=354aac6f" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
@@ -247,14 +247,18 @@
 </li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../../../../api/probly.representation.html">probly.representation</a><input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle navigation of probly.representation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l3 has-children"><a class="reference internal" href="../../../../api/probly.representation.credal_set.html">probly.representation.credal_set</a><input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of probly.representation.credal_set</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
-<li class="toctree-l4"><a class="reference internal" href="../../../../api/probly.representation.credal_set.credal_set.html">probly.representation.credal_set.credal_set</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../../api/probly.representation.credal_set.jax.html">probly.representation.credal_set.jax</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../../api/probly.representation.credal_set.torch.html">probly.representation.credal_set.torch</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/probly.representation.credal_set.array.html">probly.representation.credal_set.array</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/probly.representation.credal_set.array_functions.html">probly.representation.credal_set.array_functions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/probly.representation.credal_set.common.html">probly.representation.credal_set.common</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../../api/probly.representation.distribution.html">probly.representation.distribution</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../../api/probly.representation.representer.html">probly.representation.representer</a></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="../../../../api/probly.representation.sampling.html">probly.representation.sampling</a><input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><div class="visually-hidden">Toggle navigation of probly.representation.sampling</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/probly.representation.sampling.array_sample.html">probly.representation.sampling.array_sample</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/probly.representation.sampling.array_sample_axis_tracking.html">probly.representation.sampling.array_sample_axis_tracking</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/probly.representation.sampling.array_sample_functions.html">probly.representation.sampling.array_sample_functions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/probly.representation.sampling.common_sample.html">probly.representation.sampling.common_sample</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../../api/probly.representation.sampling.flax_sampler.html">probly.representation.sampling.flax_sampler</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../../api/probly.representation.sampling.jax_sample.html">probly.representation.sampling.jax_sample</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../../api/probly.representation.sampling.sample.html">probly.representation.sampling.sample</a></li>
@@ -310,6 +314,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../../../../api/probly.utils.errors.html">probly.utils.errors</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../../api/probly.utils.probabilities.html">probly.utils.probabilities</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../../api/probly.utils.sets.html">probly.utils.sets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../api/probly.utils.switchdispatch.html">probly.utils.switchdispatch</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../../api/probly.utils.torch.html">probly.utils.torch</a></li>
 </ul>
 </li>
@@ -356,40 +361,191 @@
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <h1>Source code for probly.representation.credal_set.torch</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;Torch credal set implementation.&quot;&quot;&quot;</span>
+          <h1>Source code for probly.representation.credal_set.array</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Classes representing credal sets.&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
-<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABCMeta</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TYPE_CHECKING</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Self</span><span class="p">,</span> <span class="n">override</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">probly.representation.credal_set.credal_set</span><span class="w"> </span><span class="kn">import</span> <span class="n">CredalSet</span><span class="p">,</span> <span class="n">credal_set_from_sample</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">probly.representation.sampling.torch_sample</span><span class="w"> </span><span class="kn">import</span> <span class="n">TorchTensorSample</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">probly.representation.credal_set.common</span><span class="w"> </span><span class="kn">import</span> <span class="n">CategoricalCredalSet</span><span class="p">,</span> <span class="n">DiscreteCredalSet</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">probly.representation.sampling.sample</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArraySample</span>
 
-<div class="viewcode-block" id="TorchTensorCredalSet">
-<a class="viewcode-back" href="../../../../api/probly.representation.credal_set.torch.html#probly.representation.credal_set.torch.TorchTensorCredalSet">[docs]</a>
-<span class="nd">@credal_set_from_sample</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">TorchTensorSample</span><span class="p">)</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">TorchTensorCredalSet</span><span class="p">(</span><span class="n">CredalSet</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;A credal set implementation for torch tensors.&quot;&quot;&quot;</span>
+<span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">numpy.typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">DTypeLike</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sample</span><span class="p">:</span> <span class="n">TorchTensorSample</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the torch tensor credal set.&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">tensor</span> <span class="o">=</span> <span class="n">sample</span><span class="o">.</span><span class="n">tensor</span>
-
-<div class="viewcode-block" id="TorchTensorCredalSet.lower">
-<a class="viewcode-back" href="../../../../api/probly.representation.credal_set.torch.html#probly.representation.credal_set.torch.TorchTensorCredalSet.lower">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">lower</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute the lower envelope of the credal set.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">tensor</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">values</span></div>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">probly.representation.sampling.common_sample</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sample</span>
 
 
-<div class="viewcode-block" id="TorchTensorCredalSet.upper">
-<a class="viewcode-back" href="../../../../api/probly.representation.credal_set.torch.html#probly.representation.credal_set.torch.TorchTensorCredalSet.upper">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">upper</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute the upper envelope of the credal set.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">tensor</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">values</span></div>
+<div class="viewcode-block" id="ArrayCategoricalCredalSet">
+<a class="viewcode-back" href="../../../../api/probly.representation.credal_set.array.html#probly.representation.credal_set.ArrayCategoricalCredalSet">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ArrayCategoricalCredalSet</span><span class="p">(</span><span class="n">CategoricalCredalSet</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">metaclass</span><span class="o">=</span><span class="n">ABCMeta</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A credal set of predictions stored in a numpy array.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="ArrayCategoricalCredalSet.from_sample">
+<a class="viewcode-back" href="../../../../api/probly.representation.credal_set.array.html#probly.representation.credal_set.ArrayCategoricalCredalSet.from_sample">[docs]</a>
+    <span class="nd">@override</span>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_sample</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">sample</span><span class="p">:</span> <span class="n">Sample</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">distribution_axis</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
+        <span class="n">array_sample</span> <span class="o">=</span> <span class="n">ArraySample</span><span class="o">.</span><span class="n">from_sample</span><span class="p">(</span><span class="n">sample</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_array_sample</span><span class="p">(</span><span class="n">array_sample</span><span class="p">,</span> <span class="n">distribution_axis</span><span class="o">=</span><span class="n">distribution_axis</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ArrayCategoricalCredalSet.from_array_sample">
+<a class="viewcode-back" href="../../../../api/probly.representation.credal_set.array.html#probly.representation.credal_set.ArrayCategoricalCredalSet.from_array_sample">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_array_sample</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">sample</span><span class="p">:</span> <span class="n">ArraySample</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+        <span class="n">distribution_axis</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a credal set from an ArraySample.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            sample: The sample to create the credal set from.</span>
+<span class="sd">            distribution_axis: The axis in each sample containing the categorical probabilities.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The created credal set.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;from_array_sample method not implemented.&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span></div>
 </div>
+
+
+
+<div class="viewcode-block" id="ArrayDiscreteCredalSet">
+<a class="viewcode-back" href="../../../../api/probly.representation.credal_set.array.html#probly.representation.credal_set.ArrayDiscreteCredalSet">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">slots</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">weakref_slot</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ArrayDiscreteCredalSet</span><span class="p">(</span><span class="n">ArrayCategoricalCredalSet</span><span class="p">,</span> <span class="n">DiscreteCredalSet</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A discrete credal set over a finite set of distributions stored in a numpy array.</span>
+
+<span class="sd">    Internall, a discrete credal set is represented as a numpy array of shape</span>
+<span class="sd">    (..., num_members, num_classes)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">array</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
+
+<div class="viewcode-block" id="ArrayDiscreteCredalSet.from_array_sample">
+<a class="viewcode-back" href="../../../../api/probly.representation.credal_set.array.html#probly.representation.credal_set.ArrayDiscreteCredalSet.from_array_sample">[docs]</a>
+    <span class="nd">@override</span>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_array_sample</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">sample</span><span class="p">:</span> <span class="n">ArraySample</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+        <span class="n">distribution_axis</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">distribution_axis</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">distribution_axis</span> <span class="o">+=</span> <span class="n">sample</span><span class="o">.</span><span class="n">ndim</span> <span class="o">-</span> <span class="mi">1</span>
+
+        <span class="n">array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">moveaxis</span><span class="p">(</span><span class="n">sample</span><span class="o">.</span><span class="n">samples</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">distribution_axis</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">array</span><span class="o">=</span><span class="n">array</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__array_namespace__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>  <span class="c1"># noqa: ANN401</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the array namespace of the underlying array.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">array</span><span class="o">.</span><span class="n">__array_namespace__</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">device</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the device of the credal set array.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">array</span><span class="o">.</span><span class="n">device</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">dtype</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the data type of the credal set array.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">array</span><span class="o">.</span><span class="n">dtype</span>  <span class="c1"># type: ignore[no-any-return]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">ndim</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the number of dimensions of the credal set array.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">array</span><span class="o">.</span><span class="n">ndim</span> <span class="o">-</span> <span class="mi">2</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">shape</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the shape of the credal set array.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">array</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span>  <span class="c1"># type: ignore[no-any-return]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the number of members in the credal set.&quot;&quot;&quot;</span>
+        <span class="n">shape</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">shape</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;len() of unsized credal set&quot;</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__array__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">copy</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the underlying numpy array.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            dtype: Desired data type of the array.</span>
+<span class="sd">            copy: Whether to return a copy of the array.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The underlying numpy array.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">dtype</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">copy</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">array</span>
+
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">array</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="n">copy</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ArrayDiscreteCredalSet.lower">
+<a class="viewcode-back" href="../../../../api/probly.representation.credal_set.array.html#probly.representation.credal_set.ArrayDiscreteCredalSet.lower">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">lower</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute the lower envelope of the credal set.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">array</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">2</span><span class="p">)</span>  <span class="c1"># type: ignore[no-any-return]</span></div>
+
+
+<div class="viewcode-block" id="ArrayDiscreteCredalSet.upper">
+<a class="viewcode-back" href="../../../../api/probly.representation.credal_set.array.html#probly.representation.credal_set.ArrayDiscreteCredalSet.upper">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">upper</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute the upper envelope of the credal set.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">array</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">2</span><span class="p">)</span>  <span class="c1"># type: ignore[no-any-return]</span></div>
+
+
+<div class="viewcode-block" id="ArrayDiscreteCredalSet.copy">
+<a class="viewcode-back" href="../../../../api/probly.representation.credal_set.array.html#probly.representation.credal_set.ArrayDiscreteCredalSet.copy">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a copy of the ArraySample.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A copy of the ArraySample.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)(</span><span class="n">array</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">array</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span></div>
+
+
+<div class="viewcode-block" id="ArrayDiscreteCredalSet.to_device">
+<a class="viewcode-back" href="../../../../api/probly.representation.credal_set.array.html#probly.representation.credal_set.ArrayDiscreteCredalSet.to_device">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_device</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">device</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;cpu&quot;</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Move the underlying array to the specified device.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            device: The target device.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A new ArrayDiscreteCredalSet on the specified device.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">device</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span>
+
+        <span class="k">return</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)(</span><span class="n">array</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">array</span><span class="o">.</span><span class="n">to_device</span><span class="p">(</span><span class="n">device</span><span class="p">))</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>  <span class="c1"># type: ignore[override]  # noqa: ANN401, PYI032</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Vectorized equality comparison.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>  <span class="c1"># type: ignore[return-value]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute the hash of the ArraySample.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__hash__</span><span class="p">()</span></div>
 
 </pre></div>
         </article>

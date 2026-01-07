@@ -248,14 +248,18 @@
 </li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="probly.representation.html">probly.representation</a><input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle navigation of probly.representation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l3 has-children"><a class="reference internal" href="probly.representation.credal_set.html">probly.representation.credal_set</a><input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of probly.representation.credal_set</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
-<li class="toctree-l4"><a class="reference internal" href="probly.representation.credal_set.credal_set.html">probly.representation.credal_set.credal_set</a></li>
-<li class="toctree-l4"><a class="reference internal" href="probly.representation.credal_set.jax.html">probly.representation.credal_set.jax</a></li>
-<li class="toctree-l4"><a class="reference internal" href="probly.representation.credal_set.torch.html">probly.representation.credal_set.torch</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.credal_set.array.html">probly.representation.credal_set.array</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.credal_set.array_functions.html">probly.representation.credal_set.array_functions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.credal_set.common.html">probly.representation.credal_set.common</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="probly.representation.distribution.html">probly.representation.distribution</a></li>
 <li class="toctree-l3"><a class="reference internal" href="probly.representation.representer.html">probly.representation.representer</a></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="probly.representation.sampling.html">probly.representation.sampling</a><input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><div class="visually-hidden">Toggle navigation of probly.representation.sampling</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.array_sample.html">probly.representation.sampling.array_sample</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.array_sample_axis_tracking.html">probly.representation.sampling.array_sample_axis_tracking</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.array_sample_functions.html">probly.representation.sampling.array_sample_functions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.common_sample.html">probly.representation.sampling.common_sample</a></li>
 <li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.flax_sampler.html">probly.representation.sampling.flax_sampler</a></li>
 <li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.jax_sample.html">probly.representation.sampling.jax_sample</a></li>
 <li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.sample.html">probly.representation.sampling.sample</a></li>
@@ -311,6 +315,7 @@
 <li class="toctree-l3"><a class="reference internal" href="probly.utils.errors.html">probly.utils.errors</a></li>
 <li class="toctree-l3"><a class="reference internal" href="probly.utils.probabilities.html">probly.utils.probabilities</a></li>
 <li class="toctree-l3"><a class="reference internal" href="probly.utils.sets.html">probly.utils.sets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="probly.utils.switchdispatch.html">probly.utils.switchdispatch</a></li>
 <li class="toctree-l3"><a class="reference internal" href="probly.utils.torch.html">probly.utils.torch</a></li>
 </ul>
 </li>
@@ -366,7 +371,7 @@
 <div class="table-wrapper autosummary longtable docutils container">
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#probly.traverse_nn.common.compose" title="probly.traverse_nn.common.compose"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compose</span></code></a>(traverser[, nn_traverser, name])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#probly.traverse_nn.common.compose" title="probly.traverse_nn.common.compose"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compose</span></code></a>(*traversers[, nn_traverser, name])</p></td>
 <td><p>Compose a custom traverser with neural network traversal functionality.</p></td>
 </tr>
 </tbody>
@@ -374,7 +379,7 @@
 </div>
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.traverse_nn.common.compose">
-<span class="sig-prename descclassname"><span class="pre">probly.traverse_nn.common.</span></span><span class="sig-name descname"><span class="pre">compose</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">traverser</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nn_traverser=&lt;pytraverse.composition.LazydispatchTraverser</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/traverse_nn/common.html#compose"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.traverse_nn.common.compose" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">probly.traverse_nn.common.</span></span><span class="sig-name descname"><span class="pre">compose</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">*traversers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nn_traverser=&lt;pytraverse.composition.LazydispatchTraverser</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/traverse_nn/common.html#compose"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.traverse_nn.common.compose" title="Link to this definition">¶</a></dt>
 <dd><p>Compose a custom traverser with neural network traversal functionality.</p>
 <p>This function creates a sequential traverser that combines neural network traversal,
 a custom traverser, and layer counting capabilities in a specific order.</p>
@@ -384,7 +389,7 @@ a custom traverser, and layer counting capabilities in a specific order.</p>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
-<li><p><strong>traverser</strong> (<em>Traverser</em>) – A custom traverser function to be composed with the NN traverser.</p></li>
+<li><p><strong>traversers</strong> (<em>Traverser</em>) – Custom traverser functions to be composed (sequentially) with the NN traverser.</p></li>
 <li><p><strong>nn_traverser</strong> (<em>Traverser</em>) – The neural network traverser to use. Defaults to the module’s
 nn_traverser.</p></li>
 <li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> | </em><em>None</em>) – Optional name for the composed traverser.</p></li>

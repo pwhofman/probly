@@ -248,14 +248,18 @@
 </li>
 <li class="toctree-l2 current has-children"><a class="reference internal" href="probly.representation.html">probly.representation</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle navigation of probly.representation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
 <li class="toctree-l3 has-children"><a class="reference internal" href="probly.representation.credal_set.html">probly.representation.credal_set</a><input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of probly.representation.credal_set</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
-<li class="toctree-l4"><a class="reference internal" href="probly.representation.credal_set.credal_set.html">probly.representation.credal_set.credal_set</a></li>
-<li class="toctree-l4"><a class="reference internal" href="probly.representation.credal_set.jax.html">probly.representation.credal_set.jax</a></li>
-<li class="toctree-l4"><a class="reference internal" href="probly.representation.credal_set.torch.html">probly.representation.credal_set.torch</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.credal_set.array.html">probly.representation.credal_set.array</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.credal_set.array_functions.html">probly.representation.credal_set.array_functions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.credal_set.common.html">probly.representation.credal_set.common</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="probly.representation.distribution.html">probly.representation.distribution</a></li>
 <li class="toctree-l3"><a class="reference internal" href="probly.representation.representer.html">probly.representation.representer</a></li>
 <li class="toctree-l3 current has-children"><a class="reference internal" href="probly.representation.sampling.html">probly.representation.sampling</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><div class="visually-hidden">Toggle navigation of probly.representation.sampling</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.array_sample.html">probly.representation.sampling.array_sample</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.array_sample_axis_tracking.html">probly.representation.sampling.array_sample_axis_tracking</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.array_sample_functions.html">probly.representation.sampling.array_sample_functions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.common_sample.html">probly.representation.sampling.common_sample</a></li>
 <li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.flax_sampler.html">probly.representation.sampling.flax_sampler</a></li>
 <li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.jax_sample.html">probly.representation.sampling.jax_sample</a></li>
 <li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.sample.html">probly.representation.sampling.sample</a></li>
@@ -311,6 +315,7 @@
 <li class="toctree-l3"><a class="reference internal" href="probly.utils.errors.html">probly.utils.errors</a></li>
 <li class="toctree-l3"><a class="reference internal" href="probly.utils.probabilities.html">probly.utils.probabilities</a></li>
 <li class="toctree-l3"><a class="reference internal" href="probly.utils.sets.html">probly.utils.sets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="probly.utils.switchdispatch.html">probly.utils.switchdispatch</a></li>
 <li class="toctree-l3"><a class="reference internal" href="probly.utils.torch.html">probly.utils.torch</a></li>
 </ul>
 </li>
@@ -379,7 +384,7 @@
 <div class="table-wrapper autosummary longtable docutils container">
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#probly.representation.sampling.sampler.EnsembleSampler" title="probly.representation.sampling.sampler.EnsembleSampler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">EnsembleSampler</span></code></a>(predictor[, sample_factory])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#probly.representation.sampling.sampler.EnsembleSampler" title="probly.representation.sampling.sampler.EnsembleSampler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">EnsembleSampler</span></code></a>(predictor[, sample_factory, ...])</p></td>
 <td><p>A sampler that creates representations from ensemble predictions.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#probly.representation.sampling.sampler.Sampler" title="probly.representation.sampling.sampler.Sampler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Sampler</span></code></a>(predictor[, sampling_strategy, ...])</p></td>
@@ -390,14 +395,15 @@
 </div>
 <dl class="py class">
 <dt class="sig sig-object py" id="probly.representation.sampling.sampler.EnsembleSampler">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.sampling.sampler.</span></span><span class="sig-name descname"><span class="pre">EnsembleSampler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">predictor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_factory=&lt;lazy_dispatch.singledispatch.lazydispatch</span> <span class="pre">object&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/sampling/sampler.html#EnsembleSampler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.sampling.sampler.EnsembleSampler" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.sampling.sampler.</span></span><span class="sig-name descname"><span class="pre">EnsembleSampler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">predictor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_factory=&lt;lazy_dispatch.singledispatch.lazydispatch</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_axis=1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/sampling/sampler.html#EnsembleSampler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.sampling.sampler.EnsembleSampler" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="probly.representation.representer.html#probly.representation.representer.Representer" title="probly.representation.representer.Representer"><code class="xref py py-class docutils literal notranslate"><span class="pre">Representer</span></code></a>[<code class="xref py py-obj docutils literal notranslate"><span class="pre">In</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">KwIn</span></code>, <a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterable</span></code></a>], <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Generic" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Generic</span></code></a></p>
 <p>A sampler that creates representations from ensemble predictions.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>predictor</strong> (<a class="reference internal" href="probly.predictor.html#probly.predictor.Predictor" title="probly.predictor.Predictor"><em>Predictor</em></a><em>[</em><em>In</em><em>, </em><em>KwIn</em><em>, </em><em>Iterable</em><em>[</em><em>Out</em><em>]</em><em>]</em>)</p></li>
-<li><p><strong>sample_factory</strong> (<em>Callable</em><em>[</em><em>[</em><em>Iterable</em><em>[</em><em>Out</em><em>]</em><em>]</em><em>, </em><a class="reference internal" href="probly.representation.html#probly.representation.Sample" title="probly.representation.Sample"><em>Sample</em></a><em>[</em><em>Out</em><em>]</em><em>]</em>)</p></li>
+<li><p><strong>sample_factory</strong> (<a class="reference internal" href="probly.representation.sampling.common_sample.html#probly.representation.sampling.common_sample.SampleFactory" title="probly.representation.sampling.common_sample.SampleFactory"><em>SampleFactory</em></a><em>[</em><em>Out</em><em>, </em><em>S</em><em>]</em>)</p></li>
+<li><p><strong>sample_axis</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>)</p></li>
 </ul>
 </dd>
 </dl>
@@ -407,7 +413,7 @@
 <dd><p>Sample from the ensemble predictor for a given input.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type">Sample[Out]</span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type">S</span></p>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
@@ -420,14 +426,14 @@
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="probly.representation.sampling.sampler.EnsembleSampler.sample_factory">
-<span class="sig-name descname"><span class="pre">sample_factory</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Callable[[Iterable[Out]],</span> <span class="pre">Sample[Out]]</span></em><a class="headerlink" href="#probly.representation.sampling.sampler.EnsembleSampler.sample_factory" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">sample_factory</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">SampleFactory[Out,</span> <span class="pre">S]</span></em><a class="headerlink" href="#probly.representation.sampling.sampler.EnsembleSampler.sample_factory" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="probly.representation.sampling.sampler.Sampler">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.sampling.sampler.</span></span><span class="sig-name descname"><span class="pre">Sampler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">predictor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sampling_strategy='sequential'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_factory=&lt;lazy_dispatch.singledispatch.lazydispatch</span> <span class="pre">object&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/sampling/sampler.html#Sampler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.sampling.sampler.Sampler" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.sampling.sampler.</span></span><span class="sig-name descname"><span class="pre">Sampler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">predictor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sampling_strategy='sequential'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_factory=&lt;lazy_dispatch.singledispatch.lazydispatch</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_axis=1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/sampling/sampler.html#Sampler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.sampling.sampler.Sampler" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="probly.representation.representer.html#probly.representation.representer.Representer" title="probly.representation.representer.Representer"><code class="xref py py-class docutils literal notranslate"><span class="pre">Representer</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Generic" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Generic</span></code></a></p>
 <p>A representation predictor that creates representations from finite samples.</p>
 <dl class="field-list simple">
@@ -435,7 +441,8 @@
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>predictor</strong> (<a class="reference internal" href="probly.predictor.html#probly.predictor.Predictor" title="probly.predictor.Predictor"><em>Predictor</em></a><em>[</em><em>In</em><em>, </em><em>KwIn</em><em>, </em><em>Out</em><em>]</em>)</p></li>
 <li><p><strong>sampling_strategy</strong> (<em>SamplingStrategy</em>)</p></li>
-<li><p><strong>sample_factory</strong> (<em>Callable</em><em>[</em><em>[</em><em>Iterable</em><em>[</em><em>Out</em><em>]</em><em>]</em><em>, </em><a class="reference internal" href="probly.representation.html#probly.representation.Sample" title="probly.representation.Sample"><em>Sample</em></a><em>[</em><em>Out</em><em>]</em><em>]</em>)</p></li>
+<li><p><strong>sample_factory</strong> (<a class="reference internal" href="probly.representation.sampling.common_sample.html#probly.representation.sampling.common_sample.SampleFactory" title="probly.representation.sampling.common_sample.SampleFactory"><em>SampleFactory</em></a><em>[</em><em>Out</em><em>, </em><em>S</em><em>]</em>)</p></li>
+<li><p><strong>sample_axis</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>)</p></li>
 </ul>
 </dd>
 </dl>
@@ -445,7 +452,7 @@
 <dd><p>Sample from the predictor for a given input.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type">Sample[Out]</span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type">S</span></p>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
@@ -464,7 +471,7 @@
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="probly.representation.sampling.sampler.Sampler.sample_factory">
-<span class="sig-name descname"><span class="pre">sample_factory</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Callable[[Iterable[Out]],</span> <span class="pre">Sample[Out]]</span></em><a class="headerlink" href="#probly.representation.sampling.sampler.Sampler.sample_factory" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">sample_factory</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">SampleFactory[Out,</span> <span class="pre">S]</span></em><a class="headerlink" href="#probly.representation.sampling.sampler.Sampler.sample_factory" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">

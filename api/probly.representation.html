@@ -248,14 +248,18 @@
 </li>
 <li class="toctree-l2 current has-children current-page"><a class="current reference internal" href="#">probly.representation</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle navigation of probly.representation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l3 has-children"><a class="reference internal" href="probly.representation.credal_set.html">probly.representation.credal_set</a><input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of probly.representation.credal_set</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
-<li class="toctree-l4"><a class="reference internal" href="probly.representation.credal_set.credal_set.html">probly.representation.credal_set.credal_set</a></li>
-<li class="toctree-l4"><a class="reference internal" href="probly.representation.credal_set.jax.html">probly.representation.credal_set.jax</a></li>
-<li class="toctree-l4"><a class="reference internal" href="probly.representation.credal_set.torch.html">probly.representation.credal_set.torch</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.credal_set.array.html">probly.representation.credal_set.array</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.credal_set.array_functions.html">probly.representation.credal_set.array_functions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.credal_set.common.html">probly.representation.credal_set.common</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="probly.representation.distribution.html">probly.representation.distribution</a></li>
 <li class="toctree-l3"><a class="reference internal" href="probly.representation.representer.html">probly.representation.representer</a></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="probly.representation.sampling.html">probly.representation.sampling</a><input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><div class="visually-hidden">Toggle navigation of probly.representation.sampling</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.array_sample.html">probly.representation.sampling.array_sample</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.array_sample_axis_tracking.html">probly.representation.sampling.array_sample_axis_tracking</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.array_sample_functions.html">probly.representation.sampling.array_sample_functions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.common_sample.html">probly.representation.sampling.common_sample</a></li>
 <li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.flax_sampler.html">probly.representation.sampling.flax_sampler</a></li>
 <li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.jax_sample.html">probly.representation.sampling.jax_sample</a></li>
 <li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.sample.html">probly.representation.sampling.sample</a></li>
@@ -311,6 +315,7 @@
 <li class="toctree-l3"><a class="reference internal" href="probly.utils.errors.html">probly.utils.errors</a></li>
 <li class="toctree-l3"><a class="reference internal" href="probly.utils.probabilities.html">probly.utils.probabilities</a></li>
 <li class="toctree-l3"><a class="reference internal" href="probly.utils.sets.html">probly.utils.sets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="probly.utils.switchdispatch.html">probly.utils.switchdispatch</a></li>
 <li class="toctree-l3"><a class="reference internal" href="probly.utils.torch.html">probly.utils.torch</a></li>
 </ul>
 </li>
@@ -363,13 +368,33 @@
 <span id="probly-representation"></span><h1>probly.representation<a class="headerlink" href="#module-probly.representation" title="Link to this heading">¶</a></h1>
 <p>Uncertainty representations for models.</p>
 <dl class="py class">
-<dt class="sig sig-object py" id="probly.representation.CredalSet">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.</span></span><span class="sig-name descname"><span class="pre">CredalSet</span></span><a class="reference internal" href="../_modules/probly/representation/credal_set/credal_set.html#CredalSet"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.CredalSet" title="Link to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Generic" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Generic</span></code></a></p>
+<dt class="sig sig-object py" id="probly.representation.CategoricalCredalSet">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.</span></span><span class="sig-name descname"><span class="pre">CategoricalCredalSet</span></span><a class="reference internal" href="../_modules/probly/representation/credal_set/common.html#CategoricalCredalSet"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.CategoricalCredalSet" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="probly.representation.credal_set.common.html#probly.representation.credal_set.common.CredalSet" title="probly.representation.credal_set.common.CredalSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">CredalSet</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Generic" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Generic</span></code></a></p>
 <p>Base class for credal sets.</p>
 <dl class="py method">
-<dt class="sig sig-object py" id="probly.representation.CredalSet.lower">
-<span class="sig-name descname"><span class="pre">lower</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/credal_set/credal_set.html#CredalSet.lower"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.CredalSet.lower" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="probly.representation.CategoricalCredalSet.from_sample">
+<em class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sample</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distribution_axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/credal_set/common.html#CategoricalCredalSet.from_sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.CategoricalCredalSet.from_sample" title="Link to this definition">¶</a></dt>
+<dd><p>Create a credal set from a finite sample.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type">Self</span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>sample</strong> (<a class="reference internal" href="#probly.representation.Sample" title="probly.representation.Sample"><em>Sample</em></a><em>[</em><em>T</em><em>]</em>) – The sample to create the credal set from.</p></li>
+<li><p><strong>distribution_axis</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – The axis containing the categorical probabilities.</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The created credal set.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="probly.representation.CategoricalCredalSet.lower">
+<span class="sig-name descname"><span class="pre">lower</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/credal_set/common.html#CategoricalCredalSet.lower"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.CategoricalCredalSet.lower" title="Link to this definition">¶</a></dt>
 <dd><p>Compute the lower envelope of the credal set.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -379,8 +404,8 @@
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="probly.representation.CredalSet.upper">
-<span class="sig-name descname"><span class="pre">upper</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/credal_set/credal_set.html#CredalSet.upper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.CredalSet.upper" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="probly.representation.CategoricalCredalSet.upper">
+<span class="sig-name descname"><span class="pre">upper</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/credal_set/common.html#CategoricalCredalSet.upper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.CategoricalCredalSet.upper" title="Link to this definition">¶</a></dt>
 <dd><p>Compute the upper envelope of the credal set.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -388,6 +413,11 @@
 </dd>
 </dl>
 </dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="probly.representation.CategoricalCredalSet.type">
+<span class="sig-name descname"><span class="pre">type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeAliasType</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'categorical'</span></em><a class="headerlink" href="#probly.representation.CategoricalCredalSet.type" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
 
 </dd></dl>
 
@@ -410,17 +440,66 @@
 
 <dl class="py class">
 <dt class="sig sig-object py" id="probly.representation.Sample">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.</span></span><span class="sig-name descname"><span class="pre">Sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">samples</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/sampling/sample.html#Sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.Sample" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.</span></span><span class="sig-name descname"><span class="pre">Sample</span></span><a class="reference internal" href="../_modules/probly/representation/sampling/common_sample.html#Sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.Sample" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Generic" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Generic</span></code></a></p>
 <p>Abstract base class for samples.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="probly.representation.Sample.from_iterable">
+<em class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_iterable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">samples</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/sampling/common_sample.html#Sample.from_iterable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.Sample.from_iterable" title="Link to this definition">¶</a></dt>
+<dd><p>Create an Sample from an iterable of samples.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>samples</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a><em>[</em><em>T</em><em>]</em>)</p>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type">Self</span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>samples</strong> (<em>Iterable</em><em>[</em><em>T</em><em>]</em>) – The predictions to create the sample from.</p></li>
+<li><p><strong>kwargs</strong> (<em>Unpack</em><em>[</em><a class="reference internal" href="probly.representation.sampling.common_sample.html#probly.representation.sampling.common_sample.SampleParams" title="probly.representation.sampling.common_sample.SampleParams"><em>SampleParams</em></a><em>]</em>) – Parameters for sample creation.</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The created ArraySample.</p>
 </dd>
 </dl>
+</dd></dl>
+
 <dl class="py method">
-<dt class="sig sig-object py" id="probly.representation.Sample.mean">
-<span class="sig-name descname"><span class="pre">mean</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/sampling/sample.html#Sample.mean"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.Sample.mean" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="probly.representation.Sample.from_sample">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sample</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/sampling/common_sample.html#Sample.from_sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.Sample.from_sample" title="Link to this definition">¶</a></dt>
+<dd><p>Create a new Sample from an existing Sample.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type">Self</span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>sample</strong> (<a class="reference internal" href="#probly.representation.Sample" title="probly.representation.Sample"><em>Sample</em></a><em>[</em><em>T</em><em>]</em>) – The sample to create the new sample from.</p></li>
+<li><p><strong>kwargs</strong> (<em>Unpack</em><em>[</em><a class="reference internal" href="probly.representation.sampling.common_sample.html#probly.representation.sampling.common_sample.SampleParams" title="probly.representation.sampling.common_sample.SampleParams"><em>SampleParams</em></a><em>]</em>) – Parameters for sample creation.</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The created Sample.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="probly.representation.Sample.concat">
+<span class="sig-name descname"><span class="pre">concat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/sampling/common_sample.html#Sample.concat"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.Sample.concat" title="Link to this definition">¶</a></dt>
+<dd><p>Append another sample to this sample.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type">Self</span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>other</strong> (<a class="reference internal" href="#probly.representation.Sample" title="probly.representation.Sample"><em>Sample</em></a><em>[</em><em>T</em><em>]</em>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="probly.representation.Sample.sample_mean">
+<span class="sig-name descname"><span class="pre">sample_mean</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/sampling/common_sample.html#Sample.sample_mean"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.Sample.sample_mean" title="Link to this definition">¶</a></dt>
 <dd><p>Compute the mean of the sample.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -430,8 +509,8 @@
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="probly.representation.Sample.std">
-<span class="sig-name descname"><span class="pre">std</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ddof</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/sampling/sample.html#Sample.std"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.Sample.std" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="probly.representation.Sample.sample_std">
+<span class="sig-name descname"><span class="pre">sample_std</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ddof</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/sampling/common_sample.html#Sample.sample_std"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.Sample.sample_std" title="Link to this definition">¶</a></dt>
 <dd><p>Compute the standard deviation of the sample.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -444,8 +523,8 @@
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="probly.representation.Sample.var">
-<span class="sig-name descname"><span class="pre">var</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ddof</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/sampling/sample.html#Sample.var"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.Sample.var" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="probly.representation.Sample.sample_var">
+<span class="sig-name descname"><span class="pre">sample_var</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ddof</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/sampling/common_sample.html#Sample.sample_var"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.Sample.sample_var" title="Link to this definition">¶</a></dt>
 <dd><p>Compute the variance of the sample.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -457,11 +536,23 @@
 </dl>
 </dd></dl>
 
+<dl class="py property">
+<dt class="sig sig-object py" id="probly.representation.Sample.sample_size">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">sample_size</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></em><a class="headerlink" href="#probly.representation.Sample.sample_size" title="Link to this definition">¶</a></dt>
+<dd><p>Return the number of samples.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="probly.representation.Sample.samples">
+<em class="property"><span class="k"><span class="pre">abstract</span></span><span class="w"> </span><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">samples</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">T</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#probly.representation.Sample.samples" title="Link to this definition">¶</a></dt>
+<dd><p>Return an iterator over the samples.</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="probly.representation.Sampler">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.</span></span><span class="sig-name descname"><span class="pre">Sampler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">predictor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sampling_strategy='sequential'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_factory=&lt;lazy_dispatch.singledispatch.lazydispatch</span> <span class="pre">object&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/sampling/sampler.html#Sampler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.Sampler" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.</span></span><span class="sig-name descname"><span class="pre">Sampler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">predictor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sampling_strategy='sequential'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_factory=&lt;lazy_dispatch.singledispatch.lazydispatch</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_axis=1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/sampling/sampler.html#Sampler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.Sampler" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="probly.representation.representer.html#probly.representation.representer.Representer" title="probly.representation.representer.Representer"><code class="xref py py-class docutils literal notranslate"><span class="pre">Representer</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Generic" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Generic</span></code></a></p>
 <p>A representation predictor that creates representations from finite samples.</p>
 <dl class="field-list simple">
@@ -469,7 +560,8 @@
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>predictor</strong> (<a class="reference internal" href="probly.predictor.html#probly.predictor.Predictor" title="probly.predictor.Predictor"><em>Predictor</em></a><em>[</em><em>In</em><em>, </em><em>KwIn</em><em>, </em><em>Out</em><em>]</em>)</p></li>
 <li><p><strong>sampling_strategy</strong> (<em>SamplingStrategy</em>)</p></li>
-<li><p><strong>sample_factory</strong> (<em>Callable</em><em>[</em><em>[</em><em>Iterable</em><em>[</em><em>Out</em><em>]</em><em>]</em><em>, </em><a class="reference internal" href="#probly.representation.Sample" title="probly.representation.Sample"><em>Sample</em></a><em>[</em><em>Out</em><em>]</em><em>]</em>)</p></li>
+<li><p><strong>sample_factory</strong> (<a class="reference internal" href="probly.representation.sampling.common_sample.html#probly.representation.sampling.common_sample.SampleFactory" title="probly.representation.sampling.common_sample.SampleFactory"><em>SampleFactory</em></a><em>[</em><em>Out</em><em>, </em><em>S</em><em>]</em>)</p></li>
+<li><p><strong>sample_axis</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>)</p></li>
 </ul>
 </dd>
 </dl>
@@ -479,7 +571,7 @@
 <dd><p>Sample from the predictor for a given input.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type">Sample[Out]</span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type">S</span></p>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
@@ -493,7 +585,7 @@
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="probly.representation.Sampler.sample_factory">
-<span class="sig-name descname"><span class="pre">sample_factory</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Callable[[Iterable[Out]],</span> <span class="pre">Sample[Out]]</span></em><a class="headerlink" href="#probly.representation.Sampler.sample_factory" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">sample_factory</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">SampleFactory[Out,</span> <span class="pre">S]</span></em><a class="headerlink" href="#probly.representation.Sampler.sample_factory" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -580,9 +672,11 @@
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">probly.representation</a><ul>
-<li><a class="reference internal" href="#probly.representation.CredalSet"><code class="docutils literal notranslate"><span class="pre">CredalSet</span></code></a><ul>
-<li><a class="reference internal" href="#probly.representation.CredalSet.lower"><code class="docutils literal notranslate"><span class="pre">CredalSet.lower()</span></code></a></li>
-<li><a class="reference internal" href="#probly.representation.CredalSet.upper"><code class="docutils literal notranslate"><span class="pre">CredalSet.upper()</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.CategoricalCredalSet"><code class="docutils literal notranslate"><span class="pre">CategoricalCredalSet</span></code></a><ul>
+<li><a class="reference internal" href="#probly.representation.CategoricalCredalSet.from_sample"><code class="docutils literal notranslate"><span class="pre">CategoricalCredalSet.from_sample()</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.CategoricalCredalSet.lower"><code class="docutils literal notranslate"><span class="pre">CategoricalCredalSet.lower()</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.CategoricalCredalSet.upper"><code class="docutils literal notranslate"><span class="pre">CategoricalCredalSet.upper()</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.CategoricalCredalSet.type"><code class="docutils literal notranslate"><span class="pre">CategoricalCredalSet.type</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#probly.representation.Representer"><code class="docutils literal notranslate"><span class="pre">Representer</span></code></a><ul>
@@ -590,9 +684,14 @@
 </ul>
 </li>
 <li><a class="reference internal" href="#probly.representation.Sample"><code class="docutils literal notranslate"><span class="pre">Sample</span></code></a><ul>
-<li><a class="reference internal" href="#probly.representation.Sample.mean"><code class="docutils literal notranslate"><span class="pre">Sample.mean()</span></code></a></li>
-<li><a class="reference internal" href="#probly.representation.Sample.std"><code class="docutils literal notranslate"><span class="pre">Sample.std()</span></code></a></li>
-<li><a class="reference internal" href="#probly.representation.Sample.var"><code class="docutils literal notranslate"><span class="pre">Sample.var()</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.Sample.from_iterable"><code class="docutils literal notranslate"><span class="pre">Sample.from_iterable()</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.Sample.from_sample"><code class="docutils literal notranslate"><span class="pre">Sample.from_sample()</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.Sample.concat"><code class="docutils literal notranslate"><span class="pre">Sample.concat()</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.Sample.sample_mean"><code class="docutils literal notranslate"><span class="pre">Sample.sample_mean()</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.Sample.sample_std"><code class="docutils literal notranslate"><span class="pre">Sample.sample_std()</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.Sample.sample_var"><code class="docutils literal notranslate"><span class="pre">Sample.sample_var()</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.Sample.sample_size"><code class="docutils literal notranslate"><span class="pre">Sample.sample_size</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.Sample.samples"><code class="docutils literal notranslate"><span class="pre">Sample.samples</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#probly.representation.Sampler"><code class="docutils literal notranslate"><span class="pre">Sampler</span></code></a><ul>

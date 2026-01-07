@@ -247,14 +247,18 @@
 </li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../../../api/probly.representation.html">probly.representation</a><input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle navigation of probly.representation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l3 has-children"><a class="reference internal" href="../../../api/probly.representation.credal_set.html">probly.representation.credal_set</a><input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of probly.representation.credal_set</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
-<li class="toctree-l4"><a class="reference internal" href="../../../api/probly.representation.credal_set.credal_set.html">probly.representation.credal_set.credal_set</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../api/probly.representation.credal_set.jax.html">probly.representation.credal_set.jax</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../api/probly.representation.credal_set.torch.html">probly.representation.credal_set.torch</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/probly.representation.credal_set.array.html">probly.representation.credal_set.array</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/probly.representation.credal_set.array_functions.html">probly.representation.credal_set.array_functions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/probly.representation.credal_set.common.html">probly.representation.credal_set.common</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../api/probly.representation.distribution.html">probly.representation.distribution</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../api/probly.representation.representer.html">probly.representation.representer</a></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="../../../api/probly.representation.sampling.html">probly.representation.sampling</a><input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><div class="visually-hidden">Toggle navigation of probly.representation.sampling</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/probly.representation.sampling.array_sample.html">probly.representation.sampling.array_sample</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/probly.representation.sampling.array_sample_axis_tracking.html">probly.representation.sampling.array_sample_axis_tracking</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/probly.representation.sampling.array_sample_functions.html">probly.representation.sampling.array_sample_functions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/probly.representation.sampling.common_sample.html">probly.representation.sampling.common_sample</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../api/probly.representation.sampling.flax_sampler.html">probly.representation.sampling.flax_sampler</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../api/probly.representation.sampling.jax_sample.html">probly.representation.sampling.jax_sample</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../api/probly.representation.sampling.sample.html">probly.representation.sampling.sample</a></li>
@@ -310,6 +314,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../../../api/probly.utils.errors.html">probly.utils.errors</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../api/probly.utils.probabilities.html">probly.utils.probabilities</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../api/probly.utils.sets.html">probly.utils.sets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/probly.utils.switchdispatch.html">probly.utils.switchdispatch</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../api/probly.utils.torch.html">probly.utils.torch</a></li>
 </ul>
 </li>
@@ -389,7 +394,7 @@
 <div class="viewcode-block" id="compose">
 <a class="viewcode-back" href="../../../api/probly.traverse_nn.common.html#probly.traverse_nn.common.compose">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">compose</span><span class="p">(</span>
-    <span class="n">traverser</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Traverser</span><span class="p">,</span>
+    <span class="o">*</span><span class="n">traversers</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Traverser</span><span class="p">,</span>
     <span class="n">nn_traverser</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Traverser</span> <span class="o">=</span> <span class="n">nn_traverser</span><span class="p">,</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Traverser</span><span class="p">:</span>
@@ -399,7 +404,7 @@
 <span class="sd">    a custom traverser, and layer counting capabilities in a specific order.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        traverser: A custom traverser function to be composed with the NN traverser.</span>
+<span class="sd">        traversers: Custom traverser functions to be composed (sequentially) with the NN traverser.</span>
 <span class="sd">        nn_traverser: The neural network traverser to use. Defaults to the module&#39;s</span>
 <span class="sd">            nn_traverser.</span>
 <span class="sd">        name: Optional name for the composed traverser.</span>
@@ -408,7 +413,7 @@
 <span class="sd">        A composed sequential traverser that applies NN traversal, custom traversal,</span>
 <span class="sd">        and layer counting in sequence.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">t</span><span class="o">.</span><span class="n">sequential</span><span class="p">(</span><span class="n">nn_traverser</span><span class="p">,</span> <span class="n">traverser</span><span class="p">,</span> <span class="n">layer_count_traverser</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">t</span><span class="o">.</span><span class="n">sequential</span><span class="p">(</span><span class="n">nn_traverser</span><span class="p">,</span> <span class="o">*</span><span class="n">traversers</span><span class="p">,</span> <span class="n">layer_count_traverser</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span></div>
 
 </pre></div>
         </article>

@@ -248,14 +248,18 @@
 </li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="probly.representation.html">probly.representation</a><input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle navigation of probly.representation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l3 has-children"><a class="reference internal" href="probly.representation.credal_set.html">probly.representation.credal_set</a><input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of probly.representation.credal_set</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
-<li class="toctree-l4"><a class="reference internal" href="probly.representation.credal_set.credal_set.html">probly.representation.credal_set.credal_set</a></li>
-<li class="toctree-l4"><a class="reference internal" href="probly.representation.credal_set.jax.html">probly.representation.credal_set.jax</a></li>
-<li class="toctree-l4"><a class="reference internal" href="probly.representation.credal_set.torch.html">probly.representation.credal_set.torch</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.credal_set.array.html">probly.representation.credal_set.array</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.credal_set.array_functions.html">probly.representation.credal_set.array_functions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.credal_set.common.html">probly.representation.credal_set.common</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="probly.representation.distribution.html">probly.representation.distribution</a></li>
 <li class="toctree-l3"><a class="reference internal" href="probly.representation.representer.html">probly.representation.representer</a></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="probly.representation.sampling.html">probly.representation.sampling</a><input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><div class="visually-hidden">Toggle navigation of probly.representation.sampling</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.array_sample.html">probly.representation.sampling.array_sample</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.array_sample_axis_tracking.html">probly.representation.sampling.array_sample_axis_tracking</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.array_sample_functions.html">probly.representation.sampling.array_sample_functions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.common_sample.html">probly.representation.sampling.common_sample</a></li>
 <li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.flax_sampler.html">probly.representation.sampling.flax_sampler</a></li>
 <li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.jax_sample.html">probly.representation.sampling.jax_sample</a></li>
 <li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.sample.html">probly.representation.sampling.sample</a></li>
@@ -311,6 +315,7 @@
 <li class="toctree-l3"><a class="reference internal" href="probly.utils.errors.html">probly.utils.errors</a></li>
 <li class="toctree-l3"><a class="reference internal" href="probly.utils.probabilities.html">probly.utils.probabilities</a></li>
 <li class="toctree-l3"><a class="reference internal" href="probly.utils.sets.html">probly.utils.sets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="probly.utils.switchdispatch.html">probly.utils.switchdispatch</a></li>
 <li class="toctree-l3"><a class="reference internal" href="probly.utils.torch.html">probly.utils.torch</a></li>
 </ul>
 </li>
@@ -362,6 +367,95 @@
           <section id="module-probly.utils">
 <span id="probly-utils"></span><h1>probly.utils<a class="headerlink" href="#module-probly.utils" title="Link to this heading">¶</a></h1>
 <p>Utils module for probly library.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="probly.utils.switchdispatch">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.utils.</span></span><span class="sig-name descname"><span class="pre">switchdispatch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/utils/switchdispatch.html#switchdispatch"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.utils.switchdispatch" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Generic" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Generic</span></code></a></p>
+<p>A switch dispatch decorator.</p>
+<p>Similar to functools.singledispatch, but dispatches based on equality
+rather than type.</p>
+<p>Example:
+<a href="#id1"><span class="problematic" id="id2">``</span></a><a href="#id3"><span class="problematic" id="id4">`</span></a>python</p>
+<blockquote>
+<div><p>&#64;switchdispatch
+def func(x):</p>
+<blockquote>
+<div><p>return “default”</p>
+</div></blockquote>
+<p>&#64;func.register(1)
+def _(x):</p>
+<blockquote>
+<div><p>return “one”</p>
+</div></blockquote>
+<p>&#64;func.register(2)
+def _(x):</p>
+<blockquote>
+<div><p>return “two”</p>
+</div></blockquote>
+<p>print(func(1))  # Output: “one”
+print(func(2))  # Output: “two”
+print(func(3))  # Output: “default”</p>
+</div></blockquote>
+<p><a href="#id5"><span class="problematic" id="id6">``</span></a><a href="#id7"><span class="problematic" id="id8">`</span></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>func</strong> (<em>C</em>)</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="probly.utils.switchdispatch.__call__">
+<span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arg</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/utils/switchdispatch.html#switchdispatch.__call__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.utils.switchdispatch.__call__" title="Link to this definition">¶</a></dt>
+<dd><p>Call the appropriate function based on the argument.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>arg</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><em>object</em></a>)</p></li>
+<li><p><strong>args</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><em>Any</em></a>)</p></li>
+<li><p><strong>kwargs</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><em>Any</em></a>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="probly.utils.switchdispatch.multi_register">
+<span class="sig-name descname"><span class="pre">multi_register</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">keys</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/utils/switchdispatch.html#switchdispatch.multi_register"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.utils.switchdispatch.multi_register" title="Link to this definition">¶</a></dt>
+<dd><p>Register a new function for the given keys.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type">C | Callable[[C], C]</span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>keys</strong> (<em>Iterable</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><em>object</em></a><em>]</em>)</p></li>
+<li><p><strong>f</strong> (<em>C</em><em> | </em><em>None</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="probly.utils.switchdispatch.register">
+<span class="sig-name descname"><span class="pre">register</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/utils/switchdispatch.html#switchdispatch.register"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.utils.switchdispatch.register" title="Link to this definition">¶</a></dt>
+<dd><p>Register a new function for the given key.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type">C | Callable[[C], C]</span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>key</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><em>object</em></a>)</p></li>
+<li><p><strong>f</strong> (<em>C</em><em> | </em><em>None</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.utils.capacity">
 <span class="sig-prename descclassname"><span class="pre">probly.utils.</span></span><span class="sig-name descname"><span class="pre">capacity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">q</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">a</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/utils/sets.html#capacity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.utils.capacity" title="Link to this definition">¶</a></dt>
@@ -423,7 +517,7 @@
 <dt class="sig sig-object py" id="probly.utils.intersection_probability">
 <span class="sig-prename descclassname"><span class="pre">probly.utils.</span></span><span class="sig-name descname"><span class="pre">intersection_probability</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/utils/probabilities.html#intersection_probability"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.utils.intersection_probability" title="Link to this definition">¶</a></dt>
 <dd><p>Compute the intersection probability of a credal set based on intervals of lower and upper probabilities.</p>
-<p>Computes the intersection probability from <span id="id1">[<a class="reference internal" href="../references.html#id20" title="Fabio Cuzzolin. The intersection probability: betting with probability intervals. CoRR, 2022. URL: https://arxiv.org/abs/2201.01729, arXiv:2201.01729.">Cuz22</a>]</span>.</p>
+<p>Computes the intersection probability from <span id="id9">[<a class="reference internal" href="../references.html#id20" title="Fabio Cuzzolin. The intersection probability: betting with probability intervals. CoRR, 2022. URL: https://arxiv.org/abs/2201.01729, arXiv:2201.01729.">Cuz22</a>]</span>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
@@ -536,7 +630,10 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="probly.utils.sets.html#module-probly.utils.sets" title="probly.utils.sets"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sets</span></code></a></p></td>
 <td><p>Utility functions regarding sets.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="probly.utils.torch.html#module-probly.utils.torch" title="probly.utils.torch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">torch</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="probly.utils.switchdispatch.html#probly.utils.switchdispatch" title="probly.utils.switchdispatch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">switchdispatch</span></code></a>(func)</p></td>
+<td><p>A switch dispatch decorator.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="probly.utils.torch.html#module-probly.utils.torch" title="probly.utils.torch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">torch</span></code></a></p></td>
 <td><p>Utility functions for PyTorch models.</p></td>
 </tr>
 </tbody>
@@ -600,6 +697,12 @@
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">probly.utils</a><ul>
+<li><a class="reference internal" href="#probly.utils.switchdispatch"><code class="docutils literal notranslate"><span class="pre">switchdispatch</span></code></a><ul>
+<li><a class="reference internal" href="#probly.utils.switchdispatch.__call__"><code class="docutils literal notranslate"><span class="pre">switchdispatch.__call__()</span></code></a></li>
+<li><a class="reference internal" href="#probly.utils.switchdispatch.multi_register"><code class="docutils literal notranslate"><span class="pre">switchdispatch.multi_register()</span></code></a></li>
+<li><a class="reference internal" href="#probly.utils.switchdispatch.register"><code class="docutils literal notranslate"><span class="pre">switchdispatch.register()</span></code></a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#probly.utils.capacity"><code class="docutils literal notranslate"><span class="pre">capacity()</span></code></a></li>
 <li><a class="reference internal" href="#probly.utils.differential_entropy_gaussian"><code class="docutils literal notranslate"><span class="pre">differential_entropy_gaussian()</span></code></a></li>
 <li><a class="reference internal" href="#probly.utils.intersection_probability"><code class="docutils literal notranslate"><span class="pre">intersection_probability()</span></code></a></li>

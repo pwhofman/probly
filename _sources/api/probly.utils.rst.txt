@@ -13,4 +13,5 @@
    errors
    probabilities
    sets
+   switchdispatch
    torch

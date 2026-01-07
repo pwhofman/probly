@@ -3,10 +3,10 @@
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="probly.representation.distribution" href="probly.representation.distribution.html" /><link rel="prev" title="probly.representation.credal_set.jax" href="probly.representation.credal_set.jax.html" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="probly.representation.credal_set.array_functions" href="probly.representation.credal_set.array_functions.html" /><link rel="prev" title="probly.representation.credal_set" href="probly.representation.credal_set.html" />
 
     <!-- Generated with Sphinx 8.2.3 and Furo 2024.08.06 -->
-        <title>probly.representation.credal_set.torch - probly 0.3.1 documentation</title>
+        <title>probly.representation.credal_set.array - probly 0.3.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=354aac6f" />
     <link rel="stylesheet" type="text/css" href="../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
@@ -248,14 +248,18 @@
 </li>
 <li class="toctree-l2 current has-children"><a class="reference internal" href="probly.representation.html">probly.representation</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle navigation of probly.representation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
 <li class="toctree-l3 current has-children"><a class="reference internal" href="probly.representation.credal_set.html">probly.representation.credal_set</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of probly.representation.credal_set</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
-<li class="toctree-l4"><a class="reference internal" href="probly.representation.credal_set.credal_set.html">probly.representation.credal_set.credal_set</a></li>
-<li class="toctree-l4"><a class="reference internal" href="probly.representation.credal_set.jax.html">probly.representation.credal_set.jax</a></li>
-<li class="toctree-l4 current current-page"><a class="current reference internal" href="#">probly.representation.credal_set.torch</a></li>
+<li class="toctree-l4 current current-page"><a class="current reference internal" href="#">probly.representation.credal_set.array</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.credal_set.array_functions.html">probly.representation.credal_set.array_functions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.credal_set.common.html">probly.representation.credal_set.common</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="probly.representation.distribution.html">probly.representation.distribution</a></li>
 <li class="toctree-l3"><a class="reference internal" href="probly.representation.representer.html">probly.representation.representer</a></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="probly.representation.sampling.html">probly.representation.sampling</a><input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><div class="visually-hidden">Toggle navigation of probly.representation.sampling</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.array_sample.html">probly.representation.sampling.array_sample</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.array_sample_axis_tracking.html">probly.representation.sampling.array_sample_axis_tracking</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.array_sample_functions.html">probly.representation.sampling.array_sample_functions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.common_sample.html">probly.representation.sampling.common_sample</a></li>
 <li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.flax_sampler.html">probly.representation.sampling.flax_sampler</a></li>
 <li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.jax_sample.html">probly.representation.sampling.jax_sample</a></li>
 <li class="toctree-l4"><a class="reference internal" href="probly.representation.sampling.sample.html">probly.representation.sampling.sample</a></li>
@@ -311,6 +315,7 @@
 <li class="toctree-l3"><a class="reference internal" href="probly.utils.errors.html">probly.utils.errors</a></li>
 <li class="toctree-l3"><a class="reference internal" href="probly.utils.probabilities.html">probly.utils.probabilities</a></li>
 <li class="toctree-l3"><a class="reference internal" href="probly.utils.sets.html">probly.utils.sets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="probly.utils.switchdispatch.html">probly.utils.switchdispatch</a></li>
 <li class="toctree-l3"><a class="reference internal" href="probly.utils.torch.html">probly.utils.torch</a></li>
 </ul>
 </li>
@@ -359,49 +364,173 @@
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="module-probly.representation.credal_set.torch">
-<span id="probly-representation-credal-set-torch"></span><h1>probly.representation.credal_set.torch<a class="headerlink" href="#module-probly.representation.credal_set.torch" title="Link to this heading">¶</a></h1>
-<p>Torch credal set implementation.</p>
+          <section id="module-probly.representation.credal_set.array">
+<span id="probly-representation-credal-set-array"></span><h1>probly.representation.credal_set.array<a class="headerlink" href="#module-probly.representation.credal_set.array" title="Link to this heading">¶</a></h1>
+<p>Classes representing credal sets.</p>
 <p class="rubric">Classes</p>
 <div class="table-wrapper autosummary longtable docutils container">
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#probly.representation.credal_set.torch.TorchTensorCredalSet" title="probly.representation.credal_set.torch.TorchTensorCredalSet"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TorchTensorCredalSet</span></code></a>(sample)</p></td>
-<td><p>A credal set implementation for torch tensors.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#probly.representation.credal_set.array.ArrayCategoricalCredalSet" title="probly.representation.credal_set.array.ArrayCategoricalCredalSet"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ArrayCategoricalCredalSet</span></code></a>()</p></td>
+<td><p>A credal set of predictions stored in a numpy array.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#probly.representation.credal_set.array.ArrayDiscreteCredalSet" title="probly.representation.credal_set.array.ArrayDiscreteCredalSet"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ArrayDiscreteCredalSet</span></code></a>(array)</p></td>
+<td><p>A discrete credal set over a finite set of distributions stored in a numpy array.</p></td>
 </tr>
 </tbody>
 </table>
 </div>
 <dl class="py class">
-<dt class="sig sig-object py" id="probly.representation.credal_set.torch.TorchTensorCredalSet">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.credal_set.torch.</span></span><span class="sig-name descname"><span class="pre">TorchTensorCredalSet</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sample</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/credal_set/torch.html#TorchTensorCredalSet"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.credal_set.torch.TorchTensorCredalSet" title="Link to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="probly.representation.credal_set.credal_set.html#probly.representation.credal_set.credal_set.CredalSet" title="probly.representation.credal_set.credal_set.CredalSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">CredalSet</span></code></a>[<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>]</p>
-<p>A credal set implementation for torch tensors.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>sample</strong> (<a class="reference internal" href="probly.representation.sampling.torch_sample.html#probly.representation.sampling.torch_sample.TorchTensorSample" title="probly.representation.sampling.torch_sample.TorchTensorSample"><em>TorchTensorSample</em></a>)</p>
-</dd>
-</dl>
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayCategoricalCredalSet">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.credal_set.array.</span></span><span class="sig-name descname"><span class="pre">ArrayCategoricalCredalSet</span></span><a class="reference internal" href="../_modules/probly/representation/credal_set/array.html#ArrayCategoricalCredalSet"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.credal_set.array.ArrayCategoricalCredalSet" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="probly.representation.credal_set.common.html#probly.representation.credal_set.common.CategoricalCredalSet" title="probly.representation.credal_set.common.CategoricalCredalSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">CategoricalCredalSet</span></code></a>[<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a>]</p>
+<p>A credal set of predictions stored in a numpy array.</p>
 <dl class="py method">
-<dt class="sig sig-object py" id="probly.representation.credal_set.torch.TorchTensorCredalSet.lower">
-<span class="sig-name descname"><span class="pre">lower</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/credal_set/torch.html#TorchTensorCredalSet.lower"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.credal_set.torch.TorchTensorCredalSet.lower" title="Link to this definition">¶</a></dt>
-<dd><p>Compute the lower envelope of the credal set.</p>
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayCategoricalCredalSet.from_array_sample">
+<em class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_array_sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sample</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distribution_axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/credal_set/array.html#ArrayCategoricalCredalSet.from_array_sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.credal_set.array.ArrayCategoricalCredalSet.from_array_sample" title="Link to this definition">¶</a></dt>
+<dd><p>Create a credal set from an ArraySample.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Self</span></code></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>sample</strong> (<a class="reference internal" href="probly.representation.sampling.array_sample.html#probly.representation.sampling.array_sample.ArraySample" title="probly.representation.sampling.array_sample.ArraySample"><em>ArraySample</em></a><em>[</em><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><em>ndarray</em></a><em>]</em>) – The sample to create the credal set from.</p></li>
+<li><p><strong>distribution_axis</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – The axis in each sample containing the categorical probabilities.</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The created credal set.</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="probly.representation.credal_set.torch.TorchTensorCredalSet.upper">
-<span class="sig-name descname"><span class="pre">upper</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/credal_set/torch.html#TorchTensorCredalSet.upper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.credal_set.torch.TorchTensorCredalSet.upper" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayCategoricalCredalSet.from_sample">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sample</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distribution_axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/credal_set/array.html#ArrayCategoricalCredalSet.from_sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.credal_set.array.ArrayCategoricalCredalSet.from_sample" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Self</span></code></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>sample</strong> (<a class="reference internal" href="probly.representation.sampling.common_sample.html#probly.representation.sampling.common_sample.Sample" title="probly.representation.sampling.common_sample.Sample"><em>Sample</em></a><em>[</em><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><em>ndarray</em></a><em>]</em>)</p></li>
+<li><p><strong>distribution_axis</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayDiscreteCredalSet">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.credal_set.array.</span></span><span class="sig-name descname"><span class="pre">ArrayDiscreteCredalSet</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">array</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/credal_set/array.html#ArrayDiscreteCredalSet"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.credal_set.array.ArrayDiscreteCredalSet" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#probly.representation.credal_set.array.ArrayCategoricalCredalSet" title="probly.representation.credal_set.array.ArrayCategoricalCredalSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">ArrayCategoricalCredalSet</span></code></a>, <a class="reference internal" href="probly.representation.credal_set.common.html#probly.representation.credal_set.common.DiscreteCredalSet" title="probly.representation.credal_set.common.DiscreteCredalSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">DiscreteCredalSet</span></code></a>[<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a>]</p>
+<p>A discrete credal set over a finite set of distributions stored in a numpy array.</p>
+<p>Internall, a discrete credal set is represented as a numpy array of shape
+(…, num_members, num_classes)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>array</strong> (<em>np.ndarray</em>)</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayDiscreteCredalSet.from_array_sample">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_array_sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sample</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distribution_axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/credal_set/array.html#ArrayDiscreteCredalSet.from_array_sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.credal_set.array.ArrayDiscreteCredalSet.from_array_sample" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Self</span></code></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>sample</strong> (<a class="reference internal" href="probly.representation.sampling.array_sample.html#probly.representation.sampling.array_sample.ArraySample" title="probly.representation.sampling.array_sample.ArraySample"><em>ArraySample</em></a><em>[</em><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><em>ndarray</em></a><em>]</em>)</p></li>
+<li><p><strong>distribution_axis</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayDiscreteCredalSet.copy">
+<span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/credal_set/array.html#ArrayDiscreteCredalSet.copy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.credal_set.array.ArrayDiscreteCredalSet.copy" title="Link to this definition">¶</a></dt>
+<dd><p>Create a copy of the ArraySample.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Self</span></code></span></p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A copy of the ArraySample.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayDiscreteCredalSet.lower">
+<span class="sig-name descname"><span class="pre">lower</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/credal_set/array.html#ArrayDiscreteCredalSet.lower"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.credal_set.array.ArrayDiscreteCredalSet.lower" title="Link to this definition">¶</a></dt>
+<dd><p>Compute the lower envelope of the credal set.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayDiscreteCredalSet.to_device">
+<span class="sig-name descname"><span class="pre">to_device</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/credal_set/array.html#ArrayDiscreteCredalSet.to_device"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.credal_set.array.ArrayDiscreteCredalSet.to_device" title="Link to this definition">¶</a></dt>
+<dd><p>Move the underlying array to the specified device.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Self</span></code></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>device</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.14)"><em>Literal</em></a><em>[</em><em>'cpu'</em><em>]</em>) – The target device.</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A new ArrayDiscreteCredalSet on the specified device.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayDiscreteCredalSet.upper">
+<span class="sig-name descname"><span class="pre">upper</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/credal_set/array.html#ArrayDiscreteCredalSet.upper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.credal_set.array.ArrayDiscreteCredalSet.upper" title="Link to this definition">¶</a></dt>
 <dd><p>Compute the upper envelope of the credal set.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayDiscreteCredalSet.array">
+<span class="sig-name descname"><span class="pre">array</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">np.ndarray</span></em><a class="headerlink" href="#probly.representation.credal_set.array.ArrayDiscreteCredalSet.array" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayDiscreteCredalSet.device">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">device</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><a class="headerlink" href="#probly.representation.credal_set.array.ArrayDiscreteCredalSet.device" title="Link to this definition">¶</a></dt>
+<dd><p>Return the device of the credal set array.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayDiscreteCredalSet.dtype">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">dtype</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.dtype.html#numpy.dtype" title="(in NumPy v2.4)"><span class="pre">dtype</span></a></em><a class="headerlink" href="#probly.representation.credal_set.array.ArrayDiscreteCredalSet.dtype" title="Link to this definition">¶</a></dt>
+<dd><p>Return the data type of the credal set array.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayDiscreteCredalSet.ndim">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ndim</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></em><a class="headerlink" href="#probly.representation.credal_set.array.ArrayDiscreteCredalSet.ndim" title="Link to this definition">¶</a></dt>
+<dd><p>Return the number of dimensions of the credal set array.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayDiscreteCredalSet.shape">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">shape</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#probly.representation.credal_set.array.ArrayDiscreteCredalSet.shape" title="Link to this definition">¶</a></dt>
+<dd><p>Return the shape of the credal set array.</p>
 </dd></dl>
 
 </dd></dl>
@@ -413,23 +542,23 @@
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="probly.representation.distribution.html">
+          <a class="next-page" href="probly.representation.credal_set.array_functions.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">probly.representation.distribution</div>
+                <div class="title">probly.representation.credal_set.array_functions</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="probly.representation.credal_set.jax.html">
+          <a class="prev-page" href="probly.representation.credal_set.html">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">probly.representation.credal_set.jax</div>
+                <div class="title">probly.representation.credal_set</div>
                 
               </div>
             </a>
@@ -463,10 +592,23 @@
         <div class="toc-tree-container">
           <div class="toc-tree">
             <ul>
-<li><a class="reference internal" href="#">probly.representation.credal_set.torch</a><ul>
-<li><a class="reference internal" href="#probly.representation.credal_set.torch.TorchTensorCredalSet"><code class="docutils literal notranslate"><span class="pre">TorchTensorCredalSet</span></code></a><ul>
-<li><a class="reference internal" href="#probly.representation.credal_set.torch.TorchTensorCredalSet.lower"><code class="docutils literal notranslate"><span class="pre">TorchTensorCredalSet.lower()</span></code></a></li>
-<li><a class="reference internal" href="#probly.representation.credal_set.torch.TorchTensorCredalSet.upper"><code class="docutils literal notranslate"><span class="pre">TorchTensorCredalSet.upper()</span></code></a></li>
+<li><a class="reference internal" href="#">probly.representation.credal_set.array</a><ul>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayCategoricalCredalSet"><code class="docutils literal notranslate"><span class="pre">ArrayCategoricalCredalSet</span></code></a><ul>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayCategoricalCredalSet.from_array_sample"><code class="docutils literal notranslate"><span class="pre">ArrayCategoricalCredalSet.from_array_sample()</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayCategoricalCredalSet.from_sample"><code class="docutils literal notranslate"><span class="pre">ArrayCategoricalCredalSet.from_sample()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayDiscreteCredalSet"><code class="docutils literal notranslate"><span class="pre">ArrayDiscreteCredalSet</span></code></a><ul>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayDiscreteCredalSet.from_array_sample"><code class="docutils literal notranslate"><span class="pre">ArrayDiscreteCredalSet.from_array_sample()</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayDiscreteCredalSet.copy"><code class="docutils literal notranslate"><span class="pre">ArrayDiscreteCredalSet.copy()</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayDiscreteCredalSet.lower"><code class="docutils literal notranslate"><span class="pre">ArrayDiscreteCredalSet.lower()</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayDiscreteCredalSet.to_device"><code class="docutils literal notranslate"><span class="pre">ArrayDiscreteCredalSet.to_device()</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayDiscreteCredalSet.upper"><code class="docutils literal notranslate"><span class="pre">ArrayDiscreteCredalSet.upper()</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayDiscreteCredalSet.array"><code class="docutils literal notranslate"><span class="pre">ArrayDiscreteCredalSet.array</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayDiscreteCredalSet.device"><code class="docutils literal notranslate"><span class="pre">ArrayDiscreteCredalSet.device</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayDiscreteCredalSet.dtype"><code class="docutils literal notranslate"><span class="pre">ArrayDiscreteCredalSet.dtype</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayDiscreteCredalSet.ndim"><code class="docutils literal notranslate"><span class="pre">ArrayDiscreteCredalSet.ndim</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayDiscreteCredalSet.shape"><code class="docutils literal notranslate"><span class="pre">ArrayDiscreteCredalSet.shape</span></code></a></li>
 </ul>
 </li>
 </ul>
