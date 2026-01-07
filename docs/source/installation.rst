@@ -1,5 +1,3 @@
-.. _installation:
-
 The ``probly`` Python Package
 =============================================
 probly is a Python package for **uncertainty representation** and **quantification** for machine learning.

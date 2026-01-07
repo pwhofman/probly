@@ -257,9 +257,6 @@ fabric.properties
 # add docs to gitignore
 docs/source/api
 
-# Ignore generated Sphinx rst files (they are produced locally and should not be committed)
-docs/source/generated/
-
 .idea/
 
 # add docs to gitignore

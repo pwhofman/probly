@@ -1,5 +1,3 @@
-.. _faq:
-
 FAQ and Troubleshooting
 =======================
 
@@ -9,8 +7,8 @@ covering installation issues, basic usage questions, uncertainty methods, integr
 with different frameworks, and debugging tips.
 
 If you cannot find an answer to your question here, please refer to the
-:ref:`core_concepts` section for conceptual background, the :ref:`main_components`
-section for detailed component descriptions, or the :ref:`examples_and_tutorials`
+:doc:`core_concepts` section for conceptual background, the :doc:`main_components`
+section for detailed component descriptions, or the :doc:`examples_&_tutorials`
 section for practical demonstrations.
 
 1. Installation and Setup
@@ -23,7 +21,7 @@ section for practical demonstrations.
 If you are using an older Python version, you may encounter compatibility issues
 with dependencies or type hints. We recommend upgrading to Python 3.12 or later.
 
-For installation instructions, see :ref:`installation`.
+For installation instructions, see :doc:`installation`.
 
 1.2 How do I install ``probly``?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -40,7 +38,7 @@ or
 
    uv add probly
 
-For more details, refer to the :ref:`installation` section.
+For more details, refer to the :doc:`installation` section.
 
 1.3 Installation fails with dependency conflicts. What should I do?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -114,7 +112,7 @@ Example using Monte Carlo Dropout :cite:`galDropoutBayesian2016`:
    # Shape will be (num_samples, batch_size, num_outputs)
    stacked_preds = np.stack([p.detach().numpy() for p in predictions])
 
-For more details, see :ref:`introduction` section 3.2.
+For more details, see :doc:`introduction` section 3.2.
 
 2.2 Do I need to retrain my model to use ``probly``?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -127,7 +125,7 @@ Some uncertainty methods, such as evidential networks or Bayesian neural network
 do require specific training procedures, but even these can often be retrofitted
 to existing architectures with minimal changes.
 
-See :ref:`introduction` section 3 for the complete workflow.
+See :doc:`introduction` section 3 for the complete workflow.
 
 2.3 What is an uncertainty representation?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -143,7 +141,7 @@ a single prediction, the model returns additional information such as:
 ``probly`` unifies these different formats into a consistent interface so they can
 be quantified and used in downstream tasks.
 
-For a detailed explanation, see :ref:`core_concepts` section 2.
+For a detailed explanation, see :doc:`core_concepts` section 2.
 
 2.4 How do I quantify uncertainty from a representation?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -175,7 +173,7 @@ quantification functions in ``probly.quantification`` to compute numerical uncer
 These scores can then be used for tasks such as out-of-distribution detection
 or selective prediction.
 
-See :ref:`core_concepts` section 3.1 for more quantification methods.
+See :doc:`core_concepts` section 3.1 for more quantification methods.
 
 3. Uncertainty Methods
 ----------------------
@@ -210,7 +208,7 @@ constraints, and the type of uncertainty you want to capture:
 * **Cons:** Computationally expensive, requires specialized training
 * **Use when:** You need theoretically grounded uncertainty and have computational resources
 
-For conceptual background, see :ref:`core_concepts` and :ref:`introduction`.
+For conceptual background, see :doc:`core_concepts` and :doc:`introduction`.
 
 3.2 What is the difference between epistemic and aleatoric uncertainty?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -228,7 +226,7 @@ This uncertainty cannot be reduced by simply collecting more data.
 ``probly`` provides tools to quantify both types of uncertainty. For example,
 mutual information captures epistemic uncertainty, while total entropy includes both types.
 
-See :ref:`core_concepts` section 1.1 for detailed explanations with visualizations.
+See :doc:`core_concepts` section 1.1 for detailed explanations with visualizations.
 
 3.3 Can I combine different uncertainty methods?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -275,7 +273,7 @@ Example:
 Yes. ``probly`` supports Flax/JAX models through the same transformation interface.
 You can apply uncertainty transformations to ``flax.nnx.Module`` objects.
 
-See :ref:`introduction` section 5 for supported frameworks.
+See :doc:`introduction` section 5 for supported frameworks.
 
 4.3 Can I use ``probly`` with scikit-learn models?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -644,7 +642,7 @@ When reporting bugs or asking for help, include:
 
 * **GitHub Issues:** Report bugs and request features at https://github.com/pwhofman/probly/issues
 * **FAQ & Troubleshooting:** Check this document for common solutions
-* **Documentation:** Refer to :ref:`core_concepts`, :ref:`introduction`, and :ref:`examples_and_tutorials`
+* **Documentation:** Refer to :doc:`core_concepts`, :doc:`introduction`, and :doc:`examples_&_tutorials`
 * **Community:** Discuss with other users through the GitHub issue tracker
 
 8. Advanced Topics
@@ -693,8 +691,8 @@ For production deployment:
 
 For detailed usage examples, refer to:
 
-* The :ref:`introduction` section for workflow examples
-* The :ref:`installation` section for quickstart code
+* The :doc:`introduction` section for workflow examples
+* The :doc:`installation` section for quickstart code
 * The notebooks in the ``notebooks/examples/`` directory of the repository
 
 9. Getting Help

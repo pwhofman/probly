@@ -7,10 +7,8 @@
    core_concepts
    main_components
    advanced_topics
-   examples_and_tutorials
+   examples_&_tutorials
    methods
    contributing
    references
    faq
-
-   notebooks/examples/index

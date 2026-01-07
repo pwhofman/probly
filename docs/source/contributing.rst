@@ -1,7 +1,5 @@
-.. _contributing:
-
 Contributing Guide
-==================
+==================     
 
 ``Probly`` is an open-source project, and we welcome contributions from the
 community. Whether you maintain or expand the library, make a bug report,
