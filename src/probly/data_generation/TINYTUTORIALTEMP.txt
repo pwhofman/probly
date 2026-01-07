@@ -178,3 +178,38 @@ Explanation: How end-to-end(train model start with raw inputs through all the st
             - lr (optimizer): learning rate (e.g., 0.1), reduce if loss is unstable; increase if learning is too slow
             - epsilon (coverage): agreement threshold (e.g., 0.25), lower = stricter; higher = easier to satisfy
             - seed (torch.manual_seed): fixes randomness in data and initialization to reproduce run_summary.json numbers
+
+MultiLib Explanation:
+base_generator.py:
+BaseDataGenerator
+ Overview & Usage
+    What it is:
+        - An abstract base class that defines the common interface for data generators. You cannot use it directly you must implement a concrete subclass!
+
+    Constructor:
+        - BaseDataGenerator(model, dataset, batch_size=32, device=None)
+            - model: any model (e.g., a PyTorch nn.Module), the base class makes no assumption about its type
+            - dataset: any dataset or iterable that yields samples, no restriction to a specific framework
+            - batch_size, device: optional knobs you can set them when constructing or update them later
+
+    Methods you must implement in your subclass:
+        - generate() -> dict[str, Any]:
+            - runs your model over the provided dataset and returns a dictionary of results
+        - save(path: str) -> None
+            - persists the generated results to a file (format is up to you, e.g., JSON, pickle, CSV)
+        - load(path: str) -> dict[str, Any]:
+            - loads results from the file and returns the same data type produced by generate() (a Dict[str, Any])
+
+    Helper provided by the base class:
+        - get_info() -> dict[str, Any]:
+            - Returns lightweight metadata such as {"batch_size": ..., "device": ...
+
+    Typical usage pattern:
+        1) Define a concrete subclass (e.g., FirstOrderDataGenerator) that inherits from BaseDataGenerator.
+        2) Implement generate(), save(), and load() according to your task and file format.
+        3) Instantiate your subclass with a model and dataset, call generate(), optionally save() the outputs, and later load() them when needed.
+
+    Notes:
+        - Keep generate() deterministic by seeding your frameworks when reproducibility matters.
+        - Ensure the dictionary returned by generate() can be serialized by your chosen save() format.
+        - Make load() return the exact structure generate() produced to keep downstream code simple.
