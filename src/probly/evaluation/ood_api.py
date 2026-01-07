@@ -303,7 +303,7 @@ def visualize_ood(
     """Generate visualization plots from OODEvaluationResult type.
 
     Parameters:
-    results : OodEvaluationResult
+    result_data : OodEvaluationResult
         The calculated result object containing scores and curve data.
         Use `compute_ood_evaluation_result` to generate this.
     plot_types : list[str], optional
