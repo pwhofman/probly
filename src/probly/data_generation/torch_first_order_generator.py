@@ -339,22 +339,14 @@ def save_distributions_pt(
     create_dir: bool = False,
     verbose: bool = True,
 ) -> None:
-    """Save a dictionary of tensors as a .pt/.pth file using torch.save.
-
-    Parameters
-    ----------
-    tensor_dict:
-        Mapping of names to tensors to serialize.
-    save_path:
-        Target path. If it does not end with .pt or .pth, .pt will be appended.
-    create_dir:
-        Whether to create the parent directory automatically.
-    verbose:
-        When True, prints a short summary including per-tensor shapes and total size.
-    """
+    """Save distributions to a torch binary file (.pt / .pth)."""
     path = Path(save_path)
-    if not path.suffix.endswith((".pt", ".pth")):
+
+    if path.suffix == "":
         path = path.with_suffix(".pt")
+    elif path.suffix not in {".pt", ".pth"}:
+        _msg_invalid_suffix = "File suffix must be '.pt' or '.pth'."
+        raise ValueError(_msg_invalid_suffix)
 
     if create_dir:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -362,17 +354,7 @@ def save_distributions_pt(
     torch.save(tensor_dict, path)
 
     if verbose:
-        logger.info("Tensor dict has been saved to: %s", str(path))
-        logger.info("Dictionary overview:")
-        total_size = 0.0
-        for key, tensor in tensor_dict.items():
-            if isinstance(tensor, torch.Tensor):
-                size_mb = tensor.element_size() * tensor.nelement() / (1024**2)
-                total_size += size_mb
-                logger.info("- %s: %s, %s, %.2f MB", key, tuple(tensor.shape), tensor.dtype, size_mb)
-            else:
-                logger.info("- %s: non-tensor value of type %s", key, type(tensor).__name__)
-        logger.info("Total size (tensor entries): %.2f MB", total_size)
+        logger.info("Saved distributions to: %s", path)
 
 
 def load_distributions_pt(
@@ -381,38 +363,19 @@ def load_distributions_pt(
     device: str | None = None,
     verbose: bool = True,
 ) -> dict[str, Any]:
-    """Load a tensor dictionary from a .pt/.pth file using torch.load.
-
-    Parameters
-    ----------
-    load_path:
-        Path to the saved tensor dictionary (.pt or .pth).
-    device:
-        Target device for loaded tensors (e.g., 'cpu', 'cuda:0').
-        When None, keeps original device information.
-    verbose:
-        When True, prints a short summary of the loaded contents.
-    """
+    """Load distributions from a torch binary file (.pt / .pth)."""
     path = Path(load_path)
     if not path.exists():
-        msg = f"File not found: {path}"
-        raise FileNotFoundError(msg)
+        _msg_not_found = f"File not found: {path}"
+        raise FileNotFoundError(_msg_not_found)
 
-    tensor_dict = cast("dict[str, Any]", torch.load(path, map_location=device))
+    distributions = torch.load(path, map_location=device)
+
+    if not isinstance(distributions, dict):
+        _msg_not_dict = "Loaded object is not a dictionary."
+        raise TypeError(_msg_not_dict)
 
     if verbose:
-        logger.info("Tensor dict has been loaded from %s", str(path))
-        logger.info("Loaded contents overview:")
-        for key, tensor in tensor_dict.items():
-            if isinstance(tensor, torch.Tensor):
-                logger.info(
-                    "- %s: %s, %s, device: %s",
-                    key,
-                    tuple(tensor.shape),
-                    tensor.dtype,
-                    str(tensor.device),
-                )
-            else:
-                logger.info("- %s: non-tensor value of type %s", key, type(tensor).__name__)
+        logger.info("Loaded distributions from: %s", path)
 
-    return tensor_dict
+    return distributions
