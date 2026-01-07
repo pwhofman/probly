@@ -46,7 +46,7 @@ def setup(binary_torch_model: nn.Sequential, multiclass_torch_model: nn.Sequenti
 def test_fit_binary(setup: SetupReturnType) -> None:
     _, base_model_binary, _, _, calibration_set = setup
 
-    ir_calibrator = IsotonicRegressionCalibrator(base_model_binary, torch.device("cpu"))
+    ir_calibrator = IsotonicRegressionCalibrator(base_model_binary)
 
     assert len(ir_calibrator.calibrator) == 0
 
@@ -59,7 +59,7 @@ def test_fit_binary(setup: SetupReturnType) -> None:
 def test_predict_binary(setup: SetupReturnType) -> None:
     _, base_model_binary, inputs, _, calibration_set = setup
 
-    ir_calibrator = IsotonicRegressionCalibrator(base_model_binary, torch.device("cpu"))
+    ir_calibrator = IsotonicRegressionCalibrator(base_model_binary)
     ir_calibrator.fit(calibration_set)
 
     probs_calibrated = ir_calibrator.predict(inputs)
@@ -73,7 +73,7 @@ def test_predict_binary(setup: SetupReturnType) -> None:
 def test_fit_multiclass(setup: SetupReturnType) -> None:
     base_model_multiclass, _, _, calibration_set, _ = setup
 
-    ir_calibrator = IsotonicRegressionCalibrator(base_model_multiclass, torch.device("cpu"))
+    ir_calibrator = IsotonicRegressionCalibrator(base_model_multiclass)
 
     assert len(ir_calibrator.calibrator) == 0
 
@@ -88,7 +88,7 @@ def test_fit_multiclass(setup: SetupReturnType) -> None:
 def test_predict_multiclass(setup: SetupReturnType) -> None:
     base_model_multiclass, _, inputs, calibration_set, _ = setup
 
-    ir_calibrator = IsotonicRegressionCalibrator(base_model_multiclass, torch.device("cpu"))
+    ir_calibrator = IsotonicRegressionCalibrator(base_model_multiclass)
     ir_calibrator.fit(calibration_set)
 
     probs_calibrated = ir_calibrator.predict(inputs)

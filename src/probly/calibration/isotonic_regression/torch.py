@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 from sklearn.isotonic import IsotonicRegression
-from torch import Tensor, cat, device as TorchDevice, nn, no_grad, sigmoid, softmax, tensor, unique
+from torch import Tensor, as_tensor, cat, nn, no_grad, sigmoid, softmax, unique
 
 if TYPE_CHECKING:
     from torch.utils.data import DataLoader
@@ -15,16 +15,14 @@ if TYPE_CHECKING:
 class IsotonicRegressionCalibrator:
     """Class for the isotonic regression calibration."""
 
-    def __init__(self, base_model: nn.Module, device: TorchDevice) -> None:
+    def __init__(self, base_model: nn.Module) -> None:
         """Set up the wrapper.
 
         Args:
             base_model: The base model to calibrate
-            device: The device that torch uses for the model
 
         """
         self.model = base_model
-        self.device = device
         self.calibrator: list[IsotonicRegression] = []
 
     def fit(self, calibration_set: DataLoader) -> None:
@@ -75,7 +73,6 @@ class IsotonicRegressionCalibrator:
         self.model.eval()
 
         with no_grad():
-            x = x.to(self.device)
             logits = self.model(x)
 
             if self.calibrator is None:
@@ -90,14 +87,14 @@ class IsotonicRegressionCalibrator:
                 ).T
 
                 calibrated_probs = calibrated_probs / calibrated_probs.sum(axis=1, keepdims=True)
-                return tensor(calibrated_probs, device=self.device)
+                return as_tensor(calibrated_probs, device=x.device, dtype=logits.dtype)
 
             # Case Binary Model
             scores = self._get_binary_scores(logits)
             probabilities = sigmoid(scores).cpu().numpy()
             calibrated_probs = self.calibrator[0].predict(probabilities)
             calibrated_probs = np.stack([1 - calibrated_probs, calibrated_probs], axis=1)
-            return tensor(calibrated_probs, device=self.device, dtype=logits.dtype)
+            return as_tensor(calibrated_probs, device=x.device, dtype=logits.dtype)
 
     def _extract_logits_and_labels(self, dataset: DataLoader) -> tuple[Tensor, Tensor]:
         """Returns the logits and labels for a dataset as a tuple (logits, labels)."""
@@ -108,7 +105,7 @@ class IsotonicRegressionCalibrator:
 
         with no_grad():
             for x, y in dataset:
-                inpt = x.to(self.device)
+                inpt = x.to("cpu")
                 output = self.model(inpt)
                 logits.append(output.cpu())
                 labels.append(y.cpu())
