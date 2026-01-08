@@ -25,7 +25,7 @@ def _uet_dispatch(
     _lr: float = 1e-3,
     _device: str = "cpu",
 ) -> None:
-    msg = "No unified evidential trainer registered."
+    msg = "No support for given framework available."
     raise TypeError(msg)
 
 
