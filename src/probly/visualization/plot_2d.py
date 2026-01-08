@@ -22,7 +22,7 @@ class IntervalVisualizer:
 
         returns: cartesian coordinates.
         """
-        p1, p2 = probs
+        _p1, p2 = probs
         x = p2
         y = 0
         return x, y
@@ -51,7 +51,7 @@ class IntervalVisualizer:
         coords = np.array([self.probs_to_coords_2d(p) for p in probs])
 
         if ax is None:
-            fig, ax = plt.subplots(figsize=(6, 4))
+            _fig, ax = plt.subplots(figsize=(6, 4))
 
         y_marg = np.array([0.1, -0.1])
 
