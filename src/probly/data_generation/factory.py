@@ -1,21 +1,30 @@
-from typing import Any, Optional
+# noqa: INP001
+"""Factory for creating framework-specific data generators.
 
+Selects an appropriate BaseDataGenerator implementation based on the
+framework argument ("pytorch", "tensorflow", or "jax").
+"""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+from .jax_generator import JAXDataGenerator
 from .pytorch_generator import PyTorchDataGenerator
 from .tensorflow_generator import TensorFlowDataGenerator
-from .jax_generator import JAXDataGenerator
+
+if TYPE_CHECKING:  # import for type checking only
+    from .base_generator import BaseDataGenerator
 
 
 def create_data_generator(
     framework: str,
-    model: Any,
-    dataset: Any,
+    model: object,
+    dataset: object,
     batch_size: int = 32,
-    device: Optional[str] = None,
-):
-    """
-    Create a data generator based on the selected framework.
-    """
-
+    device: str | None = None,
+) -> BaseDataGenerator[object, object, str | None]:
+    """Create a data generator based on the selected framework."""
     framework = framework.lower()
 
     if framework == "pytorch":
@@ -42,4 +51,5 @@ def create_data_generator(
             device=device,
         )
 
-    raise ValueError(f"Unknown framework: {framework}")
+    msg = f"Unknown framework: {framework}"
+    raise ValueError(msg)

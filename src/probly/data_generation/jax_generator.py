@@ -1,32 +1,46 @@
-from typing import Dict, Any, Optional
+"""JAX data generator implementation.
+
+Runs a JAX model over input arrays, collects simple statistics, and
+provides helpers to persist results.
+"""
+
+# ruff: noqa: INP001
+from __future__ import annotations
+
 import json
+import logging
+from pathlib import Path
+from typing import Any
+
 import jax
 import jax.numpy as jnp
 
 from .base_generator import BaseDataGenerator
 
+logger = logging.getLogger(__name__)
 
-class JAXDataGenerator(BaseDataGenerator):
-    """
-    Data generator for JAX models.
-    """
+
+class JAXDataGenerator(BaseDataGenerator[object, tuple[object, object], str | None]):
+    """Data generator for JAX models."""
 
     def __init__(
         self,
-        model,          # JAX model function
-        dataset,        # (x, y) as numpy or jax arrays
+        model: object,  # JAX model function (callable)
+        dataset: tuple[object, object],  # (x, y) as numpy or jax arrays
         batch_size: int = 32,
-        device: Optional[str] = None,
-    ):
+        device: str | None = None,
+    ) -> None:
+        """Initialize the generator with model, dataset, and runtime options."""
         super().__init__(model, dataset, batch_size, device)
 
         self.device = device or "cpu"
-        self.results: Dict[str, Any] = {}
+        self.results: dict[str, Any] = {}
 
-        print("JAX DataGenerator initialized.")
+        logger.info("JAX DataGenerator initialized")
 
-    def generate(self) -> Dict[str, Any]:
-        print("Generating model statistics with JAX...")
+    def generate(self) -> dict[str, Any]:
+        """Run the model on the dataset and compute basic metrics."""
+        logger.info("Generating model statistics with JAX...")
 
         x, y = self.dataset
         x = jnp.array(x)
@@ -62,31 +76,34 @@ class JAXDataGenerator(BaseDataGenerator):
 
         return self.results
 
-    def _count(self, values) -> Dict[int, int]:
+    def _count(self, values: jnp.ndarray) -> dict[int, int]:
         counts = {}
-        for v in values.tolist():
-            v = int(v)
-            counts[v] = counts.get(v, 0) + 1
+        for val in values.tolist():
+            key = int(val)
+            counts[key] = counts.get(key, 0) + 1
         return counts
 
     def save(self, path: str) -> None:
+        """Persist generated results to a JSON file at path."""
         if not self.results:
-            print("No results to save.")
+            logger.info("No results to save.")
             return
 
         try:
-            with open(path, "w") as f:
+            with Path(path).open("w", encoding="utf-8") as f:
                 json.dump(self.results, f, indent=2)
-            print(f"Results saved to {path}")
-        except Exception as e:
-            print("Saving failed:", e)
+            logger.info("Results saved to %s", path)
+        except OSError:
+            logger.exception("Saving failed")
 
-    def load(self, path: str) -> Dict[str, Any]:
+    def load(self, path: str) -> dict[str, Any]:
+        """Load results from a JSON file at path."""
         try:
-            with open(path, "r") as f:
+            with Path(path).open(encoding="utf-8") as f:
                 self.results = json.load(f)
-            print(f"Results loaded from {path}")
-            return self.results
-        except Exception as e:
-            print("Loading failed:", e)
-            return {}
+        except (OSError, json.JSONDecodeError):
+            logger.exception("Loading failed")
+            self.results = {}
+        else:
+            logger.info("Results loaded from %s", path)
+        return self.results

@@ -1,5 +1,7 @@
 """JAX FirstOrder data generator."""
 
+# ruff: noqa: INP001
+
 from __future__ import annotations
 
 from dataclasses import dataclass
