@@ -73,11 +73,39 @@ def normalize_input(input_data: np.ndarray) -> np.ndarray:
     return input_data
 
 
+def _choice_flag_result(
+    choice: str | None = None,
+) -> tuple[bool, bool]:
+    """Helper function to evaluate the user's choice what to show.
+
+    Args:
+        choice: Either "MLE", "Credal", "Probability" or None.
+    """
+    match choice:
+        case None:
+            mle_flag = True
+            credal_flag = True
+        case "MLE":
+            mle_flag = True
+            credal_flag = False
+        case "Credal":
+            mle_flag = False
+            credal_flag = True
+        case "Probability":
+            mle_flag = False
+            credal_flag = False
+        case _:
+            msgchoice = "Choice must be MLE, Credal, Probability or None."
+            raise ValueError(msgchoice)
+    return mle_flag, credal_flag
+
+
 def dispatch_plot(
     input_data: np.ndarray,
     labels: list[str] | None = None,
     title: str | None = None,
     choice: str | None = None,
+    minmax: bool | None = None,
 ) -> plt.Axes:
     """Selects and executes the correct plotting function based on class count.
 
@@ -86,6 +114,7 @@ def dispatch_plot(
         labels: List of labels corresponding to the classes.
         title: Manages custom or predefined title.
         choice: Allows either "MLE", "Credal", "Probability" or None.
+        minmax: Enables to show the Min/Max lines for ternary plots.
     """
     # Validates input.
     input_data = check_shape(input_data)
@@ -106,22 +135,10 @@ def dispatch_plot(
     if title is None:
         title = f"Credal Plot ({n_classes} Classes)"
 
-    match choice:
-        case None:
-            mle_flag = True
-            credal_flag = True
-        case "MLE":
-            mle_flag = True
-            credal_flag = False
-        case "Credal":
-            mle_flag = False
-            credal_flag = True
-        case "Probability":
-            mle_flag = False
-            credal_flag = False
-        case _:
-            msgchoice = "Choice must be MLE, Credal, Probability or None."
-            raise ValueError(msgchoice)
+    mle_flag, credal_flag = _choice_flag_result(choice)
+
+    if minmax is None:
+        minmax = False
 
     # Depending on number of classes chooses correct plotting function.
     if n_classes == 2:
@@ -130,7 +147,14 @@ def dispatch_plot(
 
     if n_classes == 3:
         ter = TernaryVisualizer()
-        ax = ter.ternary_plot(points, labels=labels, title=title, mle_flag=mle_flag, credal_flag=credal_flag)
+        ax = ter.ternary_plot(
+            points,
+            labels=labels,
+            title=title,
+            mle_flag=mle_flag,
+            credal_flag=credal_flag,
+            minmax_flag=minmax,
+        )
         return ax
 
     multi = MultiVisualizer()

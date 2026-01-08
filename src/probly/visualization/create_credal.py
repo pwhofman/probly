@@ -13,6 +13,7 @@ def create_credal_plot(
     labels: list[str] | None = None,
     title: str | None = None,
     choice: str | None = None,
+    minmax: bool | None = None,
     *,
     show: bool = True,
 ) -> plt.Axes | None:
@@ -23,9 +24,10 @@ def create_credal_plot(
     labels: List of labels corresponding to the input data.
     title: Custom or predefined title.
     choice: Either "MLE", "Credal", "Probability" or None.
+    minmax: Enables to show the Min/Max lines for ternary plots.
     show: Enables the user to decide whether to show the plot or not.
     """
-    plot = dispatch_plot(input_data, labels=labels, title=title, choice=choice)
+    plot = dispatch_plot(input_data, labels=labels, title=title, choice=choice, minmax=minmax)
     if show:
         plt.show()
     return plot
