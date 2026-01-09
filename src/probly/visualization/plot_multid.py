@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
-from matplotlib.patches import Circle, Polygon, RegularPolygon
+from matplotlib.patches import Circle, Patch, Polygon, RegularPolygon
 from matplotlib.path import Path
 from matplotlib.projections import register_projection
 from matplotlib.projections.polar import PolarAxes
@@ -42,10 +42,12 @@ def radar_factory(num_vars: int, frame: str = "circle") -> np.ndarray:  # noqa: 
         def fill(self, *args: object, **kwargs: object) -> list[Polygon]:
             """Override fill to handle closed polygons by default."""
             closed = kwargs.pop("closed", True)
-            return super().fill(*args, closed=closed, **kwargs)
+            result = super().fill(*args, closed=closed, **kwargs)
+            return cast("list[Polygon]", result)
 
         def plot(self, *args: object, **kwargs: object) -> list[Line2D]:
-            lines = super().plot(*args, **kwargs)
+            result = super().plot(*args, **kwargs)
+            lines = cast("list[Line2D]", result)
             for line in lines:
                 self._close_line(line)
             return lines
@@ -60,7 +62,7 @@ def radar_factory(num_vars: int, frame: str = "circle") -> np.ndarray:  # noqa: 
         def set_varlabels(self, labels: list[str]) -> None:
             self.set_thetagrids(np.degrees(theta), labels)
 
-        def _gen_axes_patch(self) -> None:
+        def _gen_axes_patch(self) -> Patch:
             if frame == "circle":
                 return Circle((0.5, 0.5), 0.5)
             if frame == "polygon":
@@ -68,7 +70,7 @@ def radar_factory(num_vars: int, frame: str = "circle") -> np.ndarray:  # noqa: 
             msg = f"Unknown value for 'frame': {frame}"
             raise ValueError(msg)
 
-        def _gen_axes_spines(self) -> None:
+        def _gen_axes_spines(self) -> Patch:
             if frame == "circle":
                 return super()._gen_axes_spines()
             if frame == "polygon":
