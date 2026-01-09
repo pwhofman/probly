@@ -114,10 +114,19 @@ class MultiVisualizer:
         if ax is None:
             fig, ax = plt.subplots(figsize=(6, 6), subplot_kw={"projection": "radar"})
 
-        # Setup Axis
+        # Setup Axis with line for better visibility
         ax.set_rgrids([0.2, 0.4, 0.6, 0.8, 1.0])
         ax.set_ylim(0.0, 1.0)
         ax.set_varlabels(labels)
+        ax.set_rlabel_position(0)
+        ref_theta = 0.0
+        ax.plot(
+            [ref_theta, ref_theta],
+            [0.0, 1.0],
+            color="red",
+            linewidth=2,
+            zorder=1,
+        )
 
         max_class = np.argmax(probs, axis=1)
         max_probs = np.max(probs, axis=1)
