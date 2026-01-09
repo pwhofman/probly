@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING
 
-from matplotlib.patches import Circle, RegularPolygon
+from matplotlib.patches import Circle, Polygon, RegularPolygon
 from matplotlib.path import Path
 from matplotlib.projections import register_projection
 from matplotlib.projections.polar import PolarAxes
@@ -15,6 +15,9 @@ import numpy as np
 
 import probly.visualization.config as cfg
 
+if TYPE_CHECKING:
+    from matplotlib.lines import Line2D
+
 
 def radar_factory(num_vars: int, frame: str = "circle") -> np.ndarray:  # noqa: C901
     """Create a radar chart with `num_vars` axes."""
@@ -23,7 +26,8 @@ def radar_factory(num_vars: int, frame: str = "circle") -> np.ndarray:  # noqa: 
     class RadarTransform(PolarAxes.PolarTransform):
         def transform_path_non_affine(self, path: Path) -> Path:
             # Note: _interpolation_steps is internal logic needed for this projection hack
-            if path._interpolation_steps > 1:  # noqa: SLF001
+            interpolation_steps = getattr(path, "_interpolation_steps", 1)
+            if interpolation_steps > 1:
                 path = path.interpolated(num_vars)
             return Path(self.transform(path.vertices), path.codes)
 
@@ -31,22 +35,22 @@ def radar_factory(num_vars: int, frame: str = "circle") -> np.ndarray:  # noqa: 
         name = "radar"
         PolarTransform = RadarTransform
 
-        def __init__(self, *args: Any, **kwargs: Any) -> None:  # noqa: ANN401
+        def __init__(self, *args: object, **kwargs: object) -> None:
             super().__init__(*args, **kwargs)
             self.set_theta_zero_location("N")
 
-        def fill(self, *args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
+        def fill(self, *args: object, **kwargs: object) -> list[Polygon]:
             """Override fill to handle closed polygons by default."""
             closed = kwargs.pop("closed", True)
-            return super().fill(closed=closed, *args, **kwargs)  # noqa: B026
+            return super().fill(*args, closed=closed, **kwargs)
 
-        def plot(self, *args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
+        def plot(self, *args: object, **kwargs: object) -> list[Line2D]:
             lines = super().plot(*args, **kwargs)
             for line in lines:
                 self._close_line(line)
             return lines
 
-        def _close_line(self, line: Any) -> None:  # noqa: ANN401
+        def _close_line(self, line: Line2D) -> None:
             x, y = line.get_data()
             if x[0] != x[-1]:
                 x = np.append(x, x[0])
@@ -56,7 +60,7 @@ def radar_factory(num_vars: int, frame: str = "circle") -> np.ndarray:  # noqa: 
         def set_varlabels(self, labels: list[str]) -> None:
             self.set_thetagrids(np.degrees(theta), labels)
 
-        def _gen_axes_patch(self) -> Any:  # noqa: ANN401
+        def _gen_axes_patch(self) -> None:
             if frame == "circle":
                 return Circle((0.5, 0.5), 0.5)
             if frame == "polygon":
@@ -64,7 +68,7 @@ def radar_factory(num_vars: int, frame: str = "circle") -> np.ndarray:  # noqa: 
             msg = f"Unknown value for 'frame': {frame}"
             raise ValueError(msg)
 
-        def _gen_axes_spines(self) -> Any:  # noqa: ANN401
+        def _gen_axes_spines(self) -> None:
             if frame == "circle":
                 return super()._gen_axes_spines()
             if frame == "polygon":
