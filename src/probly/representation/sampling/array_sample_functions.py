@@ -409,6 +409,35 @@ def array_squeeze_function(
     return type(a)(res, sample_axis=new_sample_axis)
 
 
+@array_function.register(np.apply_along_axis)
+@array_function_override
+def array_apply_along_axis_function(
+    func: Callable,
+    params: BoundArguments,
+) -> Any:  # noqa: ANN401
+    """Implementation of np.apply_along_axis for sample arrays."""
+    func1d = params.arguments["func1d"]
+    axis = params.arguments["axis"]
+    arr = params.arguments["arr"]
+
+    arr_array, arr_sample_axis = array_sample_internals(arr)
+
+    if arr_array is None or arr_sample_axis is None:
+        return func._implementation(func1d, axis, arr)  # type: ignore[attr-defined] # noqa: SLF001
+
+    arr_ndim = arr_array.ndim
+    axis = axis if axis >= 0 else arr_ndim + axis
+
+    res = func._implementation(func1d, axis, arr_array)  # type: ignore[attr-defined]  # noqa: SLF001
+
+    if axis == arr_sample_axis or not isinstance(res, np.ndarray):
+        return res
+
+    new_sample_axis = arr_sample_axis if arr_sample_axis < axis else res.ndim - arr_ndim + arr_sample_axis
+
+    return type(arr)(res, sample_axis=new_sample_axis)
+
+
 #     np.argsort,
 #     np.cumprod,
 #     np.cumsum,
