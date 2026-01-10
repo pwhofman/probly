@@ -39,7 +39,7 @@ def register(cls: LazyType, traverser: RegisteredLooseTraverser) -> None:
 
 def batchensemble[T: Predictor](
     base: T,
-    num_members: int,
+    num_members: int = NUM_MEMBERS.default,
     s_mean: float = S_MEAN.default,
     s_std: float = S_STD.default,
     r_mean: float = R_MEAN.default,
