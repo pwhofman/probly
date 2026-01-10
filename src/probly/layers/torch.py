@@ -84,10 +84,10 @@ class BatchEnsembleLinear(nn.Module):
             msg = f"Expected first dim={self.num_members}, got {x.size(0)}"
             raise ValueError(msg)
 
-        x *= self.s.unsqueeze(1)
+        x = x * self.s.clone().unsqueeze(1)
         y = F.linear(x, self.weight, bias=None)
-        y *= self.r.unsqueeze(1)
-        y += self.bias
+        y = y * self.r.clone().unsqueeze(1)
+        y = y + self.bias
         return y
 
 
