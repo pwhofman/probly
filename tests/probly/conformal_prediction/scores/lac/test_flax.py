@@ -9,7 +9,7 @@ from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
-from probly.conformal_prediction.methods.split import SplitConformalPredictor
+from probly.conformal_prediction.methods.split import SplitConformalClassifier
 from probly.conformal_prediction.scores.lac.common import LACScore
 
 pytest.importorskip("flax")
@@ -256,7 +256,7 @@ def test_lacscore_with_trained_flax_model() -> None:
     assert pred_scores.shape == (len(x_test), 3)
 
     # create conformal predictor
-    cp_predictor = SplitConformalPredictor(
+    cp_predictor = SplitConformalClassifier(
         model=predictor,
         score=score,
         use_accretive=True,
@@ -364,7 +364,7 @@ def test_lacscore_iris_coverage_guarantee() -> None:
     score = LACScore(model=predictor)
 
     # create conformal predictor
-    cp_predictor = SplitConformalPredictor(
+    cp_predictor = SplitConformalClassifier(
         model=predictor,
         score=score,
         use_accretive=True,
@@ -478,7 +478,7 @@ def test_lacscore_iris_multiple_seeds() -> None:
         score = LACScore(model=predictor)
 
         # create conformal predictor
-        cp_predictor = SplitConformalPredictor(
+        cp_predictor = SplitConformalClassifier(
             model=predictor,
             score=score,
             use_accretive=True,

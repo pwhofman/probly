@@ -14,6 +14,7 @@ import numpy.typing as npt
 
 from lazy_dispatch import lazydispatch
 from probly.conformal_prediction.methods.common import Predictor, predict_probs
+from probly.conformal_prediction.scores.common import ClassificationScore
 
 
 @lazydispatch
@@ -41,7 +42,7 @@ def register(cls: LazyType, func: Callable) -> None:
     aps_score_func.register(cls=cls, func=func)
 
 
-class APSScore:
+class APSScore(ClassificationScore):
     """Adaptive Prediction Sets (APS) nonconformity score."""
 
     def __init__(

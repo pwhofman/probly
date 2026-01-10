@@ -11,7 +11,7 @@ from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
-from probly.conformal_prediction.methods.split import SplitConformal, SplitConformalPredictor
+from probly.conformal_prediction.methods.split import SplitConformal, SplitConformalClassifier
 from probly.conformal_prediction.scores.aps.common import APSScore
 
 pytest.importorskip("flax")
@@ -166,9 +166,9 @@ class TestAPSScoreFlax:
         assert pred_scores.shape == (10, 3)
 
     def test_apsscore_integration(self, flax_predictor: FlaxPredictor) -> None:
-        """Test APSScore integrated in SplitConformalPredictor."""
+        """Test APSScore integrated in SplitConformalClassifier."""
         score = APSScore(model=flax_predictor, randomize=False)
-        cp_predictor = SplitConformalPredictor(model=flax_predictor, score=score)
+        cp_predictor = SplitConformalClassifier(model=flax_predictor, score=score)
 
         # create test data
         rng = np.random.default_rng(42)
@@ -236,7 +236,7 @@ class TestAPSScoreFlax:
     def test_with_split_conformal(self, flax_predictor: FlaxPredictor) -> None:
         """Test integration with split conformal."""
         score = APSScore(model=flax_predictor, randomize=False)
-        predictor = SplitConformalPredictor(model=flax_predictor, score=score)
+        predictor = SplitConformalClassifier(model=flax_predictor, score=score)
 
         # create full dataset
         rng = np.random.default_rng(42)
@@ -311,7 +311,7 @@ class TestAPSScoreFlax:
 
         # create score and predictor
         score = APSScore(model=predictor_wrapper, randomize=False, random_state=42)
-        predictor = SplitConformalPredictor(model=predictor_wrapper, score=score)
+        predictor = SplitConformalClassifier(model=predictor_wrapper, score=score)
 
         # calibrate
         threshold = predictor.calibrate(x_calib_scaled, y_calib, alpha=0.1)
@@ -386,7 +386,7 @@ class TestAPSScoreFlax:
 
             # create and calibrate predictor
             score = APSScore(model=predictor_wrapper, randomize=False, random_state=seed)
-            predictor = SplitConformalPredictor(model=predictor_wrapper, score=score)
+            predictor = SplitConformalClassifier(model=predictor_wrapper, score=score)
 
             threshold = predictor.calibrate(x_calib_scaled, y_calib, alpha=0.1)
 

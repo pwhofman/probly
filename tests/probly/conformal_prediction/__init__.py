@@ -6,7 +6,7 @@ from abc import ABC
 
 import probly.conformal_prediction as cp
 from probly.conformal_prediction import ConformalPredictor
-from probly.conformal_prediction.methods import SplitConformalPredictor, predict_probs
+from probly.conformal_prediction.methods import SplitConformalClassifier, predict_probs
 import probly.conformal_prediction.methods.common
 import probly.conformal_prediction.methods.split
 from probly.conformal_prediction.scores import Score
@@ -29,7 +29,7 @@ def test_import_conformal_prediction() -> None:
 
 def test_import_methods() -> None:
     """Test that methods submodule can be imported."""
-    assert SplitConformalPredictor is not None
+    assert SplitConformalClassifier is not None
     assert predict_probs is not None
 
 

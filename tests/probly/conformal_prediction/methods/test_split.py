@@ -8,7 +8,7 @@ from typing import Any
 import numpy as np
 import pytest
 
-from probly.conformal_prediction.methods.split import SplitConformal, SplitConformalPredictor
+from probly.conformal_prediction.methods.split import SplitConformal, SplitConformalClassifier
 from probly.conformal_prediction.scores.aps.common import APSScore
 from probly.conformal_prediction.scores.lac.common import LACScore
 
@@ -77,8 +77,8 @@ def test_split_validation_checks() -> None:
         splitter.split(x_mismatch, y_mismatch)
 
 
-def test_split_conformal_predictor_initialization() -> None:
-    """Test SplitConformalPredictor initialization."""
+def test_split_conformal_classifier_initialization() -> None:
+    """Test SplitConformalClassifier initialization."""
 
     class MockModel:
         def __call__(self, x: Sequence[Any]) -> np.ndarray:
@@ -88,12 +88,12 @@ def test_split_conformal_predictor_initialization() -> None:
 
     # Test with APSScore
     aps_score = APSScore(model)
-    predictor_aps = SplitConformalPredictor(model, aps_score)
+    predictor_aps = SplitConformalClassifier(model, aps_score)
     assert predictor_aps.score is aps_score
     assert predictor_aps.model is model
 
     # Test with LACScore
     lac_score = LACScore(model)
-    predictor_lac = SplitConformalPredictor(model, lac_score, use_accretive=True)
+    predictor_lac = SplitConformalClassifier(model, lac_score, use_accretive=True)
     assert predictor_lac.score is lac_score
     assert predictor_lac.use_accretive is True

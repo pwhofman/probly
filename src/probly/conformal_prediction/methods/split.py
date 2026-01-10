@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from probly.conformal_prediction.scores.common import Score
+    from probly.conformal_prediction.scores.common import ClassificationScore, RegressionScore
 
 
 import numpy as np
@@ -15,7 +15,12 @@ import numpy.typing as npt
 import torch
 from torch import Tensor
 
-from probly.conformal_prediction.methods.common import ConformalPredictor, Predictor, predict_probs
+from probly.conformal_prediction.methods.common import (
+    ConformalClassifier,
+    ConformalRegressor,
+    Predictor,
+    predict_probs,
+)
 from probly.conformal_prediction.scores.lac.common import accretive_completion
 from probly.conformal_prediction.utils.quantile import calculate_quantile
 
@@ -90,16 +95,16 @@ class SplitConformal:
         )
 
 
-class SplitConformalPredictor(ConformalPredictor):
+class SplitConformalClassifier(ConformalClassifier):
     """Generic split conformal predictor for classification."""
 
     def __init__(
         self,
         model: Predictor,
-        score: Score,
+        score: ClassificationScore,
         use_accretive: bool = False,
     ) -> None:
-        """Create a split conformal predictor."""
+        """Create a split conformal predictor for classification."""
         super().__init__(model=model)
         self.score = score
         self.use_accretive = use_accretive
@@ -166,3 +171,61 @@ class SplitConformalPredictor(ConformalPredictor):
             prediction_sets = accretive_completion(prediction_sets, probs_np)
 
         return prediction_sets
+
+
+class SplitConformalRegressor(ConformalRegressor):
+    """Generic split conformal predictor for regression."""
+
+    def __init__(
+        self,
+        model: Predictor,
+        score: RegressionScore,
+    ) -> None:
+        """Create a split conformal predictor for regression."""
+        super().__init__(model=model)
+        self.score = score
+
+    def calibrate(
+        self,
+        x_cal: Sequence[Any],
+        y_cal: Sequence[Any],
+        alpha: float,
+    ) -> float:
+        """Calibrate the predictor on a calibration dataset."""
+        # nonconformity score from object
+        self.nonconformity_scores = self.score.calibration_nonconformity(x_cal, y_cal)
+
+        # ensure scores are on CPU/Numpy for quantile calculation
+        scores_for_quantile = self.nonconformity_scores
+        if torch is not None and isinstance(scores_for_quantile, Tensor):
+            scores_for_quantile = scores_for_quantile.detach().cpu().numpy()
+        else:
+            # covers numpy + jax
+            scores_for_quantile = np.asarray(scores_for_quantile)
+
+        # calculate quantile threshold
+        self.threshold = calculate_quantile(scores_for_quantile, alpha)
+
+        self.is_calibrated = True
+        return self.threshold
+
+    def predict(
+        self,
+        x_test: Sequence[Any],
+        alpha: float,  # noqa: ARG002
+    ) -> npt.NDArray[np.floating]:
+        """Return prediction intervals as a (n_instances, 2)-matrix [lower, upper]."""
+        if not self.is_calibrated or self.threshold is None:
+            msg = "Predictor must be calibrated before predict()."
+            raise RuntimeError(msg)
+
+        # predict
+        y_hat = self.model(x_test)
+
+        # convert predictions to Numpy for interval construction
+        if torch is not None and isinstance(y_hat, Tensor):
+            y_hat_np = y_hat.detach().cpu().numpy()
+        else:
+            y_hat_np = np.asarray(y_hat, dtype=float)
+
+        return self.score.construct_intervals(y_hat_np, self.threshold)

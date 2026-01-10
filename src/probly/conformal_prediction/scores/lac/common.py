@@ -14,6 +14,7 @@ import numpy.typing as npt
 
 from lazy_dispatch import lazydispatch
 from probly.conformal_prediction.methods.common import Predictor, predict_probs
+from probly.conformal_prediction.scores.common import ClassificationScore
 
 
 @lazydispatch
@@ -65,7 +66,7 @@ def accretive_completion(
     return completed_sets
 
 
-class LACScore:
+class LACScore(ClassificationScore):
     """LAC Nonconformity-Score."""
 
     def __init__(self, model: Predictor) -> None:

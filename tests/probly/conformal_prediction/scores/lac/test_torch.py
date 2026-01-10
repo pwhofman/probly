@@ -13,7 +13,7 @@ import torch
 from torch import nn, optim
 
 from probly.conformal_prediction.methods.common import predict_probs
-from probly.conformal_prediction.methods.split import SplitConformalPredictor
+from probly.conformal_prediction.methods.split import SplitConformalClassifier
 from probly.conformal_prediction.scores.lac.common import LACScore
 
 
@@ -118,10 +118,10 @@ def test_lacscore_with_torch_model() -> None:
 
 
 def test_lacscore_in_split_predictor() -> None:
-    """Test LACScore integrated in SplitConformalPredictor."""
+    """Test LACScore integrated in SplitConformalClassifier."""
     model = MockTorchModel(true_prob=0.8)
     score = LACScore(model=model)
-    predictor = SplitConformalPredictor(model=model, score=score, use_accretive=True)
+    predictor = SplitConformalClassifier(model=model, score=score, use_accretive=True)
 
     rng = np.random.default_rng(42)
 
@@ -163,7 +163,7 @@ def test_lacscore_accretive_completion_comparison() -> None:
     y_cal = rng.integers(0, 3, size=50)
 
     # Test without accretive completion
-    predictor_no_accretive = SplitConformalPredictor(
+    predictor_no_accretive = SplitConformalClassifier(
         model=model,
         score=score,
         use_accretive=False,
@@ -173,7 +173,7 @@ def test_lacscore_accretive_completion_comparison() -> None:
     sets_no_accretive = predictor_no_accretive.predict(x_test, alpha=0.1)
 
     # Test with accretive completion
-    predictor_with_accretive = SplitConformalPredictor(
+    predictor_with_accretive = SplitConformalClassifier(
         model=model,
         score=score,
         use_accretive=True,
@@ -332,7 +332,7 @@ def test_lacscore_iris_coverage_guarantee() -> None:
     score = LACScore(model=model)
 
     # create conformal predictor
-    cp_predictor = SplitConformalPredictor(
+    cp_predictor = SplitConformalClassifier(
         model=model,
         score=score,
         use_accretive=True,
@@ -413,7 +413,7 @@ def test_lacscore_iris_multiple_seeds() -> None:
         score = LACScore(model=model)
 
         # create conformal predictor
-        cp_predictor = SplitConformalPredictor(
+        cp_predictor = SplitConformalClassifier(
             model=model,
             score=score,
             use_accretive=True,

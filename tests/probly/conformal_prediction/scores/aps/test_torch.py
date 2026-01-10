@@ -13,7 +13,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
-from probly.conformal_prediction.methods.split import SplitConformal, SplitConformalPredictor
+from probly.conformal_prediction.methods.split import SplitConformal, SplitConformalClassifier
 from probly.conformal_prediction.scores.aps.common import APSScore
 
 
@@ -107,9 +107,9 @@ class TestAPSScoreTorch:
         assert np.all(cal_scores <= 1.0)  # APS scores should be <= 1
 
     def test_apsscore_in_split_predictor(self, simple_model: nn.Module) -> None:
-        """Test APSScore integrated in SplitConformalPredictor."""
+        """Test APSScore integrated in SplitConformalClassifier."""
         score = APSScore(model=simple_model, randomize=False)
-        predictor = SplitConformalPredictor(model=simple_model, score=score)
+        predictor = SplitConformalClassifier(model=simple_model, score=score)
 
         rng = np.random.default_rng(42)
 
@@ -133,7 +133,7 @@ class TestAPSScoreTorch:
     def test_with_split_conformal(self, simple_model: nn.Module) -> None:
         """Test integration with split conformal."""
         score = APSScore(model=simple_model, randomize=False)
-        predictor = SplitConformalPredictor(model=simple_model, score=score)
+        predictor = SplitConformalClassifier(model=simple_model, score=score)
 
         # create full dataset
         rng = np.random.default_rng(42)
@@ -208,7 +208,7 @@ class TestAPSScoreTorch:
 
         # create score and predictor
         score = APSScore(model=model, randomize=False, random_state=42)
-        predictor = SplitConformalPredictor(model=model, score=score)
+        predictor = SplitConformalClassifier(model=model, score=score)
 
         # calibrate
         threshold = predictor.calibrate(x_calib_scaled, y_calib, alpha=0.1)
@@ -386,7 +386,7 @@ class TestAPSScoreTorch:
 
             # create score and predictor
             score = APSScore(model=model, randomize=False, random_state=seed)
-            predictor = SplitConformalPredictor(model=model, score=score)
+            predictor = SplitConformalClassifier(model=model, score=score)
 
             # calibrate
             threshold = predictor.calibrate(x_calib_scaled, y_calib, alpha=0.1)

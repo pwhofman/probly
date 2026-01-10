@@ -8,10 +8,10 @@ from typing import Any
 import numpy as np
 import numpy.typing as npt
 
-from probly.conformal_prediction.scores.common import Score
+from probly.conformal_prediction.scores.common import ClassificationScore
 
 
-class MockScore(Score):
+class MockScore(ClassificationScore):
     """Mock implementation of Score protocol for testing."""
 
     def __init__(self, fixed_score: float = 0.5) -> None:
@@ -36,6 +36,107 @@ class MockScore(Score):
         n = len(x_test) if hasattr(x_test, "__len__") else 1
         k = 3  # 3 classes
         return np.ones((n, k), dtype=float) * self.fixed_score
+
+
+def test_forward_shape() -> None:
+    """Test that MockScore returns correct shapes."""
+    score = MockScore(fixed_score=0.2)
+
+    x_cal = [[1, 2], [3, 4], [5, 6]]
+    y_cal = [0, 1, 2]
+    cal_scores = score.calibration_nonconformity(x_cal, y_cal)
+
+    assert isinstance(cal_scores, np.ndarray)
+    assert cal_scores.shape == (3,)
+    assert np.all(cal_scores == 0.2)
+
+    x_test = [[7, 8], [9, 10]]
+    pred_scores = score.predict_nonconformity(x_test)
+
+    assert isinstance(pred_scores, np.ndarray)
+    assert pred_scores.shape == (2, 3)  # 2 samples, 3 classes
+    assert np.all(pred_scores == 0.2)
+
+
+def test_output_types() -> None:
+    """Test that MockScore outputs correct types."""
+    score = MockScore()
+
+    x_cal = [[1], [2], [3]]
+    y_cal = [0, 1, 0]
+    cal_scores = score.calibration_nonconformity(x_cal, y_cal)
+
+    assert isinstance(cal_scores, np.ndarray)
+    assert np.issubdtype(cal_scores.dtype, np.floating)
+
+    x_test = [[4], [5]]
+    pred_scores = score.predict_nonconformity(x_test)
+
+    assert isinstance(pred_scores, np.ndarray)
+    assert np.issubdtype(pred_scores.dtype, np.floating)
+
+
+def test_edge_cases_single_sample() -> None:
+    """Test MockScore with single sample inputs."""
+    score = MockScore(fixed_score=0.1)
+
+    x_cal = [[1, 2]]
+    y_cal = [0]
+    cal_scores = score.calibration_nonconformity(x_cal, y_cal)
+
+    assert isinstance(cal_scores, np.ndarray)
+    assert cal_scores.shape == (1,)
+    assert np.all(cal_scores == 0.1)
+
+    x_test = [[3, 4]]
+    pred_scores = score.predict_nonconformity(x_test)
+
+    assert isinstance(pred_scores, np.ndarray)
+    assert pred_scores.shape == (1, 3)  # 1 sample, 3 classes
+    assert np.all(pred_scores == 0.1)
+
+
+def test_edge_cases_large_batch() -> None:
+    """Test MockScore with large batch inputs."""
+    score = MockScore(fixed_score=0.7)
+
+    n_samples = 1000
+    x_cal = [[i, i + 1] for i in range(n_samples)]
+    y_cal = [i % 3 for i in range(n_samples)]
+    cal_scores = score.calibration_nonconformity(x_cal, y_cal)
+
+    assert isinstance(cal_scores, np.ndarray)
+    assert cal_scores.shape == (n_samples,)
+    assert np.all(cal_scores == 0.7)
+
+    x_test = [[i, i + 1] for i in range(n_samples)]
+    pred_scores = score.predict_nonconformity(x_test)
+
+    assert isinstance(pred_scores, np.ndarray)
+    assert pred_scores.shape == (n_samples, 3)  # n_samples, 3 classes
+    assert np.all(pred_scores == 0.7)
+
+
+def test_no_input_modification() -> None:
+    """Test that MockScore does not modify input data."""
+    score = MockScore(fixed_score=0.6)
+
+    x_cal = [[1, 2], [3, 4]]
+    y_cal = [0, 1]
+    x_cal_copy = [list(x) for x in x_cal]
+    y_cal_copy = list(y_cal)
+
+    _ = score.calibration_nonconformity(x_cal, y_cal)
+
+    assert x_cal == x_cal_copy
+    assert y_cal == y_cal_copy
+
+    x_test = [[5, 6], [7, 8]]
+    x_test_copy = [list(x) for x in x_test]
+
+    _ = score.predict_nonconformity(x_test)
+
+    assert x_test == x_test_copy
 
 
 def test_score_protocol_implementation() -> None:
@@ -80,7 +181,7 @@ def test_score_protocol_with_probs() -> None:
 def test_score_protocol_type_hints() -> None:
     """Test that Score protocol has correct type hints."""
     # this is more of a type checking test
-    score: Score = MockScore()
+    score: ClassificationScore = MockScore()
 
     # these should all type-check correctly
     x_cal: Sequence[Any] = [[1], [2]]
@@ -112,7 +213,7 @@ def test_score_protocol_output_shapes() -> None:
 def test_score_inheritance() -> None:
     """Test that classes can properly inherit from Score."""
 
-    class CustomScore(Score):
+    class CustomScore(ClassificationScore):
         """Custom score implementation."""
 
         def calibration_nonconformity(
