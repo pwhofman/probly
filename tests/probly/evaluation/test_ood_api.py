@@ -11,8 +11,6 @@ Metric correctness is tested elsewhere.
 
 from __future__ import annotations
 
-import matplotlib
-
 from matplotlib.figure import Figure
 import numpy as np
 import pytest
