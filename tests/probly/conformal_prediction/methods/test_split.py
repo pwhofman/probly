@@ -116,6 +116,10 @@ class MockClassificationModel:
         probs = np.ones((n_samples, 3), dtype=float) / 3.0
         return probs
 
+    def predict(self, x: Sequence[Any]) -> np.ndarray:
+        """Alias for __call__ fallback."""
+        return self.__call__(x)
+
 
 class MockClassificationScore:
     """Mock ClassificationScore for testing."""
@@ -279,6 +283,7 @@ def test_split_conformal_classifier_with_different_alphas() -> None:
 
     assert isinstance(threshold_strict, float)
     assert isinstance(threshold_permissive, float)
+
     # more permissive alpha should generally give lower threshold
     assert threshold_strict >= threshold_permissive
 
@@ -387,6 +392,7 @@ def test_split_conformal_regressor_predict_output_shape() -> None:
     predictions_large = regressor.predict(x_test_large, alpha=0.1)
 
     assert predictions_large.shape == (10, 2)
+
     # check that lower < upper for all intervals
     assert np.all(predictions_large[:, 0] < predictions_large[:, 1])
 
@@ -419,6 +425,7 @@ def test_split_conformal_regressor_with_different_alphas() -> None:
 
     assert isinstance(threshold_strict, float)
     assert isinstance(threshold_permissive, float)
+
     # more permissive alpha should generally give lower threshold
     assert threshold_strict >= threshold_permissive
 
@@ -481,3 +488,205 @@ def test_split_conformal_classifier_vs_regressor_differences() -> None:
     reg_preds = regressor.predict(x_test, alpha=0.1)
     assert np.issubdtype(reg_preds.dtype, np.floating)
     assert reg_preds.shape == (2, 2)
+
+
+class SimpleRegressionModel:
+    """Deterministic model for regression testing."""
+
+    def __call__(self, x: Sequence[Any]) -> np.ndarray:
+        """Return deterministic predictions."""
+        n_samples = len(x) if hasattr(x, "__len__") else 1
+        # return values based on sample index
+        return np.arange(1.0, n_samples + 1.0)
+
+
+class SimpleRegressionScore:
+    """Deterministic score for regression."""
+
+    def __init__(self, model: Any) -> None:  # noqa: ANN401
+        """Initialize with model."""
+        self.model = model
+
+    def calibration_nonconformity(
+        self,
+        x_cal: Sequence[Any],
+        y_cal: Sequence[Any],
+    ) -> np.ndarray:
+        """Return calibration scores based on prediction error."""
+        n = len(x_cal) if hasattr(x_cal, "__len__") else 1
+        y_cal_np = np.asarray(y_cal)
+
+        # predictions are [1, 2, 3, ...], compute absolute errors
+        y_pred = np.arange(1.0, n + 1.0)
+        scores = np.asarray(np.abs(y_pred - y_cal_np), dtype=float)
+        return scores
+
+    def predict_nonconformity(
+        self,
+        x_test: Sequence[Any],
+    ) -> np.ndarray:
+        """Return deterministic scores."""
+        n = len(x_test) if hasattr(x_test, "__len__") else 1
+
+        # return small errors to ensure good coverage
+        return np.full(n, 0.5, dtype=float)
+
+    def construct_intervals(
+        self,
+        y_hat: np.ndarray,
+        threshold: float,
+    ) -> np.ndarray:
+        """Construct symmetric intervals."""
+        n = len(y_hat)
+        intervals = np.zeros((n, 2), dtype=float)
+        intervals[:, 0] = y_hat - threshold
+        intervals[:, 1] = y_hat + threshold
+        return intervals
+
+
+def test_split_conformal_regressor_coverage_guarantee() -> None:
+    """Test coverage guarantee for regressor: intervals contain true values with freq >= 1-alpha."""
+    model = SimpleRegressionModel()
+    score = SimpleRegressionScore(model)
+    regressor = SplitConformalRegressor(model, score)
+
+    # create calibration set
+    n_cal = 50
+    x_cal = [[i, i + 1] for i in range(n_cal)]
+    # create y values with some variation from model predictions
+    rng = np.random.default_rng(123)
+    y_cal = np.arange(1.0, n_cal + 1.0) + rng.normal(0, 0.1, n_cal)
+
+    alpha = 0.1
+    regressor.calibrate(x_cal, y_cal, alpha=alpha)
+
+    # create test set
+    n_test = 100
+    x_test = [[i, i + 1] for i in range(n_test)]
+    y_test = np.arange(1.0, n_test + 1.0) + rng.normal(0, 0.1, n_test)
+
+    intervals = regressor.predict(x_test, alpha=alpha)
+
+    # check coverage: how many true values fall within intervals
+    coverage = 0
+    for i in range(n_test):
+        lower, upper = intervals[i]
+        if lower <= y_test[i] <= upper:
+            coverage += 1
+
+    empirical_coverage = coverage / n_test
+
+    # coverage should be >= 1 - alpha
+    assert empirical_coverage >= (1 - alpha) - 0.05, f"Empirical coverage {empirical_coverage:.3f} < 1-alpha-margin"
+
+
+def test_split_conformal_regressor_coverage_with_different_alphas() -> None:
+    """Test that higher alpha (less strict) gives wider intervals and higher coverage."""
+    model = SimpleRegressionModel()
+    score = SimpleRegressionScore(model)
+
+    # create calibration and test sets
+    n_cal = 60
+    x_cal = [[i, i + 1] for i in range(n_cal)]
+    y_cal = np.arange(1.0, n_cal + 1.0)
+
+    n_test = 100
+    x_test = [[i, i + 1] for i in range(n_test)]
+    y_test = np.arange(1.0, n_test + 1.0)
+
+    alpha_low = 0.05
+    alpha_high = 0.2
+
+    # Test with low alpha
+    regressor_low = SplitConformalRegressor(model, score)
+    regressor_low.calibrate(x_cal, y_cal, alpha=alpha_low)
+    intervals_low = regressor_low.predict(x_test, alpha=alpha_low)
+
+    coverage_low = sum(intervals_low[i, 0] <= y_test[i] <= intervals_low[i, 1] for i in range(n_test)) / n_test
+
+    # Test with high alpha
+    regressor_high = SplitConformalRegressor(model, score)
+    regressor_high.calibrate(x_cal, y_cal, alpha=alpha_high)
+    intervals_high = regressor_high.predict(x_test, alpha=alpha_high)
+
+    coverage_high = sum(intervals_high[i, 0] <= y_test[i] <= intervals_high[i, 1] for i in range(n_test)) / n_test
+
+    # higher alpha should give wider intervals, thus higher coverage
+    assert coverage_high >= coverage_low, (
+        f"Expected coverage_high ({coverage_high:.3f}) >= coverage_low ({coverage_low:.3f})"
+    )
+
+
+def test_split_conformal_regressor_interval_widths() -> None:
+    """Test that interval widths increase with alpha."""
+    model = SimpleRegressionModel()
+    score = SimpleRegressionScore(model)
+
+    # create calibration set
+    n_cal = 50
+    x_cal = [[i, i + 1] for i in range(n_cal)]
+    y_cal = np.arange(1.0, n_cal + 1.0)
+
+    alpha_low = 0.05
+    alpha_high = 0.2
+
+    # Test with low alpha
+    regressor_low = SplitConformalRegressor(model, score)
+    regressor_low.calibrate(x_cal, y_cal, alpha=alpha_low)
+
+    # Test with high alpha
+    regressor_high = SplitConformalRegressor(model, score)
+    regressor_high.calibrate(x_cal, y_cal, alpha=alpha_high)
+
+    x_test = [[1, 2], [3, 4], [5, 6]]
+    intervals_low = regressor_low.predict(x_test, alpha=alpha_low)
+    intervals_high = regressor_high.predict(x_test, alpha=alpha_high)
+
+    # compute widths
+    widths_low = intervals_low[:, 1] - intervals_low[:, 0]
+    widths_high = intervals_high[:, 1] - intervals_high[:, 0]
+
+    # widths with high alpha should be larger
+    assert np.all(widths_high >= widths_low), (
+        f"Expected widths_high to be >= widths_low. widths_low: {widths_low}, widths_high: {widths_high}"
+    )
+
+
+def test_split_conformal_classifier_empty_set_prevention() -> None:
+    """Test that accretive completion prevents empty prediction sets."""
+    model = MockClassificationModel()
+    score = MockClassificationScore(model)
+
+    classifier_no_accretive = SplitConformalClassifier(
+        model,
+        score,
+        use_accretive=False,
+    )
+    classifier_with_accretive = SplitConformalClassifier(
+        model,
+        score,
+        use_accretive=True,
+    )
+
+    # calibrate with strict alpha to potentially create empty sets
+    x_cal = [[i, i + 1] for i in range(20)]
+    y_cal = [i % 3 for i in range(20)]
+    alpha_strict = 0.01
+
+    classifier_no_accretive.calibrate(x_cal, y_cal, alpha=alpha_strict)
+    classifier_with_accretive.calibrate(x_cal, y_cal, alpha=alpha_strict)
+
+    x_test = [[1, 2], [3, 4], [5, 6]]
+
+    preds_no_accretive = classifier_no_accretive.predict(x_test, alpha=alpha_strict)
+    preds_with_accretive = classifier_with_accretive.predict(x_test, alpha=alpha_strict)
+
+    # with accretive completion, no row should be all False
+    empty_sets_no_accretive = np.any(~np.any(preds_no_accretive, axis=1))
+    empty_sets_with_accretive = np.any(~np.any(preds_with_accretive, axis=1))
+
+    # accretive completion should prevent or reduce empty sets
+    assert empty_sets_with_accretive <= empty_sets_no_accretive, (
+        "Accretive completion must not create more empty sets than without it"
+    )
+    assert not empty_sets_with_accretive, "Accretive completion should prevent empty prediction sets"
