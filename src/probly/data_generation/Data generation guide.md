@@ -362,8 +362,8 @@ from torch.utils.data import DataLoader
 
 # Sie können auch direkt einen DataLoader übergeben
 custom_loader = DataLoader(
- dataset, 
- batch_size=16, 
+ dataset,
+ batch_size=16,
  shuffle=False, # WICHTIG: shuffle=False für korrekte Indizierung!
  num_workers=4
 )
@@ -503,8 +503,8 @@ teacher_dists = teacher_gen.generate_distributions(train_set)
 
 # Schritt 2: Schüler mit Soft Targets trainieren
 student_loader = output_dataloader(
- train_set, 
- teacher_dists, 
+ train_set,
+ teacher_dists,
  batch_size=64,
  shuffle=True,
  num_workers=4,
@@ -649,9 +649,9 @@ distributions = generator.generate_distributions(loader)
 
 # Dann kann shuffle=True beim Training
 training_loader = output_dataloader(
- dataset, 
- distributions, 
- batch_size=32, 
+ dataset,
+ distributions,
+ batch_size=32,
  shuffle=True # Jetzt OK!
 )
 ```
@@ -691,10 +691,10 @@ generator.save_distributions('output/dists.json', distributions, meta=meta)
 ```python
 # Abschätzung:
 # Größe ≈ num_samples * num_classes * 8 bytes (float) + Overhead
-# 
+#
 # Beispiel: 50,000 samples, 10 classes
 # → ~50,000 * 10 * 8 = 4 MB (+ JSON Overhead ≈ 5-6 MB)
-# 
+#
 # Beispiel: 50,000 samples, 1000 classes
 # → ~50,000 * 1000 * 8 = 400 MB (+ JSON Overhead ≈ 500 MB)
 
@@ -1034,5 +1034,5 @@ Teil des `probly` Projekts. Weitere Informationen in der Haupt-README.
 
 ---
 
-**Last Updated**: Januar 2025 
+**Last Updated**: Januar 2025
 **Maintainer**: ProblyPros

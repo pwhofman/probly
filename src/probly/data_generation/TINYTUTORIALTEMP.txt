@@ -1,82 +1,191 @@
 This is a temporary Tiny Tutorial containing Information on using the following files:
-    src/probly/data_generation/first_order_generator.py
-    tests/probly/data_generation/test_first_order_generator.py
- as well as maybe additional information containing other files relevant.
 
-first_order_generator.py:
-        The main file of the FirstOrder Data Generator contains some of the actual classes and methods which are now usabale to generate First Order Data.(given you have access to ACTUAL models
-        you are going to be using to train with the generated data as seen in test_first_order_generator.py)
+Generator files:
+    src/probly/data_generation/first_order_datagenerator.py
+    src/probly/data_generation/torch_first_order_generator.py
+    src/probly/data_generation/jax_first_order_generator.py
+
+Test files:
+    tests/probly/data_generation/test_first_order_datagenerator.py
+    tests/probly/data_generation/test_torch_first_order_generator.py
+    tests/probly/data_generation/test_jax_first_order_generator.py
+
+MultiLibrary files:
+    src/probly/data_generation/base_generator.py
+as well as maybe additional information containing other files relevant.
+
+Generator Files
+
+torch_first_order_generator.py:
+    The main Torch implementation of the First-Order Data Generator. It contains the classes and helpers to create
+    first-order training data from your Torch models (logits or probabilities) which you can then use to train models.
 
     How does it work ?:
         This file can generate 3 kinds of outputs that can be used for training: JSON file, DataSet, DataLoader
 
                 JSON file:
-                        - What it is: A serialized mapping from dataset indices to first-order class probability vectors (and some metadata).
+                        - What it is: A serialized mapping from dataset indices to first-order class probability vectors (plus some metadata).
                         - How generated:
-                            1) FirstOrderDataGenerator.generate_distributions(dataset_or_loader) runs the model over the dataset in batches.
-                            2) For each batch, the model output (outputs: can be logits or probabilities) is converted to probabilities (probs) with method to_probs()
-                                 - If output_mode == 'probs', then probs = outputs
-                                 - If output_mode == 'logits', then probs = softmax(outputs, dim=-1)
-                                 - If output_mode == 'auto', it checks _is_probabilities(outputs) true then uses as-is; otherwise applies softmax !!!
-                                   - Softmax (its softmax... incase you dont know what softmax is lol): exponentiate each score and divide by the sum of all exponentiated scores (exp(score) / sum(exp(all scores))),
-                                             so each probability is between 0 and 1 and they add up to 1
-                            3) The per-sample probabilities are detached to CPU and stored in a Python dict using the running index(this will be called idx in Code) (start_idx + i)
-                            4) FirstOrderDataGenerator.save_distributions(path, distributions, meta=...) writes JSONfile:
+                            1) FirstOrderDataGenerator.generate_distributions(dataset_or_loader) runs your Torch model over the dataset in batches.
+                            2) For each batch, raw outputs are converted to probabilities via to_probs():
+                                 - If output_mode == 'probs', probs = outputs
+                                 - If output_mode == 'logits', probs = softmax(outputs, dim=-1)
+                                 - If output_mode == 'auto', uses outputs as-is if they already look like probabilities
+                                   (values in [0,1] and rows sum≈1); otherwise applies softmax
+                                   - Softmax: exp(score)/sum(exp(scores)) so values are in [0,1] and sum to 1
+                            3) Per-sample probabilities are moved to CPU (detach().cpu()), then stored in a dict by running index (start_idx + i)
+                            4) FirstOrderDataGenerator.save_distributions(path, distributions, meta=...) writes a JSON object like:
                                  {
                                      "meta": {"model_name": ..., ...},
                                      "distributions": {"0": [p_0,...], "1": [...], ...}
                                  }
                         - How to use:
-                            - Call save_distributions() to make it persist; later call load_distributions(path) to restore (distributions, meta)
-                            - load_distributions() converts string keys back to ints
+                            - Call save_distributions(...) to persist; later call load_distributions(path) to restore (distributions, meta)
+                            - load_distributions(...) converts string keys back to ints automatically
 
                 DataSet:
-                        - A wrapper FirstOrderDataset that pairs each base dataset sample with its probability distrib
+                        - A wrapper FirstOrderDataset that pairs each base dataset sample with its probability distribution
                         - How generated:
-                            1) First generate or load distributions: dict[int, list[float]]
+                            1) Generate or load distributions: dict[int, list[float]]
                             2) Construct FirstOrderDataset(base_dataset, distributions, input_getter=...)
-                            3) For __getitem__(idx), it fetches sample = base_dataset[idx] and dist = distributions[idx]
-                                 - The distribution is converted to a tensor: dist_tensor = torch.tensor(dist, dtype=torch.float32)
-                                 - If the base sample is (input, label), returns (input, label, dist_tensor)
-                                 - If the base sample is just input, returns (input, dist_tensor)
-                        - Math details / correct checks:
-                            - Probability validation (used during generation): _is_probabilities(x) checks each vector is in [0,1] and sums to 1 within tolerance atol
-                            - If outputs were logits, softmax produces a valid probability simplex point as given above
-                            - Index alignment: the generator assigns distributions by sequential batch order now: for batch of size B, indices [start_idx, ..., start_idx+B-1]
-                                Ensure your base_dataset order matches the order used to generate the distributions.
+                            3) __getitem__(idx) returns base sample + distribution:
+                                 - dist -> torch.tensor(dist, dtype=torch.float32)
+                                 - If base sample is (input, label), returns (input, label, dist_tensor)
+                                 - If base sample is input-only, returns (input, dist_tensor)
+                        - Notes / checks:
+                            - Probability validation during generation uses _is_probabilities(...) (values in [0,1], rows sum≈1 with tolerance)
+                            - If outputs were logits: softmax gives a valid probability vector
+                            - Index alignment: generator assigns indices sequentially per batch; keep generation unshuffled to match dataset order
 
                 DataLoader:
-                    - A batched loader (DataLoader that yields data in batches rather than one sample at a time) created by output_dataloader(...) for training/evaluation with first-order targets
+                    - A batched loader created by output_dataloader(...) for training/evaluation with first-order targets
                         - How generated:
-                            1) Prepare distributions as above.
+                            1) Prepare distributions as above
                             2) Call output_dataloader(base_dataset, distributions, batch_size=..., shuffle=..., num_workers=..., pin_memory=..., input_getter=...)
-                            3) Internally, this constructs FirstOrderDataset(...) and returns torch.utils.data.DataLoader
+                            3) Internally constructs FirstOrderDataset(...) and returns torch.utils.data.DataLoader
                         - What batches look like:
-                            - If base samples are (input, label), each batch yields tuples (inputs, labels, dist_tensors)
-                            - If base samples are input only, each batch yields (inputs, dist_tensors)
-                        - Math in training with distributions:
+                            - If base samples are (input, label), batches yield (inputs, labels, dist_tensors)
+                            - If base samples are input-only, batches yield (inputs, dist_tensors)
+                        - Training with distributions (soft labels q):
                             - Treat dist_tensors as label probability vectors q over classes
-                            - Common losses (getting complex now):
-                                • Cross-entropy: compare predicted probabilities to label probabilities; take negative sum of label * log(predicted). Lower is better
-                                • KL divergence: measure how different two probability distributions are; sum label * (log(label) − log(predicted)). (At the end after finished: run_summary.json) Lower is better
-                            - If your model outputs logits (scores) during training, turn them into probabilities with softmax first, then compute these losses
+                            - Common losses:
+                                • Cross-entropy with soft labels: -(q * log(softmax(z))).sum(dim=-1).mean()
+                                • KL divergence: kl_div(log_softmax(z), q, reduction="batchmean")
+                            - If your model outputs logits during training, apply softmax as needed before computing the losses
+
+        Torch-specific extras:
+            - Binary save/load: save_distributions_pt(...) and load_distributions_pt(...) provide .pt/.pth convenience for torch.save/torch.load in addition to JSON helpers.
+            - Bayesian layers: get_posterior_distributions() collects parameters ending with _mu/_rho for BayesLinear-style layers into a serializable dict.
+            - Input unpacking: prepares_batch_inp(...) unpacks the first element from list/tuple batches (e.g., (inputs, labels, ...)).
+            - DataLoader knobs: num_workers and pin_memory are honored on the returned torch.utils.data.DataLoader.
 
 
-test_first_order_generator.py:
+first_order_datagenerator.py:
+    Backend/general First-Order Data Generator implemented with pure Python (no Torch dependency).
+    Produces the same conceptual outputs as the Torch version, but returns plane lists and uses a minimal SimpleDataLoader.
+
     How does it work ?:
-        This file contains pytests which test structure as well as functionality of the First Order DataGenerator.
+        This file can generate 3 kinds of outputs that can be used for training: JSON file, DataSet, DataLoader
+
+                JSON file:
+                        - What it is: A serialized mapping from dataset indices to first-order class probability vectors (plus some metadata).
+                        - How generated:
+                            1) FirstOrderDataGenerator.generate_distributions(dataset_or_loader) iterates over the dataset in batches (via SimpleDataLoader if needed).
+                            2) Raw outputs are converted to probabilities via to_probs():
+                                 - If output_mode == 'probs', uses batch as-is
+                                 - If output_mode == 'logits', applies a numerically stable row-wise softmax
+                                 - If output_mode == 'auto', uses vectors as-is if they already look like probabilities (values in [0,1], rows sum≈1); otherwise softmax
+                            3) Stores per-sample probability rows in a dict using the running index (start_idx + i)
+                            4) save_distributions(path, distributions, meta=...) writes a JSON object with "meta" and "distributions"
+                        - How to use:
+                            - Call save_distributions(...) to persist; later call load_distributions(path) to restore (distributions, meta)
+
+                DataSet:
+                        - FirstOrderDataset pairs each base dataset item with its probability distribution (lists of floats)
+                        - How generated:
+                            1) Prepare distributions: dict[int, list[float]]
+                            2) Construct FirstOrderDataset(base_dataset, distributions, input_getter=...)
+                            3) __getitem__(idx) returns either (input, label, dist) if the base sample is (input, label) or (input, dist) otherwise
+                        - Notes / checks:
+                            - Probability validation during generation ensures vectors are within [0,1] and sum≈1 (with tolerance)
+                            - Keep generation unshuffled so indices align with dataset order
+
+                DataLoader:
+                    - SimpleDataLoader yields Python lists of items in batches, with optional shuffle
+                        - How generated:
+                            1) Call output_dataloader(base_dataset, distributions, batch_size=..., shuffle=..., input_getter=...)
+                            2) Internally wraps base_dataset via FirstOrderDataset and returns a SimpleDataLoader
+                        - Batches contain tuples matching the dataset shape plus per-sample distributions
+
+        Backend-specific notes:
+            - Input unpacking: lists are treated as input-only feature vectors and are NOT unpacked; only tuples like (input, label, ...) are unpacked.
+            - Ignored loader args: output_dataloader(...) accepts num_workers and pin_memory for API parity but ignores them.
+            - Model call signature: generate_distributions(...) builds a Python list of per-sample inputs and passes that list to your model; ensure your model can accept a list-batch or wrap via input_getter.
+            - Types: distributions are plain Python lists (no torch/jax tensors) in the Dataset and JSON outputs.
+            - Device parameter: the device field is kept for API symmetry but not used by the Python only backend version.
+
+
+jax_first_order_generator.py:
+    JAX-native First-Order Data Generator using jax.numpy and jax.nn. Similar to the Torch implementation but with JAX arrays and a minimal JaxDataLoader.
+
+    How does it work ?:
+        This file can generate 3 kinds of outputs that can be used for training: JSON file, DataSet, DataLoader
+
+                JSON file:
+                        - What it is: A serialized mapping from dataset indices to first-order class probability vectors (plus some metadata).
+                        - How generated:
+                            1) FirstOrderDataGenerator.generate_distributions(dataset_or_loader) runs your JAX model over batches from JaxDataLoader.
+                            2) Raw outputs are converted to probabilities via to_probs():
+                                 - If output_mode == 'probs', returns outputs
+                                 - If output_mode == 'logits', applies jax.nn.softmax along the last axis
+                                 - If output_mode == 'auto', uses outputs as-is if they look like probabilities; otherwise softmax
+                            3) Each row is converted to Python floats and stored in a dict keyed by the running index (start_idx + i)
+                            4) save_distributions(path, distributions, meta=...) writes JSON
+                        - How to use:
+                            - Call save_distributions(...) to persist; later call load_distributions(path) to restore (distributions, meta)
+
+                DataSet:
+                        - FirstOrderDataset pairs base items with distributions and returns JAX arrays for the distribution component
+                        - How generated:
+                            1) Build distributions: dict[int, list[float]]
+                            2) Construct FirstOrderDataset(base_dataset, distributions, input_getter=...)
+                            3) __getitem__(idx) returns (input, label, dist_arr) or (input, dist_arr), where dist_arr is a jnp.float32 array
+                        - Notes / checks:
+                            - Probability checks and softmax behave as in the Torch version but via jax.nn and jnp
+                            - Keep generation unshuffled to maintain index alignment
+
+                DataLoader:
+                    - JaxDataLoader batches items by index; num_workers/pin_memory are ignored and may emit warnings if set
+                        - How generated:
+                            1) Call output_dataloader(base_dataset, distributions, batch_size=..., shuffle=..., input_getter=...)
+                            2) Returns a JaxDataLoader over FirstOrderDataset
+                        - Batches contain base items plus per-sample distributions (as JAX arrays inside items)
+
+        JAX-specific notes:
+            - Device placement: to_device(...) places arrays on the configured JAX device (e.g., 'cpu', 'gpu', 'tpu'); device selection is best-effort via jax.devices().
+            - Batchification: inputs are stacked with jnp.array(..., dtype=jnp.float32) when possible; if shapes/types vary, it falls back to dtype=object.
+            - Loader knobs: output_dataloader(...) ignores num_workers/pin_memory and emits warnings if they are set.
+            - Types: FirstOrderDataset returns distributions as jnp.float32 arrays, while generate_distributions(...) serializes Python float lists for JSON.
+
+Test Files
+
+test_torch_first_order_generator.py:
+    How does it work ?:
+        This file contains PyTorch-focused tests that validate the Torch First-Order Data Generators API and behavior.
+
+    What is verified:
+        - Generator basic run: FirstOrderDataGenerator with DummyModel/DummyDataset produces dict[int, list[float]]; each row is a probability vector in [0,1] that sums≈1
+        - Dataset + DataLoader with targets: FirstOrderDataset wraps (input, target) datasets; output_dataloader yields (inputs, targets, dist_tensors) with correct batch shapes, and distributions sum≈1
+        - Input-only datasets: For datasets that emit inputs only, FirstOrderDataset returns (input, dist_tensor); output_dataloader batches yield (inputs, dist_tensors) with aligned dimensions
+        - Empty dataset: generate_distributions on an empty dataset returns an empty dict without errors
+        - Bayesian posterior extraction: get_posterior_distributions() returns 'mu'/'rho' tensors for BayesLinear-transformed nn.Linear with the expected shapes
+        - End-to-end training + coverage: Training a student with KL-divergence decreases loss; epsilon-credal coverage improves when comparing student softmax to teacher distributions
 
     Artifacts generated by running the command:
-        C:\Users\ash\...........\PythonProjekte\probly\src\probly\data_generation\run_summary.json
-            This is the run summary for the trainning of the student models which proves that the FirstOrderDataGenerator generated Data can be used
-            to train models.
-
-        C:\Users\ash\............\PythonProjekte\probly\src\probly\data_generation\first_order_dists.json
-            This is the JSON file output of the FirstOrderDataGenerator when it is used. Which proves a JSON file with the distribs
-            which could be used to train a model can be generated by the FirstOrderDataGenerator
+        Due to Request: None by default anymore - this Torch test suite operates entirely in-memory and does not write run_summary.json or first_order_dists.json
 
     How to use:
-        0) Make sure you have probly and the files you are trying to test(and the tests obviously) downloaded on your pc.
+        0) Make sure you have probly and the files you are trying to test (and the tests) downloaded on your PC.
         1) Go into the Terminal.
         2) (OPTIONAL) Navigate into the probly folder e.g.:
             PS C:\Users\ash\Desktop\Informatik\Semester\SEPProbly\PythonProjekte> cd probly
@@ -86,77 +195,57 @@ test_first_order_generator.py:
             Now put in this command to start the pytests:
 ----------------------------WARNING NEVER PUT IN RANDOM COMMANDS IN YOUR TERMINAL THAT YOU DONT KNOW ANYTHING ABOUT OR DONT FULLY UNDERSTAND-------------------------------------------------------------------------
 
-            pytest tests\probly\data_generation\test_first_order_generator.py -q
+            pytest tests\probly\data_generation\test_torch_first_order_generator.py -q
 
 ----------------------------WARNING NEVER PUT IN RANDOM COMMANDS IN YOUR TERMINAL THAT YOU DONT KNOW ANYTHING ABOUT OR DONT FULLY UNDERSTAND-------------------------------------------------------------------------
-        The output may look like this(output can be different depending on many different factors):
+        The output will show the test progress; no JAX/TPU warnings are expected here because this suite is PyTorch-only.
 
-        .......                                                                                                                      [100%]
-======================================================== warnings summary =========================================================
-..\..\..\..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\flax\nnx\variablelib.py:49
-  C:\Users\ash\AppData\Local\Programs\Python\Python312\Lib\site-packages\flax\nnx\variablelib.py:49: DeprecationWarning: jax.array_ref is deprecated; use jax.new_ref instead.
-    if hasattr(jax, 'array_ref') and hasattr(jax, 'ArrayRef'):
+    Explanation: How end-to-end (train model start with raw inputs through all the steps!) training uses First-Order outputs
+        Most relevant test: test_end_to_end_training_and_coverage_improves()
 
-..\..\..\..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\flax\nnx\variablelib.py:49
-  C:\Users\ash\AppData\Local\Programs\Python\Python312\Lib\site-packages\flax\nnx\variablelib.py:49: DeprecationWarning: jax.ArrayRef is deprecated; use jax.Ref instead.
-    if hasattr(jax, 'array_ref') and hasattr(jax, 'ArrayRef'):
+        Goal:
+            Show that distributions generated by FirstOrderDataGenerator (in Code:teacher probabilities) can train a model and that agreement/coverage improves after training.
 
--- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
-7 passed, 2 warnings in 0.74s
+        Setup:
+            - Teacher model generates class probability distributions for each dataset item via FirstOrderDataGenerator (logits -> softmax)
+            - These distributions are treated as soft labels q (one probability vector per sample)
+            - Build a DataLoader with output_dataloader(dataset, dists, batch_size=..., shuffle=True) to feed (inputs, q) to the learner
 
-As you can see the tests passed in this case and confirm the functionality whihc was tested(look at the tests if you wanna know).
+        Training loop (KL loss):
+            - The learner produces logits z for a batch of inputs.
+            - Convert logits to log-probabilities(has to for usability): log_p = log_softmax(z)
+            - Use KL divergence between label q and prediction p:
+                KL(q || p) = sum over classes [ q * (log(q) − log(p)) ]
+              In code, PyTorch computes this as kl_div(log_p, q) with reduction="batchmean"
+            - Optimize with SGD; losses should decrease over steps (learning signal present)
 
-Explanation: How end-to-end(train model start with raw inputs through all the steps!) training uses First-Order outputs (student vs teacher models)
-    Most relevant test: test_end_to_end_training_and_coverage_improves()
+        Coverage metric (epsilon-credal coverage):
+            - For each sample, compute L1 distance between predicted probabilities and teacher probabilities:
+                L1 = sum |p_pred − p_teacher|
+            - A sample is "covered" if L1 ≤ epsilon (e.g., 0.25)
+            - Coverage is the fraction of covered samples in [0,1]. Higher is better
+            - Baseline (before training): compare a naive uniform prediction to teacher probabilities
+            - After training: compare learner softmax predictions to teacher probabilities
 
-    Goal:
-        Show that distributions generated by FirstOrderDataGenerator (in Code:teacher probabilities) can train a student model, and that agreement/coverage improves after training
-
-    Setup:
-        - Teacher model generates class probability distributions for each dataset item via FirstOrderDataGenerator (using logits -> softmax)
-        - These distributions are treated as soft labels q (one probability vector per sample)
-        - Build a DataLoader with output_dataloader(dataset, dists, batch_size=..., shuffle=True) to feed (inputs, q) to the student
-
-    Training loop (student with KL loss):
-        - Student produces logits z for a batch of inputs
-        - Convert logits to log-probabilities(has to for usability): log_p = log_softmax(z)
-        - Use KL divergence between label q and prediction p:
-            KL(q || p) = sum over classes [ q * (log(q) − log(p)) ]
-          In code, PyTorch computes this as kl_div(log_p, q) with reduction="batchmean"
-        - Optimize with SGD; losses should decrease over steps (learning signal present)
-
-    Coverage metric (epsilon-credal coverage):
-        - For each sample, compute L1 distance between predicted probabilities and teacher probabilities:
-            L1 = sum |p_pred − p_teacher|
-        - A sample is "covered" if L1 ≤ epsilon (e.g., 0.25)
-        - Coverage is the fraction of covered samples in [0,1]. Higher is better
-        - Baseline (before training): compare a naive uniform prediction to teacher probabilities
-        - After training: compare student softmax predictions to teacher probabilities
-
-    Expected outcome in the test:
-        - Training loss decreases (loss_initial > loss_final)
-        - Coverage_after ≥ Coverage_before, indicating the student’s predictions moved closer to the teacher distributions
+        Expected outcome in the test:
+            - Training loss decreases (loss_initial > loss_final)
+            - Coverage_after ≥ Coverage_before, indicating predictions moved closer to the teacher distributions
 
     How to modify and customize the values/which values cna be customized and modified:
         Generator (FirstOrderDataGenerator):
             - model: any torch.nn.Module that returns logits or probabilities
             - device: where inference runs ("cpu" or "cuda")
             - batch_size: batch size used when wrapping a Dataset for generation
-            - output_mode: 'auto' | 'logits' | 'probs'; 'logits' applies softmax; 'probs' uses outputs as-is; 'auto' detects the one the one that should be used
+            - output_mode: 'auto' | 'logits' | 'probs'; 'logits' applies softmax; 'probs' passes values through; 'auto' detects or applies softmax
             - output_transform: custom function to convert model outputs -> probabilities (overrides output_mode)
-            - input_getter: function to extract the model input from more complex samples(its like having backup), e.g., lambda sample: sample[0]
+            - input_getter: function to extract the model input from more complex samples, e.g., lambda sample: sample[0]
             - model_name: optional identifier stored in JSON metadata
             - progress (in generate_distributions): toggle batch progress logging
-
-        Save/Load JSON:
-            - path: choose where to persist distributions (e.g., under src/probly/data_generation)
-            - meta: add any fields you want (e.g., {"note": "experiment-1", "classes": n_classes})
-            - keys: saved as strings in JSON; load_distributions() restores them to ints automatically
 
         Dataset + DataLoader:
             - base_dataset: can yield (input, label) or input only; both are supported
             - distributions: dict mapping index -> probability list; must align with dataset order
-            - alignment: generator assigns indices per batch order; ensure you don’t shuffle during generation !!!
+            - alignment: generator assigns indices per batch order; ensure you dont shuffle during generation !!!
             - dataloader args: batch_size, shuffle, num_workers, pin_memory, and input_getter (if inputs are nested)
 
         Training knobs (as used in tests):
@@ -178,6 +267,200 @@ Explanation: How end-to-end(train model start with raw inputs through all the st
             - lr (optimizer): learning rate (e.g., 0.1), reduce if loss is unstable; increase if learning is too slow
             - epsilon (coverage): agreement threshold (e.g., 0.25), lower = stricter; higher = easier to satisfy
             - seed (torch.manual_seed): fixes randomness in data and initialization to reproduce run_summary.json numbers
+
+test_jax_first_order_generator.py:
+    How does it work ?:
+        This file contains JAX-focused tests that validate the JAX First-Order Data Generators API and behavior
+
+    What is verified:
+        - Generator basic run: FirstOrderDataGenerator with DummyModel/DummyDataset produces dict[int, list[float]]; each row is a probability vector in [0,1] that sums≈1
+        - Dataset + DataLoader with targets: FirstOrderDataset wraps (input, target) datasets; output_dataloader yields list-batches of (input, target, dist_arr) with correct shapes; distributions sum≈1
+        - Input-only datasets: For datasets that emit inputs only FirstOrderDataset returns (input, dist_arr); output_dataloader batches yield lists of (input, dist_arr) with aligned dimensions
+        - Empty dataset: generate_distributions on an empty dataset returns an empty dict without errors
+        - End-to-end training + coverage: Training a simple linear learner with KL-divergence decreases loss; epsilon-credal coverage improves when comparing learner softmax to teacher distributions
+
+    Artifacts generated by running the command:
+        None by default - this JAX test suite runs entirely in-memory and does not write external files.
+
+    How to use:
+        0) Make sure you have probly and the files you are trying to test (and the tests) downloaded on your PC.
+        1) Go into the Terminal.
+        2) (OPTIONAL) Navigate into the probly folder e.g.:
+            PS C:\Users\ash\Desktop\Informatik\Semester\SEPProbly\PythonProjekte> cd probly
+            PS C:\Users\ash\Desktop\Informatik\Semester\SEPProbly\PythonProjekte\probly> _
+
+        3) (If you didnt navigate into the probly folder youll have to put in a different command according to the path the test file is at)
+            Now put in this command to start the pytests:
+----------------------------WARNING NEVER PUT IN RANDOM COMMANDS IN YOUR TERMINAL THAT YOU DONT KNOW ANYTHING ABOUT OR DONT FULLY UNDERSTAND-------------------------------------------------------------------------
+
+            pytest tests\probly\data_generation\test_jax_first_order_generator.py -q
+
+----------------------------WARNING NEVER PUT IN RANDOM COMMANDS IN YOUR TERMINAL THAT YOU DONT KNOW ANYTHING ABOUT OR DONT FULLY UNDERSTAND-------------------------------------------------------------------------
+        The output will show the test progress no Torch/CUDA setup is required - these tests run on CPU via JAX by default.
+
+    Explanation: How end-to-end (train model start with raw inputs through all the steps!) training uses First-Order outputs
+        Most relevant test: test_end_to_end_training_and_coverage_improves()
+
+        Goal:
+            Show that distributions generated by FirstOrderDataGenerator (teacher probabilities) can train a simple linear model and that agreement/coverage improves after training.
+
+        Setup:
+            - Teacher model generates class probability distributions for each dataset item via FirstOrderDataGenerator (logits -> softmax)
+            - These distributions are treated as soft labels q (one probability vector per sample)
+            - Build a DataLoader with output_dataloader(dataset, dists, batch_size=..., shuffle=True) to feed (inputs, q) to the learner (batches are Python lists)
+
+        Training loop (KL loss, manual updates):
+            - The learner produces logits z for an input x via z = x·W + b.
+            - Convert logits to probabilities: p = softmax(z)
+            - Use KL divergence between label q and prediction p:
+                KL(q || p) = sum over classes [ q * (log(q) − log(p)) ]
+            - Apply a simple gradient step with learning rate lr (implemented explicitly, not via jax.grad)
+            - Losses should decrease over steps (learning signal present)
+
+        Coverage metric (epsilon-credal coverage):
+            - For each sample, compute L1 distance between predicted probabilities and teacher probabilities:
+                L1 = sum |p_pred − p_teacher|
+            - A sample is "covered" if L1 ≤ epsilon (e.g., 0.25)
+            - Coverage is the fraction of covered samples in [0,1]. Higher is better
+            - Baseline (before training): compare a naive uniform prediction to teacher probabilities
+            - After training: compare learner softmax predictions to teacher probabilities
+
+        Expected outcome in the test:
+            - Training loss decreases (loss_initial > loss_final)
+            - Coverage_after ≥ Coverage_before, indicating predictions moved closer to the teacher distributions
+
+    How to modify and customize the values/which values can be customized and modified:
+        Generator (FirstOrderDataGenerator):
+            - model: any callable that returns logits or probabilities (JAX arrays)
+            - device: where inference runs (e.g., "cpu", "gpu", "tpu"); tests use "cpu"
+            - batch_size: batch size used when wrapping a Dataset for generation
+            - output_mode: 'auto' | 'logits' | 'probs'; 'logits' applies jax.nn.softmax; 'probs' passes values through; 'auto' detects or applies softmax
+            - output_transform: custom function to convert model outputs -> probabilities (overrides output_mode)
+            - input_getter: function to extract the model input from more complex samples, e.g., lambda sample: sample[0]
+            - model_name: optional identifier stored in JSON metadata
+            - progress (in generate_distributions): toggle batch progress logging
+
+        Dataset + DataLoader:
+            - base_dataset: can yield (input, label) or input only; both are supported
+            - distributions: dict mapping index -> probability list; must align with dataset order
+            - alignment: generator assigns indices per batch order; ensure you dont shuffle during generation !!!
+            - dataloader args: batch_size, shuffle, input_getter (if inputs are nested); num_workers/pin_memory are ignored in JAX loader
+            - batch type: output_dataloader returns Python list-batches of samples with JAX arrays inside
+
+        Training knobs (as used in tests):
+            - optimizer: simple manual gradient step inside the helper (no optax used); you can adapt to jax.grad/optax if desired
+            - lr: learning rate is set inside the helper (0.1); adjust if needed
+            - steps: number of training steps/epochs in _train_one_model_with_soft_targets (e.g., 15–30)
+            - loss choice: KL divergence with softmax probabilities (manual implementation in tests)
+            - seeds: use random.seed(...) for reproducibility of data and model initialization in the test harness
+
+        Modify Model values:
+            - n (dataset size): number of samples (e.g., 40), larger n -> more training signal; smaller n -> faster runs
+            - d_in (input feature dimension): controls input vector size (e.g., 6), must match your dataset and the DummyModel(d_in=...)
+            - n_classes (output classes): number of classes (e.g., 5); distributions and linear output size must match
+            - batch_size (loader): samples per step (e.g., 16); larger -> fewer steps per epoch; smaller -> more updates
+            - shuffle (loader): True randomizes batch order; keep False when generating distribs you want index-aligned
+            - steps (training): iterations/epochs (e.g., 15–30); increase for more learning
+            - epsilon (coverage): agreement threshold (e.g., 0.25), lower = stricter; higher = easier to satisfy
+            - seed (random.seed): fixes randomness in data and initialization to reproduce numbers
+
+test_first_order_datagenerator.py:
+    How does it work ?:
+        This file contains pure-Python tests that validate the First-Order Data Generators API and behavior without Torch/JAX dependencies.
+
+    What is verified:
+        - Generator basic run: FirstOrderDataGenerator with DummyModel/DummyDataset produces dict[int, list[float]]; each row is a probability vector in [0,1] that sums≈1
+        - Dataset + DataLoader with targets: FirstOrderDataset wraps (input, target) datasets; output_dataloader yields list-batches of (input, target, dist) with correct shapes; distributions sum≈1 and batch size respects the requested value
+        - Input-only datasets: For datasets that emit inputs only, FirstOrderDataset returns (input, dist); output_dataloader batches yield lists of (input, dist) with aligned dimensions
+        - Empty dataset: generate_distributions on an empty dataset returns an empty dict without errors
+        - End-to-end training + coverage: Training a simple linear learner with manual gradient steps decreases loss; epsilon-credal coverage improves when comparing learner softmax to teacher distributions
+
+    Artifacts generated by running the command:
+        None by default - this pure-Python test suite runs entirely in-memory and does not write external files.
+
+    How to use:
+        0) Make sure you have probly and the files you are trying to test (and the tests) downloaded on your PC.
+        1) Go into the Terminal.
+        2) (OPTIONAL) Navigate into the probly folder e.g.:
+            PS C:\Users\ash\Desktop\Informatik\Semester\SEPProbly\PythonProjekte> cd probly
+            PS C:\Users\ash\Desktop\Informatik\Semester\SEPProbly\PythonProjekte\probly> _
+
+        3) (If you didnt navigate into the probly folder youll have to put in a different command according to the path the test file is at)
+            Now put in this command to start the pytests:
+----------------------------WARNING NEVER PUT IN RANDOM COMMANDS IN YOUR TERMINAL THAT YOU DONT KNOW ANYTHING ABOUT OR DONT FULLY UNDERSTAND-------------------------------------------------------------------------
+
+            pytest tests\probly\data_generation\test_first_order_datagenerator.py -q
+
+----------------------------WARNING NEVER PUT IN RANDOM COMMANDS IN YOUR TERMINAL THAT YOU DONT KNOW ANYTHING ABOUT OR DONT FULLY UNDERSTAND-------------------------------------------------------------------------
+        The output will show the test progress; no Torch/JAX setup is required — these tests run with pure Python lists only.
+
+    Explanation: How end-to-end (train model start with raw inputs through all the steps!) training uses First-Order outputs
+        Most relevant test: test_end_to_end_training_and_coverage_improves()
+
+        Goal:
+            Show that distributions generated by FirstOrderDataGenerator (teacher probabilities) can train a simple linear model and that agreement/coverage improves after training.
+
+        Setup:
+            - Teacher model generates class probability distributions for each dataset item via FirstOrderDataGenerator (logits -> softmax)
+            - These distributions are treated as soft labels q (one probability vector per sample)
+            - Build a DataLoader with output_dataloader(dataset, dists, batch_size=..., shuffle=True) to feed (inputs, q) to the learner (batches are Python lists)
+
+        Training loop (KL loss, manual updates):
+            - The learner produces logits z for an input x via z_c = sum_j x_j * W_{j,c} (no external optimizer)
+            - Convert logits to probabilities: p = softmax(z) over classes
+            - Use KL divergence between label q and prediction p:
+                KL(q || p) = sum over classes [ q * (log(q) − log(p)) ]
+            - Apply simple weight updates proportional to (p − q) and input features; losses decrease over steps
+
+        Coverage metric (epsilon-credal coverage):
+            - For each sample, compute L1 distance between predicted probabilities and teacher probabilities:
+                L1 = sum |p_pred − p_teacher|
+            - A sample is "covered" if L1 ≤ epsilon
+            - Coverage is the fraction of covered samples in [0,1]. Higher is better
+            - Baseline (before training): compare a naive uniform prediction to teacher probabilities
+            - After training: compare learner softmax predictions to teacher probabilities
+            - Note: helper _compute_coverage defaults to ε=0.15; the test uses ε=0.25 for the before/after comparison
+
+        Expected outcome in the test:
+            - Training loss decreases (loss_initial > loss_final)
+            - Coverage_after ≥ Coverage_before, indicating predictions moved closer to the teacher distributions
+
+    How to modify and customize the values/which values can be customized and modified:
+        Generator (FirstOrderDataGenerator):
+            - model: any callable that accepts a list-batch and returns logits or probabilities (Python lists)
+            - device: kept for API symmetry; unused in the pure-Python backend
+            - batch_size: batch size used when wrapping a Dataset for generation
+            - output_mode: 'auto' | 'logits' | 'probs'; 'logits' applies a numerically stable softmax; 'probs' passes values through; 'auto' detects or applies softmax
+            - output_transform: custom function to convert model outputs -> probabilities (overrides output_mode)
+            - input_getter: function to extract the model input from more complex samples, e.g., lambda sample: sample[0]
+            - model_name: optional identifier stored in JSON metadata
+            - progress (in generate_distributions): toggle batch progress logging
+
+        Dataset + DataLoader:
+            - base_dataset: can yield (input, label) or input only; both are supported
+            - distributions: dict mapping index -> probability list; must align with dataset order
+            - alignment: generator assigns indices per batch order; ensure you dont shuffle during generation !!!
+            - dataloader args: batch_size, shuffle, input_getter (if inputs are nested); num_workers/pin_memory are ignored
+            - batch type: output_dataloader returns Python list-batches of samples (all components are plain lists of floats)
+
+        Training knobs (as used in tests):
+            - optimizer: manual gradient step inside the helper (no external library); adapt as needed
+            - lr: learning rate is set inside the helper (0.1); adjust if needed
+            - steps: number of training steps/epochs in _train_one_model_with_soft_targets (e.g., 15–30)
+            - loss choice: KL divergence over probabilities (manual implementation in tests)
+            - seeds: use random.seed(...) for reproducibility of data and model initialization in the test harness
+
+        Modify Model values:
+            - n (dataset size): number of samples (e.g., 40), larger n -> more training signal; smaller n -> faster runs.
+            - d_in (input feature dimension): controls input vector size (e.g., 6), must match your dataset and the DummyModel(d_in=...)
+            - n_classes (output classes): number of classes (e.g., 5); distributions and linear output size must match
+            - batch_size (loader): samples per step (e.g., 16); larger -> fewer steps per epoch; smaller -> more updates
+            - shuffle (loader): True randomizes batch order; keep False when generating distribs you want index-aligned
+            - steps (training): iterations/epochs (e.g., 15–30); increase for more learning
+            - epsilon (coverage): agreement threshold (e.g., 0.25 in the test), lower = stricter; higher = easier to satisfy
+            - seed (random.seed): fixes randomness in data and initialization to reproduce numbers
+
+MultiLibrary Files
 
 MultiLib Explanation:
 base_generator.py:

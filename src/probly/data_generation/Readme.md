@@ -45,7 +45,7 @@
    - Zusammenfassung
    - Mögliche Erweiterungen
    - Zukünftige Arbeiten
-   
+
 # First-Order Data Generator
 
 Ein framework-agnostisches Python-Tool zur Generierung von First-Order Data (Ground-Truth Conditional Distributions) für die Evaluation von Credal Sets und Unsicherheitsquantifizierung in Machine Learning.
@@ -198,10 +198,10 @@ class BaseDataGenerator[M, D, Dev](ABC):
 # Framework-specific implementations
 class PyTorchDataGenerator(BaseDataGenerator[torch.nn.Module, Dataset, str]):
  """PyTorch-specific implementation"""
- 
+
 class TensorFlowDataGenerator(BaseDataGenerator[tf.keras.Model, tf.data.Dataset, str]):
  """TensorFlow-specific implementation"""
- 
+
 class JAXDataGenerator(BaseDataGenerator[object, tuple, str]):
  """JAX-specific implementation"""
 ```

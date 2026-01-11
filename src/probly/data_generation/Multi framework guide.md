@@ -696,28 +696,28 @@ tf.config.optimizer.set_jit(True)
 ## Framework Selection Guide
 
 ### Wählen Sie PyTorch wenn:
- Sie bereits PyTorch verwenden 
- Große Community & Ressourcen wichtig sind 
- Flexibilität bei Model-Definition wichtig ist 
- Debugging-Freundlichkeit Priorität hat 
+ Sie bereits PyTorch verwenden
+ Große Community & Ressourcen wichtig sind
+ Flexibilität bei Model-Definition wichtig ist
+ Debugging-Freundlichkeit Priorität hat
 
 ### Wählen Sie JAX wenn:
- Performance kritisch ist 
- Sie funktionale Programmierung bevorzugen 
- TPU-Support benötigt wird 
- Automatische Differentiation zentral ist 
+ Performance kritisch ist
+ Sie funktionale Programmierung bevorzugen
+ TPU-Support benötigt wird
+ Automatische Differentiation zentral ist
 
 ### Wählen Sie TensorFlow wenn:
- Production Deployment wichtig ist 
- TensorFlow Serving verwendet wird 
- TPU-Training benötigt wird 
- Mobile Deployment (TFLite) geplant ist 
+ Production Deployment wichtig ist
+ TensorFlow Serving verwendet wird
+ TPU-Training benötigt wird
+ Mobile Deployment (TFLite) geplant ist
 
 ### Wählen Sie Framework-Agnostic wenn:
- Keine Dependencies erlaubt sind 
- Custom Framework verwendet wird 
- Maximale Portabilität benötigt wird 
- Nur CPU-Inferenz benötigt wird 
+ Keine Dependencies erlaubt sind
+ Custom Framework verwendet wird
+ Maximale Portabilität benötigt wird
+ Nur CPU-Inferenz benötigt wird
 
 ---
 
@@ -813,5 +813,5 @@ def predict(x):
 
 ---
 
-**Last Updated**: Januar 2025 
+**Last Updated**: Januar 2025
 **Maintainer**: ProblyPros

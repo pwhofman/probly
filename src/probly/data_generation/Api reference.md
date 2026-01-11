@@ -148,7 +148,7 @@ generator.save_distributions(
 
 ```python
 def load_distributions(
- self, 
+ self,
  path: str | Path
 ) -> tuple[dict[int, list[float]], dict[str, Any]]
 ```
@@ -839,5 +839,5 @@ for batch_idx, batch in enumerate(dataloader):
 
 ---
 
-**Last Updated**: Januar 2025 
+**Last Updated**: Januar 2025
 **Maintainer**: ProblyPros
