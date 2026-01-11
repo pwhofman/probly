@@ -33,7 +33,7 @@ class TestInvalidArgs:
     def test_s_mean(self, dummy_predictor: ValidPredictor) -> None:
         num_members = 2
         s_mean = -0.1
-        msg = f"The initial mean of the output modulation r must be greater than 0, but got {s_mean} instead."
+        msg = f"The initial mean of the input modulation s must be greater than 0, but got {s_mean} instead."
         with pytest.raises(ValueError, match=msg):
             batchensemble(dummy_predictor, num_members=num_members, s_mean=s_mean)
 
