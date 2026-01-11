@@ -269,9 +269,9 @@ def compute_ood_evaluation_result(
     ood_s = np.asarray(out_distribution)
 
     # 1. Decoupled calculation
-    scalars = evaluate_ood(id_s, ood_s, metrics=["auroc", "aupr", "fpr@95tpr"])
+    scalars = evaluate_ood(id_s, ood_s, metrics=["auroc", "aupr", "fpr@95%"])
     if not isinstance(scalars, dict):
-        scalars = {"auroc": scalars, "aupr": 0.0, "fpr@95tpr": 0.0}
+        scalars = {"auroc": scalars, "aupr": 0.0, "fpr@95%": 0.0}
 
     # 2. Prepare Data for Curve
     labels = np.concatenate([np.zeros(len(id_s)), np.ones(len(ood_s))])
@@ -286,7 +286,7 @@ def compute_ood_evaluation_result(
     return OodEvaluationResult(
         auroc=scalars["auroc"],
         aupr=scalars["aupr"],
-        fpr95=scalars.get("fpr@95tpr"),
+        fpr95=scalars.get("fpr@95%"),
         fpr=fpr,
         tpr=tpr,
         precision=precision,
