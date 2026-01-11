@@ -11,6 +11,8 @@ Metric correctness is tested elsewhere.
 
 from __future__ import annotations
 
+import matplotlib
+
 from matplotlib.figure import Figure
 import numpy as np
 import pytest
@@ -37,11 +39,7 @@ def test_evaluate_ood_single_metric_string_returns_dict() -> None:
     in_distribution = np.array([0.9, 0.8, 0.95])
     out_distribution = np.array([0.1, 0.2, 0.05])
 
-    result = evaluate_ood(
-        in_distribution,
-        out_distribution,
-        metrics="auroc",
-    )
+    result = evaluate_ood(in_distribution, out_distribution, metrics="auroc")
 
     assert isinstance(result, dict)
     assert set(result.keys()) == {"auroc"}
@@ -51,11 +49,7 @@ def test_evaluate_ood_all_metrics_includes_static_and_dynamic() -> None:
     in_distribution = np.array([0.9, 0.8, 0.95])
     out_distribution = np.array([0.1, 0.2, 0.05])
 
-    result = evaluate_ood(
-        in_distribution,
-        out_distribution,
-        metrics="all",
-    )
+    result = evaluate_ood(in_distribution, out_distribution, metrics="all")
 
     assert isinstance(result, dict)
     assert "auroc" in result
@@ -69,16 +63,11 @@ def test_evaluate_ood_unknown_metric_raises() -> None:
     out_distribution = np.array([0.1, 0.2])
 
     with pytest.raises(ValueError, match="Unknown metric"):
-        evaluate_ood(
-            in_distribution,
-            out_distribution,
-            metrics=["not_a_metric"],
-        )
+        evaluate_ood(in_distribution, out_distribution, metrics=["not_a_metric"])
 
 
 def test_parse_dynamic_metric_default_threshold() -> None:
     base, threshold = parse_dynamic_metric("fpr")
-
     assert base == "fpr"
     assert threshold == 0.95
 
@@ -89,7 +78,6 @@ def test_parse_dynamic_metric_raises_unknown() -> None:
 
 
 def test_visualize_ood_returns_figures() -> None:
-    """visualize_ood should return a dict of figures without crashing."""
     rng = np.random.default_rng(42)
     in_distribution = rng.random(50)
     out_distribution = rng.random(50)
@@ -107,7 +95,6 @@ def test_visualize_ood_returns_figures() -> None:
 
 
 def test_visualize_ood_subset_of_plots() -> None:
-    """visualize_ood should respect plot_types."""
     rng = np.random.default_rng(123)
     in_distribution = rng.random(50)
     out_distribution = rng.random(50)
