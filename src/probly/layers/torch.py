@@ -161,8 +161,8 @@ class BatchEnsembleConv2d(nn.Module):
         nn.init.normal_(self.r, r_mean, r_std)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Forward pass of the BatchEnsemble conv2d layer.
-        
+        """Forward pass of the BatchEnsemble Conv2d layer.
+
         Args:
             x: torch.Tensor, Input tensor of shape [B, in_channels, H, W] or [E, B, in_channels, H, W],
                             where B is the batch size, E is the ensemble size, H is height, and W is width.
