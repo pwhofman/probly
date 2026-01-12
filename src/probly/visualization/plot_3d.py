@@ -298,14 +298,14 @@ class TernaryVisualizer:
 
         x1, y1 = self.probs_to_coords_3d(p_start)
         x2, y2 = self.probs_to_coords_3d(p_end)
-
+        color, linestyle = cfg.choose_min_max_style(style_key)
         ax.plot(
             [x1, x2],
             [y1, y2],
             linewidth=cfg.MIN_MAX_LINE_WIDTH,
             alpha=cfg.MIN_MAX_ALPHA,
-            color=cfg.choose_min_max_style_color(style_key),
-            linestyle=cfg.choose_min_max_linestyle(style_key),
+            color=color,
+            linestyle=linestyle,
         )
 
     def plot_minmax_lines(

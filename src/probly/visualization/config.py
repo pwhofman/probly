@@ -21,6 +21,7 @@ __all__ = [
     "PROB_LINE_WIDTH",
     "RED",
     "WHITE",
+    "_MIN_MAX_STYLES",
     "get_sign_color",
 ]
 
@@ -44,17 +45,18 @@ MIN_MAX_ALPHA: float = 0.7
 MIN_MAX_LINESTYLE_1: str = "--"
 MIN_MAX_LINESTYLE_2: str = "-."
 
+_MIN_MAX_STYLES = {
+    1: (RED, "--"),
+    2: (BLUE, "-."),
+}
 
-def choose_min_max_style_color(value: int) -> str:
-    if value == 1:
-        return RED
-    return BLUE
 
-
-def choose_min_max_linestyle(value: int) -> str:
-    if value == 1:
-        return "--"
-    return "-."
+def choose_min_max_style(value: int) -> tuple[str, str]:
+    try:
+        return _MIN_MAX_STYLES[value]
+    except KeyError as err:
+        msg = f"Unknown min/max style key: {value}"
+        raise ValueError(msg) from err
 
 
 def get_sign_color(value: float) -> str:
