@@ -1,5 +1,4 @@
-"""===============================
-Threshold-based decision sketch
+"""Threshold-based decision sketch.
 ===============================
 
 A minimal thresholding “predictor” that turns continuous inputs into class labels,
