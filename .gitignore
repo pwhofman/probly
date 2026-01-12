@@ -266,3 +266,5 @@ docs/source/api
 
 # macOS
 .DS_Store
+notebooks/examples/cifar-10-batches-py/
+notebooks/examples/cifar-10-python.tar.gz
