@@ -81,9 +81,9 @@ This example shows:
     std = np.std(data_stack, axis=0, ddof=0)
 
     print("mean shape:", mean.shape)  # noqa: T201
-    print("std shape:", std.shape)    # noqa: T201
-    print("mean[0]:", mean[0])        # noqa: T201
-    print("std[0]:", std[0])          # noqa: T201
+    print("std shape:", std.shape)  # noqa: T201
+    print("mean[0]:", mean[0])  # noqa: T201
+    print("std[0]:", std[0])  # noqa: T201
 
     # Plot mean ± std for instance 0
     classes = np.arange(mean.shape[1])
@@ -99,7 +99,7 @@ This example shows:
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 0.034 seconds)
+   **Total running time of the script:** (0 minutes 0.020 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_samples_with_array_sample.py:

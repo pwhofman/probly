@@ -15,6 +15,27 @@ Examples using ``probly.representation.ArraySample``
 
 .. raw:: html
 
+    <div class="sphx-glr-thumbcontainer" tooltip="You typically don&#x27;t want to care about the concrete sample type. probly provides create_sample which selects the best representation based on the sample element type.">
+
+.. only:: html
+
+  .. image:: /auto_examples/images/thumb/sphx_glr_plot_create_sample_dispatch_thumb.png
+    :alt:
+
+  :doc:`/auto_examples/plot_create_sample_dispatch`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Automatic sample construction (dispatcher)</div>
+    </div>
+
+
+.. only:: not html
+
+ * :doc:`/auto_examples/plot_create_sample_dispatch`
+
+.. raw:: html
+
     <div class="sphx-glr-thumbcontainer" tooltip="probly represents repeated stochastic predictions as a &quot;sample&quot;. For NumPy-like data, the concrete implementation is probly.representation.sampling.sample.ArraySample.">
 
 .. only:: html

@@ -33,30 +33,19 @@ version = probly.__version__
 
 # -- General configuration ---------------------------------------------------
 extensions = [
-    "sphinx.ext.autodoc",
-    "sphinx.ext.autosummary",
-    "sphinx.ext.viewcode",
-    "sphinx.ext.napoleon",
-    "sphinx.ext.duration",
-    "sphinx_gallery.gen_gallery",
-    "sphinx_gallery.load_style",
-    "sphinx.ext.intersphinx",
-    "sphinx.ext.mathjax",
-    "sphinx.ext.doctest",
-    "sphinx_copybutton",
-    "sphinxcontrib.bibtex",
     "sphinx.ext.autodoc",  # generates API documentation from docstrings
     "sphinx.ext.autosummary",  # generates .rst files for each module
-    # "sphinx.ext.linkcode",  # adds [source] links to code that link to GitHub. Use when repo is public.  # noqa: E501, ERA001
     "sphinx.ext.viewcode",  # adds [source] links to code that link to the source code in the docs.
     "sphinx.ext.napoleon",  # for Google-style docstrings
     "sphinx.ext.duration",  # optional, show the duration of the build
-    "myst_nb",  # for jupyter notebook support, also includes myst_parser
+    "sphinx_gallery.gen_gallery",
     "sphinx.ext.intersphinx",  # for linking to other projects' docs
     "sphinx.ext.mathjax",  # for math support
     "sphinx.ext.doctest",  # for testing code snippets in the docs
     "sphinx_copybutton",  # adds a copy button to code blocks
-    # '"sphinx.ext.autosectionlabel",  # for auto-generating section labels,
+    # "sphinx.ext.linkcode",  # adds [source] links to code that link to GitHub. Use when repo is public.  # noqa: E501, ERA001
+    "myst_nb",  # for jupyter notebook support, also includes myst_parser
+    # "sphinx.ext.autosectionlabel",  # for auto-generating section labels
     "sphinxcontrib.bibtex",  # for bibliography support
 ]
 
@@ -120,7 +109,7 @@ sphinx_gallery_conf = {
     "filename_pattern": r"plot_.*\.py",
     "plot_gallery": True,
     "download_all_examples": False,
-    # Don’t kill the whole build if one example errors
+    # Don't kill the whole build if one example errors
     "abort_on_example_error": False,
     "default_thumb_file": str(DOCS_DIR / "_static" / "logo" / "logo_light.png"),
 }
@@ -138,6 +127,20 @@ intersphinx_mapping = {
 
 # -- Linkcode (optional) -----------------------------------------------------
 def linkcode_resolve(domain: str, info: dict[str, str]) -> str | None:
+    """Return a URL to the source for the given Python object for Sphinx linkcode.
+
+    Parameters
+    ----------
+    domain : str
+        The domain, e.g. "py".
+    info : dict[str, str]
+        Info dict containing keys like "module" and "fullname".
+
+    Returns:
+    -------
+    str | None
+        The URL to the source file (or None if it cannot be resolved).
+    """
     if domain != "py" or not info.get("module"):
         return None
     try:
