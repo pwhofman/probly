@@ -210,7 +210,7 @@ Uses a stack of radial flow layers to transform a base Gaussian distribution:
 
    # Create flow with 4 radial layers over a 2D latent space
    flow = RadialFlowDensity(dim=2, flow_length=4)
-   
+
    # Compute log probability of latent vectors
    log_prob = flow.log_prob(z)  # Shape: [B]
 
@@ -230,7 +230,7 @@ and normalizing flow for density-based uncertainty:
        certainty_budget=2.0,  # Scales density into evidence (default: latent_dim)
        n_prior=10.0           # Prior pseudo-count (default: num_classes)
    )
-   
+
    # Forward pass returns three values
    alpha, z, log_pz = model(x)
    # alpha: Posterior Dirichlet parameters [B, num_classes]
@@ -246,7 +246,7 @@ MLP model for evidential regression that outputs Normal-Inverse-Gamma parameters
    from probly.layers.evidential.torch import EvidentialRegression
 
    model = EvidentialRegression()
-   
+
    # Returns four parameters for 1D regression
    mu, kappa, alpha, beta = model(x)
    # mu: Predicted mean
@@ -396,7 +396,7 @@ For evidential regression, the model outputs (μ, κ, α, β):
 .. code-block:: python
 
    mu, kappa, alpha, beta = model(x)
-   
+
    aleatoric = beta / (alpha - 1)
    epistemic = beta / (kappa * (alpha - 1))
 
@@ -437,12 +437,12 @@ with probabilistic outputs and enable end-to-end uncertainty-aware workflows.
 
 **Key utilities include:**
 
-- :doc:`Custom Loss Functions </notebooks/examples/utilities_and_layers/custom_loss_functions>`: 
+- :doc:`Custom Loss Functions </notebooks/examples/utilities_and_layers/custom_loss_functions>`:
 Tailored loss functions that properly account for
 uncertainty in predictions. These include negative log-likelihood variants, evidential loss functions,and calibration-aware losses that ensure your model
 learns meaningful uncertainty estimates.
 
-- :doc:`Metrics </notebooks/examples/utilities_and_layers/metrics>`: 
+- :doc:`Metrics </notebooks/examples/utilities_and_layers/metrics>`:
 Specialized metrics to evaluate not only prediction accuracy but also the
 quality of uncertainty estimates, including calibration error, sharpness, and proper scoring rules.
 
@@ -478,7 +478,7 @@ and negative log-likelihood metrics.
 Methods to visualize uncertainty in predictions
 through confidence bands, prediction interval plots, and uncertainty heatmaps, aiding in qualitative interpretation and model debugging.
 
-- :doc:`Interpretation Techniques </notebooks/examples/evaluation_and_quantification/interpretation_techniques>`: 
+- :doc:`Interpretation Techniques </notebooks/examples/evaluation_and_quantification/interpretation_techniques>`:
 Approaches to decompose uncertaintyinto aleatoric (data) and epistemic (model) components,identify which inputs drive uncertainty, and understand the sources and implications of uncertainty in
 model outputs.
 

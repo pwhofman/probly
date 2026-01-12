@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import re
-
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest

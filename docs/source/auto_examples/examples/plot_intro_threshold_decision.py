@@ -1,5 +1,4 @@
-"""
-===============================
+"""===============================
 Threshold-based decision sketch
 ===============================
 
@@ -34,4 +33,3 @@ plt.yticks([0, 1], ["class 0", "class 1"])
 plt.title("Threshold decision rule")
 plt.legend(loc="upper left", frameon=False)
 plt.tight_layout()
-

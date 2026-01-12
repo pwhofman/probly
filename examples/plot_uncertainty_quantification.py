@@ -1,5 +1,4 @@
-"""
-Uncertainty Quantification
+"""Uncertainty Quantification
 =================================
 
 This example demonstrates a simple form of uncertainty quantification (UQ)
@@ -13,8 +12,10 @@ We simulate a *predictive distribution* by sampling multiple model predictions
 - An uncertainty band (mean ± 2σ)
 """
 
-import numpy as np
+from __future__ import annotations
+
 import matplotlib.pyplot as plt
+import numpy as np
 
 # Data
 X = np.linspace(0, 10, 100)

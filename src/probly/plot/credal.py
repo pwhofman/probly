@@ -8,9 +8,9 @@ import mpltern  # noqa: F401, required for ternary projection, do not remove
 import numpy as np
 
 if TYPE_CHECKING:
-    import matplotlib.pyplot as plt
-    from matplotlib.figure import Figure
     from matplotlib.axes import Axes
+    from matplotlib.figure import Figure
+    import matplotlib.pyplot as plt
 else:
     import matplotlib.pyplot as plt
 

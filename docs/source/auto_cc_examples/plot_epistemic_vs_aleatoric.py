@@ -1,13 +1,11 @@
-"""
-Epistemic vs Aleatoric Uncertainty
+"""Epistemic vs Aleatoric Uncertainty
 =================================
 
 This is a minimal Sphinx-Gallery example.
 """
 
-
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 
 # Random seed
 rng = np.random.RandomState(0)
@@ -21,10 +19,7 @@ noise = rng.normal(scale=0.2, size=len(X))
 y_aleatoric = y_true + noise
 
 # Epistemic uncertainty (model variance simulation)
-epistemic_samples = [
-    y_true + rng.normal(scale=0.1, size=len(X))
-    for _ in range(10)
-]
+epistemic_samples = [y_true + rng.normal(scale=0.1, size=len(X)) for _ in range(10)]
 
 # Plot
 plt.figure(figsize=(8, 4))

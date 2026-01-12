@@ -1,5 +1,4 @@
-"""
-==========================
+"""==========================
 Hello, uncertainty (glimpse)
 ==========================
 
@@ -36,4 +35,3 @@ plt.xlabel("Class index")
 plt.ylabel("Probability")
 plt.title("Mean ± std over stochastic passes")
 plt.tight_layout()
-

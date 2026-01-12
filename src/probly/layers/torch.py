@@ -253,7 +253,9 @@ class BayesConv2d(nn.Module):
             if not use_base_weights:
                 self.bias_mu = nn.Parameter(torch.empty((self.out_channels,)))
             else:
-                self.bias_mu = nn.Parameter(base_layer.bias.data if base_layer.bias is not None else torch.empty((self.out_channels,)))
+                self.bias_mu = nn.Parameter(
+                    base_layer.bias.data if base_layer.bias is not None else torch.empty((self.out_channels,))
+                )
             self.bias_rho = nn.Parameter(torch.full((self.out_channels,), rho))
 
             # prior bias
@@ -265,7 +267,9 @@ class BayesConv2d(nn.Module):
             else:
                 self.register_buffer(
                     "bias_prior_mu",
-                    base_layer.bias.data if base_layer.bias is not None else torch.full((self.out_channels,), prior_mean),
+                    base_layer.bias.data
+                    if base_layer.bias is not None
+                    else torch.full((self.out_channels,), prior_mean),
                 )
             self.register_buffer(
                 "bias_prior_sigma",
@@ -340,7 +344,7 @@ class BayesConv2d(nn.Module):
                 _kl_divergence_gaussian(
                     self.bias_mu,
                     torch.log1p(torch.exp(self.bias_rho)) ** 2,
-                    cast("torch.Tensor", self.bias_prior_mu), 
+                    cast("torch.Tensor", self.bias_prior_mu),
                     cast("torch.Tensor", self.bias_prior_sigma) ** 2,
                 ),
             )
@@ -450,7 +454,9 @@ class NormalInverseGammaLinear(nn.Module):
 
     """
 
-    def __init__(self, in_features: int, out_features: int, device: torch.device | None = None, *, bias: bool = True) -> None:
+    def __init__(
+        self, in_features: int, out_features: int, device: torch.device | None = None, *, bias: bool = True
+    ) -> None:
         """Initialize an instance of the NormalInverseGammaLinear layer.
 
         Args:

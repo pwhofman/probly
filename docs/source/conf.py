@@ -1,20 +1,20 @@
-﻿"""Configuration file for the Sphinx documentation builder."""
+"""Configuration file for the Sphinx documentation builder."""
 
 from __future__ import annotations
 
 import importlib
 import inspect
 import os
-import sys
 from pathlib import Path
+import sys
 
 import probly
 
 # -- Paths -------------------------------------------------------------------
 # conf.py lives in:  .../probly/docs/source/conf.py
-DOCS_SOURCE_DIR = Path(__file__).resolve().parent          # .../docs/source
-DOCS_DIR = DOCS_SOURCE_DIR.parent                         # .../docs
-REPO_ROOT = DOCS_DIR.parent                               # .../probly
+DOCS_SOURCE_DIR = Path(__file__).resolve().parent  # .../docs/source
+DOCS_DIR = DOCS_SOURCE_DIR.parent  # .../docs
+REPO_ROOT = DOCS_DIR.parent  # .../probly
 
 # Add package + example dirs to Python path
 sys.path.insert(0, str(REPO_ROOT / "src"))
@@ -133,6 +133,7 @@ intersphinx_mapping = {
     "torch": ("https://pytorch.org/docs/stable/", None),
 }
 
+
 # -- Linkcode (optional) -----------------------------------------------------
 def linkcode_resolve(domain: str, info: dict[str, str]) -> str | None:
     if domain != "py" or not info.get("module"):
@@ -153,6 +154,7 @@ def linkcode_resolve(domain: str, info: dict[str, str]) -> str | None:
     base = "https://github.com/n-teGruppe/probly"
     branch = "sphinx_gallery"
     return f"{base}/blob/{branch}/{relpath}#L{lineno}"
+
 
 # -- HTML output -------------------------------------------------------------
 html_theme = "furo"
