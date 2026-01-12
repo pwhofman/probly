@@ -1,5 +1,5 @@
 """=======================================
-Automatic sample construction (dispatcher)
+Automatic sample construction (dispatcher).
 ==========================================
 
 You typically don't want to care about the concrete sample type. ``probly`` provides

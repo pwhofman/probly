@@ -18,7 +18,7 @@
 .. _sphx_glr_auto_examples_plot_intro_uncertainty_glimpse.py:
 
 =========================
-Hello, uncertainty (glimpse)
+Hello, uncertainty (glimpse).
 ============================
 
 This tiny example shows how repeated stochastic predictions can be summarized into

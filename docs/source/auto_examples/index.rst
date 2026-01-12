@@ -29,7 +29,7 @@ By convention, example files are named ``plot_*.py``.
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">Sphinx-Gallery smoke test</div>
+      <div class="sphx-glr-thumbnail-title">Sphinx-Gallery smoke test.</div>
     </div>
 
 
@@ -46,7 +46,7 @@ By convention, example files are named ``plot_*.py``.
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">Uncertainty Quantification</div>
+      <div class="sphx-glr-thumbnail-title">Uncertainty Quantification.</div>
     </div>
 
 
@@ -63,7 +63,7 @@ By convention, example files are named ``plot_*.py``.
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">Hello, uncertainty (glimpse)</div>
+      <div class="sphx-glr-thumbnail-title">Hello, uncertainty (glimpse).</div>
     </div>
 
 
@@ -80,7 +80,7 @@ By convention, example files are named ``plot_*.py``.
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">Epistemic vs Aleatoric Uncertainty</div>
+      <div class="sphx-glr-thumbnail-title">Epistemic vs Aleatoric Uncertainty.</div>
     </div>
 
 
@@ -97,7 +97,7 @@ By convention, example files are named ``plot_*.py``.
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">Automatic sample construction (dispatcher)</div>
+      <div class="sphx-glr-thumbnail-title">Automatic sample construction (dispatcher).</div>
     </div>
 
 
@@ -114,7 +114,7 @@ By convention, example files are named ``plot_*.py``.
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">Threshold-based decision sketch</div>
+      <div class="sphx-glr-thumbnail-title">Threshold-based decision sketch.</div>
     </div>
 
 
@@ -131,7 +131,7 @@ By convention, example files are named ``plot_*.py``.
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">Using the generic predict()</div>
+      <div class="sphx-glr-thumbnail-title">Using the generic predict().</div>
     </div>
 
 
@@ -148,7 +148,7 @@ By convention, example files are named ``plot_*.py``.
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">Working with samples (`ArraySample`)</div>
+      <div class="sphx-glr-thumbnail-title">Working with samples (`ArraySample`).</div>
     </div>
 
 
@@ -165,7 +165,7 @@ By convention, example files are named ``plot_*.py``.
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">Selective Prediction</div>
+      <div class="sphx-glr-thumbnail-title">Selective Prediction.</div>
     </div>
 
 

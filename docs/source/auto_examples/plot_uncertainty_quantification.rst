@@ -17,7 +17,7 @@
 
 .. _sphx_glr_auto_examples_plot_uncertainty_quantification.py:
 
-Uncertainty Quantification
+Uncertainty Quantification.
 =============================
 
 This example demonstrates a simple form of uncertainty quantification (UQ)
@@ -75,7 +75,7 @@ We simulate a *predictive distribution* by sampling multiple model predictions
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 0.028 seconds)
+   **Total running time of the script:** (0 minutes 0.030 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_uncertainty_quantification.py:

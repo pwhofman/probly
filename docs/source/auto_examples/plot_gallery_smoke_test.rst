@@ -18,7 +18,7 @@
 .. _sphx_glr_auto_examples_plot_gallery_smoke_test.py:
 
 ======================
-Sphinx-Gallery smoke test
+Sphinx-Gallery smoke test.
 =========================
 
 This page exists mainly to verify that Sphinx-Gallery is correctly configured for

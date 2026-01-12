@@ -18,7 +18,7 @@
 .. _sphx_glr_auto_examples_plot_samples_with_array_sample.py:
 
 =================================
-Working with samples (`ArraySample`)
+Working with samples (`ArraySample`).
 ====================================
 
 ``probly`` represents repeated stochastic predictions as a "sample". For NumPy-like data,

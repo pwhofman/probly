@@ -17,7 +17,7 @@
 
 .. _sphx_glr_auto_examples_plot_selective_prediction.py:
 
-Selective Prediction
+Selective Prediction.
 =======================
 
 This example demonstrates *selective prediction* (abstention).
@@ -99,7 +99,7 @@ threshold; otherwise it rejects the sample.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 0.038 seconds)
+   **Total running time of the script:** (0 minutes 0.039 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_selective_prediction.py:
