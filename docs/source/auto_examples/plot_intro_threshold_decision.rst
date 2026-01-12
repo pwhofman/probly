@@ -17,9 +17,9 @@
 
 .. _sphx_glr_auto_examples_plot_intro_threshold_decision.py:
 
-============================
+=============================
 Threshold-based decision sketch.
-===============================
+================================
 
 A minimal thresholding “predictor” that turns continuous inputs into class labels,
 plus a plot showing how the decision changes with the threshold.

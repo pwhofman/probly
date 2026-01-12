@@ -6,7 +6,7 @@
 
 Computation times
 =================
-**00:00.251** total execution time for 9 files **from auto_examples**:
+**00:00.245** total execution time for 9 files **from auto_examples**:
 
 .. container::
 
@@ -33,7 +33,7 @@ Computation times
      - Time
      - Mem (MB)
    * - :ref:`sphx_glr_auto_examples_plot_epistemic_vs_aleatoric.py` (``plot_epistemic_vs_aleatoric.py``)
-     - 00:00.056
+     - 00:00.053
      - 0.0
    * - :ref:`sphx_glr_auto_examples_plot_selective_prediction.py` (``plot_selective_prediction.py``)
      - 00:00.039
@@ -42,7 +42,7 @@ Computation times
      - 00:00.032
      - 0.0
    * - :ref:`sphx_glr_auto_examples_plot_uncertainty_quantification.py` (``plot_uncertainty_quantification.py``)
-     - 00:00.030
+     - 00:00.029
      - 0.0
    * - :ref:`sphx_glr_auto_examples_plot_samples_with_array_sample.py` (``plot_samples_with_array_sample.py``)
      - 00:00.020
@@ -53,9 +53,9 @@ Computation times
    * - :ref:`sphx_glr_auto_examples_plot_intro_threshold_decision.py` (``plot_intro_threshold_decision.py``)
      - 00:00.018
      - 0.0
-   * - :ref:`sphx_glr_auto_examples_plot_create_sample_dispatch.py` (``plot_create_sample_dispatch.py``)
+   * - :ref:`sphx_glr_auto_examples_plot_using_predict_protocol.py` (``plot_using_predict_protocol.py``)
      - 00:00.018
      - 0.0
-   * - :ref:`sphx_glr_auto_examples_plot_using_predict_protocol.py` (``plot_using_predict_protocol.py``)
+   * - :ref:`sphx_glr_auto_examples_plot_create_sample_dispatch.py` (``plot_create_sample_dispatch.py``)
      - 00:00.018
      - 0.0

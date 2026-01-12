@@ -17,9 +17,9 @@
 
 .. _sphx_glr_auto_examples_plot_using_predict_protocol.py:
 
-==========================
+===========================
 Using the generic `predict()`.
-=============================
+==============================
 
 ``probly`` defines a small protocol for "predictors" and a generic
 :func:`probly.predictor.predict` helper.

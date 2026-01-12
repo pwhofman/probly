@@ -18,7 +18,7 @@
 .. _sphx_glr_auto_examples_plot_epistemic_vs_aleatoric.py:
 
 Epistemic vs Aleatoric Uncertainty.
-=====================================
+======================================
 
 This example illustrates the difference between epistemic and aleatoric
 uncertainty in probabilistic models.
@@ -76,7 +76,7 @@ uncertainty in probabilistic models.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 0.056 seconds)
+   **Total running time of the script:** (0 minutes 0.053 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_epistemic_vs_aleatoric.py:

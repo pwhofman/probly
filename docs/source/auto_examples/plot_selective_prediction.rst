@@ -18,7 +18,7 @@
 .. _sphx_glr_auto_examples_plot_selective_prediction.py:
 
 Selective Prediction.
-=======================
+========================
 
 This example demonstrates *selective prediction* (abstention).
 
