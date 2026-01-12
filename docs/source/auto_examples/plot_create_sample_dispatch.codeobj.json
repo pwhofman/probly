@@ -81,6 +81,22 @@
    "name": "array"
   }
  ],
+ "np.mean": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "_ArrayFunctionDispatcher"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "mean"
+  }
+ ],
  "plt.bar": [
   {
    "is_class": false,
@@ -111,6 +127,22 @@
    "module": "matplotlib.pyplot",
    "module_short": "matplotlib.pyplot",
    "name": "figure"
+  }
+ ],
+ "plt.show": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "function"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib.pyplot",
+   "module_short": "matplotlib.pyplot",
+   "name": "show"
   }
  ],
  "plt.tight_layout": [
@@ -238,7 +270,7 @@
   {
    "is_class": false,
    "is_explicit": false,
-   "module": "probly.representation.sampling.sample",
+   "module": "probly.representation.sampling.array_sample",
    "module_short": "probly.representation.sampling",
    "name": "ArraySample"
   },
@@ -262,78 +294,6 @@
    "module": "probly",
    "module_short": "probly",
    "name": "ArraySample"
-  }
- ],
- "sample.mean": [
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "probly.representation.sampling.sample",
-   "module_short": "probly.representation.sampling",
-   "name": "ArraySample.mean"
-  },
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "probly.representation.sampling",
-   "module_short": "probly.representation.sampling",
-   "name": "ArraySample.mean"
-  },
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "probly.representation",
-   "module_short": "probly.representation",
-   "name": "ArraySample.mean"
-  },
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "probly",
-   "module_short": "probly",
-   "name": "ArraySample.mean"
-  },
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "probly.representation.sampling.sample",
-   "module_short": "probly.representation",
-   "name": "Sample.mean"
-  },
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "probly.representation.sampling",
-   "module_short": "probly.representation",
-   "name": "Sample.mean"
-  },
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "probly.representation",
-   "module_short": "probly.representation",
-   "name": "Sample.mean"
-  },
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "probly",
-   "module_short": "probly",
-   "name": "Sample.mean"
-  },
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "typing",
-   "module_short": "typing",
-   "name": "Generic.mean"
-  },
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "abc",
-   "module_short": "abc",
-   "name": "ABC.mean"
   }
  ],
  "samples": [

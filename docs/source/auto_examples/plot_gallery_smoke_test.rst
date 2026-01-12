@@ -17,8 +17,7 @@
 
 .. _sphx_glr_auto_examples_plot_gallery_smoke_test.py:
 
-
-=========================
+======================
 Sphinx-Gallery smoke test
 =========================
 
@@ -29,7 +28,7 @@ These examples are executed during the documentation build. Keep them lightweigh
 and avoid optional heavy ML dependencies unless you explicitly want the docs build
 to require them.
 
-.. GENERATED FROM PYTHON SOURCE LINES 13-26
+.. GENERATED FROM PYTHON SOURCE LINES 12-25
 
 
 
@@ -71,7 +70,7 @@ to require them.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 0.071 seconds)
+   **Total running time of the script:** (0 minutes 0.032 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_gallery_smoke_test.py:

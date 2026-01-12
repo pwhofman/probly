@@ -17,16 +17,15 @@
 
 .. _sphx_glr_auto_examples_plot_selective_prediction.py:
 
-
 Selective Prediction
-=================================
+=======================
 
 This example demonstrates *selective prediction* (abstention).
 
 A model outputs a prediction only when its confidence is above a chosen
 threshold; otherwise it rejects the sample.
 
-.. GENERATED FROM PYTHON SOURCE LINES 10-64
+.. GENERATED FROM PYTHON SOURCE LINES 9-64
 
 
 
@@ -42,9 +41,10 @@ threshold; otherwise it rejects the sample.
 .. code-block:: Python
 
 
-    import numpy as np
-    import matplotlib.pyplot as plt
+    from __future__ import annotations
 
+    import matplotlib.pyplot as plt
+    import numpy as np
 
     rng = np.random.default_rng(0)
 
@@ -99,7 +99,7 @@ threshold; otherwise it rejects the sample.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 0.058 seconds)
+   **Total running time of the script:** (0 minutes 0.039 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_selective_prediction.py:

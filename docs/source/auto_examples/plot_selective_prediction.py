@@ -1,11 +1,13 @@
 """Selective Prediction
-=================================
+=======================
 
 This example demonstrates *selective prediction* (abstention).
 
 A model outputs a prediction only when its confidence is above a chosen
 threshold; otherwise it rejects the sample.
 """
+
+from __future__ import annotations
 
 import matplotlib.pyplot as plt
 import numpy as np

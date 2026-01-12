@@ -8,6 +8,8 @@ import os
 from pathlib import Path
 import sys
 
+sys.path.insert(0, os.path.abspath("../../src"))
+
 import probly
 
 # -- Paths -------------------------------------------------------------------

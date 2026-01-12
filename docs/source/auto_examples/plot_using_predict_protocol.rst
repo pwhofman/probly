@@ -17,8 +17,7 @@
 
 .. _sphx_glr_auto_examples_plot_using_predict_protocol.py:
 
-
-=============================
+==========================
 Using the generic `predict()`
 =============================
 
@@ -31,7 +30,7 @@ while still supporting the simple ``predictor(x)`` callable pattern.
 To make the execution visible in the gallery, this example also produces a small plot
 showing the input values and the predicted class labels.
 
-.. GENERATED FROM PYTHON SOURCE LINES 15-47
+.. GENERATED FROM PYTHON SOURCE LINES 14-46
 
 
 
@@ -92,7 +91,7 @@ showing the input values and the predicted class labels.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 0.028 seconds)
+   **Total running time of the script:** (0 minutes 0.018 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_using_predict_protocol.py:

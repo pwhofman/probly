@@ -1,6 +1,12 @@
 :orphan:
 
+# Uncertainty Quantification Examples
 
+This directory contains example scripts for **Sphinx-Gallery** illustrating
+different concepts of uncertainty in machine learning.
+
+The examples are automatically rendered into the documentation and can be
+accessed via the generated gallery pages.
 
 
 
@@ -10,70 +16,11 @@
 
 .. thumbnail-parent-div-open
 
-.. raw:: html
-
-    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates a simple form of uncertainty quantification (UQ) for a regression-like setting.">
-
-.. only:: html
-
-  .. image:: /auto_examples/cc_examples/images/thumb/sphx_glr_plot_uncertainty_quantification_thumb.png
-    :alt:
-
-  :doc:`/auto_examples/cc_examples/plot_uncertainty_quantification`
-
-.. raw:: html
-
-      <div class="sphx-glr-thumbnail-title">Uncertainty Quantification</div>
-    </div>
-
-
-.. raw:: html
-
-    <div class="sphx-glr-thumbcontainer" tooltip="This example illustrates the difference between epistemic and aleatoric uncertainty in probabilistic models.">
-
-.. only:: html
-
-  .. image:: /auto_examples/cc_examples/images/thumb/sphx_glr_plot_epistemic_vs_aleatoric_thumb.png
-    :alt:
-
-  :doc:`/auto_examples/cc_examples/plot_epistemic_vs_aleatoric`
-
-.. raw:: html
-
-      <div class="sphx-glr-thumbnail-title">Epistemic vs Aleatoric Uncertainty</div>
-    </div>
-
-
-.. raw:: html
-
-    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates selective prediction (abstention).">
-
-.. only:: html
-
-  .. image:: /auto_examples/cc_examples/images/thumb/sphx_glr_plot_selective_prediction_thumb.png
-    :alt:
-
-  :doc:`/auto_examples/cc_examples/plot_selective_prediction`
-
-.. raw:: html
-
-      <div class="sphx-glr-thumbnail-title">Selective Prediction</div>
-    </div>
-
-
 .. thumbnail-parent-div-close
 
 .. raw:: html
 
     </div>
-
-
-.. toctree::
-   :hidden:
-
-   /auto_examples/cc_examples/plot_uncertainty_quantification
-   /auto_examples/cc_examples/plot_epistemic_vs_aleatoric
-   /auto_examples/cc_examples/plot_selective_prediction
 
 
 

@@ -1,4 +1,4 @@
-"""====================================
+"""=================================
 Working with samples (`ArraySample`)
 ====================================
 
@@ -25,15 +25,18 @@ pass_1 = np.array([[0.1, 0.2, 0.6, 0.1], [0.7, 0.1, 0.1, 0.1]])
 pass_2 = np.array([[0.2, 0.2, 0.5, 0.1], [0.6, 0.2, 0.1, 0.1]])
 pass_3 = np.array([[0.15, 0.25, 0.5, 0.1], [0.65, 0.15, 0.1, 0.1]])
 
-sample = ArraySample([pass_1, pass_2, pass_3])
+data_stack = np.array([pass_1, pass_2, pass_3])
 
-mean = sample.mean()
-std = sample.std(ddof=0)
 
-print("mean shape:", mean.shape)
-print("std shape:", std.shape)
-print("mean[0]:", mean[0])
-print("std[0]:", std[0])
+sample = ArraySample(data_stack, sample_axis=0)
+
+mean = np.mean(data_stack, axis=0)
+std = np.std(data_stack, axis=0, ddof=0)
+
+print("mean shape:", mean.shape)  # noqa: T201
+print("std shape:", std.shape)  # noqa: T201
+print("mean[0]:", mean[0])  # noqa: T201
+print("std[0]:", std[0])  # noqa: T201
 
 # Plot mean ± std for instance 0
 classes = np.arange(mean.shape[1])

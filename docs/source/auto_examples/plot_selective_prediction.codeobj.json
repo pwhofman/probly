@@ -78,8 +78,8 @@
   {
    "is_class": false,
    "is_explicit": false,
-   "module": "_cython_3_0_11",
-   "module_short": "_cython_3_0_11",
+   "module": "_cython_3_2_1",
+   "module_short": "_cython_3_2_1",
    "name": "cython_function_or_method"
   },
   {

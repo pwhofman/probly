@@ -1,9 +1,11 @@
 """Epistemic vs Aleatoric Uncertainty
-=================================
+=====================================
 
 This example illustrates the difference between epistemic and aleatoric
 uncertainty in probabilistic models.
 """
+
+from __future__ import annotations
 
 import matplotlib.pyplot as plt
 import numpy as np

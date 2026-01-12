@@ -17,8 +17,7 @@
 
 .. _sphx_glr_auto_examples_plot_samples_with_array_sample.py:
 
-
-====================================
+=================================
 Working with samples (`ArraySample`)
 ====================================
 
@@ -31,7 +30,7 @@ This example shows:
 2) summarizing it with ``mean`` and ``std``, and
 3) visualizing predictive uncertainty as an error-bar plot.
 
-.. GENERATED FROM PYTHON SOURCE LINES 15-49
+.. GENERATED FROM PYTHON SOURCE LINES 14-51
 
 
 
@@ -73,15 +72,18 @@ This example shows:
     pass_2 = np.array([[0.2, 0.2, 0.5, 0.1], [0.6, 0.2, 0.1, 0.1]])
     pass_3 = np.array([[0.15, 0.25, 0.5, 0.1], [0.65, 0.15, 0.1, 0.1]])
 
-    sample = ArraySample([pass_1, pass_2, pass_3])
+    data_stack = np.array([pass_1, pass_2, pass_3])
 
-    mean = sample.mean()
-    std = sample.std(ddof=0)
 
-    print("mean shape:", mean.shape)
-    print("std shape:", std.shape)
-    print("mean[0]:", mean[0])
-    print("std[0]:", std[0])
+    sample = ArraySample(data_stack, sample_axis=0)
+
+    mean = np.mean(data_stack, axis=0)
+    std = np.std(data_stack, axis=0, ddof=0)
+
+    print("mean shape:", mean.shape)  # noqa: T201
+    print("std shape:", std.shape)    # noqa: T201
+    print("mean[0]:", mean[0])        # noqa: T201
+    print("std[0]:", std[0])          # noqa: T201
 
     # Plot mean ± std for instance 0
     classes = np.arange(mean.shape[1])
@@ -97,7 +99,7 @@ This example shows:
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 0.029 seconds)
+   **Total running time of the script:** (0 minutes 0.034 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_samples_with_array_sample.py:

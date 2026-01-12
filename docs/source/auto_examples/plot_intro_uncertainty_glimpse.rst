@@ -17,15 +17,14 @@
 
 .. _sphx_glr_auto_examples_plot_intro_uncertainty_glimpse.py:
 
-
-==========================
+=========================
 Hello, uncertainty (glimpse)
-==========================
+============================
 
 This tiny example shows how repeated stochastic predictions can be summarized into
 mean probabilities and visualized as error bars.
 
-.. GENERATED FROM PYTHON SOURCE LINES 9-40
+.. GENERATED FROM PYTHON SOURCE LINES 8-38
 
 
 
@@ -83,10 +82,9 @@ mean probabilities and visualized as error bars.
     plt.tight_layout()
 
 
-
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 0.027 seconds)
+   **Total running time of the script:** (0 minutes 0.019 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_intro_uncertainty_glimpse.py:

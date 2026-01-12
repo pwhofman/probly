@@ -17,14 +17,13 @@
 
 .. _sphx_glr_auto_examples_plot_epistemic_vs_aleatoric.py:
 
-
 Epistemic vs Aleatoric Uncertainty
-=================================
+=====================================
 
 This example illustrates the difference between epistemic and aleatoric
 uncertainty in probabilistic models.
 
-.. GENERATED FROM PYTHON SOURCE LINES 8-45
+.. GENERATED FROM PYTHON SOURCE LINES 7-41
 
 
 
@@ -40,10 +39,10 @@ uncertainty in probabilistic models.
 .. code-block:: Python
 
 
+    from __future__ import annotations
 
-
-    import numpy as np
     import matplotlib.pyplot as plt
+    import numpy as np
 
     # Random seed
     rng = np.random.RandomState(0)
@@ -57,10 +56,7 @@ uncertainty in probabilistic models.
     y_aleatoric = y_true + noise
 
     # Epistemic uncertainty (model variance simulation)
-    epistemic_samples = [
-        y_true + rng.normal(scale=0.1, size=len(X))
-        for _ in range(10)
-    ]
+    epistemic_samples = [y_true + rng.normal(scale=0.1, size=len(X)) for _ in range(10)]
 
     # Plot
     plt.figure(figsize=(8, 4))
@@ -80,7 +76,7 @@ uncertainty in probabilistic models.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 0.075 seconds)
+   **Total running time of the script:** (0 minutes 0.059 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_epistemic_vs_aleatoric.py:

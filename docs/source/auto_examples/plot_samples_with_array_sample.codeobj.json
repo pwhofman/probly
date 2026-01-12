@@ -3,7 +3,7 @@
   {
    "is_class": true,
    "is_explicit": false,
-   "module": "probly.representation.sampling.sample",
+   "module": "probly.representation.sampling.array_sample",
    "module_short": "probly.representation.sampling",
    "name": "ArraySample"
   },
@@ -31,7 +31,7 @@
   {
    "is_class": true,
    "is_explicit": false,
-   "module": "probly.representation.sampling.sample",
+   "module": "probly.representation.sampling.common_sample",
    "module_short": "probly.representation",
    "name": "Sample"
   },
@@ -55,6 +55,27 @@
    "module": "probly",
    "module_short": "probly",
    "name": "Sample"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "numpy.lib.mixins",
+   "module_short": "numpy.lib.mixins",
+   "name": "NDArrayOperatorsMixin"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "numpy.lib",
+   "module_short": "numpy.lib",
+   "name": "NDArrayOperatorsMixin"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "NDArrayOperatorsMixin"
   },
   {
    "is_class": true,
@@ -79,6 +100,15 @@
   }
  ],
  "classes": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "data_stack": [
   {
    "is_class": false,
    "is_explicit": false,
@@ -135,6 +165,38 @@
    "module": "numpy",
    "module_short": "numpy",
    "name": "array"
+  }
+ ],
+ "np.mean": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "_ArrayFunctionDispatcher"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "mean"
+  }
+ ],
+ "np.std": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "_ArrayFunctionDispatcher"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "std"
   }
  ],
  "pass_1": [
@@ -305,7 +367,7 @@
   {
    "is_class": false,
    "is_explicit": false,
-   "module": "probly.representation.sampling.sample",
+   "module": "probly.representation.sampling.array_sample",
    "module_short": "probly.representation.sampling",
    "name": "ArraySample"
   },
@@ -329,150 +391,6 @@
    "module": "probly",
    "module_short": "probly",
    "name": "ArraySample"
-  }
- ],
- "sample.mean": [
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "probly.representation.sampling.sample",
-   "module_short": "probly.representation.sampling",
-   "name": "ArraySample.mean"
-  },
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "probly.representation.sampling",
-   "module_short": "probly.representation.sampling",
-   "name": "ArraySample.mean"
-  },
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "probly.representation",
-   "module_short": "probly.representation",
-   "name": "ArraySample.mean"
-  },
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "probly",
-   "module_short": "probly",
-   "name": "ArraySample.mean"
-  },
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "probly.representation.sampling.sample",
-   "module_short": "probly.representation",
-   "name": "Sample.mean"
-  },
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "probly.representation.sampling",
-   "module_short": "probly.representation",
-   "name": "Sample.mean"
-  },
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "probly.representation",
-   "module_short": "probly.representation",
-   "name": "Sample.mean"
-  },
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "probly",
-   "module_short": "probly",
-   "name": "Sample.mean"
-  },
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "typing",
-   "module_short": "typing",
-   "name": "Generic.mean"
-  },
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "abc",
-   "module_short": "abc",
-   "name": "ABC.mean"
-  }
- ],
- "sample.std": [
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "probly.representation.sampling.sample",
-   "module_short": "probly.representation.sampling",
-   "name": "ArraySample.std"
-  },
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "probly.representation.sampling",
-   "module_short": "probly.representation.sampling",
-   "name": "ArraySample.std"
-  },
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "probly.representation",
-   "module_short": "probly.representation",
-   "name": "ArraySample.std"
-  },
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "probly",
-   "module_short": "probly",
-   "name": "ArraySample.std"
-  },
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "probly.representation.sampling.sample",
-   "module_short": "probly.representation",
-   "name": "Sample.std"
-  },
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "probly.representation.sampling",
-   "module_short": "probly.representation",
-   "name": "Sample.std"
-  },
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "probly.representation",
-   "module_short": "probly.representation",
-   "name": "Sample.std"
-  },
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "probly",
-   "module_short": "probly",
-   "name": "Sample.std"
-  },
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "typing",
-   "module_short": "typing",
-   "name": "Generic.std"
-  },
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "abc",
-   "module_short": "abc",
-   "name": "ABC.std"
   }
  ],
  "std": [

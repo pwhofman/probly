@@ -1,6 +1,6 @@
-"""=========================================
+"""=======================================
 Automatic sample construction (dispatcher)
-=========================================
+==========================================
 
 You typically don't want to care about the concrete sample type. ``probly`` provides
 ``create_sample`` which selects the best representation based on the sample element type.
@@ -30,11 +30,12 @@ samples = [
 
 sample = create_sample(samples)
 
-print("sample type:", type(sample).__name__)
-print("mean:", sample.mean())
+print("sample type:", type(sample).__name__)  # noqa: T201
+
+mean = np.mean(samples, axis=0)
+print("mean:\n", mean)  # noqa: T201
 
 # Visualize the mean probabilities for the first instance.
-mean = sample.mean()
 classes = np.arange(mean.shape[1])
 plt.figure(figsize=(4, 2.5))
 plt.bar(classes, mean[0], color="#6c8cd5")
@@ -44,3 +45,4 @@ plt.xlabel("Class index")
 plt.ylabel("Mean probability")
 plt.title("Mean probabilities for instance 0")
 plt.tight_layout()
+plt.show()

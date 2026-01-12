@@ -17,9 +17,8 @@
 
 .. _sphx_glr_auto_examples_plot_uncertainty_quantification.py:
 
-
 Uncertainty Quantification
-=================================
+=============================
 
 This example demonstrates a simple form of uncertainty quantification (UQ)
 for a regression-like setting.
@@ -31,7 +30,7 @@ We simulate a *predictive distribution* by sampling multiple model predictions
 - Predictive standard deviation
 - An uncertainty band (mean ± 2σ)
 
-.. GENERATED FROM PYTHON SOURCE LINES 15-39
+.. GENERATED FROM PYTHON SOURCE LINES 14-40
 
 
 
@@ -47,8 +46,10 @@ We simulate a *predictive distribution* by sampling multiple model predictions
 .. code-block:: Python
 
 
-    import numpy as np
+    from __future__ import annotations
+
     import matplotlib.pyplot as plt
+    import numpy as np
 
     # Data
     X = np.linspace(0, 10, 100)
@@ -74,7 +75,7 @@ We simulate a *predictive distribution* by sampling multiple model predictions
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 0.063 seconds)
+   **Total running time of the script:** (0 minutes 0.029 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_uncertainty_quantification.py:

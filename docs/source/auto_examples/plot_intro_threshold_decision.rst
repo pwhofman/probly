@@ -17,15 +17,14 @@
 
 .. _sphx_glr_auto_examples_plot_intro_threshold_decision.py:
 
-
-===============================
+============================
 Threshold-based decision sketch
 ===============================
 
 A minimal thresholding “predictor” that turns continuous inputs into class labels,
 plus a plot showing how the decision changes with the threshold.
 
-.. GENERATED FROM PYTHON SOURCE LINES 9-38
+.. GENERATED FROM PYTHON SOURCE LINES 8-36
 
 
 
@@ -81,10 +80,9 @@ plus a plot showing how the decision changes with the threshold.
     plt.tight_layout()
 
 
-
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 0.028 seconds)
+   **Total running time of the script:** (0 minutes 0.018 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_intro_threshold_decision.py:

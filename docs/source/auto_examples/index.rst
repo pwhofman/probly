@@ -35,6 +35,23 @@ By convention, example files are named ``plot_*.py``.
 
 .. raw:: html
 
+    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates a simple form of uncertainty quantification (UQ) for a regression-like setting.">
+
+.. only:: html
+
+  .. image:: /auto_examples/images/thumb/sphx_glr_plot_uncertainty_quantification_thumb.png
+    :alt:
+
+  :doc:`/auto_examples/plot_uncertainty_quantification`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Uncertainty Quantification</div>
+    </div>
+
+
+.. raw:: html
+
     <div class="sphx-glr-thumbcontainer" tooltip="This tiny example shows how repeated stochastic predictions can be summarized into mean probabilities and visualized as error bars.">
 
 .. only:: html
@@ -47,6 +64,23 @@ By convention, example files are named ``plot_*.py``.
 .. raw:: html
 
       <div class="sphx-glr-thumbnail-title">Hello, uncertainty (glimpse)</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="This example illustrates the difference between epistemic and aleatoric uncertainty in probabilistic models.">
+
+.. only:: html
+
+  .. image:: /auto_examples/images/thumb/sphx_glr_plot_epistemic_vs_aleatoric_thumb.png
+    :alt:
+
+  :doc:`/auto_examples/plot_epistemic_vs_aleatoric`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Epistemic vs Aleatoric Uncertainty</div>
     </div>
 
 
@@ -118,6 +152,23 @@ By convention, example files are named ``plot_*.py``.
     </div>
 
 
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates selective prediction (abstention).">
+
+.. only:: html
+
+  .. image:: /auto_examples/images/thumb/sphx_glr_plot_selective_prediction_thumb.png
+    :alt:
+
+  :doc:`/auto_examples/plot_selective_prediction`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Selective Prediction</div>
+    </div>
+
+
 .. thumbnail-parent-div-close
 
 .. raw:: html
@@ -129,11 +180,14 @@ By convention, example files are named ``plot_*.py``.
    :hidden:
 
    /auto_examples/plot_gallery_smoke_test
+   /auto_examples/plot_uncertainty_quantification
    /auto_examples/plot_intro_uncertainty_glimpse
+   /auto_examples/plot_epistemic_vs_aleatoric
    /auto_examples/plot_create_sample_dispatch
    /auto_examples/plot_intro_threshold_decision
    /auto_examples/plot_using_predict_protocol
    /auto_examples/plot_samples_with_array_sample
+   /auto_examples/plot_selective_prediction
 
 
 
