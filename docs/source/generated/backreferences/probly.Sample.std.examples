@@ -1,0 +1,42 @@
+
+
+Examples using ``probly.Sample.std``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+.. start-sphx-glr-thumbnails
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbnails">
+
+.. thumbnail-parent-div-open
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="probly represents repeated stochastic predictions as a &quot;sample&quot;. For NumPy-like data, the concrete implementation is probly.representation.sampling.sample.ArraySample.">
+
+.. only:: html
+
+  .. image:: /auto_examples/images/thumb/sphx_glr_plot_samples_with_array_sample_thumb.png
+    :alt:
+
+  :doc:`/auto_examples/plot_samples_with_array_sample`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Working with samples (`ArraySample`)</div>
+    </div>
+
+
+.. only:: not html
+
+ * :doc:`/auto_examples/plot_samples_with_array_sample`
+
+.. thumbnail-parent-div-close
+
+.. raw:: html
+
+    </div>
+

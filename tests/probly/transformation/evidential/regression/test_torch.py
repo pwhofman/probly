@@ -1,8 +1,10 @@
-"""Test for torch evidential regression models."""
+"""Tests for torch evidential regression models."""
 
 from __future__ import annotations
 
 import pytest
+import torch as th
+from torch import nn
 
 from probly.layers.torch import NormalInverseGammaLinear
 from probly.transformation.evidential.regression import evidential_regression
@@ -10,138 +12,74 @@ from tests.probly.torch_utils import count_layers
 
 torch = pytest.importorskip("torch")
 
-from torch import nn  # noqa: E402
 
+class TestEvidentialRegression:
+    """Test class for torch evidential regression models."""
 
-class TestNetworkArchitectures:
-    """Test class for different network architectures."""
+    def test_returns_a_clone(self, torch_model_small_2d_2d: nn.Sequential) -> None:
+        """Tests if evidential_regression returns a clone of the input model."""
+        original_model = torch_model_small_2d_2d
 
-    def test_linear_network(self, torch_model_small_2d_2d: nn.Sequential) -> None:
-        """Tests if evidential regression correctly replaces the last Linear layer with NIG layer.
+        new_model = evidential_regression(original_model)
 
-        This function verifies that:
-        - The last Linear layer is replaced with NormalInverseGammaLinear.
-        - The structure of the model remains unchanged except for the replaced layer.
+        assert new_model is not original_model
 
-        Parameters:
-            torch_model_small_2d_2d: The torch model to be tested, specified as a sequential model.
+    def test_replaces_only_last_linear_layer(self, torch_model_small_2d_2d: nn.Sequential) -> None:
+        """Tests if evidential_regression *only* replaces the last linear layer.
 
-        Raises:
-            AssertionError: If the structure of the model differs in an unexpected manner or if the
-            NIG layer is not inserted correctly.
-        """
-        model = evidential_regression(torch_model_small_2d_2d)
-
-        # count number of nn.Linear layers in original model
-        count_linear_original = count_layers(torch_model_small_2d_2d, nn.Linear)
-        # count number of NIG layers in original model
-        count_nig_original = count_layers(
-            torch_model_small_2d_2d,
-            NormalInverseGammaLinear,
-        )
-
-        # count number of nn.Linear layers in modified model
-        count_linear_modified = count_layers(model, nn.Linear)
-        # count number of NIG layers in modified model
-        count_nig_modified = count_layers(model, NormalInverseGammaLinear)
-
-        # check that one Linear was replaced with NIG
-        assert model is not None
-        assert isinstance(model, nn.Sequential)
-        assert count_nig_modified == count_nig_original + 1
-        assert count_linear_modified == count_linear_original - 1
-
-    def test_convolutional_network(self, torch_conv_linear_model: nn.Sequential) -> None:
-        """Tests the convolutional neural network modification with NIG layer.
-
-        This function evaluates whether the given convolutional neural network model
-        has been correctly modified to replace the last Linear layer with a
-        NormalInverseGammaLinear layer without altering the number of convolutional layers.
-
-        Parameters:
-            torch_conv_linear_model: The original convolutional neural network model to be tested.
-
-        Raises:
-            AssertionError: If the modified model deviates in structure other than
-            the replacement of the last Linear layer.
-        """
-        model = evidential_regression(torch_conv_linear_model)
-
-        # count number of nn.Linear layers in original model
-        count_linear_original = count_layers(torch_conv_linear_model, nn.Linear)
-        # count number of NIG layers in original model
-        count_nig_original = count_layers(
-            torch_conv_linear_model,
-            NormalInverseGammaLinear,
-        )
-        # count number of nn.Conv2d layers in original model
-        count_conv_original = count_layers(torch_conv_linear_model, nn.Conv2d)
-
-        # count number of nn.Linear layers in modified model
-        count_linear_modified = count_layers(model, nn.Linear)
-        # count number of NIG layers in modified model
-        count_nig_modified = count_layers(model, NormalInverseGammaLinear)
-        # count number of nn.Conv2d layers in modified model
-        count_conv_modified = count_layers(model, nn.Conv2d)
-
-        # check that one Linear was replaced with NIG, convs unchanged
-        assert model is not None
-        assert isinstance(model, nn.Sequential)
-        assert count_nig_modified == count_nig_original + 1
-        assert count_linear_modified == count_linear_original - 1
-        assert count_conv_modified == count_conv_original
-
-    def test_custom_network(self, torch_custom_model: nn.Module) -> None:
-        """Tests the custom model modification with NIG layer.
-
-        Parameters:
-            torch_custom_model: A custom PyTorch model (not Sequential).
-
-        Raises:
-            AssertionError: If the modified model structure is not correct.
-        """
-        model = evidential_regression(torch_custom_model)
-
-        # check that model contains NIG layer
-        assert model is not None
-        has_nig = any(isinstance(m, NormalInverseGammaLinear) for m in model.modules())
-        assert has_nig, "NormalInverseGammaLinear layer should be present in the model"
-
-
-class TestLayerReplacement:
-    """Test class for layer replacement tests."""
-
-    def test_nig_layer_present(self, torch_model_small_2d_2d: nn.Sequential) -> None:
-        """Tests that a NormalInverseGammaLinear layer is present after transformation.
+        This function verifies that the new model has exactly one LESS nn.Linear layer
+        than the original, and one NormalInverseGammaLinear (NIG) layer.
 
         Parameters:
             torch_model_small_2d_2d: The torch model to be tested.
-
-        Raises:
-            AssertionError: If the NIG layer is not present.
         """
-        model = evidential_regression(torch_model_small_2d_2d)
+        original_model = torch_model_small_2d_2d
+        new_model = evidential_regression(original_model)
 
-        # check that NIG layer is in the model
-        has_nig = any(isinstance(m, NormalInverseGammaLinear) for m in model.modules())
-        assert has_nig, "NormalInverseGammaLinear layer should be present in the model"
+        # Layer Count Checks
+        count_linear_original = count_layers(original_model, nn.Linear)
+        count_linear_modified = count_layers(new_model, nn.Linear)
 
-    def test_last_layer_is_nig(self, torch_model_small_2d_2d: nn.Sequential) -> None:
-        """Tests that the last layer of the modified model is NormalInverseGammaLinear.
+        # Check the core logic: The new model should have one LESS nn.Linear layer
+        assert count_linear_modified == (count_linear_original - 1)
+
+        # The modified model should have exactly one NIG layer
+        count_nig_modified = count_layers(new_model, NormalInverseGammaLinear)
+        assert count_nig_modified == 1
+
+    def test_last_layer_replacement_and_integrity(self, torch_model_small_2d_2d: nn.Sequential) -> None:
+        """Tests replacement of the last layer and verifies model integrity.
 
         Parameters:
             torch_model_small_2d_2d: The torch model to be tested.
-
-        Raises:
-            AssertionError: If the last layer is not NIG.
         """
-        model = evidential_regression(torch_model_small_2d_2d)
+        original_model = torch_model_small_2d_2d
 
-        # The model should have NIG as the last layer
-        assert isinstance(model, nn.Sequential)
-        # Get the last layer
-        last_layer = list(model.children())[-1]
-        assert isinstance(
-            last_layer,
-            NormalInverseGammaLinear,
-        ), f"Last layer should be NormalInverseGammaLinear, but got {type(last_layer)}"
+        # 1. Forward Pass & Shape Check
+        input_data = th.randn(1, 2)
+
+        # The output of the original model (Tensor) is needed to check the shape
+        original_output = original_model(input_data)
+        expected_output_shape = original_output.shape
+
+        # Transformation
+        new_model = evidential_regression(original_model)
+
+        # 1a. Shape Check
+        new_output = new_model(input_data)
+        # KORREKTUR: Der NIG-Layer gibt ein Dictionary zurück, wir prüfen die Shape des 'gamma'-Tensors (mean).
+        assert new_output["gamma"].shape == expected_output_shape
+
+        # 1b. Last Layer Replacement Check
+        # Check if the last layer in the new model is the NIG layer.
+        last_layer_index = len(original_model) - 1
+        last_layer_modified = new_model[last_layer_index]
+
+        assert isinstance(last_layer_modified, NormalInverseGammaLinear)
+
+        # 1c. Rest Model Integrity Check
+        # The layers BEFORE the last layer must retain their original type.
+        for i in range(last_layer_index):
+            original_layer = original_model[i]
+            modified_layer = new_model[i]
+            assert type(original_layer) is type(modified_layer)

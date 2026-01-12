@@ -36,7 +36,7 @@ The model may never have seen anything similar before, for example
 a rare medical anomaly or an unusual object in autonomous driving.
 This uncertainty can be reduced with more or better data.
 
-.. figure:: Epistemische.png
+.. figure:: /_static/Epistemische.png
    :alt: Epistemic uncertainty illustration
    :width: 35%
    :align: center
@@ -52,7 +52,7 @@ Most classical ML models such as neural networks or random forests
 ignore both forms of uncertainty and return only a single output, often
 leading to overconfident predictions.
 
-.. figure:: Aleatorische.png
+.. figure:: /_static/Aleatorische.png
    :alt: Aleatoric uncertainty illustration
    :width: 35%
    :align: center
@@ -251,7 +251,7 @@ OOD detection is a core task in uncertainty research :cite:`Yang2021`, :cite:`He
 The model may output *“I don’t know.”*
 This behavior is evaluated with accuracy–rejection curves :cite:`Geifman2017`.
 
-.. figure:: Accuracy-Rejection-Curve.png
+.. figure:: /_static/Accuracy-Rejection-Curve.png
    :alt: Accuracy-Rejection Curve
    :width: 50%
    :align: center

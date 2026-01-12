@@ -132,7 +132,7 @@ class lazydispatch[A: Callable, Out]:  # noqa: N801
         types, strings = _split_lazy_type(cls)  # type: ignore[arg-type]
 
         if len(types) > 0:
-            union_type = reduce(operator.or_, types)  # type: ignore[assignment]
+            union_type = reduce(operator.or_, types) 
             self.eager_register(union_type, func)
 
         if len(strings) > 0:

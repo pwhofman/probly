@@ -250,14 +250,14 @@ Common examples of uncertainty quantities include:
 
 **Epistemic Uncertainty**
 
-.. figure:: Epistemische.png
+.. figure:: /_static/Epistemische.png
    :alt: Epistemic uncertainty illustration
    :width: 35%
    :align: center
 
 **Aleatoric Uncertainty**
 
-.. figure:: Aleatorische.png
+.. figure:: /_static/Aleatorische.png
    :alt: Aleatoric uncertainty illustration
    :width: 35%
    :align: center

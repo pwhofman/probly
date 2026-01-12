@@ -3,11 +3,7 @@
 from __future__ import annotations
 
 from abc import ABC
-from typing import TYPE_CHECKING, TypeVar
-
-In = TypeVar("In")
-KwIn = TypeVar("KwIn")
-Out = TypeVar("Out")
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from probly.predictor import Predictor

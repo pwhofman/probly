@@ -1,17 +1,17 @@
-"""Flax dropout implementation."""
+"""Flax dropconnect implementation."""
 
 from __future__ import annotations
 
 from flax import nnx
 
-from probly.layers.flax import DropConnectDense
+from probly.layers.flax import DropConnectLinear
 
 from .common import register
 
 
-def replace_flax_dropconnect(obj: nnx.Linear, p: float) -> DropConnectDense:
-    """Replace a given layer by a DropConnectDense layer."""
-    return DropConnectDense(obj, rate=p)
+def replace_flax_dropconnect(obj: nnx.Linear, p: float) -> DropConnectLinear:
+    """Replace a given layer by a DropConnectLinear layer."""
+    return DropConnectLinear(obj, rate=p)
 
 
 register(nnx.Linear, replace_flax_dropconnect)

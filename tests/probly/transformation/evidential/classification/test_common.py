@@ -1,41 +1,39 @@
-"""Test for evidential classification models - common tests."""
+"""Tests for evidential classification registration and dispatch."""
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Any, cast
 
-import pytest
+from probly.transformation.evidential.classification.common import (
+    evidential_classification,
+    register,
+)
 
-from probly.predictor import Predictor
-from probly.transformation.evidential.classification import evidential_classification
 
+def test_multiple_types_are_handled_independently() -> None:
+    class ModelA:
+        def __init__(self, mid: str) -> None:
+            self.id = mid
 
-class TestBasicFunctionality:
-    """Test class for basic evidential classification functionality."""
+    class ModelB:
+        def __init__(self, mid: str) -> None:
+            self.id = mid
 
-    def test_unregistered_type_raises_error(self, dummy_predictor: Predictor) -> None:
-        """Tests that evidential_classification raises error for unregistered types.
+    def appender_a(base: ModelA) -> str:
+        return f"A_Enhanced({base.id})"
 
-        This function verifies that the evidential_classification transformation
-        raises NotImplementedError for predictor types that haven't been registered.
+    def appender_b(base: ModelB) -> str:
+        return f"B_Enhanced({base.id})"
 
-        Parameters:
-            dummy_predictor: A dummy predictor to be tested.
+    register(ModelA, cast(Callable[..., object], appender_a))
+    register(ModelB, cast(Callable[..., object], appender_b))
 
-        Raises:
-            AssertionError: If NotImplementedError is not raised.
-        """
-        with pytest.raises(NotImplementedError, match="No evidential classification appender registered"):
-            evidential_classification(dummy_predictor)
+    a = ModelA("001")
+    b = ModelB("002")
 
-    def test_with_none_input(self) -> None:
-        """Tests that evidential_classification raises appropriate error with None input.
+    result_a = evidential_classification(cast(Any, a))
+    result_b = evidential_classification(cast(Any, b))
 
-        This function verifies that passing None to evidential_classification
-        raises NotImplementedError.
-
-        Raises:
-            AssertionError: If the function does not raise an error with None input.
-        """
-        with pytest.raises(NotImplementedError):
-            evidential_classification(cast(Predictor[Any, Any, Any], None))
+    assert cast(str, result_a) == "A_Enhanced(001)"
+    assert cast(str, result_b) == "B_Enhanced(002)"

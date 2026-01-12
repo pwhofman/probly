@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING
 
 from lazy_dispatch.singledispatch import lazydispatch
 from probly.lazy_types import JAX_ARRAY, TORCH_TENSOR
 from probly.representation.sampling.sample import ArraySample
-
-T = TypeVar("T")
 
 if TYPE_CHECKING:
     import numpy as np

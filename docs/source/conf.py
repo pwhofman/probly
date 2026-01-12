@@ -43,6 +43,33 @@ extensions = [
     "sphinx.ext.doctest",
     "sphinx_copybutton",
     "sphinxcontrib.bibtex",
+    "sphinx.ext.autodoc",  # generates API documentation from docstrings
+    "sphinx.ext.autosummary",  # generates .rst files for each module
+    # "sphinx.ext.linkcode",  # adds [source] links to code that link to GitHub. Use when repo is public.  # noqa: E501, ERA001
+    "sphinx.ext.viewcode",  # adds [source] links to code that link to the source code in the docs.
+    "sphinx.ext.napoleon",  # for Google-style docstrings
+    "sphinx.ext.duration",  # optional, show the duration of the build
+    "myst_nb",  # for jupyter notebook support, also includes myst_parser
+    "sphinx.ext.intersphinx",  # for linking to other projects' docs
+    "sphinx.ext.mathjax",  # for math support
+    "sphinx.ext.doctest",  # for testing code snippets in the docs
+    "sphinx_copybutton",  # adds a copy button to code blocks
+    # '"sphinx.ext.autosectionlabel",  # for auto-generating section labels,
+    "sphinxcontrib.bibtex",  # for bibliography support
+]
+
+suppress_warnings = [
+    "toc.not_included",
+    "autodoc.import_object",
+    "autodoc",
+    "ref.ref",
+    "ref.doc",
+    "ref.python",
+    "misc.highlighting_failure",
+    "myst.header",
+    "autosummary",
+    "toc.not_readable",
+    "docutils",
 ]
 
 templates_path = ["_templates"]
@@ -70,6 +97,7 @@ exclude_patterns = [
 nb_execution_mode = "off"
 
 # Bibliography
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "**/*.ipynb", "**/*.py", "**/*.json", "**/*.zip", "**/*.md5"]
 bibtex_bibfiles = ["references.bib"]
 bibtex_default_style = "alpha"
 
@@ -166,9 +194,11 @@ autodoc_default_options = {
 }
 autoclass_content = "class"
 autodoc_inherit_docstrings = False
-autodoc_typehints = "both"
 
-# -- Copybutton --------------------------------------------------------------
+autodoc_typehints = "description"  # put typehints in the description instead of the signature
+
+# -- Copy Paste Button -----------------------------------------------------------------------------
+# Ignore >>> when copying code
 copybutton_prompt_text = r">>> |\.\.\. "
 copybutton_prompt_is_regexp = True
 
