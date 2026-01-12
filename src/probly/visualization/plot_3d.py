@@ -269,8 +269,7 @@ class TernaryVisualizer:
         ax: plt.Axes,
         index: int,
         value: float,
-        color: str = "red",
-        linestyle: str = "--",
+        style_key: int,
     ) -> None:
         """Draw a line of constant probability p[index] = value.
 
@@ -303,10 +302,10 @@ class TernaryVisualizer:
         ax.plot(
             [x1, x2],
             [y1, y2],
-            color=color,
-            linestyle=linestyle,
             linewidth=cfg.MIN_MAX_LINE_WIDTH,
             alpha=cfg.MIN_MAX_ALPHA,
+            color=cfg.choose_min_max_style_color(style_key),
+            linestyle=cfg.choose_min_max_linestyle(style_key),
         )
 
     def plot_minmax_lines(
@@ -326,13 +325,11 @@ class TernaryVisualizer:
                 ax=ax,
                 index=i,
                 value=p_min[i],
-                color=cfg.RED,
-                linestyle=cfg.MIN_MAX_LINESTYLE_1,
+                style_key=1,
             )
             self._draw_constant_probability_line(
                 ax=ax,
                 index=i,
                 value=p_max[i],
-                color=cfg.BLUE,
-                linestyle=cfg.MIN_MAX_LINESTYLE_2,
+                style_key=2,
             )

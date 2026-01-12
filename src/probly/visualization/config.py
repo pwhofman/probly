@@ -45,6 +45,18 @@ MIN_MAX_LINESTYLE_1: str = "--"
 MIN_MAX_LINESTYLE_2: str = "-."
 
 
+def choose_min_max_style_color(value: int) -> str:
+    if value == 1:
+        return RED
+    return BLUE
+
+
+def choose_min_max_linestyle(value: int) -> str:
+    if value == 1:
+        return "--"
+    return "-."
+
+
 def get_sign_color(value: float) -> str:
     """Return RED for >= 0 and BLUE for < 0."""
     return RED if value >= 0 else BLUE
