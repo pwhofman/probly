@@ -9,7 +9,17 @@ arises in real-world problems, and why handling it correctly is essential for
 building trustworthy models. Probly provides tools to work with uncertainty in a
 structured and unified way.
 
+Mini gallery (quick links)
+-------------------------
+Short, focused examples for the concepts in this section:
+
+.. minigallery::
+   ../../examples/plot_epistemic_vs_aleatoric.py
+   ../../examples/plot_uncertainty_quantification.py
+   ../../examples/plot_selective_prediction.py
+
 1.1 What Is Uncertainty?
+
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 In standard machine learning pipelines a model outputs a **single prediction**
@@ -256,26 +266,20 @@ highlighted in modern deep learning models :cite:`Guo2017`.
 Credal sets, distributional ambiguity, and pessimistic/robust reasoning are tools for
 risk-sensitive decisions :cite:`Augustin2014`, :cite:`Hullermeier2021`.
 
-.. raw:: html
 
-   <table style="width:100%; border:0px;">
-     <tr>
-       <td style="width:40%; vertical-align:top; padding-right:20px;">
-         <img src="/_static/Credal_Set.png" style="width:100%;"/>
-       </td>
-       <td style="vertical-align:top;">
-         <p>
-         The figure shows three complementary ways to represent uncertainty within the probability simplex:<br><br>
-         <b>top:</b> a credal set capturing all admissible distributions,<br>
-         <b>middle:</b> discrete samples describing a distribution over distributions,<br>
-         <b>bottom:</b> a continuous density reflecting epistemic uncertainty through entropy.<br><br>
-         Such representations are essential for risk-aware decision making, as they allow decisions
-         to be adjusted based on distributional ambiguity, entropy-based decompositions,
-         or worst-case reasoning.
-         </p>
-       </td>
-     </tr>
-   </table>
+.. list-table::
+   :widths: 30 70
+ 
+   * - .. image:: Credal_Set.png
+          :width: 30%
+     - The figure shows three complementary ways to represent uncertainty within the probability simplex:
+
+       **top:** a credal set capturing all admissible distributions  
+
+       **middle:** discrete samples describing a distribution over distributions  
+
+       **bottom:** a continuous density reflecting epistemic uncertainty through entropy.
+
 
 
 3.4 How everything is connected

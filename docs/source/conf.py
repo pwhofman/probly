@@ -1,35 +1,48 @@
-"""Configuration file for the Sphinx documentation builder."""
+﻿"""Configuration file for the Sphinx documentation builder."""
 
-# Configuration file for the Sphinx documentation builder.
-#
-# For the full list of built-in configuration values, see the documentation:
-# https://www.sphinx-doc.org/en/master/usage/configuration.html
 from __future__ import annotations
 
 import importlib
 import inspect
 import os
 import sys
-
-# -- Path setup --------------------------------------------------------------
-sys.path.insert(0, os.path.abspath("../../src"))
-sys.path.insert(0, os.path.abspath("../../examples"))
+from pathlib import Path
 
 import probly
 
-# -- Project information -----------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
+# -- Paths -------------------------------------------------------------------
+# conf.py lives in:  .../probly/docs/source/conf.py
+DOCS_SOURCE_DIR = Path(__file__).resolve().parent          # .../docs/source
+DOCS_DIR = DOCS_SOURCE_DIR.parent                         # .../docs
+REPO_ROOT = DOCS_DIR.parent                               # .../probly
 
+# Add package + example dirs to Python path
+sys.path.insert(0, str(REPO_ROOT / "src"))
+sys.path.insert(0, str(REPO_ROOT / "examples"))
+sys.path.insert(0, str(REPO_ROOT / "cc_examples"))
+
+# -- Project information -----------------------------------------------------
 project = "probly"
-copyright = "2025, probly team"  # noqa: A001
 author = "probly team"
+copyright = "2025, probly team"  # noqa: A001
+
 release = probly.__version__
 version = probly.__version__
 
 # -- General configuration ---------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
-
 extensions = [
+    "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
+    "sphinx.ext.viewcode",
+    "sphinx.ext.napoleon",
+    "sphinx.ext.duration",
+    "sphinx_gallery.gen_gallery",
+    "sphinx_gallery.load_style",
+    "sphinx.ext.intersphinx",
+    "sphinx.ext.mathjax",
+    "sphinx.ext.doctest",
+    "sphinx_copybutton",
+    "sphinxcontrib.bibtex",
     "sphinx.ext.autodoc",  # generates API documentation from docstrings
     "sphinx.ext.autosummary",  # generates .rst files for each module
     # "sphinx.ext.linkcode",  # adds [source] links to code that link to GitHub. Use when repo is public.  # noqa: E501, ERA001
@@ -60,11 +73,57 @@ suppress_warnings = [
 ]
 
 templates_path = ["_templates"]
+
+exclude_patterns = [
+    "_build",
+    "Thumbs.db",
+    ".DS_Store",
+    # Ignore generated artifacts if they end up in the source tree
+    "auto_examples/*.ipynb",
+    "auto_examples/*.py",
+    "auto_examples/*.zip",
+    "auto_examples/*.json",
+    "auto_examples/*.db",
+    "auto_examples/*.md5",
+    "auto_examples/cc_examples/*.ipynb",
+    "auto_examples/cc_examples/*.py",
+    "auto_examples/cc_examples/*.zip",
+    "auto_examples/cc_examples/*.json",
+    "auto_examples/cc_examples/*.db",
+    "auto_examples/cc_examples/*.md5",
+]
+
+# Notebooks: don't execute during docs build
+nb_execution_mode = "off"
+
+# Bibliography
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "**/*.ipynb", "**/*.py", "**/*.json", "**/*.zip", "**/*.md5"]
 bibtex_bibfiles = ["references.bib"]
 bibtex_default_style = "alpha"
-nb_execution_mode = "off"  # don't run notebooks when building the docs
 
+# -- Sphinx-Gallery ----------------------------------------------------------
+# Two galleries rendered into auto_examples/ and its cc_examples subfolder.
+sphinx_gallery_conf = {
+    "examples_dirs": [
+        str(REPO_ROOT / "examples"),
+        str(REPO_ROOT / "cc_examples"),
+    ],
+    "gallery_dirs": [
+        "auto_examples",
+        "auto_examples/cc_examples",
+    ],
+    "backreferences_dir": "generated/backreferences",
+    "doc_module": ("probly",),
+    "reference_url": {"probly": None},
+    "filename_pattern": r"plot_.*\.py",
+    "plot_gallery": True,
+    "download_all_examples": False,
+    # Don’t kill the whole build if one example errors
+    "abort_on_example_error": False,
+    "default_thumb_file": str(DOCS_DIR / "_static" / "logo" / "logo_light.png"),
+}
+
+# -- Intersphinx -------------------------------------------------------------
 intersphinx_mapping = {
     "python3": ("https://docs.python.org/3", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
@@ -74,50 +133,34 @@ intersphinx_mapping = {
     "torch": ("https://pytorch.org/docs/stable/", None),
 }
 
-
+# -- Linkcode (optional) -----------------------------------------------------
 def linkcode_resolve(domain: str, info: dict[str, str]) -> str | None:
-    """Resolve the link to the source code in GitHub.
-
-    This function is required by sphinx.ext.linkcode and is used to generate links to the source code on GitHub.
-
-    Args:
-        domain (str): The domain of the object.
-        info (dict[str, str]): The information about the object.
-
-    Returns:
-        str | None: The URL to the source code or None if not found.
-    """
-    if domain != "py" or not info["module"]:
+    if domain != "py" or not info.get("module"):
         return None
-
     try:
         module = importlib.import_module(info["module"])
         obj = module
         for part in info["fullname"].split("."):
             obj = getattr(obj, part)
         fn = inspect.getsourcefile(obj)
-        _source, lineno = inspect.getsourcelines(obj)
-        root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-        relpath = os.path.relpath(fn, start=root)
+        _src, lineno = inspect.getsourcelines(obj)
+        if fn is None:
+            return None
+        relpath = os.path.relpath(fn, start=str(REPO_ROOT))
     except (ModuleNotFoundError, AttributeError, TypeError, OSError):
         return None
 
-    base = "https://github.com/pwhofman/probly"
-    tag = "v0.2.0-pre-alpha" if version == "0.2.0" else f"v{version}"
+    base = "https://github.com/n-teGruppe/probly"
+    branch = "sphinx_gallery"
+    return f"{base}/blob/{branch}/{relpath}#L{lineno}"
 
-    return f"{base}/blob/{tag}/{relpath}#L{lineno}"
-
-
-# -- Options for HTML output -------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
+# -- HTML output -------------------------------------------------------------
 html_theme = "furo"
+
 html_static_path = ["_static"]
-html_css_files = [
-    "css/custom.css",
-]
-# TODO(pwhofman): add favicon Issue: https://github.com/pwhofman/probly/issues/95
-# html_favicon = "_static/logo/"  # noqa: ERA001
+html_css_files = ["css/custom.css"]
 pygments_dark_style = "monokai"
+
 html_theme_options = {
     "sidebar_hide_name": True,
     "light_logo": "logo/logo_light.png",
@@ -132,13 +175,13 @@ html_sidebars = {
         "sidebar/navigation.html",
         "sidebar/ethical-ads.html",
         "sidebar/scroll-end.html",
-        "sidebar/footer.html",  # to get the github link in the footer of the sidebar
+        "sidebar/footer.html",
     ],
 }
 
-html_show_sourcelink = False  # to remove button next to dark mode showing source in txt format
+html_show_sourcelink = False
 
-# -- Autodoc ---------------------------------------------------------------------------------------
+# -- Autodoc -----------------------------------------------------------------
 autosummary_generate = False
 autodoc_default_options = {
     "show-inheritance": True,
@@ -150,7 +193,6 @@ autodoc_default_options = {
     "exclude-members": "__weakref__",
 }
 autoclass_content = "class"
-# TODO(pwhofman): maybe set this to True, Issue https://github.com/pwhofman/probly/issues/94
 autodoc_inherit_docstrings = False
 
 autodoc_typehints = "description"  # put typehints in the description instead of the signature
@@ -160,6 +202,7 @@ autodoc_typehints = "description"  # put typehints in the description instead of
 copybutton_prompt_text = r">>> |\.\.\. "
 copybutton_prompt_is_regexp = True
 
+# -- Linkcheck ---------------------------------------------------------------
 linkcheck_ignore = [
     r"https://doi.org/10.1142/S0218488500000253",
     r"https://www.worldscientific.com/.*",
