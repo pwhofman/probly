@@ -41,6 +41,7 @@ def check_shape(input_data: np.ndarray) -> np.ndarray:
     msg3 = "Input must be at least 2D."
     msg4 = "The probabilities of each class must sum to 1."
     msg5 = "All probabilities must be positive."
+    msg6 = "Input must have more than one class."
 
     # Validates that input_data is either a 2D or 3D NumPy Array.
     if not isinstance(input_data, np.ndarray):
@@ -55,6 +56,11 @@ def check_shape(input_data: np.ndarray) -> np.ndarray:
         raise ValueError(msg4)
     if (input_data < 0).any():
         raise ValueError(msg5)
+
+    # Validates that more than one class exists.
+    if input_data.shape[-1] < 2:
+        raise ValueError(msg6)
+
     return input_data
 
 
