@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, cast
 
 from matplotlib.patches import Circle, Patch, Polygon, RegularPolygon
 from matplotlib.path import Path
+import matplotlib.patheffects as PathEffects
 from matplotlib.projections import register_projection
 from matplotlib.projections.polar import PolarAxes
 import matplotlib.pyplot as plt
@@ -114,23 +115,74 @@ class MultiVisualizer:
         if ax is None:
             fig, ax = plt.subplots(figsize=(6, 6), subplot_kw={"projection": "radar"})
 
-        #def spiderplot_axis(self, ) -> None:
+        # def spiderplot_axis(self, ) -> None:
 
         # Setup Axis with line for better visibility
-        axis_ticks = ax.set_rgrids([0.2, 0.4, 0.6, 0.8, 1.0])
+        ax.set_rgrids([0.2, 0.4, 0.6, 0.8, 1.0])
         ax.set_ylim(0.0, 1.0)
         ax.set_varlabels(labels)
         ref_theta = 0.5 * (theta[0] + theta[1])  # midpoint in radians
         ax.set_rlabel_position(np.degrees(ref_theta))
+        ax.set_yticklabels([])
 
-        ax.plot(
-            [ref_theta, ref_theta],
-            [0.0, 1.0],
-            color="red",
-            linewidth=2,
-            zorder=1,
-        )
+        def spiderplot_axis_with_ticks(
+            ax: plt.Axes,
+            theta: np.ndarray,
+            n_vars: int,
+            tick_values: list[float] | None = None,
+            draw_tick_marks: bool = True,
+        ) -> None:
+            """Draw reference axis between class 1 and 2 and place 0..1 labels scaled to polygon boundary."""
+            # Midpoint angle between class 1 and 2 (in radians)
+            ref_theta = 0.5 * (theta[0] + theta[1])
 
+            # For a regular n-gon frame, the radius to the middle of an edge is cos(pi/n)
+            r_max = float(np.cos(np.pi / n_vars))
+
+            if tick_values is None:
+                tick_values = [0.2, 0.4, 0.6, 0.8, 1.0]
+
+            axis_color = cfg.BLACK
+
+            # Draw axis line only until polygon boundary
+            (axis_line,) = ax.plot(
+                [ref_theta, ref_theta],
+                [0.0, r_max],
+                color=axis_color,
+                linewidth=2,
+                zorder=10,
+            )
+            axis_line.set_clip_path(ax.patch)
+
+            # Labels + optional tick marks, all scaled into [0, r_max]
+            for t in tick_values:
+                if t < 0 or t > 1:
+                    continue
+                r = t * r_max
+
+                if draw_tick_marks and t not in (0.0, 1.0):
+                    dtheta = 0.015
+                    (tm,) = ax.plot(
+                        [ref_theta - dtheta, ref_theta + dtheta],
+                        [r, r],
+                        color=axis_color,
+                        linewidth=2,
+                        zorder=11,
+                    )
+                    tm.set_clip_path(ax.patch)
+
+                txt = ax.text(
+                    ref_theta,
+                    r,
+                    f"{t:g}",
+                    color=cfg.WHITE,
+                    fontsize=9,
+                    ha="center",
+                    va="center",
+                    zorder=12,
+                )
+                txt.set_clip_path(ax.patch)
+                txt.set_path_effects([PathEffects.withStroke(linewidth=2, foreground=cfg.BLACK)])
 
         max_class = np.argmax(probs, axis=1)
         max_probs = np.max(probs, axis=1)
@@ -165,7 +217,7 @@ class MultiVisualizer:
 
             ax.plot(theta_c, lower_c, linestyle=cfg.MIN_MAX_LINESTYLE_1, linewidth=1.5, label="Lower bound")
             ax.plot(theta_c, upper_c, linewidth=1.5, label="Upper bound")
-
+        spiderplot_axis_with_ticks(ax, theta, n_vars=n_classes, draw_tick_marks=True)
         ax.set_title(title, pad=20)
         ax.legend(loc="upper right", bbox_to_anchor=(1.3, 1.1))
         plt.tight_layout()
