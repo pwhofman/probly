@@ -79,7 +79,7 @@ def _choice_flag_result(
     """Helper function to evaluate the user's choice what to show.
 
     Args:
-        choice: Either "MLE", "Credal", "Probability" or None.
+        choice: Input String should be either "MLE", "Credal", "Probability" or None.
     """
     match choice:
         case None:
