@@ -21,11 +21,3 @@ def _histogram_factory(base: object, device: object) -> type[Any]:
 def register_histogram_factory(key: LazyType) -> Callable:
     """Decorator to register a HistogramBinning class for a base type."""
     return _histogram_factory.register(key)
-
-
-class HistogramBinningCalibrator:
-    """Factory for creating HistogramBinning calibrators."""
-
-    def __new__(cls, base: object, device: object, *args: Any, **kwargs: Any) -> object:  # noqa: ANN401, D102
-        implementation: type[Any] = _histogram_factory(base, device)
-        return implementation(base, device, *args, **kwargs)
