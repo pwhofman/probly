@@ -1,6 +1,4 @@
-"""=============================
-Threshold-based decision sketch.
-================================
+"""Threshold-based decision sketch.
 
 A minimal thresholding “predictor” that turns continuous inputs into class labels,
 plus a plot showing how the decision changes with the threshold.
@@ -13,15 +11,13 @@ import numpy as np
 
 
 def threshold_predict(x: np.ndarray, threshold: float) -> np.ndarray:
+    """Return 1 for values above the threshold, otherwise 0."""
     return (x > threshold).astype(int)
 
 
 x = np.linspace(-1.0, 2.0, 9)
 threshold = 0.3
 preds = threshold_predict(x, threshold)
-
-print("x:", x)
-print("preds:", preds)
 
 plt.figure(figsize=(4, 2.5))
 plt.plot(x, np.zeros_like(x), "o", label="input")

@@ -1,6 +1,4 @@
-"""===========================
-Using the generic `predict()`.
-==============================
+"""Using the generic `predict()`.
 
 ``probly`` defines a small protocol for "predictors" and a generic
 :func:`probly.predictor.predict` helper.
@@ -24,15 +22,17 @@ from probly.predictor import predict
 
 @dataclass(frozen=True)
 class ThresholdPredictor:
+    """Threshold-based predictor for the gallery demo."""
+
     threshold: float = 0.0
 
     def __call__(self, x: np.ndarray) -> np.ndarray:
+        """Return binary predictions using the configured threshold."""
         return (x > self.threshold).astype(int)
 
 
 x = np.array([-0.5, 0.0, 0.2, 2.0])
 preds = predict(ThresholdPredictor(threshold=0.1), x)
-print("preds:", preds)
 
 plt.figure(figsize=(4, 2.5))
 plt.plot(x, np.zeros_like(x), "o", label="input value")
