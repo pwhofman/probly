@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from jax import Array
 
 
-# histogram binnig
+@register_histogram_factory(nnx.Module)
 class HistogramBinningFlax(CalibratorBaseFlax):
     """Calibrator that uses histogram binning."""
 
@@ -96,6 +96,3 @@ class HistogramBinningFlax(CalibratorBaseFlax):
         calibrated = self.bin_probs[bin_indices]
 
         return calibrated
-
-
-register_histogram_factory(nnx.Module, HistogramBinningFlax)
