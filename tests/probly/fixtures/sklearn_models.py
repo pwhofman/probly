@@ -6,9 +6,9 @@ import pytest
 
 sklearn = pytest.importorskip("sklearn")
 from sklearn.base import BaseEstimator  # noqa: E402
-from sklearn.linear_model import LogisticRegression  # noqa: E402
+from sklearn.linear_model import LogisticRegression, SGDClassifier, SGDRegressor  # noqa: E402
 from sklearn.neural_network import MLPClassifier, MLPRegressor  # noqa: E402
-from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor  # noqa: E402
+from sklearn.svm import SVC, SVR  # noqa: E402
 
 
 @pytest.fixture
@@ -39,14 +39,28 @@ def sklearn_mlp_regressor_2d_1d(sklearn_random_state: int) -> MLPRegressor:
 
 
 @pytest.fixture
-def sklearn_decision_tree_classifier(sklearn_random_state: int) -> BaseEstimator:
-    """Return a small decision tree classification model."""
-    model = DecisionTreeClassifier(max_depth=3, min_samples_leaf=1, random_state=sklearn_random_state)
+def sklearn_sgd_classifier(sklearn_random_state: int) -> SGDClassifier:
+    """Return a SGD Classifier."""
+    model = SGDClassifier(max_iter=100, random_state=sklearn_random_state)
     return model
 
 
 @pytest.fixture
-def sklearn_decision_tree_regressor(sklearn_random_state: int) -> BaseEstimator:
-    """Return a small decision tree regression model."""
-    model = DecisionTreeRegressor(max_depth=3, min_samples_leaf=5, random_state=sklearn_random_state)
+def sklearn_sgd_regressor(sklearn_random_state: int) -> SGDRegressor:
+    """Return a SGD Regressor."""
+    model = SGDRegressor(max_iter=100, random_state=sklearn_random_state)
+    return model
+
+
+@pytest.fixture
+def sklearn_svc(sklearn_random_state: int) -> SVC:
+    """Return a Support Vector Classifier."""
+    model = SVC(kernel="rbf", random_state=sklearn_random_state)
+    return model
+
+
+@pytest.fixture
+def sklearn_svr() -> SVR:
+    """Return a Support Vector Regressor."""
+    model = SVR(kernel="rbf")
     return model
