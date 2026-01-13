@@ -262,9 +262,7 @@ docs/source/api
 docs/build/
 docs/source/auto_examples/
 .idea/
-
-# add docs to gitignore
-docs/source/api
+docs/source/generated/backreferences/
 
 .vscode/settings.json
 
