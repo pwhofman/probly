@@ -1,5 +1,4 @@
 """Selective Prediction.
-========================
 
 This example demonstrates *selective prediction* (abstention).
 

@@ -1,6 +1,4 @@
-"""===========================
-Using the generic `predict()`.
-==============================
+"""Using the generic `predict()`.
 
 ``probly`` defines a small protocol for "predictors" and a generic
 :func:`probly.predictor.predict` helper.
@@ -24,6 +22,8 @@ from probly.predictor import predict
 
 @dataclass(frozen=True)
 class ThresholdPredictor:
+    """Threshold-based predictor for the gallery demo."""
+
     threshold: float = 0.0
 
     def __call__(self, x: np.ndarray) -> np.ndarray:

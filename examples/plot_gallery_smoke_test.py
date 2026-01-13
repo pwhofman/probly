@@ -1,6 +1,4 @@
-"""=======================
-Sphinx-Gallery smoke test.
-==========================
+"""Sphinx-Gallery smoke test.
 
 This page exists mainly to verify that Sphinx-Gallery is correctly configured for
 the project.
@@ -16,9 +14,7 @@ import matplotlib.pyplot as plt
 
 import probly
 
-print(f"probly version: {probly.__version__}")
-
 plt.figure(figsize=(4, 2))
 plt.plot([0, 1, 2], [0, 1, 0])
-plt.title("Sphinx-Gallery is running")
+plt.title(f"Sphinx-Gallery is running (probly {probly.__version__})")
 plt.tight_layout()

@@ -1,5 +1,4 @@
 """Epistemic vs Aleatoric Uncertainty.
-======================================
 
 This example illustrates the difference between epistemic and aleatoric
 uncertainty in probabilistic models.

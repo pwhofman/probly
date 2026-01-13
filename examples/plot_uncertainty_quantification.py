@@ -1,5 +1,4 @@
 """Uncertainty Quantification.
-==============================
 
 This example demonstrates a simple form of uncertainty quantification (UQ)
 for a regression-like setting.
@@ -9,7 +8,7 @@ We simulate a *predictive distribution* by sampling multiple model predictions
 
 - Predictive mean
 - Predictive standard deviation
-- An uncertainty band (mean ± 2σ)
+- An uncertainty band (mean +/- 2 std)
 """
 
 from __future__ import annotations
