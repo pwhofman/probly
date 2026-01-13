@@ -149,8 +149,9 @@ class MultiVisualizer:
                 [ref_theta, ref_theta],
                 [0.0, r_max],
                 color=axis_color,
-                linewidth=2,
-                zorder=10,
+                alpha=0.8,
+                linewidth=0.5,
+                zorder=2,
             )
             axis_line.set_clip_path(ax.patch)
 
@@ -166,8 +167,8 @@ class MultiVisualizer:
                         [ref_theta - dtheta, ref_theta + dtheta],
                         [r, r],
                         color=axis_color,
-                        linewidth=2,
-                        zorder=11,
+                        linewidth=1.5,
+                        zorder=5,
                     )
                     tm.set_clip_path(ax.patch)
 
@@ -176,10 +177,10 @@ class MultiVisualizer:
                     r,
                     f"{t:g}",
                     color=cfg.WHITE,
-                    fontsize=9,
+                    fontsize=7,
                     ha="center",
                     va="center",
-                    zorder=12,
+                    zorder=7,
                 )
                 txt.set_clip_path(ax.patch)
                 txt.set_path_effects([PathEffects.withStroke(linewidth=2, foreground=cfg.BLACK)])
@@ -215,8 +216,22 @@ class MultiVisualizer:
                 zorder=2,
             )
 
-            ax.plot(theta_c, lower_c, linestyle=cfg.MIN_MAX_LINESTYLE_1, linewidth=1.5, label="Lower bound")
-            ax.plot(theta_c, upper_c, linewidth=1.5, label="Upper bound")
+            ax.plot(
+                theta_c,
+                lower_c,
+                linestyle=cfg.MIN_MAX_LINESTYLE_1,
+                color=cfg.RED,
+                linewidth=1.5,
+                label="Lower bound",
+            )
+            ax.plot(
+                theta_c,
+                upper_c,
+                linestyle=cfg.MIN_MAX_LINESTYLE_2,
+                color=cfg.BLUE,
+                linewidth=1.5,
+                label="Upper bound",
+            )
         spiderplot_axis_with_ticks(ax, theta, n_vars=n_classes, draw_tick_marks=True)
         ax.set_title(title, pad=20)
         ax.legend(loc="upper right", bbox_to_anchor=(1.3, 1.1))
