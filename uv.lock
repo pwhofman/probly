@@ -2007,7 +2007,6 @@ wheels = [
 name = "probly"
 source = { editable = "." }
 dependencies = [
-    { name = "flax" },
     { name = "joblib" },
     { name = "matplotlib" },
     { name = "mpltern" },
@@ -2031,6 +2030,7 @@ dev = [
     { name = "ipython" },
     { name = "ipywidgets" },
     { name = "jax" },
+    { name = "matplotlib" },
     { name = "mypy" },
     { name = "myst-nb" },
     { name = "notebook" },
@@ -2051,6 +2051,7 @@ dev = [
 docs = [
     { name = "furo" },
     { name = "ipython" },
+    { name = "matplotlib" },
     { name = "myst-nb" },
     { name = "sphinx" },
     { name = "sphinx-autodoc-typehints" },
@@ -2083,7 +2084,6 @@ torch = [
 
 [package.metadata]
 requires-dist = [
-    { name = "flax" },
     { name = "joblib" },
     { name = "matplotlib", specifier = ">=3.8.0" },
     { name = "mpltern" },
@@ -2107,6 +2107,7 @@ dev = [
     { name = "ipython", specifier = "<8.38.0" },
     { name = "ipywidgets" },
     { name = "jax", specifier = ">=0.8.0" },
+    { name = "matplotlib" },
     { name = "mypy", specifier = ">=1.18.2" },
     { name = "myst-nb" },
     { name = "notebook", specifier = ">=7.3.3" },
@@ -2127,6 +2128,7 @@ dev = [
 docs = [
     { name = "furo" },
     { name = "ipython", specifier = "<8.38.0" },
+    { name = "matplotlib" },
     { name = "myst-nb" },
     { name = "sphinx", specifier = ">=8.0.0" },
     { name = "sphinx-autodoc-typehints" },
