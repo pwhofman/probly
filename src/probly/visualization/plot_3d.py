@@ -58,8 +58,8 @@ class TernaryVisualizer:
         title: str,
         credal_flag: bool,
         mle_flag: bool,
+        minmax_flag: bool,
         ax: plt.Axes = None,
-        plot_minmax: bool = True,
         **scatter_kwargs: object,
     ) -> plt.Axes:
         """Plot ternary scatter points.
@@ -70,9 +70,9 @@ class TernaryVisualizer:
         title: title of the plot.
         mle_flag: Flag to indicate whether median of probabilities is shown.
         credal_flag: Flag to indicate whether convex hull is shown.
+        minmax_flag: bool defaulted to true, which optionally draws upper and lower probability envelopes.
         scatter_kwargs: keyword arguments passed to scatter_kwargs.
         ax: matplotlib axes.Axes to plot on.
-        plot_minmax: bool defaulted to true, which optionally draws upper and lower probability envelopes.
 
         returns: Ternary plot with scattered points.
         """
@@ -148,7 +148,7 @@ class TernaryVisualizer:
             self.plot_convex_hull(probs, ax=ax)
 
         # Optionally draw second order max/min envelope lines
-        if plot_minmax:
+        if minmax_flag:
             self.plot_minmax_lines(probs, ax=ax)
 
         return ax
