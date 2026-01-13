@@ -2,20 +2,24 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Self
+
 import numpy as np
 
-from .sample import Sample, create_sample
-from collections.abc import Sequence
+from probly.representation.sampling.common_sample import Sample
 
-from typing import TYPE_CHECKING, Self
-from probly.representation.sampling.common_sample import Sample, SampleAxis
+from .sample import create_sample
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
     from numpy.typing import DTypeLike
 
+    from probly.representation.sampling.common_sample import SampleAxis
+
 type Numeric = np.number | np.ndarray | float | int
+
 
 @create_sample.register(np.ndarray)
 class SklearnSample(Sample[np.ndarray]):
@@ -24,7 +28,12 @@ class SklearnSample(Sample[np.ndarray]):
     sample_axis: int
     array: np.ndarray
 
-    def from_iterable(cls, samples: Iterable[Numeric], sample_axis: SampleAxis = "auto", dtype: DTypeLike = None) -> Self:
+    def from_iterable(
+        self,
+        samples: Iterable[Numeric],
+        sample_axis: SampleAxis = "auto",
+        dtype: DTypeLike = None,
+    ) -> Self:
         """Create an ArraySample for Sklearn from a sequence of samples.
 
         Args:
@@ -56,8 +65,8 @@ class SklearnSample(Sample[np.ndarray]):
                 sample_axis = (0 if first_sample.ndim == 0 else 1) if isinstance(first_sample, np.ndarray) else 0
             samples = np.stack(samples, axis=sample_axis, dtype=dtype)
 
-        return cls(array=samples, sample_axis=sample_axis)
-    
+        return self(array=samples, sample_axis=sample_axis)
+
     def samples(self) -> Iterable[np.ndarray]:
         """Return an iterator over the samples."""
         if self.sample_axis == 0:
@@ -71,12 +80,12 @@ class SklearnSample(Sample[np.ndarray]):
 
     def sample_mean(self) -> np.ndarray:
         """Compute mean across the samples axis."""
-        return self.array.mean(axis=self.sample_axis) 
-    
+        return self.array.mean(axis=self.sample_axis)
+
     def sample_std(self, ddof: int = 1) -> np.ndarray:
         """Compute standard deviation across the samples axis."""
         return self.array.std(axis=self.sample_axis, ddof=ddof)
 
     def sample_var(self, ddof: int = 1) -> np.ndarray:
         """Compute variance across the samples axis."""
-        return self.array.var(axis=self.sample_axis, ddof=ddof) 
+        return self.array.var(axis=self.sample_axis, ddof=ddof)
