@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import torch
 from torch import nn
+
+from probly.utils.switchdispatch import switchdispatch
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -13,7 +15,7 @@ if TYPE_CHECKING:
     from torch.utils.data import DataLoader
 
 
-def unified_evidential_train(  # noqa: C901, PLR0912, PLR0915
+def unified_evidential_train(
     mode: Literal["PostNet", "NatPostNet", "EDL", "PrNet", "IRD", "DER", "RPN"],
     model: nn.Module,
     dataloader: DataLoader,
@@ -95,43 +97,19 @@ def unified_evidential_train(  # noqa: C901, PLR0912, PLR0915
 
             optimizer.zero_grad()  # clears old gradients
             outputs = model(x)  # computes model-outputs
-            if mode == "PostNet":
-                loss, _ = loss_fn(outputs, y, flow, class_count)
 
-            elif mode == "NatPostNet":
-                alpha, _, _ = outputs
-                loss = loss_fn(alpha, y)
-
-            elif mode == "EDL":
-                loss = loss_fn(outputs, y)
-
-            elif mode in {"PrNet", "RPN"}:
-                ood_iter = iter(oodloader)
-                try:
-                    x_ood_raw, _ = next(ood_iter)
-                except StopIteration:
-                    ood_iter = iter(oodloader)
-                    x_ood_raw, _ = next(ood_iter)
-
-                x_ood = x_ood_raw.to(device)
-                loss = loss_fn(model, x, y, x_ood)
-
-            elif mode == "IRD":
-                x_adv = x + 0.01 * torch.randn_like(x)
-                alpha = outputs
-                alpha_adv = model(x_adv)
-                y_oh = nn.functional.one_hot(
-                    y,
-                    num_classes=outputs.shape[1],
-                ).float()
-                loss = loss_fn(alpha, y_oh, adversarial_alpha=alpha_adv)
-
-            elif mode == "DER":
-                mu, kappa, alpha, beta = outputs
-                loss = loss_fn(y, mu, kappa, alpha, beta)
-            else:
-                msg = 'Enter a valid mode ["PostNet", "NatPostNet", "EDL", "PrNet", "IRD", "DER", "RPN"]'
-                raise ValueError(msg)
+            loss = compute_loss(
+                mode,
+                outputs=outputs,
+                loss_fn=loss_fn,
+                model=model,
+                x=x,
+                y=y,
+                device=torch.device(device),
+                oodloader=oodloader,
+                flow=flow,
+                class_count=class_count,
+            )  # computes the loss based on the selected mode
 
             loss.backward()  # backpropagation
             optimizer.step()  # updates model-parameters
@@ -140,3 +118,117 @@ def unified_evidential_train(  # noqa: C901, PLR0912, PLR0915
 
         avg_loss = total_loss / len(dataloader)  # calculate average loss per epoch across all batches
         print(f"Epoch [{epoch + 1}/{epochs}] - Loss: {avg_loss:.4f}")  # noqa: T201
+
+
+@switchdispatch
+def compute_loss(
+    _mode: str,
+    *,
+    _outputs: torch.Tensor,
+    _loss_fn: Callable[..., torch.Tensor],
+    _model: nn.Module,
+    _x: torch.Tensor,
+    _y: torch.Tensor,
+    _device: torch.device,
+    _oodloader: DataLoader | None = None,
+    _flow: nn.Module | None = None,
+    _class_count: torch.Tensor | None = None,
+) -> torch.Tensor:
+    """Dispatch function for computing the loss based on the selected mode via switchdispatch."""
+    msg = 'Enter a valid mode ["PostNet", "NatPostNet", "EDL", "PrNet", "IRD", "DER", "RPN"]'
+    raise ValueError(msg)
+
+
+@compute_loss.register("PostNet")
+def _postnet_loss(
+    _mode: str,
+    *,
+    y: torch.Tensor,
+    outputs: torch.Tensor,
+    loss_fn: Callable[..., torch.Tensor],
+    flow: nn.Module,
+    class_count: torch.Tensor | None = None,
+    **_: dict[str, Any],
+) -> torch.Tensor:
+    return loss_fn(outputs, y, flow, class_count)
+
+
+@compute_loss.register("NatPostNet")
+def _natpostnet_loss(
+    _mode: str,
+    *,
+    y: torch.Tensor,
+    outputs: torch.Tensor,
+    loss_fn: Callable[..., torch.Tensor],
+    **_: dict[str, Any],
+) -> torch.Tensor:
+    alpha, _, _ = outputs
+    return loss_fn(alpha, y)
+
+
+@compute_loss.register("EDL")
+def _edl_loss(
+    _mode: str,
+    *,
+    y: torch.Tensor,
+    outputs: torch.Tensor,
+    loss_fn: Callable[..., torch.Tensor],
+    **_: dict[str, Any],
+) -> torch.Tensor:
+    return loss_fn(outputs, y)
+
+
+@compute_loss.multi_register({"PrNet", "RPN"})
+def _prnet_rpn_loss(
+    _mode: str,
+    *,
+    model: nn.Module,
+    x: torch.Tensor,
+    y: torch.Tensor,
+    loss_fn: Callable[..., torch.Tensor],
+    oodloader: DataLoader,
+    **_: dict[str, Any],
+) -> torch.Tensor:
+    ood_iter = iter(oodloader)
+    try:
+        x_ood_raw, _ = next(ood_iter)
+    except StopIteration:
+        ood_iter = iter(oodloader)
+        x_ood_raw, _ = next(ood_iter)
+
+    x_ood = x_ood_raw.to(x.device)
+    return loss_fn(model, x, y, x_ood)
+
+
+@compute_loss.register("IRD")
+def _ird_loss(
+    _mode: str,
+    *,
+    y: torch.Tensor,
+    outputs: torch.Tensor,
+    loss_fn: Callable[..., torch.Tensor],
+    model: nn.Module,
+    x: torch.Tensor,
+    **_: dict[str, Any],
+) -> torch.Tensor:
+    x_adv = x + 0.01 * torch.randn_like(x)
+    alpha = outputs
+    alpha_adv = model(x_adv)
+    y_oh = nn.functional.one_hot(
+        y,
+        num_classes=outputs.shape[1],
+    ).float()
+    return loss_fn(alpha, y_oh, adversarial_alpha=alpha_adv)
+
+
+@compute_loss.register("DER")
+def _der_loss(
+    _mode: str,
+    *,
+    y: torch.Tensor,
+    outputs: torch.Tensor,
+    loss_fn: Callable[..., torch.Tensor],
+    **_: dict[str, Any],
+) -> torch.Tensor:
+    mu, kappa, alpha, beta = outputs
+    return loss_fn(y, mu, kappa, alpha, beta)
