@@ -153,22 +153,19 @@ class TernaryVisualizer:
 
         return ax
 
-    def draw_prob_line(self, ax: plt.Axes) -> None:
-        """Mini demo: draw probability axes through one fixed example point.
+    def draw_mle_prob_line(self, probs: np.narray, ax: plt.Axes) -> None:
+        """Draw probability axes for MLE for better readability.
 
         Args:
         ax: Axes to draw on
-        Draws the three isolines through (a,b,c):
-        - constant a (parallel to BC)
-        - constant b (parallel to AC)
-        - constant c (parallel to AB).
+        probs: given probabilities to calculate MLE
         """
-        # hard coded demo
-        example = np.array([0.25, 0.55, 0.20])
-        x, y = self.probs_to_coords_3d(example)
-        ax.scatter([x], [y], color=cfg.RED, s=30, zorder=5)
-
-        a, b, c = example
+        tmp_mle = probs.mean(axis=0)
+        mle_sum = tmp_mle.sum()
+        mle = tmp_mle / mle_sum
+        x, y = self.probs_to_coords_3d(mle)
+        ax.scatter([x], [y], color=cfg.RED, s=40, zorder=6)
+        a, b, c = mle
 
         # helper to draw lines
         def seg(p: np.ndarray, q: np.ndarray, *, color: str, lw: float = 2.0, alpha: float = 1.0) -> None:
@@ -185,14 +182,14 @@ class TernaryVisualizer:
             txt.set_path_effects([PathEffects.withStroke(linewidth=2, foreground=cfg.BLACK)])
 
         p_ac = np.array([a, 0.0, 1.0 - a])
-        seg(example, p_ac, color=cfg.BLUE, lw=1, alpha=1.0)
-        mid_lable(example, p_ac, f"a={a:.2f}")
+        seg(mle, p_ac, color=cfg.BLUE, lw=1, alpha=1.0)
+        mid_lable(mle, p_ac, f"a={a:.2f}")
         p_ba = np.array([1.0 - b, b, 0.0])
-        seg(p_ba, example, color=cfg.BLUE, lw=1, alpha=1.0)
-        mid_lable(p_ba, example, f"b={b:.2f}")
+        seg(p_ba, mle, color=cfg.BLUE, lw=1, alpha=1.0)
+        mid_lable(p_ba, mle, f"b={b:.2f}")
         p_cb = np.array([0.0, 1.0 - c, c])
-        seg(example, p_cb, color=cfg.BLUE, lw=1, alpha=1.0)
-        mid_lable(example, p_cb, f"c={c:.2f}")
+        seg(mle, p_cb, color=cfg.BLUE, lw=1, alpha=1.0)
+        mid_lable(mle, p_cb, f"c={c:.2f}")
 
     def plot_convex_hull(
         self,
@@ -261,7 +258,7 @@ class TernaryVisualizer:
                 color=cfg.HULL_EDGE,
                 linewidth=cfg.HULL_LINE_WIDTH,
             )
-        self.draw_prob_line(ax)
+        self.draw_mle_prob_line(probs, ax=ax)
         return ax
 
     def _draw_constant_probability_line(
