@@ -28,10 +28,10 @@ samples = [
 
 sample = create_sample(samples)
 
-print("sample type:", type(sample).__name__)  # noqa: T201
+print("sample type:", type(sample).__name__)
 
 mean = np.mean(samples, axis=0)
-print("mean:\n", mean)  # noqa: T201
+print("mean:\n", mean)
 
 # Visualize the mean probabilities for the first instance.
 classes = np.arange(mean.shape[1])

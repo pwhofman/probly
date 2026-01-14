@@ -31,10 +31,10 @@ sample = ArraySample(data_stack, sample_axis=0)
 mean = np.mean(data_stack, axis=0)
 std = np.std(data_stack, axis=0, ddof=0)
 
-print("mean shape:", mean.shape)  # noqa: T201
-print("std shape:", std.shape)  # noqa: T201
-print("mean[0]:", mean[0])  # noqa: T201
-print("std[0]:", std[0])  # noqa: T201
+print("mean shape:", mean.shape)
+print("std shape:", std.shape)
+print("mean[0]:", mean[0])
+print("std[0]:", std[0])
 
 # Plot mean ± std for instance 0
 classes = np.arange(mean.shape[1])
