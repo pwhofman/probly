@@ -9,7 +9,10 @@ from probly.lazy_types import JAX_ARRAY, TORCH_TENSOR
 from probly.representation.sampling.array_sample import ArraySample
 from probly.representation.sampling.common_sample import ListSample, Sample, SampleFactory
 
-create_sample = lazydispatch[SampleFactory, Sample](ListSample.from_iterable, dispatch_on=lambda s: s[0])
+create_sample = lazydispatch[SampleFactory, Sample](
+    ListSample.from_iterable,
+    dispatch_on=lambda s, sample_axis=1: s[0],  # noqa: ARG005 sample_axis is unused
+)
 
 
 create_sample.register(np.number | np.ndarray | float | int, ArraySample.from_iterable)
