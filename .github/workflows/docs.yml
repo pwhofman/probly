@@ -3,9 +3,9 @@ name: CI Documentation Check
 # TRIGGERING AND ENVIRONMENT SETUP
 on:
   pull_request:
-    push:
-        branches: [main, user_guide]
-    workflow_dispatch:
+  push:
+    branches: [main, user_guide]
+  workflow_dispatch:
 
 jobs:
   docs_build_check:
