@@ -4,9 +4,12 @@ from __future__ import annotations
 
 from typing import Any
 
+import pytest
+
+pytest.importorskip("jax")
+
 import jax.numpy as jnp
 import jax.random as jrandom
-import pytest
 
 from probly.conformal_prediction.scores.saps.flax import (
     saps_score_jax,

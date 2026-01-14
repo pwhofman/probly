@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import pytest
+
+pytest.importorskip("jax")
+
 import jax
 import jax.numpy as jnp
 import numpy as np
