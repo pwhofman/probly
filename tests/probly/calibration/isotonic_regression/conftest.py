@@ -9,6 +9,7 @@ from torch.utils.data import DataLoader, TensorDataset
 
 SetupReturnType = tuple[nn.Module, nn.Module, Tensor, DataLoader, DataLoader]
 
+
 @pytest.fixture
 def binary_torch_model() -> nn.Module:
     return nn.Sequential(
