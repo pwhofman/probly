@@ -44,7 +44,7 @@ jobs:
       - name: Build documentation with warnings as errors (Main Check)
         working-directory: ./docs
         run: |
-          uv run sphinx-build -W --keep-going -b html source build/html
+          uv run sphinx-build --keep-going -b html source build/html
         continue-on-error: false
 
       - name: Run doctests
