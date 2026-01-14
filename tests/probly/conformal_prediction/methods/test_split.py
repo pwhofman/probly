@@ -363,9 +363,14 @@ def test_split_conformal_regressor_calibration() -> None:
     threshold = regressor.calibrate(x_cal, y_cal, alpha=0.1)
 
     assert regressor.is_calibrated is True
-    assert regressor.threshold is not None
-    assert isinstance(threshold, float)
-    assert threshold == regressor.threshold
+    if regressor.is_asymmetric:
+        assert regressor.threshold_lower is not None
+        assert regressor.threshold_upper is not None
+        assert threshold == 0.1 or threshold is None
+    else:
+        assert regressor.threshold is not None
+        assert isinstance(threshold, float)
+        assert threshold == regressor.threshold
     assert regressor.nonconformity_scores is not None
     assert len(regressor.nonconformity_scores) == 10
 
