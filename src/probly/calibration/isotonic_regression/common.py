@@ -21,3 +21,8 @@ def _isotonic_factory(base: object, device: object) -> type[Any]:
 def register_isotonic_factory(key: LazyType) -> Callable:
     """Returns a decorator to register a class in the isotonic factory."""
     return _isotonic_factory.register(key)
+
+
+def isotonic_regression(base: object, device: object) -> object:
+    """Dispatches different implementations for isotonic regression."""
+    return _isotonic_factory(base, device)
