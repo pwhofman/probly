@@ -88,7 +88,7 @@ exclude_patterns = [
 nb_execution_mode = "off"
 
 # Bibliography
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "**/*.ipynb", "**/*.py", "**/*.json", "**/*.zip", "**/*.md5"]
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "**/*.py", "**/*.json", "**/*.zip", "**/*.md5"]
 bibtex_bibfiles = ["references.bib"]
 bibtex_default_style = "alpha"
 
