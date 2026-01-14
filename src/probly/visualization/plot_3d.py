@@ -46,10 +46,10 @@ class TernaryVisualizer:
         ax.text(v2[0] + 0.02, v2[1] - offset_x, c2, ha="left", va="top", fontsize=12)
         ax.text(v3[0], v3[1] + offset_x, c3, ha="center", va="bottom", fontsize=12)
 
-        edge_lable = "0.0 / 1.0"
-        ax.text(v1[0], v1[1], edge_lable, ha="right", va="top", fontsize=8)
-        ax.text(v2[0], v2[1], edge_lable, ha="left", va="top", fontsize=8)
-        ax.text(v3[0], v3[1], edge_lable, ha="center", va="bottom", fontsize=8)
+        edge_label = "0.0 / 1.0"
+        ax.text(v1[0], v1[1], edge_label, ha="right", va="top", fontsize=8)
+        ax.text(v2[0], v2[1], edge_label, ha="left", va="top", fontsize=8)
+        ax.text(v3[0], v3[1], edge_label, ha="center", va="bottom", fontsize=8)
 
     def ternary_plot(
         self,
@@ -269,8 +269,7 @@ class TernaryVisualizer:
         ax: plt.Axes,
         index: int,
         value: float,
-        color: str = "red",
-        linestyle: str = "--",
+        style_key: int,
     ) -> None:
         """Draw a line of constant probability p[index] = value.
 
@@ -299,14 +298,14 @@ class TernaryVisualizer:
 
         x1, y1 = self.probs_to_coords_3d(p_start)
         x2, y2 = self.probs_to_coords_3d(p_end)
-
+        color, linestyle = cfg.choose_min_max_style(style_key)
         ax.plot(
             [x1, x2],
             [y1, y2],
-            color=color,
-            linestyle=linestyle,
             linewidth=cfg.MIN_MAX_LINE_WIDTH,
             alpha=cfg.MIN_MAX_ALPHA,
+            color=color,
+            linestyle=linestyle,
         )
 
     def plot_minmax_lines(
@@ -326,13 +325,11 @@ class TernaryVisualizer:
                 ax=ax,
                 index=i,
                 value=p_min[i],
-                color=cfg.RED,
-                linestyle=cfg.MIN_MAX_LINESTYLE_1,
+                style_key=1,
             )
             self._draw_constant_probability_line(
                 ax=ax,
                 index=i,
                 value=p_max[i],
-                color=cfg.BLUE,
-                linestyle=cfg.MIN_MAX_LINESTYLE_2,
+                style_key=2,
             )
