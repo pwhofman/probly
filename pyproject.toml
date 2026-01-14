@@ -190,6 +190,9 @@ convention = "google"
     "PTH",
     "I002"
 ]
+"examples/*.py" = [
+    "T201",
+]
 
 # Use isort-compatible settings
 [tool.ruff.lint.isort]
