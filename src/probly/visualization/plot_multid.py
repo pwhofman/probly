@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, cast
 
-from matplotlib.patches import Circle, RegularPolygon
+from matplotlib.patches import Circle, Patch, Polygon, RegularPolygon
 from matplotlib.path import Path
+import matplotlib.patheffects as PathEffects
 from matplotlib.projections import register_projection
 from matplotlib.projections.polar import PolarAxes
 import matplotlib.pyplot as plt
@@ -15,6 +16,9 @@ import numpy as np
 
 import probly.visualization.config as cfg
 
+if TYPE_CHECKING:
+    from matplotlib.lines import Line2D
+
 
 def radar_factory(num_vars: int, frame: str = "circle") -> np.ndarray:  # noqa: C901
     """Create a radar chart with `num_vars` axes."""
@@ -23,7 +27,8 @@ def radar_factory(num_vars: int, frame: str = "circle") -> np.ndarray:  # noqa: 
     class RadarTransform(PolarAxes.PolarTransform):
         def transform_path_non_affine(self, path: Path) -> Path:
             # Note: _interpolation_steps is internal logic needed for this projection hack
-            if path._interpolation_steps > 1:  # noqa: SLF001
+            interpolation_steps = getattr(path, "_interpolation_steps", 1)
+            if interpolation_steps > 1:
                 path = path.interpolated(num_vars)
             return Path(self.transform(path.vertices), path.codes)
 
@@ -31,22 +36,24 @@ def radar_factory(num_vars: int, frame: str = "circle") -> np.ndarray:  # noqa: 
         name = "radar"
         PolarTransform = RadarTransform
 
-        def __init__(self, *args: Any, **kwargs: Any) -> None:  # noqa: ANN401
+        def __init__(self, *args: object, **kwargs: object) -> None:
             super().__init__(*args, **kwargs)
             self.set_theta_zero_location("N")
 
-        def fill(self, *args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
+        def fill(self, *args: object, **kwargs: object) -> list[Polygon]:
             """Override fill to handle closed polygons by default."""
             closed = kwargs.pop("closed", True)
-            return super().fill(closed=closed, *args, **kwargs)  # noqa: B026
+            result = super().fill(*args, closed=closed, **kwargs)
+            return cast("list[Polygon]", result)
 
-        def plot(self, *args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
-            lines = super().plot(*args, **kwargs)
+        def plot(self, *args: object, **kwargs: object) -> list[Line2D]:
+            result = super().plot(*args, **kwargs)
+            lines = cast("list[Line2D]", result)
             for line in lines:
                 self._close_line(line)
             return lines
 
-        def _close_line(self, line: Any) -> None:  # noqa: ANN401
+        def _close_line(self, line: Line2D) -> None:
             x, y = line.get_data()
             if x[0] != x[-1]:
                 x = np.append(x, x[0])
@@ -56,7 +63,7 @@ def radar_factory(num_vars: int, frame: str = "circle") -> np.ndarray:  # noqa: 
         def set_varlabels(self, labels: list[str]) -> None:
             self.set_thetagrids(np.degrees(theta), labels)
 
-        def _gen_axes_patch(self) -> Any:  # noqa: ANN401
+        def _gen_axes_patch(self) -> Patch:
             if frame == "circle":
                 return Circle((0.5, 0.5), 0.5)
             if frame == "polygon":
@@ -64,7 +71,7 @@ def radar_factory(num_vars: int, frame: str = "circle") -> np.ndarray:  # noqa: 
             msg = f"Unknown value for 'frame': {frame}"
             raise ValueError(msg)
 
-        def _gen_axes_spines(self) -> Any:  # noqa: ANN401
+        def _gen_axes_spines(self) -> Patch:
             if frame == "circle":
                 return super()._gen_axes_spines()
             if frame == "polygon":
@@ -108,10 +115,75 @@ class MultiVisualizer:
         if ax is None:
             fig, ax = plt.subplots(figsize=(6, 6), subplot_kw={"projection": "radar"})
 
-        # Setup Axis
+        # def spiderplot_axis(self, ) -> None:
+
+        # Setup Axis with line for better visibility
         ax.set_rgrids([0.2, 0.4, 0.6, 0.8, 1.0])
         ax.set_ylim(0.0, 1.0)
         ax.set_varlabels(labels)
+        ref_theta = 0.5 * (theta[0] + theta[1])  # midpoint in radians
+        ax.set_rlabel_position(np.degrees(ref_theta))
+        ax.set_yticklabels([])
+
+        def spiderplot_axis_with_ticks(
+            ax: plt.Axes,
+            theta: np.ndarray,
+            n_vars: int,
+            tick_values: list[float] | None = None,
+            draw_tick_marks: bool = True,
+        ) -> None:
+            """Draw reference axis between class 1 and 2 and place 0..1 labels scaled to polygon boundary."""
+            # Midpoint angle between class 1 and 2 (in radians)
+            ref_theta = 0.5 * (theta[0] + theta[1])
+
+            # For a regular n-gon frame, the radius to the middle of an edge is cos(pi/n)
+            r_max = float(np.cos(np.pi / n_vars))
+
+            if tick_values is None:
+                tick_values = [0.2, 0.4, 0.6, 0.8, 1.0]
+
+            axis_color = cfg.BLACK
+
+            # Draw axis line only until polygon boundary
+            (axis_line,) = ax.plot(
+                [ref_theta, ref_theta],
+                [0.0, r_max],
+                color=axis_color,
+                alpha=0.8,
+                linewidth=0.5,
+                zorder=2,
+            )
+            axis_line.set_clip_path(ax.patch)
+
+            # Labels + optional tick marks, all scaled into [0, r_max]
+            for t in tick_values:
+                if t < 0 or t > 1:
+                    continue
+                r = t * r_max
+
+                if draw_tick_marks and t not in (0.0, 1.0):
+                    dtheta = 0.015
+                    (tm,) = ax.plot(
+                        [ref_theta - dtheta, ref_theta + dtheta],
+                        [r, r],
+                        color=axis_color,
+                        linewidth=1.5,
+                        zorder=5,
+                    )
+                    tm.set_clip_path(ax.patch)
+
+                txt = ax.text(
+                    ref_theta,
+                    r,
+                    f"{t:g}",
+                    color=cfg.WHITE,
+                    fontsize=7,
+                    ha="center",
+                    va="center",
+                    zorder=7,
+                )
+                txt.set_clip_path(ax.patch)
+                txt.set_path_effects([PathEffects.withStroke(linewidth=2, foreground=cfg.BLACK)])
 
         max_class = np.argmax(probs, axis=1)
         max_probs = np.max(probs, axis=1)
@@ -144,9 +216,23 @@ class MultiVisualizer:
                 zorder=2,
             )
 
-            ax.plot(theta_c, lower_c, linestyle=cfg.MIN_MAX_LINESTYLE_1, linewidth=1.5, label="Lower bound")
-            ax.plot(theta_c, upper_c, linewidth=1.5, label="Upper bound")
-
+            ax.plot(
+                theta_c,
+                lower_c,
+                linestyle=cfg.MIN_MAX_LINESTYLE_1,
+                color=cfg.RED,
+                linewidth=1.5,
+                label="Lower bound",
+            )
+            ax.plot(
+                theta_c,
+                upper_c,
+                linestyle=cfg.MIN_MAX_LINESTYLE_2,
+                color=cfg.BLUE,
+                linewidth=1.5,
+                label="Upper bound",
+            )
+        spiderplot_axis_with_ticks(ax, theta, n_vars=n_classes, draw_tick_marks=True)
         ax.set_title(title, pad=20)
         ax.legend(loc="upper right", bbox_to_anchor=(1.3, 1.1))
         plt.tight_layout()
