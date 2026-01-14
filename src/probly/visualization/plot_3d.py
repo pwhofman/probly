@@ -135,7 +135,8 @@ class TernaryVisualizer:
         ax.set_ylim(-0.1, np.sqrt(3) / 2)
 
         # Scatter points
-        ax.scatter(coords[:, 0], coords[:, 1], **scatter_kwargs)
+        scatter_label = scatter_kwargs.pop("label", "Samples")
+        ax.scatter(coords[:, 0], coords[:, 1], label=scatter_label, **scatter_kwargs)
 
         ax.set_title(title, pad=20, y=-0.2)
 
@@ -151,7 +152,7 @@ class TernaryVisualizer:
         # Optionally draw second order max/min envelope lines
         if minmax_flag:
             self.plot_minmax_lines(probs, ax=ax)
-
+        ax.legend(loc="upper right", frameon=True, fontsize=9)
         return ax
 
     def draw_mle_prob_line(self, probs: np.narray, ax: plt.Axes) -> None:
@@ -245,6 +246,7 @@ class TernaryVisualizer:
                 edgecolor=cfg.HULL_EDGE,
                 alpha=cfg.FILL_ALPHA,
                 linewidth=cfg.HULL_LINE_WIDTH,
+                label="Credal set",
             )
             ax.add_patch(poly)
 
@@ -258,6 +260,7 @@ class TernaryVisualizer:
                 [coords[i, 1], coords[j, 1]],
                 color=cfg.HULL_EDGE,
                 linewidth=cfg.HULL_LINE_WIDTH,
+                label="Credal set",
             )
         return ax
 
@@ -267,6 +270,7 @@ class TernaryVisualizer:
         index: int,
         value: float,
         style_key: int,
+        label: str | None,
     ) -> None:
         """Draw a line of constant probability p[index] = value.
 
@@ -303,6 +307,7 @@ class TernaryVisualizer:
             alpha=cfg.MIN_MAX_ALPHA,
             color=color,
             linestyle=linestyle,
+            label=label,
         )
 
     def plot_minmax_lines(
@@ -323,10 +328,12 @@ class TernaryVisualizer:
                 index=i,
                 value=p_min[i],
                 style_key=1,
+                label="Min envelope" if i == 0 else None,
             )
             self._draw_constant_probability_line(
                 ax=ax,
                 index=i,
                 value=p_max[i],
                 style_key=2,
+                label="Max envelope" if i == 0 else None,
             )
