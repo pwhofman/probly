@@ -3,12 +3,17 @@ from __future__ import annotations
 import pytest
 
 from probly.losses.evidential.torch import (
+    der_loss,
     evidential_ce_loss,
     evidential_kl_divergence,
     evidential_log_loss,
     evidential_mse_loss,
     evidential_nignll_loss,
     evidential_regression_regularization,
+    rpn_distillation_loss,
+    rpn_loss,
+    rpn_ng_kl,
+    rpn_prior,
 )
 from probly.predictor import Predictor
 from probly.transformation import evidential_regression
@@ -102,4 +107,117 @@ def test_evidential_regression_regularization(
     outputs = model(inputs)
     criterion = evidential_regression_regularization
     loss = criterion(outputs, targets)
+    validate_loss(loss)
+
+
+def test_der_loss(
+    torch_regression_model_1d: nn.Module,
+    torch_regression_model_2d: nn.Module,
+) -> None:
+    inputs = torch.randn(4, 2)
+    targets = torch.randn(4, 1)
+
+    model: Predictor = evidential_regression(torch_regression_model_1d)
+    outputs = model(inputs)
+    criterion = der_loss
+    loss = criterion(targets, *outputs)
+    validate_loss(loss)
+
+    inputs = torch.randn(4, 4)
+    targets = torch.randn(4, 1)
+
+    model = evidential_regression(torch_regression_model_2d)
+    outputs = model(inputs)
+    loss = criterion(targets, *outputs)
+    validate_loss(loss)
+
+
+def test_rpn_distillation_loss() -> None:
+    m = torch.randn(4, 1)
+    l_precision = torch.rand(4, 1).abs() + 0.1
+    kappa = torch.rand(4, 1).abs() + 0.1
+    nu = torch.rand(4, 1).abs() + 3.0
+    rpn_params = (m, l_precision, kappa, nu)
+
+    mus = [torch.randn(4, 1) for _ in range(3)]
+    variances = [torch.rand(4, 1).abs() + 0.01 for _ in range(3)]
+    criterion = rpn_distillation_loss
+    loss = criterion(rpn_params, mus, variances)
+    validate_loss(loss)
+
+
+def test_rpn_prior_returns_valid_parameters() -> None:
+    device = torch.device("cpu")
+    shape = (4, 1)
+
+    mu0, kappa0, alpha0, beta0 = rpn_prior(shape, device)
+    assert mu0.shape == shape
+    assert kappa0.shape == shape
+    assert alpha0.shape == shape
+    assert beta0.shape == shape
+
+    assert mu0.device == device
+    assert kappa0.device == device
+    assert alpha0.device == device
+    assert beta0.device == device
+
+    assert torch.isfinite(mu0).all()
+    assert torch.isfinite(kappa0).all()
+    assert torch.isfinite(alpha0).all()
+    assert torch.isfinite(beta0).all()
+
+    assert (kappa0 >= 0).all()
+    assert (alpha0 > 1.0).all()
+    assert (beta0 >= 0).all()
+
+
+def test_rpn_ng_kl(
+    torch_regression_model_1d: nn.Module,
+    torch_regression_model_2d: nn.Module,
+) -> None:
+    inputs = torch.randn(4, 2)
+    model: Predictor = evidential_regression(torch_regression_model_1d)
+    mu, kappa, alpha, beta = model(inputs)
+
+    mu0, kappa0, alpha0, beta0 = rpn_prior(mu.shape, mu.device)
+
+    criterion = rpn_ng_kl
+    loss = criterion(mu, kappa, alpha, beta, mu0, kappa0, alpha0, beta0)
+    validate_loss(loss)
+
+    inputs = torch.randn(4, 4)
+    model = evidential_regression(torch_regression_model_2d)
+    mu, kappa, alpha, beta = model(inputs)
+
+    mu0, kappa0, alpha0, beta0 = rpn_prior(mu.shape, mu.device)
+
+    criterion = rpn_ng_kl
+    loss = criterion(mu, kappa, alpha, beta, mu0, kappa0, alpha0, beta0)
+
+    validate_loss(loss)
+
+
+def test_rpn_loss(
+    torch_regression_model_1d: nn.Module,
+    torch_regression_model_2d: nn.Module,
+) -> None:
+    model: Predictor = evidential_regression(torch_regression_model_1d)
+
+    x_id = torch.randn(4, 2)
+    y_id = torch.randn(4, 1)
+
+    x_ood = torch.randn(4, 2) * 3.0 + 5.0
+
+    criterion = rpn_loss
+    loss = criterion(model, x_id, y_id, x_ood)
+
+    validate_loss(loss)
+    model = evidential_regression(torch_regression_model_2d)
+
+    x_id = torch.randn(4, 4)
+    y_id = torch.randn(4, 2)
+
+    x_ood = torch.randn(4, 4) * 4.0 - 2.0
+    criterion = rpn_loss
+    loss = criterion(model, x_id, y_id, x_ood)
     validate_loss(loss)
