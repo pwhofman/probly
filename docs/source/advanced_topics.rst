@@ -1,3 +1,5 @@
+.. _advanced_topics:
+
 Advanced Topics
 ===============
 
@@ -10,15 +12,15 @@ Advanced Topics
 This chapter explains:
 
 - What “advanced” means in the context of ``probly``,
-- When you should read this chapter (recommended after :doc:`core_concepts` and :doc:`Main Components <main_components>`).
+- When you should read this chapter (recommended after :ref:`core_concepts` and :ref:`main_components`).
 
 1.2 Prerequisites & Notation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Before reading this chapter, the reader should already be familiar with:
 
-- The concepts introduced in :doc:`core_concepts`,
-- The basic workflows described in :doc:`Main Components <main_components>`,
+- The concepts introduced in :ref:`core_concepts`,
+- The basic workflows described in :ref:`main_components`,
 - Foundational ideas such as uncertainty representations, transformations, and inference.
 
 For clarity, this chapter follows the same notation conventions used throughout the ``probly`` documentation.
@@ -36,9 +38,9 @@ These use cases often require a deeper understanding of transformations, scalabi
 
 .. seealso::
 
-    For background material, see :doc:`core_concepts`.
+    For background material, see :ref:`core_concepts`.
 
-    For the main building blocks of ``probly``, like the main transformations, utilities & layers, and evaluation tools, see :doc:`Main Components <main_components>`.
+    For the main building blocks of ``probly``, like the main transformations, utilities & layers, and evaluation tools, see :ref:`main_components`.
 
 Mini gallery (quick links)
 -------------------------
@@ -1061,7 +1063,7 @@ and far more likely to understand what your large ``probly`` runs are doing.
 
 This section sketches a few “advanced” modelling patterns you will often see in
 real projects. The goal is not to give full mathematical detail, but to show how
-they fit conceptually with ``probly`` and when they are useful. For runnable walk-throughs, see :doc:`Examples & Tutorials <examples_&_tutorials>`.
+they fit conceptually with ``probly`` and when they are useful. For runnable walk-throughs, see :ref:`examples_and_tutorials`.
 
 **Hierarchical models**
 

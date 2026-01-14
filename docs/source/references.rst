@@ -1,3 +1,5 @@
+.. _references:
+
 References and Further Reading
 ==============================
 
