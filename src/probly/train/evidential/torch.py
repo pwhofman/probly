@@ -7,22 +7,20 @@ from typing import TYPE_CHECKING, Literal
 import torch
 from torch import nn
 
-from .common import _uet_dispatch
-
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from torch.utils.data import DataLoader
 
 
-@_uet_dispatch.register(torch.nn.Module)
-def _torch_uet(  # noqa: C901, PLR0912, PLR0915
-    model: nn.Module,
-    *,
+def unified_evidential_train(  # noqa: C901, PLR0912, PLR0915
     mode: Literal["PostNet", "NatPostNet", "EDL", "PrNet", "IRD", "DER", "RPN"],
+    model: nn.Module,
     dataloader: DataLoader,
-    loss_fn: torch.Tensor = None,
-    oodloader: DataLoader = None,
-    flow: torch.Tensor = None,
-    class_count: torch.Tensor = None,
+    loss_fn: Callable[..., torch.Tensor] | None = None,
+    oodloader: DataLoader | None = None,
+    flow: nn.Module | None = None,
+    class_count: torch.Tensor | None = None,
     epochs: int = 5,
     lr: float = 1e-3,
     device: str = "cpu",
