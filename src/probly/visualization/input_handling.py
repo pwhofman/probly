@@ -143,9 +143,8 @@ def dispatch_plot(
 
     mle_flag, credal_flag = _choice_flag_result(choice)
 
-    if minmax is None:
+    if minmax is None or (minmax is True and credal_flag is False):
         minmax = False
-
     # Depending on number of classes chooses correct plotting function.
     if n_classes == 2:
         viz = IntervalVisualizer()

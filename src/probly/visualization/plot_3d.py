@@ -143,6 +143,7 @@ class TernaryVisualizer:
             mle = probs.mean(axis=0)
             mle_x, mle_y = self.probs_to_coords_3d(mle)
             ax.scatter(mle_x, mle_y, color=cfg.RED, s=50, zorder=5, label="MLE")
+            self.draw_mle_prob_line(probs, ax=ax)
 
         if credal_flag:
             self.plot_convex_hull(probs, ax=ax)
@@ -258,7 +259,6 @@ class TernaryVisualizer:
                 color=cfg.HULL_EDGE,
                 linewidth=cfg.HULL_LINE_WIDTH,
             )
-        self.draw_mle_prob_line(probs, ax=ax)
         return ax
 
     def _draw_constant_probability_line(
