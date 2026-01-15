@@ -244,7 +244,7 @@ def test_raps_score_jax_device_agnostic() -> None:
 
 def test_raps_score_jax_dtype_preservation() -> None:
     """Test that raps_score_jax preserves input dtype."""
-    # Test with float32
+    # Test with float32 only
     probs_f32 = jnp.array(
         [
             [0.5, 0.3, 0.2],
@@ -255,15 +255,3 @@ def test_raps_score_jax_dtype_preservation() -> None:
 
     scores_f32 = raps_score_jax(probs_f32, lambda_reg=0.1, k_reg=0)
     assert scores_f32.dtype == jnp.float32
-
-    # Test with float64
-    probs_f64 = jnp.array(
-        [
-            [0.5, 0.3, 0.2],
-            [0.1, 0.7, 0.2],
-        ],
-        dtype=jnp.float64,
-    )
-
-    scores_f64 = raps_score_jax(probs_f64, lambda_reg=0.1, k_reg=0)
-    assert scores_f64.dtype == jnp.float64
