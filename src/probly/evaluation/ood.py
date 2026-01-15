@@ -8,9 +8,6 @@ import numpy as np
 import sklearn.metrics as sm
 from sklearn.metrics import precision_recall_curve, roc_curve
 
-from probly.evaluation.types import (
-    OodEvaluationResult,
-)
 from probly.plot.ood import plot_histogram, plot_pr_curve, plot_roc_curve
 
 if TYPE_CHECKING:
@@ -243,87 +240,61 @@ def evaluate_ood(
     return results
 
 
-def compute_ood_evaluation_result(
+def visualize_ood(
     in_distribution: np.ndarray | list[float],
     out_distribution: np.ndarray | list[float],
+    plot_types: list[str] | None = None,
     invert_scores: bool = True,
-) -> OodEvaluationResult:
-    """Compute all OOD metrics and curve data for visualization.
-
-    Calculation Logic is seperated from the actual plotting logic in the visualize_ood() function.
+) -> dict[str, Figure]:
+    """Generate visualization plots from OOD scores.
 
     Parameters:
     in_distribution :
         Scores for in-distribution samples.
     out_distribution :
         Scores for out-of-distribution samples.
+    plot_types : list[str], optional
+        List of specific plots to return (e.g. ['roc', 'hist', 'pr']).
+        If None, all plots are generated.
     invert_scores : bool
         If True (default), assumes scores are 'Confidence' (High = ID).
         They will be inverted (1.0 - score) for metrics where OOD is the positive class.
         If False, assumes scores are 'Anomaly Scores' (High = OOD).
 
     Returns:
-        OodEvaluationResult object containing scalars and curve arrays.
+        Dict containing matplotlib Figures for the requested plots.
     """
     id_s = np.asarray(in_distribution)
     ood_s = np.asarray(out_distribution)
 
-    # 1. Decoupled calculation
-    scalars = evaluate_ood(id_s, ood_s, metrics=["auroc", "aupr", "fpr@95%"])
-    if not isinstance(scalars, dict):
-        scalars = {"auroc": scalars, "aupr": 0.0, "fpr@95%": 0.0}
-
-    # 2. Prepare Data for Curve
-    labels = np.concatenate([np.zeros(len(id_s)), np.ones(len(ood_s))])
-    all_scores = np.concatenate([id_s, ood_s])
-
-    preds = 1.0 - all_scores if invert_scores else all_scores
-
-    fpr, tpr, _ = roc_curve(labels, preds)
-    precision, recall, _ = precision_recall_curve(labels, preds)
-
-    # 3. Return Result Object
-    return OodEvaluationResult(
-        auroc=scalars["auroc"],
-        aupr=scalars["aupr"],
-        fpr95=scalars.get("fpr@95%"),
-        fpr=fpr,
-        tpr=tpr,
-        precision=precision,
-        recall=recall,
-        id_scores=id_s,
-        ood_scores=ood_s,
-    )
-
-
-def visualize_ood(
-    result_data: OodEvaluationResult,
-    plot_types: list[str] | None = None,
-) -> dict[str, Figure]:
-    """Generate visualization plots from OODEvaluationResult type.
-
-    Parameters:
-    result_data : OodEvaluationResult
-        The calculated result object containing scores and curve data.
-        Use `compute_ood_evaluation_result` to generate this.
-    plot_types : list[str], optional
-        List of specific plots to return (e.g. ['roc', 'hist', 'pr']).
-        If None, all plots are generated.
-
-    Returns:
-        Dict containing matplotlib Figures for the requested plots.
-    """
     available_plots = {"hist", "roc", "pr"}
     requested_plots = available_plots if plot_types is None else set(plot_types).intersection(available_plots)
     figures = {}
 
     if "hist" in requested_plots:
-        figures["hist"] = plot_histogram(result_data)
+        figures["hist"] = plot_histogram(id_scores=id_s, ood_scores=ood_s)
 
-    if "roc" in requested_plots:
-        figures["roc"] = plot_roc_curve(result_data)
+    if "roc" in requested_plots or "pr" in requested_plots:
+        if invert_scores:
+            id_s_eval = 1.0 - id_s
+            ood_s_eval = 1.0 - ood_s
+        else:
+            id_s_eval = id_s
+            ood_s_eval = ood_s
 
-    if "pr" in requested_plots:
-        figures["pr"] = plot_pr_curve(result_data)
+        labels = np.concatenate([np.zeros(len(id_s_eval)), np.ones(len(ood_s_eval))])
+        preds = np.concatenate([id_s_eval, ood_s_eval])
+
+        if "roc" in requested_plots:
+            fpr, tpr, _ = roc_curve(labels, preds)
+            auroc = sm.auc(fpr, tpr)
+            idx_95 = np.where(tpr >= 0.95)[0]
+            fpr95 = fpr[idx_95[0]] if len(idx_95) > 0 else None
+            figures["roc"] = plot_roc_curve(fpr=fpr, tpr=tpr, auroc=auroc, fpr95=fpr95)
+
+        if "pr" in requested_plots:
+            precision, recall, _ = precision_recall_curve(labels, preds)
+            aupr = sm.auc(recall, precision)
+            figures["pr"] = plot_pr_curve(recall=recall, precision=precision, aupr=aupr)
 
     return figures
