@@ -15,7 +15,7 @@ from matplotlib.figure import Figure
 import numpy as np
 import pytest
 
-from probly.evaluation.ood_api import (
+from probly.evaluation.ood import (
     compute_ood_evaluation_result,
     evaluate_ood,
     parse_dynamic_metric,
