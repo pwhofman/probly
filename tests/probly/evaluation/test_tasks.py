@@ -29,4 +29,3 @@ def test_selective_prediction_too_many_bins() -> None:
     rng = np.random.default_rng()
     with pytest.raises(ValueError, match="The number of bins can not be larger than the number of elements criterion"):
         selective_prediction(rng.random(5), rng.random(5), n_bins=10)
-

@@ -8,6 +8,7 @@ These tests focus exclusively on API behavior:
 
 Metric correctness is tested elsewhere.
 """
+
 from __future__ import annotations
 
 from matplotlib.figure import Figure
@@ -15,12 +16,12 @@ import numpy as np
 import pytest
 
 from probly.evaluation.ood import (
+    compute_ood_evaluation_result,
+    evaluate_ood,
     out_of_distribution_detection_aupr,
     out_of_distribution_detection_auroc,
     out_of_distribution_detection_fnr_at_x_tpr,
     out_of_distribution_detection_fpr_at_x_tpr,
-    compute_ood_evaluation_result,
-    evaluate_ood,
     parse_dynamic_metric,
     visualize_ood,
 )
@@ -242,4 +243,3 @@ def test_fpr_at_95_tpr_complete_overlap() -> None:
     result = out_of_distribution_detection_fpr_at_x_tpr(in_distribution, out_distribution)
 
     assert np.isclose(result, 1.0)
-
