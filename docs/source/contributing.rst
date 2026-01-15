@@ -87,6 +87,22 @@ standards and includes appropriate tests.
    "New pull request" button. Select your branch from your forked repository and submit the pull request.
    Provide a clear description of the changes you have made and why they are necessary.
 
+Set up your development environment
+------------------------------------
+After you forked the repository, you can now set up your development environment for contributing to ``probly``:
+
+1. Ensure you have Python 3.10 or higher installed on your machine.
+
+2. `uv <https://docs.astral.sh/uv/>`_ :cite:`uv` can be used to manage the development environment.
+
+   Run
+
+   .. code-block:: sh
+
+      uv sync --dev
+
+   This will install all the required dependencies in your Python environment.
+
 Add new examples
 ------------------------
 We welcome new examples that demonstrate the capabilities of ``probly``.
@@ -160,9 +176,10 @@ Documentation test warnings should be fixed by running:
 Doctrings and style guide
 --------------------------------
 When contributing code, please ensure that your code follows the
-`PEP 8 <https://peps.python.org/pep-0008/>`_ :cite:`pep8` style guide and
-includes appropriate docstrings. You can use tools like `flake8` and `pydocstyle`
-to check your code for style and docstring compliance.
+`Google Style Guide <https://google.github.io/styleguide/pyguide.html#docstrings>`_ :cite:`GooglePythonStyleGuide`
+style guide and includes appropriate docstrings.
+For linting and formatting, ``Probly`` uses ``Ruffly``. The rules can be found in the `pyproject.toml <https://github.com/pwhofman/probly/blob/main/pyproject.toml>`_ file. If you set up your develelopment environment
+correctly, the pre-commit hooks will automatically run Ruffly on your code before each commit.
 
 
 CI checks
