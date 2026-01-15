@@ -286,6 +286,7 @@
 </ul>
 </li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="probly.transformation.html">probly.transformation</a><input class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" role="switch" type="checkbox"/><label for="toctree-checkbox-14"><div class="visually-hidden">Toggle navigation of probly.transformation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="probly.transformation.batchensemble.html">probly.transformation.batchensemble</a></li>
 <li class="toctree-l3"><a class="reference internal" href="probly.transformation.bayesian.html">probly.transformation.bayesian</a></li>
 <li class="toctree-l3"><a class="reference internal" href="probly.transformation.dropconnect.html">probly.transformation.dropconnect</a></li>
 <li class="toctree-l3"><a class="reference internal" href="probly.transformation.dropout.html">probly.transformation.dropout</a></li>
@@ -371,6 +372,12 @@
 <div class="table-wrapper autosummary longtable docutils container">
 <table class="autosummary longtable docutils align-default">
 <tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#probly.layers.torch.BatchEnsembleConv2d" title="probly.layers.torch.BatchEnsembleConv2d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">BatchEnsembleConv2d</span></code></a>(base_layer[, ...])</p></td>
+<td><p>Implements a BatchEnsemble convolutional layer.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#probly.layers.torch.BatchEnsembleLinear" title="probly.layers.torch.BatchEnsembleLinear"><code class="xref py py-obj docutils literal notranslate"><span class="pre">BatchEnsembleLinear</span></code></a>(base_layer[, ...])</p></td>
+<td><p>Implements a BatchEnsemble linear layer.</p></td>
+</tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#probly.layers.torch.BayesConv2d" title="probly.layers.torch.BayesConv2d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">BayesConv2d</span></code></a>(base_layer[, use_base_weights, ...])</p></td>
 <td><p>Implementation of a Bayesian convolutional layer.</p></td>
 </tr>
@@ -386,6 +393,202 @@
 </tbody>
 </table>
 </div>
+<dl class="py class">
+<dt class="sig sig-object py" id="probly.layers.torch.BatchEnsembleConv2d">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.layers.torch.</span></span><span class="sig-name descname"><span class="pre">BatchEnsembleConv2d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base_layer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_members</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_base_weights</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">s_mean</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">s_std</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r_mean</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r_std</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/layers/torch.html#BatchEnsembleConv2d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.layers.torch.BatchEnsembleConv2d" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></a></p>
+<p>Implements a BatchEnsemble convolutional layer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>base_layer</strong> (<em>nn.Conv2d</em>)</p></li>
+<li><p><strong>num_members</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>)</p></li>
+<li><p><strong>use_base_weights</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>)</p></li>
+<li><p><strong>s_mean</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>)</p></li>
+<li><p><strong>s_std</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>)</p></li>
+<li><p><strong>r_mean</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>)</p></li>
+<li><p><strong>r_std</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="probly.layers.torch.BatchEnsembleConv2d.in_channels">
+<span class="sig-name descname"><span class="pre">in_channels</span></span><a class="headerlink" href="#probly.layers.torch.BatchEnsembleConv2d.in_channels" title="Link to this definition">¶</a></dt>
+<dd><p>int, number of input channels</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="probly.layers.torch.BatchEnsembleConv2d.out_channels">
+<span class="sig-name descname"><span class="pre">out_channels</span></span><a class="headerlink" href="#probly.layers.torch.BatchEnsembleConv2d.out_channels" title="Link to this definition">¶</a></dt>
+<dd><p>int, number of output channels</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="probly.layers.torch.BatchEnsembleConv2d.kernel_size">
+<span class="sig-name descname"><span class="pre">kernel_size</span></span><a class="headerlink" href="#probly.layers.torch.BatchEnsembleConv2d.kernel_size" title="Link to this definition">¶</a></dt>
+<dd><p>int or tuple, size of the convolutional kernel</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="probly.layers.torch.BatchEnsembleConv2d.stride">
+<span class="sig-name descname"><span class="pre">stride</span></span><a class="headerlink" href="#probly.layers.torch.BatchEnsembleConv2d.stride" title="Link to this definition">¶</a></dt>
+<dd><p>int or tuple, stride of the convolution</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="probly.layers.torch.BatchEnsembleConv2d.padding">
+<span class="sig-name descname"><span class="pre">padding</span></span><a class="headerlink" href="#probly.layers.torch.BatchEnsembleConv2d.padding" title="Link to this definition">¶</a></dt>
+<dd><p>int or tuple, padding of the convolution</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="probly.layers.torch.BatchEnsembleConv2d.dilation">
+<span class="sig-name descname"><span class="pre">dilation</span></span><a class="headerlink" href="#probly.layers.torch.BatchEnsembleConv2d.dilation" title="Link to this definition">¶</a></dt>
+<dd><p>int or tuple, dilation of the convolution</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="probly.layers.torch.BatchEnsembleConv2d.groups">
+<span class="sig-name descname"><span class="pre">groups</span></span><a class="headerlink" href="#probly.layers.torch.BatchEnsembleConv2d.groups" title="Link to this definition">¶</a></dt>
+<dd><p>int, number of groups for grouped convolution</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="probly.layers.torch.BatchEnsembleConv2d.num_members">
+<span class="sig-name descname"><span class="pre">num_members</span></span><a class="headerlink" href="#probly.layers.torch.BatchEnsembleConv2d.num_members" title="Link to this definition">¶</a></dt>
+<dd><p>int, number of batch ensemble members</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="probly.layers.torch.BatchEnsembleConv2d.weight">
+<span class="sig-name descname"><span class="pre">weight</span></span><a class="headerlink" href="#probly.layers.torch.BatchEnsembleConv2d.weight" title="Link to this definition">¶</a></dt>
+<dd><p>torch.Tensor, shared weight matrix</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="probly.layers.torch.BatchEnsembleConv2d.bias">
+<span class="sig-name descname"><span class="pre">bias</span></span><a class="headerlink" href="#probly.layers.torch.BatchEnsembleConv2d.bias" title="Link to this definition">¶</a></dt>
+<dd><p>torch.Tensor, shared bias vector</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="probly.layers.torch.BatchEnsembleConv2d.s">
+<span class="sig-name descname"><span class="pre">s</span></span><a class="headerlink" href="#probly.layers.torch.BatchEnsembleConv2d.s" title="Link to this definition">¶</a></dt>
+<dd><p>torch.Tensor, rank-one factor for input features</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="probly.layers.torch.BatchEnsembleConv2d.r">
+<span class="sig-name descname"><span class="pre">r</span></span><a class="headerlink" href="#probly.layers.torch.BatchEnsembleConv2d.r" title="Link to this definition">¶</a></dt>
+<dd><p>torch.Tensor, rank-one factor for output features</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="probly.layers.torch.BatchEnsembleConv2d.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/layers/torch.html#BatchEnsembleConv2d.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.layers.torch.BatchEnsembleConv2d.forward" title="Link to this definition">¶</a></dt>
+<dd><p>Forward pass of the BatchEnsemble Conv2d layer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>x</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.9)"><em>Tensor</em></a>) – torch.Tensor, Input tensor of shape [B, in_channels, H, W] or [E, B, in_channels, H, W],
+where B is the batch size, E is the ensemble size, H is height, and W is width.</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Output tensor of shape [E, B, out_channels, H_out, W_out].</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.9)">torch.Tensor</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="probly.layers.torch.BatchEnsembleLinear">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.layers.torch.</span></span><span class="sig-name descname"><span class="pre">BatchEnsembleLinear</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base_layer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_members</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_base_weights</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">s_mean</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">s_std</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r_mean</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r_std</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/layers/torch.html#BatchEnsembleLinear"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.layers.torch.BatchEnsembleLinear" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></a></p>
+<p>Implements a BatchEnsemble linear layer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>base_layer</strong> (<em>nn.Linear</em>)</p></li>
+<li><p><strong>num_members</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>)</p></li>
+<li><p><strong>use_base_weights</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>)</p></li>
+<li><p><strong>s_mean</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>)</p></li>
+<li><p><strong>s_std</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>)</p></li>
+<li><p><strong>r_mean</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>)</p></li>
+<li><p><strong>r_std</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="probly.layers.torch.BatchEnsembleLinear.in_features">
+<span class="sig-name descname"><span class="pre">in_features</span></span><a class="headerlink" href="#probly.layers.torch.BatchEnsembleLinear.in_features" title="Link to this definition">¶</a></dt>
+<dd><p>int, number of input features</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="probly.layers.torch.BatchEnsembleLinear.out_features">
+<span class="sig-name descname"><span class="pre">out_features</span></span><a class="headerlink" href="#probly.layers.torch.BatchEnsembleLinear.out_features" title="Link to this definition">¶</a></dt>
+<dd><p>int, number of output features</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="probly.layers.torch.BatchEnsembleLinear.num_members">
+<span class="sig-name descname"><span class="pre">num_members</span></span><a class="headerlink" href="#probly.layers.torch.BatchEnsembleLinear.num_members" title="Link to this definition">¶</a></dt>
+<dd><p>int, number of batch ensemble members</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="probly.layers.torch.BatchEnsembleLinear.weight">
+<span class="sig-name descname"><span class="pre">weight</span></span><a class="headerlink" href="#probly.layers.torch.BatchEnsembleLinear.weight" title="Link to this definition">¶</a></dt>
+<dd><p>torch.Tensor, shared weight matrix</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="probly.layers.torch.BatchEnsembleLinear.bias">
+<span class="sig-name descname"><span class="pre">bias</span></span><a class="headerlink" href="#probly.layers.torch.BatchEnsembleLinear.bias" title="Link to this definition">¶</a></dt>
+<dd><p>torch.Tensor, shared bias vector</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="probly.layers.torch.BatchEnsembleLinear.s">
+<span class="sig-name descname"><span class="pre">s</span></span><a class="headerlink" href="#probly.layers.torch.BatchEnsembleLinear.s" title="Link to this definition">¶</a></dt>
+<dd><p>torch.Tensor, rank-one factor for input features</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="probly.layers.torch.BatchEnsembleLinear.r">
+<span class="sig-name descname"><span class="pre">r</span></span><a class="headerlink" href="#probly.layers.torch.BatchEnsembleLinear.r" title="Link to this definition">¶</a></dt>
+<dd><p>torch.Tensor, rank-one factor for output features</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="probly.layers.torch.BatchEnsembleLinear.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/layers/torch.html#BatchEnsembleLinear.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.layers.torch.BatchEnsembleLinear.forward" title="Link to this definition">¶</a></dt>
+<dd><p>Forward pass of the BatchEnsemble linear layer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>x</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.9)"><em>Tensor</em></a>) – torch.Tensor, Input tensor of shape [B, in_features] or [E, B, in_features],
+where B is the batch size and E is the ensemble size.</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Output tensor of shape [E, B, out_features].</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.9)">torch.Tensor</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 <dl class="py class">
 <dt class="sig sig-object py" id="probly.layers.torch.BayesConv2d">
 <em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.layers.torch.</span></span><span class="sig-name descname"><span class="pre">BayesConv2d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base_layer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_base_weights</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">posterior_std</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_mean</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_std</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/layers/torch.html#BayesConv2d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.layers.torch.BayesConv2d" title="Link to this definition">¶</a></dt>
@@ -893,6 +1096,33 @@ uniform(-1/sqrt(in_features), 1/sqrt(in_features)). For details, see
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">probly.layers.torch</a><ul>
+<li><a class="reference internal" href="#probly.layers.torch.BatchEnsembleConv2d"><code class="docutils literal notranslate"><span class="pre">BatchEnsembleConv2d</span></code></a><ul>
+<li><a class="reference internal" href="#probly.layers.torch.BatchEnsembleConv2d.in_channels"><code class="docutils literal notranslate"><span class="pre">BatchEnsembleConv2d.in_channels</span></code></a></li>
+<li><a class="reference internal" href="#probly.layers.torch.BatchEnsembleConv2d.out_channels"><code class="docutils literal notranslate"><span class="pre">BatchEnsembleConv2d.out_channels</span></code></a></li>
+<li><a class="reference internal" href="#probly.layers.torch.BatchEnsembleConv2d.kernel_size"><code class="docutils literal notranslate"><span class="pre">BatchEnsembleConv2d.kernel_size</span></code></a></li>
+<li><a class="reference internal" href="#probly.layers.torch.BatchEnsembleConv2d.stride"><code class="docutils literal notranslate"><span class="pre">BatchEnsembleConv2d.stride</span></code></a></li>
+<li><a class="reference internal" href="#probly.layers.torch.BatchEnsembleConv2d.padding"><code class="docutils literal notranslate"><span class="pre">BatchEnsembleConv2d.padding</span></code></a></li>
+<li><a class="reference internal" href="#probly.layers.torch.BatchEnsembleConv2d.dilation"><code class="docutils literal notranslate"><span class="pre">BatchEnsembleConv2d.dilation</span></code></a></li>
+<li><a class="reference internal" href="#probly.layers.torch.BatchEnsembleConv2d.groups"><code class="docutils literal notranslate"><span class="pre">BatchEnsembleConv2d.groups</span></code></a></li>
+<li><a class="reference internal" href="#probly.layers.torch.BatchEnsembleConv2d.num_members"><code class="docutils literal notranslate"><span class="pre">BatchEnsembleConv2d.num_members</span></code></a></li>
+<li><a class="reference internal" href="#probly.layers.torch.BatchEnsembleConv2d.weight"><code class="docutils literal notranslate"><span class="pre">BatchEnsembleConv2d.weight</span></code></a></li>
+<li><a class="reference internal" href="#probly.layers.torch.BatchEnsembleConv2d.bias"><code class="docutils literal notranslate"><span class="pre">BatchEnsembleConv2d.bias</span></code></a></li>
+<li><a class="reference internal" href="#probly.layers.torch.BatchEnsembleConv2d.s"><code class="docutils literal notranslate"><span class="pre">BatchEnsembleConv2d.s</span></code></a></li>
+<li><a class="reference internal" href="#probly.layers.torch.BatchEnsembleConv2d.r"><code class="docutils literal notranslate"><span class="pre">BatchEnsembleConv2d.r</span></code></a></li>
+<li><a class="reference internal" href="#probly.layers.torch.BatchEnsembleConv2d.forward"><code class="docutils literal notranslate"><span class="pre">BatchEnsembleConv2d.forward()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#probly.layers.torch.BatchEnsembleLinear"><code class="docutils literal notranslate"><span class="pre">BatchEnsembleLinear</span></code></a><ul>
+<li><a class="reference internal" href="#probly.layers.torch.BatchEnsembleLinear.in_features"><code class="docutils literal notranslate"><span class="pre">BatchEnsembleLinear.in_features</span></code></a></li>
+<li><a class="reference internal" href="#probly.layers.torch.BatchEnsembleLinear.out_features"><code class="docutils literal notranslate"><span class="pre">BatchEnsembleLinear.out_features</span></code></a></li>
+<li><a class="reference internal" href="#probly.layers.torch.BatchEnsembleLinear.num_members"><code class="docutils literal notranslate"><span class="pre">BatchEnsembleLinear.num_members</span></code></a></li>
+<li><a class="reference internal" href="#probly.layers.torch.BatchEnsembleLinear.weight"><code class="docutils literal notranslate"><span class="pre">BatchEnsembleLinear.weight</span></code></a></li>
+<li><a class="reference internal" href="#probly.layers.torch.BatchEnsembleLinear.bias"><code class="docutils literal notranslate"><span class="pre">BatchEnsembleLinear.bias</span></code></a></li>
+<li><a class="reference internal" href="#probly.layers.torch.BatchEnsembleLinear.s"><code class="docutils literal notranslate"><span class="pre">BatchEnsembleLinear.s</span></code></a></li>
+<li><a class="reference internal" href="#probly.layers.torch.BatchEnsembleLinear.r"><code class="docutils literal notranslate"><span class="pre">BatchEnsembleLinear.r</span></code></a></li>
+<li><a class="reference internal" href="#probly.layers.torch.BatchEnsembleLinear.forward"><code class="docutils literal notranslate"><span class="pre">BatchEnsembleLinear.forward()</span></code></a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#probly.layers.torch.BayesConv2d"><code class="docutils literal notranslate"><span class="pre">BayesConv2d</span></code></a><ul>
 <li><a class="reference internal" href="#probly.layers.torch.BayesConv2d.in_channels"><code class="docutils literal notranslate"><span class="pre">BayesConv2d.in_channels</span></code></a></li>
 <li><a class="reference internal" href="#probly.layers.torch.BayesConv2d.out_channels"><code class="docutils literal notranslate"><span class="pre">BayesConv2d.out_channels</span></code></a></li>

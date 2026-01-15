@@ -10,6 +10,7 @@
    :toctree:
    :recursive:
 
+   batchensemble
    bayesian
    dropconnect
    dropout

@@ -1,0 +1,6 @@
+probly.transformation.batchensemble
+===================================
+
+.. currentmodule:: probly.transformation
+
+.. autofunction:: batchensemble

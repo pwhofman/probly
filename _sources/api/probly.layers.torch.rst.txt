@@ -8,6 +8,8 @@ probly.layers.torch
 
    .. autosummary::
    
+      BatchEnsembleConv2d
+      BatchEnsembleLinear
       BayesConv2d
       BayesLinear
       DropConnectLinear

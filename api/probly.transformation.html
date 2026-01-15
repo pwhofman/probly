@@ -3,7 +3,7 @@
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="probly.transformation.bayesian" href="probly.transformation.bayesian.html" /><link rel="prev" title="probly.train.evidential.torch" href="probly.train.evidential.torch.html" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="probly.transformation.batchensemble" href="probly.transformation.batchensemble.html" /><link rel="prev" title="probly.train.evidential.torch" href="probly.train.evidential.torch.html" />
 
     <!-- Generated with Sphinx 8.2.3 and Furo 2024.08.06 -->
         <title>probly.transformation - probly 0.3.1 documentation</title>
@@ -286,6 +286,7 @@
 </ul>
 </li>
 <li class="toctree-l2 current has-children current-page"><a class="current reference internal" href="#">probly.transformation</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" role="switch" type="checkbox"/><label for="toctree-checkbox-14"><div class="visually-hidden">Toggle navigation of probly.transformation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="probly.transformation.batchensemble.html">probly.transformation.batchensemble</a></li>
 <li class="toctree-l3"><a class="reference internal" href="probly.transformation.bayesian.html">probly.transformation.bayesian</a></li>
 <li class="toctree-l3"><a class="reference internal" href="probly.transformation.dropconnect.html">probly.transformation.dropconnect</a></li>
 <li class="toctree-l3"><a class="reference internal" href="probly.transformation.dropout.html">probly.transformation.dropout</a></li>
@@ -367,6 +368,42 @@
           <section id="module-probly.transformation">
 <span id="probly-transformation"></span><h1>probly.transformation<a class="headerlink" href="#module-probly.transformation" title="Link to this heading">¶</a></h1>
 <p>Transformations for models.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="probly.transformation.batchensemble">
+<span class="sig-prename descclassname"><span class="pre">probly.transformation.</span></span><span class="sig-name descname"><span class="pre">batchensemble</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_members</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_base_weights</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">s_mean</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">s_std</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r_mean</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r_std</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/transformation/batchensemble/common.html#batchensemble"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.transformation.batchensemble" title="Link to this definition">¶</a></dt>
+<dd><p>Create a Batchensemble predictor from a base predictor.</p>
+<p>It calls a traverser to replace all linear and convolutional layers by their BatchEnsemble
+counterparts.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type">T</span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>base</strong> (<em>T</em>) – Predictor, The model in which the layers will be replaced by BatchEnsemble layers.</p></li>
+<li><p><strong>num_members</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – int, The number of members in the BatchEnsemble.</p></li>
+<li><p><strong>use_base_weights</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>) – bool, Whether to use the weights of the base layer as prior means.</p></li>
+<li><p><strong>s_mean</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – float, The mean of the input modulation s, drawn from <cite>nn.init._normal(s_mean, s_std)</cite>.</p></li>
+<li><p><strong>s_std</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – float, The standard deviation of the input modulation s, drawn from <cite>nn.init._normal(s_mean, s_std)</cite>.</p></li>
+<li><p><strong>r_mean</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – float, The mean of the output modulation r, drawn from <cite>nn.init._normal(r_mean, r_std)</cite>.</p></li>
+<li><p><strong>r_std</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – float, The standard deviation of the output modulation r, drawn from <cite>nn.init._normal(r_mean, r_std)</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Predictor, The BatchEnsemble predictor.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <cite>num_members</cite> is not a positive integer.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <cite>s_std</cite> is not greater than 0.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <cite>s_mean</cite> is not greater than 0.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <cite>r_std</cite> is not greater than 0.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <cite>r_mean</cite> is not greater than 0.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.transformation.bayesian">
 <span class="sig-prename descclassname"><span class="pre">probly.transformation.</span></span><span class="sig-name descname"><span class="pre">bayesian</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_base_weights</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">posterior_std</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_mean</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_std</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/transformation/bayesian/common.html#bayesian"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.transformation.bayesian" title="Link to this definition">¶</a></dt>
@@ -489,19 +526,22 @@
 <div class="table-wrapper autosummary longtable docutils container">
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="probly.transformation.bayesian.html#probly.transformation.bayesian" title="probly.transformation.bayesian"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bayesian</span></code></a>(base[, use_base_weights, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="probly.transformation.batchensemble.html#probly.transformation.batchensemble" title="probly.transformation.batchensemble"><code class="xref py py-obj docutils literal notranslate"><span class="pre">batchensemble</span></code></a>(base[, num_members, ...])</p></td>
+<td><p>Create a Batchensemble predictor from a base predictor.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="probly.transformation.bayesian.html#probly.transformation.bayesian" title="probly.transformation.bayesian"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bayesian</span></code></a>(base[, use_base_weights, ...])</p></td>
 <td><p>Create a Bayesian predictor from a base predictor.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="probly.transformation.dropconnect.html#probly.transformation.dropconnect" title="probly.transformation.dropconnect"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dropconnect</span></code></a>(base[, p])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="probly.transformation.dropconnect.html#probly.transformation.dropconnect" title="probly.transformation.dropconnect"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dropconnect</span></code></a>(base[, p])</p></td>
 <td><p>Create a DropConnect predictor from a base predictor.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="probly.transformation.dropout.html#probly.transformation.dropout" title="probly.transformation.dropout"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dropout</span></code></a>(base[, p])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="probly.transformation.dropout.html#probly.transformation.dropout" title="probly.transformation.dropout"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dropout</span></code></a>(base[, p])</p></td>
 <td><p>Create a Dropout predictor from a base predictor.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="probly.transformation.ensemble.html#probly.transformation.ensemble" title="probly.transformation.ensemble"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ensemble</span></code></a>(base, num_members[, reset_params])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="probly.transformation.ensemble.html#probly.transformation.ensemble" title="probly.transformation.ensemble"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ensemble</span></code></a>(base, num_members[, reset_params])</p></td>
 <td><p>Create an ensemble predictor from a base predictor.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="probly.transformation.evidential.html#module-probly.transformation.evidential" title="probly.transformation.evidential"><code class="xref py py-obj docutils literal notranslate"><span class="pre">evidential</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="probly.transformation.evidential.html#module-probly.transformation.evidential" title="probly.transformation.evidential"><code class="xref py py-obj docutils literal notranslate"><span class="pre">evidential</span></code></a></p></td>
 <td><p>Evidential module for probly.</p></td>
 </tr>
 </tbody>
@@ -514,12 +554,12 @@
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="probly.transformation.bayesian.html">
+          <a class="next-page" href="probly.transformation.batchensemble.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">probly.transformation.bayesian</div>
+                <div class="title">probly.transformation.batchensemble</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
@@ -565,6 +605,7 @@
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">probly.transformation</a><ul>
+<li><a class="reference internal" href="#probly.transformation.batchensemble"><code class="docutils literal notranslate"><span class="pre">batchensemble()</span></code></a></li>
 <li><a class="reference internal" href="#probly.transformation.bayesian"><code class="docutils literal notranslate"><span class="pre">bayesian()</span></code></a></li>
 <li><a class="reference internal" href="#probly.transformation.dropconnect"><code class="docutils literal notranslate"><span class="pre">dropconnect()</span></code></a></li>
 <li><a class="reference internal" href="#probly.transformation.dropout"><code class="docutils literal notranslate"><span class="pre">dropout()</span></code></a></li>
