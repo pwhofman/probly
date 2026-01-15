@@ -16,10 +16,18 @@ if TYPE_CHECKING:
 def _enforce_fitted_already(obj: BaseEstimator, state: State) -> tuple[BaseEstimator, State]:
     """Should check that the sklearn estimator is fitted already.
 
-    There is no standard way to check if a sklearn estimator is fitted.
+    Now we check for the presence of the `n_features_in_` attribute,
+    which is set by all sklearn estimators when they are fitted.
 
+    There is no standard way to check if a sklearn estimator is fitted.
     See: https://scikit-learn.org/stable/glossary.html#term-fitted
     """
+
+    if not hasattr(obj, "n_features_in_"):
+        raise ValueError(
+            f"The sklearn estimator {obj} is not fitted yet. "
+            "Please fit the estimator before using it in sampling.",
+        )
     return obj, state
 
 
