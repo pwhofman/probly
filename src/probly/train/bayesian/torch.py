@@ -15,7 +15,7 @@ from probly.layers.torch import BayesConv2d, BayesLinear  # noqa: TC001, require
 from probly.traverse_nn import nn_compose
 from pytraverse import GlobalVariable, State, TraverserResult, singledispatch_traverser, traverse_with_state
 
-KL_DIVERGENCE = GlobalVariable[torch.Tensor]("KL_DIVERGENCE", default=0.0)
+KL_DIVERGENCE = GlobalVariable[torch.Tensor]("KL_DIVERGENCE", default=torch.tensor(0.0))
 
 
 @singledispatch_traverser[object]
@@ -23,7 +23,7 @@ def kl_divergence_traverser(
     obj: BayesLinear | BayesConv2d,
     state: State,
 ) -> TraverserResult[BayesLinear | BayesConv2d]:
-    """Traverser to compute the KL divergence of a Bayesian layer."""
+    """Traverser to compute the KL divergence of a Bayesian layer based on :cite:`galDropoutBayesian2016`."""
     state[KL_DIVERGENCE] += obj.kl_divergence
     return obj, state
 

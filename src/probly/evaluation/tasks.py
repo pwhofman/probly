@@ -9,7 +9,7 @@ import sklearn.metrics as sm
 
 
 def selective_prediction(criterion: np.ndarray, losses: np.ndarray, n_bins: int = 50) -> tuple[float, np.ndarray]:
-    """Selective prediction downstream task for evaluation.
+    """Selective prediction downstream task for evaluation based on :cite: lakshminarayananSimpleScalable2017.
 
     Perform selective prediction based on criterion and losses.
     The criterion is used the sort the losses. In line with uncertainty

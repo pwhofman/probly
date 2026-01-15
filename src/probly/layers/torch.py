@@ -202,7 +202,7 @@ class BatchEnsembleConv2d(nn.Module):
 
 
 class BayesLinear(nn.Module):
-    """Implements a Bayesian linear layer.
+    """Implements a Bayesian linear layer based on :cite:`blundellWeightUncertainty2015`.
 
     Attributes:
         in_features: int, number of input features
@@ -249,7 +249,7 @@ class BayesLinear(nn.Module):
         if not use_base_weights:
             self.weight_mu = nn.Parameter(torch.empty((self.out_features, self.in_features)))
         else:
-            self.weight_mu = nn.Parameter(cast("torch.Tensor", base_layer.weight.data))
+            self.weight_mu = nn.Parameter(base_layer.weight.data)
         self.weight_rho = nn.Parameter(torch.full((self.out_features, self.in_features), rho))
 
         # prior weights
@@ -261,7 +261,7 @@ class BayesLinear(nn.Module):
         else:
             self.register_buffer(
                 "weight_prior_mu",
-                cast("torch.Tensor", base_layer.weight.data),
+                base_layer.weight.data,
             )
         self.register_buffer(
             "weight_prior_sigma",
@@ -273,7 +273,7 @@ class BayesLinear(nn.Module):
             if not use_base_weights:
                 self.bias_mu = nn.Parameter(torch.empty((self.out_features,)))
             else:
-                self.bias_mu = nn.Parameter(cast("torch.Tensor", base_layer.bias.data))
+                self.bias_mu = nn.Parameter(base_layer.bias.data)
             self.bias_rho = nn.Parameter(
                 torch.full((self.out_features,), rho),
             )
@@ -287,7 +287,7 @@ class BayesLinear(nn.Module):
             else:
                 self.register_buffer(
                     "bias_prior_mu",
-                    cast("torch.Tensor", base_layer.bias.data),
+                    base_layer.bias.data,
                 )
             self.register_buffer(
                 "bias_prior_sigma",
@@ -319,12 +319,11 @@ class BayesLinear(nn.Module):
         """Reset the parameters of the Bayesian conv2d layer.
 
         Setting a=sqrt(5) in kaiming_uniform is the same as initializing with
-        uniform(-1/sqrt(k), 1/sqrt(k)), where k = weight.size(1) * prod(*kernel_size)
-        For more details see: https://github.com/pytorch/pytorch/issues/15314#issuecomment-477448573
+        uniform(-1/sqrt(k), 1/sqrt(k)), where ``k = weight.size(1) * prod(*kernel_size)``
+        For more details see: https://github.com/pytorch/pytorch/issues/15314
         """
         init.kaiming_uniform_(self.weight_mu, a=math.sqrt(5))
         if self.bias is not False:
-            fan_in: torch.Tensor
             fan_in, _ = init._calculate_fan_in_and_fan_out(  # noqa: SLF001
                 self.weight_mu,
             )
@@ -355,7 +354,7 @@ class BayesLinear(nn.Module):
 
 
 class BayesConv2d(nn.Module):
-    """Implementation of a Bayesian convolutional layer.
+    """Implementation of a Bayesian convolutional layer based on :cite:`blundellWeightUncertainty2015`.
 
     Attributes:
         in_channels: int, number of input channels
@@ -414,7 +413,7 @@ class BayesConv2d(nn.Module):
                 torch.empty((self.out_channels, self.in_channels // self.groups, *self.kernel_size)),
             )
         else:
-            self.weight_mu = nn.Parameter(cast("torch.Tensor", base_layer.weight.data))
+            self.weight_mu = nn.Parameter(base_layer.weight.data)
         self.weight_rho = nn.Parameter(
             torch.full((self.out_channels, self.in_channels // self.groups, *self.kernel_size), rho),
         )
@@ -431,7 +430,7 @@ class BayesConv2d(nn.Module):
         else:
             self.register_buffer(
                 "weight_prior_mu",
-                cast("torch.Tensor", base_layer.weight.data),
+                base_layer.weight.data,
             )
 
         self.register_buffer(
@@ -444,7 +443,9 @@ class BayesConv2d(nn.Module):
             if not use_base_weights:
                 self.bias_mu = nn.Parameter(torch.empty((self.out_channels,)))
             else:
-                self.bias_mu = nn.Parameter(cast("torch.Tensor", base_layer.bias.data))
+                self.bias_mu = nn.Parameter(
+                    base_layer.bias.data if base_layer.bias is not None else torch.empty((self.out_channels,))
+                )
             self.bias_rho = nn.Parameter(torch.full((self.out_channels,), rho))
 
             # prior bias
@@ -456,7 +457,9 @@ class BayesConv2d(nn.Module):
             else:
                 self.register_buffer(
                     "bias_prior_mu",
-                    cast("torch.Tensor", base_layer.bias.data),
+                    base_layer.bias.data
+                    if base_layer.bias is not None
+                    else torch.full((self.out_channels,), prior_mean),
                 )
             self.register_buffer(
                 "bias_prior_sigma",
@@ -503,8 +506,8 @@ class BayesConv2d(nn.Module):
         """Reset the parameters of the Bayesian conv2d layer.
 
         Setting a=sqrt(5) in kaiming_uniform is the same as initializing with
-        uniform(-1/sqrt(k), 1/sqrt(k)), where k = weight.size(1) * prod(*kernel_size)
-        For more details see: https://github.com/pytorch/pytorch/issues/15314#issuecomment-477448573
+        uniform(-1/sqrt(k), 1/sqrt(k)), where ``k = weight.size(1) * prod(*kernel_size)``
+        For more details see: https://github.com/pytorch/pytorch/issues/15314
         """
         init.kaiming_uniform_(self.weight_mu, a=math.sqrt(5))
         if self.bias is not False:
@@ -575,7 +578,7 @@ def _inverse_softplus(x: torch.Tensor) -> torch.Tensor:
 
 
 class DropConnectLinear(nn.Module):
-    """Custom Linear layer with DropConnect applied to weights during training.
+    """Custom Linear layer with DropConnect applied to weights during training based on :cite:`aminiDeepEvidential2020`.
 
     Attributes:
         in_features: int, number of input features.
@@ -626,7 +629,7 @@ class DropConnectLinear(nn.Module):
 
 
 class NormalInverseGammaLinear(nn.Module):
-    """Custom Linear layer modeling the parameters of a normal-inverse-gamma-distribution.
+    """Custom Linear layer for the normal-inverse-gamma-distribution based on :cite:`aminiDeepEvidential2020`.
 
     Attributes:
         gamma: torch.Tensor, shape (out_features, in_features), the mean of the normal distribution.
@@ -641,7 +644,9 @@ class NormalInverseGammaLinear(nn.Module):
 
     """
 
-    def __init__(self, in_features: int, out_features: int, device: torch.device = None, *, bias: bool = True) -> None:
+    def __init__(
+        self, in_features: int, out_features: int, device: torch.device | None = None, *, bias: bool = True
+    ) -> None:
         """Initialize an instance of the NormalInverseGammaLinear layer.
 
         Args:

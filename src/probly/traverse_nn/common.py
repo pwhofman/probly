@@ -44,7 +44,7 @@ def compose(
         name: Optional name for the composed traverser.
 
     Returns:
-        A composed sequential traverser that applies NN traversal, custom traversal,
-        and layer counting in sequence.
+        A composed sequential traverser that applies NN traversal, custom traversal, and layer counting in sequence.
+
     """
     return t.sequential(nn_traverser, *traversers, layer_count_traverser, name=name)

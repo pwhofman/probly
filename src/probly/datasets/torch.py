@@ -22,17 +22,17 @@ class CIFAR10H(torchvision.datasets.CIFAR10):
     The dataset can be found at https://github.com/jcpeterson/cifar-10h.
 
     Attributes:
-        counts: torch.Tensor,
-        targets: torch.Tensor size (n_instances, n_classes), first-order distribution
+        counts (torch.Tensor): Tensor containing counts.
+        targets (torch.Tensor): Tensor of size (n_instances, n_classes), first-order distribution.
     """
 
     def __init__(self, root: str, transform: Callable[..., Any] | None = None, *, download: bool = False) -> None:
         """Initialize an instance of the CIFAR10H class.
 
         Args:
-            root: str, root directory of the dataset
-            transform: optional transform to apply to the data
-            download: bool, whether to download the CIFAR10 dataset or not
+            root (str): Root directory of the dataset.
+            transform (Callable, optional): Optional transform to apply to the data.
+            download (bool): Whether to download the CIFAR10 dataset or not.
         """
         super().__init__(root, train=False, transform=transform, download=download)
         first_order_path = Path(self.root) / "cifar-10h-master" / "data" / "cifar10h-counts.npy"
@@ -50,15 +50,15 @@ class ImageNetReaL(torchvision.datasets.ImageNet):
     downloaded from https://github.com/google-research/reassessed-imagenet.
 
     Attributes:
-        dists: list, list of distributions over target classes.
+        dists (list): List of distributions over target classes.
     """
 
     def __init__(self, root: str | Path, transform: Callable[..., Any] | None = None) -> None:
         """Initialize an instance of the ImageNetReaL class.
 
         Args:
-            root: str, root directory of the dataset
-            transform: optional transform to apply to the data
+            root (str): Root directory of the dataset.
+            transform (Callable, optional): Optional transform to apply to the data.
         """
         super().__init__(root=root, split="val", transform=transform)
         root = Path(root).expanduser()
@@ -80,7 +80,7 @@ class ImageNetReaL(torchvision.datasets.ImageNet):
         """Get the item at the specified index.
 
         Args:
-            index (int): Index
+            index (int): Index.
 
         Returns:
             tuple: (sample, dist) where dist is a distribution over target classes.
@@ -99,15 +99,14 @@ class DCICDataset(torch.utils.data.Dataset):
     These datasets can be found at https://zenodo.org/records/7180818.
 
     Attributes:
-        root: str, root directory of the dataset
-        transform: transform to apply to the data
-        image_labels: dict, dictionary of image labels grouped by image
-        image_paths: list, image paths
-        label_mappings: dict, # TODO
-        num_classes: int, number of classes
-        data: list, images
-        targets: list, labels
-        # TODO remove unnecessary fields
+        root (str): Root directory of the dataset.
+        transform (Callable): Transform to apply to the data.
+        image_labels (dict): Dictionary of image labels grouped by image.
+        image_paths (list): List of image paths.
+        label_mappings (dict): Mapping of labels to indices.
+        num_classes (int): Number of classes.
+        data (list): List of images.
+        targets (list): List of labels.
     """
 
     def __init__(
@@ -120,9 +119,9 @@ class DCICDataset(torch.utils.data.Dataset):
         """Initialize an instance of the DCICDataset class.
 
         Args:
-            root: Path or str, root directory of the dataset
-            transform: optional transform to apply to the data
-            first_order: bool, whether to use first order data or class labels
+            root (Path | str): Root directory of the dataset.
+            transform (Callable, optional): Optional transform to apply to the data.
+            first_order (bool): Whether to use first order data or class labels. Defaults to True.
         """
         root = Path(root).expanduser()
         with (Path(root).expanduser() / "annotations.json").open() as f:
@@ -166,20 +165,18 @@ class DCICDataset(torch.utils.data.Dataset):
         """Return the number of instances in the dataset.
 
         Returns:
-            int, The number of instances in the dataset.
-
+            int: The number of instances in the dataset.
         """
         return len(self.data)
 
-    def __getitem__(self, index: int) -> tuple[torch.Tensor, torch.Tensor]:
+    def __getitem__(self, index: int) -> tuple[Any, torch.Tensor]:
         """Returned indexed item in the dataset.
 
         Args:
-            index: int, Index within the dataset.
+            index (int): Index within the dataset.
 
         Returns:
-            (image, target): tuple[torch.Tensor, torch.Tensor], The image and label within the dataset.
-
+            tuple[torch.Tensor, torch.Tensor]: The (image, target) tuple within the dataset.
         """
         image = self.data[index]
         if self.transform:
@@ -204,9 +201,9 @@ class Benthic(DCICDataset):
         """Initialize an instance of the Benthic dataset class.
 
         Args:
-            root: Path or str, root directory of the dataset
-            transform: optional transform to apply to the data
-            first_order: bool, whether to use first order data or class labels
+            root (Path | str): Root directory of the dataset.
+            transform (Callable, optional): Optional transform to apply to the data.
+            first_order (bool): Whether to use first order data or class labels. Defaults to True.
         """
         super().__init__(Path(root) / "Benthic", transform, first_order=first_order)
 
@@ -227,9 +224,9 @@ class Plankton(DCICDataset):
         """Initialize an instance of the Plankton dataset class.
 
         Args:
-            root: Path or str, root directory of the dataset
-            transform: optional transform to apply to the data
-            first_order: bool, whether to use first order data or class labels
+            root (Path | str): Root directory of the dataset.
+            transform (Callable, optional): Optional transform to apply to the data.
+            first_order (bool): Whether to use first order data or class labels. Defaults to True.
         """
         super().__init__(Path(root) / "Plankton", transform, first_order=first_order)
 
@@ -250,9 +247,9 @@ class QualityMRI(DCICDataset):
         """Initialize an instance of the QualityMRI dataset class.
 
         Args:
-            root: Path or str, root directory of the dataset
-            transform: optional transform to apply to the data
-            first_order: bool, whether to use first order data or class labels
+            root (Path | str): Root directory of the dataset.
+            transform (Callable, optional): Optional transform to apply to the data.
+            first_order (bool): Whether to use first order data or class labels. Defaults to True.
         """
         super().__init__(Path(root) / "QualityMRI", transform, first_order=first_order)
 
@@ -273,9 +270,9 @@ class Treeversity1(DCICDataset):
         """Initialize an instance of the Treeversity#1 dataset class.
 
         Args:
-            root: Path or str, root directory of the dataset
-            transform: optional transform to apply to the data
-            first_order: bool, whether to use first order data or class labels
+            root (Path | str): Root directory of the dataset.
+            transform (Callable, optional): Optional transform to apply to the data.
+            first_order (bool): Whether to use first order data or class labels. Defaults to True.
         """
         super().__init__(Path(root) / "Treeversity#1", transform, first_order=first_order)
 
@@ -296,8 +293,8 @@ class Treeversity6(DCICDataset):
         """Initialize an instance of the Treeversity#6 dataset class.
 
         Args:
-            root: Path or str, root directory of the dataset
-            transform: optional transform to apply to the data
-            first_order: bool, whether to use first order data or class labels
+            root (Path | str): Root directory of the dataset.
+            transform (Callable, optional): Optional transform to apply to the data.
+            first_order (bool): Whether to use first order data or class labels. Defaults to True.
         """
         super().__init__(Path(root) / "Treeversity#6", transform, first_order=first_order)

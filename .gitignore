@@ -71,6 +71,9 @@ instance/
 
 # Sphinx documentation
 docs/_build/
+docs/source/auto_examples/
+docs/source/sg_execution_times.rst
+docs/source/generated/
 
 # PyBuilder
 .pybuilder/
@@ -256,13 +259,13 @@ fabric.properties
 
 # add docs to gitignore
 docs/source/api
-
+docs/build/
+docs/source/auto_examples/
 .idea/
-
-# add docs to gitignore
-docs/source/api
+docs/source/generated/backreferences/
 
 .vscode/settings.json
 
 # macOS
+**/.DS_Store
 .DS_Store
