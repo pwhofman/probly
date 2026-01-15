@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from probly.evaluation.ood_api import (
+from probly.evaluation.ood import (
     out_of_distribution_detection_aupr,
     out_of_distribution_detection_auroc,
     out_of_distribution_detection_fnr_at_x_tpr,
