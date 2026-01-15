@@ -243,15 +243,14 @@ def evaluate_ood(
     return results
 
 
-def visualize_ood(
+def compute_ood_evaluation_result(
     in_distribution: np.ndarray | list[float],
     out_distribution: np.ndarray | list[float],
     invert_scores: bool = True,
-    plot_types: list[str] | None = None,
-) -> dict[str, Figure]:
-    """Generate visualization plots for OOD evaluation.
+) -> OodEvaluationResult:
+    """Compute all OOD metrics and curve data for visualization.
 
-    Calculates curve data (ROC, PR) and generates standard plots.
+    Calculation Logic is seperated from the actual plotting logic in the visualize_ood() function.
 
     Parameters:
     in_distribution :
@@ -262,50 +261,32 @@ def visualize_ood(
         If True (default), assumes scores are 'Confidence' (High = ID).
         They will be inverted (1.0 - score) for metrics where OOD is the positive class.
         If False, assumes scores are 'Anomaly Scores' (High = OOD).
-    plot_types : list[str], optional
-        List of specific plots to return (e.g. ['roc', 'hist', 'pr']).
-        If None, all plots are generated.
 
     Returns:
-        Dict containing matplotlib Figures for the requested plots.
+        OodEvaluationResult object containing scalars and curve arrays.
     """
-    available_plots = {"hist", "roc", "pr"}
-
-    requested_plots = available_plots if plot_types is None else set(plot_types).intersection(available_plots)
-
     id_s = np.asarray(in_distribution)
     ood_s = np.asarray(out_distribution)
 
-    # 1. Calculate scalar metrics using the Unified API
-    # -> We use the existing API to ensure consistency in values
-    scalars = evaluate_ood(id_s, ood_s, metrics=["auroc", "aupr", "fpr@95tpr"])
+    # 1. Decoupled calculation
+    scalars = evaluate_ood(id_s, ood_s, metrics=["auroc", "aupr", "fpr@95%"])
     if not isinstance(scalars, dict):
-        # Fallback should technically not happen with explicit list input
-        scalars = {"auroc": scalars, "aupr": 0.0, "fpr@95tpr": 0.0}
+        scalars = {"auroc": scalars, "aupr": 0.0, "fpr@95%": 0.0}
 
-    # 2. Prepare Data for Curves (Requires sklearn)
+    # 2. Prepare Data for Curve
+    labels = np.concatenate([np.zeros(len(id_s)), np.ones(len(ood_s))])
+    all_scores = np.concatenate([id_s, ood_s])
 
-    fpr, tpr = None, None
-    precision, recall = None, None
+    preds = 1.0 - all_scores if invert_scores else all_scores
 
-    if "roc" in requested_plots or "pr" in requested_plots:
-        labels = np.concatenate([np.zeros(len(id_s)), np.ones(len(ood_s))])
-        all_scores = np.concatenate([id_s, ood_s])
+    fpr, tpr, _ = roc_curve(labels, preds)
+    precision, recall, _ = precision_recall_curve(labels, preds)
 
-        preds = 1.0 - all_scores if invert_scores else all_scores
-
-        # Compute curve arrays conditionally
-        if "roc" in requested_plots:
-            fpr, tpr, _ = roc_curve(labels, preds)
-
-        if "pr" in requested_plots:
-            precision, recall, _ = precision_recall_curve(labels, preds)
-
-    # 3. -> Result Object from types.
-    result_data = OodEvaluationResult(
+    # 3. Return Result Object
+    return OodEvaluationResult(
         auroc=scalars["auroc"],
         aupr=scalars["aupr"],
-        fpr95=scalars.get("fpr@95tpr"),
+        fpr95=scalars.get("fpr@95%"),
         fpr=fpr,
         tpr=tpr,
         precision=precision,
@@ -314,7 +295,26 @@ def visualize_ood(
         ood_scores=ood_s,
     )
 
-    # 4.Generate Plots as figures.
+
+def visualize_ood(
+    result_data: OodEvaluationResult,
+    plot_types: list[str] | None = None,
+) -> dict[str, Figure]:
+    """Generate visualization plots from OODEvaluationResult type.
+
+    Parameters:
+    result_data : OodEvaluationResult
+        The calculated result object containing scores and curve data.
+        Use `compute_ood_evaluation_result` to generate this.
+    plot_types : list[str], optional
+        List of specific plots to return (e.g. ['roc', 'hist', 'pr']).
+        If None, all plots are generated.
+
+    Returns:
+        Dict containing matplotlib Figures for the requested plots.
+    """
+    available_plots = {"hist", "roc", "pr"}
+    requested_plots = available_plots if plot_types is None else set(plot_types).intersection(available_plots)
     figures = {}
 
     if "hist" in requested_plots:
