@@ -2,13 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Protocol, TypeVar, Unpack, runtime_checkable
+from typing import Protocol, Unpack, runtime_checkable
 
 from lazy_dispatch.singledispatch import lazydispatch
-
-In = TypeVar("In")
-KwIn = TypeVar("KwIn")
-Out = TypeVar("Out")
 
 
 @runtime_checkable
