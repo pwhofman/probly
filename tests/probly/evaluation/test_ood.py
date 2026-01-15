@@ -8,7 +8,6 @@ These tests focus exclusively on API behavior:
 
 Metric correctness is tested elsewhere.
 """
-
 from __future__ import annotations
 
 from matplotlib.figure import Figure
@@ -16,6 +15,10 @@ import numpy as np
 import pytest
 
 from probly.evaluation.ood import (
+    out_of_distribution_detection_aupr,
+    out_of_distribution_detection_auroc,
+    out_of_distribution_detection_fnr_at_x_tpr,
+    out_of_distribution_detection_fpr_at_x_tpr,
     compute_ood_evaluation_result,
     evaluate_ood,
     parse_dynamic_metric,
