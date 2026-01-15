@@ -5,7 +5,7 @@ from __future__ import annotations
 import matplotlib.pyplot as plt
 import numpy as np  # noqa: TC002
 
-from probly.visualization.input_handling import dispatch_plot
+from probly.visualization.credalviz.input_handling import dispatch_plot
 
 
 def create_credal_plot(

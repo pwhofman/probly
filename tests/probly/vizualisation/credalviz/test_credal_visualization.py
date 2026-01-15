@@ -10,7 +10,7 @@ import pytest
 mpl.use("Agg")
 
 
-from probly.visualization.create_credal import create_credal_plot
+from probly.visualization.credalviz.credal_visualization import create_credal_plot
 
 
 def test_check_shape_raises_on_empty_dataset() -> None:

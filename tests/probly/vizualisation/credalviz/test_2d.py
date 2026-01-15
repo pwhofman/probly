@@ -8,7 +8,7 @@ import pytest
 
 mpl.use("Agg")
 
-from probly.visualization.plot_2d import IntervalVisualizer
+from probly.visualization.credalviz.plot_2d import IntervalVisualizer
 
 
 def test_probs_to_coords_2d_edge_values() -> None:

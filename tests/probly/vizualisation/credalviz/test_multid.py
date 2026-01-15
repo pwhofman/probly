@@ -9,8 +9,8 @@ mpl.use("Agg")
 import numpy as np
 import pytest
 
-from probly.visualization.create_credal import create_credal_plot
-from probly.visualization.plot_multid import MultiVisualizer
+from probly.visualization.credalviz.credal_visualization import create_credal_plot
+from probly.visualization.credalviz.plot_multid import MultiVisualizer
 
 
 def test_spider_plot_returns_radar_axes_and_sets_ylim_and_title() -> None:
