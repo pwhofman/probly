@@ -42,7 +42,7 @@ class TorchTensorSample(Sample[torch.Tensor]):
     def from_iterable(  # noqa: C901
         cls,
         samples: Iterable[torch.Tensor],
-        sample_dim: SampleAxis | None = "auto",
+        sample_dim: SampleAxis | None = None,
         sample_axis: SampleAxis | None = "auto",
         dtype: torch.dtype | None = None,
     ) -> Self:
@@ -62,6 +62,9 @@ class TorchTensorSample(Sample[torch.Tensor]):
                 msg = "Either sample_dim or sample_axis must be not None."
                 raise ValueError(msg)
             sample_dim = sample_axis
+        elif sample_axis is not None and sample_axis != "auto":
+            msg = "Cannot specify both sample_dim and sample_axis."
+            raise ValueError(msg)
 
         if isinstance(samples, torch.Tensor):
             if sample_dim == "auto":
@@ -171,6 +174,22 @@ class TorchTensorSample(Sample[torch.Tensor]):
 
         concatenated = torch.cat((self.tensor, other_tensor), dim=self.sample_dim)
         return type(self)(tensor=concatenated, sample_dim=self.sample_dim)
+
+    def move_sample_dim(self, new_sample_dim: int) -> TorchTensorSample:
+        """Return a new TorchTensorSample with the sample dimension moved to new_sample_dim.
+
+        Args:
+            new_sample_dim: The new sample dimension.
+
+        Returns:
+            A new TorchTensorSample with the sample dimension moved.
+        """
+        moved_array = torch.moveaxis(self.tensor, self.sample_dim, new_sample_dim)
+        return type(self)(tensor=moved_array, sample_dim=new_sample_dim)
+
+    def move_sample_axis(self, new_sample_axis: int) -> TorchTensorSample:
+        """Alias for :meth:`TorchTensorSample.move_sample_dim`."""
+        return self.move_sample_dim(new_sample_axis)
 
     def __array__(self, dtype: npt.DTypeLike = None, copy: bool | None = None) -> np.ndarray:
         """Get the underlying numpy array.

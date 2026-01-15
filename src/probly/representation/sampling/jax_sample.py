@@ -185,6 +185,18 @@ class JaxArraySample(Sample[jax.Array]):
 
         return type(self)(array=concatenated, sample_axis=self.sample_axis)
 
+    def move_sample_axis(self, new_sample_axis: int) -> JaxArraySample:
+        """Return a new JaxArraySample with the sample dimension moved to new_sample_axis.
+
+        Args:
+            new_sample_axis: The new sample dimension.
+
+        Returns:
+            A new ArraySample with the sample dimension moved.
+        """
+        moved_array = jnp.moveaxis(self.array, self.sample_axis, new_sample_axis)
+        return type(self)(array=moved_array, sample_axis=new_sample_axis)
+
     def __array__(self, dtype: npt.DTypeLike = None, copy: bool | None = None) -> np.ndarray:
         """Get the underlying numpy array.
 
@@ -198,10 +210,10 @@ class JaxArraySample(Sample[jax.Array]):
         return np.asarray(self.array, dtype=dtype, copy=copy)
 
     def copy(self) -> Self:
-        """Create a copy of the ArraySample.
+        """Create a copy of the JaxArraySample.
 
         Returns:
-            A copy of the ArraySample.
+            A copy of the JaxArraySample.
         """
         return type(self)(array=self.array.copy(), sample_axis=self.sample_axis)
 
@@ -218,7 +230,7 @@ class JaxArraySample(Sample[jax.Array]):
             stream: not implemented, passing a non-None value will lead to an error.
 
         Returns:
-            A new ArraySample on the specified device.
+            A new JaxArraySample on the specified device.
         """
         if stream is not None:
             msg = "stream argument of array.to_device()"
