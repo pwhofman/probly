@@ -150,7 +150,6 @@ class TestFitandPredict:
         ("model_fixture", "X", "y"),
         [
             ("sklearn_mlp_regressor_2d_1d", [[0, 0], [1, 1], [2, 2], [3, 3]], [0.0, 1.0, 2.0, 3.0]),
-
         ],
     )
     def test_fit_and_predict_resetparams(
@@ -169,10 +168,9 @@ class TestFitandPredict:
             member.fit(X, y)
         predictions = [member.predict(X) for member in sklearn_ensemble]
         for i in range(len(predictions)):
-            print(predictions[i])
             for j in range(i + 1, len(predictions)):
                 assert not all(predictions[i] == predictions[j])
-        
+
     @pytest.mark.parametrize(
         ("model_fixture", "X", "y"),
         [

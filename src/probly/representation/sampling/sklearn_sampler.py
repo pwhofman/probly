@@ -22,11 +22,9 @@ def _enforce_fitted_already(obj: BaseEstimator, state: State) -> tuple[BaseEstim
     There is no standard way to check if a sklearn estimator is fitted.
     See: https://scikit-learn.org/stable/glossary.html#term-fitted
     """
-
     if not hasattr(obj, "n_features_in_"):
         raise ValueError(
-            f"The sklearn estimator {obj} is not fitted yet. "
-            "Please fit the estimator before using it in sampling.",
+            msg="The sklearn estimator must be fitted already before sampling.",
         )
     return obj, state
 
