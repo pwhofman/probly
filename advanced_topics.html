@@ -1,0 +1,1518 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="./">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Examples and Tutorials" href="examples_and_tutorials.html" /><link rel="prev" title="Main Components" href="main_components.html" />
+
+    <!-- Generated with Sphinx 8.2.3 and Furo 2024.08.06 -->
+        <title>Advanced Topics - probly 0.3.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=354aac6f" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
+    <link rel="stylesheet" type="text/css" href="_static/sg_gallery.css?v=d2d258e8" />
+    <link rel="stylesheet" type="text/css" href="_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=302659d7" />
+    <link rel="stylesheet" type="text/css" href="_static/css/custom.css?v=201d0c9a" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f8f8f8;
+  --color-code-foreground: black;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #272822;
+  --color-code-foreground: #f8f8f2;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #272822;
+  --color-code-foreground: #f8f8f2;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="index.html"><div class="brand">probly 0.3.1 documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><div class="sidebar-scroll"><a class="sidebar-brand" href="index.html">
+  
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo only-light" src="_static/logo/logo_light.png" alt="Light Logo"/>
+    <img class="sidebar-logo only-dark" src="_static/logo/logo_dark.png" alt="Dark Logo"/>
+  </div>
+  
+  
+</a><form class="sidebar-search-container" method="get" action="search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Content</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">The <code class="docutils literal notranslate"><span class="pre">probly</span></code> Python Package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core_concepts.html">Core Concepts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_components.html">Main Components</a></li>
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Advanced Topics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples_and_tutorials.html">Examples and Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="methods.html">Implemented methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing to probly 🏔️</a></li>
+<li class="toctree-l1"><a class="reference internal" href="references.html">References and Further Reading</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">FAQ and Troubleshooting</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Notebooks</span></p>
+<ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="notebooks/examples/index.html">Notebook Examples</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Notebook Examples</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="notebooks/examples/utilities_and_layers/index.html">Utilities and Layers</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Utilities and Layers</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/examples/utilities_and_layers/custom_loss_functions.html">Custom Loss Functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/examples/utilities_and_layers/metrics.html">Evaluation Metrics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/examples/utilities_and_layers/probabilistic_layers.html">Key Probabilistic Layers in <code class="docutils literal notranslate"><span class="pre">probly</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/examples/utilities_and_layers/utility_functions.html">Utility Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="notebooks/examples/evaluation_and_quantification/index.html">Evaluation and Quantification</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of Evaluation and Quantification</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/examples/evaluation_and_quantification/calibration_metrics.html">Calibration Metrics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/examples/evaluation_and_quantification/interpretation_techniques.html">Interpretation techniques</a></li>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/examples/evaluation_and_quantification/visualization_tools.html">Visualisation Tools</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/bayesian_transformation.html">Bayesian Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/dropconnect_transformation.html">Dropconnect Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/dropout_transformation.html">Dropout Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/ensemble_transformation.html">Ensemble Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/evidential_classification_transformation.html">Evidential Classification Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/evidential_regression_transformation.html">Evidential Regression Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/fashionmnist_ood_ensemble.html">Out-of-Distribution Detection with an Ensemble</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/label_relaxation_calibration.html">Calibration with Label Relaxation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/lazy_dispatch_test.html">Lazy Dispatch Test</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/multilib_demo.html">Multilib Demo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/pytraverse_tutorial.html">A Brief Introduction to PyTraverse</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/sklearn_selective_prediction.html">Using probly with scikit-learn</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/temperature_scaling_calibration.html">Calibration using Temperature Scaling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/train_bnn_classification.html">Bayesian Neural Networks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/train_evidential_classification.html">Evidential Model for Classification</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/train_evidential_regression.html">Evidential Regression Model</a></li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div><div style="text-align: center; margin-top: 1rem; margin-bottom: 1rem;">
+  <a href="https://github.com/pwhofman/probly" target="_blank" rel="noopener noreferrer" title="GitHub Repository">
+    <img src="_static/github-mark.svg" alt="GitHub Logo" width="28" height="28" style="display: inline-block;">
+  </a>
+</div>
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          
+
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="advanced-topics">
+<span id="id1"></span><h1>Advanced Topics<a class="headerlink" href="#advanced-topics" title="Link to this heading">¶</a></h1>
+<section id="overview">
+<h2>1. Overview<a class="headerlink" href="#overview" title="Link to this heading">¶</a></h2>
+<section id="purpose-of-this-chapter">
+<h3>1.1 Purpose of this chapter<a class="headerlink" href="#purpose-of-this-chapter" title="Link to this heading">¶</a></h3>
+<p>This chapter explains:</p>
+<ul class="simple">
+<li><p>What “advanced” means in the context of <code class="docutils literal notranslate"><span class="pre">probly</span></code>,</p></li>
+<li><p>When you should read this chapter (recommended after <a class="reference internal" href="core_concepts.html#core-concepts"><span class="std std-ref">Core Concepts</span></a> and <a class="reference internal" href="main_components.html#main-components"><span class="std std-ref">Main Components</span></a>).</p></li>
+</ul>
+</section>
+<section id="prerequisites-notation">
+<h3>1.2 Prerequisites &amp; Notation<a class="headerlink" href="#prerequisites-notation" title="Link to this heading">¶</a></h3>
+<p>Before reading this chapter, the reader should already be familiar with:</p>
+<ul class="simple">
+<li><p>The concepts introduced in <a class="reference internal" href="core_concepts.html#core-concepts"><span class="std std-ref">Core Concepts</span></a>,</p></li>
+<li><p>The basic workflows described in <a class="reference internal" href="main_components.html#main-components"><span class="std std-ref">Main Components</span></a>,</p></li>
+<li><p>Foundational ideas such as uncertainty representations, transformations, and inference.</p></li>
+</ul>
+<p>For clarity, this chapter follows the same notation conventions used throughout the <code class="docutils literal notranslate"><span class="pre">probly</span></code> documentation.</p>
+</section>
+<section id="typical-advanced-use-cases">
+<h3>1.3 Typical Advanced Use Cases<a class="headerlink" href="#typical-advanced-use-cases" title="Link to this heading">¶</a></h3>
+<p>This chapter is intended for scenarios where users go beyond simple examples, such as:</p>
+<ul class="simple">
+<li><p>Training or evaluating large or real-world models,</p></li>
+<li><p>Dealing with tight performance or memory constraints,</p></li>
+<li><p>Integrating <code class="docutils literal notranslate"><span class="pre">probly</span></code> into existing machine-learning pipelines.</p></li>
+</ul>
+<p>These use cases often require a deeper understanding of transformations, scalability, and framework interoperability, which this chapter provides.</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p>For background material, see <a class="reference internal" href="core_concepts.html#core-concepts"><span class="std std-ref">Core Concepts</span></a>.</p>
+<p>For the main building blocks of <code class="docutils literal notranslate"><span class="pre">probly</span></code>, like the main transformations, utilities &amp; layers, and evaluation tools, see <a class="reference internal" href="main_components.html#main-components"><span class="std std-ref">Main Components</span></a>.</p>
+</div>
+</section>
+</section>
+<section id="mini-gallery-quick-links">
+<h2>Mini gallery (quick links)<a class="headerlink" href="#mini-gallery-quick-links" title="Link to this heading">¶</a></h2>
+<p>These are short, focused example pages (generated by Sphinx-Gallery) that are relevant to the topics
+on this page.</p>
+<div class="sphx-glr-thumbnails"><div class="sphx-glr-thumbcontainer" tooltip="You typically don&#x27;t want to care about the concrete sample type. probly provides create_sample which selects the best representation based on the sample element type."><img alt="" src="_images/sphx_glr_plot_create_sample_dispatch_thumb.png" />
+<p><a class="reference internal" href="auto_examples/plot_create_sample_dispatch.html"><span class="doc">&lt;no title&gt;</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Automatic sample construction (dispatcher).</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="This page exists mainly to verify that Sphinx-Gallery is correctly configured for the project."><img alt="" src="_images/sphx_glr_plot_gallery_smoke_test_thumb.png" />
+<p><a class="reference internal" href="auto_examples/plot_gallery_smoke_test.html"><span class="doc">&lt;no title&gt;</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Sphinx-Gallery smoke test.</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="probly represents repeated stochastic predictions as a &quot;sample&quot;. For NumPy-like data, the concrete implementation is probly.representation.sampling.sample.ArraySample."><img alt="" src="_images/sphx_glr_plot_samples_with_array_sample_thumb.png" />
+<p><a class="reference internal" href="auto_examples/plot_samples_with_array_sample.html"><span class="doc">&lt;no title&gt;</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Working with samples (`ArraySample`).</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="probly defines a small protocol for &quot;predictors&quot; and a generic probly.predictor.predict helper."><img alt="" src="_images/sphx_glr_plot_using_predict_protocol_thumb.png" />
+<p><a class="reference internal" href="auto_examples/plot_using_predict_protocol.html"><span class="doc">&lt;no title&gt;</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Using the generic predict().</div>
+</div></div></section>
+<section id="custom-transformations">
+<h2>2. Custom Transformations<a class="headerlink" href="#custom-transformations" title="Link to this heading">¶</a></h2>
+<section id="recall-what-is-a-transformation">
+<h3>2.1 Recall: What is a transformation?<a class="headerlink" href="#recall-what-is-a-transformation" title="Link to this heading">¶</a></h3>
+<p>In <code class="docutils literal notranslate"><span class="pre">probly</span></code>, a <strong>transformation</strong> is a small building block that maps values between two spaces,
+similar in spirit to the bijectors used in TensorFlow Probability <span id="id2">[<a class="reference internal" href="references.html#id31" title="Danilo J. Rezende and Shakir Mohamed. Variational inference with normalizing flows. In Proceedings of the 32nd International Conference on Machine Learning, volume 37 of Proceedings of Machine Learning Research, 1530–1538. PMLR, 2015. URL: https://proceedings.mlr.press/v37/rezende15.html.">RM15</a>, <a class="reference internal" href="references.html#id35" title="TensorFlow Probability. Tfp.bijectors.bijector; tfp.bijectors.softplus. 2023. In TensorFlow Probability API documentation. URL: https://www.tensorflow.org/probability/api_docs/python/tfp/bijectors/Bijector.">TensorFlowProbability23</a>]</span>:</p>
+<ul class="simple">
+<li><p>An <strong>unconstrained space</strong>, where optimisation and inference algorithms can work freely, and</p></li>
+<li><p>A <strong>constrained space</strong>, which matches the natural domain of your parameters or predictions
+(for example positive scales, probabilities on a simplex, or bounded intervals) <span id="id3">[<a class="reference internal" href="references.html#id35" title="TensorFlow Probability. Tfp.bijectors.bijector; tfp.bijectors.softplus. 2023. In TensorFlow Probability API documentation. URL: https://www.tensorflow.org/probability/api_docs/python/tfp/bijectors/Bijector.">TensorFlowProbability23</a>]</span>.</p></li>
+</ul>
+<p>Instead of forcing you to design models directly in a complicated constrained space, you write
+your model in terms of meaningful parameters, and the transformation then takes care of the math
+that keeps everything inside the valid domain <span id="id4">[<a class="reference internal" href="references.html#id31" title="Danilo J. Rezende and Shakir Mohamed. Variational inference with normalizing flows. In Proceedings of the 32nd International Conference on Machine Learning, volume 37 of Proceedings of Machine Learning Research, 1530–1538. PMLR, 2015. URL: https://proceedings.mlr.press/v37/rezende15.html.">RM15</a>, <a class="reference internal" href="references.html#id35" title="TensorFlow Probability. Tfp.bijectors.bijector; tfp.bijectors.softplus. 2023. In TensorFlow Probability API documentation. URL: https://www.tensorflow.org/probability/api_docs/python/tfp/bijectors/Bijector.">TensorFlowProbability23</a>]</span>.</p>
+<p>In practice this means that transformations:</p>
+<ul class="simple">
+<li><p>Provide a <em>short, reusable recipe</em> for how to turn raw latent variables into valid parameters,</p></li>
+<li><p>Enable <strong>reparameterisation</strong>, which can make optimisation easier and gradients better behaved <span id="id5">[<a class="reference internal" href="references.html#id27" title="Diederik P. Kingma and Max Welling. Auto-encoding variational bayes. In Proceedings of the 2nd International Conference on Learning Representations (ICLR 2014). 2014. arXiv:1312.6114. URL: https://arxiv.org/abs/1312.6114.">KW14</a>]</span>,</p></li>
+<li><p>Automatically enforce <strong>constraints</strong> such as positivity, bounds, or simplex structure <span id="id6">[<a class="reference internal" href="references.html#id35" title="TensorFlow Probability. Tfp.bijectors.bijector; tfp.bijectors.softplus. 2023. In TensorFlow Probability API documentation. URL: https://www.tensorflow.org/probability/api_docs/python/tfp/bijectors/Bijector.">TensorFlowProbability23</a>]</span>.</p></li>
+</ul>
+<p>You can think of a transformation as an adapter between “nice for the optimiser” coordinates and
+“nice for the human” coordinates <span id="id7">[<a class="reference internal" href="references.html#id27" title="Diederik P. Kingma and Max Welling. Auto-encoding variational bayes. In Proceedings of the 2nd International Conference on Learning Representations (ICLR 2014). 2014. arXiv:1312.6114. URL: https://arxiv.org/abs/1312.6114.">KW14</a>, <a class="reference internal" href="references.html#id31" title="Danilo J. Rezende and Shakir Mohamed. Variational inference with normalizing flows. In Proceedings of the 32nd International Conference on Machine Learning, volume 37 of Proceedings of Machine Learning Research, 1530–1538. PMLR, 2015. URL: https://proceedings.mlr.press/v37/rezende15.html.">RM15</a>]</span>. Clear
+parameterisations also make it easier to reason about how epistemic and aleatoric uncertainty are
+represented in the model <span id="id8">[<a class="reference internal" href="references.html#id41" title="Eyke Hüllermeier and Willem Waegeman. Aleatoric and epistemic uncertainty in machine learning: an introduction to concepts and methods. Machine Learning, 2021. arXiv:1910.09457.">HW21</a>]</span>.</p>
+<p>The diagram below <span id="id9">[<a class="reference internal" href="references.html#id41" title="Eyke Hüllermeier and Willem Waegeman. Aleatoric and epistemic uncertainty in machine learning: an introduction to concepts and methods. Machine Learning, 2021. arXiv:1910.09457.">HW21</a>]</span> contrasts approximation uncertainty inside a hypothesis
+space with model uncertainty relative to the broader function space. It is a handy reminder that
+transformations often sit between what a model can express and what the optimiser explores.</p>
+<figure class="align-default" id="id73">
+<a class="reference internal image-reference" href="_images/transformation.png"><img alt="Illustration of approximation vs. model uncertainty and predictors" src="_images/transformation.png" style="width: 80%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Illustration of approximation (within the hypothesis space) versus model uncertainty (within the
+larger function space) for predictors <span class="math notranslate nohighlight">\(\\hat{h}\)</span>, <span class="math notranslate nohighlight">\(h^*\)</span>, and <span class="math notranslate nohighlight">\(f^*\)</span>.</span><a class="headerlink" href="#id73" title="Link to this image">¶</a></p>
+</figcaption>
+</figure>
+</section>
+<section id="when-to-implement-your-own">
+<h3>2.2 When to implement your own?<a class="headerlink" href="#when-to-implement-your-own" title="Link to this heading">¶</a></h3>
+<p>The built-in transformations in <code class="docutils literal notranslate"><span class="pre">probly</span></code> are designed to cover many common cases,
+such as positive scales, simple box constraints, or mappings to probability vectors.
+This is similar in spirit to other probabilistic frameworks that provide default
+constraint transforms for bounded, ordered, simplex, correlation, or covariance
+parameters <span id="id10">[<a class="reference internal" href="references.html#id33" title="Stan Development Team. Constraint transforms. 2025. In Stan Reference Manual, Version 2.37. URL: https://mc-stan.org/docs/reference-manual/transforms.html.">StanDTeam25</a>]</span>. In many projects these standard building
+blocks are sufficient and you never need to write your own transformation.</p>
+<p>There are, however, important situations where a <strong>custom transformation</strong> is the
+better choice.</p>
+<ul>
+<li><p><strong>Limitations of built-in transformations</strong></p>
+<p>Some models use parameter spaces that go beyond the usual catalogue of common constraints such as positive,
+bounded, or simplex parameters. For example, you may need structured covariance matrices,
+ordered-but-positive sequences, monotone functions, or parameters that satisfy
+several coupled constraints at once. The Stan reference manual notes that
+“vectors may … be constrained to be ordered, positive ordered, or simplexes”
+and matrices “to be correlation matrices or covariance matrices” in its section on
+constraint transforms <span id="id11">[<a class="reference internal" href="references.html#id33" title="Stan Development Team. Constraint transforms. 2025. In Stan Reference Manual, Version 2.37. URL: https://mc-stan.org/docs/reference-manual/transforms.html.">StanDTeam25</a>]</span>, but real applications
+often demand more specialised structures. In such cases, a custom
+transformation lets you explicitly encode the structure your model needs.</p>
+</li>
+<li><p><strong>Custom distributions or domain constraints</strong></p>
+<p>In many domains, prior knowledge is naturally expressed as constraints on
+parameters: certain probabilities must always sum to one, some effects must be
+monotone, or fairness and safety requirements restrict which configurations are
+admissible. A custom transformation is a convenient way to build such
+domain-specific rules into the parameterisation instead of relying on
+ad-hoc clipping or post-processing.</p>
+</li>
+<li><p><strong>Cleaner uncertainty behaviour and numerical stability</strong></p>
+<p>Some parameterisations yield more interpretable and numerically stable
+uncertainty estimates than others. A classic example is working on a log or
+softplus scale for strictly positive parameters. Stan, for instance, uses a
+logarithmic transform for lower-bounded variables and applies the inverse
+exponential to map back to the constrained space <span id="id12">[<a class="reference internal" href="references.html#id33" title="Stan Development Team. Constraint transforms. 2025. In Stan Reference Manual, Version 2.37. URL: https://mc-stan.org/docs/reference-manual/transforms.html.">StanDTeam25</a>]</span>.
+Practitioners have observed that replacing a naïve exponential with a softplus
+transform can substantially stabilise inference; one NumPyro user reports a
+very substantial improvement in inference stability when replacing an <code class="docutils literal notranslate"><span class="pre">exp</span></code>
+transform with <code class="docutils literal notranslate"><span class="pre">softplus</span></code> for constraining <code class="docutils literal notranslate"><span class="pre">site_scale</span></code> <span id="id13">[<a class="reference internal" href="references.html#id39" title="vitkl. Softplus transform as a more numerically stable way to enforce positive constraint. GitHub issue #855 on the \emph NumPyro repository, December 2020. Issue opened December 31, 2020. URL: https://github.com/pyro-ppl/numpyro/issues/855.">vit20</a>]</span>. In <code class="docutils literal notranslate"><span class="pre">probly</span></code>, a custom transformation can encapsulate this kind of
+numerically robust parameterisation and make its effect on uncertainty
+representations easier to reason about.</p>
+</li>
+<li><p><strong>Integration with existing code or libraries</strong></p>
+<p>When you plug <code class="docutils literal notranslate"><span class="pre">probly</span></code> into an existing machine-learning pipeline, external
+code often expects parameters in a fixed, domain-specific representation. The
+internal unconstrained parameterisation that is convenient for inference may
+not match what a legacy training loop, a deep-learning framework, or a
+production system “expects to see.” A transformation can act as a bridge:
+<code class="docutils literal notranslate"><span class="pre">probly</span></code> operates in its preferred unconstrained space, while the surrounding
+code continues to work with familiar application-level parameters, just as
+constraint transforms reconcile internal and external parameterisations in Stan <span id="id14">[<a class="reference internal" href="references.html#id33" title="Stan Development Team. Constraint transforms. 2025. In Stan Reference Manual, Version 2.37. URL: https://mc-stan.org/docs/reference-manual/transforms.html.">StanDTeam25</a>]</span>.</p>
+</li>
+</ul>
+<p>As a practical rule of thumb: if you frequently add manual clamps, min/max
+operations, or ad-hoc post-processing steps just to keep parameters valid, that is
+a strong signal that a dedicated custom transformation would make the model
+cleaner, more robust, and easier to maintain.</p>
+</section>
+<section id="api-design-principles">
+<h3>2.3 API &amp; Design Principles<a class="headerlink" href="#api-design-principles" title="Link to this heading">¶</a></h3>
+<p>Custom transformations in <code class="docutils literal notranslate"><span class="pre">probly</span></code> should follow a <strong>small and predictable interface</strong>. Similar
+interfaces appear in other probabilistic libraries. For example, TensorFlow Probability notes
+that a <code class="docutils literal notranslate"><span class="pre">Bijector</span></code> is characterised by three operations (forward, inverse, and a log-determinant
+Jacobian) <span id="id15">[<a class="reference internal" href="references.html#id35" title="TensorFlow Probability. Tfp.bijectors.bijector; tfp.bijectors.softplus. 2023. In TensorFlow Probability API documentation. URL: https://www.tensorflow.org/probability/api_docs/python/tfp/bijectors/Bijector.">TensorFlowProbability23</a>]</span>, and other libraries adopt essentially the same pattern.</p>
+<p>Conceptually, each transformation in <code class="docutils literal notranslate"><span class="pre">probly</span></code> is responsible for three things:</p>
+<ul class="simple">
+<li><p>A <strong>forward mapping</strong> from an unconstrained input to the constrained parameter space,
+typically used to turn one random outcome into another <span id="id16">[<a class="reference internal" href="references.html#id35" title="TensorFlow Probability. Tfp.bijectors.bijector; tfp.bijectors.softplus. 2023. In TensorFlow Probability API documentation. URL: https://www.tensorflow.org/probability/api_docs/python/tfp/bijectors/Bijector.">TensorFlowProbability23</a>]</span>,</p></li>
+<li><p>An <strong>inverse mapping</strong> that recovers the unconstrained value from a constrained one,
+enabling probability and density computations,</p></li>
+<li><p>Any <strong>auxiliary quantities</strong> that inference algorithms may need, such as Jacobians or
+log-determinants, to account for the change of variables.</p></li>
+</ul>
+<p>Stan’s transform system illustrates the same pattern: every (multivariate) parameter in a Stan
+model is transformed to an unconstrained variable behind the scenes by the model compiler,
+and the C++ classes include code to transform parameters from unconstrained to
+constrained and apply the appropriate Jacobians <span id="id17">[<a class="reference internal" href="references.html#id33" title="Stan Development Team. Constraint transforms. 2025. In Stan Reference Manual, Version 2.37. URL: https://mc-stan.org/docs/reference-manual/transforms.html.">StanDTeam25</a>]</span>. In other
+words, the model is written in terms of constrained parameters, while inference operates in an
+unconstrained space connected by well-defined forward and inverse transforms.</p>
+<p>Beyond this minimal interface, good transformations follow several design principles:</p>
+<ul>
+<li><p><strong>Local and self-contained</strong></p>
+<p>All logic that enforces a particular constraint should live inside the transformation. The rest
+of the model should not need to know which reparameterisation is used internally. This mirrors
+how libraries like Stan and NumPyro encapsulate constraints as self-contained objects that define
+where parameters are valid <span id="id18">[<a class="reference internal" href="references.html#id23" title="Contributors to the Pyro Project. NumPyro transforms module. Documentation, 2019. NumPyro documentation, transforms module, version 0.4.1. URL: https://num.pyro.ai/en/0.4.1/_modules/numpyro/distributions/transforms.html.">ContributorsttPProject19</a>, <a class="reference internal" href="references.html#id33" title="Stan Development Team. Constraint transforms. 2025. In Stan Reference Manual, Version 2.37. URL: https://mc-stan.org/docs/reference-manual/transforms.html.">StanDTeam25</a>]</span>.</p>
+</li>
+<li><p><strong>Clearly documented domain and range</strong></p>
+<p>It should be obvious which inputs are valid, what shapes are expected, and which constraints the
+outputs satisfy. NumPyro’s documentation describes constraint objects as representing regions over
+which a variable is valid and can be optimised <span id="id19">[<a class="reference internal" href="references.html#id23" title="Contributors to the Pyro Project. NumPyro transforms module. Documentation, 2019. NumPyro documentation, transforms module, version 0.4.1. URL: https://num.pyro.ai/en/0.4.1/_modules/numpyro/distributions/transforms.html.">ContributorsttPProject19</a>]</span>. Documenting domains and ranges for custom
+transformations in <code class="docutils literal notranslate"><span class="pre">probly</span></code> serves the same purpose.</p>
+</li>
+<li><p><strong>Numerically stable</strong></p>
+<p>The implementation should avoid unnecessary overflow, underflow, or extreme gradients. Stan’s
+documentation on constraint transforms highlights numerical issues arising from floating-point
+arithmetic and the need for careful treatment of boundaries and Jacobian terms <span id="id20">[<a class="reference internal" href="references.html#id33" title="Stan Development Team. Constraint transforms. 2025. In Stan Reference Manual, Version 2.37. URL: https://mc-stan.org/docs/reference-manual/transforms.html.">StanDTeam25</a>]</span>. In practice, this often means using stable variants of mathematical formulas,
+adding small epsilons, or applying safe clipping near boundaries.</p>
+</li>
+<li><p><strong>Composable</strong></p>
+<p>Whenever possible, transformations should work well in combination with others. TensorFlow
+Probability, for example, provides composition utilities such as <code class="docutils literal notranslate"><span class="pre">Chain</span></code> to build complex
+mappings out of simpler bijectors <span id="id21">[<a class="reference internal" href="references.html#id34" title="TensorFlow Probability. Module: tfp.bijectors. n.d. In TensorFlow Probability API documentation. URL: https://www.tensorflow.org/probability/api_docs/python/tfp/bijectors.">TensorFlowProbabilityd.</a>]</span>. In <code class="docutils literal notranslate"><span class="pre">probly</span></code>, the same
+idea applies: designing transformations to be composable makes it easier to express rich
+constraints while keeping each individual component small and testable.</p>
+</li>
+</ul>
+<p>During <strong>sampling and inference</strong>, <code class="docutils literal notranslate"><span class="pre">probly</span></code> repeatedly calls the forward and inverse mappings of
+your transformation to move between the internal unconstrained representation and the external
+constrained parameters that appear in the model. A well-designed transformation therefore keeps
+these operations cheap, stable, and easy to reason about, in line with the goals of similar
+transform systems in Stan and TensorFlow Probability <span id="id22">[<a class="reference internal" href="references.html#id33" title="Stan Development Team. Constraint transforms. 2025. In Stan Reference Manual, Version 2.37. URL: https://mc-stan.org/docs/reference-manual/transforms.html.">StanDTeam25</a>, <a class="reference internal" href="references.html#id35" title="TensorFlow Probability. Tfp.bijectors.bijector; tfp.bijectors.softplus. 2023. In TensorFlow Probability API documentation. URL: https://www.tensorflow.org/probability/api_docs/python/tfp/bijectors/Bijector.">TensorFlowProbability23</a>]</span>.</p>
+</section>
+<section id="step-by-step-tutorial-simple-custom-transformation">
+<h3>2.4 Step-by-step tutorial: simple custom transformation<a class="headerlink" href="#step-by-step-tutorial-simple-custom-transformation" title="Link to this heading">¶</a></h3>
+<p>This section walks through a minimal example of implementing a custom transformation in <code class="docutils literal notranslate"><span class="pre">probly</span></code>.
+The goal is not to show every detail of the library API, but to illustrate the typical workflow
+from an initial idea to a working component that can be used inside a model.</p>
+<p><strong>Problem description</strong></p>
+<p>Suppose we want a parameter that must always be <strong>strictly positive</strong>, for example a scale or
+standard deviation. Many probabilistic frameworks enforce such constraints by transforming from an
+unconstrained real variable into a positive domain. For instance, the Stan reference manual notes
+that Stan uses a logarithmic transform for lower and upper bounds <span id="id23">[<a class="reference internal" href="references.html#id32" title="Stan Development Team. 10.2 lower bounded scalar. n.d. In Stan Reference Manual, Version 2.22. URL: https://mc-stan.org/docs/2_22/reference-manual/lower-bound-transform-section.html.">StanDTeamd.</a>]</span>,
+and TensorFlow Probability’s Softplus bijector is documented as having the positive real numbers
+as its domain <span id="id24">[<a class="reference internal" href="references.html#id35" title="TensorFlow Probability. Tfp.bijectors.bijector; tfp.bijectors.softplus. 2023. In TensorFlow Probability API documentation. URL: https://www.tensorflow.org/probability/api_docs/python/tfp/bijectors/Bijector.">TensorFlowProbability23</a>]</span>. Following the same idea, we introduce an
+unconstrained real-valued variable and use a transformation to map it into the positive domain.</p>
+<p>Our transformation therefore needs to:</p>
+<ul class="simple">
+<li><p>Take any real number as input,</p></li>
+<li><p>Output a strictly positive value,</p></li>
+<li><p>Be invertible (or at least approximately invertible) so that inference algorithms in <code class="docutils literal notranslate"><span class="pre">probly</span></code>
+can move between the two spaces.</p></li>
+</ul>
+<p><strong>Implementation</strong></p>
+<p>At implementation time we translate this idea into a small transformation object. Conceptually, it
+contains:</p>
+<ul class="simple">
+<li><p>A <strong>forward</strong> method that maps from the unconstrained real line to positive values
+(for example via an exponential or softplus mapping),</p></li>
+<li><p>An <strong>inverse</strong> method that maps positive values back to the real line,</p></li>
+<li><p>Any additional helpers required by the inference backends, such as computing a log-determinant
+of the Jacobian if needed.</p></li>
+</ul>
+<p>Different libraries choose different specific transforms. Stan typically uses a log transform for
+strictly positive parameters <span id="id25">[<a class="reference internal" href="references.html#id32" title="Stan Development Team. 10.2 lower bounded scalar. n.d. In Stan Reference Manual, Version 2.22. URL: https://mc-stan.org/docs/2_22/reference-manual/lower-bound-transform-section.html.">StanDTeamd.</a>]</span>, while TensorFlow Probability provides a
+Softplus bijector which does not overflow as easily as the exponential bijector <span id="id26">[<a class="reference internal" href="references.html#id35" title="TensorFlow Probability. Tfp.bijectors.bijector; tfp.bijectors.softplus. 2023. In TensorFlow Probability API documentation. URL: https://www.tensorflow.org/probability/api_docs/python/tfp/bijectors/Bijector.">TensorFlowProbability23</a>]</span>. NumPyro implements a similar idea with a dedicated
+Softplus-based transform from unconstrained space to the positive domain in its
+transforms module <span id="id27">[<a class="reference internal" href="references.html#id23" title="Contributors to the Pyro Project. NumPyro transforms module. Documentation, 2019. NumPyro documentation, transforms module, version 0.4.1. URL: https://num.pyro.ai/en/0.4.1/_modules/numpyro/distributions/transforms.html.">ContributorsttPProject19</a>]</span>. In practice, this means you can choose
+between an exponential-style mapping (simple but potentially less stable) and a softplus-style
+mapping (slightly more complex but often more robust).</p>
+<p>The concrete class and method names in a custom transformation depend on the transformation base
+class used by <code class="docutils literal notranslate"><span class="pre">probly</span></code>, but the conceptual structure is always the same: a forward map, an
+inverse map, and (when required) the corresponding Jacobian terms.</p>
+<p>A minimal, self-contained stub that follows this pattern (using NumPy for
+numerics) looks like:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">PositiveTransform</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Maps R -&gt; (0, inf) with stable forward/inverse.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">logaddexp</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>  <span class="c1"># softplus</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">inverse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-8</span><span class="p">):</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">eps</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> <span class="o">-</span> <span class="mf">1.0</span> <span class="o">+</span> <span class="n">eps</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">log_abs_det_jacobian</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="k">return</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">logaddexp</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="o">-</span><span class="n">x</span><span class="p">)</span>  <span class="c1"># log(softplus&#39;(x))</span>
+
+<span class="n">transform</span> <span class="o">=</span> <span class="n">PositiveTransform</span><span class="p">()</span>
+<span class="n">unconstrained</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">])</span>
+<span class="n">constrained</span> <span class="o">=</span> <span class="n">transform</span><span class="o">.</span><span class="n">forward</span><span class="p">(</span><span class="n">unconstrained</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Registration / configuration</strong></p>
+<p>Once implemented, the transformation must be <strong>registered</strong> so that <code class="docutils literal notranslate"><span class="pre">probly</span></code> can find and use it.
+This usually means:</p>
+<ul class="simple">
+<li><p>Making the class importable from the appropriate module,</p></li>
+<li><p>Optionally adding it to a registry or configuration table,</p></li>
+<li><p>Defining any configuration options (for example, whether to clamp values near the boundary, or
+which nonlinearity to use).</p></li>
+</ul>
+<p>In other systems, something similar happens when new bijectors or constraint objects are added to
+the library’s registry and then reused across models <span id="id28">[<a class="reference internal" href="references.html#id23" title="Contributors to the Pyro Project. NumPyro transforms module. Documentation, 2019. NumPyro documentation, transforms module, version 0.4.1. URL: https://num.pyro.ai/en/0.4.1/_modules/numpyro/distributions/transforms.html.">ContributorsttPProject19</a>, <a class="reference internal" href="references.html#id35" title="TensorFlow Probability. Tfp.bijectors.bijector; tfp.bijectors.softplus. 2023. In TensorFlow Probability API documentation. URL: https://www.tensorflow.org/probability/api_docs/python/tfp/bijectors/Bijector.">TensorFlowProbability23</a>]</span>. In <code class="docutils literal notranslate"><span class="pre">probly</span></code>, registration plays the same role: it turns a single
+implementation into a reusable building block.</p>
+<p>After registration, the transformation can be referred to by name or imported wherever it is needed.</p>
+<p><strong>Using it in a model</strong></p>
+<p>To use the transformation in a model, we introduce an unconstrained latent parameter and attach the
+transformation to it. During model construction, <code class="docutils literal notranslate"><span class="pre">probly</span></code> will then:</p>
+<ul class="simple">
+<li><p>Store the transformation together with the parameter,</p></li>
+<li><p>Transparently apply the forward mapping whenever the constrained parameter is needed,</p></li>
+<li><p>Keep track of the relationship so that gradients and uncertainty estimates remain consistent.</p></li>
+</ul>
+<p>This mirrors the way Stan and other packages internally work with unconstrained parameters while
+presenting constrained parameters in the modelling language <span id="id29">[<a class="reference internal" href="references.html#id32" title="Stan Development Team. 10.2 lower bounded scalar. n.d. In Stan Reference Manual, Version 2.22. URL: https://mc-stan.org/docs/2_22/reference-manual/lower-bound-transform-section.html.">StanDTeamd.</a>]</span>. From the model author’s perspective, the parameter now behaves like a
+normal positive quantity, even though internally it is represented by an unconstrained variable.</p>
+<p><strong>Running inference and inspecting results</strong></p>
+<p>When we run inference, optimisation, or sampling, <code class="docutils literal notranslate"><span class="pre">probly</span></code> operates in the unconstrained space but
+uses the transformation to interpret results in the constrained space. After the run finishes, we
+can:</p>
+<ul class="simple">
+<li><p>Inspect posterior samples or point estimates of the constrained parameter,</p></li>
+<li><p>Verify that all inferred values satisfy the desired constraints,</p></li>
+<li><p>Compare behaviour with and without the custom transformation to understand its impact.</p></li>
+</ul>
+<p>Empirically, users have reported that carefully chosen positive transforms can significantly
+improve numerical behaviour. For example, one NumPyro user notes a very substantial improvement in
+inference stability when replacing an <code class="docutils literal notranslate"><span class="pre">exp</span></code> transformation with <code class="docutils literal notranslate"><span class="pre">softplus</span></code> for constraining
+<code class="docutils literal notranslate"><span class="pre">site_scale</span></code> <span id="id30">[<a class="reference internal" href="references.html#id39" title="vitkl. Softplus transform as a more numerically stable way to enforce positive constraint. GitHub issue #855 on the \emph NumPyro repository, December 2020. Issue opened December 31, 2020. URL: https://github.com/pyro-ppl/numpyro/issues/855.">vit20</a>]</span>. This simple workflow generalises to more complex transformations with
+multiple inputs, coupled constraints, or additional structure, and similar patterns appear across
+modern probabilistic programming frameworks.</p>
+</section>
+<section id="advanced-patterns">
+<h3>2.5 Advanced Patterns<a class="headerlink" href="#advanced-patterns" title="Link to this heading">¶</a></h3>
+<p>Once you are comfortable with basic custom transformations, <code class="docutils literal notranslate"><span class="pre">probly</span></code> allows for more advanced
+usage patterns that can make large or complex models easier to express. In the wider literature,
+normalizing flows show how powerful models can be obtained by composing simple invertible
+transformations <span id="id31">[<a class="reference internal" href="references.html#id28" title="George Papamakarios, Eric Nalisnick, Danilo Jimenez Rezende, Shakir Mohamed, and Balaji Lakshminarayanan. Normalizing flows for probabilistic modeling and inference. Journal of Machine Learning Research, 22(57):1–64, 2021. URL: https://www.jmlr.org/papers/volume22/19-1028/19-1028.pdf.">PNR+21</a>, <a class="reference internal" href="references.html#id31" title="Danilo J. Rezende and Shakir Mohamed. Variational inference with normalizing flows. In Proceedings of the 32nd International Conference on Machine Learning, volume 37 of Proceedings of Machine Learning Research, 1530–1538. PMLR, 2015. URL: https://proceedings.mlr.press/v37/rezende15.html.">RM15</a>]</span>.</p>
+<p><strong>Composing multiple transformations</strong></p>
+<p>Often it is easier to build a complex mapping by <strong>composing several simple transformations</strong>
+rather than writing one large one. For example, you might:</p>
+<ul class="simple">
+<li><p>First apply a shift-and-scale transform,</p></li>
+<li><p>Then map the result onto a simplex,</p></li>
+<li><p>Finally enforce an ordering constraint.</p></li>
+</ul>
+<p>Normalizing-flow work explicitly argues that we can build complex transformations by composing
+multiple instances of simpler transformations <span id="id32">[<a class="reference internal" href="references.html#id28" title="George Papamakarios, Eric Nalisnick, Danilo Jimenez Rezende, Shakir Mohamed, and Balaji Lakshminarayanan. Normalizing flows for probabilistic modeling and inference. Journal of Machine Learning Research, 22(57):1–64, 2021. URL: https://www.jmlr.org/papers/volume22/19-1028/19-1028.pdf.">PNR+21</a>]</span>, while still
+preserving invertibility and differentiability. Deep-learning libraries such as TensorFlow
+Probability provide bijector APIs that implement this idea in practice, allowing chains of
+transforms to be treated as a single object <span id="id33">[<a class="reference internal" href="references.html#id34" title="TensorFlow Probability. Module: tfp.bijectors. n.d. In TensorFlow Probability API documentation. URL: https://www.tensorflow.org/probability/api_docs/python/tfp/bijectors.">TensorFlowProbabilityd.</a>]</span>.</p>
+<p>Designing custom transformations in <code class="docutils literal notranslate"><span class="pre">probly</span></code> with this mindset keeps each piece simple and
+testable: each small transform has a clear responsibility, and the full behaviour emerges from
+their composition.</p>
+<p><strong>Sharing parameters across transformations</strong></p>
+<p>In some models, several transformations depend on a <strong>shared parameter</strong> or hyperparameter (for
+example a common scale or concentration parameter). Instead of duplicating this value, it is often
+better to:</p>
+<ul class="simple">
+<li><p>Define the shared quantity once,</p></li>
+<li><p>Pass references to it into multiple transformations,</p></li>
+<li><p>Ensure that updates to the shared parameter are consistently reflected in all dependent
+transformations.</p></li>
+</ul>
+<p>This pattern is closely related to hierarchical Bayesian modelling, where group-specific
+parameters are tied together through common hyperparameters. In that context, hierarchical models
+allow for the pooling of information across groups while accounting for group-specific
+variations <span id="id34">[<a class="reference internal" href="references.html#id24" title="Andrew Gelman and Jennifer Hill. Data Analysis Using Regression and Multilevel/Hierarchical Models. Analytical Methods for Social Research. Cambridge University Press, New York, NY, 2007. ISBN 978-0-521-86706-1. URL: https://doi.org/10.1017/CBO9780511790942, doi:10.1017/CBO9780511790942.">GH07</a>]</span>. Using shared parameters across transformations in <code class="docutils literal notranslate"><span class="pre">probly</span></code>
+has a similar effect: information is shared in a controlled way, and the structure of the model
+remains explicit and interpretable.</p>
+<p><strong>Handling randomness vs determinism inside transformations</strong></p>
+<p>Most transformations are deterministic mappings, but in some cases it is useful to include
+controlled <strong>randomness</strong> inside a transformation (for example randomised rounding or stochastic
+discretisation). When you design such components, it helps to follow the discipline used by
+modern functional ML frameworks.</p>
+<p>For example, the JAX documentation emphasises that JAX avoids implicit global random state and
+instead tracks state explicitly via a random key, and stresses that you should never use the same
+key twice <span id="id35">[<a class="reference internal" href="references.html#id36" title="The JAX Authors. Pseudorandom numbers. 2024. In JAX documentation. URL: https://docs.jax.dev/en/latest/random-numbers.html.">TheJAuthors24</a>]</span>. Even if <code class="docutils literal notranslate"><span class="pre">probly</span></code> uses a different backend, the same
+principles are useful:</p>
+<ul class="simple">
+<li><p>Deterministic behaviour is usually easier for optimisation and debugging,</p></li>
+<li><p>If randomness is used, it should be driven by the same seeding and PRNG mechanisms as the rest
+of the model,</p></li>
+<li><p>The statistical meaning of the model should remain clear even when transformations are
+stochastic.</p></li>
+</ul>
+<p>In practice, this means treating any random choices inside a transformation as part of the
+probabilistic model, not as hidden side effects.</p>
+</section>
+<section id="testing-debugging">
+<h3>2.6 Testing &amp; Debugging<a class="headerlink" href="#testing-debugging" title="Link to this heading">¶</a></h3>
+<p>Well-tested transformations are crucial for trustworthy models. Because transformations sit
+between the internal representation and the visible parameters, subtle bugs can be hard to
+detect unless you test them explicitly. Large probabilistic frameworks such as Stan rely on
+extensive unit tests for accuracy of values and derivatives as well as error checking <span id="id36">[<a class="reference internal" href="references.html#id22" title="Bob Carpenter, Andrew Gelman, Matthew D. Hoffman, Daniel Lee, Ben Goodrich, Michael Betancourt, Marcus Brubaker, Jiqiang Guo, Peter Li, and Allen Riddell. Stan: A probabilistic programming language. Journal of Statistical Software, 76(1):1–32, 2017. URL: https://www.jstatsoft.org/article/view/v076i01, doi:10.18637/jss.v076.i01.">CGH+17</a>]</span>, which is a good benchmark for how seriously this layer should
+be treated.</p>
+<p><strong>Round-trip tests (forward + inverse)</strong></p>
+<p>A basic but powerful test is the <strong>round-trip check</strong>:</p>
+<ul class="simple">
+<li><p>Sample or construct a range of valid unconstrained inputs,</p></li>
+<li><p>Apply the forward mapping followed by the inverse mapping,</p></li>
+<li><p>Verify that the original inputs are recovered (up to numerical tolerance).</p></li>
+</ul>
+<p>From a mathematical point of view, this is just checking the fundamental property of a
+bijective transform: bijective functions are invertible and satisfy <span class="math notranslate nohighlight">\(f^{-1}(f(x)) = x\)</span>.
+Round-trip tests are designed to catch cases where implementation details or shape handling
+break this property.</p>
+<p>Similarly, you can test constrained values by applying inverse then forward. Systematic
+deviations in either direction usually indicate mistakes in the formulas, inconsistencies in
+broadcasting, or shape mismatches between forward and inverse.</p>
+<p>For the <code class="docutils literal notranslate"><span class="pre">PositiveTransform</span></code> stub above, a minimal round-trip test is:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="n">xs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">7</span><span class="p">)</span>
+<span class="n">ys</span> <span class="o">=</span> <span class="n">transform</span><span class="o">.</span><span class="n">forward</span><span class="p">(</span><span class="n">xs</span><span class="p">)</span>
+<span class="n">xs_back</span> <span class="o">=</span> <span class="n">transform</span><span class="o">.</span><span class="n">inverse</span><span class="p">(</span><span class="n">ys</span><span class="p">)</span>
+<span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">xs_back</span><span class="p">,</span> <span class="n">xs</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Numerical stability checks</strong></p>
+<p>Transformations that operate near boundaries (very small or very large values, probabilities
+near 0 or 1, etc.) can suffer from numerical problems. It is good practice to:</p>
+<ul class="simple">
+<li><p>Test extreme but valid inputs,</p></li>
+<li><p>Check for overflow, underflow, or <code class="docutils literal notranslate"><span class="pre">nan</span></code>/<code class="docutils literal notranslate"><span class="pre">inf</span></code> values,</p></li>
+<li><p>Monitor gradients if the transformation is used in gradient-based inference.</p></li>
+</ul>
+<p>Experience in differentiable simulation libraries shows why this matters: NaNs tend to
+spread uncontrollably, making it difficult to trace their origin, so many projects adopt a
+strict no-NaN policy for both outputs and gradients. The same mindset works well in
+<code class="docutils literal notranslate"><span class="pre">probly</span></code>: treat any appearance of NaNs or infinities as a bug in either the transformation
+or its inputs, and add targeted tests to reproduce and eliminate it.</p>
+<p>Where necessary, introduce small epsilons, safe clipping, or alternative parameterisations
+to keep the transformation stable. For instance, many implementations replace naïve formulas
+by numerically stable variants or custom Jacobians when differentiability and stability
+conflict, as discussed in the algorithmic differentiation literature <span id="id37">[<a class="reference internal" href="references.html#id25" title="Andreas Griewank and Andrea Walther. Evaluating Derivatives: Principles and Techniques of Algorithmic Differentiation. Volume 105 of Other Titles in Applied Mathematics. Society for Industrial and Applied Mathematics, Philadelphia, PA, 2 edition, 2008. ISBN 978-0-89871-659-7. URL: https://doi.org/10.1137/1.9780898717761, doi:10.1137/1.9780898717761.">GW08</a>]</span>.</p>
+<p><strong>Common pitfalls and how to recognise them</strong></p>
+<p>Typical issues with custom transformations include:</p>
+<ul class="simple">
+<li><p>Silently producing invalid outputs (for example negative values where only positives are allowed),</p></li>
+<li><p>Mismatched shapes between forward and inverse mappings,</p></li>
+<li><p>Forgetting to update the transformation when the model structure changes,</p></li>
+<li><p>Inconsistent handling of broadcasting or batching.</p></li>
+</ul>
+<p>Basic unit-testing advice for probabilistic code still applies here: at least assert that
+returned values are not null and lie in the expected range, and then add stronger
+distributional checks where appropriate. For transformations, that means checking <em>both</em> the
+unconstrained and constrained spaces for sanity (ranges, monotonicity, simple invariants).</p>
+<p>Symptoms of problems with transformations often show up later as:</p>
+<ul class="simple">
+<li><p>Optimisation failing to converge or getting stuck,</p></li>
+<li><p>Extremely large or unstable uncertainty estimates,</p></li>
+<li><p>Runtime errors or NaNs deep inside the inference code.</p></li>
+</ul>
+<p>Empirical work on probabilistic programming systems suggests that many real bugs are linked
+to boundary conditions, dimension handling, and numerical issues. Tools that systematically
+stress-test these systems have uncovered previously unknown bugs across several frameworks,
+underlining that small mistakes in transform logic can have large downstream effects.</p>
+<p>When such issues appear in a <code class="docutils literal notranslate"><span class="pre">probly</span></code> model, it is often helpful to temporarily isolate
+the transformation in a small test script, run the round-trip and stability checks described
+above, and only then reintegrate it into the full model. This mirrors the way mature
+probabilistic frameworks separate low-level tests of math functions and transforms from
+high-level tests of full models <span id="id38">[<a class="reference internal" href="references.html#id22" title="Bob Carpenter, Andrew Gelman, Matthew D. Hoffman, Daniel Lee, Ben Goodrich, Michael Betancourt, Marcus Brubaker, Jiqiang Guo, Peter Li, and Allen Riddell. Stan: A probabilistic programming language. Journal of Statistical Software, 76(1):1–32, 2017. URL: https://www.jstatsoft.org/article/view/v076i01, doi:10.18637/jss.v076.i01.">CGH+17</a>]</span>.</p>
+</section>
+</section>
+<section id="working-with-large-models">
+<h2>3. Working with Large Models<a class="headerlink" href="#working-with-large-models" title="Link to this heading">¶</a></h2>
+<section id="what-is-a-large-model-in-practice">
+<h3>3.1 What is a “large” model in practice?<a class="headerlink" href="#what-is-a-large-model-in-practice" title="Link to this heading">¶</a></h3>
+<p>What counts as a “large” model depends on your hardware and your goals. In the
+research world, “large models” often mean networks with hundreds of millions or
+billions of parameters <span id="id39">[<a class="reference internal" href="references.html#id37" title="Xiaoguang Tu, Zhi He, Yi Huang, Zhi-Hao Zhang, Ming Yang, and Jian Zhao. An overview of large AI models and their applications. Visual Intelligence, 2(1):34, 2024. URL: https://doi.org/10.1007/s44267-024-00065-8, doi:10.1007/s44267-024-00065-8.">THH+24</a>]</span>. In everyday <code class="docutils literal notranslate"><span class="pre">probly</span></code> projects, you will
+usually run into “large-model” problems much earlier, as soon as memory, data
+handling, or runtime start to become annoying.</p>
+<p>In practice, a model is “large” when one or more of these become real limits:</p>
+<ul>
+<li><p><strong>Model size (number of parameters)</strong></p>
+<p>As you add layers and parameters, you need memory for parameters, gradients,
+optimiser state, and activations. If this no longer fits comfortably on a
+single device, you are in “large-model” territory <span id="id40">[<a class="reference internal" href="references.html#id38" title="Ankush Jitendrakumar Tyagi. Scaling deep learning models: challenges and solutions for large-scale deployments. World Journal of Advanced Engineering Technology and Sciences, 16(2):10–20, 2025. URL: https://doi.org/10.30574/wjaets.2025.16.2.1252, doi:10.30574/wjaets.2025.16.2.1252.">Tya25</a>]</span>.</p>
+</li>
+<li><p><strong>Dataset size</strong></p>
+<p>A model can also feel large because the <strong>data</strong> are large. If the full
+dataset does not fit in RAM, you have to switch to streaming or mini-batches
+instead of loading everything at once <span id="id41">[<a class="reference internal" href="references.html#id38" title="Ankush Jitendrakumar Tyagi. Scaling deep learning models: challenges and solutions for large-scale deployments. World Journal of Advanced Engineering Technology and Sciences, 16(2):10–20, 2025. URL: https://doi.org/10.30574/wjaets.2025.16.2.1252, doi:10.30574/wjaets.2025.16.2.1252.">Tya25</a>]</span>.</p>
+</li>
+</ul>
+<p>The illustration <span id="id42">[<a class="reference internal" href="references.html#id41" title="Eyke Hüllermeier and Willem Waegeman. Aleatoric and epistemic uncertainty in machine learning: an introduction to concepts and methods. Machine Learning, 2021. arXiv:1910.09457.">HW21</a>]</span> below shows a Gaussian-process fit with very few observations
+(left) versus many observations (right). The predictive uncertainty band
+shrinks as data grow, which is exactly why large-data workflows need careful
+memory and batching strategies: you want the benefits of more data without
+running out of compute.</p>
+<figure class="align-default" id="id74">
+<a class="reference internal image-reference" href="_images/large_models.png"><img alt="Gaussian-process predictive uncertainty shrinking with more observations" src="_images/large_models.png" style="width: 85%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Predictive mean (orange) and uncertainty band narrowing as the number of
+observations increases (dashed line is the true function).</span><a class="headerlink" href="#id74" title="Link to this image">¶</a></p>
+</figcaption>
+</figure>
+<ul>
+<li><p><strong>Runtime and cost</strong></p>
+<p>Even a medium-sized model becomes “large” if one run takes many hours, or if
+GPU time is expensive and you can only afford a few runs <span id="id43">[<a class="reference internal" href="references.html#id37" title="Xiaoguang Tu, Zhi He, Yi Huang, Zhi-Hao Zhang, Ming Yang, and Jian Zhao. An overview of large AI models and their applications. Visual Intelligence, 2(1):34, 2024. URL: https://doi.org/10.1007/s44267-024-00065-8, doi:10.1007/s44267-024-00065-8.">THH+24</a>, <a class="reference internal" href="references.html#id38" title="Ankush Jitendrakumar Tyagi. Scaling deep learning models: challenges and solutions for large-scale deployments. World Journal of Advanced Engineering Technology and Sciences, 16(2):10–20, 2025. URL: https://doi.org/10.30574/wjaets.2025.16.2.1252, doi:10.30574/wjaets.2025.16.2.1252.">Tya25</a>]</span>.</p>
+</li>
+</ul>
+<p>For this chapter, we call a model “large” whenever memory, data handling, or
+runtime force you to think about structure and efficiency, instead of just
+writing the most direct version of the model.</p>
+</section>
+<section id="model-structuring-strategies">
+<h3>3.2 Model Structuring Strategies<a class="headerlink" href="#model-structuring-strategies" title="Link to this heading">¶</a></h3>
+<p>As models and datasets grow, <strong>code structure</strong> becomes as important as the
+choice of algorithm. A messy single file might work for a tiny example but
+quickly becomes painful for larger projects. Guides on structuring data science
+projects recommend a simple, modular layout instead of one big script <span id="id44">[<a class="reference internal" href="references.html#id29" title="Suvendu K. Pati. Best practices for organizing and coding data science projects — part 1. 2025. The Deep Hub (Medium), posted March 27, 2025. URL: https://medium.com/thedeephub/best-practices-for-organizing-and-coding-data-science-projects-part-1-72539e14a7a0.">Pat25</a>, <a class="reference internal" href="references.html#id40" title="Martin Zinkevich. Rules of machine learning: best practices for ML engineering. Google Developers, n.d. Google Developers guide, accessed 19 November 2025. URL: https://developers.google.com/machine-learning/guides/rules-of-ml.">Zind.</a>]</span>.</p>
+<p><strong>Modular design (sub-models and reusable components)</strong></p>
+<p>For <code class="docutils literal notranslate"><span class="pre">probly</span></code> projects, a modular design usually means:</p>
+<ul class="simple">
+<li><p>Separating data loading and preprocessing from model definition and inference,</p></li>
+<li><p>Grouping related model parts into their own modules (for example,
+<code class="docutils literal notranslate"><span class="pre">uncertainty_heads.py</span></code> or <code class="docutils literal notranslate"><span class="pre">transforms/constraints.py</span></code>),</p></li>
+<li><p>Turning common patterns into reusable functions or classes.</p></li>
+</ul>
+<p>Splitting a project into files like <code class="docutils literal notranslate"><span class="pre">preprocess.py</span></code>, <code class="docutils literal notranslate"><span class="pre">train.py</span></code>, and <code class="docutils literal notranslate"><span class="pre">evaluate.py</span></code>
+makes it easier to maintain and reuse code <span id="id45">[<a class="reference internal" href="references.html#id29" title="Suvendu K. Pati. Best practices for organizing and coding data science projects — part 1. 2025. The Deep Hub (Medium), posted March 27, 2025. URL: https://medium.com/thedeephub/best-practices-for-organizing-and-coding-data-science-projects-part-1-72539e14a7a0.">Pat25</a>]</span>. The same idea applies to <code class="docutils literal notranslate"><span class="pre">probly</span></code>: instead of one huge model
+file, you build small building blocks (e.g. shared transformations or likelihood
+components) and import them where you need them.</p>
+<p><strong>Naming and project layout</strong></p>
+<p>A clear layout makes a large codebase feel smaller. In practice, this can mean:</p>
+<ul class="simple">
+<li><p>Using descriptive filenames such as <code class="docutils literal notranslate"><span class="pre">large_models/core_layers.py</span></code> or
+<code class="docutils literal notranslate"><span class="pre">pipelines/experiment_large_01.py</span></code>,</p></li>
+<li><p>Keeping reusable library code separate from experiment-specific scripts and
+notebooks,</p></li>
+<li><p>Writing down a short “project structure” section in the README so new people
+can quickly find the important pieces <span id="id46">[<a class="reference internal" href="references.html#id29" title="Suvendu K. Pati. Best practices for organizing and coding data science projects — part 1. 2025. The Deep Hub (Medium), posted March 27, 2025. URL: https://medium.com/thedeephub/best-practices-for-organizing-and-coding-data-science-projects-part-1-72539e14a7a0.">Pat25</a>, <a class="reference internal" href="references.html#id40" title="Martin Zinkevich. Rules of machine learning: best practices for ML engineering. Google Developers, n.d. Google Developers guide, accessed 19 November 2025. URL: https://developers.google.com/machine-learning/guides/rules-of-ml.">Zind.</a>]</span>.</p></li>
+</ul>
+<p>Good structure does not make the model mathematically simpler, but it makes it
+much easier to find bugs, add new ideas, and run larger experiments without
+getting lost.</p>
+</section>
+<section id="memory-management">
+<h3>3.3 Memory Management<a class="headerlink" href="#memory-management" title="Link to this heading">¶</a></h3>
+<p>For small toy examples, you can often ignore memory and just run the model. As
+soon as you start using bigger datasets or deeper networks, memory becomes a
+real constraint. Typical symptoms are “out of memory” errors on the GPU, very
+slow training, or code that spends a lot of time just moving data around.</p>
+<p><strong>Batching and mini-batching</strong></p>
+<p>Mini-batching means processing a subset of the data at a time instead of the
+whole dataset. This is standard practice in large-scale deep learning: it
+reduces memory usage and often makes hardware utilisation better <span id="id47">[<a class="reference internal" href="references.html#id38" title="Ankush Jitendrakumar Tyagi. Scaling deep learning models: challenges and solutions for large-scale deployments. World Journal of Advanced Engineering Technology and Sciences, 16(2):10–20, 2025. URL: https://doi.org/10.30574/wjaets.2025.16.2.1252, doi:10.30574/wjaets.2025.16.2.1252.">Tya25</a>]</span>.</p>
+<p>For <code class="docutils literal notranslate"><span class="pre">probly</span></code> models, this usually means:</p>
+<ul class="simple">
+<li><p>Choosing a batch size that fits comfortably in GPU or CPU memory,</p></li>
+<li><p>Keeping intermediate tensors only for the current batch,</p></li>
+<li><p>Scaling to larger datasets by running more batches instead of making each
+batch bigger and bigger.</p></li>
+</ul>
+<p><strong>Streaming data</strong></p>
+<p>When the dataset does not fit into RAM, you need some form of <strong>streaming</strong>:</p>
+<ul class="simple">
+<li><p>A data loader that reads from disk in chunks,</p></li>
+<li><p>A generator that yields one batch at a time,</p></li>
+<li><p>Sharded datasets that are loaded piece by piece.</p></li>
+</ul>
+<p>The details depend on whether you use PyTorch, JAX, or something else, but the
+idea is always the same: the model only ever sees a manageable batch, not the
+entire dataset at once <span id="id48">[<a class="reference internal" href="references.html#id38" title="Ankush Jitendrakumar Tyagi. Scaling deep learning models: challenges and solutions for large-scale deployments. World Journal of Advanced Engineering Technology and Sciences, 16(2):10–20, 2025. URL: https://doi.org/10.30574/wjaets.2025.16.2.1252, doi:10.30574/wjaets.2025.16.2.1252.">Tya25</a>]</span>.</p>
+<p><strong>Avoiding unnecessary copies and recomputations</strong></p>
+<p>Memory and runtime are often wasted by hidden copies and repeated work. Common
+issues include:</p>
+<ul class="simple">
+<li><p>Moving tensors between CPU and GPU more often than necessary,</p></li>
+<li><p>Calling <code class="docutils literal notranslate"><span class="pre">.cpu()</span></code>, <code class="docutils literal notranslate"><span class="pre">.numpy()</span></code> or similar conversions in tight loops,</p></li>
+<li><p>Recomputing the same large intermediate results in every iteration.</p></li>
+</ul>
+<p>A simple rule of thumb is:</p>
+<ul class="simple">
+<li><p>Move data to the right device <strong>once per batch</strong>,</p></li>
+<li><p>Cache expensive things that do not change,</p></li>
+<li><p>Profile your code to see whether the main cost is in the model, the data
+pipeline, or device transfers <span id="id49">[<a class="reference internal" href="references.html#id38" title="Ankush Jitendrakumar Tyagi. Scaling deep learning models: challenges and solutions for large-scale deployments. World Journal of Advanced Engineering Technology and Sciences, 16(2):10–20, 2025. URL: https://doi.org/10.30574/wjaets.2025.16.2.1252, doi:10.30574/wjaets.2025.16.2.1252.">Tya25</a>]</span>.</p></li>
+</ul>
+</section>
+<section id="scalability-features-in-probly">
+<h3>3.4 Scalability Features in <code class="docutils literal notranslate"><span class="pre">probly</span></code><a class="headerlink" href="#scalability-features-in-probly" title="Link to this heading">¶</a></h3>
+<p>Even with good batching and streaming, some models will still push the limits
+of your hardware. Modern numerical libraries provide features like
+<strong>vectorisation</strong> and <strong>just-in-time (JIT) compilation</strong> to help with this.
+<code class="docutils literal notranslate"><span class="pre">probly</span></code> can benefit from these features when it runs on JAX or similar
+backends.</p>
+<p><strong>Vectorisation</strong></p>
+<p>Vectorisation means writing code that works on whole arrays at once instead of
+looping in Python. This lets the backend use fast compiled kernels and parallel
+hardware <span id="id50">[<a class="reference internal" href="references.html#id37" title="Xiaoguang Tu, Zhi He, Yi Huang, Zhi-Hao Zhang, Ming Yang, and Jian Zhao. An overview of large AI models and their applications. Visual Intelligence, 2(1):34, 2024. URL: https://doi.org/10.1007/s44267-024-00065-8, doi:10.1007/s44267-024-00065-8.">THH+24</a>, <a class="reference internal" href="references.html#id38" title="Ankush Jitendrakumar Tyagi. Scaling deep learning models: challenges and solutions for large-scale deployments. World Journal of Advanced Engineering Technology and Sciences, 16(2):10–20, 2025. URL: https://doi.org/10.30574/wjaets.2025.16.2.1252, doi:10.30574/wjaets.2025.16.2.1252.">Tya25</a>]</span>.</p>
+<p>In <code class="docutils literal notranslate"><span class="pre">probly</span></code>, vectorisation usually looks like:</p>
+<ul class="simple">
+<li><p>Writing your model so it naturally accepts batches of inputs,</p></li>
+<li><p>Evaluating many data points or parameter settings in one call,</p></li>
+<li><p>Avoiding Python <code class="docutils literal notranslate"><span class="pre">for</span></code>-loops in the hottest parts of the code when an array
+operation would do.</p></li>
+</ul>
+<p><strong>JIT compilation and configuration knobs</strong></p>
+<p>JIT compilation takes a Python function and compiles it into an efficient
+accelerator program. Frameworks such as JAX use this to turn numerical Python
+code into highly optimised kernels <span id="id51">[<a class="reference internal" href="references.html#id37" title="Xiaoguang Tu, Zhi He, Yi Huang, Zhi-Hao Zhang, Ming Yang, and Jian Zhao. An overview of large AI models and their applications. Visual Intelligence, 2(1):34, 2024. URL: https://doi.org/10.1007/s44267-024-00065-8, doi:10.1007/s44267-024-00065-8.">THH+24</a>]</span>.</p>
+<p>When <code class="docutils literal notranslate"><span class="pre">probly</span></code> runs on such a backend, you can:</p>
+<ul class="simple">
+<li><p>JIT-compile the main log-likelihood or posterior function,</p></li>
+<li><p>Reuse compiled functions across many batches or chains,</p></li>
+<li><p>Switch JIT on or off depending on whether you are debugging or running a
+large experiment <span id="id52">[<a class="reference internal" href="references.html#id38" title="Ankush Jitendrakumar Tyagi. Scaling deep learning models: challenges and solutions for large-scale deployments. World Journal of Advanced Engineering Technology and Sciences, 16(2):10–20, 2025. URL: https://doi.org/10.30574/wjaets.2025.16.2.1252, doi:10.30574/wjaets.2025.16.2.1252.">Tya25</a>]</span>.</p></li>
+</ul>
+<p>Typical configuration “knobs” in a <code class="docutils literal notranslate"><span class="pre">probly</span></code> project include:</p>
+<ul class="simple">
+<li><p>Enabling/disabling JIT for specific functions,</p></li>
+<li><p>Deciding which dimension to batch over (data vs. chains),</p></li>
+<li><p>Choosing between a slow, very transparent debug mode and a fast, compiled mode.</p></li>
+</ul>
+<p>Example: JIT-compile a log-likelihood once and reuse it across batches (JAX backend):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">log_likelihood</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">batch</span><span class="p">):</span>
+    <span class="n">preds</span> <span class="o">=</span> <span class="n">model_forward</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">batch</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">])</span>  <span class="c1"># your network forward</span>
+    <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">batch</span><span class="p">[</span><span class="s2">&quot;log_prob_fn&quot;</span><span class="p">](</span><span class="n">preds</span><span class="p">,</span> <span class="n">batch</span><span class="p">[</span><span class="s2">&quot;y&quot;</span><span class="p">]))</span>
+
+<span class="n">fast_log_likelihood</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">log_likelihood</span><span class="p">)</span>
+<span class="n">value</span> <span class="o">=</span> <span class="n">fast_log_likelihood</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">batch</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="case-study-scaling-up-a-small-example">
+<h3>3.5 Case study: scaling up a small example<a class="headerlink" href="#case-study-scaling-up-a-small-example" title="Link to this heading">¶</a></h3>
+<p>This section sketches a typical path from a tiny prototype to a more serious
+large-model setup in <code class="docutils literal notranslate"><span class="pre">probly</span></code>. The exact code will differ, but the steps are
+similar in most projects.</p>
+<p><strong>Step 1 – Start small and simple</strong></p>
+<p>You begin with a small dataset and a simple model on your laptop. At this
+stage, you:</p>
+<ul class="simple">
+<li><p>Run everything on a single device,</p></li>
+<li><p>Keep all data in memory,</p></li>
+<li><p>Focus on correctness and clarity, not speed.</p></li>
+</ul>
+<p>Practical ML advice strongly recommends starting this way: get a simple
+baseline working end-to-end before you add complexity <span id="id53">[<a class="reference internal" href="references.html#id40" title="Martin Zinkevich. Rules of machine learning: best practices for ML engineering. Google Developers, n.d. Google Developers guide, accessed 19 November 2025. URL: https://developers.google.com/machine-learning/guides/rules-of-ml.">Zind.</a>]</span>. For a
+<code class="docutils literal notranslate"><span class="pre">probly</span></code> model, this means checking that:</p>
+<ul class="simple">
+<li><p>The model compiles,</p></li>
+<li><p>Transformations and priors behave sensibly,</p></li>
+<li><p>Metrics such as loss and accuracy look reasonable.</p></li>
+</ul>
+<p><strong>Step 2 – Add more data and batching</strong></p>
+<p>Next, you switch to a larger dataset. Now you:</p>
+<ul class="simple">
+<li><p>Introduce mini-batches so only part of the data is in memory at a time,</p></li>
+<li><p>Replace ad-hoc loading with a proper data loader or generator,</p></li>
+<li><p>Keep the model structure almost the same so you can tell whether problems
+come from the data size or from the model itself <span id="id54">[<a class="reference internal" href="references.html#id38" title="Ankush Jitendrakumar Tyagi. Scaling deep learning models: challenges and solutions for large-scale deployments. World Journal of Advanced Engineering Technology and Sciences, 16(2):10–20, 2025. URL: https://doi.org/10.30574/wjaets.2025.16.2.1252, doi:10.30574/wjaets.2025.16.2.1252.">Tya25</a>]</span>.</p></li>
+</ul>
+<p>You watch for memory errors, runtime per step, and whether the metrics still
+behave similarly to the small-data case.</p>
+<p><strong>Step 3 – Grow the model and use the hardware</strong></p>
+<p>Once data handling is under control, you might want a bigger or more expressive
+model. At this point, you:</p>
+<ul class="simple">
+<li><p>Add layers or hierarchical structure where it helps,</p></li>
+<li><p>Use regularisation to keep things stable,</p></li>
+<li><p>Start using vectorisation and, where available, JIT compilation to make
+better use of the hardware <span id="id55">[<a class="reference internal" href="references.html#id37" title="Xiaoguang Tu, Zhi He, Yi Huang, Zhi-Hao Zhang, Ming Yang, and Jian Zhao. An overview of large AI models and their applications. Visual Intelligence, 2(1):34, 2024. URL: https://doi.org/10.1007/s44267-024-00065-8, doi:10.1007/s44267-024-00065-8.">THH+24</a>, <a class="reference internal" href="references.html#id38" title="Ankush Jitendrakumar Tyagi. Scaling deep learning models: challenges and solutions for large-scale deployments. World Journal of Advanced Engineering Technology and Sciences, 16(2):10–20, 2025. URL: https://doi.org/10.30574/wjaets.2025.16.2.1252, doi:10.30574/wjaets.2025.16.2.1252.">Tya25</a>]</span>.</p></li>
+</ul>
+<p>Profiling helps you see whether the time is spent in the model, the data
+pipeline, or somewhere else.</p>
+<p><strong>Step 4 – Run “production-like” experiments</strong></p>
+<p>Finally, you run something closer to a real large-scale experiment:</p>
+<ul class="simple">
+<li><p>Full training and validation sets,</p></li>
+<li><p>Realistic batch sizes and number of epochs,</p></li>
+<li><p>Logging, monitoring, and checkpointing turned on.</p></li>
+</ul>
+<p>Guides for real-world ML systems stress the importance of data checks, clear
+metrics, and experiment tracking at this stage <span id="id56">[<a class="reference internal" href="references.html#id38" title="Ankush Jitendrakumar Tyagi. Scaling deep learning models: challenges and solutions for large-scale deployments. World Journal of Advanced Engineering Technology and Sciences, 16(2):10–20, 2025. URL: https://doi.org/10.30574/wjaets.2025.16.2.1252, doi:10.30574/wjaets.2025.16.2.1252.">Tya25</a>, <a class="reference internal" href="references.html#id40" title="Martin Zinkevich. Rules of machine learning: best practices for ML engineering. Google Developers, n.d. Google Developers guide, accessed 19 November 2025. URL: https://developers.google.com/machine-learning/guides/rules-of-ml.">Zind.</a>]</span>. For <code class="docutils literal notranslate"><span class="pre">probly</span></code>, the idea is the same: you want runs that are not only fast,
+but also traceable and reproducible.</p>
+</section>
+<section id="checklist-preparing-a-large-model-run">
+<h3>3.6 Checklist: preparing a large model run<a class="headerlink" href="#checklist-preparing-a-large-model-run" title="Link to this heading">¶</a></h3>
+<p>Before starting a big and expensive run, it helps to walk through a short
+checklist. Many common problems in production ML come from skipped basic steps,
+not from exotic algorithms <span id="id57">[<a class="reference internal" href="references.html#id38" title="Ankush Jitendrakumar Tyagi. Scaling deep learning models: challenges and solutions for large-scale deployments. World Journal of Advanced Engineering Technology and Sciences, 16(2):10–20, 2025. URL: https://doi.org/10.30574/wjaets.2025.16.2.1252, doi:10.30574/wjaets.2025.16.2.1252.">Tya25</a>, <a class="reference internal" href="references.html#id40" title="Martin Zinkevich. Rules of machine learning: best practices for ML engineering. Google Developers, n.d. Google Developers guide, accessed 19 November 2025. URL: https://developers.google.com/machine-learning/guides/rules-of-ml.">Zind.</a>]</span>.</p>
+<p><strong>Data and problem</strong></p>
+<ul class="simple">
+<li><p>Is the prediction task clearly defined (inputs, target, evaluation metric)?</p></li>
+<li><p>Has the training data been checked for obvious issues (missing values, wrong
+ranges, label problems)?</p></li>
+<li><p>Are training, validation, and test splits clearly separated?</p></li>
+<li><p>If you stream data, are you sure the pipeline eventually covers the whole
+dataset?</p></li>
+</ul>
+<p><strong>Model and code</strong></p>
+<ul class="simple">
+<li><p>Has the same model been run on a smaller dataset as a sanity check? <span id="id58">[<a class="reference internal" href="references.html#id40" title="Martin Zinkevich. Rules of machine learning: best practices for ML engineering. Google Developers, n.d. Google Developers guide, accessed 19 November 2025. URL: https://developers.google.com/machine-learning/guides/rules-of-ml.">Zind.</a>]</span></p></li>
+<li><p>Are custom pieces (e.g. transformations) covered by at least basic tests
+(shapes, ranges, round-trip checks)?</p></li>
+<li><p>Is configuration (batch size, learning rate, etc.) separated from the code so
+you can easily rerun experiments with different settings?</p></li>
+</ul>
+<p><strong>Resources and runtime</strong></p>
+<ul class="simple">
+<li><p>Does the model fit in memory on the planned hardware with the chosen batch
+size? <span id="id59">[<a class="reference internal" href="references.html#id38" title="Ankush Jitendrakumar Tyagi. Scaling deep learning models: challenges and solutions for large-scale deployments. World Journal of Advanced Engineering Technology and Sciences, 16(2):10–20, 2025. URL: https://doi.org/10.30574/wjaets.2025.16.2.1252, doi:10.30574/wjaets.2025.16.2.1252.">Tya25</a>]</span></p></li>
+<li><p>Have you done a short “smoke test” run (for example, one epoch or a few
+batches) on the real hardware?</p></li>
+<li><p>Is checkpointing enabled so that you can resume after interruptions?</p></li>
+</ul>
+<p><strong>Monitoring and reproducibility</strong></p>
+<ul class="simple">
+<li><p>Are key metrics (loss, accuracy, calibration, runtime per step) being logged
+somewhere you can inspect later?</p></li>
+<li><p>Are random seeds, library versions, and important hyperparameters recorded
+so that important runs can be reproduced? <span id="id60">[<a class="reference internal" href="references.html#id40" title="Martin Zinkevich. Rules of machine learning: best practices for ML engineering. Google Developers, n.d. Google Developers guide, accessed 19 November 2025. URL: https://developers.google.com/machine-learning/guides/rules-of-ml.">Zind.</a>]</span></p></li>
+</ul>
+<p><strong>Before you press “run”</strong></p>
+<p>Ask yourself:</p>
+<ul class="simple">
+<li><p>If this run fails, do I know what I will try next?</p></li>
+<li><p>Is there a cheaper or smaller version of this experiment I could run first?</p></li>
+<li><p>Do I have clear success criteria (for example, “validation accuracy improves
+by at least 2 points without worse calibration”)?</p></li>
+</ul>
+<p>Walking through this checklist helps make sure that, when you finally launch a
+large <code class="docutils literal notranslate"><span class="pre">probly</span></code> run, you use your compute budget wisely and can trust what the
+results are telling you <span id="id61">[<a class="reference internal" href="references.html#id29" title="Suvendu K. Pati. Best practices for organizing and coding data science projects — part 1. 2025. The Deep Hub (Medium), posted March 27, 2025. URL: https://medium.com/thedeephub/best-practices-for-organizing-and-coding-data-science-projects-part-1-72539e14a7a0.">Pat25</a>, <a class="reference internal" href="references.html#id37" title="Xiaoguang Tu, Zhi He, Yi Huang, Zhi-Hao Zhang, Ming Yang, and Jian Zhao. An overview of large AI models and their applications. Visual Intelligence, 2(1):34, 2024. URL: https://doi.org/10.1007/s44267-024-00065-8, doi:10.1007/s44267-024-00065-8.">THH+24</a>, <a class="reference internal" href="references.html#id38" title="Ankush Jitendrakumar Tyagi. Scaling deep learning models: challenges and solutions for large-scale deployments. World Journal of Advanced Engineering Technology and Sciences, 16(2):10–20, 2025. URL: https://doi.org/10.30574/wjaets.2025.16.2.1252, doi:10.30574/wjaets.2025.16.2.1252.">Tya25</a>, <a class="reference internal" href="references.html#id40" title="Martin Zinkevich. Rules of machine learning: best practices for ML engineering. Google Developers, n.d. Google Developers guide, accessed 19 November 2025. URL: https://developers.google.com/machine-learning/guides/rules-of-ml.">Zind.</a>]</span>.</p>
+</section>
+</section>
+<section id="integration-with-other-frameworks">
+<h2>4. Integration with Other Frameworks<a class="headerlink" href="#integration-with-other-frameworks" title="Link to this heading">¶</a></h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code class="docutils literal notranslate"><span class="pre">probly</span></code> already ships maintained helpers for <strong>PyTorch</strong> and <strong>Flax/JAX</strong>. There is <strong>no</strong>
+TensorFlow backend and <strong>no</strong> scikit-learn estimator wrapper in the codebase. TensorFlow and
+scikit-learn are mentioned below only to show how you might connect your own code to <code class="docutils literal notranslate"><span class="pre">probly</span></code>.</p>
+</div>
+<p>This chapter assumes that you sometimes want to use <code class="docutils literal notranslate"><span class="pre">probly</span></code> together with other
+tools: neural-network libraries, data pipelines, or classic ML components.
+The goal is not to cover every possible setup, but to give you an idea of how
+<code class="docutils literal notranslate"><span class="pre">probly</span></code> can fit into a larger system and what to watch out for at the
+boundaries.</p>
+<section id="general-integration-concepts">
+<h3>4.1 General Integration Concepts<a class="headerlink" href="#general-integration-concepts" title="Link to this heading">¶</a></h3>
+<p>When you connect <code class="docutils literal notranslate"><span class="pre">probly</span></code> with other frameworks, three questions come up over
+and over again:</p>
+<ul class="simple">
+<li><p>How <strong>data</strong> moves between components,</p></li>
+<li><p>How <strong>types, shapes, and devices</strong> are handled,</p></li>
+<li><p>How <strong>randomness and seeds</strong> are managed.</p></li>
+</ul>
+<p><strong>Data flow between ``probly`` and other libraries</strong></p>
+<ul class="simple">
+<li><p>PyTorch: pass/return <code class="docutils literal notranslate"><span class="pre">torch.Tensor</span></code> (supported directly in <code class="docutils literal notranslate"><span class="pre">probly</span></code> via built-in torch modules,
+e.g. <code class="docutils literal notranslate"><span class="pre">probly.representation.sampling.torch_sample</span></code>).</p></li>
+<li><p>Flax/JAX: pass/return JAX arrays/pytrees (supported directly in <code class="docutils literal notranslate"><span class="pre">probly</span></code> via built-in JAX modules,
+e.g. <code class="docutils literal notranslate"><span class="pre">probly.representation.sampling.jax_sample</span></code>).</p></li>
+<li><p>TensorFlow: convert tensors or <code class="docutils literal notranslate"><span class="pre">tf.data</span></code> batches to NumPy/JAX (e.g. <code class="docutils literal notranslate"><span class="pre">np.array(batch)</span></code> or
+<code class="docutils literal notranslate"><span class="pre">tfds.as_numpy</span></code>) before calling <code class="docutils literal notranslate"><span class="pre">probly</span></code>. Convert results back to tensors only if you need TF
+tools.</p></li>
+<li><p>Scikit-learn: feed NumPy arrays; any wrapper must be written by you.</p></li>
+</ul>
+<p>Do conversions once at a clear boundary; avoid bouncing between types inside tight loops.</p>
+<p><strong>Types, shapes, and devices (CPU/GPU)</strong></p>
+<ul class="simple">
+<li><p>Pick a simple shape convention (usually batch-first).</p></li>
+<li><p>Standardise dtypes (often <code class="docutils literal notranslate"><span class="pre">float32</span></code>).</p></li>
+<li><p>Move data to the correct device once (CPU/GPU) before calling library code; minimise device hops.</p></li>
+</ul>
+<p><strong>Randomness and seeds</strong></p>
+<ul class="simple">
+<li><p>JAX/Flax: explicit PRNG keys (split keys as you descend the call stack).</p></li>
+<li><p>PyTorch: global RNG (<code class="docutils literal notranslate"><span class="pre">torch.manual_seed</span></code>), plus generator objects if needed.</p></li>
+<li><p>TensorFlow/NumPy: global seeds (<code class="docutils literal notranslate"><span class="pre">tf.random.set_seed</span></code>, <code class="docutils literal notranslate"><span class="pre">np.random.seed</span></code>).</p></li>
+</ul>
+<p>Pick one library as the “source of truth” for seeding and derive others from it; log seeds/keys for
+reproducibility.</p>
+</section>
+<section id="using-probly-with-flax">
+<h3>4.2 Using <code class="docutils literal notranslate"><span class="pre">probly</span></code> with Flax<a class="headerlink" href="#using-probly-with-flax" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Define a Flax Linen module for your NN.</p></li>
+<li><p>Initialise it to get the <code class="docutils literal notranslate"><span class="pre">variables</span></code> dict (params + state).</p></li>
+<li><p>Feed Flax outputs (features/logits) into <code class="docutils literal notranslate"><span class="pre">probly</span></code> components (likelihoods, priors, uncertainty
+heads).</p></li>
+<li><p>Optimise one combined PyTree that holds both Flax params/state and <code class="docutils literal notranslate"><span class="pre">probly</span></code> params.</p></li>
+<li><p>Thread PRNG keys explicitly; split where randomness is needed.</p></li>
+</ul>
+</section>
+<section id="using-probly-with-tensorflow">
+<h3>4.3 Using <code class="docutils literal notranslate"><span class="pre">probly</span></code> with TensorFlow<a class="headerlink" href="#using-probly-with-tensorflow" title="Link to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">probly</span></code> does <strong>not</strong> include any TensorFlow backend. To call a <code class="docutils literal notranslate"><span class="pre">probly</span></code> model from TF code:</p>
+<ul class="simple">
+<li><p>Build your <code class="docutils literal notranslate"><span class="pre">tf.data.Dataset</span></code> as usual.</p></li>
+<li><p>In the training loop, convert each batch to NumPy/JAX (for Flax/JAX paths) or to PyTorch tensors
+(for Torch paths).</p></li>
+<li><p>Call the <code class="docutils literal notranslate"><span class="pre">probly</span></code> model on those arrays/tensors.</p></li>
+<li><p>Convert outputs back to TensorFlow tensors only if you need TF utilities (e.g. TensorBoard).</p></li>
+</ul>
+<p>Performance tips mirror <code class="docutils literal notranslate"><span class="pre">tf.data</span></code> guidance: overlap input loading with model execution (e.g.
+<code class="docutils literal notranslate"><span class="pre">prefetch</span></code>/parallel <code class="docutils literal notranslate"><span class="pre">map</span></code>) so the probabilistic model is not idle.</p>
+</section>
+<section id="using-probly-with-scikit-learn">
+<h3>4.4 Using <code class="docutils literal notranslate"><span class="pre">probly</span></code> with scikit-learn<a class="headerlink" href="#using-probly-with-scikit-learn" title="Link to this heading">¶</a></h3>
+<p>There is no scikit-learn adapter in the library. <code class="docutils literal notranslate"><span class="pre">scikit-learn</span></code> is only used for metrics in
+<code class="docutils literal notranslate"><span class="pre">src/probly/evaluation/tasks.py</span></code>. To integrate with the estimator API, write a small wrapper:</p>
+<ul class="simple">
+<li><p>Store config in <code class="docutils literal notranslate"><span class="pre">__init__</span></code> (model structure, priors, inference method).</p></li>
+<li><p>Implement <code class="docutils literal notranslate"><span class="pre">fit(X,</span> <span class="pre">y=None)</span></code> to run <code class="docutils literal notranslate"><span class="pre">probly</span></code> training/inference.</p></li>
+<li><p>Implement <code class="docutils literal notranslate"><span class="pre">predict(X)</span></code> / <code class="docutils literal notranslate"><span class="pre">predict_proba(X)</span></code> to return point or uncertainty outputs.</p></li>
+<li><p>Optionally implement <code class="docutils literal notranslate"><span class="pre">score(X,</span> <span class="pre">y)</span></code> using sklearn metrics or your own.</p></li>
+</ul>
+<p>Once the wrapper follows the estimator rules, you can use it in <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code> and grid search.</p>
+</section>
+<section id="interoperability-best-practices">
+<h3>4.5 Interoperability Best Practices<a class="headerlink" href="#interoperability-best-practices" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><strong>Device management:</strong> Decide CPU vs GPU per component; move a batch once; avoid hidden transfers.</p></li>
+<li><p><strong>Version management:</strong> Pin JAX/Flax/PyTorch; note any TF or sklearn versions you rely on; record
+versions for important runs.</p></li>
+<li><p><strong>Debugging boundaries:</strong> Start with a tiny hand-off example; log shapes/dtypes/devices around
+conversions; disable JIT/complex pipelines while debugging; fix seeds to check determinism.</p></li>
+</ul>
+</section>
+</section>
+<section id="performance-computational-efficiency">
+<h2>5. Performance &amp; Computational Efficiency<a class="headerlink" href="#performance-computational-efficiency" title="Link to this heading">¶</a></h2>
+<section id="understanding-performance-bottlenecks">
+<h3>5.1 Understanding Performance Bottlenecks<a class="headerlink" href="#understanding-performance-bottlenecks" title="Link to this heading">¶</a></h3>
+<p>When a model feels “slow”, the first step is to understand <strong>where the time is
+actually spent</strong>. In typical <code class="docutils literal notranslate"><span class="pre">probly</span></code> workflows, bottlenecks usually fall into
+a few simple categories:</p>
+<ul class="simple">
+<li><p><strong>CPU compute</strong> – lots of Python loops, non-vectorised NumPy operations, or
+heavy bookkeeping in pure Python.</p></li>
+<li><p><strong>GPU compute</strong> – large matrix multiplications or convolutions that fully
+load the GPU.</p></li>
+<li><p><strong>I/O</strong> – reading data from disk or the network, or slow preprocessing.</p></li>
+<li><p><strong>Python overhead</strong> – very frequent function calls, dynamic graph building,
+or extremely verbose logging.</p></li>
+</ul>
+<p>Profiling tools help you see which of these dominates. The standard Python
+profilers, for example, record how often and for how long various parts of the
+program executed <span id="id62">[<a class="reference internal" href="references.html#id30" title="Python Software Foundation. The python profilers. n.d. In Python Documentation. URL: https://docs.python.org/3/library/profile.html.">PythonSFoundationd.</a>]</span>, so you can check whether
+time goes into your model, the data pipeline, or external libraries.</p>
+<p>A simple routine that works well in practice:</p>
+<ul class="simple">
+<li><p>Run a <strong>small experiment</strong> with realistic settings,</p></li>
+<li><p>Profile the run to find the <strong>slowest functions/lines</strong>,</p></li>
+<li><p>Focus optimisation on the few places that clearly dominate runtime.</p></li>
+</ul>
+<p>You do not need perfect measurements – just enough to see where the main time
+sink is.</p>
+</section>
+<section id="profiling-your-probly-code">
+<h3>5.2 Profiling your <code class="docutils literal notranslate"><span class="pre">probly</span></code> Code<a class="headerlink" href="#profiling-your-probly-code" title="Link to this heading">¶</a></h3>
+<p>Profiling your code can stay very simple. In many cases, it is enough to:</p>
+<ul class="simple">
+<li><p>Use a <strong>function-level profiler</strong> (like <code class="docutils literal notranslate"><span class="pre">cProfile</span></code>) to find the most
+expensive calls <span id="id63">[<a class="reference internal" href="references.html#id30" title="Python Software Foundation. The python profilers. n.d. In Python Documentation. URL: https://docs.python.org/3/library/profile.html.">PythonSFoundationd.</a>]</span>,</p></li>
+<li><p>Add a <strong>line-level or memory profiler</strong> only when you suspect a specific
+block of code.</p></li>
+</ul>
+<p>A practical workflow:</p>
+<ol class="arabic simple">
+<li><p>Wrap your main training or inference loop in a profiler context.</p></li>
+<li><p>Run a short experiment on a subset of the data.</p></li>
+<li><p>Sort the output by <strong>cumulative time</strong> to see the top few functions.</p></li>
+<li><p>For one or two of those, use a line profiler or add logging to see what is
+really happening.</p></li>
+</ol>
+<p>The goal is not to optimise every line. You just want to answer questions like:</p>
+<ul class="simple">
+<li><p>Is the time mostly in <code class="docutils literal notranslate"><span class="pre">probly</span></code> / NumPy / JAX, or in my own Python glue
+code?</p></li>
+<li><p>Is data loading slower than the model itself?</p></li>
+<li><p>Are there one or two functions that dominate runtime?</p></li>
+</ul>
+<p>Once you know that, it is much easier to decide what to change.</p>
+</section>
+<section id="algorithmic-improvements">
+<h3>5.3 Algorithmic Improvements<a class="headerlink" href="#algorithmic-improvements" title="Link to this heading">¶</a></h3>
+<p>Before you tweak low-level details, it often helps more to change the
+<strong>algorithmic setup</strong>:</p>
+<ul class="simple">
+<li><p><strong>Pick an inference method that fits the model.</strong>
+Some models work fine with simple optimisation; others need richer samplers.
+A method with better convergence can cut total runtime a lot, even if each
+step is a bit slower.</p></li>
+<li><p><strong>Simplify or re-parameterise the model.</strong>
+Better parameterisations can improve gradient flow, avoid extreme curvature,
+and make constraints easier to handle. That usually means fewer iterations
+and more stable training.</p></li>
+<li><p><strong>Re-use previous runs.</strong>
+Warm-start from parameters that already work reasonably well, or cache
+expensive intermediate results. There is no need to recompute everything from
+scratch if a similar experiment has already been done.</p></li>
+</ul>
+<p>Many “performance problems” disappear once the model and inference method are a
+good match for the task.</p>
+</section>
+<section id="vectorisation-parallelisation">
+<h3>5.4 Vectorisation &amp; Parallelisation<a class="headerlink" href="#vectorisation-parallelisation" title="Link to this heading">¶</a></h3>
+<p>Low-level speed usually comes from <strong>doing more work per call</strong>, not from
+writing more loops. Array libraries like NumPy are designed so that you express
+operations on whole arrays and they run in fast compiled code instead of pure
+Python.</p>
+<p>In <code class="docutils literal notranslate"><span class="pre">probly</span></code>, this means:</p>
+<ul class="simple">
+<li><p>Prefer <strong>batch operations</strong> over manual Python <code class="docutils literal notranslate"><span class="pre">for</span></code>-loops,</p></li>
+<li><p>Write code so that entire arrays of parameters, samples, or observations can
+be processed at once,</p></li>
+<li><p>Let the backend (NumPy, JAX, etc.) use SIMD, multi-core CPUs, or GPUs.</p></li>
+</ul>
+<p>You can combine this with <strong>parallelisation</strong>:</p>
+<ul class="simple">
+<li><p>Run independent chains or tasks on different CPU cores or devices,</p></li>
+<li><p>Make sure the work per task is large enough so that parallel overhead does
+not dominate,</p></li>
+<li><p>Keep seeds and random-number streams clearly separated, so parallel chains
+really are independent.</p></li>
+</ul>
+<p>More parallelism is not always better: if each task is tiny, the overhead of
+starting and syncing workers can outweigh any speedup.</p>
+</section>
+<section id="reproducibility-randomness">
+<h3>5.5 Reproducibility &amp; Randomness<a class="headerlink" href="#reproducibility-randomness" title="Link to this heading">¶</a></h3>
+<p>Randomness is central to probabilistic modelling but can make performance
+harder to debug if every run behaves differently. A few simple habits help:</p>
+<ul class="simple">
+<li><p><strong>Set random seeds on purpose.</strong>
+Use fixed seeds for NumPy, JAX, and other backends so that runs with the same
+settings produce comparable results.</p></li>
+<li><p><strong>Log important settings.</strong>
+Store seeds, dataset versions, batch sizes, hardware info, and key
+hyperparameters somewhere (config files, experiment tracker, or logs).</p></li>
+<li><p><strong>Balance reproducibility and exploration.</strong>
+During debugging and profiling, fixed seeds are very helpful. For final
+experiments, you might run several seeds to see how stable the results are.</p></li>
+</ul>
+<p>Good reproducibility is not just “nice for papers”; it makes performance tuning
+much easier, because you know that changes in runtime or metrics are due to
+your code changes, not random noise.</p>
+</section>
+<section id="performance-checklist">
+<h3>5.6 Performance Checklist<a class="headerlink" href="#performance-checklist" title="Link to this heading">¶</a></h3>
+<p>Before you launch a big and expensive run, a quick checklist can save a lot of
+time:</p>
+<ul class="simple">
+<li><p><strong>Model &amp; algorithm</strong>
+- Does the inference method make sense for this model?
+- Are there layers, parameters, or transforms you can remove without losing
+quality?</p></li>
+<li><p><strong>Implementation</strong>
+- Are your main computations vectorised, or are there slow Python loops in
+the hot path?
+- Are you avoiding repeated work (e.g. recomputing static features inside the
+main loop)?</p></li>
+<li><p><strong>Data pipeline</strong>
+- Is data loading fast enough compared to the model compute?
+- Are you using batching or mini-batching to keep memory usage under control?</p></li>
+<li><p><strong>Resources</strong>
+- Is the model using available hardware (CPU cores, GPU, memory) in a
+sensible way?
+- Is logging set to a reasonable level so it does not become an I/O
+bottleneck?</p></li>
+<li><p><strong>Reproducibility</strong>
+- Are seeds and key settings stored somewhere?
+- Can you reproduce a small profiling run before scaling up?</p></li>
+</ul>
+<p>If you can honestly tick these boxes, you are much less likely to waste compute
+and far more likely to understand what your large <code class="docutils literal notranslate"><span class="pre">probly</span></code> runs are doing.</p>
+</section>
+</section>
+<section id="advanced-usage-patterns-recipes">
+<h2>6. Advanced Usage Patterns &amp; Recipes<a class="headerlink" href="#advanced-usage-patterns-recipes" title="Link to this heading">¶</a></h2>
+<section id="common-advanced-modeling-patterns">
+<h3>6.1 Common Advanced Modeling Patterns<a class="headerlink" href="#common-advanced-modeling-patterns" title="Link to this heading">¶</a></h3>
+<p>This section sketches a few “advanced” modelling patterns you will often see in
+real projects. The goal is not to give full mathematical detail, but to show how
+they fit conceptually with <code class="docutils literal notranslate"><span class="pre">probly</span></code> and when they are useful. For runnable walk-throughs, see <a class="reference internal" href="examples_and_tutorials.html#examples-and-tutorials"><span class="std std-ref">Examples and Tutorials</span></a>.</p>
+<p><strong>Hierarchical models</strong></p>
+<p>Hierarchical (or multilevel) models are used when data are organised in groups,
+levels, or contexts – for example, students within classes, patients within
+hospitals, or measurements for multiple machines. Instead of fitting a separate
+model to each group, a hierarchical model shares information across groups using
+higher-level parameters. This “partial pooling” stabilises estimates, especially
+when some groups have only a few observations <span id="id64">[<a class="reference internal" href="references.html#id24" title="Andrew Gelman and Jennifer Hill. Data Analysis Using Regression and Multilevel/Hierarchical Models. Analytical Methods for Social Research. Cambridge University Press, New York, NY, 2007. ISBN 978-0-521-86706-1. URL: https://doi.org/10.1017/CBO9780511790942, doi:10.1017/CBO9780511790942.">GH07</a>]</span>.</p>
+<p>In <code class="docutils literal notranslate"><span class="pre">probly</span></code>, hierarchical models typically:</p>
+<ul class="simple">
+<li><p>Define group-specific parameters (e.g. intercepts or slopes),</p></li>
+<li><p>Tie them together through shared hyperparameters,</p></li>
+<li><p>Use uncertainty representations to see how much information is borrowed across groups.</p></li>
+</ul>
+<p>This pattern is especially helpful when you care about both overall trends and
+group-level differences at the same time.</p>
+<p><strong>Mixture models</strong></p>
+<p>Mixture models assume that the data come from a combination of several latent
+components, such as different customer types, regimes, or clusters. A classic
+example is a Gaussian mixture model, where each data point is generated from one
+of several Gaussian components, each with its own mean and variance <span id="id65">[<a class="reference internal" href="references.html#id21" title="Christopher M. Bishop. Pattern Recognition and Machine Learning. Information Science and Statistics. Springer, New York, NY, USA, 2006. ISBN 978-0-387-31073-2. URL: https://link.springer.com/book/10.1007/978-0-387-45528-0, doi:10.1007/978-0-387-45528-0.">Bis06a</a>]</span>.</p>
+<p>In <code class="docutils literal notranslate"><span class="pre">probly</span></code>, mixture models can:</p>
+<ul class="simple">
+<li><p>Represent component-specific parameters and their mixing weights,</p></li>
+<li><p>Use latent variables (discrete or continuous) to indicate which component
+generated each observation,</p></li>
+<li><p>Quantify uncertainty about both the component assignments and the component
+parameters.</p></li>
+</ul>
+<p>You would reach for a mixture model when a single simple distribution cannot
+capture the shape of your data (for example, clearly multi-modal data).</p>
+<p><strong>Time-series and sequential models</strong></p>
+<p>Time-series and sequential models deal with data that arrive in order, such as
+sensor readings, financial prices, or user activity over time. Typical goals are
+to forecast future values, detect regime changes, or understand temporal
+structure <span id="id66">[<a class="reference internal" href="references.html#id26" title="Robin J. Hyndman and George Athanasopoulos. Forecasting: Principles and Practice. OTexts, Australia, 2nd edition, 2018. URL: https://otexts.com/fpp2/.">HA18</a>]</span>.</p>
+<p>With <code class="docutils literal notranslate"><span class="pre">probly</span></code>, you can:</p>
+<ul class="simple">
+<li><p>Build models that include lagged variables, latent states, or time-varying
+parameters,</p></li>
+<li><p>Express uncertainty about future trajectories, not just single point forecasts,</p></li>
+<li><p>Feed these predictive distributions into downstream decisions or risk analysis.</p></li>
+</ul>
+<p>More advanced time-series models often mix ideas from hierarchies (e.g. many
+related series, like many stores over time) and mixtures (e.g. different
+behavioural regimes).</p>
+</section>
+<section id="reusable-templates">
+<h3>6.2 Reusable Templates<a class="headerlink" href="#reusable-templates" title="Link to this heading">¶</a></h3>
+<p>As your models become more complex, it helps to recognise <strong>reusable templates</strong>:
+small patterns that show up again and again. Examples include:</p>
+<ul class="simple">
+<li><p>A standard hierarchical regression block for grouped data (inspired by
+typical multilevel models in <span id="id67">[<a class="reference internal" href="references.html#id24" title="Andrew Gelman and Jennifer Hill. Data Analysis Using Regression and Multilevel/Hierarchical Models. Analytical Methods for Social Research. Cambridge University Press, New York, NY, 2007. ISBN 978-0-521-86706-1. URL: https://doi.org/10.1017/CBO9780511790942, doi:10.1017/CBO9780511790942.">GH07</a>]</span>),</p></li>
+<li><p>A generic mixture-of-experts block that combines several prediction heads <span id="id68">[<a class="reference internal" href="references.html#id21" title="Christopher M. Bishop. Pattern Recognition and Machine Learning. Information Science and Statistics. Springer, New York, NY, USA, 2006. ISBN 978-0-387-31073-2. URL: https://link.springer.com/book/10.1007/978-0-387-45528-0, doi:10.1007/978-0-387-45528-0.">Bis06a</a>]</span>,</p></li>
+<li><p>A time-series forecasting head that can be attached to different feature
+extractors <span id="id69">[<a class="reference internal" href="references.html#id26" title="Robin J. Hyndman and George Athanasopoulos. Forecasting: Principles and Practice. OTexts, Australia, 2nd edition, 2018. URL: https://otexts.com/fpp2/.">HA18</a>]</span>.</p></li>
+</ul>
+<p>In <code class="docutils literal notranslate"><span class="pre">probly</span></code>, you can implement these templates as functions or modules that:</p>
+<ul class="simple">
+<li><p>Take model-specific pieces as arguments (e.g. feature networks, priors, or
+likelihood choices),</p></li>
+<li><p>Expose a clear, well-documented interface,</p></li>
+<li><p>Return predictions and uncertainty representations in a consistent format.</p></li>
+</ul>
+<p>By reusing such templates, you:</p>
+<ul class="simple">
+<li><p>Reduce copy–paste boilerplate,</p></li>
+<li><p>Keep projects more uniform,</p></li>
+<li><p>Make it easier for other people (or future you) to understand and extend your
+models.</p></li>
+</ul>
+</section>
+<section id="pointers-to-examples">
+<h3>6.3 Pointers to Examples<a class="headerlink" href="#pointers-to-examples" title="Link to this heading">¶</a></h3>
+<p>To make these patterns easier to learn, it is useful to connect each idea to at
+least one <strong>worked example</strong>:</p>
+<ul class="simple">
+<li><p>For hierarchical models, a grouped-data example (e.g. “schools”, “hospitals”,
+or “stores”) that walks through model specification, inference, and how to
+read the group-level posteriors <span id="id70">[<a class="reference internal" href="references.html#id24" title="Andrew Gelman and Jennifer Hill. Data Analysis Using Regression and Multilevel/Hierarchical Models. Analytical Methods for Social Research. Cambridge University Press, New York, NY, 2007. ISBN 978-0-521-86706-1. URL: https://doi.org/10.1017/CBO9780511790942, doi:10.1017/CBO9780511790942.">GH07</a>]</span>.</p></li>
+<li><p>For mixture models, a clustering or anomaly-detection example that shows both
+cluster responsibilities and uncertainty about the clusters themselves <span id="id71">[<a class="reference internal" href="references.html#id21" title="Christopher M. Bishop. Pattern Recognition and Machine Learning. Information Science and Statistics. Springer, New York, NY, USA, 2006. ISBN 978-0-387-31073-2. URL: https://link.springer.com/book/10.1007/978-0-387-45528-0, doi:10.1007/978-0-387-45528-0.">Bis06a</a>]</span>.</p></li>
+<li><p>For time-series models, a forecasting example that compares point forecasts to
+predictive intervals over time, and shows how to evaluate them <span id="id72">[<a class="reference internal" href="references.html#id26" title="Robin J. Hyndman and George Athanasopoulos. Forecasting: Principles and Practice. OTexts, Australia, 2nd edition, 2018. URL: https://otexts.com/fpp2/.">HA18</a>]</span>.</p></li>
+</ul>
+<p>For each advanced pattern in this chapter, there is at least one worked example in the
+<span class="xref std std-ref">examples_tutorials</span> file.</p>
+</section>
+</section>
+<section id="summary">
+<h2>7. Summary<a class="headerlink" href="#summary" title="Link to this heading">¶</a></h2>
+<section id="key-takeaways">
+<h3>7.1 Key Takeaways<a class="headerlink" href="#key-takeaways" title="Link to this heading">¶</a></h3>
+<p>This chapter pulled together the “advanced” parts of working with <code class="docutils literal notranslate"><span class="pre">probly</span></code>. Here are the
+most important ideas to remember:</p>
+<ul class="simple">
+<li><p><strong>Think in workflows, not one-off runs.</strong>
+You rarely get the model right on the first attempt. Start simple, run it, look at what
+goes wrong, and then refine. Advanced topics are mostly about having good tools for
+iterating in a controlled way.</p></li>
+<li><p><strong>Use transformations to tame tricky parameter spaces.</strong>
+Transformations let you express models in natural, human-friendly parameters while keeping
+inference in a convenient unconstrained space. Custom transforms are the place to encode
+constraints, reparameterisations, and numerical tricks so the rest of the model stays clean.</p></li>
+<li><p><strong>Structure your code for large models and datasets.</strong>
+As things grow, clear modular structure matters as much as the math: separate data loading,
+model definition, and inference; avoid giant monolithic scripts; and reuse building blocks
+across projects.</p></li>
+<li><p><strong>Lean on vectorisation, batching, and compilation.</strong>
+Performance usually comes from doing more work per call, not from clever loops. Writing
+models in a vectorised style and using backend compilation options (where available) can
+make the difference between a toy demo and a practical large-scale run.</p></li>
+<li><p><strong>Integrate carefully with other frameworks.</strong>
+When combining <code class="docutils literal notranslate"><span class="pre">probly</span></code> with Flax, TensorFlow, or scikit-learn, be explicit about how
+data, shapes, devices (CPU/GPU), and random seeds move across boundaries. Clear integration
+points make complex systems much easier to debug.</p></li>
+<li><p><strong>Test, profile, and document advanced pieces.</strong>
+Custom transformations, large-model setups, and multi-framework integrations deserve small
+dedicated tests and occasional profiling runs. A few well-placed checks (round-trip tests,
+shape checks, smoke tests) catch many subtle bugs before they become expensive.</p></li>
+<li><p><strong>Favour clarity and robustness over cleverness.</strong>
+An “advanced” model is only useful if people can understand, trust, and maintain it. Simple,
+well-structured models with honest uncertainty are usually more valuable than fragile,
+over-complicated constructions.</p></li>
+</ul>
+<p>If you keep these principles in mind, the rest of the <code class="docutils literal notranslate"><span class="pre">probly</span></code> documentation methods,
+modules, and examples should slot naturally into your own advanced models and experiments.</p>
+</section>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="examples_and_tutorials.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Examples and Tutorials</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="main_components.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">Main Components</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2025, probly team
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Advanced Topics</a><ul>
+<li><a class="reference internal" href="#overview">1. Overview</a><ul>
+<li><a class="reference internal" href="#purpose-of-this-chapter">1.1 Purpose of this chapter</a></li>
+<li><a class="reference internal" href="#prerequisites-notation">1.2 Prerequisites &amp; Notation</a></li>
+<li><a class="reference internal" href="#typical-advanced-use-cases">1.3 Typical Advanced Use Cases</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#mini-gallery-quick-links">Mini gallery (quick links)</a></li>
+<li><a class="reference internal" href="#custom-transformations">2. Custom Transformations</a><ul>
+<li><a class="reference internal" href="#recall-what-is-a-transformation">2.1 Recall: What is a transformation?</a></li>
+<li><a class="reference internal" href="#when-to-implement-your-own">2.2 When to implement your own?</a></li>
+<li><a class="reference internal" href="#api-design-principles">2.3 API &amp; Design Principles</a></li>
+<li><a class="reference internal" href="#step-by-step-tutorial-simple-custom-transformation">2.4 Step-by-step tutorial: simple custom transformation</a></li>
+<li><a class="reference internal" href="#advanced-patterns">2.5 Advanced Patterns</a></li>
+<li><a class="reference internal" href="#testing-debugging">2.6 Testing &amp; Debugging</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#working-with-large-models">3. Working with Large Models</a><ul>
+<li><a class="reference internal" href="#what-is-a-large-model-in-practice">3.1 What is a “large” model in practice?</a></li>
+<li><a class="reference internal" href="#model-structuring-strategies">3.2 Model Structuring Strategies</a></li>
+<li><a class="reference internal" href="#memory-management">3.3 Memory Management</a></li>
+<li><a class="reference internal" href="#scalability-features-in-probly">3.4 Scalability Features in <code class="docutils literal notranslate"><span class="pre">probly</span></code></a></li>
+<li><a class="reference internal" href="#case-study-scaling-up-a-small-example">3.5 Case study: scaling up a small example</a></li>
+<li><a class="reference internal" href="#checklist-preparing-a-large-model-run">3.6 Checklist: preparing a large model run</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#integration-with-other-frameworks">4. Integration with Other Frameworks</a><ul>
+<li><a class="reference internal" href="#general-integration-concepts">4.1 General Integration Concepts</a></li>
+<li><a class="reference internal" href="#using-probly-with-flax">4.2 Using <code class="docutils literal notranslate"><span class="pre">probly</span></code> with Flax</a></li>
+<li><a class="reference internal" href="#using-probly-with-tensorflow">4.3 Using <code class="docutils literal notranslate"><span class="pre">probly</span></code> with TensorFlow</a></li>
+<li><a class="reference internal" href="#using-probly-with-scikit-learn">4.4 Using <code class="docutils literal notranslate"><span class="pre">probly</span></code> with scikit-learn</a></li>
+<li><a class="reference internal" href="#interoperability-best-practices">4.5 Interoperability Best Practices</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#performance-computational-efficiency">5. Performance &amp; Computational Efficiency</a><ul>
+<li><a class="reference internal" href="#understanding-performance-bottlenecks">5.1 Understanding Performance Bottlenecks</a></li>
+<li><a class="reference internal" href="#profiling-your-probly-code">5.2 Profiling your <code class="docutils literal notranslate"><span class="pre">probly</span></code> Code</a></li>
+<li><a class="reference internal" href="#algorithmic-improvements">5.3 Algorithmic Improvements</a></li>
+<li><a class="reference internal" href="#vectorisation-parallelisation">5.4 Vectorisation &amp; Parallelisation</a></li>
+<li><a class="reference internal" href="#reproducibility-randomness">5.5 Reproducibility &amp; Randomness</a></li>
+<li><a class="reference internal" href="#performance-checklist">5.6 Performance Checklist</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#advanced-usage-patterns-recipes">6. Advanced Usage Patterns &amp; Recipes</a><ul>
+<li><a class="reference internal" href="#common-advanced-modeling-patterns">6.1 Common Advanced Modeling Patterns</a></li>
+<li><a class="reference internal" href="#reusable-templates">6.2 Reusable Templates</a></li>
+<li><a class="reference internal" href="#pointers-to-examples">6.3 Pointers to Examples</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#summary">7. Summary</a><ul>
+<li><a class="reference internal" href="#key-takeaways">7.1 Key Takeaways</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="_static/documentation_options.js?v=4621528c"></script>
+    <script src="_static/doctools.js?v=9bcbadda"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/scripts/furo.js?v=5fa4622c"></script>
+    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="_static/copybutton.js?v=ccdb6887"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    </body>
+</html>

@@ -1,0 +1,225 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "id": "34133126",
+   "metadata": {},
+   "source": [
+    "# Evidential Regression Transformation"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "620df8ba",
+   "metadata": {},
+   "source": [
+    "This notebook is a practical introduction to the **Evidential Regression transformation** in `probly`. This technique allows a model to predict not just a single value, but a full probability distribution, enabling it to quantify both its confidence in the data (**aleatoric uncertainty**) and its own knowledge (**epistemic uncertainty**).\n",
+    "\n",
+    "We will start by explaining the core idea behind evidential regression and then see how `probly`'s transformation automates the process of building such a model by replacing the final layer. We will then train this model on a simple 1D dataset and visualize its predictive uncertainty."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "7907b7f6",
+   "metadata": {},
+   "source": [
+    "---\n",
+    "\n",
+    "## Part A — Introduction to Evidential Regression\n",
+    "\n",
+    "---"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "325ad035",
+   "metadata": {},
+   "source": [
+    "## 1. Concept: What is Evidential Regression?\n",
+    "### 1.1 The Problem: Standard Regression Predicts a Point\n",
+    "\n",
+    "A standard regression network is trained to predict a single value. For a given input, it might predict `y = 3.14`. This gives us no information about the model's confidence. Is the prediction `3.14 ± 0.01` or `3.14 ± 10.0`? We have no way of knowing.\n",
+    "\n",
+    "\n",
+    "### 1.2 The Evidential Approach: Predicting a Distribution\n",
+    "Evidential Regression reframes the problem. Instead of predicting a single point, the model predicts the four parameters of a **Normal-Inverse-Gamma (NIG)** distribution. These four parameters are: `gamma` (γ), `nu` (ν), `alpha` (α), and `beta` (β).\n",
+    "\n",
+    "Together, these parameters define a distribution over our prediction. From them, we can directly calculate:\n",
+    "-   **The Prediction:** The mean of the distribution (given by `gamma`).\n",
+    "-   **Aleatoric Uncertainty (Data Noise):** The inherent noise or ambiguity in the data itself. A high value means the data points are widely scattered.\n",
+    "-   **Epistemic Uncertainty (Model Ignorance):** The model's own uncertainty about its predictions. A high value means the model is \"out of its depth,\" perhaps because it's seeing data far from what it was trained on.\n",
+    "\n",
+    "### 1.3 The Evidential Regression Transformation (probly)\n",
+    "The `probly` transformation makes it easy to create an evidential regression model.\n",
+    "-   You design your network as usual.\n",
+    "-   The `evidential_regression` transformation traverses your model *backwards* and **replaces the final `nn.Linear` layer** with a special `NormalInverseGammaLinear` layer.\n",
+    "-   This new final layer is responsible for outputting the four `(γ, ν, α, β)` parameters instead of a single value.\n",
+    "\n",
+    "The uncertainty can then be calculated from these parameters in a **single forward pass**.\n",
+    "\n",
+    "### 1.4 Short side‑by‑side comparison\n",
+    "\n",
+    "| Aspect | Evidential Regression | Standard (Point) Regression |\n",
+    "| :--- | --- | --- |\n",
+    "| **Model Output** | Four parameters: `(γ, ν, α, β)` | A single predicted value. |\n",
+    "| **Final Layer** | `NormalInverseGammaLinear` | `nn.Linear` |\n",
+    "| **Uncertainty Source** | Calculated directly from the four output parameters. | None. |\n",
+    "| **Inference Cost** | **One single forward pass.** | One single forward pass. |\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "e5ff1d4f",
+   "metadata": {},
+   "source": [
+    "## 2. Quickstart (PyTorch)\n",
+    "Below: build a small MLP and apply `evidential_regression(model)` to see how the *last* linear layer is replaced."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "id": "0152dc5b",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Original model:\n",
+      " Sequential(\n",
+      "  (0): Linear(in_features=10, out_features=32, bias=True)\n",
+      "  (1): ReLU()\n",
+      "  (2): Linear(in_features=32, out_features=32, bias=True)\n",
+      "  (3): ReLU()\n",
+      "  (4): Linear(in_features=32, out_features=1, bias=True)\n",
+      ")\n",
+      "\n",
+      "With Evidential transformation:\n",
+      " Sequential(\n",
+      "  (0): Linear(in_features=10, out_features=32, bias=True)\n",
+      "  (1): ReLU()\n",
+      "  (2): Linear(in_features=32, out_features=32, bias=True)\n",
+      "  (3): ReLU()\n",
+      "  (4): NormalInverseGammaLinear()\n",
+      ")\n"
+     ]
+    }
+   ],
+   "source": [
+    "from torch import nn\n",
+    "\n",
+    "from probly.transformation import evidential_regression\n",
+    "\n",
+    "\n",
+    "def build_mlp(in_dim: int = 10, hidden: int = 32, out_dim: int = 1) -> nn.Sequential:\n",
+    "    return nn.Sequential(\n",
+    "        nn.Linear(in_dim, hidden),\n",
+    "        nn.ReLU(),\n",
+    "        nn.Linear(hidden, hidden),\n",
+    "        nn.ReLU(),\n",
+    "        nn.Linear(hidden, out_dim),\n",
+    "    )\n",
+    "\n",
+    "\n",
+    "model = build_mlp()\n",
+    "print(\"Original model:\\n\", model)\n",
+    "\n",
+    "# Apply the Evidential Regression transformation\n",
+    "model_evidential = evidential_regression(model)\n",
+    "print(\"\\nWith Evidential transformation:\\n\", model_evidential)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "77a9ddf6",
+   "metadata": {},
+   "source": [
+    "### Notes on the structure\n",
+    "-   Notice that the transformation has replaced **only the final `nn.Linear` layer** with a `NormalInverseGammaLinear` layer.\n",
+    "-   The output of this new model will be a dictionary containing the four parameters."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "85d9c959",
+   "metadata": {},
+   "source": [
+    "## 3. Part A Summary\n",
+    "In Part A, we introduced Evidential Regression as a method for a model to predict its own uncertainty. Instead of a single point, the model learns to output the four parameters of a Normal-Inverse-Gamma distribution (`γ, ν, α, β`). We learned that the `probly` transformation automates this by replacing the final linear layer of a network. The key advantage is that both data uncertainty (aleatoric) and model uncertainty (epistemic) can be calculated from these parameters in a single, deterministic forward pass."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "b427617f",
+   "metadata": {},
+   "source": [
+    " ---\n",
+    " \n",
+    "## Part B — Applied Evidential Regression\n",
+    "\n",
+    " ---"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "edbeca7f",
+   "metadata": {},
+   "source": [
+    "An indepth walkthrough of:\n",
+    "\n",
+    "- How to generate synthetic regression data using a cubic function.\n",
+    "- How to define a standard neural network with `ReLU` activations.\n",
+    "- How to transform the network into an **Evidential Regression Model**.\n",
+    "- How to train the network using the evidential loss and regularization.\n",
+    "- How to plot the predictions and targets to visualize the model's performance.\n",
+    "\n",
+    "Can be found here:\n",
+    "[Training an Evidential Regression Model](train_evidential_regression.ipynb)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "de05c223",
+   "metadata": {},
+   "source": [
+    "---\n",
+    " \n",
+    "## Final Summary — Evidential Regression Tutorial\n",
+    " \n",
+    "---"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "f988b2ec",
+   "metadata": {},
+   "source": [
+    "This tutorial demonstrated how to use the **Evidential Regression Transformation** in `probly` to create models that can predict their own uncertainty.\n",
+    "We learned that instead of a single point, an evidential model outputs the four parameters of a distribution (`γ, ν, α, β`). The `probly` transformation automates this by replacing the final linear layer of a network. The key advantage is that both **aleatoric (data) uncertainty** and **epistemic (model) uncertainty** can be calculated from these parameters in a single forward pass.\n",
+    " We saw this in practice by training a model on a dataset with a gap. The final visualization clearly showed the model's uncertainty increasing in the regions where it had no training data, making it a powerful and interpretable tool for building more reliable regression models."
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "probly",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.13.7"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}

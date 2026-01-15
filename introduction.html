@@ -1,0 +1,794 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="./">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="The probly Python Package" href="installation.html" /><link rel="prev" title="&lt;no title&gt;" href="index.html" />
+
+    <!-- Generated with Sphinx 8.2.3 and Furo 2024.08.06 -->
+        <title>Introduction - probly 0.3.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=354aac6f" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
+    <link rel="stylesheet" type="text/css" href="_static/sg_gallery.css?v=d2d258e8" />
+    <link rel="stylesheet" type="text/css" href="_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=302659d7" />
+    <link rel="stylesheet" type="text/css" href="_static/css/custom.css?v=201d0c9a" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f8f8f8;
+  --color-code-foreground: black;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #272822;
+  --color-code-foreground: #f8f8f2;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #272822;
+  --color-code-foreground: #f8f8f2;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="index.html"><div class="brand">probly 0.3.1 documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><div class="sidebar-scroll"><a class="sidebar-brand" href="index.html">
+  
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo only-light" src="_static/logo/logo_light.png" alt="Light Logo"/>
+    <img class="sidebar-logo only-dark" src="_static/logo/logo_dark.png" alt="Dark Logo"/>
+  </div>
+  
+  
+</a><form class="sidebar-search-container" method="get" action="search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Content</span></p>
+<ul class="current">
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">The <code class="docutils literal notranslate"><span class="pre">probly</span></code> Python Package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core_concepts.html">Core Concepts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_components.html">Main Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="advanced_topics.html">Advanced Topics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples_and_tutorials.html">Examples and Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="methods.html">Implemented methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing to probly 🏔️</a></li>
+<li class="toctree-l1"><a class="reference internal" href="references.html">References and Further Reading</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">FAQ and Troubleshooting</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Notebooks</span></p>
+<ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="notebooks/examples/index.html">Notebook Examples</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Notebook Examples</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="notebooks/examples/utilities_and_layers/index.html">Utilities and Layers</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Utilities and Layers</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/examples/utilities_and_layers/custom_loss_functions.html">Custom Loss Functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/examples/utilities_and_layers/metrics.html">Evaluation Metrics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/examples/utilities_and_layers/probabilistic_layers.html">Key Probabilistic Layers in <code class="docutils literal notranslate"><span class="pre">probly</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/examples/utilities_and_layers/utility_functions.html">Utility Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="notebooks/examples/evaluation_and_quantification/index.html">Evaluation and Quantification</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of Evaluation and Quantification</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/examples/evaluation_and_quantification/calibration_metrics.html">Calibration Metrics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/examples/evaluation_and_quantification/interpretation_techniques.html">Interpretation techniques</a></li>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/examples/evaluation_and_quantification/visualization_tools.html">Visualisation Tools</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/bayesian_transformation.html">Bayesian Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/dropconnect_transformation.html">Dropconnect Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/dropout_transformation.html">Dropout Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/ensemble_transformation.html">Ensemble Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/evidential_classification_transformation.html">Evidential Classification Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/evidential_regression_transformation.html">Evidential Regression Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/fashionmnist_ood_ensemble.html">Out-of-Distribution Detection with an Ensemble</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/label_relaxation_calibration.html">Calibration with Label Relaxation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/lazy_dispatch_test.html">Lazy Dispatch Test</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/multilib_demo.html">Multilib Demo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/pytraverse_tutorial.html">A Brief Introduction to PyTraverse</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/sklearn_selective_prediction.html">Using probly with scikit-learn</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/temperature_scaling_calibration.html">Calibration using Temperature Scaling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/train_bnn_classification.html">Bayesian Neural Networks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/train_evidential_classification.html">Evidential Model for Classification</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/train_evidential_regression.html">Evidential Regression Model</a></li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div><div style="text-align: center; margin-top: 1rem; margin-bottom: 1rem;">
+  <a href="https://github.com/pwhofman/probly" target="_blank" rel="noopener noreferrer" title="GitHub Repository">
+    <img src="_static/github-mark.svg" alt="GitHub Logo" width="28" height="28" style="display: inline-block;">
+  </a>
+</div>
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          
+
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="introduction">
+<span id="id1"></span><h1>Introduction<a class="headerlink" href="#introduction" title="Link to this heading">¶</a></h1>
+<p>This page gives a gentle, high-level overview of what <code class="docutils literal notranslate"><span class="pre">probly</span></code> is and why
+uncertainty is an important topic in modern machine learning <span id="id2">[<a class="reference internal" href="references.html#id41" title="Eyke Hüllermeier and Willem Waegeman. Aleatoric and epistemic uncertainty in machine learning: an introduction to concepts and methods. Machine Learning, 2021. arXiv:1910.09457.">HW21</a>]</span>. It is meant as
+a starting point for new users before they continue reading the rest of the User Guide, which
+covers everything from installation and quickstart examples to core concepts, main components,
+advanced topics, and hands-on tutorials. The aim is to equip readers with the conceptual background needed
+to understand and apply the more detailed material presented in later sections.</p>
+<section id="mini-gallery-quick-links">
+<h2>Mini gallery (quick links)<a class="headerlink" href="#mini-gallery-quick-links" title="Link to this heading">¶</a></h2>
+<p>Threshold-based decision sketch:
+This mini gallery contains a short, runnable example that demonstrates a simple threshold-based decision rule.
+It shows how a continuous input can be converted into discrete class labels by comparing it to a chosen threshold, and visualizes how the predicted class changes when the threshold moves.
+The page is generated by Sphinx-Gallery, so it includes the executed code, the printed output, and the resulting plot.</p>
+<p>Hello, uncertainty (glimpse):
+This mini gallery contains a compact “hello world” style example for uncertainty.
+It simulates repeated stochastic predictions, summarizes them into a mean and standard deviation, and visualizes the result using an error-bar plot.
+Like all Sphinx-Gallery examples, the page is built from an executable script and therefore shows real output and figures produced during the docs build.</p>
+<div class="sphx-glr-thumbnails"><div class="sphx-glr-thumbcontainer" tooltip="A minimal thresholding “predictor” that turns continuous inputs into class labels, plus a plot showing how the decision changes with the threshold."><img alt="" src="_images/sphx_glr_plot_intro_threshold_decision_thumb.png" />
+<p><a class="reference internal" href="auto_examples/plot_intro_threshold_decision.html"><span class="doc">&lt;no title&gt;</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Threshold-based decision sketch.</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="This tiny example shows how repeated stochastic predictions can be summarized into mean probabilities and visualized as error bars."><img alt="" src="_images/sphx_glr_plot_intro_uncertainty_glimpse_thumb.png" />
+<p><a class="reference internal" href="auto_examples/plot_intro_uncertainty_glimpse.html"><span class="doc">&lt;no title&gt;</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Hello, uncertainty (glimpse).</div>
+</div></div></section>
+<section id="what-is-probly">
+<h2>1. What is <code class="docutils literal notranslate"><span class="pre">probly</span></code>?<a class="headerlink" href="#what-is-probly" title="Link to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">probly</span></code> is a Python library for <strong>uncertainty-aware machine learning</strong>.</p>
+<p>In a typical machine-learning project you train a model (for example a neural
+network or a random forest) and then use it to make predictions. Most models
+only return a <strong>single number or label</strong>: a class, a score, a regression
+value. However, in many applications we also want to know <strong>how sure</strong> the
+model is about this prediction—distinguishing epistemic vs. aleatoric uncertainty <span id="id3">[<a class="reference internal" href="references.html#id41" title="Eyke Hüllermeier and Willem Waegeman. Aleatoric and epistemic uncertainty in machine learning: an introduction to concepts and methods. Machine Learning, 2021. arXiv:1910.09457.">HW21</a>]</span>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">probly</span></code> helps with exactly this. It provides:</p>
+<ul class="simple">
+<li><p>tools to turn standard models into <strong>uncertainty-aware models</strong>,</p></li>
+<li><p>a common interface to represent different kinds of uncertainty,</p></li>
+<li><p>functions to <strong>quantify</strong> uncertainty numerically, and</p></li>
+<li><p>utilities for downstream tasks such as out-of-distribution detection
+or selective prediction.</p></li>
+</ul>
+<p>Instead of forcing you to use a completely new framework, <code class="docutils literal notranslate"><span class="pre">probly</span></code> is designed
+to work together with existing libraries such as PyTorch, Flax/JAX and
+scikit-learn. You can keep your usual training code and add uncertainty on top
+of it with a thin <code class="docutils literal notranslate"><span class="pre">probly</span></code> wrapper.</p>
+<section id="the-problem-overconfident-machine-learning-models">
+<h3>1.1 The Problem: Overconfident Machine Learning Models<a class="headerlink" href="#the-problem-overconfident-machine-learning-models" title="Link to this heading">¶</a></h3>
+<p>Most machine learning models today are overconfident.
+They output a single prediction such as a class label, a score, or a regression value,
+but they do not tell us how uncertain they are about that prediction.</p>
+<p>This becomes a problem in practical applications <span id="id4">[<a class="reference internal" href="references.html#id66" title="Dan Hendrycks and Kevin Gimpel. A baseline for detecting misclassified and out-of-distribution examples in neural networks. ICLR, 2017.">HG17</a>]</span>:</p>
+<ul class="simple">
+<li><p>A medical classifier might give the wrong diagnosis but still report a confident 0.98 probability.</p></li>
+<li><p>An autonomous vehicle might misinterpret a rare object because it has never seen anything similar before.</p></li>
+<li><p>A financial model may make predictions far outside the training distribution without realizing it.</p></li>
+</ul>
+<p>Standard ML tools such as PyTorch, TensorFlow, and scikit learn do not provide a unified way
+to represent uncertainty. Each uncertainty method such as dropout <span id="id5">[<a class="reference internal" href="references.html#id60" title="Yarin Gal and Zoubin Ghahramani. Dropout as a bayesian approximation: representing model uncertainty in deep learning. ICML, 2016.">GG16a</a>]</span>, ensembles <span id="id6">[<a class="reference internal" href="references.html#id61" title="Balaji Lakshminarayanan, Alexander Pritzel, and Charles Blundell. Simple and scalable predictive uncertainty estimation using deep ensembles. NeurIPS, 2017.">LPB17a</a>]</span>, Bayesian networks,
+and evidential models uses different outputs, shapes, and conventions.
+This makes it difficult to compare or combine uncertainty methods.</p>
+<p>This is exactly the gap that <code class="docutils literal notranslate"><span class="pre">probly</span></code> fills.</p>
+<p><code class="docutils literal notranslate"><span class="pre">probly</span></code> provides:</p>
+<ul class="simple">
+<li><p>a common interface for different uncertainty methods</p></li>
+<li><p>a unified representation for uncertainty aware predictions</p></li>
+<li><p>tools to quantify uncertainty such as epistemic or aleatoric measures</p></li>
+<li><p>ready to use transformations that turn existing models into uncertainty aware models
+without rewriting the training pipeline</p></li>
+</ul>
+<p>Instead of requiring users to pick one uncertainty method and redesign their entire training code,
+<code class="docutils literal notranslate"><span class="pre">probly</span></code> offers a consistent way to apply uncertainty methods across modern ML frameworks
+such as PyTorch, and Flax/JAX.</p>
+<p>In short, machine learning models are often overconfident and <code class="docutils literal notranslate"><span class="pre">probly</span></code> is designed to make
+their uncertainty explicit, comparable, and usable.</p>
+</section>
+<section id="why-does-uncertainty-matter">
+<h3>1.2 Why does Uncertainty Matter?<a class="headerlink" href="#why-does-uncertainty-matter" title="Link to this heading">¶</a></h3>
+<p>In many real world situations, the correctness of a prediction is not the only thing that matters.
+We also want to understand how confident the model is in its output.
+A prediction with low confidence should be treated very differently from the same prediction made with high confidence.</p>
+<p>Uncertainty awareness is important for several reasons:</p>
+<ul class="simple">
+<li><p>It helps detect inputs that are very different from the training data, which is useful for out of distribution detection.</p></li>
+<li><p>It allows systems to decide when a model should answer and when it should ask for human help.</p></li>
+<li><p>It supports safer and more transparent decision making in fields such as medicine, finance, and autonomous systems.</p></li>
+<li><p>It makes model behavior easier to interpret and debug by showing where the model is unsure.</p></li>
+</ul>
+<p>When a model communicates its uncertainty, users and downstream systems can make more careful choices.
+A low confidence prediction might trigger a safety mechanism, a manual review, or a fallback strategy.
+A high confidence prediction might allow the system to act automatically.</p>
+<p>Without uncertainty information, a model can appear confident even when it is wrong.
+With uncertainty awareness, the model becomes more reliable, more transparent, and more useful in real world applications <span id="id7">[<a class="reference internal" href="references.html#id68" title="Chuan Guo, Geoff Pleiss, Yu Sun, and Kilian Weinberger. On calibration of modern neural networks. ICML, 2017.">GPSW17a</a>]</span>.</p>
+</section>
+<section id="what-does-probly-provide">
+<h3>1.3 What Does <code class="docutils literal notranslate"><span class="pre">probly</span></code> Provide?<a class="headerlink" href="#what-does-probly-provide" title="Link to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">probly</span></code> is designed to make uncertainty aware machine learning simple, practical, and consistent.
+It provides a unified way to work with uncertainty so that users do not need to implement
+multiple methods from scratch or worry about incompatible output formats.</p>
+<p><code class="docutils literal notranslate"><span class="pre">probly</span></code> offers several core components:</p>
+<ul class="simple">
+<li><p>Representations that describe uncertainty information in a clear and structured way</p></li>
+<li><p>Transformations that can turn standard models into uncertainty aware models with minimal changes</p></li>
+<li><p>Quantification tools that compute numerical measures of uncertainty</p></li>
+<li><p>Tasks that use uncertainty information for practical purposes such as out of distribution detection or selective prediction</p></li>
+</ul>
+<p>A key idea behind <code class="docutils literal notranslate"><span class="pre">probly</span></code> is that users should not be forced to adopt one specific uncertainty method.
+Different models and different applications may require different approaches.
+<code class="docutils literal notranslate"><span class="pre">probly</span></code> provides a common interface so that these methods can be used and compared in a consistent manner.</p>
+<p>Another important advantage is that <code class="docutils literal notranslate"><span class="pre">probly</span></code> integrates with modern machine learning frameworks
+such as PyTorch, Flax JAX, and scikit learn.
+This means that users can keep their existing training pipelines and add uncertainty awareness on top of them
+without rewriting their entire code.</p>
+<p>Overall, <code class="docutils literal notranslate"><span class="pre">probly</span></code> gives users the building blocks needed to make machine learning models more
+transparent, reliable, and informative by exposing how confident the model is in its predictions.</p>
+</section>
+</section>
+<section id="key-ideas-behind-probly">
+<h2>2. Key Ideas Behind <code class="docutils literal notranslate"><span class="pre">probly</span></code><a class="headerlink" href="#key-ideas-behind-probly" title="Link to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">probly</span></code> is built around a few central ideas that make uncertainty aware machine learning easier to use.</p>
+</section>
+<section id="quick-visual-demos">
+<h2>Quick visual demos<a class="headerlink" href="#quick-visual-demos" title="Link to this heading">¶</a></h2>
+<p>Before you dive deeper, here are two ultra-light examples (executed via Sphinx-Gallery) that
+show uncertainty and a simple decision rule at a glance.</p>
+<section id="tiny-starter-examples">
+<h3>Tiny starter examples<a class="headerlink" href="#tiny-starter-examples" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+  <li><a class="reference internal" href="auto_examples/plot_intro_uncertainty_glimpse.html">Hello, uncertainty (glimpse)</a></li>
+  <li><a class="reference internal" href="auto_examples/plot_intro_threshold_decision.html">Threshold-based decision sketch</a></li>
+</ul><p>Instead of treating uncertainty as something separate or difficult, <code class="docutils literal notranslate"><span class="pre">probly</span></code> organizes the process into
+clear steps that work together and build on one another.</p>
+<p>These ideas form the foundation of the entire library.
+They help users understand how uncertainty is represented, how it is created,
+and how it can be used to solve practical machine learning problems.</p>
+<p>The main ideas are:</p>
+<ul class="simple">
+<li><p>Representations that describe uncertainty information</p></li>
+<li><p>Transformations that create uncertainty aware models</p></li>
+<li><p>Quantification tools that measure uncertainty</p></li>
+<li><p>Tasks that make use of uncertainty in real applications</p></li>
+</ul>
+<p>The following sections explain each of these ideas in more detail.</p>
+</section>
+<section id="uncertainty-representations">
+<h3>2.1 Uncertainty Representations<a class="headerlink" href="#uncertainty-representations" title="Link to this heading">¶</a></h3>
+<p>An uncertainty representation describes the information a model returns when it predicts with uncertainty.
+Instead of giving a single output, the model provides additional information that shows how unsure it is.
+This information can look different depending on the method, but <code class="docutils literal notranslate"><span class="pre">probly</span></code> provides one consistent way
+to work with all of them.</p>
+<p>A representation is the structure that stores the uncertainty information.
+It is the foundation that <code class="docutils literal notranslate"><span class="pre">probly</span></code> uses for everything that follows,
+including quantification and downstream tasks.</p>
+<p>Different uncertainty methods create different types of representations.
+Some examples include:</p>
+<ul class="simple">
+<li><p>Multiple stochastic forward passes, which appear when using dropout</p></li>
+<li><p>Predictions from several independently trained models, which form an ensemble</p></li>
+<li><p>Parameters of a predictive distribution that come from evidential models</p></li>
+<li><p>Collections of outputs that describe a distribution of possible predictions</p></li>
+</ul>
+<p>Each method creates uncertainty in its own way, but <code class="docutils literal notranslate"><span class="pre">probly</span></code> unifies them
+so they can all be handled through a single interface.
+This makes it easier to compare methods, switch between them,
+and build systems that use uncertainty consistently.</p>
+<p>The key idea behind uncertainty representations is simple.
+They capture how the model behaves when it is unsure,
+and <code class="docutils literal notranslate"><span class="pre">probly</span></code> uses this representation as the base for all later steps.</p>
+</section>
+<section id="uncertainty-transformations">
+<h3>2.2 Uncertainty Transformations<a class="headerlink" href="#uncertainty-transformations" title="Link to this heading">¶</a></h3>
+<p>An uncertainty transformation changes how a model makes predictions so that it can express uncertainty.
+Instead of building a new model from the beginning, the transformation wraps the existing model
+and makes it produce uncertainty information in addition to normal outputs.</p>
+<p>Transformations are one of the core ideas in <code class="docutils literal notranslate"><span class="pre">probly</span></code> .
+They let users add uncertainty to their models without rewriting the training process.
+The model can be trained exactly as usual.
+The transformation then controls how the model behaves during prediction.</p>
+<p>Common examples of uncertainty transformations include:</p>
+<ul class="simple">
+<li><p>Using dropout during prediction to generate multiple different outputs</p></li>
+<li><p>Combining predictions from several independently trained models in an ensemble</p></li>
+<li><p>Adding evidential layers that output distribution parameters instead of single values</p></li>
+<li><p>Sampling from probabilistic or stochastic layers to produce a range of predictions</p></li>
+</ul>
+<p>Even though each transformation works differently, <code class="docutils literal notranslate"><span class="pre">probly</span></code> treats all of them in a unified way.
+The result of any transformation becomes a consistent uncertainty representation
+that <code class="docutils literal notranslate"><span class="pre">probly</span></code> can analyze, quantify, and use for downstream tasks.</p>
+<p>The idea behind uncertainty transformations is simple.
+They modify the prediction behavior of a model so that uncertainty becomes visible.
+<code class="docutils literal notranslate"><span class="pre">probly</span></code> then provides all tools needed to work with this uncertainty in a reliable and practical way.</p>
+</section>
+<section id="uncertainty-quantification">
+<h3>2.3 Uncertainty Quantification<a class="headerlink" href="#uncertainty-quantification" title="Link to this heading">¶</a></h3>
+<p>Once a model has an uncertainty representation, the next step is to measure
+how uncertain the model actually is.
+This step is called uncertainty quantification.</p>
+<p>Quantification turns the raw uncertainty information into numerical values
+that describe how confident or uncertain the model is about each prediction.
+These values make uncertainty easy to interpret and compare across different models
+and different uncertainty methods.</p>
+<p><code class="docutils literal notranslate"><span class="pre">probly</span></code> provides an unified set of tools for quantifying uncertainty.
+This means users can switch between different uncertainty methods
+without changing the way they compute uncertainty scores.</p>
+<p>Common examples of uncertainty quantities include:</p>
+<ul class="simple">
+<li><p>epistemic uncertainty, which reflects what the model does not know
+for example because it has not seen similar data during training</p></li>
+<li><p>aleatoric uncertainty, which reflects noise or ambiguity in the data itself</p></li>
+<li><p>predictive entropy, which measures how spread out the predictions are</p></li>
+<li><p>mutual information, which separates model uncertainty from data uncertainty</p></li>
+</ul>
+<p><strong>Epistemic Uncertainty</strong></p>
+<figure class="align-center">
+<a class="reference internal image-reference" href="_images/Epistemische.png"><img alt="Epistemic uncertainty illustration" src="_images/Epistemische.png" style="width: 35%;" />
+</a>
+</figure>
+<p><strong>Aleatoric Uncertainty</strong></p>
+<figure class="align-center">
+<a class="reference internal image-reference" href="_images/Aleatorische.png"><img alt="Aleatoric uncertainty illustration" src="_images/Aleatorische.png" style="width: 35%;" />
+</a>
+</figure>
+<p>These quantities help answer practical questions such as:</p>
+<ul class="simple">
+<li><p>How confident is the model in this prediction</p></li>
+<li><p>Is this input outside the model’s training distribution</p></li>
+<li><p>Should the system rely on the model or ask for human input</p></li>
+</ul>
+<p><code class="docutils literal notranslate"><span class="pre">probly</span></code> makes uncertainty quantification simple and consistent.
+Regardless of whether the model uses dropout, ensembles, evidential methods,
+or any other transformation, the uncertainty representation produced by <code class="docutils literal notranslate"><span class="pre">probly</span></code>
+can be passed directly into its quantification tools.</p>
+<p>The key idea is that quantification turns uncertainty into meaningful numbers
+that can be used in evaluation, decision making, or downstream tasks.</p>
+</section>
+<section id="downstream-tasks">
+<h3>2.4 Downstream Tasks<a class="headerlink" href="#downstream-tasks" title="Link to this heading">¶</a></h3>
+<p>Once a model has an uncertainty representation and the uncertainty has been quantified, this information can
+be used to perform important downstream tasks. These tasks help make machine learning systems safer, more
+reliable, and more interpretable in real applications.</p>
+<p><code class="docutils literal notranslate"><span class="pre">probly</span></code> is designed so that uncertainty information can be reused easily for several common downstream tasks.
+Because all uncertainty methods in <code class="docutils literal notranslate"><span class="pre">probly</span></code> share the same unified representation, the same workflow can be
+applied no matter which uncertainty method is used.</p>
+<p>Examples of downstream tasks include:</p>
+<ul class="simple">
+<li><p>out of distribution detection, where uncertainty is used to decide whether an input is very different from the training data</p></li>
+<li><p>selective prediction, where the model abstains from a prediction if uncertainty is too high</p></li>
+<li><p>calibration evaluation, which measures how well predicted probabilities match reality</p></li>
+<li><p>risk based decision making, where predictions are combined with uncertainty to take safer actions</p></li>
+</ul>
+<p>These tasks are essential for deploying machine learning models in environments where mistakes are costly or
+where the system should recognize when it does not know enough.</p>
+<p>In practice, <code class="docutils literal notranslate"><span class="pre">probly</span></code> makes it easier to implement such tasks by providing simple functions that operate on
+the shared uncertainty representations and quantification results. This allows users to evaluate and improve
+model reliability without rewriting their training or inference pipelines.</p>
+</section>
+</section>
+<section id="how-probly-fits-into-your-ml-workflow">
+<h2>3. How <code class="docutils literal notranslate"><span class="pre">probly</span></code> fits into your ML Workflow<a class="headerlink" href="#how-probly-fits-into-your-ml-workflow" title="Link to this heading">¶</a></h2>
+<p>One of the most important design principles of <code class="docutils literal notranslate"><span class="pre">probly</span></code> is its non-invasive nature.
+It is built to augment your existing machine learning workflow, not replace it.
+You can think of it as a diagnostic layer that you add after the core modeling work is done,
+allowing you to extract valuable uncertainty information without disrupting your training pipeline.</p>
+<p>This process provides a practical “mental map” and can be broken down into these straightforward steps:</p>
+<section id="train-your-model-no-changes-needed">
+<h3>3.1 Train Your Model (No Changes Needed)<a class="headerlink" href="#train-your-model-no-changes-needed" title="Link to this heading">¶</a></h3>
+<p>First, train your model exactly as you normally would using your preferred framework, such as PyTorch or Flax/JAX.
+This part of your workflow remains completely unchanged.</p>
+</section>
+<section id="apply-an-uncertainty-transformation">
+<h3>3.2 Apply an Uncertainty Transformation<a class="headerlink" href="#apply-an-uncertainty-transformation" title="Link to this heading">¶</a></h3>
+<p>Once your model is trained, you can apply any desired transformation from the <code class="docutils literal notranslate"><span class="pre">probly.tansformation</span></code> folder.
+You apply a transformation by passing your trained model to a high-level function.
+For example, to use Monte Carlo Dropout, you would call:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># trained_model is your trained torch.nn.Module or flax.nnx.Module</span>
+<span class="n">mc_dropout_model</span> <span class="o">=</span> <span class="n">probly</span><span class="o">.</span><span class="n">transformation</span><span class="o">.</span><span class="n">dropout</span><span class="p">(</span><span class="n">trained_model</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This single line of code performs a sophisticated operation:</p>
+<ul class="simple">
+<li><p>It creates a deep copy of your original model, leaving it untouched.</p></li>
+<li><p>It traverses the architecture of the new model.</p></li>
+<li><dl class="simple">
+<dt>It automatically finds all compatible layers (e.g., Linear layers) and inserts a Dropout layer</dt><dd><p>immediately before them.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>The result is a new model object, ready to produce uncertainty-aware predictions.</p>
+</section>
+<section id="generate-an-uncertainty-representation">
+<h3>3.3 Generate an Uncertainty Representation<a class="headerlink" href="#generate-an-uncertainty-representation" title="Link to this heading">¶</a></h3>
+<p>You now call this new, transformed model.
+<code class="docutils literal notranslate"><span class="pre">probly</span></code> runs inference multiple times behind the scenes (stochastic forward passes) and returns a
+Representation object. This object acts as a container for the raw results. The most important data it
+holds is the collection of probability outputs from each forward pass.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">representation</span> <span class="o">=</span> <span class="n">mc_dropout_model</span><span class="p">(</span><span class="n">input_data</span><span class="p">)</span>
+
+<span class="c1"># The representation object contains the raw probability samples</span>
+<span class="c1"># (e.g., in a .probs attribute)</span>
+<span class="n">probs_array</span> <span class="o">=</span> <span class="n">representation</span><span class="o">.</span><span class="n">probs</span>
+</pre></div>
+</div>
+<p>This array has shape (num_samples, batch_size, num_classes) and contains all the stochastic outputs needed for quantification.</p>
+</section>
+<section id="quantify-the-uncertainty">
+<h3>3.4 Quantify the Uncertainty<a class="headerlink" href="#quantify-the-uncertainty" title="Link to this heading">¶</a></h3>
+<p>Finally, you pass the raw probability array from the representation object to one of <code class="docutils literal notranslate"><span class="pre">probly</span></code> ‘s
+many Quantification functions. This distills the complex set of samples into a single, meaningful score.
+<code class="docutils literal notranslate"><span class="pre">probly</span></code> provides functions to measure different types of uncertainty:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Compute epistemic uncertainty using mutual information</span>
+<span class="n">eu_scores</span> <span class="o">=</span> <span class="n">probly</span><span class="o">.</span><span class="n">quantification</span><span class="o">.</span><span class="n">classification</span><span class="o">.</span><span class="n">mutual_information</span><span class="p">(</span><span class="n">probs_array</span><span class="p">)</span>
+
+<span class="c1"># Alternatively, compute predictive entropy</span>
+<span class="n">pe_scores</span> <span class="o">=</span> <span class="n">probly</span><span class="o">.</span><span class="n">quantification</span><span class="o">.</span><span class="n">classification</span><span class="o">.</span><span class="n">predictive_entropy</span><span class="p">(</span><span class="n">probs_array</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>These functions return concrete numerical scores that summarize the model’s uncertainty for each input.</p>
+</section>
+<section id="use-it-for-downstream-tasks">
+<h3>3.5 Use It for Downstream Tasks<a class="headerlink" href="#use-it-for-downstream-tasks" title="Link to this heading">¶</a></h3>
+<p>With these concrete uncertainty scores, you can now perform valuable Downstream Tasks,
+such as flagging out-of-distribution inputs or allowing the model to abstain when its
+model_uncertainty score is too high.</p>
+</section>
+</section>
+<section id="a-simple-before-after-example">
+<h2>4. A Simple Before/After Example<a class="headerlink" href="#a-simple-before-after-example" title="Link to this heading">¶</a></h2>
+<p>To understand the practical impact of <code class="docutils literal notranslate"><span class="pre">probly</span></code>, let’s contrast a standard model with one enhanced by the library.</p>
+<section id="before-probly-the-overconfident-prediction">
+<h3>4.1 Before <code class="docutils literal notranslate"><span class="pre">probly</span></code>: The Overconfident Prediction<a class="headerlink" href="#before-probly-the-overconfident-prediction" title="Link to this heading">¶</a></h3>
+<p>A standard, trained classifier produces a single, deterministic output. It has no way to communicate how confident it is.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Standard model prediction</span>
+<span class="n">predicted_probs</span> <span class="o">=</span> <span class="n">trained_model</span><span class="p">(</span><span class="n">input_data</span><span class="p">)</span>  <span class="c1"># Shape: (batch_size, num_classes)</span>
+<span class="n">predicted_labels</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">predicted_probs</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="c1"># Example output</span>
+<span class="c1"># predicted_probs: tensor([[0.98, 0.01, 0.01],  # Very confident prediction</span>
+<span class="c1">#                          [0.60, 0.20, 0.20]]) # Less confident but no uncertainty info</span>
+</pre></div>
+</div>
+<p>In this case, the model outputs a single probability distribution per input.
+However, it provides no information about its uncertainty.
+Even when the model is wrong, it may still output high confidence scores, leading to overconfident and potentially dangerous predictions.</p>
+</section>
+<section id="after-probly-uncertainty-aware-prediction">
+<h3>4.2 After <code class="docutils literal notranslate"><span class="pre">probly</span></code>: Uncertainty-Aware Prediction<a class="headerlink" href="#after-probly-uncertainty-aware-prediction" title="Link to this heading">¶</a></h3>
+<p>By applying probly, we transform the model to produce uncertainty-aware predictions.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Apply an uncertainty transformation (e.g., MC Dropout)</span>
+<span class="n">mc_dropout_model</span> <span class="o">=</span> <span class="n">probly</span><span class="o">.</span><span class="n">transformation</span><span class="o">.</span><span class="n">dropout</span><span class="p">(</span><span class="n">trained_model</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+
+<span class="c1"># Generate an uncertainty representation</span>
+<span class="n">representation</span> <span class="o">=</span> <span class="n">mc_dropout_model</span><span class="p">(</span><span class="n">input_data</span><span class="p">)</span>
+
+<span class="c1"># Extract raw probability samples</span>
+<span class="n">probs_array</span> <span class="o">=</span> <span class="n">representation</span><span class="o">.</span><span class="n">probs</span>  <span class="c1"># Shape: (num_samples, batch_size, num_classes)</span>
+
+<span class="c1"># Quantify uncertainty (e.g., predictive entropy)</span>
+<span class="n">pe_scores</span> <span class="o">=</span> <span class="n">probly</span><span class="o">.</span><span class="n">quantification</span><span class="o">.</span><span class="n">classification</span><span class="o">.</span><span class="n">predictive_entropy</span><span class="p">(</span><span class="n">probs_array</span><span class="p">)</span>
+
+<span class="c1"># Example output</span>
+<span class="c1"># pe_scores: tensor([0.05, 0.80])  # Low uncertainty for first input, high for second</span>
+</pre></div>
+</div>
+<p>Now, the model produces a collection of stochastic outputs, which probly uses to compute uncertainty scores.
+The predictive entropy scores indicate how uncertain the model is about each prediction.
+This additional information allows us to identify inputs where the model is unsure, enabling safer decision-making.</p>
+</section>
+</section>
+<section id="supported-frameworks-and-integrations">
+<h2>5. Supported Frameworks and Integrations<a class="headerlink" href="#supported-frameworks-and-integrations" title="Link to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">probly</span></code> is designed to work seamlessly with popular machine learning frameworks, allowing you to integrate uncertainty awareness
+into your existing workflows without significant changes. The library currently supports the following frameworks:</p>
+<ul class="simple">
+<li><p>PyTorch: Full support for wrapping PyTorch models and utilizing its layers for uncertainty transformations.</p></li>
+<li><p>Flax/JAX: Integration with Flax models, enabling uncertainty-aware predictions in JAX-based workflows.</p></li>
+</ul>
+<p>Future plans include expanding support to additional frameworks and libraries based on user demand and community contributions.</p>
+</section>
+<section id="summary">
+<h2>6. Summary<a class="headerlink" href="#summary" title="Link to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">probly</span></code> provides a practical, non-invasive way to make machine learning models uncertainty-aware.
+It addresses the problem of overconfident models by offering a unified interface to represent, transform, and quantify uncertainty, and
+by supporting downstream tasks such as out-of-distribution detection, selective prediction, calibration, and risk-aware decision making.
+Instead of replacing existing workflows, <code class="docutils literal notranslate"><span class="pre">probly</span></code> builds on top of them: you train your model as usual, apply an uncertainty
+transformation, obtain an uncertainty representation, and then compute meaningful uncertainty scores that can be used directly
+in applications. The before/after example illustrates how a standard overconfident model can be turned into one that not only predicts
+labels but also communicates how unsure it is. With support for popular frameworks like PyTorch and Flax/JAX,
+<code class="docutils literal notranslate"><span class="pre">probly</span></code> helps users build models that are not just accurate, but also safer, more transparent, and easier to trust in real-world
+settings.</p>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="installation.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">The <code class="docutils literal notranslate"><span class="pre">probly</span></code> Python Package</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="index.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">Home</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2025, probly team
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Introduction</a><ul>
+<li><a class="reference internal" href="#mini-gallery-quick-links">Mini gallery (quick links)</a></li>
+<li><a class="reference internal" href="#what-is-probly">1. What is <code class="docutils literal notranslate"><span class="pre">probly</span></code>?</a><ul>
+<li><a class="reference internal" href="#the-problem-overconfident-machine-learning-models">1.1 The Problem: Overconfident Machine Learning Models</a></li>
+<li><a class="reference internal" href="#why-does-uncertainty-matter">1.2 Why does Uncertainty Matter?</a></li>
+<li><a class="reference internal" href="#what-does-probly-provide">1.3 What Does <code class="docutils literal notranslate"><span class="pre">probly</span></code> Provide?</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#key-ideas-behind-probly">2. Key Ideas Behind <code class="docutils literal notranslate"><span class="pre">probly</span></code></a></li>
+<li><a class="reference internal" href="#quick-visual-demos">Quick visual demos</a><ul>
+<li><a class="reference internal" href="#tiny-starter-examples">Tiny starter examples</a></li>
+<li><a class="reference internal" href="#uncertainty-representations">2.1 Uncertainty Representations</a></li>
+<li><a class="reference internal" href="#uncertainty-transformations">2.2 Uncertainty Transformations</a></li>
+<li><a class="reference internal" href="#uncertainty-quantification">2.3 Uncertainty Quantification</a></li>
+<li><a class="reference internal" href="#downstream-tasks">2.4 Downstream Tasks</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#how-probly-fits-into-your-ml-workflow">3. How <code class="docutils literal notranslate"><span class="pre">probly</span></code> fits into your ML Workflow</a><ul>
+<li><a class="reference internal" href="#train-your-model-no-changes-needed">3.1 Train Your Model (No Changes Needed)</a></li>
+<li><a class="reference internal" href="#apply-an-uncertainty-transformation">3.2 Apply an Uncertainty Transformation</a></li>
+<li><a class="reference internal" href="#generate-an-uncertainty-representation">3.3 Generate an Uncertainty Representation</a></li>
+<li><a class="reference internal" href="#quantify-the-uncertainty">3.4 Quantify the Uncertainty</a></li>
+<li><a class="reference internal" href="#use-it-for-downstream-tasks">3.5 Use It for Downstream Tasks</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#a-simple-before-after-example">4. A Simple Before/After Example</a><ul>
+<li><a class="reference internal" href="#before-probly-the-overconfident-prediction">4.1 Before <code class="docutils literal notranslate"><span class="pre">probly</span></code>: The Overconfident Prediction</a></li>
+<li><a class="reference internal" href="#after-probly-uncertainty-aware-prediction">4.2 After <code class="docutils literal notranslate"><span class="pre">probly</span></code>: Uncertainty-Aware Prediction</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#supported-frameworks-and-integrations">5. Supported Frameworks and Integrations</a></li>
+<li><a class="reference internal" href="#summary">6. Summary</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="_static/documentation_options.js?v=4621528c"></script>
+    <script src="_static/doctools.js?v=9bcbadda"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/scripts/furo.js?v=5fa4622c"></script>
+    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="_static/copybutton.js?v=ccdb6887"></script>
+    </body>
+</html>

@@ -1,0 +1,43 @@
+{
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "Selective Prediction.\n\nThis example demonstrates *selective prediction* (abstention).\n\nA model outputs a prediction only when its confidence is above a chosen\nthreshold; otherwise it rejects the sample.\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "collapsed": false
+      },
+      "outputs": [],
+      "source": [
+        "from __future__ import annotations\n\nimport matplotlib.pyplot as plt\nimport numpy as np\n\nrng = np.random.default_rng(0)\n\nX = np.linspace(-3, 3, 300)\ntrue_prob = 1 / (1 + np.exp(-X))  # sigmoid-shaped ground-truth probability\n\n# Simulated predicted probabilities with noise\npredicted_prob = true_prob + rng.normal(0, 0.1, size=len(X))\npredicted_prob = np.clip(predicted_prob, 0, 1)\n\nconfidence_threshold = 0.7\n\naccepted_mask = predicted_prob >= confidence_threshold\nrejected_mask = ~accepted_mask\n\nplt.figure(figsize=(8, 4))\n\nplt.plot(X, true_prob, color=\"black\", label=\"True probability\")\nplt.plot(X, predicted_prob, color=\"tab:blue\", alpha=0.7, label=\"Predicted probability\")\n\nplt.scatter(\n    X[accepted_mask],\n    predicted_prob[accepted_mask],\n    color=\"tab:green\",\n    s=15,\n    label=\"Accepted predictions\",\n)\n\nplt.scatter(\n    X[rejected_mask],\n    predicted_prob[rejected_mask],\n    color=\"tab:red\",\n    s=15,\n    alpha=0.5,\n    label=\"Rejected predictions\",\n)\n\nplt.axhline(\n    confidence_threshold,\n    color=\"gray\",\n    linestyle=\"--\",\n    label=\"Confidence threshold\",\n)\n\nplt.xlabel(\"Input\")\nplt.ylabel(\"Predicted probability\")\nplt.title(\"Selective Prediction with Abstention\")\nplt.legend()\nplt.tight_layout()\nplt.show()"
+      ]
+    }
+  ],
+  "metadata": {
+    "kernelspec": {
+      "display_name": "Python 3",
+      "language": "python",
+      "name": "python3"
+    },
+    "language_info": {
+      "codemirror_mode": {
+        "name": "ipython",
+        "version": 3
+      },
+      "file_extension": ".py",
+      "mimetype": "text/x-python",
+      "name": "python",
+      "nbconvert_exporter": "python",
+      "pygments_lexer": "ipython3",
+      "version": "3.12.3"
+    }
+  },
+  "nbformat": 4,
+  "nbformat_minor": 0
+}

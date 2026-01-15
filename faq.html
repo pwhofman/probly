@@ -1,0 +1,1068 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="./">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Notebook Examples" href="notebooks/examples/index.html" /><link rel="prev" title="References and Further Reading" href="references.html" />
+
+    <!-- Generated with Sphinx 8.2.3 and Furo 2024.08.06 -->
+        <title>FAQ and Troubleshooting - probly 0.3.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=354aac6f" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
+    <link rel="stylesheet" type="text/css" href="_static/sg_gallery.css?v=d2d258e8" />
+    <link rel="stylesheet" type="text/css" href="_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=302659d7" />
+    <link rel="stylesheet" type="text/css" href="_static/css/custom.css?v=201d0c9a" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f8f8f8;
+  --color-code-foreground: black;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #272822;
+  --color-code-foreground: #f8f8f2;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #272822;
+  --color-code-foreground: #f8f8f2;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="index.html"><div class="brand">probly 0.3.1 documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><div class="sidebar-scroll"><a class="sidebar-brand" href="index.html">
+  
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo only-light" src="_static/logo/logo_light.png" alt="Light Logo"/>
+    <img class="sidebar-logo only-dark" src="_static/logo/logo_dark.png" alt="Dark Logo"/>
+  </div>
+  
+  
+</a><form class="sidebar-search-container" method="get" action="search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Content</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">The <code class="docutils literal notranslate"><span class="pre">probly</span></code> Python Package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core_concepts.html">Core Concepts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_components.html">Main Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="advanced_topics.html">Advanced Topics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples_and_tutorials.html">Examples and Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="methods.html">Implemented methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing to probly 🏔️</a></li>
+<li class="toctree-l1"><a class="reference internal" href="references.html">References and Further Reading</a></li>
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">FAQ and Troubleshooting</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Notebooks</span></p>
+<ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="notebooks/examples/index.html">Notebook Examples</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Notebook Examples</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="notebooks/examples/utilities_and_layers/index.html">Utilities and Layers</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Utilities and Layers</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/examples/utilities_and_layers/custom_loss_functions.html">Custom Loss Functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/examples/utilities_and_layers/metrics.html">Evaluation Metrics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/examples/utilities_and_layers/probabilistic_layers.html">Key Probabilistic Layers in <code class="docutils literal notranslate"><span class="pre">probly</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/examples/utilities_and_layers/utility_functions.html">Utility Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="notebooks/examples/evaluation_and_quantification/index.html">Evaluation and Quantification</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of Evaluation and Quantification</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/examples/evaluation_and_quantification/calibration_metrics.html">Calibration Metrics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/examples/evaluation_and_quantification/interpretation_techniques.html">Interpretation techniques</a></li>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/examples/evaluation_and_quantification/visualization_tools.html">Visualisation Tools</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/bayesian_transformation.html">Bayesian Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/dropconnect_transformation.html">Dropconnect Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/dropout_transformation.html">Dropout Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/ensemble_transformation.html">Ensemble Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/evidential_classification_transformation.html">Evidential Classification Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/evidential_regression_transformation.html">Evidential Regression Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/fashionmnist_ood_ensemble.html">Out-of-Distribution Detection with an Ensemble</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/label_relaxation_calibration.html">Calibration with Label Relaxation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/lazy_dispatch_test.html">Lazy Dispatch Test</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/multilib_demo.html">Multilib Demo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/pytraverse_tutorial.html">A Brief Introduction to PyTraverse</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/sklearn_selective_prediction.html">Using probly with scikit-learn</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/temperature_scaling_calibration.html">Calibration using Temperature Scaling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/train_bnn_classification.html">Bayesian Neural Networks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/train_evidential_classification.html">Evidential Model for Classification</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/train_evidential_regression.html">Evidential Regression Model</a></li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div><div style="text-align: center; margin-top: 1rem; margin-bottom: 1rem;">
+  <a href="https://github.com/pwhofman/probly" target="_blank" rel="noopener noreferrer" title="GitHub Repository">
+    <img src="_static/github-mark.svg" alt="GitHub Logo" width="28" height="28" style="display: inline-block;">
+  </a>
+</div>
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          
+
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="faq-and-troubleshooting">
+<span id="faq"></span><h1>FAQ and Troubleshooting<a class="headerlink" href="#faq-and-troubleshooting" title="Link to this heading">¶</a></h1>
+<p>This page provides answers to frequently asked questions about using <code class="docutils literal notranslate"><span class="pre">probly</span></code> and
+solutions to common problems that users may encounter. It is organized into sections
+covering installation issues, basic usage questions, uncertainty methods, integration
+with different frameworks, and debugging tips.</p>
+<p>If you cannot find an answer to your question here, please refer to the
+<a class="reference internal" href="core_concepts.html#core-concepts"><span class="std std-ref">Core Concepts</span></a> section for conceptual background, the <a class="reference internal" href="main_components.html#main-components"><span class="std std-ref">Main Components</span></a>
+section for detailed component descriptions, or the <a class="reference internal" href="examples_and_tutorials.html#examples-and-tutorials"><span class="std std-ref">Examples and Tutorials</span></a>
+section for practical demonstrations.</p>
+<section id="installation-and-setup">
+<h2>1. Installation and Setup<a class="headerlink" href="#installation-and-setup" title="Link to this heading">¶</a></h2>
+<section id="which-python-versions-does-probly-support">
+<h3>1.1 Which Python versions does <code class="docutils literal notranslate"><span class="pre">probly</span></code> support?<a class="headerlink" href="#which-python-versions-does-probly-support" title="Link to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">probly</span></code> is designed to work with <strong>Python 3.12 and above</strong>.
+If you are using an older Python version, you may encounter compatibility issues
+with dependencies or type hints. We recommend upgrading to Python 3.12 or later.</p>
+<p>For installation instructions, see <a class="reference internal" href="installation.html#installation"><span class="std std-ref">The probly Python Package</span></a>.</p>
+</section>
+<section id="how-do-i-install-probly">
+<h3>1.2 How do I install <code class="docutils literal notranslate"><span class="pre">probly</span></code>?<a class="headerlink" href="#how-do-i-install-probly" title="Link to this heading">¶</a></h3>
+<p>You can install <code class="docutils literal notranslate"><span class="pre">probly</span></code> using either <code class="docutils literal notranslate"><span class="pre">pip</span></code> or <code class="docutils literal notranslate"><span class="pre">uv</span></code>:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>probly
+</pre></div>
+</div>
+<p>or</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>uv<span class="w"> </span>add<span class="w"> </span>probly
+</pre></div>
+</div>
+<p>For more details, refer to the <a class="reference internal" href="installation.html#installation"><span class="std std-ref">The probly Python Package</span></a> section.</p>
+</section>
+<section id="installation-fails-with-dependency-conflicts-what-should-i-do">
+<h3>1.3 Installation fails with dependency conflicts. What should I do?<a class="headerlink" href="#installation-fails-with-dependency-conflicts-what-should-i-do" title="Link to this heading">¶</a></h3>
+<p>Dependency conflicts can occur when <code class="docutils literal notranslate"><span class="pre">probly</span></code> requires specific versions of libraries
+that conflict with other packages in your environment. Here are some solutions:</p>
+<p><strong>Create a clean virtual environment:</strong></p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>probly_env
+<span class="nb">source</span><span class="w"> </span>probly_env/bin/activate<span class="w">  </span><span class="c1"># On Windows: probly_env\Scripts\activate</span>
+pip<span class="w"> </span>install<span class="w"> </span>probly
+</pre></div>
+</div>
+<p><strong>Use uv for dependency resolution:</strong></p>
+<p>The <code class="docutils literal notranslate"><span class="pre">uv</span></code> package manager often handles dependency conflicts more effectively:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>uv<span class="w"> </span>venv
+uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>probly
+</pre></div>
+</div>
+<p><strong>Check for conflicting packages:</strong></p>
+<p>If you have existing PyTorch, JAX, or Flax installations, make sure they are compatible
+with the versions required by <code class="docutils literal notranslate"><span class="pre">probly</span></code>. You may need to upgrade or downgrade these packages.</p>
+</section>
+<section id="do-i-need-to-install-pytorch-or-jax-separately">
+<h3>1.4 Do I need to install PyTorch or JAX separately?<a class="headerlink" href="#do-i-need-to-install-pytorch-or-jax-separately" title="Link to this heading">¶</a></h3>
+<p>Yes. <code class="docutils literal notranslate"><span class="pre">probly</span></code> integrates with PyTorch and Flax/JAX but does not install them automatically
+as dependencies. This allows you to choose the appropriate version and configuration
+(CPU or GPU) for your system.</p>
+<p>Install PyTorch following the instructions at <a class="reference external" href="https://pytorch.org/">https://pytorch.org/</a>, or install JAX
+following <a class="reference external" href="https://github.com/google/jax#installation">https://github.com/google/jax#installation</a>.</p>
+</section>
+</section>
+<section id="basic-usage-questions">
+<h2>2. Basic Usage Questions<a class="headerlink" href="#basic-usage-questions" title="Link to this heading">¶</a></h2>
+<section id="how-do-i-make-my-model-uncertainty-aware">
+<h3>2.1 How do I make my model uncertainty-aware?<a class="headerlink" href="#how-do-i-make-my-model-uncertainty-aware" title="Link to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">probly</span></code> provides high-level transformation functions that wrap your existing model
+to make it uncertainty-aware. The most common approach is to use one of the transformations
+from the <code class="docutils literal notranslate"><span class="pre">probly.transformation</span></code> module.</p>
+<p>Example using Monte Carlo Dropout <span id="id1">[<a class="reference internal" href="references.html#id3" title="Yarin Gal and Zoubin Ghahramani. Dropout as a bayesian approximation: representing model uncertainty in deep learning. In Maria-Florina Balcan and Kilian Q. Weinberger, editors, Proceedings of the 33nd International Conference on Machine Learning, ICML 2016, New York City, NY, USA, June 19-24, 2016, volume 48 of JMLR Workshop and Conference Proceedings, 1050–1059. JMLR.org, 2016. URL: http://proceedings.mlr.press/v48/gal16.html.">GG16b</a>]</span>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">probly</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">probly.representation.sampling</span><span class="w"> </span><span class="kn">import</span> <span class="n">sampler_factory</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="c1"># Your trained model</span>
+<span class="n">trained_model</span> <span class="o">=</span> <span class="o">...</span>
+
+<span class="c1"># Step 1: Apply dropout transformation</span>
+<span class="n">dropout_model</span> <span class="o">=</span> <span class="n">probly</span><span class="o">.</span><span class="n">transformation</span><span class="o">.</span><span class="n">dropout</span><span class="p">(</span><span class="n">trained_model</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+
+<span class="c1"># Step 2: Create a sampler that generates multiple predictions</span>
+<span class="n">sampler</span> <span class="o">=</span> <span class="n">sampler_factory</span><span class="p">(</span><span class="n">dropout_model</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+
+<span class="c1"># Step 3: Generate predictions (returns a list of tensors)</span>
+<span class="n">predictions</span> <span class="o">=</span> <span class="n">sampler</span><span class="p">(</span><span class="n">input_data</span><span class="p">)</span>
+
+<span class="c1"># Step 4: Stack predictions into array for quantification</span>
+<span class="c1"># Shape will be (num_samples, batch_size, num_outputs)</span>
+<span class="n">stacked_preds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">p</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">predictions</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>For more details, see <a class="reference internal" href="introduction.html#introduction"><span class="std std-ref">Introduction</span></a> section 3.2.</p>
+</section>
+<section id="do-i-need-to-retrain-my-model-to-use-probly">
+<h3>2.2 Do I need to retrain my model to use <code class="docutils literal notranslate"><span class="pre">probly</span></code>?<a class="headerlink" href="#do-i-need-to-retrain-my-model-to-use-probly" title="Link to this heading">¶</a></h3>
+<p><strong>No.</strong> One of the key design principles of <code class="docutils literal notranslate"><span class="pre">probly</span></code> is that it works with models
+you have already trained. You train your model exactly as usual, then apply a
+<code class="docutils literal notranslate"><span class="pre">probly</span></code> transformation to add uncertainty awareness during inference.</p>
+<p>Some uncertainty methods, such as evidential networks or Bayesian neural networks,
+do require specific training procedures, but even these can often be retrofitted
+to existing architectures with minimal changes.</p>
+<p>See <a class="reference internal" href="introduction.html#introduction"><span class="std std-ref">Introduction</span></a> section 3 for the complete workflow.</p>
+</section>
+<section id="what-is-an-uncertainty-representation">
+<h3>2.3 What is an uncertainty representation?<a class="headerlink" href="#what-is-an-uncertainty-representation" title="Link to this heading">¶</a></h3>
+<p>An uncertainty representation is a structured object that contains information about
+how confident or uncertain a model is about its predictions. Instead of returning
+a single prediction, the model returns additional information such as:</p>
+<ul class="simple">
+<li><p>Multiple stochastic samples (from dropout or ensembles)</p></li>
+<li><p>Distribution parameters (from evidential models)</p></li>
+<li><p>Probability intervals or credal sets</p></li>
+</ul>
+<p><code class="docutils literal notranslate"><span class="pre">probly</span></code> unifies these different formats into a consistent interface so they can
+be quantified and used in downstream tasks.</p>
+<p>For a detailed explanation, see <a class="reference internal" href="core_concepts.html#core-concepts"><span class="std std-ref">Core Concepts</span></a> section 2.</p>
+</section>
+<section id="how-do-i-quantify-uncertainty-from-a-representation">
+<h3>2.4 How do I quantify uncertainty from a representation?<a class="headerlink" href="#how-do-i-quantify-uncertainty-from-a-representation" title="Link to this heading">¶</a></h3>
+<p>Once you have predictions from a sampling-based uncertainty method, you can use the
+quantification functions in <code class="docutils literal notranslate"><span class="pre">probly.quantification</span></code> to compute numerical uncertainty scores:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">probly.quantification</span><span class="w"> </span><span class="kn">import</span> <span class="n">classification</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">probly.representation.sampling</span><span class="w"> </span><span class="kn">import</span> <span class="n">sampler_factory</span>
+
+<span class="c1"># Create sampler from your model</span>
+<span class="n">sampler</span> <span class="o">=</span> <span class="n">sampler_factory</span><span class="p">(</span><span class="n">dropout_model</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+
+<span class="c1"># Generate predictions (returns list of tensors)</span>
+<span class="n">predictions</span> <span class="o">=</span> <span class="n">sampler</span><span class="p">(</span><span class="n">input_data</span><span class="p">)</span>
+
+<span class="c1"># Stack into numpy array: shape (num_samples, batch_size, num_classes)</span>
+<span class="n">stacked_preds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">p</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">predictions</span><span class="p">])</span>
+
+<span class="c1"># Compute epistemic uncertainty using mutual information</span>
+<span class="n">eu_scores</span> <span class="o">=</span> <span class="n">classification</span><span class="o">.</span><span class="n">mutual_information</span><span class="p">(</span><span class="n">stacked_preds</span><span class="p">)</span>
+
+<span class="c1"># Compute total entropy</span>
+<span class="n">entropy_scores</span> <span class="o">=</span> <span class="n">classification</span><span class="o">.</span><span class="n">entropy</span><span class="p">(</span><span class="n">stacked_preds</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>These scores can then be used for tasks such as out-of-distribution detection
+or selective prediction.</p>
+<p>See <a class="reference internal" href="core_concepts.html#core-concepts"><span class="std std-ref">Core Concepts</span></a> section 3.1 for more quantification methods.</p>
+</section>
+</section>
+<section id="uncertainty-methods">
+<h2>3. Uncertainty Methods<a class="headerlink" href="#uncertainty-methods" title="Link to this heading">¶</a></h2>
+<section id="which-uncertainty-method-should-i-use">
+<h3>3.1 Which uncertainty method should I use?<a class="headerlink" href="#which-uncertainty-method-should-i-use" title="Link to this heading">¶</a></h3>
+<p>The choice of uncertainty method depends on your specific use case, computational
+constraints, and the type of uncertainty you want to capture:</p>
+<p><strong>Monte Carlo Dropout</strong> <span id="id2">[<a class="reference internal" href="references.html#id3" title="Yarin Gal and Zoubin Ghahramani. Dropout as a bayesian approximation: representing model uncertainty in deep learning. In Maria-Florina Balcan and Kilian Q. Weinberger, editors, Proceedings of the 33nd International Conference on Machine Learning, ICML 2016, New York City, NY, USA, June 19-24, 2016, volume 48 of JMLR Workshop and Conference Proceedings, 1050–1059. JMLR.org, 2016. URL: http://proceedings.mlr.press/v48/gal16.html.">GG16b</a>]</span></p>
+<ul class="simple">
+<li><p><strong>Pros:</strong> Easy to implement, works with any model that has dropout layers, computationally efficient</p></li>
+<li><p><strong>Cons:</strong> May underestimate uncertainty, requires multiple forward passes</p></li>
+<li><p><strong>Use when:</strong> You want a quick and simple way to add uncertainty to existing models</p></li>
+</ul>
+<p><strong>Ensembles</strong> <span id="id3">[<a class="reference internal" href="references.html#id4" title="Balaji Lakshminarayanan, Alexander Pritzel, and Charles Blundell. Simple and scalable predictive uncertainty estimation using deep ensembles. In Isabelle Guyon, Ulrike von Luxburg, Samy Bengio, Hanna M. Wallach, Rob Fergus, S. V. N. Vishwanathan, and Roman Garnett, editors, Advances in Neural Information Processing Systems 30: Annual Conference on Neural Information Processing Systems 2017, December 4-9, 2017, Long Beach, CA, USA, 6402–6413. 2017. URL: https://proceedings.neurips.cc/paper/2017/hash/9ef2ed4b7fd2c810847ffa5fa85bce38-Abstract.html.">LPB17b</a>]</span></p>
+<ul class="simple">
+<li><p><strong>Pros:</strong> Robust, well-calibrated, captures epistemic uncertainty effectively</p></li>
+<li><p><strong>Cons:</strong> Requires training multiple models, higher memory and computation costs</p></li>
+<li><p><strong>Use when:</strong> You have computational resources and need reliable uncertainty estimates</p></li>
+</ul>
+<p><strong>Evidential Neural Networks</strong> <span id="id4">[<a class="reference internal" href="references.html#id6" title="Alexander Amini, Wilko Schwarting, Ava Soleimany, and Daniela Rus. Deep evidential regression. In Hugo Larochelle, Marc'Aurelio Ranzato, Raia Hadsell, Maria-Florina Balcan, and Hsuan-Tien Lin, editors, Advances in Neural Information Processing Systems 33: Annual Conference on Neural Information Processing Systems 2020, NeurIPS 2020, December 6-12, 2020, virtual. 2020. URL: https://proceedings.neurips.cc/paper/2020/hash/aab085461de182608ee9f607f3f7d18f-Abstract.html.">ASSR20</a>, <a class="reference internal" href="references.html#id5" title="Murat Sensoy, Lance M. Kaplan, and Melih Kandemir. Evidential deep learning to quantify classification uncertainty. In Samy Bengio, Hanna M. Wallach, Hugo Larochelle, Kristen Grauman, Nicolò Cesa-Bianchi, and Roman Garnett, editors, Advances in Neural Information Processing Systems 31: Annual Conference on Neural Information Processing Systems 2018, NeurIPS 2018, December 3-8, 2018, Montréal, Canada, 3183–3193. 2018. URL: https://proceedings.neurips.cc/paper/2018/hash/a981f2b708044d6fb4a71a1463242520-Abstract.html.">SKK18</a>]</span></p>
+<ul class="simple">
+<li><p><strong>Pros:</strong> Single forward pass, explicitly models higher-order uncertainty</p></li>
+<li><p><strong>Cons:</strong> Requires specific training procedures and loss functions</p></li>
+<li><p><strong>Use when:</strong> You need fast inference and can modify your training pipeline</p></li>
+</ul>
+<p><strong>Bayesian Neural Networks</strong> <span id="id5">[<a class="reference internal" href="references.html#id2" title="Charles Blundell, Julien Cornebise, Koray Kavukcuoglu, and Daan Wierstra. Weight uncertainty in neural network. In Francis R. Bach and David M. Blei, editors, Proceedings of the 32nd International Conference on Machine Learning, ICML 2015, Lille, France, 6-11 July 2015, volume 37 of JMLR Workshop and Conference Proceedings, 1613–1622. JMLR.org, 2015. URL: http://proceedings.mlr.press/v37/blundell15.html.">BCKW15</a>]</span></p>
+<ul class="simple">
+<li><p><strong>Pros:</strong> Principled probabilistic framework, captures full posterior distribution</p></li>
+<li><p><strong>Cons:</strong> Computationally expensive, requires specialized training</p></li>
+<li><p><strong>Use when:</strong> You need theoretically grounded uncertainty and have computational resources</p></li>
+</ul>
+<p>For conceptual background, see <a class="reference internal" href="core_concepts.html#core-concepts"><span class="std std-ref">Core Concepts</span></a> and <a class="reference internal" href="introduction.html#introduction"><span class="std std-ref">Introduction</span></a>.</p>
+</section>
+<section id="what-is-the-difference-between-epistemic-and-aleatoric-uncertainty">
+<h3>3.2 What is the difference between epistemic and aleatoric uncertainty?<a class="headerlink" href="#what-is-the-difference-between-epistemic-and-aleatoric-uncertainty" title="Link to this heading">¶</a></h3>
+<p><strong>Epistemic uncertainty</strong> (also called model uncertainty) reflects what the model does not know
+because it has not seen similar data during training. This uncertainty can be reduced
+by collecting more training data or improving the model.</p>
+<p>For a theoretical foundation of this decomposition, see <span id="id6">[<a class="reference internal" href="references.html#id8" title="Stefan Depeweg, José Miguel Hernández-Lobato, Finale Doshi-Velez, and Steffen Udluft. Decomposition of uncertainty in bayesian deep learning for efficient and risk-sensitive learning. In Jennifer G. Dy and Andreas Krause, editors, Proceedings of the 35th International Conference on Machine Learning, ICML 2018, Stockholmsmässan, Stockholm, Sweden, July 10-15, 2018, volume 80 of Proceedings of Machine Learning Research, 1192–1201. PMLR, 2018. URL: http://proceedings.mlr.press/v80/depeweg18a.html.">DHernandezLobatoDoshiVelezU18</a>]</span>.</p>
+<p><strong>Aleatoric uncertainty</strong> (also called data uncertainty) reflects inherent noise or ambiguity
+in the data itself, such as sensor noise, label disagreements, or inherently ambiguous cases.
+This uncertainty cannot be reduced by simply collecting more data.</p>
+<p><code class="docutils literal notranslate"><span class="pre">probly</span></code> provides tools to quantify both types of uncertainty. For example,
+mutual information captures epistemic uncertainty, while total entropy includes both types.</p>
+<p>See <a class="reference internal" href="core_concepts.html#core-concepts"><span class="std std-ref">Core Concepts</span></a> section 1.1 for detailed explanations with visualizations.</p>
+</section>
+<section id="can-i-combine-different-uncertainty-methods">
+<h3>3.3 Can I combine different uncertainty methods?<a class="headerlink" href="#can-i-combine-different-uncertainty-methods" title="Link to this heading">¶</a></h3>
+<p>Yes. <code class="docutils literal notranslate"><span class="pre">probly</span></code> is designed so that different uncertainty methods share a common interface.
+This means you can:</p>
+<ul class="simple">
+<li><p>Compare different methods on the same dataset</p></li>
+<li><p>Use ensemble-based and dropout-based uncertainty in parallel</p></li>
+<li><p>Switch between methods without changing your downstream analysis code</p></li>
+</ul>
+<p>The unified representation format makes it easy to experiment with different approaches
+and choose the one that works best for your application.</p>
+</section>
+</section>
+<section id="framework-integration">
+<h2>4. Framework Integration<a class="headerlink" href="#framework-integration" title="Link to this heading">¶</a></h2>
+<section id="does-probly-work-with-pytorch">
+<h3>4.1 Does <code class="docutils literal notranslate"><span class="pre">probly</span></code> work with PyTorch?<a class="headerlink" href="#does-probly-work-with-pytorch" title="Link to this heading">¶</a></h3>
+<p>Yes. <code class="docutils literal notranslate"><span class="pre">probly</span></code> has full support for PyTorch models. You can wrap any <code class="docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>
+with a <code class="docutils literal notranslate"><span class="pre">probly</span></code> transformation to make it uncertainty-aware.</p>
+<p>Example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">probly</span>
+
+<span class="c1"># Your PyTorch model</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
+    <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">784</span><span class="p">,</span> <span class="mi">256</span><span class="p">),</span>
+    <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">(),</span>
+    <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">256</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="p">)</span>
+
+<span class="c1"># Apply transformation</span>
+<span class="n">mc_dropout_model</span> <span class="o">=</span> <span class="n">probly</span><span class="o">.</span><span class="n">transformation</span><span class="o">.</span><span class="n">dropout</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="does-probly-work-with-flax-jax">
+<h3>4.2 Does <code class="docutils literal notranslate"><span class="pre">probly</span></code> work with Flax/JAX?<a class="headerlink" href="#does-probly-work-with-flax-jax" title="Link to this heading">¶</a></h3>
+<p>Yes. <code class="docutils literal notranslate"><span class="pre">probly</span></code> supports Flax/JAX models through the same transformation interface.
+You can apply uncertainty transformations to <code class="docutils literal notranslate"><span class="pre">flax.nnx.Module</span></code> objects.</p>
+<p>See <a class="reference internal" href="introduction.html#introduction"><span class="std std-ref">Introduction</span></a> section 5 for supported frameworks.</p>
+</section>
+<section id="can-i-use-probly-with-scikit-learn-models">
+<h3>4.3 Can I use <code class="docutils literal notranslate"><span class="pre">probly</span></code> with scikit-learn models?<a class="headerlink" href="#can-i-use-probly-with-scikit-learn-models" title="Link to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">probly</span></code> is primarily designed for neural network frameworks like PyTorch and Flax/JAX.
+However, some uncertainty quantification functions can work with probability outputs
+from scikit-learn models if they are formatted correctly.</p>
+<p>For full integration, we recommend using neural network-based models.</p>
+</section>
+<section id="how-do-i-use-probly-with-pre-trained-models">
+<h3>4.4 How do I use <code class="docutils literal notranslate"><span class="pre">probly</span></code> with pre-trained models?<a class="headerlink" href="#how-do-i-use-probly-with-pre-trained-models" title="Link to this heading">¶</a></h3>
+<p>You can apply <code class="docutils literal notranslate"><span class="pre">probly</span></code> transformations to any pre-trained model, whether you trained it yourself
+or loaded it from a model zoo. Simply pass the pre-trained model to a transformation function:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">torchvision.models</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">models</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">probly</span>
+
+<span class="c1"># Load pre-trained ResNet</span>
+<span class="n">pretrained_model</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">resnet18</span><span class="p">(</span><span class="n">pretrained</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="c1"># Apply dropout transformation</span>
+<span class="n">uncertain_model</span> <span class="o">=</span> <span class="n">probly</span><span class="o">.</span><span class="n">transformation</span><span class="o">.</span><span class="n">dropout</span><span class="p">(</span><span class="n">pretrained_model</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="common-errors-and-solutions">
+<h2>5. Common Errors and Solutions<a class="headerlink" href="#common-errors-and-solutions" title="Link to this heading">¶</a></h2>
+<section id="error-cannot-find-module-probly">
+<h3>5.1 Error: “Cannot find module ‘probly’”<a class="headerlink" href="#error-cannot-find-module-probly" title="Link to this heading">¶</a></h3>
+<p>This error means <code class="docutils literal notranslate"><span class="pre">probly</span></code> is not installed in your current Python environment.</p>
+<p><strong>Solution:</strong></p>
+<p>Make sure you have activated the correct virtual environment and installed <code class="docutils literal notranslate"><span class="pre">probly</span></code>:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>probly
+</pre></div>
+</div>
+<p>If you are using Jupyter notebooks, ensure the notebook kernel matches your virtual environment.</p>
+</section>
+<section id="error-shape-mismatch-in-uncertainty-quantification">
+<h3>5.2 Error: “Shape mismatch in uncertainty quantification”<a class="headerlink" href="#error-shape-mismatch-in-uncertainty-quantification" title="Link to this heading">¶</a></h3>
+<p>This error occurs when the array passed to quantification has an unexpected shape.</p>
+<p><strong>Solution:</strong></p>
+<p>The quantification functions expect a numpy array with shape <code class="docutils literal notranslate"><span class="pre">(num_samples,</span> <span class="pre">batch_size,</span> <span class="pre">num_classes)</span></code>
+for classification tasks. Make sure you are stacking predictions correctly:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">probly.quantification</span><span class="w"> </span><span class="kn">import</span> <span class="n">classification</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="c1"># If you have a list of predictions from sampler_factory:</span>
+<span class="n">predictions</span> <span class="o">=</span> <span class="n">sampler</span><span class="p">(</span><span class="n">input_data</span><span class="p">)</span>  <span class="c1"># Returns list of tensors</span>
+
+<span class="c1"># Stack into correct shape</span>
+<span class="n">stacked</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">p</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">predictions</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">stacked</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>  <span class="c1"># Should be (num_samples, batch_size, num_classes)</span>
+
+<span class="c1"># Now quantification will work</span>
+<span class="n">mi_scores</span> <span class="o">=</span> <span class="n">classification</span><span class="o">.</span><span class="n">mutual_information</span><span class="p">(</span><span class="n">stacked</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Make sure the first dimension is the number of samples, not the batch size.</p>
+</section>
+<section id="warning-model-returns-deterministic-output">
+<h3>5.3 Warning: “Model returns deterministic output”<a class="headerlink" href="#warning-model-returns-deterministic-output" title="Link to this heading">¶</a></h3>
+<p>This warning appears when a transformation that requires stochastic behavior
+(like dropout) produces identical outputs across multiple forward passes.</p>
+<p><strong>Solution:</strong></p>
+<ul class="simple">
+<li><p>Make sure dropout is enabled during inference</p></li>
+<li><p>Check that your model actually contains dropout layers</p></li>
+<li><p>Verify that the transformation was applied correctly</p></li>
+</ul>
+<p>Example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Incorrect: dropout disabled during eval</span>
+<span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+<span class="n">representation</span> <span class="o">=</span> <span class="n">mc_dropout_model</span><span class="p">(</span><span class="n">input_data</span><span class="p">)</span>  <span class="c1"># All outputs identical!</span>
+
+<span class="c1"># Correct: keep model in training mode for MC Dropout</span>
+<span class="n">model</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
+<span class="n">representation</span> <span class="o">=</span> <span class="n">mc_dropout_model</span><span class="p">(</span><span class="n">input_data</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="error-out-of-memory-during-ensemble-prediction">
+<h3>5.4 Error: “Out of memory during ensemble prediction”<a class="headerlink" href="#error-out-of-memory-during-ensemble-prediction" title="Link to this heading">¶</a></h3>
+<p>Ensemble methods require running multiple models simultaneously, which can consume
+significant GPU memory.</p>
+<p><strong>Solution:</strong></p>
+<ul class="simple">
+<li><p>Reduce batch size</p></li>
+<li><p>Process ensemble members sequentially instead of in parallel</p></li>
+<li><p>Use gradient checkpointing if available</p></li>
+<li><p>Consider using a smaller number of ensemble members</p></li>
+</ul>
+</section>
+</section>
+<section id="performance-and-optimization">
+<h2>6. Performance and Optimization<a class="headerlink" href="#performance-and-optimization" title="Link to this heading">¶</a></h2>
+<section id="how-many-forward-passes-should-i-use-for-monte-carlo-dropout">
+<h3>6.1 How many forward passes should I use for Monte Carlo Dropout?<a class="headerlink" href="#how-many-forward-passes-should-i-use-for-monte-carlo-dropout" title="Link to this heading">¶</a></h3>
+<p>The number of forward passes (samples) is a trade-off between accuracy and computational cost:</p>
+<ul class="simple">
+<li><p><strong>10-30 samples:</strong> Good starting point for most applications</p></li>
+<li><p><strong>50-100 samples:</strong> Better uncertainty estimates, higher computational cost</p></li>
+<li><p><strong>100+ samples:</strong> Diminishing returns, use only if very precise estimates are needed</p></li>
+</ul>
+<p>You can experiment with different numbers of samples and evaluate using uncertainty
+calibration metrics.</p>
+</section>
+<section id="is-probly-slow-compared-to-standard-inference">
+<h3>6.2 Is <code class="docutils literal notranslate"><span class="pre">probly</span></code> slow compared to standard inference?<a class="headerlink" href="#is-probly-slow-compared-to-standard-inference" title="Link to this heading">¶</a></h3>
+<p>Uncertainty-aware inference is inherently more expensive than standard inference because:</p>
+<ul class="simple">
+<li><p>Monte Carlo Dropout requires multiple forward passes</p></li>
+<li><p>Ensembles require multiple models</p></li>
+<li><p>Bayesian methods involve sampling procedures</p></li>
+</ul>
+<p>However, <code class="docutils literal notranslate"><span class="pre">probly</span></code> is designed to be as efficient as possible within these constraints.
+If speed is critical, consider:</p>
+<ul class="simple">
+<li><p>Using fewer samples for Monte Carlo methods</p></li>
+<li><p>Using evidential networks (single forward pass)</p></li>
+<li><p>Batching uncertainty computations</p></li>
+<li><p>Using GPU acceleration</p></li>
+</ul>
+</section>
+<section id="how-can-i-speed-up-uncertainty-quantification">
+<h3>6.3 How can I speed up uncertainty quantification?<a class="headerlink" href="#how-can-i-speed-up-uncertainty-quantification" title="Link to this heading">¶</a></h3>
+<p><strong>Use vectorized operations:</strong></p>
+<p><code class="docutils literal notranslate"><span class="pre">probly</span></code> quantification functions are implemented with vectorized operations
+and work efficiently on batched data.</p>
+<p><strong>Reduce the number of samples:</strong></p>
+<p>If using Monte Carlo methods, try using fewer samples during development and
+increase only for final evaluation.</p>
+<p><strong>Use appropriate hardware:</strong></p>
+<p>Move computations to GPU if available:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;cuda&#39;</span><span class="p">)</span>
+<span class="n">input_data</span> <span class="o">=</span> <span class="n">input_data</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;cuda&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="troubleshooting-advanced-features">
+<h2>7. Troubleshooting Advanced Features<a class="headerlink" href="#troubleshooting-advanced-features" title="Link to this heading">¶</a></h2>
+<section id="frequent-issues-and-error-messages">
+<h3>7.1 Frequent Issues and Error Messages<a class="headerlink" href="#frequent-issues-and-error-messages" title="Link to this heading">¶</a></h3>
+<p><strong>Custom Transformations</strong></p>
+<p>When implementing custom uncertainty transformations, users may encounter:</p>
+<ul class="simple">
+<li><p><strong>Type errors:</strong> Ensure your custom transformation returns the expected representation format</p></li>
+<li><p><strong>Shape mismatches:</strong> Verify that output dimensions match the expected uncertainty representation</p></li>
+<li><p><strong>Integration issues:</strong> Check that the transformation is compatible with the base model framework</p></li>
+</ul>
+<p><strong>Large Models</strong></p>
+<p>Working with large models introduces specific challenges:</p>
+<ul>
+<li><p><strong>Memory errors during ensemble creation:</strong> Large models multiplied across ensemble members can exceed GPU memory</p>
+<p><strong>Solution:</strong> Use gradient checkpointing, reduce batch size, or process ensemble members sequentially</p>
+</li>
+<li><p><strong>Slow inference with MC Dropout:</strong> Multiple forward passes on large models can be time-consuming</p>
+<p><strong>Solution:</strong> Reduce the number of samples, use mixed precision, or consider single-pass methods like evidential networks</p>
+</li>
+</ul>
+<p><strong>Integration with Flax/TensorFlow/scikit-learn</strong></p>
+<ul>
+<li><p><strong>Flax/JAX compatibility:</strong> Ensure you’re using compatible JAX and Flax versions (JAX ≥0.8.0, Flax ≥0.12.0)</p>
+<p><strong>Solution:</strong> Check version compatibility in your environment and update if needed</p>
+</li>
+<li><p><strong>TensorFlow models:</strong> <code class="docutils literal notranslate"><span class="pre">probly</span></code> primarily supports PyTorch and Flax/JAX. For TensorFlow, you may need to convert models or use probability outputs directly</p></li>
+<li><p><strong>scikit-learn integration:</strong> While <code class="docutils literal notranslate"><span class="pre">probly</span></code> is designed for neural networks, some quantification functions can work with probability outputs from scikit-learn classifiers if properly formatted</p></li>
+</ul>
+<p><strong>Performance Problems</strong></p>
+<ul>
+<li><p><strong>Slow uncertainty quantification:</strong> Vectorized operations are optimized, but large batch sizes or many samples can still be slow</p>
+<p><strong>Solution:</strong> Profile your code to identify bottlenecks, reduce sample counts during development, use GPU acceleration</p>
+</li>
+<li><p><strong>High memory usage:</strong> Storing multiple samples from ensemble or MC Dropout methods requires significant memory</p>
+<p><strong>Solution:</strong> Process in smaller batches, use streaming quantification where possible, or reduce the number of samples</p>
+</li>
+</ul>
+</section>
+<section id="systematic-debugging-approach">
+<h3>7.2 Systematic Debugging Approach<a class="headerlink" href="#systematic-debugging-approach" title="Link to this heading">¶</a></h3>
+<p>When encountering issues with <code class="docutils literal notranslate"><span class="pre">probly</span></code>, follow this systematic approach to isolate problems:</p>
+<p><strong>Step 1: Reduce Model Complexity</strong></p>
+<p>Start with a minimal model to verify the transformation works:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">probly</span>
+
+<span class="c1"># Create a simple model</span>
+<span class="n">simple_model</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
+    <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
+    <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">(),</span>
+    <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="p">)</span>
+
+<span class="c1"># Test transformation</span>
+<span class="n">dropout_model</span> <span class="o">=</span> <span class="n">probly</span><span class="o">.</span><span class="n">transformation</span><span class="o">.</span><span class="n">dropout</span><span class="p">(</span><span class="n">simple_model</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+
+<span class="c1"># Verify it works</span>
+<span class="n">test_input</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="n">output</span> <span class="o">=</span> <span class="n">dropout_model</span><span class="p">(</span><span class="n">test_input</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Simple model works:&quot;</span><span class="p">,</span> <span class="n">output</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Step 2: Use Smaller Data</strong></p>
+<p>Test with a small synthetic dataset before using your full data:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">probly.representation.sampling</span><span class="w"> </span><span class="kn">import</span> <span class="n">sampler_factory</span>
+
+<span class="c1"># Small synthetic data</span>
+<span class="n">small_data</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+
+<span class="c1"># Test sampler</span>
+<span class="n">sampler</span> <span class="o">=</span> <span class="n">sampler_factory</span><span class="p">(</span><span class="n">dropout_model</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+<span class="n">predictions</span> <span class="o">=</span> <span class="n">sampler</span><span class="p">(</span><span class="n">small_data</span><span class="p">)</span>
+
+<span class="c1"># Verify output format</span>
+<span class="n">stacked</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">p</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">predictions</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Predictions shape:&quot;</span><span class="p">,</span> <span class="n">stacked</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>  <span class="c1"># Should be (5, 10, 2)</span>
+</pre></div>
+</div>
+<p><strong>Step 3: Disable Features Incrementally</strong></p>
+<p>If using multiple features, disable them one by one to identify the problematic component:</p>
+<ul class="simple">
+<li><p>Remove custom transformations</p></li>
+<li><p>Use fewer samples</p></li>
+<li><p>Simplify quantification metrics</p></li>
+<li><p>Test on CPU before GPU</p></li>
+</ul>
+<p><strong>Step 4: Distinguish Transformation vs. Integration Issues</strong></p>
+<p><strong>Transformation issues</strong> typically manifest as:</p>
+<ul class="simple">
+<li><p>Incorrect output shapes</p></li>
+<li><p>Deterministic outputs when stochastic behavior is expected</p></li>
+<li><p>Type errors when calling transformation functions</p></li>
+</ul>
+<p><strong>Integration issues</strong> typically manifest as:</p>
+<ul class="simple">
+<li><p>Framework-specific errors (PyTorch vs. Flax)</p></li>
+<li><p>Incompatibility with model architectures</p></li>
+<li><p>Device placement errors (CPU vs. GPU)</p></li>
+</ul>
+<p><strong>Debugging example:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Test if issue is with transformation or integration</span>
+
+<span class="c1"># 1. Test transformation directly</span>
+<span class="n">transformed</span> <span class="o">=</span> <span class="n">probly</span><span class="o">.</span><span class="n">transformation</span><span class="o">.</span><span class="n">dropout</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+<span class="n">out1</span> <span class="o">=</span> <span class="n">transformed</span><span class="p">(</span><span class="n">test_input</span><span class="p">)</span>
+<span class="n">out2</span> <span class="o">=</span> <span class="n">transformed</span><span class="p">(</span><span class="n">test_input</span><span class="p">)</span>
+
+<span class="c1"># Should be different if dropout is working</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Outputs differ:&quot;</span><span class="p">,</span> <span class="ow">not</span> <span class="n">torch</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">out1</span><span class="p">,</span> <span class="n">out2</span><span class="p">))</span>
+
+<span class="c1"># 2. Test integration with sampler</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">probly.representation.sampling</span><span class="w"> </span><span class="kn">import</span> <span class="n">sampler_factory</span>
+<span class="n">sampler</span> <span class="o">=</span> <span class="n">sampler_factory</span><span class="p">(</span><span class="n">transformed</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="n">samples</span> <span class="o">=</span> <span class="n">sampler</span><span class="p">(</span><span class="n">test_input</span><span class="p">)</span>
+
+<span class="c1"># Should get list of 3 different outputs</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Got&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">samples</span><span class="p">),</span> <span class="s2">&quot;samples&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="getting-help">
+<h3>7.3 Getting Help<a class="headerlink" href="#getting-help" title="Link to this heading">¶</a></h3>
+<p><strong>What Information to Include in Bug Reports</strong></p>
+<p>When reporting bugs or asking for help, include:</p>
+<ol class="arabic simple">
+<li><p><strong>Environment details:</strong></p>
+<ul class="simple">
+<li><p>Python version</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">probly</span></code> version</p></li>
+<li><p>Framework versions (PyTorch/JAX/Flax)</p></li>
+<li><p>Operating system</p></li>
+</ul>
+</li>
+<li><p><strong>Minimal reproducible example:</strong></p>
+<ul class="simple">
+<li><p>Simplest code that demonstrates the issue</p></li>
+<li><p>Sample data or synthetic data that triggers the problem</p></li>
+<li><p>Expected vs. actual behavior</p></li>
+</ul>
+</li>
+<li><p><strong>Error messages:</strong></p>
+<ul class="simple">
+<li><p>Complete stack trace</p></li>
+<li><p>Any warning messages</p></li>
+<li><p>Console output</p></li>
+</ul>
+</li>
+</ol>
+<p><strong>Example bug report:</strong></p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>**Environment:**
+- Python 3.12.1
+- probly 0.1.0
+- PyTorch 2.1.0
+- Ubuntu 22.04
+
+**Issue:**
+Getting shape mismatch when using mutual_information with dropout predictions
+
+
+**Code:**
+</pre></div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">probly</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<span class="n">dropout_model</span> <span class="o">=</span> <span class="n">probly</span><span class="o">.</span><span class="n">transformation</span><span class="o">.</span><span class="n">dropout</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+<span class="c1"># ... rest of minimal example</span>
+
+
+<span class="o">**</span><span class="n">Error</span><span class="p">:</span><span class="o">**</span>
+</pre></div>
+</div>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>ValueError: Shape mismatch in mutual_information...
+</pre></div>
+</div>
+<p><strong>Where to Get Help</strong></p>
+<ul class="simple">
+<li><p><strong>GitHub Issues:</strong> Report bugs and request features at <a class="reference external" href="https://github.com/pwhofman/probly/issues">https://github.com/pwhofman/probly/issues</a></p></li>
+<li><p><strong>FAQ &amp; Troubleshooting:</strong> Check this document for common solutions</p></li>
+<li><p><strong>Documentation:</strong> Refer to <a class="reference internal" href="core_concepts.html#core-concepts"><span class="std std-ref">Core Concepts</span></a>, <a class="reference internal" href="introduction.html#introduction"><span class="std std-ref">Introduction</span></a>, and <a class="reference internal" href="examples_and_tutorials.html#examples-and-tutorials"><span class="std std-ref">Examples and Tutorials</span></a></p></li>
+<li><p><strong>Community:</strong> Discuss with other users through the GitHub issue tracker</p></li>
+</ul>
+</section>
+</section>
+<section id="advanced-topics">
+<h2>8. Advanced Topics<a class="headerlink" href="#advanced-topics" title="Link to this heading">¶</a></h2>
+<section id="can-i-use-custom-uncertainty-quantification-metrics">
+<h3>8.1 Can I use custom uncertainty quantification metrics?<a class="headerlink" href="#can-i-use-custom-uncertainty-quantification-metrics" title="Link to this heading">¶</a></h3>
+<p>Yes. If you have a custom metric, you can implement it as a function that takes
+a stacked numpy array of predictions and returns numerical scores.</p>
+<p>Example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">custom_uncertainty_metric</span><span class="p">(</span><span class="n">stacked_predictions</span><span class="p">):</span>
+    <span class="c1"># Your custom metric implementation</span>
+    <span class="c1"># stacked_predictions shape: (num_samples, batch_size, num_classes)</span>
+    <span class="c1"># Example: compute variance across samples</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">var</span><span class="p">(</span><span class="n">stacked_predictions</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="c1"># Use it</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">probly.representation.sampling</span><span class="w"> </span><span class="kn">import</span> <span class="n">sampler_factory</span>
+
+<span class="n">sampler</span> <span class="o">=</span> <span class="n">sampler_factory</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+<span class="n">predictions</span> <span class="o">=</span> <span class="n">sampler</span><span class="p">(</span><span class="n">input_data</span><span class="p">)</span>
+<span class="n">stacked</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">p</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">predictions</span><span class="p">])</span>
+
+<span class="n">custom_scores</span> <span class="o">=</span> <span class="n">custom_uncertainty_metric</span><span class="p">(</span><span class="n">stacked</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="how-do-i-integrate-probly-into-a-production-system">
+<h3>8.2 How do I integrate <code class="docutils literal notranslate"><span class="pre">probly</span></code> into a production system?<a class="headerlink" href="#how-do-i-integrate-probly-into-a-production-system" title="Link to this heading">¶</a></h3>
+<p>For production deployment:</p>
+<ul class="simple">
+<li><p><strong>Optimize inference:</strong> Reduce the number of samples or use single-pass methods like evidential networks</p></li>
+<li><p><strong>Batch processing:</strong> Process multiple inputs together for efficiency</p></li>
+<li><p><strong>Uncertainty thresholds:</strong> Define application-specific thresholds for rejection or alerts</p></li>
+<li><p><strong>Monitoring:</strong> Log uncertainty scores alongside predictions for analysis</p></li>
+<li><p><strong>Fallback strategies:</strong> Define what happens when uncertainty is too high</p></li>
+</ul>
+</section>
+<section id="where-can-i-find-more-examples">
+<h3>8.3 Where can I find more examples?<a class="headerlink" href="#where-can-i-find-more-examples" title="Link to this heading">¶</a></h3>
+<p>For detailed usage examples, refer to:</p>
+<ul class="simple">
+<li><p>The <a class="reference internal" href="introduction.html#introduction"><span class="std std-ref">Introduction</span></a> section for workflow examples</p></li>
+<li><p>The <a class="reference internal" href="installation.html#installation"><span class="std std-ref">The probly Python Package</span></a> section for quickstart code</p></li>
+<li><p>The notebooks in the <code class="docutils literal notranslate"><span class="pre">notebooks/examples/</span></code> directory of the repository</p></li>
+</ul>
+</section>
+</section>
+<section id="id7">
+<h2>9. Getting Help<a class="headerlink" href="#id7" title="Link to this heading">¶</a></h2>
+<section id="where-can-i-report-bugs-or-request-features">
+<h3>9.1 Where can I report bugs or request features?<a class="headerlink" href="#where-can-i-report-bugs-or-request-features" title="Link to this heading">¶</a></h3>
+<p>Please report bugs and feature requests on the <code class="docutils literal notranslate"><span class="pre">probly</span></code> GitHub repository:</p>
+<p><a class="reference external" href="https://github.com/pwhofman/probly/issues">https://github.com/pwhofman/probly/issues</a></p>
+<p>Include:</p>
+<ul class="simple">
+<li><p>Python and <code class="docutils literal notranslate"><span class="pre">probly</span></code> versions</p></li>
+<li><p>Minimal code to reproduce the issue</p></li>
+<li><p>Expected vs. actual behavior</p></li>
+<li><p>Any error messages or stack traces</p></li>
+</ul>
+</section>
+<section id="how-can-i-contribute-to-probly">
+<h3>9.2 How can I contribute to <code class="docutils literal notranslate"><span class="pre">probly</span></code>?<a class="headerlink" href="#how-can-i-contribute-to-probly" title="Link to this heading">¶</a></h3>
+<p>We welcome contributions! Please see the Contributing Guide for details on:</p>
+<ul class="simple">
+<li><p>Setting up a development environment</p></li>
+<li><p>Code style and conventions</p></li>
+<li><p>Submitting pull requests</p></li>
+<li><p>Adding new uncertainty methods or quantification functions</p></li>
+</ul>
+</section>
+<section id="where-can-i-discuss-probly-with-other-users">
+<h3>9.3 Where can I discuss <code class="docutils literal notranslate"><span class="pre">probly</span></code> with other users?<a class="headerlink" href="#where-can-i-discuss-probly-with-other-users" title="Link to this heading">¶</a></h3>
+<p>Join the <code class="docutils literal notranslate"><span class="pre">probly</span></code> community:</p>
+<ul class="simple">
+<li><p>Issue tracker for questions: <a class="reference external" href="https://github.com/pwhofman/probly/issues">https://github.com/pwhofman/probly/issues</a></p></li>
+</ul>
+<p>For questions about uncertainty quantification in general, the broader machine learning
+community resources may also be helpful.</p>
+</section>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="notebooks/examples/index.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Notebook Examples</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="references.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">References and Further Reading</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2025, probly team
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">FAQ and Troubleshooting</a><ul>
+<li><a class="reference internal" href="#installation-and-setup">1. Installation and Setup</a><ul>
+<li><a class="reference internal" href="#which-python-versions-does-probly-support">1.1 Which Python versions does <code class="docutils literal notranslate"><span class="pre">probly</span></code> support?</a></li>
+<li><a class="reference internal" href="#how-do-i-install-probly">1.2 How do I install <code class="docutils literal notranslate"><span class="pre">probly</span></code>?</a></li>
+<li><a class="reference internal" href="#installation-fails-with-dependency-conflicts-what-should-i-do">1.3 Installation fails with dependency conflicts. What should I do?</a></li>
+<li><a class="reference internal" href="#do-i-need-to-install-pytorch-or-jax-separately">1.4 Do I need to install PyTorch or JAX separately?</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#basic-usage-questions">2. Basic Usage Questions</a><ul>
+<li><a class="reference internal" href="#how-do-i-make-my-model-uncertainty-aware">2.1 How do I make my model uncertainty-aware?</a></li>
+<li><a class="reference internal" href="#do-i-need-to-retrain-my-model-to-use-probly">2.2 Do I need to retrain my model to use <code class="docutils literal notranslate"><span class="pre">probly</span></code>?</a></li>
+<li><a class="reference internal" href="#what-is-an-uncertainty-representation">2.3 What is an uncertainty representation?</a></li>
+<li><a class="reference internal" href="#how-do-i-quantify-uncertainty-from-a-representation">2.4 How do I quantify uncertainty from a representation?</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#uncertainty-methods">3. Uncertainty Methods</a><ul>
+<li><a class="reference internal" href="#which-uncertainty-method-should-i-use">3.1 Which uncertainty method should I use?</a></li>
+<li><a class="reference internal" href="#what-is-the-difference-between-epistemic-and-aleatoric-uncertainty">3.2 What is the difference between epistemic and aleatoric uncertainty?</a></li>
+<li><a class="reference internal" href="#can-i-combine-different-uncertainty-methods">3.3 Can I combine different uncertainty methods?</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#framework-integration">4. Framework Integration</a><ul>
+<li><a class="reference internal" href="#does-probly-work-with-pytorch">4.1 Does <code class="docutils literal notranslate"><span class="pre">probly</span></code> work with PyTorch?</a></li>
+<li><a class="reference internal" href="#does-probly-work-with-flax-jax">4.2 Does <code class="docutils literal notranslate"><span class="pre">probly</span></code> work with Flax/JAX?</a></li>
+<li><a class="reference internal" href="#can-i-use-probly-with-scikit-learn-models">4.3 Can I use <code class="docutils literal notranslate"><span class="pre">probly</span></code> with scikit-learn models?</a></li>
+<li><a class="reference internal" href="#how-do-i-use-probly-with-pre-trained-models">4.4 How do I use <code class="docutils literal notranslate"><span class="pre">probly</span></code> with pre-trained models?</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#common-errors-and-solutions">5. Common Errors and Solutions</a><ul>
+<li><a class="reference internal" href="#error-cannot-find-module-probly">5.1 Error: “Cannot find module ‘probly’”</a></li>
+<li><a class="reference internal" href="#error-shape-mismatch-in-uncertainty-quantification">5.2 Error: “Shape mismatch in uncertainty quantification”</a></li>
+<li><a class="reference internal" href="#warning-model-returns-deterministic-output">5.3 Warning: “Model returns deterministic output”</a></li>
+<li><a class="reference internal" href="#error-out-of-memory-during-ensemble-prediction">5.4 Error: “Out of memory during ensemble prediction”</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#performance-and-optimization">6. Performance and Optimization</a><ul>
+<li><a class="reference internal" href="#how-many-forward-passes-should-i-use-for-monte-carlo-dropout">6.1 How many forward passes should I use for Monte Carlo Dropout?</a></li>
+<li><a class="reference internal" href="#is-probly-slow-compared-to-standard-inference">6.2 Is <code class="docutils literal notranslate"><span class="pre">probly</span></code> slow compared to standard inference?</a></li>
+<li><a class="reference internal" href="#how-can-i-speed-up-uncertainty-quantification">6.3 How can I speed up uncertainty quantification?</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#troubleshooting-advanced-features">7. Troubleshooting Advanced Features</a><ul>
+<li><a class="reference internal" href="#frequent-issues-and-error-messages">7.1 Frequent Issues and Error Messages</a></li>
+<li><a class="reference internal" href="#systematic-debugging-approach">7.2 Systematic Debugging Approach</a></li>
+<li><a class="reference internal" href="#getting-help">7.3 Getting Help</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#advanced-topics">8. Advanced Topics</a><ul>
+<li><a class="reference internal" href="#can-i-use-custom-uncertainty-quantification-metrics">8.1 Can I use custom uncertainty quantification metrics?</a></li>
+<li><a class="reference internal" href="#how-do-i-integrate-probly-into-a-production-system">8.2 How do I integrate <code class="docutils literal notranslate"><span class="pre">probly</span></code> into a production system?</a></li>
+<li><a class="reference internal" href="#where-can-i-find-more-examples">8.3 Where can I find more examples?</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id7">9. Getting Help</a><ul>
+<li><a class="reference internal" href="#where-can-i-report-bugs-or-request-features">9.1 Where can I report bugs or request features?</a></li>
+<li><a class="reference internal" href="#how-can-i-contribute-to-probly">9.2 How can I contribute to <code class="docutils literal notranslate"><span class="pre">probly</span></code>?</a></li>
+<li><a class="reference internal" href="#where-can-i-discuss-probly-with-other-users">9.3 Where can I discuss <code class="docutils literal notranslate"><span class="pre">probly</span></code> with other users?</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="_static/documentation_options.js?v=4621528c"></script>
+    <script src="_static/doctools.js?v=9bcbadda"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/scripts/furo.js?v=5fa4622c"></script>
+    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="_static/copybutton.js?v=ccdb6887"></script>
+    </body>
+</html>

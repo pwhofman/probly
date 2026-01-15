@@ -1,0 +1,567 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" />
+
+    <!-- Generated with Sphinx 8.2.3 and Furo 2024.08.06 -->
+        <title>probly Tutorial — Bayesian Transformation - probly 0.3.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=354aac6f" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery.css?v=d2d258e8" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=302659d7" />
+    <link rel="stylesheet" type="text/css" href="../_static/css/custom.css?v=201d0c9a" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f8f8f8;
+  --color-code-foreground: black;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #272822;
+  --color-code-foreground: #f8f8f2;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #272822;
+  --color-code-foreground: #f8f8f2;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">probly 0.3.1 documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><div class="sidebar-scroll"><a class="sidebar-brand" href="../index.html">
+  
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo only-light" src="../_static/logo/logo_light.png" alt="Light Logo"/>
+    <img class="sidebar-logo only-dark" src="../_static/logo/logo_dark.png" alt="Dark Logo"/>
+  </div>
+  
+  
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Content</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">The <code class="docutils literal notranslate"><span class="pre">probly</span></code> Python Package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core_concepts.html">Core Concepts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_components.html">Main Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../advanced_topics.html">Advanced Topics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples_and_tutorials.html">Examples and Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../methods.html">Implemented methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributing to probly 🏔️</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../references.html">References and Further Reading</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../faq.html">FAQ and Troubleshooting</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Notebooks</span></p>
+<ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../notebooks/examples/index.html">Notebook Examples</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Notebook Examples</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../notebooks/examples/utilities_and_layers/index.html">Utilities and Layers</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Utilities and Layers</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../notebooks/examples/utilities_and_layers/custom_loss_functions.html">Custom Loss Functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../notebooks/examples/utilities_and_layers/metrics.html">Evaluation Metrics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../notebooks/examples/utilities_and_layers/probabilistic_layers.html">Key Probabilistic Layers in <code class="docutils literal notranslate"><span class="pre">probly</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../notebooks/examples/utilities_and_layers/utility_functions.html">Utility Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../notebooks/examples/evaluation_and_quantification/index.html">Evaluation and Quantification</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of Evaluation and Quantification</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../notebooks/examples/evaluation_and_quantification/calibration_metrics.html">Calibration Metrics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../notebooks/examples/evaluation_and_quantification/interpretation_techniques.html">Interpretation techniques</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../notebooks/examples/evaluation_and_quantification/visualization_tools.html">Visualisation Tools</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../notebooks/examples/bayesian_transformation.html">Bayesian Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../notebooks/examples/dropconnect_transformation.html">Dropconnect Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../notebooks/examples/dropout_transformation.html">Dropout Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../notebooks/examples/ensemble_transformation.html">Ensemble Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../notebooks/examples/evidential_classification_transformation.html">Evidential Classification Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../notebooks/examples/evidential_regression_transformation.html">Evidential Regression Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../notebooks/examples/fashionmnist_ood_ensemble.html">Out-of-Distribution Detection with an Ensemble</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../notebooks/examples/label_relaxation_calibration.html">Calibration with Label Relaxation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../notebooks/examples/lazy_dispatch_test.html">Lazy Dispatch Test</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../notebooks/examples/multilib_demo.html">Multilib Demo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../notebooks/examples/pytraverse_tutorial.html">A Brief Introduction to PyTraverse</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../notebooks/examples/sklearn_selective_prediction.html">Using probly with scikit-learn</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../notebooks/examples/temperature_scaling_calibration.html">Calibration using Temperature Scaling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../notebooks/examples/train_bnn_classification.html">Bayesian Neural Networks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../notebooks/examples/train_evidential_classification.html">Evidential Model for Classification</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../notebooks/examples/train_evidential_regression.html">Evidential Regression Model</a></li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div><div style="text-align: center; margin-top: 1rem; margin-bottom: 1rem;">
+  <a href="https://github.com/pwhofman/probly" target="_blank" rel="noopener noreferrer" title="GitHub Repository">
+    <img src="../_static/github-mark.svg" alt="GitHub Logo" width="28" height="28" style="display: inline-block;">
+  </a>
+</div>
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          
+
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="probly-tutorial-bayesian-transformation">
+<h1><code class="docutils literal notranslate"><span class="pre">probly</span></code> Tutorial — Bayesian Transformation<a class="headerlink" href="#probly-tutorial-bayesian-transformation" title="Link to this heading">¶</a></h1>
+<p>This notebook is a practical introduction to the Bayesian transformation in <code class="docutils literal notranslate"><span class="pre">probly</span></code>. Bayesian Neural Networks are a more advanced topic than Dropout or DropConnect,
+so this tutorial aims to provide an intuitive, hands-on understanding.</p>
+<p>We will start by explaining the core idea behind Bayesian Neural Networks (BNNs) and then see how the <code class="docutils literal notranslate"><span class="pre">probly</span></code> transformation enables you to create them. After that, we will look at a PyTorch example to inspect the transformed model and use it to estimate uncertainty.</p>
+</section>
+<hr class="docutils" />
+<section id="part-a-introduction-to-bnns-and-the-bayesian-transformation">
+<h1>Part A: Introduction to BNNs and the Bayesian Transformation<a class="headerlink" href="#part-a-introduction-to-bnns-and-the-bayesian-transformation" title="Link to this heading">¶</a></h1>
+<hr class="docutils" />
+<section id="concept-what-is-a-bayesian-neural-network">
+<h2>1.Concept: What is a Bayesian Neural Network?<a class="headerlink" href="#concept-what-is-a-bayesian-neural-network" title="Link to this heading">¶</a></h2>
+<p>To understand the Bayesian transformation, we first need to understand the difference between a standard neural network and a Bayesian one.</p>
+<section id="standard-neural-networks">
+<h3>1.1 Standard Neural Networks<a class="headerlink" href="#standard-neural-networks" title="Link to this heading">¶</a></h3>
+<p>In a standard neural network, each weight is a single, deterministic number. After training, these weights are fixed.
+When you pass an input through the model, it follows one exact path, producing one exact output.
+The model has no inherent way to express how “sure” it is about the values of its weights.</p>
+</section>
+<section id="bayesian-neural-networks-bnns">
+<h3>1.2 Bayesian Neural Networks (BNNs)<a class="headerlink" href="#bayesian-neural-networks-bnns" title="Link to this heading">¶</a></h3>
+<p>In a Bayesian Neural Network, we replace the deterministic weights with probability distributions.
+Instead of a weight being a single number, it might be represented by a Gaussian (normal) distribution
+with a mean and a standard deviation.</p>
+<ul class="simple">
+<li><p>The mean represents the most likely value for that weight.</p></li>
+<li><p>The standard deviation represents the model’s uncertainty about that weight. A small standard deviation means the model
+is very confident in the weight’s value, while a large one means it is very unsure.</p></li>
+</ul>
+<p>During a forward pass, we don’t use the mean value directly. Instead, we sample a value for each weight from its distribution.
+Because we get a slightly different set of weights every time, each forward pass on the same input will produce a slightly different
+output. This natural variation is a direct reflection of the model’s parameter uncertainty.</p>
+</section>
+<section id="the-bayesian-transformation-probly">
+<h3>1.3 The Bayesian Transformation <code class="docutils literal notranslate"><span class="pre">(probly)</span></code><a class="headerlink" href="#the-bayesian-transformation-probly" title="Link to this heading">¶</a></h3>
+<p>The Bayesian transformation in <code class="docutils literal notranslate"><span class="pre">probly</span></code> automates the process of converting a standard network into a BNN.</p>
+<p>The transformation does the following:</p>
+<p>It walks through your PyTorch model and finds all compatible layers (e.g., nn.Linear and nn.Conv2d).
+It programmatically replaces each standard layer with a corresponding custom Bayesian layer (e.g., BayesLinear, BayesConv2d).
+These new layers contain weight distributions instead of single values and are inherently stochastic, even during inference.</p>
+<p>This allows us to get a distribution of predictions by running multiple forward passes, which we can then use to quantify the model’s uncertainty.</p>
+</section>
+<section id="what-that-entails">
+<h3>1.4. What that entails<a class="headerlink" href="#what-that-entails" title="Link to this heading">¶</a></h3>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Aspect</p></th>
+<th class="head"><p>Bayesian Transformation <code class="docutils literal notranslate"><span class="pre">(probly)</span></code></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Main Idea</strong></p></td>
+<td><p>“Weights are distributions”</p></td>
+</tr>
+<tr class="row-odd"><td><p>Stochastic Element</p></td>
+<td><p>Weights are sampled from probability distributions.</p></td>
+</tr>
+<tr class="row-even"><td><p>Architectural Change</p></td>
+<td><p>Replaces <code class="docutils literal notranslate"><span class="pre">nn.Linear</span></code> and <code class="docutils literal notranslate"><span class="pre">nn.Conv2d</span></code> with <code class="docutils literal notranslate"><span class="pre">BayesLinear</span></code>/<code class="docutils literal notranslate"><span class="pre">BayesConv2d</span></code> layers.</p></td>
+</tr>
+<tr class="row-odd"><td><p>Uncertainty Interpretation</p></td>
+<td><p>A principled, direct measure of the model’s parameter uncertainty.</p></td>
+</tr>
+<tr class="row-even"><td><p>Supported Layers</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Linear</span></code> and <code class="docutils literal notranslate"><span class="pre">Conv2d</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>Key Parameters</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">prior_mean</span></code>, <code class="docutils literal notranslate"><span class="pre">prior_std</span></code>, <code class="docutils literal notranslate"><span class="pre">posterior_std</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</section>
+<section id="quickstart-pytorch">
+<h2>2. Quickstart (PyTorch)<a class="headerlink" href="#quickstart-pytorch" title="Link to this heading">¶</a></h2>
+<p>Below: build a small MLP, apply <code class="docutils literal notranslate"><span class="pre">bayesian(model)</span></code>, and inspect the modified architecture to see the layer replacement.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">nn</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">probly.transformation</span><span class="w"> </span><span class="kn">import</span> <span class="n">bayesian</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">build_mlp</span><span class="p">(</span><span class="n">in_dim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">hidden</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span> <span class="n">out_dim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
+        <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">in_dim</span><span class="p">,</span> <span class="n">hidden</span><span class="p">),</span>
+        <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">(),</span>
+        <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">hidden</span><span class="p">,</span> <span class="n">hidden</span><span class="p">),</span>
+        <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">(),</span>
+        <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">hidden</span><span class="p">,</span> <span class="n">out_dim</span><span class="p">),</span>
+    <span class="p">)</span>
+
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">build_mlp</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Original model:</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
+
+<span class="c1"># Apply the Bayesian transformation with default parameters</span>
+<span class="n">model_bnn</span> <span class="o">=</span> <span class="n">bayesian</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">With Bayesian transformation:</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">model_bnn</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Original model:
+ Sequential(
+  (0): Linear(in_features=10, out_features=32, bias=True)
+  (1): ReLU()
+  (2): Linear(in_features=32, out_features=32, bias=True)
+  (3): ReLU()
+  (4): Linear(in_features=32, out_features=1, bias=True)
+)
+
+With Bayesian transformation:
+ Sequential(
+  (0): BayesLinear()
+  (1): ReLU()
+  (2): BayesLinear()
+  (3): ReLU()
+  (4): BayesLinear()
+)
+</pre></div>
+</div>
+</div>
+</div>
+<section id="notes-on-the-structure">
+<h3>Notes on the structure<a class="headerlink" href="#notes-on-the-structure" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Notice that each <code class="docutils literal notranslate"><span class="pre">Linear</span></code> layer has been replaced by a <code class="docutils literal notranslate"><span class="pre">BayesLinear</span></code> layer.</p></li>
+<li><p>The new layers manage the distributions for the weights and biases internally.</p></li>
+</ul>
+</section>
+</section>
+<section id="uncertainty-via-stochastic-forward-passes">
+<h2>3. Uncertainty via Stochastic Forward Passes<a class="headerlink" href="#uncertainty-via-stochastic-forward-passes" title="Link to this heading">¶</a></h2>
+<p>To obtain predictive uncertainty, we run multiple forward passes. In each pass, a new set of weights is sampled from the learned distributions.
+We then compute the mean and variance of the resulting predictions.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Toy regression data</span>
+<span class="n">torch</span><span class="o">.</span><span class="n">manual_seed</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">n</span> <span class="o">=</span> <span class="mi">128</span>
+<span class="n">X</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="n">true_w</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">X</span> <span class="o">@</span> <span class="n">true_w</span> <span class="o">+</span> <span class="mf">0.1</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+<span class="c1"># Build and transform the model</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">build_mlp</span><span class="p">(</span><span class="n">in_dim</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">hidden</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">out_dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">model_bnn</span> <span class="o">=</span> <span class="n">bayesian</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+
+<span class="c1"># Simple training loop (for illustration)</span>
+<span class="n">opt</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">(</span><span class="n">model_bnn</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span> <span class="n">lr</span><span class="o">=</span><span class="mf">1e-2</span><span class="p">)</span>
+<span class="n">loss_fn</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">MSELoss</span><span class="p">()</span>
+
+<span class="k">for</span> <span class="n">_step</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">200</span><span class="p">):</span>
+    <span class="n">opt</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>
+    <span class="n">pred</span> <span class="o">=</span> <span class="n">model_bnn</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+    <span class="n">loss</span> <span class="o">=</span> <span class="n">loss_fn</span><span class="p">(</span><span class="n">pred</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+    <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+    <span class="n">opt</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+
+
+<span class="c1"># Prediction function (stochastic passes)</span>
+<span class="nd">@torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">()</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">stochastic_predict</span><span class="p">(</span>
+    <span class="n">bayesian_model</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span>
+    <span class="n">inputs</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">n_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
+    <span class="n">preds</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_samples</span><span class="p">):</span>
+        <span class="n">preds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">bayesian_model</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span><span class="o">.</span><span class="n">detach</span><span class="p">())</span>
+    <span class="n">stacked</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">preds</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>  <span class="c1"># [n_samples, N, out_dim]</span>
+    <span class="n">mean</span> <span class="o">=</span> <span class="n">stacked</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">var</span> <span class="o">=</span> <span class="n">stacked</span><span class="o">.</span><span class="n">var</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">unbiased</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">mean</span><span class="p">,</span> <span class="n">var</span>
+
+
+<span class="n">mean_pred</span><span class="p">,</span> <span class="n">var_pred</span> <span class="o">=</span> <span class="n">stochastic_predict</span><span class="p">(</span><span class="n">model_bnn</span><span class="p">,</span> <span class="n">X</span><span class="p">[:</span><span class="mi">5</span><span class="p">],</span> <span class="n">n_samples</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Predictive mean (first 5):</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">mean_pred</span><span class="o">.</span><span class="n">squeeze</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Predictive variance (first 5):</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">var_pred</span><span class="o">.</span><span class="n">squeeze</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Predictive mean (first 5):
+ tensor([-1.1153,  3.2737,  1.8071, -1.3878, -0.6908])
+
+Predictive variance (first 5):
+ tensor([0.0594, 0.0913, 0.0668, 0.0288, 0.0506])
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="part-a-summary">
+<h2>4. Part A Summary<a class="headerlink" href="#part-a-summary" title="Link to this heading">¶</a></h2>
+<p>In Part A, we introduced the core concept of Bayesian Neural Networks, where weights are represented as probability distributions rather than single numbers.
+This inherently captures the model’s uncertainty about its own parameters. We saw how the <code class="docutils literal notranslate"><span class="pre">probly.transformation.bayesian</span></code> Bayesian Transformation makes creating BNNs simple:
+it traverses a standard PyTorch model and replaces <code class="docutils literal notranslate"><span class="pre">nn.Linear</span></code> and <code class="docutils literal notranslate"><span class="pre">nn.Conv2d</span></code> layers with their Bayesian counterparts. This transformed model naturally producesIn Part A,
+we introduced the core concept of Bayesian Neural Networks, where weights are represented as probability distributions rather than single numbers.
+This inherently captures the model’s uncertainty about its own parameters. We saw how the probly Bayesian Transformation makes creating BNNs simple:
+it traverses a standard PyTorch model and replaces nn.Linear and nn.Conv2d layers with their Bayesian counterparts. This transformed model naturally
+produces a distribution of outputs for any given input, allowing us to directly quantify predictive uncertainty. a distribution of outputs for any given input,
+allowing us to directly quantify predictive uncertainty.</p>
+</section>
+</section>
+<hr class="docutils" />
+<section id="part-b-applied-bnn-transformation">
+<h1>Part B — Applied BNN Transformation<a class="headerlink" href="#part-b-applied-bnn-transformation" title="Link to this heading">¶</a></h1>
+<hr class="docutils" />
+<p>In Part A, we learned what the Bayesian transformation in <code class="docutils literal notranslate"><span class="pre">probly</span></code> does.
+In this Part B, we will apply it to a model containing both linear and convolutional layers, run several stochastic predictions, and visualize the resulting uncertainty.</p>
+<p>An indepth tutorial showing:</p>
+<ul class="simple">
+<li><p>How to define a standard neural network (LeNet) and make it Bayesian using the bayesian transformation.</p></li>
+<li><p>How to set up the specialized training loop required for a BNN using the ELBO loss function.</p></li>
+<li><p>How to train the BNN on a real-world dataset (FashionMNIST).</p></li>
+<li><p>How to evaluate the final classification accuracy of the trained Bayesian model.</p></li>
+</ul>
+<p>Can be found in the here:  <strong><a class="reference internal" href="train_bnn_classification.html"><span class="std std-doc">Training a BNN for Classification</span></a></strong>.</p>
+</section>
+<hr class="docutils" />
+<section id="final-summary-bayesian-transformation-tutorial">
+<h1>Final Summary — Bayesian Transformation Tutorial<a class="headerlink" href="#final-summary-bayesian-transformation-tutorial" title="Link to this heading">¶</a></h1>
+<hr class="docutils" />
+<p>This tutorial introduced the core concepts of Bayesian Neural Networks (BNNs), where weights are treated as probability distributions to capture model uncertainty. We demonstrated how <code class="docutils literal notranslate"><span class="pre">probly</span></code>’s <strong><code class="docutils literal notranslate"><span class="pre">bayesian</span></code> transformation</strong> automates this by replacing standard <code class="docutils literal notranslate"><span class="pre">nn.Linear</span></code> and <code class="docutils literal notranslate"><span class="pre">nn.Conv2d</span></code> layers with their stochastic Bayesian counterparts. We also walked through a simplified example of how to run multiple forward passes to get a predictive mean and variance.</p>
+<p>While this notebook covered the fundamentals, a proper BNN requires a specialized training procedure. For a complete, end-to-end guide that shows you how to train a Bayesian LeNet on the FashionMNIST dataset using the correct <strong>ELBO loss</strong>, please see the next tutorial: <strong><a class="reference internal" href="train_bnn_classification.html"><span class="std std-doc">Training a BNN for Classification</span></a></strong>.</p>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          
+          
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2025, probly team
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer no-toc">
+      
+      
+      
+    </aside>
+  </div>
+</div><script src="../_static/documentation_options.js?v=4621528c"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/scripts/furo.js?v=5fa4622c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=ccdb6887"></script>
+    </body>
+</html>

@@ -1,0 +1,785 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="./">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Advanced Topics" href="advanced_topics.html" /><link rel="prev" title="Core Concepts" href="core_concepts.html" />
+
+    <!-- Generated with Sphinx 8.2.3 and Furo 2024.08.06 -->
+        <title>Main Components - probly 0.3.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=354aac6f" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
+    <link rel="stylesheet" type="text/css" href="_static/sg_gallery.css?v=d2d258e8" />
+    <link rel="stylesheet" type="text/css" href="_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=302659d7" />
+    <link rel="stylesheet" type="text/css" href="_static/css/custom.css?v=201d0c9a" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f8f8f8;
+  --color-code-foreground: black;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #272822;
+  --color-code-foreground: #f8f8f2;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #272822;
+  --color-code-foreground: #f8f8f2;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="index.html"><div class="brand">probly 0.3.1 documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><div class="sidebar-scroll"><a class="sidebar-brand" href="index.html">
+  
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo only-light" src="_static/logo/logo_light.png" alt="Light Logo"/>
+    <img class="sidebar-logo only-dark" src="_static/logo/logo_dark.png" alt="Dark Logo"/>
+  </div>
+  
+  
+</a><form class="sidebar-search-container" method="get" action="search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Content</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">The <code class="docutils literal notranslate"><span class="pre">probly</span></code> Python Package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core_concepts.html">Core Concepts</a></li>
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Main Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="advanced_topics.html">Advanced Topics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples_and_tutorials.html">Examples and Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="methods.html">Implemented methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing to probly 🏔️</a></li>
+<li class="toctree-l1"><a class="reference internal" href="references.html">References and Further Reading</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">FAQ and Troubleshooting</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Notebooks</span></p>
+<ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="notebooks/examples/index.html">Notebook Examples</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Notebook Examples</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="notebooks/examples/utilities_and_layers/index.html">Utilities and Layers</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Utilities and Layers</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/examples/utilities_and_layers/custom_loss_functions.html">Custom Loss Functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/examples/utilities_and_layers/metrics.html">Evaluation Metrics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/examples/utilities_and_layers/probabilistic_layers.html">Key Probabilistic Layers in <code class="docutils literal notranslate"><span class="pre">probly</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/examples/utilities_and_layers/utility_functions.html">Utility Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="notebooks/examples/evaluation_and_quantification/index.html">Evaluation and Quantification</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of Evaluation and Quantification</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/examples/evaluation_and_quantification/calibration_metrics.html">Calibration Metrics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/examples/evaluation_and_quantification/interpretation_techniques.html">Interpretation techniques</a></li>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/examples/evaluation_and_quantification/visualization_tools.html">Visualisation Tools</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/bayesian_transformation.html">Bayesian Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/dropconnect_transformation.html">Dropconnect Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/dropout_transformation.html">Dropout Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/ensemble_transformation.html">Ensemble Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/evidential_classification_transformation.html">Evidential Classification Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/evidential_regression_transformation.html">Evidential Regression Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/fashionmnist_ood_ensemble.html">Out-of-Distribution Detection with an Ensemble</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/label_relaxation_calibration.html">Calibration with Label Relaxation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/lazy_dispatch_test.html">Lazy Dispatch Test</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/multilib_demo.html">Multilib Demo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/pytraverse_tutorial.html">A Brief Introduction to PyTraverse</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/sklearn_selective_prediction.html">Using probly with scikit-learn</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/temperature_scaling_calibration.html">Calibration using Temperature Scaling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/train_bnn_classification.html">Bayesian Neural Networks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/train_evidential_classification.html">Evidential Model for Classification</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/train_evidential_regression.html">Evidential Regression Model</a></li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div><div style="text-align: center; margin-top: 1rem; margin-bottom: 1rem;">
+  <a href="https://github.com/pwhofman/probly" target="_blank" rel="noopener noreferrer" title="GitHub Repository">
+    <img src="_static/github-mark.svg" alt="GitHub Logo" width="28" height="28" style="display: inline-block;">
+  </a>
+</div>
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          
+
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="main-components">
+<span id="id1"></span><h1>Main Components<a class="headerlink" href="#main-components" title="Link to this heading">¶</a></h1>
+<p><code class="docutils literal notranslate"><span class="pre">probly</span></code> is designed to bridge the gap between standard deterministic deep
+learning and probabilistic modeling. Instead of requiring you to rewrite your
+models from scratch to account for uncertainty, <code class="docutils literal notranslate"><span class="pre">probly</span></code> provides a modular
+set of tools that integrate directly into your existing PyTorch or Flax workflows.</p>
+<p>The library is built around three core pillars that mirror the uncertainty
+estimation pipeline: <strong>Transformation</strong>, <strong>Representation</strong>,
+and <strong>Quantification</strong>.</p>
+<section id="transformations">
+<h2>1. Transformations<a class="headerlink" href="#transformations" title="Link to this heading">¶</a></h2>
+<p>The core of <code class="docutils literal notranslate"><span class="pre">probly</span></code> lies in its <strong>Transformations</strong>. These functions take a standard, deterministic PyTorch
+(or Flax) model and automatically modify its architecture to make it uncertainty-aware. Transformations work by
+strategically modifying model layers, adding stochastic components, or duplicating architectures to create
+ensembles—all without requiring manual code rewriting.</p>
+<p>Each transformation method offers different trade-offs between computational cost, uncertainty quality, and
+implementation complexity. Whether you need fast approximate uncertainty or more principled Bayesian inference,
+<code class="docutils literal notranslate"><span class="pre">probly</span></code> provides a transformation suited to your needs.</p>
+<p>Below are the links to the Python notebooks describing the primary transformations available in the library:</p>
+<section id="dropout">
+<h3>1.1 Dropout<a class="headerlink" href="#dropout" title="Link to this heading">¶</a></h3>
+<p>Dropout-based uncertainty leverages the interpretation of dropout as approximate Bayesian inference.
+By enabling dropout at test time (Monte Carlo Dropout), you can generate multiple stochastic forward passes
+to estimate model uncertainty.</p>
+<p><a class="reference internal" href="notebooks/examples/dropout_transformation.html"><span class="doc">Dropout Transformation</span></a></p>
+</section>
+<section id="dropconnect">
+<h3>1.2 DropConnect<a class="headerlink" href="#dropconnect" title="Link to this heading">¶</a></h3>
+<p>DropConnect extends dropout by randomly dropping weights instead of activations, often providing improved
+uncertainty estimates while maintaining computational efficiency.</p>
+<p><a class="reference internal" href="notebooks/examples/dropconnect_transformation.html"><span class="doc">DropConnect Transformation</span></a></p>
+</section>
+<section id="bayesian">
+<h3>1.3 Bayesian<a class="headerlink" href="#bayesian" title="Link to this heading">¶</a></h3>
+<p>The Bayesian transformation converts deterministic weights to probabilistic distributions, enabling fully
+principled Bayesian neural networks. This approach provides theoretically grounded uncertainty estimates but
+at increased computational cost.</p>
+<p><a class="reference internal" href="notebooks/examples/bayesian_transformation.html"><span class="doc">Bayesian Transformation</span></a></p>
+</section>
+<section id="ensemble">
+<h3>1.4 Ensemble<a class="headerlink" href="#ensemble" title="Link to this heading">¶</a></h3>
+<p>Ensemble transformations create multiple independent models trained on different data subsets or with
+different initializations. By aggregating predictions across ensemble members, you obtain diverse uncertainty
+estimates that often perform well in practice.</p>
+<p><a class="reference internal" href="notebooks/examples/ensemble_transformation.html"><span class="doc">Ensemble Transformation</span></a></p>
+</section>
+<section id="evidential">
+<h3>1.5 Evidential<a class="headerlink" href="#evidential" title="Link to this heading">¶</a></h3>
+<p>Evidential methods model uncertainty by learning the parameters of a higher-order distribution
+over predictions. Unlike dropout or ensemble methods that require multiple forward passes,
+evidential models provide uncertainty estimates in a <strong>single forward pass</strong> by outputting
+the parameters of a Dirichlet distribution (classification) or Normal-Inverse-Gamma distribution
+(regression).</p>
+<p>This approach provides a principled framework for capturing both <strong>aleatoric uncertainty</strong>
+(inherent data noise) and <strong>epistemic uncertainty</strong> (model uncertainty due to limited data)
+simultaneously <span id="id2">[<a class="reference internal" href="references.html#id5" title="Murat Sensoy, Lance M. Kaplan, and Melih Kandemir. Evidential deep learning to quantify classification uncertainty. In Samy Bengio, Hanna M. Wallach, Hugo Larochelle, Kristen Grauman, Nicolò Cesa-Bianchi, and Roman Garnett, editors, Advances in Neural Information Processing Systems 31: Annual Conference on Neural Information Processing Systems 2018, NeurIPS 2018, December 3-8, 2018, Montréal, Canada, 3183–3193. 2018. URL: https://proceedings.neurips.cc/paper/2018/hash/a981f2b708044d6fb4a71a1463242520-Abstract.html.">SKK18</a>]</span>.</p>
+<section id="implemented-methods">
+<h4>1.5.1 Implemented Methods<a class="headerlink" href="#implemented-methods" title="Link to this heading">¶</a></h4>
+<p><code class="docutils literal notranslate"><span class="pre">probly</span></code> supports seven evidential deep learning methods through a unified interface:</p>
+<p><strong>Classification Methods</strong></p>
+<ul class="simple">
+<li><p><strong>Evidential Deep Learning (EDL)</strong> <span id="id3">[<a class="reference internal" href="references.html#id5" title="Murat Sensoy, Lance M. Kaplan, and Melih Kandemir. Evidential deep learning to quantify classification uncertainty. In Samy Bengio, Hanna M. Wallach, Hugo Larochelle, Kristen Grauman, Nicolò Cesa-Bianchi, and Roman Garnett, editors, Advances in Neural Information Processing Systems 31: Annual Conference on Neural Information Processing Systems 2018, NeurIPS 2018, December 3-8, 2018, Montréal, Canada, 3183–3193. 2018. URL: https://proceedings.neurips.cc/paper/2018/hash/a981f2b708044d6fb4a71a1463242520-Abstract.html.">SKK18</a>]</span> — The foundational
+method that trains networks to output Dirichlet concentration parameters directly.</p></li>
+<li><p><strong>Prior Networks (PrNet)</strong> <span id="id4">[<a class="reference internal" href="references.html#id73" title="Andrey Malinin and Mark Gales. Predictive uncertainty estimation via prior networks. In Advances in Neural Information Processing Systems, volume 31. Curran Associates, Inc., 2018.">MG18</a>]</span> — Uses both
+in-distribution and out-of-distribution data during training to learn sharper
+uncertainty estimates.</p></li>
+<li><p><strong>Information Robust Dirichlet Networks (IRD)</strong> <span id="id5">[<a class="reference internal" href="references.html#id74" title="Theodoros Tsiligkaridis. Information robust dirichlet networks for predictive uncertainty estimation. arXiv preprint arXiv:1910.04819, 2019.">Tsi19</a>]</span> —
+Adds adversarial robustness through entropy maximisation on perturbed inputs.</p></li>
+<li><p><strong>Posterior Networks (PostNet)</strong> <span id="id6">[<a class="reference internal" href="references.html#id75" title="Bertrand Charpentier, Daniel Zügner, and Stephan Günnemann. Posterior network: uncertainty estimation without ood samples via density-based pseudo-counts. In Advances in Neural Information Processing Systems, volume 33, 1356–1367. Curran Associates, Inc., 2020.">CZugnerGunnemann20</a>]</span> — Uses normalizing flows
+to estimate density in latent space, converting density to pseudo-counts.</p></li>
+<li><p><strong>Natural Posterior Networks (NatPostNet)</strong> <span id="id7">[<a class="reference internal" href="references.html#id77" title="Bertrand Charpentier, Oliver Borchert, Daniel Zügner, Simon Geisler, and Stephan Günnemann. Natural posterior network: deep bayesian predictive uncertainty for exponential family distributions. In International Conference on Learning Representations. 2022.">CBZugner+22</a>]</span> — Extends
+Posterior Networks to exponential family distributions with a certainty budget.</p></li>
+</ul>
+<p><strong>Regression Methods</strong></p>
+<ul class="simple">
+<li><p><strong>Deep Evidential Regression (DER)</strong> <span id="id8">[<a class="reference internal" href="references.html#id6" title="Alexander Amini, Wilko Schwarting, Ava Soleimany, and Daniela Rus. Deep evidential regression. In Hugo Larochelle, Marc'Aurelio Ranzato, Raia Hadsell, Maria-Florina Balcan, and Hsuan-Tien Lin, editors, Advances in Neural Information Processing Systems 33: Annual Conference on Neural Information Processing Systems 2020, NeurIPS 2020, December 6-12, 2020, virtual. 2020. URL: https://proceedings.neurips.cc/paper/2020/hash/aab085461de182608ee9f607f3f7d18f-Abstract.html.">ASSR20</a>]</span> — Outputs parameters
+of a Normal-Inverse-Gamma distribution for regression with uncertainty.</p></li>
+<li><p><strong>Regression Prior Networks (RPN)</strong> <span id="id9">[<a class="reference internal" href="references.html#id76" title="Andrey Malinin, Sergey Chervontsev, Ivan Provilkov, and Mark Gales. Regression prior networks. arXiv preprint arXiv:2006.11590, 2020.">MCPG20</a>]</span> — Combines
+evidential regression with OOD-aware training using KL divergence to a prior.</p></li>
+</ul>
+</section>
+<section id="unified-evidential-training">
+<h4>1.5.2 Unified Evidential Training<a class="headerlink" href="#unified-evidential-training" title="Link to this heading">¶</a></h4>
+<p>The <code class="docutils literal notranslate"><span class="pre">unified_evidential_train</span></code> function in <code class="docutils literal notranslate"><span class="pre">probly.train.evidential.common</span></code> provides
+a single interface for training all seven evidential methods:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">probly.train.evidential.common</span><span class="w"> </span><span class="kn">import</span> <span class="n">unified_evidential_train</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">probly.train.evidential.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">evidential_log_loss</span>
+
+<span class="n">unified_evidential_train</span><span class="p">(</span>
+    <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;EDL&quot;</span><span class="p">,</span>
+    <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+    <span class="n">dataloader</span><span class="o">=</span><span class="n">train_loader</span><span class="p">,</span>
+    <span class="n">loss_fn</span><span class="o">=</span><span class="n">evidential_log_loss</span><span class="p">,</span>
+    <span class="n">epochs</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+    <span class="n">lr</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span>
+    <span class="n">device</span><span class="o">=</span><span class="s2">&quot;cuda&quot;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Function Signature</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">unified_evidential_train</span><span class="p">(</span>
+    <span class="n">mode</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;PostNet&quot;</span><span class="p">,</span> <span class="s2">&quot;NatPostNet&quot;</span><span class="p">,</span> <span class="s2">&quot;EDL&quot;</span><span class="p">,</span> <span class="s2">&quot;PrNet&quot;</span><span class="p">,</span> <span class="s2">&quot;IRD&quot;</span><span class="p">,</span> <span class="s2">&quot;DER&quot;</span><span class="p">,</span> <span class="s2">&quot;RPN&quot;</span><span class="p">],</span>
+    <span class="n">model</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span>
+    <span class="n">dataloader</span><span class="p">:</span> <span class="n">DataLoader</span><span class="p">,</span>
+    <span class="n">loss_fn</span><span class="p">:</span> <span class="n">Callable</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">oodloader</span><span class="p">:</span> <span class="n">DataLoader</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">flow</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">class_count</span><span class="p">:</span> <span class="n">Tensor</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">epochs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
+    <span class="n">lr</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-3</span><span class="p">,</span>
+    <span class="n">device</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;cpu&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</pre></div>
+</div>
+<p><strong>Parameters</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">mode</span></code>: Training approach identifier. One of: <code class="docutils literal notranslate"><span class="pre">&quot;PostNet&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;NatPostNet&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;EDL&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;PrNet&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;IRD&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;DER&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;RPN&quot;</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">model</span></code>: The neural network to be trained (<code class="docutils literal notranslate"><span class="pre">nn.Module</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dataloader</span></code>: PyTorch DataLoader providing in-distribution training samples</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">loss_fn</span></code>: Loss function for training (mode-dependent)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">oodloader</span></code>: DataLoader for out-of-distribution samples (required for <code class="docutils literal notranslate"><span class="pre">&quot;PrNet&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;RPN&quot;</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">flow</span></code>: Normalizing flow module (required for <code class="docutils literal notranslate"><span class="pre">&quot;PostNet&quot;</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">class_count</span></code>: Tensor containing number of samples per class (used by <code class="docutils literal notranslate"><span class="pre">&quot;PostNet&quot;</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">epochs</span></code>: Number of training epochs (default: 5)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">lr</span></code>: Learning rate (default: 1e-3)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">device</span></code>: Device for training, e.g. <code class="docutils literal notranslate"><span class="pre">&quot;cpu&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;cuda&quot;</span></code> (default: <code class="docutils literal notranslate"><span class="pre">&quot;cpu&quot;</span></code>)</p></li>
+</ul>
+<p><strong>Mode-Specific Requirements</strong></p>
+<p><strong>Example: Training with Prior Networks</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">probly.train.evidential.common</span><span class="w"> </span><span class="kn">import</span> <span class="n">unified_evidential_train</span>
+
+<span class="c1"># PrNet requires both ID and OOD data</span>
+<span class="n">unified_evidential_train</span><span class="p">(</span>
+    <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;PrNet&quot;</span><span class="p">,</span>
+    <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+    <span class="n">dataloader</span><span class="o">=</span><span class="n">id_train_loader</span><span class="p">,</span>
+    <span class="n">oodloader</span><span class="o">=</span><span class="n">ood_train_loader</span><span class="p">,</span>
+    <span class="n">epochs</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">lr</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span>
+    <span class="n">device</span><span class="o">=</span><span class="s2">&quot;cuda&quot;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="evidential-layers">
+<h4>1.5.3 Evidential Layers<a class="headerlink" href="#evidential-layers" title="Link to this heading">¶</a></h4>
+<p>The <code class="docutils literal notranslate"><span class="pre">probly.layers.evidential.torch</span></code> module provides specialized layers for evidential models.</p>
+<p><strong>RadialFlowDensity</strong></p>
+<p>Normalizing flow for density estimation, used by Posterior Networks and Natural Posterior Networks.
+Uses a stack of radial flow layers to transform a base Gaussian distribution:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">probly.layers.evidential.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">RadialFlowDensity</span>
+
+<span class="c1"># Create flow with 4 radial layers over a 2D latent space</span>
+<span class="n">flow</span> <span class="o">=</span> <span class="n">RadialFlowDensity</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">flow_length</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+
+<span class="c1"># Compute log probability of latent vectors</span>
+<span class="n">log_prob</span> <span class="o">=</span> <span class="n">flow</span><span class="o">.</span><span class="n">log_prob</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>  <span class="c1"># Shape: [B]</span>
+</pre></div>
+</div>
+<p><strong>NatPNClassifier</strong></p>
+<p>Complete Natural Posterior Network classifier that combines an encoder, classifier head,
+and normalizing flow for density-based uncertainty:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">probly.layers.evidential.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">NatPNClassifier</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">NatPNClassifier</span><span class="p">(</span>
+    <span class="n">num_classes</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">latent_dim</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+    <span class="n">flow_length</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+    <span class="n">certainty_budget</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span>  <span class="c1"># Scales density into evidence (default: latent_dim)</span>
+    <span class="n">n_prior</span><span class="o">=</span><span class="mf">10.0</span>           <span class="c1"># Prior pseudo-count (default: num_classes)</span>
+<span class="p">)</span>
+
+<span class="c1"># Forward pass returns three values</span>
+<span class="n">alpha</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">log_pz</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="c1"># alpha: Posterior Dirichlet parameters [B, num_classes]</span>
+<span class="c1"># z: Latent representation [B, latent_dim]</span>
+<span class="c1"># log_pz: Log density from flow [B]</span>
+</pre></div>
+</div>
+<p><strong>EvidentialRegression</strong></p>
+<p>MLP model for evidential regression that outputs Normal-Inverse-Gamma parameters:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">probly.layers.evidential.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">EvidentialRegression</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">EvidentialRegression</span><span class="p">()</span>
+
+<span class="c1"># Returns four parameters for 1D regression</span>
+<span class="n">mu</span><span class="p">,</span> <span class="n">kappa</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="c1"># mu: Predicted mean</span>
+<span class="c1"># kappa: Observation count (&gt;= 0, controls epistemic uncertainty)</span>
+<span class="c1"># alpha: Shape parameter (&gt; 1)</span>
+<span class="c1"># beta: Rate parameter (&gt; 0, controls aleatoric uncertainty)</span>
+</pre></div>
+</div>
+</section>
+<section id="loss-functions">
+<h4>1.5.4 Loss Functions<a class="headerlink" href="#loss-functions" title="Link to this heading">¶</a></h4>
+<p>Loss functions are available in <code class="docutils literal notranslate"><span class="pre">probly.train.evidential.torch</span></code>.</p>
+<p><strong>Classification Losses</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">probly.train.evidential.torch</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">evidential_log_loss</span><span class="p">,</span>      <span class="c1"># EDL log loss (Sensoy et al., 2018)</span>
+    <span class="n">evidential_ce_loss</span><span class="p">,</span>       <span class="c1"># Cross-entropy variant using digamma</span>
+    <span class="n">evidential_mse_loss</span><span class="p">,</span>      <span class="c1"># MSE variant with variance term</span>
+    <span class="n">evidential_kl_divergence</span><span class="p">,</span> <span class="c1"># KL divergence regularizer</span>
+<span class="p">)</span>
+
+<span class="c1"># Basic usage - inputs are raw model outputs, targets are class indices</span>
+<span class="n">loss</span> <span class="o">=</span> <span class="n">evidential_log_loss</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">targets</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>ird_loss</strong> <span id="id10">[<a class="reference internal" href="references.html#id74" title="Theodoros Tsiligkaridis. Information robust dirichlet networks for predictive uncertainty estimation. arXiv preprint arXiv:1910.04819, 2019.">Tsi19</a>]</span></p>
+<p>Information Robust Dirichlet loss combining Lp calibration, regularization
+on incorrect classes, and entropy maximization for adversarial robustness:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">probly.train.evidential.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">ird_loss</span>
+
+<span class="c1"># alpha: predictions on clean inputs [B, K]</span>
+<span class="c1"># y: one-hot encoded labels [B, K]</span>
+<span class="c1"># adversarial_alpha: predictions on perturbed inputs [B, K] (optional)</span>
+<span class="n">loss</span> <span class="o">=</span> <span class="n">ird_loss</span><span class="p">(</span>
+    <span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span><span class="p">,</span>
+    <span class="n">y</span><span class="o">=</span><span class="n">y_onehot</span><span class="p">,</span>
+    <span class="n">adversarial_alpha</span><span class="o">=</span><span class="n">adversarial_alpha</span><span class="p">,</span>
+    <span class="n">p</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span>      <span class="c1"># Lp norm exponent</span>
+    <span class="n">lam</span><span class="o">=</span><span class="mf">0.15</span><span class="p">,</span>   <span class="c1"># Regularization weight</span>
+    <span class="n">gamma</span><span class="o">=</span><span class="mf">1.0</span>   <span class="c1"># Entropy weight</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>pn_loss</strong> <span id="id11">[<a class="reference internal" href="references.html#id73" title="Andrey Malinin and Mark Gales. Predictive uncertainty estimation via prior networks. In Advances in Neural Information Processing Systems, volume 31. Curran Associates, Inc., 2018.">MG18</a>]</span></p>
+<p>Prior Networks loss for paired ID and OOD training:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">probly.train.evidential.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">pn_loss</span>
+
+<span class="c1"># Computes ID KL + OOD KL + cross-entropy term</span>
+<span class="n">loss</span> <span class="o">=</span> <span class="n">pn_loss</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">x_in</span><span class="p">,</span> <span class="n">y_in</span><span class="p">,</span> <span class="n">x_ood</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>natpn_loss</strong> <span id="id12">[<a class="reference internal" href="references.html#id77" title="Bertrand Charpentier, Oliver Borchert, Daniel Zügner, Simon Geisler, and Stephan Günnemann. Natural posterior network: deep bayesian predictive uncertainty for exponential family distributions. In International Conference on Learning Representations. 2022.">CBZugner+22</a>]</span></p>
+<p>Natural Posterior Network loss (expected NLL minus entropy regularization):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">probly.train.evidential.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">natpn_loss</span>
+
+<span class="n">loss</span> <span class="o">=</span> <span class="n">natpn_loss</span><span class="p">(</span><span class="n">alpha</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">entropy_weight</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>postnet_loss</strong> <span id="id13">[<a class="reference internal" href="references.html#id75" title="Bertrand Charpentier, Daniel Zügner, and Stephan Günnemann. Posterior network: uncertainty estimation without ood samples via density-based pseudo-counts. In Advances in Neural Information Processing Systems, volume 33, 1356–1367. Curran Associates, Inc., 2020.">CZugnerGunnemann20</a>]</span></p>
+<p>Posterior Networks loss using flow-based density estimation:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">probly.train.evidential.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">postnet_loss</span>
+
+<span class="n">loss</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="n">postnet_loss</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">flow</span><span class="p">,</span> <span class="n">class_counts</span><span class="p">,</span> <span class="n">entropy_weight</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Regression Losses</strong></p>
+<p><strong>der_loss</strong> <span id="id14">[<a class="reference internal" href="references.html#id6" title="Alexander Amini, Wilko Schwarting, Ava Soleimany, and Daniela Rus. Deep evidential regression. In Hugo Larochelle, Marc'Aurelio Ranzato, Raia Hadsell, Maria-Florina Balcan, and Hsuan-Tien Lin, editors, Advances in Neural Information Processing Systems 33: Annual Conference on Neural Information Processing Systems 2020, NeurIPS 2020, December 6-12, 2020, virtual. 2020. URL: https://proceedings.neurips.cc/paper/2020/hash/aab085461de182608ee9f607f3f7d18f-Abstract.html.">ASSR20</a>]</span></p>
+<p>Deep Evidential Regression loss (Student-t NLL + evidence regularization):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">probly.train.evidential.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">der_loss</span>
+
+<span class="n">loss</span> <span class="o">=</span> <span class="n">der_loss</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">kappa</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">lam</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>rpn_loss</strong> <span id="id15">[<a class="reference internal" href="references.html#id76" title="Andrey Malinin, Sergey Chervontsev, Ivan Provilkov, and Mark Gales. Regression prior networks. arXiv preprint arXiv:2006.11590, 2020.">MCPG20</a>]</span></p>
+<p>Regression Prior Networks loss combining DER on ID data with KL to prior on OOD:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">probly.train.evidential.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">rpn_loss</span>
+
+<span class="n">loss</span> <span class="o">=</span> <span class="n">rpn_loss</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">x_id</span><span class="p">,</span> <span class="n">y_id</span><span class="p">,</span> <span class="n">x_ood</span><span class="p">,</span> <span class="n">lam_der</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">lam_rpn</span><span class="o">=</span><span class="mf">50.0</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Helper Functions</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">probly.train.evidential.torch</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">kl_dirichlet</span><span class="p">,</span>                <span class="c1"># KL(Dir(α_p) || Dir(α_q))</span>
+    <span class="n">make_in_domain_target_alpha</span><span class="p">,</span> <span class="c1"># Sharp Dirichlet target for ID (α=10 on correct class)</span>
+    <span class="n">make_ood_target_alpha</span><span class="p">,</span>       <span class="c1"># Flat Dirichlet target for OOD</span>
+    <span class="n">rpn_prior</span><span class="p">,</span>                   <span class="c1"># Zero-evidence Normal-Gamma prior</span>
+    <span class="n">rpn_ng_kl</span><span class="p">,</span>                   <span class="c1"># KL divergence for Normal-Gamma distributions</span>
+    <span class="n">predictive_probs</span><span class="p">,</span>            <span class="c1"># Expected probabilities: α / Σα</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="uncertainty-interpretation">
+<h4>1.5.5 Uncertainty Interpretation<a class="headerlink" href="#uncertainty-interpretation" title="Link to this heading">¶</a></h4>
+<p><strong>Classification (Dirichlet)</strong></p>
+<p>For evidential classification, the model outputs Dirichlet concentration parameters
+α = (α₁, …, αₖ) where K is the number of classes.</p>
+<p><strong>Key quantities:</strong></p>
+<ul class="simple">
+<li><p><strong>Dirichlet strength</strong> S = Σαᵢ — total evidence; higher means more confident</p></li>
+<li><p><strong>Expected probabilities</strong> p = α/S — the predicted class distribution</p></li>
+<li><p><strong>Epistemic uncertainty</strong> K/S — uncertainty due to lack of evidence</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">probly.train.evidential.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">predictive_probs</span>
+
+<span class="n">alpha</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">S</span> <span class="o">=</span> <span class="n">alpha</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>              <span class="c1"># Total evidence</span>
+<span class="n">probs</span> <span class="o">=</span> <span class="n">predictive_probs</span><span class="p">(</span><span class="n">alpha</span><span class="p">)</span>   <span class="c1"># Class probabilities</span>
+<span class="n">uncertainty</span> <span class="o">=</span> <span class="n">num_classes</span> <span class="o">/</span> <span class="n">S</span>     <span class="c1"># Epistemic uncertainty</span>
+</pre></div>
+</div>
+<p><strong>Regression (Normal-Inverse-Gamma)</strong></p>
+<p>For evidential regression, the model outputs (μ, κ, α, β):</p>
+<ul class="simple">
+<li><p><strong>Predicted mean</strong>: μ</p></li>
+<li><p><strong>Aleatoric uncertainty</strong> (data noise): β / (α - 1)</p></li>
+<li><p><strong>Epistemic uncertainty</strong> (model uncertainty): β / (κ(α - 1))</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">mu</span><span class="p">,</span> <span class="n">kappa</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+<span class="n">aleatoric</span> <span class="o">=</span> <span class="n">beta</span> <span class="o">/</span> <span class="p">(</span><span class="n">alpha</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">epistemic</span> <span class="o">=</span> <span class="n">beta</span> <span class="o">/</span> <span class="p">(</span><span class="n">kappa</span> <span class="o">*</span> <span class="p">(</span><span class="n">alpha</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
+</pre></div>
+</div>
+</section>
+<section id="tutorial-notebooks">
+<h4>1.5.6 Tutorial Notebooks<a class="headerlink" href="#tutorial-notebooks" title="Link to this heading">¶</a></h4>
+<p>Comprehensive tutorials are available in <code class="docutils literal notranslate"><span class="pre">notebooks/examples/unified_evidential_train/</span></code>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">unified_evidential_function_notebook.ipynb</span></code> — Unified training function demo with EDL on MNIST, including OOD detection using FashionMNIST</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Prior_Networks.ipynb</span></code> — Dirichlet Prior Networks (Malinin &amp; Gales, 2018) with KL-based training, entropy analysis, and OOD detection AUC</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">posterior_network.ipynb</span></code> — Posterior Networks (Charpentier et al., 2020) using normalizing flows for density-based pseudo-counts without OOD training data</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Natural_Posterior_Network.ipynb</span></code> — Natural Posterior Networks (Charpentier et al., 2022) with radial flows, Dirichlet posteriors, and certainty budget</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">information_robust_dirichlet_networks_notebook.ipynb</span></code> — IRD Networks (Tsiligkaridis, 2019) with Lp calibration, regularization, and adversarial entropy</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">deep_evidential_regression_summary.ipynb</span></code> — Deep Evidential Regression (Amini et al., 2020) with Normal-Inverse-Gamma distributions and aleatoric/epistemic uncertainty</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Regression_Prior_Networks</span> <span class="pre">(4).ipynb</span></code> — Regression Prior Networks (Malinin et al., 2020) with Normal-Wishart distributions and unified DER+RPN loss</p></li>
+</ul>
+<p>For the basic evidential transformation tutorials, see:</p>
+<p><a class="reference internal" href="notebooks/examples/evidential_regression_transformation.html"><span class="doc">Evidential Regression Transformation</span></a></p>
+</section>
+<section id="evidential-classification">
+<h4>1.5.2 Evidential Classification<a class="headerlink" href="#evidential-classification" title="Link to this heading">¶</a></h4>
+<p>For classification, evidential classification learns a Dirichlet distribution over class probabilities,
+enabling sophisticated uncertainty quantification for multi-class prediction tasks.</p>
+<p><a class="reference internal" href="notebooks/examples/evidential_classification_transformation.html"><span class="doc">Evidential Classification Transformation</span></a></p>
+</section>
+</section>
+</section>
+<section id="utilities-and-layers">
+<h2>2. Utilities and Layers<a class="headerlink" href="#utilities-and-layers" title="Link to this heading">¶</a></h2>
+<p>Beyond transformations, <code class="docutils literal notranslate"><span class="pre">probly</span></code> offers a comprehensive suite of <strong>Utilities and Layers</strong> that facilitate
+building and training uncertainty-aware models. These components are specifically designed to work seamlessly
+with probabilistic outputs and enable end-to-end uncertainty-aware workflows.</p>
+<p><strong>Key utilities include:</strong></p>
+<ul class="simple">
+<li><p><a class="reference internal" href="notebooks/examples/utilities_and_layers/custom_loss_functions.html"><span class="doc">Custom Loss Functions</span></a>:</p></li>
+</ul>
+<p>Tailored loss functions that properly account for
+uncertainty in predictions. These include negative log-likelihood variants, evidential loss functions,and calibration-aware losses that ensure your model
+learns meaningful uncertainty estimates.</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="notebooks/examples/utilities_and_layers/metrics.html"><span class="doc">Metrics</span></a>:</p></li>
+</ul>
+<p>Specialized metrics to evaluate not only prediction accuracy but also the
+quality of uncertainty estimates, including calibration error, sharpness, and proper scoring rules.</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="notebooks/examples/utilities_and_layers/probabilistic_layers.html"><span class="doc">Probabilistic Layers</span></a>:</p></li>
+</ul>
+<p>Drop-in replacements for standard layers (Linear, Conv2D, etc.)
+that incorporate stochasticity,enabling Bayesian inference within your models.</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="notebooks/examples/utilities_and_layers/utility_functions.html"><span class="doc">Utility Functions</span></a>:</p></li>
+</ul>
+<p>Helper functions for extracting mean and variance from model outputs,
+computing prediction intervals, and formatting probabilistic predictions for downstream tasks.</p>
+<p>These components ensure that users can not only modify their models to be uncertainty-aware but also
+effectively train, evaluate, and deploy them within the same unified framework.</p>
+</section>
+<section id="evaluation-and-quantification">
+<h2>3. Evaluation and Quantification<a class="headerlink" href="#evaluation-and-quantification" title="Link to this heading">¶</a></h2>
+<p>Finally, <code class="docutils literal notranslate"><span class="pre">probly</span></code> provides comprehensive tools for <strong>Evaluation and Quantification</strong> of uncertainty estimates.
+This includes rigorous methods to assess the calibration of uncertainty estimates, techniques to visualize
+uncertainty in predictions, and approaches to interpret where uncertainty comes from.</p>
+<p>These tools are essential for understanding how well a model’s uncertainty estimates align with real-world outcomes,
+validating that uncertainty is meaningful, and making informed decisions based on those estimates.</p>
+<p><strong>Key evaluation tools include:</strong></p>
+<ul class="simple">
+<li><p><a class="reference internal" href="notebooks/examples/evaluation_and_quantification/calibration_metrics.html"><span class="doc">Calibration Metrics</span></a>:</p></li>
+</ul>
+<p>Tools to assess how well uncertainty estimates correspond to actual prediction errors. This includes expected calibration error (ECE), maximum calibration error (MCE),
+and negative log-likelihood metrics.</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="notebooks/examples/evaluation_and_quantification/visualization_tools.html"><span class="doc">Visualization Tools</span></a>:</p></li>
+</ul>
+<p>Methods to visualize uncertainty in predictions
+through confidence bands, prediction interval plots, and uncertainty heatmaps, aiding in qualitative interpretation and model debugging.</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="notebooks/examples/evaluation_and_quantification/interpretation_techniques.html"><span class="doc">Interpretation Techniques</span></a>:</p></li>
+</ul>
+<p>Approaches to decompose uncertaintyinto aleatoric (data) and epistemic (model) components,identify which inputs drive uncertainty, and understand the sources and implications of uncertainty in
+model outputs.</p>
+</section>
+<section id="conclusion">
+<h2><strong>Conclusion</strong><a class="headerlink" href="#conclusion" title="Link to this heading">¶</a></h2>
+<p>By providing a comprehensive suite of tools across these three pillars—Transformations, Utilities &amp; Layers,
+and Evaluation &amp; Quantification—<code class="docutils literal notranslate"><span class="pre">probly</span></code> aims to make uncertainty estimation accessible and practical
+for a wide range of machine learning applications, from research prototyping to production deployment.</p>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="advanced_topics.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Advanced Topics</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="core_concepts.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">Core Concepts</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2025, probly team
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Main Components</a><ul>
+<li><a class="reference internal" href="#transformations">1. Transformations</a><ul>
+<li><a class="reference internal" href="#dropout">1.1 Dropout</a></li>
+<li><a class="reference internal" href="#dropconnect">1.2 DropConnect</a></li>
+<li><a class="reference internal" href="#bayesian">1.3 Bayesian</a></li>
+<li><a class="reference internal" href="#ensemble">1.4 Ensemble</a></li>
+<li><a class="reference internal" href="#evidential">1.5 Evidential</a><ul>
+<li><a class="reference internal" href="#implemented-methods">1.5.1 Implemented Methods</a></li>
+<li><a class="reference internal" href="#unified-evidential-training">1.5.2 Unified Evidential Training</a></li>
+<li><a class="reference internal" href="#evidential-layers">1.5.3 Evidential Layers</a></li>
+<li><a class="reference internal" href="#loss-functions">1.5.4 Loss Functions</a></li>
+<li><a class="reference internal" href="#uncertainty-interpretation">1.5.5 Uncertainty Interpretation</a></li>
+<li><a class="reference internal" href="#tutorial-notebooks">1.5.6 Tutorial Notebooks</a></li>
+<li><a class="reference internal" href="#evidential-classification">1.5.2 Evidential Classification</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#utilities-and-layers">2. Utilities and Layers</a></li>
+<li><a class="reference internal" href="#evaluation-and-quantification">3. Evaluation and Quantification</a></li>
+<li><a class="reference internal" href="#conclusion"><strong>Conclusion</strong></a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="_static/documentation_options.js?v=4621528c"></script>
+    <script src="_static/doctools.js?v=9bcbadda"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/scripts/furo.js?v=5fa4622c"></script>
+    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="_static/copybutton.js?v=ccdb6887"></script>
+    </body>
+</html>

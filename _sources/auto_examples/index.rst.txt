@@ -1,0 +1,198 @@
+:orphan:
+
+``probly`` examples
+==================
+
+This folder contains short, focused example scripts rendered into the documentation
+via Sphinx-Gallery.
+
+By convention, example files are named ``plot_*.py``.
+
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbnails">
+
+.. thumbnail-parent-div-open
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="This page exists mainly to verify that Sphinx-Gallery is correctly configured for the project.">
+
+.. only:: html
+
+  .. image:: /auto_examples/images/thumb/sphx_glr_plot_gallery_smoke_test_thumb.png
+    :alt:
+
+  :doc:`/auto_examples/plot_gallery_smoke_test`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Sphinx-Gallery smoke test.</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates a simple form of uncertainty quantification (UQ) for a regression-like setting.">
+
+.. only:: html
+
+  .. image:: /auto_examples/images/thumb/sphx_glr_plot_uncertainty_quantification_thumb.png
+    :alt:
+
+  :doc:`/auto_examples/plot_uncertainty_quantification`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Uncertainty Quantification.</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="This tiny example shows how repeated stochastic predictions can be summarized into mean probabilities and visualized as error bars.">
+
+.. only:: html
+
+  .. image:: /auto_examples/images/thumb/sphx_glr_plot_intro_uncertainty_glimpse_thumb.png
+    :alt:
+
+  :doc:`/auto_examples/plot_intro_uncertainty_glimpse`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Hello, uncertainty (glimpse).</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="You typically don&#x27;t want to care about the concrete sample type. probly provides create_sample which selects the best representation based on the sample element type.">
+
+.. only:: html
+
+  .. image:: /auto_examples/images/thumb/sphx_glr_plot_create_sample_dispatch_thumb.png
+    :alt:
+
+  :doc:`/auto_examples/plot_create_sample_dispatch`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Automatic sample construction (dispatcher).</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="This example illustrates the difference between epistemic and aleatoric uncertainty in probabilistic models.">
+
+.. only:: html
+
+  .. image:: /auto_examples/images/thumb/sphx_glr_plot_epistemic_vs_aleatoric_thumb.png
+    :alt:
+
+  :doc:`/auto_examples/plot_epistemic_vs_aleatoric`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Epistemic vs Aleatoric Uncertainty.</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="A minimal thresholding “predictor” that turns continuous inputs into class labels, plus a plot showing how the decision changes with the threshold.">
+
+.. only:: html
+
+  .. image:: /auto_examples/images/thumb/sphx_glr_plot_intro_threshold_decision_thumb.png
+    :alt:
+
+  :doc:`/auto_examples/plot_intro_threshold_decision`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Threshold-based decision sketch.</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="probly defines a small protocol for &quot;predictors&quot; and a generic probly.predictor.predict helper.">
+
+.. only:: html
+
+  .. image:: /auto_examples/images/thumb/sphx_glr_plot_using_predict_protocol_thumb.png
+    :alt:
+
+  :doc:`/auto_examples/plot_using_predict_protocol`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Using the generic predict().</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="probly represents repeated stochastic predictions as a &quot;sample&quot;. For NumPy-like data, the concrete implementation is probly.representation.sampling.sample.ArraySample.">
+
+.. only:: html
+
+  .. image:: /auto_examples/images/thumb/sphx_glr_plot_samples_with_array_sample_thumb.png
+    :alt:
+
+  :doc:`/auto_examples/plot_samples_with_array_sample`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Working with samples (`ArraySample`).</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates selective prediction (abstention).">
+
+.. only:: html
+
+  .. image:: /auto_examples/images/thumb/sphx_glr_plot_selective_prediction_thumb.png
+    :alt:
+
+  :doc:`/auto_examples/plot_selective_prediction`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Selective Prediction.</div>
+    </div>
+
+
+.. thumbnail-parent-div-close
+
+.. raw:: html
+
+    </div>
+
+
+.. toctree::
+   :hidden:
+
+   /auto_examples/plot_gallery_smoke_test
+   /auto_examples/plot_uncertainty_quantification
+   /auto_examples/plot_intro_uncertainty_glimpse
+   /auto_examples/plot_create_sample_dispatch
+   /auto_examples/plot_epistemic_vs_aleatoric
+   /auto_examples/plot_intro_threshold_decision
+   /auto_examples/plot_using_predict_protocol
+   /auto_examples/plot_samples_with_array_sample
+   /auto_examples/plot_selective_prediction
+
+
+
+.. only:: html
+
+ .. rst-class:: sphx-glr-signature
+
+    `Gallery generated by Sphinx-Gallery <https://sphinx-gallery.github.io>`_

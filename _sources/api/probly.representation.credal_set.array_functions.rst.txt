@@ -1,6 +1,0 @@
-probly.representation.credal\_set.array\_functions
-==================================================
-
-.. automodule:: probly.representation.credal_set.array_functions
-
-   

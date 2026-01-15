@@ -1,0 +1,254 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "id": "665fe77b",
+   "metadata": {},
+   "source": [
+    "## Key Probabilistic Layers in `probly`\n",
+    "\n",
+    "### 1. `BayesLinear` & `BayesConv2d`\n",
+    "\n",
+    "**What they do:**  \n",
+    "These layers replace standard `Linear` and `Conv2d` layers to build a **Bayesian Neural Network (BNN)**.\n",
+    "\n",
+    "**How they work:**  \n",
+    "Instead of using fixed weights, each weight is modeled as a probability distribution (e.g., Gaussian).  \n",
+    "On every forward pass, weights are sampled from these distributions.\n",
+    "\n",
+    "**Result:**  \n",
+    "The model can explicitly represent **uncertainty in its own parameters**."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "id": "33ac7d60",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "--- Stochastic Forward Passes ---\n",
+      "Output of first pass:\n",
+      " tensor([[-0.0915, -0.0420, -0.8667,  0.2994,  0.3818]],\n",
+      "       grad_fn=<AddmmBackward0>)\n",
+      "\n",
+      "Output of second pass:\n",
+      " tensor([[-0.2573,  0.1226, -0.4881,  0.4306,  0.5179]],\n",
+      "       grad_fn=<AddmmBackward0>)\n",
+      "\n",
+      "Outputs are the same: False\n",
+      "\n",
+      "Calculated KL Divergence: 138.1445\n"
+     ]
+    }
+   ],
+   "source": [
+    "import torch\n",
+    "from torch import nn\n",
+    "\n",
+    "from probly.layers.torch import BayesLinear, DropConnectLinear, NormalInverseGammaLinear\n",
+    "\n",
+    "# 1. Define a standard nn.Linear layer to serve as a base\n",
+    "base_linear = nn.Linear(in_features=10, out_features=5)\n",
+    "\n",
+    "# 2. Create a BayesLinear layer from the base layer\n",
+    "bayes_linear = BayesLinear(base_linear)\n",
+    "\n",
+    "# 3. Create a dummy input tensor\n",
+    "dummy_input = torch.randn(1, 10)\n",
+    "\n",
+    "# 4. Demonstrate stochastic forward passes\n",
+    "# Note: No need to call .train() as Bayesian layers are always stochastic\n",
+    "print(\"--- Stochastic Forward Passes ---\")\n",
+    "output1 = bayes_linear(dummy_input)\n",
+    "output2 = bayes_linear(dummy_input)\n",
+    "\n",
+    "print(\"Output of first pass:\\n\", output1)\n",
+    "print(\"\\nOutput of second pass:\\n\", output2)\n",
+    "print(f\"\\nOutputs are the same: {torch.allclose(output1, output2)}\")\n",
+    "\n",
+    "# 5. Access the KL divergence property (crucial for training BNNs)\n",
+    "kl = bayes_linear.kl_divergence\n",
+    "print(f\"\\nCalculated KL Divergence: {kl.item():.4f}\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "55e74022",
+   "metadata": {},
+   "source": [
+    "\n",
+    "### 2. `DropConnectLinear`\n",
+    "\n",
+    "**What it does:**  \n",
+    "Implements the **DropConnect** technique as a neural network layer.\n",
+    "\n",
+    "**How it works:**  \n",
+    "During training (and during inference when performing uncertainty quantification), individual weights are randomly set to zero.  \n",
+    "This is a more general form of Dropout.\n",
+    "\n",
+    "**Result:**  \n",
+    "Running multiple forward passes produces a **distribution of outputs** that captures model uncertainty."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "id": "a7fd096f",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "--- Behavior in .train() mode ---\n",
+      "Output of first pass:\n",
+      " tensor([[-0.3468,  0.1877, -0.2025,  0.2372, -0.2160,  0.0782, -0.0573, -0.0387,\n",
+      "         -0.4009,  0.4548]], grad_fn=<AddmmBackward0>)\n",
+      "\n",
+      "Output of second pass:\n",
+      " tensor([[-0.1440, -0.0132, -0.3005,  0.4418,  0.2543, -0.0857, -0.3065, -0.4581,\n",
+      "         -0.9260,  1.1667]], grad_fn=<AddmmBackward0>)\n",
+      "\n",
+      "Outputs are the same: False\n",
+      "\n",
+      "\n",
+      "--- Behavior in .eval() mode ---\n",
+      "Output of first pass:\n",
+      " tensor([[-0.3639,  0.0404, -0.1381,  0.2764, -0.0017,  0.0430, -0.0628,  0.1629,\n",
+      "         -0.5623,  0.5159]], grad_fn=<AddmmBackward0>)\n",
+      "\n",
+      "Output of second pass:\n",
+      " tensor([[-0.3639,  0.0404, -0.1381,  0.2764, -0.0017,  0.0430, -0.0628,  0.1629,\n",
+      "         -0.5623,  0.5159]], grad_fn=<AddmmBackward0>)\n",
+      "\n",
+      "Outputs are the same: True\n"
+     ]
+    }
+   ],
+   "source": [
+    "# 1. Define a standard nn.Linear layer as a base\n",
+    "base_linear = nn.Linear(in_features=20, out_features=10)\n",
+    "\n",
+    "# 2. Create a DropConnectLinear layer with a 50% drop probability\n",
+    "dc_linear = DropConnectLinear(base_linear, p=0.5)\n",
+    "\n",
+    "# 3. Create a dummy input tensor\n",
+    "dummy_input = torch.randn(1, 20)\n",
+    "\n",
+    "# 4. Demonstrate stochastic behavior in .train() mode\n",
+    "print(\"--- Behavior in .train() mode ---\")\n",
+    "dc_linear.train()\n",
+    "output_train1 = dc_linear(dummy_input)\n",
+    "output_train2 = dc_linear(dummy_input)\n",
+    "print(\"Output of first pass:\\n\", output_train1)\n",
+    "print(\"\\nOutput of second pass:\\n\", output_train2)\n",
+    "print(f\"\\nOutputs are the same: {torch.allclose(output_train1, output_train2)}\")\n",
+    "\n",
+    "# 5. Demonstrate deterministic behavior in .eval() mode\n",
+    "print(\"\\n\\n--- Behavior in .eval() mode ---\")\n",
+    "dc_linear.eval()\n",
+    "output_eval1 = dc_linear(dummy_input)\n",
+    "output_eval2 = dc_linear(dummy_input)\n",
+    "print(\"Output of first pass:\\n\", output_eval1)\n",
+    "print(\"\\nOutput of second pass:\\n\", output_eval2)\n",
+    "print(f\"\\nOutputs are the same: {torch.allclose(output_eval1, output_eval2)}\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "93268c59",
+   "metadata": {},
+   "source": [
+    "\n",
+    "### 3. `NormalInverseGammaLinear` (for Evidential Regression)\n",
+    "\n",
+    "**What it does:**  \n",
+    "A specialized output layer designed for **Evidential Regression**.\n",
+    "\n",
+    "**How it works:**  \n",
+    "Instead of predicting a single value, the layer outputs the four parameters of a **Normal-Inverse-Gamma (NIG)** distribution:\n",
+    "\n",
+    "- `gamma`\n",
+    "- `nu`\n",
+    "- `alpha`\n",
+    "- `beta`\n",
+    "\n",
+    "**Result:**  \n",
+    "This distribution directly models:\n",
+    "\n",
+    "- The predictive mean  \n",
+    "- The predictive variance  \n",
+    "- The model’s confidence in its own predictions\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "id": "1aa7bb5e",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "--- Output Dictionary ---\n",
+      "{'gamma': tensor([[-1.7726]], grad_fn=<AddmmBackward0>), 'nu': tensor([[0.5928]], grad_fn=<SoftplusBackward0>), 'alpha': tensor([[1.5074]], grad_fn=<AddBackward0>), 'beta': tensor([[0.5090]], grad_fn=<SoftplusBackward0>)}\n",
+      "\n",
+      "\n",
+      "--- Individual Parameters ---\n",
+      "Gamma (prediction): tensor([[-1.7726]], grad_fn=<AddmmBackward0>)\n",
+      "Nu (variance regularizer): tensor([[0.5928]], grad_fn=<SoftplusBackward0>)\n",
+      "Alpha (precision): tensor([[1.5074]], grad_fn=<AddBackward0>)\n",
+      "Beta (variance): tensor([[0.5090]], grad_fn=<SoftplusBackward0>)\n"
+     ]
+    }
+   ],
+   "source": [
+    "# 1. Create the NIG layer directly (it does not take a base layer)\n",
+    "# For a regression task, out_features is typically 1\n",
+    "nig_linear = NormalInverseGammaLinear(in_features=10, out_features=1)\n",
+    "\n",
+    "# 2. Create a dummy input tensor\n",
+    "dummy_input = torch.randn(1, 10)\n",
+    "\n",
+    "# 3. Perform a single forward pass\n",
+    "params = nig_linear(dummy_input)\n",
+    "\n",
+    "# 4. Inspect the output dictionary\n",
+    "print(\"--- Output Dictionary ---\")\n",
+    "print(params)\n",
+    "\n",
+    "print(\"\\n\\n--- Individual Parameters ---\")\n",
+    "print(\"Gamma (prediction):\", params[\"gamma\"])\n",
+    "print(\"Nu (variance regularizer):\", params[\"nu\"])\n",
+    "print(\"Alpha (precision):\", params[\"alpha\"])\n",
+    "print(\"Beta (variance):\", params[\"beta\"])"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": ".venv",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.13.7"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}

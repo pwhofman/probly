@@ -1,0 +1,843 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../../">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../../genindex.html" /><link rel="search" title="Search" href="../../search.html" /><link rel="next" title="Using probly with scikit-learn" href="sklearn_selective_prediction.html" /><link rel="prev" title="Multilib Demo" href="multilib_demo.html" />
+
+    <!-- Generated with Sphinx 8.2.3 and Furo 2024.08.06 -->
+        <title>A Brief Introduction to PyTraverse - probly 0.3.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=354aac6f" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=d2d258e8" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?v=302659d7" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css?v=201d0c9a" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f8f8f8;
+  --color-code-foreground: black;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #272822;
+  --color-code-foreground: #f8f8f2;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #272822;
+  --color-code-foreground: #f8f8f2;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../../index.html"><div class="brand">probly 0.3.1 documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><div class="sidebar-scroll"><a class="sidebar-brand" href="../../index.html">
+  
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo only-light" src="../../_static/logo/logo_light.png" alt="Light Logo"/>
+    <img class="sidebar-logo only-dark" src="../../_static/logo/logo_dark.png" alt="Dark Logo"/>
+  </div>
+  
+  
+</a><form class="sidebar-search-container" method="get" action="../../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Content</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">The <code class="docutils literal notranslate"><span class="pre">probly</span></code> Python Package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core_concepts.html">Core Concepts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../main_components.html">Main Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../advanced_topics.html">Advanced Topics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples_and_tutorials.html">Examples and Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../methods.html">Implemented methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing to probly 🏔️</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../references.html">References and Further Reading</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../faq.html">FAQ and Troubleshooting</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Notebooks</span></p>
+<ul class="current">
+<li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">Notebook Examples</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Notebook Examples</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l2 has-children"><a class="reference internal" href="utilities_and_layers/index.html">Utilities and Layers</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Utilities and Layers</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="utilities_and_layers/custom_loss_functions.html">Custom Loss Functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="utilities_and_layers/metrics.html">Evaluation Metrics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="utilities_and_layers/probabilistic_layers.html">Key Probabilistic Layers in <code class="docutils literal notranslate"><span class="pre">probly</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="utilities_and_layers/utility_functions.html">Utility Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="evaluation_and_quantification/index.html">Evaluation and Quantification</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of Evaluation and Quantification</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="evaluation_and_quantification/calibration_metrics.html">Calibration Metrics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="evaluation_and_quantification/interpretation_techniques.html">Interpretation techniques</a></li>
+<li class="toctree-l3"><a class="reference internal" href="evaluation_and_quantification/visualization_tools.html">Visualisation Tools</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="bayesian_transformation.html">Bayesian Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dropconnect_transformation.html">Dropconnect Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dropout_transformation.html">Dropout Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ensemble_transformation.html">Ensemble Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="evidential_classification_transformation.html">Evidential Classification Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="evidential_regression_transformation.html">Evidential Regression Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fashionmnist_ood_ensemble.html">Out-of-Distribution Detection with an Ensemble</a></li>
+<li class="toctree-l2"><a class="reference internal" href="label_relaxation_calibration.html">Calibration with Label Relaxation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="lazy_dispatch_test.html">Lazy Dispatch Test</a></li>
+<li class="toctree-l2"><a class="reference internal" href="multilib_demo.html">Multilib Demo</a></li>
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">A Brief Introduction to PyTraverse</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sklearn_selective_prediction.html">Using probly with scikit-learn</a></li>
+<li class="toctree-l2"><a class="reference internal" href="temperature_scaling_calibration.html">Calibration using Temperature Scaling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="train_bnn_classification.html">Bayesian Neural Networks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="train_evidential_classification.html">Evidential Model for Classification</a></li>
+<li class="toctree-l2"><a class="reference internal" href="train_evidential_regression.html">Evidential Regression Model</a></li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div><div style="text-align: center; margin-top: 1rem; margin-bottom: 1rem;">
+  <a href="https://github.com/pwhofman/probly" target="_blank" rel="noopener noreferrer" title="GitHub Repository">
+    <img src="../../_static/github-mark.svg" alt="GitHub Logo" width="28" height="28" style="display: inline-block;">
+  </a>
+</div>
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          
+
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="a-brief-introduction-to-pytraverse">
+<h1>A Brief Introduction to PyTraverse<a class="headerlink" href="#a-brief-introduction-to-pytraverse" title="Link to this heading">¶</a></h1>
+<p>The goal of this notebook is to showcase the key aspects of PyTraverse and how they can be used to rewrite datastructures.</p>
+<section id="hello-world-traverser">
+<h2>1. Hello World Traverser<a class="headerlink" href="#hello-world-traverser" title="Link to this heading">¶</a></h2>
+<p>Let’s start with the simplest possible traverser: On that does not actually traverse anything:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pytraverse</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
+
+
+<span class="nd">@t</span><span class="o">.</span><span class="n">traverser</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">my_traverser</span><span class="p">(</span><span class="n">s</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">s</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+
+
+<span class="n">s</span> <span class="o">=</span> <span class="s2">&quot;hello world&quot;</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">traverse</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">my_traverser</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>HELLO WORLD
+</pre></div>
+</div>
+</div>
+</div>
+<p>The core function offered by the <code class="docutils literal notranslate"><span class="pre">pytraverse</span></code> module is the <code class="docutils literal notranslate"><span class="pre">traverse</span></code> function. It takes an object to traverse and a traverser that should be applied to it.
+Here, the traverser just calls the <code class="docutils literal notranslate"><span class="pre">.upper()</span></code> method of the passed-in string.</p>
+<p>Note the <code class="docutils literal notranslate"><span class="pre">&#64;t.traverser</span></code> decorator. It converts our simple object mapper to a “proper” traverser - we will discuss later what this means.
+For now, just remember to annotate your traverser functions with this decorator.</p>
+</section>
+<section id="down-to-business">
+<h2>2. Down to Business<a class="headerlink" href="#down-to-business" title="Link to this heading">¶</a></h2>
+<p>The previous example was maybe a bit boring. After all, we did not traverse anything. Let’s change that now…</p>
+<p>Consider the problem of computing the sum of all the integers in a (nested) datastructure:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">data</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">],</span> <span class="mi">6</span><span class="p">],</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">],</span> <span class="mi">9</span><span class="p">]</span>
+<span class="c1"># We want to compute 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 = 45 here...</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>The main idea behind the traverser library is to abstract away the recursion, so that you can focus on the semantics of the task at hand.</p>
+<p>Let’s start by solving this task using a standard recursive implementation:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">recursive_sum</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">object</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">([</span><span class="n">recursive_sum</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">x</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">s</span>
+    <span class="k">return</span> <span class="n">x</span>
+
+
+<span class="nb">print</span><span class="p">(</span><span class="n">recursive_sum</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>45
+</pre></div>
+</div>
+</div>
+</div>
+<p>That was easy enough. Now, let’s rewrite this to use the pytraverse library:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
+
+
+<span class="nd">@t</span><span class="o">.</span><span class="n">traverser</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">sum_traverser</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">object</span><span class="p">,</span> <span class="n">traverse</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">object</span><span class="p">],</span> <span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">([</span><span class="n">traverse</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">x</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">s</span>
+    <span class="k">return</span> <span class="n">x</span>
+
+
+<span class="nb">print</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">traverse</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sum_traverser</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>45
+</pre></div>
+</div>
+</div>
+</div>
+<p><em>Not so different…</em>
+indeed, the code is mostly identical to the previous one.
+The main difference is, that the function no longer explicitly calls itself.
+Instead it receives a <code class="docutils literal notranslate"><span class="pre">traverse</span></code> function now, which facilitates the recursive calls.</p>
+<p>For now, this second implementation is not any simpler than the one above.
+The main advantage of this decoupling of the recursive caller and the callee only becomes apparent once we introduce the main superpower of the traverser module: <strong>Composition</strong>.</p>
+</section>
+<section id="let-s-compose">
+<h2>3. Let’s compose…<a class="headerlink" href="#let-s-compose" title="Link to this heading">¶</a></h2>
+<p>In the spirit of separation of concerns, it might not always be desirable (or possible) to write a single large recursive function which processes your data to your heart’s content.</p>
+<p>Instead, one might want to decouple the general logic of traversing (what are the children of a datastructure) from the actual processing of the nodes.</p>
+<p>For example, let’s assume we want to multiply all numbers in a nested list datastructure by 2.
+Alternatively, we might want to add 1 to each element, or do something else…
+Using naive recusive Python, this might look something like this:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">mashed_multiply</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">object</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">object</span><span class="p">:</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">mashed_multiply</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">x</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">x</span> <span class="o">*</span> <span class="mi">2</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">mashed_add</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">object</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">object</span><span class="p">:</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">mashed_add</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">x</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">1</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">mashed_exp</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">object</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">object</span><span class="p">:</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">mashed_exp</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">x</span><span class="p">]</span>
+    <span class="k">return</span> <span class="mi">2</span><span class="o">**</span><span class="n">x</span>
+
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Data:&quot;</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Mul:&quot;</span><span class="p">,</span> <span class="n">mashed_multiply</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Add:&quot;</span><span class="p">,</span> <span class="n">mashed_add</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Pow:&quot;</span><span class="p">,</span> <span class="n">mashed_exp</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Data: [[1, 2, [3, [4, 5], 6], 7, 8], 9]
+Mul: [[2, 4, [6, [8, 10], 12], 14, 16], 18]
+Add: [[2, 3, [4, [5, 6], 7], 8, 9], 10]
+Pow: [[2, 4, [8, [16, 32], 64], 128, 256], 512]
+</pre></div>
+</div>
+</div>
+</div>
+<p>Note the redundant code in <code class="docutils literal notranslate"><span class="pre">mashed_multiply</span></code>, <code class="docutils literal notranslate"><span class="pre">mashed_add</span></code> and <code class="docutils literal notranslate"><span class="pre">mashed_exp</span></code>.
+For complicated traversal logic, monolithic recursive processors leads to duplicated, non-extensible and brittle code.
+Let’s fix this using traversers…</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nd">@t</span><span class="o">.</span><span class="n">singledispatch_traverser</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">data_traverser</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">traverse</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">object</span><span class="p">],</span> <span class="nb">object</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">traverse</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">x</span><span class="p">]</span>
+
+
+<span class="nd">@t</span><span class="o">.</span><span class="n">singledispatch_traverser</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">mul_traverser</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">x</span> <span class="o">*</span> <span class="mi">2</span>
+
+
+<span class="nd">@t</span><span class="o">.</span><span class="n">singledispatch_traverser</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">add_traverser</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">1</span>
+
+
+<span class="nd">@t</span><span class="o">.</span><span class="n">singledispatch_traverser</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">pow_traverser</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">return</span> <span class="mi">2</span><span class="o">**</span><span class="n">x</span>
+
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Data:&quot;</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Mul:&quot;</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">traverse</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">sequential</span><span class="p">(</span><span class="n">data_traverser</span><span class="p">,</span> <span class="n">mul_traverser</span><span class="p">)))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Add:&quot;</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">traverse</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">sequential</span><span class="p">(</span><span class="n">data_traverser</span><span class="p">,</span> <span class="n">add_traverser</span><span class="p">)))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Pow:&quot;</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">traverse</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">sequential</span><span class="p">(</span><span class="n">data_traverser</span><span class="p">,</span> <span class="n">pow_traverser</span><span class="p">)))</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Data: [[1, 2, [3, [4, 5], 6], 7, 8], 9]
+Mul: [[2, 4, [6, [8, 10], 12], 14, 16], 18]
+Add: [[2, 3, [4, [5, 6], 7], 8, 9], 10]
+Pow: [[2, 4, [8, [16, 32], 64], 128, 256], 512]
+</pre></div>
+</div>
+</div>
+</div>
+<p>Here, two new functions are used:</p>
+<ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">&#64;t.singledispatch_traverser</span></code> is used instead of <code class="docutils literal notranslate"><span class="pre">&#64;t.traverser</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">t.sequential</span></code> is used to combine traversers.</p></li>
+</ol>
+<p>First, let’s consider the changed decorator.
+For now, let’s ignore the details of what this decorator does.
+Similar to <code class="docutils literal notranslate"><span class="pre">&#64;t.traverser</span></code>, <code class="docutils literal notranslate"><span class="pre">&#64;t.singledispatch_traverser</span></code> ensures that the given traverser is a “proper” traverser (whatever that means)…
+The reason we use it, instead of the regular <code class="docutils literal notranslate"><span class="pre">traverser</span></code> decorator is, that the traversal logic in each function is now type-dependent.</p>
+<p>Note that the implementation in <code class="docutils literal notranslate"><span class="pre">data_traverser</span></code> only works for lists, while the code in the other traversers only works for numbers.
+<code class="docutils literal notranslate"><span class="pre">&#64;t.singledispatch_traverser</span></code> ensures that the traversal logic is only called for compatible types, i.e., it effectively does the <code class="docutils literal notranslate"><span class="pre">isinstance(x,</span> <span class="pre">list)</span></code> checks for us.
+To do this type matching, the decorator looks at the type annotation of the first argument of the traverser.</p>
+<p>Remember: <strong>Type annotations are mandatory when using <code class="docutils literal notranslate"><span class="pre">&#64;t.singledispatch_traverser</span></code>!</strong></p>
+<p>Second, consider the <code class="docutils literal notranslate"><span class="pre">t.sequential</span></code> calls.
+This function combines the given traverers into a single traverser which applies each of the given traversers in order (left to right).</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># This:</span>
+<span class="n">t</span><span class="o">.</span><span class="n">sequential</span><span class="p">(</span><span class="n">data_traverser</span><span class="p">,</span> <span class="n">mul_traverser</span><span class="p">)</span>
+
+
+<span class="c1"># is equivalent to this:</span>
+<span class="nd">@t</span><span class="o">.</span><span class="n">traverser</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">sequential_traverser</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">object</span><span class="p">,</span> <span class="n">traverse</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">object</span><span class="p">],</span> <span class="nb">object</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">object</span><span class="p">:</span>
+    <span class="c1"># data_traverser:</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">traverse</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">x</span><span class="p">]</span>
+    <span class="c1"># mul_traverser:</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">x</span> <span class="o">*</span> <span class="mi">2</span>
+    <span class="c1"># singledispatch_traverser acts like the identity function</span>
+    <span class="c1"># for other types:</span>
+    <span class="k">return</span> <span class="n">x</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="multiple-dispatchers">
+<h2>4. …multiple dispatchers<a class="headerlink" href="#multiple-dispatchers" title="Link to this heading">¶</a></h2>
+<p>Singledispatch and sequential composition are already fairly powerful, but there is more to the story.</p>
+<p>A fundamental problem of programming is the so-called <a class="reference external" href="https://en.wikipedia.org/wiki/Expression_problem">expession problem</a>.</p>
+<p>In the case of data traversal, this problem comes up whenever the type hierarchy of the datatypes we want to work with is not fully known in advance or if it might even change later on.
+For example, assume we decide that our composed traversers should not only be able to multiply/add/exponentiate integers in nested lists, but also in mixtures of nested lists and dictionaries:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">mixed_data</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span> <span class="s2">&quot;c&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;d&quot;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span> <span class="s2">&quot;e&quot;</span><span class="p">:</span> <span class="mi">5</span><span class="p">}}</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Mixed Data:&quot;</span><span class="p">,</span> <span class="n">mixed_data</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Mul:&quot;</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">traverse</span><span class="p">(</span><span class="n">mixed_data</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">sequential</span><span class="p">(</span><span class="n">data_traverser</span><span class="p">,</span> <span class="n">mul_traverser</span><span class="p">)))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Add:&quot;</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">traverse</span><span class="p">(</span><span class="n">mixed_data</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">sequential</span><span class="p">(</span><span class="n">data_traverser</span><span class="p">,</span> <span class="n">add_traverser</span><span class="p">)))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Pow:&quot;</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">traverse</span><span class="p">(</span><span class="n">mixed_data</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">sequential</span><span class="p">(</span><span class="n">data_traverser</span><span class="p">,</span> <span class="n">pow_traverser</span><span class="p">)))</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Mixed Data: {&#39;a&#39;: 1, &#39;b&#39;: [2, 3], &#39;c&#39;: {&#39;d&#39;: 4, &#39;e&#39;: 5}}
+Mul: {&#39;a&#39;: 1, &#39;b&#39;: [2, 3], &#39;c&#39;: {&#39;d&#39;: 4, &#39;e&#39;: 5}}
+Add: {&#39;a&#39;: 1, &#39;b&#39;: [2, 3], &#39;c&#39;: {&#39;d&#39;: 4, &#39;e&#39;: 5}}
+Pow: {&#39;a&#39;: 1, &#39;b&#39;: [2, 3], &#39;c&#39;: {&#39;d&#39;: 4, &#39;e&#39;: 5}}
+</pre></div>
+</div>
+</div>
+</div>
+<p>Since <code class="docutils literal notranslate"><span class="pre">data_traverser</span></code> only knows how to deal with lists, we cannot process <code class="docutils literal notranslate"><span class="pre">mixed_data</span></code>.</p>
+<p>Naively, we could just rewrite the <code class="docutils literal notranslate"><span class="pre">data_traverser</span></code> to also deal with <code class="docutils literal notranslate"><span class="pre">dict</span></code> inputs.
+But what if we do not want to do this for <em>some reason</em>? 🤨</p>
+<blockquote>
+<div><p>[<strong>Why?</strong>]
+Before we continue, let’s justify why we would not just rewrite <code class="docutils literal notranslate"><span class="pre">data_traverser</span></code>.
+Assume, we decide that we want to extend the <code class="docutils literal notranslate"><span class="pre">data_traverser</span></code> to also work on the elements of tables contained in PDF files, i.e., what if we want to multiply all numbers contained in a table inside a PDF by 2.
+A bit odd, but why not…
+To support this very niche use-case, every user of <code class="docutils literal notranslate"><span class="pre">data_traverser</span></code> would not only have to load the basic <code class="docutils literal notranslate"><span class="pre">list</span></code> and <code class="docutils literal notranslate"><span class="pre">dict</span></code> traverser code but also a huge blob of PDF parsing code they might not even care about.
+Wouldn’t it be nice if the user could decide which data structures should be traversable by <code class="docutils literal notranslate"><span class="pre">data_traverser</span></code> and then only load the necessary code?</p>
+</div></blockquote>
+<p>Fortunately, our <code class="docutils literal notranslate"><span class="pre">singledispatch_traverser</span></code>-based <code class="docutils literal notranslate"><span class="pre">data_traverser</span></code> already supports the extensibility we need via a technique called <em>multiple dispatch</em>.
+This means that we can extend the behavior of our traverser like this:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nd">@data_traverser</span><span class="o">.</span><span class="n">register</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">traverse</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">object</span><span class="p">],</span> <span class="nb">object</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="k">return</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">traverse</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">x</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Mixed Data:&quot;</span><span class="p">,</span> <span class="n">mixed_data</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Mul:&quot;</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">traverse</span><span class="p">(</span><span class="n">mixed_data</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">sequential</span><span class="p">(</span><span class="n">data_traverser</span><span class="p">,</span> <span class="n">mul_traverser</span><span class="p">)))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Add:&quot;</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">traverse</span><span class="p">(</span><span class="n">mixed_data</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">sequential</span><span class="p">(</span><span class="n">data_traverser</span><span class="p">,</span> <span class="n">add_traverser</span><span class="p">)))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Pow:&quot;</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">traverse</span><span class="p">(</span><span class="n">mixed_data</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">sequential</span><span class="p">(</span><span class="n">data_traverser</span><span class="p">,</span> <span class="n">pow_traverser</span><span class="p">)))</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Mixed Data: {&#39;a&#39;: 1, &#39;b&#39;: [2, 3], &#39;c&#39;: {&#39;d&#39;: 4, &#39;e&#39;: 5}}
+Mul: {&#39;a&#39;: 2, &#39;b&#39;: [4, 6], &#39;c&#39;: {&#39;d&#39;: 8, &#39;e&#39;: 10}}
+Add: {&#39;a&#39;: 2, &#39;b&#39;: [3, 4], &#39;c&#39;: {&#39;d&#39;: 5, &#39;e&#39;: 6}}
+Pow: {&#39;a&#39;: 2, &#39;b&#39;: [4, 8], &#39;c&#39;: {&#39;d&#39;: 16, &#39;e&#39;: 32}}
+</pre></div>
+</div>
+</div>
+</div>
+<p>All we had to do was to <code class="docutils literal notranslate"><span class="pre">register</span></code> a new dispatch handler with the <code class="docutils literal notranslate"><span class="pre">data_traverser</span></code> (note the <code class="docutils literal notranslate"><span class="pre">x:</span> <span class="pre">dict</span></code> type hint which enables this!) and all existing users of that traverser benefit from the extended functionality.
+Cool!</p>
+</section>
+<section id="learning-to-count">
+<h2>5. Learning to Count<a class="headerlink" href="#learning-to-count" title="Link to this heading">¶</a></h2>
+<p>At this point you could just compose and register dispatchers on traversers to your heart’s content. But… there’s more.</p>
+<p>So far we just played around in functional wonderland where all traverers independently did their little thing without much care for the rest of the world.
+Unfortunately, this is not sufficent.</p>
+<p>Let’s start with a simple example:
+What if we want to apply the add/multiply/pow operations from the previous sections only to every second leaf node of a nested datastructure.
+To do this, our traverser would have to know, where it is in the traversal tree.
+<em>How do we do this?</em></p>
+<p><strong>Variables!</strong></p>
+<p>The traverse module comes with three types of variables:</p>
+<ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">GlobalVariable</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">StackVariable</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ComputedVariable</span></code></p></li>
+</ol>
+<p>To solve the conditional transformation problem described above, we can employ a <code class="docutils literal notranslate"><span class="pre">GlobalVariable</span></code>.
+Since showing is better than telling, let’s just see how this works:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">LEAF_COUNT</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">GlobalVariable</span><span class="p">[</span><span class="nb">int</span><span class="p">](</span><span class="s2">&quot;LEAF_COUNT&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+
+<span class="nd">@data_traverser</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="nb">object</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">leaf_count_traverser</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">State</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">State</span><span class="p">:</span>
+    <span class="n">state</span><span class="p">[</span><span class="n">LEAF_COUNT</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">state</span>
+
+
+<span class="n">traversed_data</span><span class="p">,</span> <span class="n">state</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">traverse_with_state</span><span class="p">(</span>
+    <span class="n">mixed_data</span><span class="p">,</span>
+    <span class="n">t</span><span class="o">.</span><span class="n">sequential</span><span class="p">(</span><span class="n">data_traverser</span><span class="p">,</span> <span class="n">mul_traverser</span><span class="p">),</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Data:&quot;</span><span class="p">,</span> <span class="n">mixed_data</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Traversed Data:&quot;</span><span class="p">,</span> <span class="n">traversed_data</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Leaf Count:&quot;</span><span class="p">,</span> <span class="n">state</span><span class="p">[</span><span class="n">LEAF_COUNT</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Data: {&#39;a&#39;: 1, &#39;b&#39;: [2, 3], &#39;c&#39;: {&#39;d&#39;: 4, &#39;e&#39;: 5}}
+Traversed Data: {&#39;a&#39;: 2, &#39;b&#39;: [4, 6], &#39;c&#39;: {&#39;d&#39;: 8, &#39;e&#39;: 10}}
+Leaf Count: 5
+</pre></div>
+</div>
+</div>
+</div>
+<p>First, we define the gloabl <code class="docutils literal notranslate"><span class="pre">int</span></code> variable <code class="docutils literal notranslate"><span class="pre">LEAF_COUNT</span></code>.
+Second, we register a new default dispatcher with the <code class="docutils literal notranslate"><span class="pre">data_traverser</span></code>.
+If no other dispatcher matches, i.e., if neigher the previously defined <code class="docutils literal notranslate"><span class="pre">list</span></code> and <code class="docutils literal notranslate"><span class="pre">dict</span></code> handlers traverse the current object, the new traverser is executed.</p>
+<p>This newly registered <code class="docutils literal notranslate"><span class="pre">leaf_count_traverser</span></code> is a bit different from the ones we saw before. Instead of an object, it takes a <code class="docutils literal notranslate"><span class="pre">t.State</span></code> as a parameter.
+During the traversal such state objects can be used to pass-along and update arbitrary data.</p>
+<p>The previously defined <code class="docutils literal notranslate"><span class="pre">LEAF_COUNT</span></code> variable can be accessed and changed via the <code class="docutils literal notranslate"><span class="pre">state[LEAF_COUNT]</span></code> syntax.
+Since <code class="docutils literal notranslate"><span class="pre">LEAF_COUNT</span></code> is a global variable, any changes to this variable will be visible to all parent and child elements in the traversed structure.</p>
+<p>Last, to access the final state after traveral, we call <code class="docutils literal notranslate"><span class="pre">t.travsere_with_state</span></code> instead of <code class="docutils literal notranslate"><span class="pre">t.traverse</span></code>.
+After traversing/processing all five leaf nodes of <code class="docutils literal notranslate"><span class="pre">mixed_data</span></code>, the final value of <code class="docutils literal notranslate"><span class="pre">LEAF_COUNT</span></code> is <code class="docutils literal notranslate"><span class="pre">5</span></code> - as we would expect.</p>
+<p>Now, let’s use this counter to apply the <code class="docutils literal notranslate"><span class="pre">mul_traverser</span></code> only to every second node:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">is_even_leaf</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">State</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">state</span><span class="p">[</span><span class="n">LEAF_COUNT</span><span class="p">]</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span>
+
+
+<span class="n">conditional_mul_traverser</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">traverser</span><span class="p">(</span><span class="n">mul_traverser</span><span class="p">,</span> <span class="n">traverse_if</span><span class="o">=</span><span class="n">is_even_leaf</span><span class="p">)</span>
+
+<span class="n">traversed_data</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">traverse</span><span class="p">(</span>
+    <span class="n">mixed_data</span><span class="p">,</span>
+    <span class="n">t</span><span class="o">.</span><span class="n">sequential</span><span class="p">(</span><span class="n">data_traverser</span><span class="p">,</span> <span class="n">conditional_mul_traverser</span><span class="p">),</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Data:&quot;</span><span class="p">,</span> <span class="n">mixed_data</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Traversed Data:&quot;</span><span class="p">,</span> <span class="n">traversed_data</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Data: {&#39;a&#39;: 1, &#39;b&#39;: [2, 3], &#39;c&#39;: {&#39;d&#39;: 4, &#39;e&#39;: 5}}
+Traversed Data: {&#39;a&#39;: 1, &#39;b&#39;: [4, 3], &#39;c&#39;: {&#39;d&#39;: 8, &#39;e&#39;: 5}}
+</pre></div>
+</div>
+</div>
+</div>
+<p>To realize the conditional traversal, we make use of another neat feature of the <code class="docutils literal notranslate"><span class="pre">traverser</span></code> decorator: <code class="docutils literal notranslate"><span class="pre">traverse_if</span></code>.
+This optional parameter can be used to disable the resulting traverser given some predicate.
+Complimentary to <code class="docutils literal notranslate"><span class="pre">traverse_if</span></code> there is also an analogous <code class="docutils literal notranslate"><span class="pre">skip_if</span></code> parameter.</p>
+</section>
+<section id="too-deep">
+<h2>6. Too deep<a class="headerlink" href="#too-deep" title="Link to this heading">¶</a></h2>
+<p>Even/odd counting is nice, but what about depth counting?
+Let’s now only apply the multiply traverser to nodes that are not at the root level.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">DEPTH_COUNT</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">StackVariable</span><span class="p">[</span><span class="nb">int</span><span class="p">](</span><span class="s2">&quot;DEPTH_COUNT&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+
+
+<span class="nd">@t</span><span class="o">.</span><span class="n">traverser</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">depth_counter_traverser</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">State</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">State</span><span class="p">:</span>
+    <span class="n">state</span><span class="p">[</span><span class="n">DEPTH_COUNT</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;DEPTH_COUNT = </span><span class="si">{</span><span class="n">state</span><span class="p">[</span><span class="n">DEPTH_COUNT</span><span class="p">]</span><span class="si">}</span><span class="s2"> at object </span><span class="si">{</span><span class="n">state</span><span class="o">.</span><span class="n">object</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">state</span>
+
+
+<span class="n">depth_conditional_mul_traverser</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">traverser</span><span class="p">(</span>
+    <span class="n">mul_traverser</span><span class="p">,</span>
+    <span class="n">traverse_if</span><span class="o">=</span><span class="k">lambda</span> <span class="n">state</span><span class="p">:</span> <span class="n">state</span><span class="p">[</span><span class="n">DEPTH_COUNT</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">traversed_data</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">traverse</span><span class="p">(</span>
+    <span class="n">mixed_data</span><span class="p">,</span>
+    <span class="n">t</span><span class="o">.</span><span class="n">sequential</span><span class="p">(</span>
+        <span class="n">depth_counter_traverser</span><span class="p">,</span>
+        <span class="n">data_traverser</span><span class="p">,</span>
+        <span class="n">depth_conditional_mul_traverser</span><span class="p">,</span>
+    <span class="p">),</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Data:&quot;</span><span class="p">,</span> <span class="n">mixed_data</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Traversed Data:&quot;</span><span class="p">,</span> <span class="n">traversed_data</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>DEPTH_COUNT = 0 at object {&#39;a&#39;: 1, &#39;b&#39;: [2, 3], &#39;c&#39;: {&#39;d&#39;: 4, &#39;e&#39;: 5}}
+DEPTH_COUNT = 1 at object 1
+DEPTH_COUNT = 1 at object [2, 3]
+DEPTH_COUNT = 2 at object 2
+DEPTH_COUNT = 2 at object 3
+DEPTH_COUNT = 1 at object {&#39;d&#39;: 4, &#39;e&#39;: 5}
+DEPTH_COUNT = 2 at object 4
+DEPTH_COUNT = 2 at object 5
+Data: {&#39;a&#39;: 1, &#39;b&#39;: [2, 3], &#39;c&#39;: {&#39;d&#39;: 4, &#39;e&#39;: 5}}
+Traversed Data: {&#39;a&#39;: 1, &#39;b&#39;: [4, 6], &#39;c&#39;: {&#39;d&#39;: 8, &#39;e&#39;: 10}}
+</pre></div>
+</div>
+</div>
+</div>
+<p>Overall, this is pretty similar to what we did before but now we used A <code class="docutils literal notranslate"><span class="pre">StackVariable</span></code> instead of a <code class="docutils literal notranslate"><span class="pre">GlobalVariable</span></code>.
+As the name suggests, updates to stack variables are only visible in downstream traverser calls, not upstream.</p>
+<section id="there-be-dragons">
+<h3>… there be dragons<a class="headerlink" href="#there-be-dragons" title="Link to this heading">¶</a></h3>
+<p>Note that the above example depends on the order of the traversers in <code class="docutils literal notranslate"><span class="pre">t.sequential</span></code>.
+Let’s try the following:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">traversed_data</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">traverse</span><span class="p">(</span>
+    <span class="n">mixed_data</span><span class="p">,</span>
+    <span class="n">t</span><span class="o">.</span><span class="n">sequential</span><span class="p">(</span>
+        <span class="n">data_traverser</span><span class="p">,</span>
+        <span class="n">depth_counter_traverser</span><span class="p">,</span>  <span class="c1"># Depth count increased after data_traverser</span>
+        <span class="n">depth_conditional_mul_traverser</span><span class="p">,</span>
+    <span class="p">),</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Data:&quot;</span><span class="p">,</span> <span class="n">mixed_data</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Traversed Data:&quot;</span><span class="p">,</span> <span class="n">traversed_data</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>DEPTH_COUNT = 0 at object 1
+DEPTH_COUNT = 0 at object 2
+DEPTH_COUNT = 0 at object 3
+DEPTH_COUNT = 0 at object [2, 3]
+DEPTH_COUNT = 0 at object 4
+DEPTH_COUNT = 0 at object 5
+DEPTH_COUNT = 0 at object {&#39;d&#39;: 4, &#39;e&#39;: 5}
+DEPTH_COUNT = 0 at object {&#39;a&#39;: 1, &#39;b&#39;: [2, 3], &#39;c&#39;: {&#39;d&#39;: 4, &#39;e&#39;: 5}}
+Data: {&#39;a&#39;: 1, &#39;b&#39;: [2, 3], &#39;c&#39;: {&#39;d&#39;: 4, &#39;e&#39;: 5}}
+Traversed Data: {&#39;a&#39;: 1, &#39;b&#39;: [2, 3], &#39;c&#39;: {&#39;d&#39;: 4, &#39;e&#39;: 5}}
+</pre></div>
+</div>
+</div>
+</div>
+<p>If the <code class="docutils literal notranslate"><span class="pre">depth_counter_traverser</span></code> is executed after the <code class="docutils literal notranslate"><span class="pre">data_traverser</span></code>, the recursive data traversal will reach the leaf nodes before the <code class="docutils literal notranslate"><span class="pre">DEPTH_COUNT</span></code> variable is increased.
+This highlights the importance of ordering composed traversers carefully.</p>
+</section>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="sklearn_selective_prediction.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Using probly with scikit-learn</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="multilib_demo.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">Multilib Demo</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2025, probly team
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">A Brief Introduction to PyTraverse</a><ul>
+<li><a class="reference internal" href="#hello-world-traverser">1. Hello World Traverser</a></li>
+<li><a class="reference internal" href="#down-to-business">2. Down to Business</a></li>
+<li><a class="reference internal" href="#let-s-compose">3. Let’s compose…</a></li>
+<li><a class="reference internal" href="#multiple-dispatchers">4. …multiple dispatchers</a></li>
+<li><a class="reference internal" href="#learning-to-count">5. Learning to Count</a></li>
+<li><a class="reference internal" href="#too-deep">6. Too deep</a><ul>
+<li><a class="reference internal" href="#there-be-dragons">… there be dragons</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../../_static/documentation_options.js?v=4621528c"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/scripts/furo.js?v=5fa4622c"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=ccdb6887"></script>
+    </body>
+</html>

@@ -1,6 +1,0 @@
-probly.traverse\_nn.flax
-========================
-
-.. automodule:: probly.traverse_nn.flax
-
-   
