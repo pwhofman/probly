@@ -56,7 +56,7 @@ def cqr_score_func[T](y_true: T, y_pred: T) -> npt.NDArray[np.floating]:
     zeros = np.zeros_like(diff_lower)
 
     scores = np.maximum.reduce((diff_lower, diff_upper, zeros))
-    return scores.astype(float)
+    return scores.astype(float)  # type: ignore[no-any-return]
 
 
 def register(cls: LazyType, func: Callable[..., Any]) -> None:

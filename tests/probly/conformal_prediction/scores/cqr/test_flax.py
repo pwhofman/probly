@@ -35,7 +35,7 @@ def _cqr_score_numpy(y_true: npt.NDArray[np.floating], y_pred: npt.NDArray[np.fl
     zeros = np.zeros_like(diff_lower)
 
     scores = np.maximum.reduce((diff_lower, diff_upper, zeros))
-    return scores.astype(float)
+    return scores.astype(float)  # type: ignore[no-any-return]
 
 
 def test_cqr_score_func_numpy_matches_reference() -> None:
@@ -106,7 +106,7 @@ def test_cqr_score_jax_with_jit_and_vmap() -> None:
     # vmap over individual samples using a scalar wrapper
     def single_sample_score(y: Array, pred: Array) -> Array:
         # use leading dimension of size 1 to reuse vectorized implementation
-        return cqr_score_jax(y[None], pred[None])[0]
+        return cqr_score_jax(y[None], pred[None])[0]  # type: ignore[no-any-return]
 
     vmap_fn = jax.vmap(single_sample_score, in_axes=(0, 0))
     vmap_scores = vmap_fn(y_true_jax, y_pred_jax)
