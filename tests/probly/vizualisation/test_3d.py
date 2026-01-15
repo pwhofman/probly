@@ -9,7 +9,7 @@ mpl.use("Agg")
 import numpy as np
 import pytest
 
-from probly.visualization.plot_3d import TernaryVisualizer
+from probly.visualization.credalviz.plot_3d import TernaryVisualizer
 
 
 def test_probs_to_coords_3d_maps_vertices_to_triangle_corners() -> None:
