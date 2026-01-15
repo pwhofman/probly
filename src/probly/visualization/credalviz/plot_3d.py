@@ -135,7 +135,7 @@ class TernaryVisualizer:
         ax.set_ylim(-0.1, np.sqrt(3) / 2)
 
         # Scatter points
-        scatter_label = scatter_kwargs.pop("label", "Samples")
+        scatter_label = scatter_kwargs.pop("label", "Probabilities")
         ax.scatter(coords[:, 0], coords[:, 1], label=scatter_label, **scatter_kwargs)
 
         ax.set_title(title, pad=20, y=-0.2)
