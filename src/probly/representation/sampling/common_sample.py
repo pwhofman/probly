@@ -5,6 +5,8 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Literal, Protocol, Self, TypedDict, Unpack
 
+from lazy_dispatch.singledispatch import lazydispatch
+
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
 
@@ -127,3 +129,6 @@ class ListSample[T](list[T], Sample[T]):
     def concat(self, other: Sample[T]) -> Self:
         """Creates a new sample by concatenating another sample to this sample."""
         return type(self)(self + list(other.samples))
+
+
+create_sample = lazydispatch[SampleFactory, Sample](ListSample.from_iterable, dispatch_on=lambda s: s[0])
