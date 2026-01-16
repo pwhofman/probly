@@ -13,7 +13,7 @@ from .common import register
 def replace_flax_dropconnect(
     obj: nnx.Linear, p: float, rngs: rnglib.Rngs | rnglib.RngStream | int
 ) -> DropConnectLinear:
-    """Replace a given layer by a DropConnectLinear layer."""
+    """Replace a given layer by a DropConnectLinear layer based on :cite:`mobinyDropConnectEffective2019`."""
     if isinstance(rngs, rnglib.Rngs):
         rngs_metadata = rngs.get_metadata()
         rngs = nnx.Rngs(dropconnect=rngs_metadata)
