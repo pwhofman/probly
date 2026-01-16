@@ -2,24 +2,21 @@
 
 from __future__ import annotations
 
-from flax import nnx
-from flax.nnx import rnglib
+from flax.nnx import Linear, Rngs, rnglib
 
 from probly.layers.flax import DropConnectLinear
 
 from .common import register
 
 
-def replace_flax_dropconnect(
-    obj: nnx.Linear, p: float, rngs: rnglib.Rngs | rnglib.RngStream | int
-) -> DropConnectLinear:
+def replace_flax_dropconnect(obj: Linear, p: float, rngs: rnglib.Rngs | rnglib.RngStream | int) -> DropConnectLinear:
     """Replace a given layer by a DropConnectLinear layer based on :cite:`mobinyDropConnectEffective2019`."""
     if isinstance(rngs, rnglib.Rngs):
         rngs_metadata = rngs.get_metadata()
-        rngs = nnx.Rngs(dropconnect=rngs_metadata)
+        rngs = Rngs(dropconnect=rngs_metadata)
     if isinstance(rngs, rnglib.RngStream | int):
-        rngs = nnx.Rngs(dropconnect=rngs)
+        rngs = Rngs(dropconnect=rngs)
     return DropConnectLinear(obj, rate=p, rngs=rngs)
 
 
-register(nnx.Linear, replace_flax_dropconnect)
+register(Linear, replace_flax_dropconnect)
