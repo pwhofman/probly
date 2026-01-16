@@ -24,7 +24,7 @@ class TernaryVisualizer:
 
         return: Tuple containing the 2D coordinates.
         """
-        p1, p2, p3 = probs
+        _, p2, p3 = probs
         x = p2 + 0.5 * p3
         y = (np.sqrt(3) / 2) * p3
         return x, y
@@ -79,7 +79,7 @@ class TernaryVisualizer:
         coords = np.array([self.probs_to_coords_3d(x) for x in probs])
 
         if ax is None:
-            fig, ax = plt.subplots(figsize=(6, 6))
+            _, ax = plt.subplots(figsize=(6, 6))
 
         def lerp(p: np.ndarray, q: np.ndarray, t: float) -> np.ndarray:
             """Linear Interpolation for line values."""
@@ -218,7 +218,7 @@ class TernaryVisualizer:
         coords = np.array([self.probs_to_coords_3d(p) for p in probs])
 
         if ax is None:
-            fig, ax = plt.subplots(figsize=(6, 6))
+            _, ax = plt.subplots(figsize=(6, 6))
 
         # Handle degenerate cases
         unique = np.unique(coords, axis=0)

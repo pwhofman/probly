@@ -11,8 +11,198 @@ from torch.nn import init
 import torch.nn.functional as F
 
 
+class BatchEnsembleLinear(nn.Module):
+    """Implements a BatchEnsemble linear layer.
+
+    Attributes:
+        in_features: int, number of input features
+        out_features: int, number of output features
+        num_members: int, number of batch ensemble members
+        weight: torch.Tensor, shared weight matrix
+        bias: torch.Tensor, shared bias vector
+        s: torch.Tensor, rank-one factor for input features
+        r: torch.Tensor, rank-one factor for output features
+    """
+
+    def __init__(
+        self,
+        base_layer: nn.Linear,
+        num_members: int = 1,
+        use_base_weights: bool = False,
+        s_mean: float = 1.0,
+        s_std: float = 0.01,
+        r_mean: float = 1.0,
+        r_std: float = 0.01,
+    ) -> None:
+        """Initializes the BatchEnsemble linear layer.
+
+        Args:
+            base_layer (nn.Linear): The original linear layer to be used.
+            num_members (int): number of ensemble members
+            use_base_weights (bool): Whether to use the weights of the base layer as prior means. Default is False.
+            s_mean (float): mean of a normal distribution to initialize s
+            s_std (float): standard deviation of a normal distribution to initialize s
+            r_mean (float): mean of a normal distribution to initialize r
+            r_std (float): standard deviation of a normal distribution to initialize r
+        """
+        super().__init__()
+        self.in_features = base_layer.in_features
+        self.out_features = base_layer.out_features
+        self.num_members = num_members
+
+        if use_base_weights:
+            self.weight = nn.Parameter(base_layer.weight.detach().clone())
+        else:
+            self.weight = nn.Parameter(torch.empty((self.out_features, self.in_features)))
+
+        if base_layer.bias is not None:
+            self.bias = nn.Parameter(base_layer.bias.detach().clone())
+        else:
+            self.bias = nn.Parameter(torch.zeros(self.out_features))
+
+        self.s = nn.Parameter(torch.Tensor(self.num_members, self.in_features))
+        self.r = nn.Parameter(torch.Tensor(self.num_members, self.out_features))
+
+        nn.init.normal_(self.s, s_mean, s_std)
+        nn.init.normal_(self.r, r_mean, r_std)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Forward pass of the BatchEnsemble linear layer.
+
+        Args:
+            x: torch.Tensor, Input tensor of shape [B, in_features] or [E, B, in_features],
+                            where B is the batch size and E is the ensemble size.
+
+        Returns:
+            torch.Tensor: Output tensor of shape [E, B, out_features].
+        """
+        # TODO @<jnpippert>: maybe use buffers for some parameters? r,s, and their mu and std? # noqa: TD003
+        if x.dim() == 2:
+            # If this is the first layer, expand to ensemble dimension
+            x = x.unsqueeze(0).expand(self.num_members, -1, -1)
+        elif x.dim() == 3 and x.size(0) != self.num_members:
+            msg = f"Expected first dim={self.num_members}, got {x.size(0)}"
+            raise ValueError(msg)
+
+        x = x * self.s.clone().unsqueeze(1)
+        y = F.linear(x, self.weight, bias=None)
+        y = y * self.r.clone().unsqueeze(1)
+        y = y + self.bias
+        return y
+
+
+class BatchEnsembleConv2d(nn.Module):
+    """Implements a BatchEnsemble convolutional layer.
+
+    Attributes:
+        in_channels: int, number of input channels
+        out_channels: int, number of output channels
+        kernel_size: int or tuple, size of the convolutional kernel
+        stride: int or tuple, stride of the convolution
+        padding: int or tuple, padding of the convolution
+        dilation: int or tuple, dilation of the convolution
+        groups: int, number of groups for grouped convolution
+        num_members: int, number of batch ensemble members
+        weight: torch.Tensor, shared weight matrix
+        bias: torch.Tensor, shared bias vector
+        s: torch.Tensor, rank-one factor for input features
+        r: torch.Tensor, rank-one factor for output features
+    """
+
+    def __init__(
+        self,
+        base_layer: nn.Conv2d,
+        num_members: int = 1,
+        use_base_weights: bool = False,
+        s_mean: float = 1.0,
+        s_std: float = 0.01,
+        r_mean: float = 1.0,
+        r_std: float = 0.01,
+    ) -> None:
+        """Initializes the BatchEnsemble linear layer.
+
+        Args:
+            base_layer (nn.Linear): The original linear layer to be used.
+            num_members (int): number of ensemble members
+            use_base_weights (bool): Whether to use the weights of the base layer as prior means. Default is False.
+            s_mean (float): mean of a normal distribution to initialize s
+            s_std (float): standard deviation of a normal distribution to initialize s
+            r_mean (float): mean of a normal distribution to initialize r
+            r_std (float): standard deviation of a normal distribution to initialize r
+        """
+        super().__init__()
+
+        self.in_channels = base_layer.in_channels
+        self.out_channels = base_layer.out_channels
+        self.kernel_size = base_layer.kernel_size
+        self.stride = base_layer.stride
+        self.padding = base_layer.padding
+        self.dilation = base_layer.dilation
+        self.groups = base_layer.groups
+
+        self.num_members = num_members
+
+        if use_base_weights:
+            self.weight = nn.Parameter(base_layer.weight.detach().clone())
+        else:
+            self.weight = nn.Parameter(
+                torch.empty((self.out_channels, self.in_channels // self.groups, *self.kernel_size)),
+            )
+
+        if base_layer.bias is not None:
+            self.bias = nn.Parameter(base_layer.bias.detach().clone())
+        else:
+            self.bias = nn.Parameter(torch.zeros(self.out_channels))
+
+        self.s = nn.Parameter(torch.Tensor(num_members, self.in_channels))
+        self.r = nn.Parameter(torch.Tensor(num_members, self.out_channels))
+
+        nn.init.normal_(self.s, s_mean, s_std)
+        nn.init.normal_(self.r, r_mean, r_std)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Forward pass of the BatchEnsemble Conv2d layer.
+
+        Args:
+            x: torch.Tensor, Input tensor of shape [B, in_channels, H, W] or [E, B, in_channels, H, W],
+                            where B is the batch size, E is the ensemble size, H is height, and W is width.
+
+        Returns:
+            torch.Tensor: Output tensor of shape [E, B, out_channels, H_out, W_out].
+        """
+        if x.dim() == 4:
+            # If this is the first layer, expand to ensemble dimension
+            x = x.unsqueeze(0).expand(self.num_members, -1, -1, -1, -1)
+        elif x.dim() == 5 and x.size(0) != self.num_members:
+            msg = f"Expected ensemble dim {self.num_members}, got {x.size(0)}"
+            raise ValueError(msg)
+
+        x *= self.s[:, None, :, None, None]
+        e, b, c, h, w = x.shape
+        x = x.reshape(e * b, c, h, w)
+
+        y = F.conv2d(
+            x,
+            self.weight,
+            bias=None,
+            stride=self.stride,
+            padding=self.padding,
+            dilation=self.dilation,
+            groups=self.groups,
+        )
+        _, c, h, w = y.shape
+        y = y.view(e, b, c, h, w)
+        y *= self.r[:, None, :, None, None]
+        y += self.bias[None, None, :, None, None]
+
+        return y
+
+
+# ======================================================================================================================
+
+
 class BayesLinear(nn.Module):
-    """Implements a Bayesian linear layer.
+    """Implements a Bayesian linear layer based on :cite:`blundellWeightUncertainty2015`.
 
     Attributes:
         in_features: int, number of input features
@@ -59,7 +249,7 @@ class BayesLinear(nn.Module):
         if not use_base_weights:
             self.weight_mu = nn.Parameter(torch.empty((self.out_features, self.in_features)))
         else:
-            self.weight_mu = nn.Parameter(cast("torch.Tensor", base_layer.weight.data))
+            self.weight_mu = nn.Parameter(base_layer.weight.data)
         self.weight_rho = nn.Parameter(torch.full((self.out_features, self.in_features), rho))
 
         # prior weights
@@ -71,7 +261,7 @@ class BayesLinear(nn.Module):
         else:
             self.register_buffer(
                 "weight_prior_mu",
-                cast("torch.Tensor", base_layer.weight.data),
+                base_layer.weight.data,
             )
         self.register_buffer(
             "weight_prior_sigma",
@@ -83,7 +273,7 @@ class BayesLinear(nn.Module):
             if not use_base_weights:
                 self.bias_mu = nn.Parameter(torch.empty((self.out_features,)))
             else:
-                self.bias_mu = nn.Parameter(cast("torch.Tensor", base_layer.bias.data))
+                self.bias_mu = nn.Parameter(base_layer.bias.data)
             self.bias_rho = nn.Parameter(
                 torch.full((self.out_features,), rho),
             )
@@ -97,7 +287,7 @@ class BayesLinear(nn.Module):
             else:
                 self.register_buffer(
                     "bias_prior_mu",
-                    cast("torch.Tensor", base_layer.bias.data),
+                    base_layer.bias.data,
                 )
             self.register_buffer(
                 "bias_prior_sigma",
@@ -129,12 +319,11 @@ class BayesLinear(nn.Module):
         """Reset the parameters of the Bayesian conv2d layer.
 
         Setting a=sqrt(5) in kaiming_uniform is the same as initializing with
-        uniform(-1/sqrt(k), 1/sqrt(k)), where k = weight.size(1) * prod(*kernel_size)
-        For more details see: https://github.com/pytorch/pytorch/issues/15314#issuecomment-477448573
+        uniform(-1/sqrt(k), 1/sqrt(k)), where ``k = weight.size(1) * prod(*kernel_size)``
+        For more details see: https://github.com/pytorch/pytorch/issues/15314
         """
         init.kaiming_uniform_(self.weight_mu, a=math.sqrt(5))
         if self.bias is not False:
-            fan_in: torch.Tensor
             fan_in, _ = init._calculate_fan_in_and_fan_out(  # noqa: SLF001
                 self.weight_mu,
             )
@@ -165,7 +354,7 @@ class BayesLinear(nn.Module):
 
 
 class BayesConv2d(nn.Module):
-    """Implementation of a Bayesian convolutional layer.
+    """Implementation of a Bayesian convolutional layer based on :cite:`blundellWeightUncertainty2015`.
 
     Attributes:
         in_channels: int, number of input channels
@@ -224,7 +413,7 @@ class BayesConv2d(nn.Module):
                 torch.empty((self.out_channels, self.in_channels // self.groups, *self.kernel_size)),
             )
         else:
-            self.weight_mu = nn.Parameter(cast("torch.Tensor", base_layer.weight.data))
+            self.weight_mu = nn.Parameter(base_layer.weight.data)
         self.weight_rho = nn.Parameter(
             torch.full((self.out_channels, self.in_channels // self.groups, *self.kernel_size), rho),
         )
@@ -241,7 +430,7 @@ class BayesConv2d(nn.Module):
         else:
             self.register_buffer(
                 "weight_prior_mu",
-                cast("torch.Tensor", base_layer.weight.data),
+                base_layer.weight.data,
             )
 
         self.register_buffer(
@@ -254,7 +443,9 @@ class BayesConv2d(nn.Module):
             if not use_base_weights:
                 self.bias_mu = nn.Parameter(torch.empty((self.out_channels,)))
             else:
-                self.bias_mu = nn.Parameter(cast("torch.Tensor", base_layer.bias.data))
+                self.bias_mu = nn.Parameter(
+                    base_layer.bias.data if base_layer.bias is not None else torch.empty((self.out_channels,))
+                )
             self.bias_rho = nn.Parameter(torch.full((self.out_channels,), rho))
 
             # prior bias
@@ -266,7 +457,9 @@ class BayesConv2d(nn.Module):
             else:
                 self.register_buffer(
                     "bias_prior_mu",
-                    cast("torch.Tensor", base_layer.bias.data),
+                    base_layer.bias.data
+                    if base_layer.bias is not None
+                    else torch.full((self.out_channels,), prior_mean),
                 )
             self.register_buffer(
                 "bias_prior_sigma",
@@ -313,8 +506,8 @@ class BayesConv2d(nn.Module):
         """Reset the parameters of the Bayesian conv2d layer.
 
         Setting a=sqrt(5) in kaiming_uniform is the same as initializing with
-        uniform(-1/sqrt(k), 1/sqrt(k)), where k = weight.size(1) * prod(*kernel_size)
-        For more details see: https://github.com/pytorch/pytorch/issues/15314#issuecomment-477448573
+        uniform(-1/sqrt(k), 1/sqrt(k)), where ``k = weight.size(1) * prod(*kernel_size)``
+        For more details see: https://github.com/pytorch/pytorch/issues/15314
         """
         init.kaiming_uniform_(self.weight_mu, a=math.sqrt(5))
         if self.bias is not False:
@@ -385,7 +578,7 @@ def _inverse_softplus(x: torch.Tensor) -> torch.Tensor:
 
 
 class DropConnectLinear(nn.Module):
-    """Custom Linear layer with DropConnect applied to weights during training.
+    """Custom Linear layer with DropConnect applied to weights during training based on :cite:`aminiDeepEvidential2020`.
 
     Attributes:
         in_features: int, number of input features.
@@ -436,7 +629,7 @@ class DropConnectLinear(nn.Module):
 
 
 class NormalInverseGammaLinear(nn.Module):
-    """Custom Linear layer modeling the parameters of a normal-inverse-gamma-distribution.
+    """Custom Linear layer for the normal-inverse-gamma-distribution based on :cite:`aminiDeepEvidential2020`.
 
     Attributes:
         gamma: torch.Tensor, shape (out_features, in_features), the mean of the normal distribution.
@@ -451,7 +644,9 @@ class NormalInverseGammaLinear(nn.Module):
 
     """
 
-    def __init__(self, in_features: int, out_features: int, device: torch.device = None, *, bias: bool = True) -> None:
+    def __init__(
+        self, in_features: int, out_features: int, device: torch.device | None = None, *, bias: bool = True
+    ) -> None:
         """Initialize an instance of the NormalInverseGammaLinear layer.
 
         Args:
