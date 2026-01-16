@@ -81,6 +81,8 @@ def test_checks_delegation_to_correct_visualizer() -> None:
 
 
 def test_dispatch_default_labels() -> None:
+    """Tests that the default labels are set correctly."""
+
     def _create_mock_class_to_check_labels_default(
         class_path: str,
         method_name: str,
@@ -116,6 +118,8 @@ def test_dispatch_default_labels() -> None:
 
 
 def test_dispatch_custom_labels() -> None:
+    """Tests the possibility to add custom labels to the plot."""
+
     def _create_mock_class_to_check_labels_custom(
         class_path: str,
         method_name: str,
@@ -151,6 +155,7 @@ def test_dispatch_custom_labels() -> None:
 
 
 def test_dispatch_wrong_label_length() -> None:
+    """Tests the ValueError when the added labels are not the right number."""
     with pytest.raises(ValueError, match="Number of labels"):
         dispatch_plot(data2d, labels=["C1"])
     with pytest.raises(ValueError, match="Number of labels"):
@@ -160,6 +165,8 @@ def test_dispatch_wrong_label_length() -> None:
 
 
 def test_dispatch_default_title() -> None:
+    """Tests that the default title is set correctly."""
+
     def _create_mock_class_to_check_title_default(
         class_path: str,
         method_name: str,
@@ -195,6 +202,8 @@ def test_dispatch_default_title() -> None:
 
 
 def test_dispatch_custom_title() -> None:
+    """Tests the possibility to add a custom title to the plot."""
+
     def _create_mock_class_to_check_title_custom(
         class_path: str,
         method_name: str,
@@ -230,6 +239,8 @@ def test_dispatch_custom_title() -> None:
 
 
 def test_dispatch_choice_none() -> None:
+    """Tests the behaviour of choice, when choice is None."""
+
     def _create_mock_class_to_check_choice_none(class_path: str, method_name: str, data: np.ndarray) -> None:
         with patch(class_path) as mock_class:
             mock_instance = mock_class.return_value
@@ -259,6 +270,8 @@ def test_dispatch_choice_none() -> None:
 
 
 def test_dispatch_choice_mle() -> None:
+    """Tests the behaviour of choice, when choice is ""MLE"."""
+
     def _create_mock_class_to_check_choice_mle(class_path: str, method_name: str, data: np.ndarray) -> None:
         with patch(class_path) as mock_class:
             mock_instance = mock_class.return_value
@@ -288,6 +301,8 @@ def test_dispatch_choice_mle() -> None:
 
 
 def test_dispatch_choice_credal() -> None:
+    """Tests the behaviour of choice, when choice is "Credal"."""
+
     def _create_mock_class_to_check_choice_credal(class_path: str, method_name: str, data: np.ndarray) -> None:
         with patch(class_path) as mock_class:
             mock_instance = mock_class.return_value
@@ -317,6 +332,8 @@ def test_dispatch_choice_credal() -> None:
 
 
 def test_dispatch_choice_probability() -> None:
+    """Tests the behaviour of choice, when choice is "Probability"."""
+
     def _create_mock_class_to_check_choice_probability(class_path: str, method_name: str, data: np.ndarray) -> None:
         with patch(class_path) as mock_class:
             mock_instance = mock_class.return_value
@@ -346,6 +363,7 @@ def test_dispatch_choice_probability() -> None:
 
 
 def test_dispatch_choice_wrong_input() -> None:
+    """Tests the behaviour of choice, when the input of choice does not exist."""
     with pytest.raises(ValueError, match="Choice must be MLE, Credal, Probability or None."):
         dispatch_plot(data2d, choice="wrong")
     with pytest.raises(ValueError, match="Choice must be MLE, Credal, Probability or None."):
@@ -355,6 +373,7 @@ def test_dispatch_choice_wrong_input() -> None:
 
 
 def test_dispatch_minmax_none() -> None:
+    """Tests the behaviour of minmax, when minmax is None."""
     with patch("probly.visualization.credalviz.input_handling.TernaryVisualizer") as mock_class:
         mock_instance = mock_class.return_value
         dispatch_plot(data3d, minmax=None)
@@ -363,6 +382,7 @@ def test_dispatch_minmax_none() -> None:
 
 
 def test_dispatch_minmax_true_credal_false() -> None:
+    """Tests the behaviour of minmax, when minmax is True, but credal_flag is False."""
     with patch("probly.visualization.credalviz.input_handling.TernaryVisualizer") as mock_class:
         mock_instance = mock_class.return_value
         dispatch_plot(data3d, choice="MLE", minmax=True)
@@ -371,6 +391,7 @@ def test_dispatch_minmax_true_credal_false() -> None:
 
 
 def test_dispatch_minmax_true_credal_true() -> None:
+    """Tests the behaviour of minmax, when minmax is True and credal_flag is True."""
     with patch("probly.visualization.credalviz.input_handling.TernaryVisualizer") as mock_class:
         mock_instance = mock_class.return_value
         dispatch_plot(data3d, choice="Credal", minmax=True)
