@@ -38,7 +38,7 @@ data4d = np.array(
 )
 
 
-def test_checks_delegation_to_dispatch() -> None:
+def test_checks_delegation_to_correct_visualizer() -> None:
     """Tests the delegation to the corresponding plotting function using mocking."""
 
     def _create_mock_class(
