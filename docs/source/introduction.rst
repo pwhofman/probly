@@ -13,6 +13,9 @@ to understand and apply the more detailed material presented in later sections.
 Mini gallery (quick links)
 -------------------------
 
+Before you dive deeper, here are two ultra-light examples (executed via Sphinx-Gallery) that
+show uncertainty and a simple decision rule at a glance.
+
 Threshold-based decision sketch:
 This mini gallery contains a short, runnable example that demonstrates a simple threshold-based decision rule.
 It shows how a continuous input can be converted into discrete class labels by comparing it to a chosen threshold, and visualizes how the predicted class changes when the threshold moves.
@@ -137,22 +140,6 @@ transparent, reliable, and informative by exposing how confident the model is in
 ------------------------------------------------------
 
 ``probly`` is built around a few central ideas that make uncertainty aware machine learning easier to use.
-
-Quick visual demos
-------------------
-
-Before you dive deeper, here are two ultra-light examples (executed via Sphinx-Gallery) that
-show uncertainty and a simple decision rule at a glance.
-
-Tiny starter examples
-~~~~~~~~~~~~~~~~~~~~~
-
-.. raw:: html
-
-    <ul class="simple">
-      <li><a class="reference internal" href="auto_examples/plot_intro_uncertainty_glimpse.html">Hello, uncertainty (glimpse)</a></li>
-      <li><a class="reference internal" href="auto_examples/plot_intro_threshold_decision.html">Threshold-based decision sketch</a></li>
-    </ul>
 
 Instead of treating uncertainty as something separate or difficult, ``probly`` organizes the process into
 clear steps that work together and build on one another.
