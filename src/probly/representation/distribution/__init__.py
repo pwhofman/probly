@@ -1,1 +1,0 @@
-"""Second-order distribution representations."""
