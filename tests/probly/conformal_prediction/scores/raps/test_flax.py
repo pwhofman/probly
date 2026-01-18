@@ -7,6 +7,7 @@ import jax.numpy as jnp
 import numpy as np
 import numpy.typing as npt
 
+from probly.conformal_prediction.scores.raps.common import test_raps_score_func_basic
 from probly.conformal_prediction.scores.raps.flax import raps_score_jax
 
 
@@ -244,3 +245,66 @@ def test_raps_score_jax_dtype_preservation() -> None:
 
     scores_f64 = raps_score_jax(probs_f64, lambda_reg=0.1, k_reg=0)
     assert scores_f64.dtype == jnp.float64
+
+
+def _iris_like_probs_jax() -> jnp.ndarray:
+    """Small iris-like batch (5x4) mapped to 3-class softmax probs (5x3)."""
+    x = jnp.array(
+        [
+            [5.1, 3.5, 1.4, 0.2],
+            [4.9, 3.0, 1.4, 0.2],
+            [6.2, 3.4, 5.4, 2.3],
+            [5.9, 3.0, 5.1, 1.8],
+            [6.0, 2.2, 4.0, 1.0],
+        ],
+        dtype=jnp.float32,
+    )
+    w = jnp.array(
+        [
+            [0.20, -0.10, 0.05],
+            [0.10, 0.15, -0.05],
+            [-0.25, 0.30, 0.10],
+            [-0.10, 0.25, 0.20],
+        ],
+        dtype=jnp.float32,
+    )
+    b = jnp.array([0.10, -0.05, 0.00], dtype=jnp.float32)
+    logits = x @ w + b
+
+    # stable softmax
+    logits = logits - jnp.max(logits, axis=1, keepdims=True)
+    exp = jnp.exp(logits)
+    return exp / jnp.sum(exp, axis=1, keepdims=True)
+
+
+def test_raps_flax_iris_like_forward_shape_and_type() -> None:
+    probs = _iris_like_probs_jax()
+    scores = raps_score_jax(probs, lambda_reg=0.1, k_reg=1, epsilon=0.01)
+
+    assert scores.shape == probs.shape
+    assert isinstance(scores, jnp.ndarray)
+    assert jnp.all(jnp.isfinite(scores))
+    assert jnp.all(scores >= 0)
+
+
+def test_raps_flax_iris_like_dispatch_matches_backend() -> None:
+    """raps_score_func should dispatch to JAX backend and match raps_score_jax."""
+    probs = _iris_like_probs_jax()
+
+    s_dispatch = test_raps_score_func_basic(probs, lambda_reg=0.1, k_reg=1, epsilon=0.01)
+    s_backend = raps_score_jax(probs, lambda_reg=0.1, k_reg=1, epsilon=0.01)
+
+    assert isinstance(s_dispatch, jnp.ndarray)
+    assert s_dispatch.shape == probs.shape
+    assert jnp.allclose(s_dispatch, s_backend, rtol=1e-6, atol=1e-6)
+
+
+def test_raps_flax_iris_like_consistency_with_numpy() -> None:
+    """JAX scores should be numerically close to NumPy implementation."""
+    probs = _iris_like_probs_jax()
+    probs_np = np.asarray(probs)
+
+    s_np = test_raps_score_func_basic(probs_np, lambda_reg=0.1, k_reg=1, epsilon=0.01)
+    s_jax = raps_score_jax(probs, lambda_reg=0.1, k_reg=1, epsilon=0.01)
+
+    assert np.allclose(np.asarray(s_jax), s_np, rtol=1e-5, atol=1e-6)

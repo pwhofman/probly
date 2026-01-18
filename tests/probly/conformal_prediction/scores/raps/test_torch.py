@@ -5,6 +5,7 @@ from __future__ import annotations
 import numpy as np
 import torch
 
+from probly.conformal_prediction.scores.raps.common import test_raps_score_func_basic
 from probly.conformal_prediction.scores.raps.torch import raps_score_torch
 
 
@@ -276,3 +277,63 @@ def test_raps_score_torch_extreme_probabilities() -> None:
     # Most probable class should have lowest score
     assert scores_concentrated[0, 0] <= scores_concentrated[0, 1]
     assert scores_concentrated[0, 0] <= scores_concentrated[0, 2]
+
+
+def _iris_like_probs_torch() -> torch.Tensor:
+    """Small iris-like batch (5x4) mapped to 3-class softmax probs (5x3)."""
+    x = torch.tensor(
+        [
+            [5.1, 3.5, 1.4, 0.2],
+            [4.9, 3.0, 1.4, 0.2],
+            [6.2, 3.4, 5.4, 2.3],
+            [5.9, 3.0, 5.1, 1.8],
+            [6.0, 2.2, 4.0, 1.0],
+        ],
+        dtype=torch.float32,
+    )
+    w = torch.tensor(
+        [
+            [0.20, -0.10, 0.05],
+            [0.10, 0.15, -0.05],
+            [-0.25, 0.30, 0.10],
+            [-0.10, 0.25, 0.20],
+        ],
+        dtype=torch.float32,
+    )
+    b = torch.tensor([0.10, -0.05, 0.00], dtype=torch.float32)
+
+    logits = x @ w + b
+    return torch.softmax(logits, dim=1)
+
+
+def test_raps_torch_iris_like_forward_shape_and_type() -> None:
+    probs = _iris_like_probs_torch()
+    scores = raps_score_torch(probs, lambda_reg=0.1, k_reg=1, epsilon=0.01)
+
+    assert scores.shape == probs.shape
+    assert isinstance(scores, torch.Tensor)
+    assert torch.isfinite(scores).all()
+    assert (scores >= 0).all()
+
+
+def test_raps_torch_iris_like_dispatch_matches_backend() -> None:
+    """raps_score_func should dispatch to Torch backend and match raps_score_torch."""
+    probs = _iris_like_probs_torch()
+
+    s_dispatch = test_raps_score_func_basic(probs, lambda_reg=0.1, k_reg=1, epsilon=0.01)
+    s_backend = raps_score_torch(probs, lambda_reg=0.1, k_reg=1, epsilon=0.01)
+
+    assert isinstance(s_dispatch, torch.Tensor)
+    assert s_dispatch.shape == probs.shape
+    assert torch.allclose(s_dispatch, s_backend, rtol=1e-6, atol=1e-6)
+
+
+def test_raps_torch_iris_like_consistency_with_numpy() -> None:
+    """Torch scores should be numerically close to NumPy implementation."""
+    probs = _iris_like_probs_torch()
+    probs_np = probs.detach().cpu().numpy()
+
+    s_np = test_raps_score_func_basic(probs_np, lambda_reg=0.1, k_reg=1, epsilon=0.01)
+    s_torch = raps_score_torch(probs, lambda_reg=0.1, k_reg=1, epsilon=0.01)
+
+    assert np.allclose(s_torch.detach().cpu().numpy(), s_np, rtol=1e-5, atol=1e-6)
