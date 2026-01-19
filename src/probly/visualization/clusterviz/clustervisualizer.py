@@ -97,6 +97,9 @@ def plot_uncertainty(
     input_1: np.ndarray,
     input_2: np.ndarray,
     ax: plt.Axes = None,
+    title: str = "Uncertainty",
+    x_label: str = "Feature 1",
+    y_label: str = "Feature 2",
     cmap_name: str = "coolwarm",
     kernel: Literal["linear", "rbf", "sigmoid", "polynomial"] = "rbf",
     C: float = 0.5,  # noqa: N803
@@ -109,9 +112,12 @@ def plot_uncertainty(
         input_1: First 2D numpy array with shape (n_samples, 2).
         input_2: Second 2D numpy array with shape (n_samples, 2).
         ax: matplotlib axes object.
+        title: title of plot, defaults to "Uncertainty".
+        x_label: Name of x-axis, "Feature 1".
+        y_label: Name of y-axis,"Feature 2".
         cmap_name: Colormap name, defaults to "coolwarm".
         kernel: Defaults to "rbf". Otherwise, chosoe "lienar", "polynomial", "sigmoid".
-        C: Regularization parameter, defaults to 1. The lower, the more tolerant to outliers.
+        C: Regularization parameter, defaults to 0.5. The lower, the more tolerant to outliers.
         gamma: Kernel coefficient controlling the influence radius of samples.
                 Higher values lead to more local decision boundaries.
         show: Flag to show the plot.
@@ -124,14 +130,14 @@ def plot_uncertainty(
 
     X = _check_shape(X)  # noqa: N806
 
-    msg_labels = "Number of labels must mach number of samples"
+    msg_labels = "Number of labels must match number of samples"
     if len(y) != len(X):
         raise ValueError(msg_labels)
 
-    ax.set_xlabel("Feature 1")
-    ax.set_ylabel("Feature 2")
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
 
-    ax.set_title("Uncertainty")
+    ax.set_title(title)
 
     cmap = plt.get_cmap(cmap_name)
     unique_labels = np.unique(y)
