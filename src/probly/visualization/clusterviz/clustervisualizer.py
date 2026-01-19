@@ -122,6 +122,9 @@ def plot_uncertainty(
     X = _2_cluster_to_x(input_1, input_2)  # noqa: N806
     y = _2_cluster_to_y(input_1, input_2)
 
+    X = _check_shape(X)  # noqa: N806
+    y = _check_shape(y)
+
     msg_labels = "Number of labels must mach number of samples"
     if len(y) != len(X):
         raise ValueError(msg_labels)
