@@ -116,21 +116,23 @@ def plot_uncertainty(
         x_label: Name of x-axis, "Feature 1".
         y_label: Name of y-axis,"Feature 2".
         cmap_name: Colormap name, defaults to "coolwarm".
-        kernel: Defaults to "rbf". Otherwise, chosoe "lienar", "polynomial", "sigmoid".
+        kernel: Defaults to "rbf". Otherwise, chosoe "linaer", "polynomial", "sigmoid".
         C: Regularization parameter, defaults to 0.5. The lower, the more tolerant to outliers.
         gamma: Kernel coefficient controlling the influence radius of samples.
                 Higher values lead to more local decision boundaries.
         show: Flag to show the plot.
     """
     if ax is None:
-        fig, ax = plt.subplots(figsize=(6, 6))
+        _, ax = plt.subplots(figsize=(6, 6))
 
     X = _2_cluster_to_x(input_1, input_2)  # noqa: N806
     y = _2_cluster_to_y(input_1, input_2)
 
     X = _check_shape(X)  # noqa: N806
-
-    msg_labels = "Number of labels must match number of samples"
+    msg_wrong_c = "C has to be > 0.0"
+    if C < 0.0:
+        raise ValueError(msg_wrong_c)
+    msg_labels = "Number of labels must match number of samples."
     if len(y) != len(X):
         raise ValueError(msg_labels)
 
