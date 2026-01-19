@@ -68,21 +68,7 @@ templates_path = ["_templates"]
 # Notebooks: don't execute during docs build
 nb_execution_mode = "off"
 
-# Bibliography
-exclude_patterns = [
-    "_build",
-    "Thumbs.db",
-    ".DS_Store",
-    "**/*.py",
-    "**/*.json",
-    "**/*.zip",
-    "**/*.md5",
-    # Prefer Sphinx-Gallery .rst over generated notebooks/markdown in auto_examples.
-    "auto_examples/*.ipynb",
-    "auto_examples/**/*.ipynb",
-    "auto_examples/*.md",
-    "auto_examples/**/*.md",
-]
+
 bibtex_bibfiles = ["references.bib"]
 bibtex_default_style = "alpha"
 
