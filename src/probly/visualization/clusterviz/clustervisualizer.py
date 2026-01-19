@@ -165,8 +165,3 @@ def plot_uncertainty(
     if show:
         plt.show()
     return ax
-
-
-mu = [0, 0]
-mean = [1, 1]
-sigma = [[0.05, 0], [0, 0.5]]
