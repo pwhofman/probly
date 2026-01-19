@@ -100,6 +100,7 @@ def plot_uncertainty(
     title: str = "Uncertainty",
     x_label: str = "Feature 1",
     y_label: str = "Feature 2",
+    class_labels: tuple[str, str] | None = None,
     cmap_name: str = "coolwarm",
     kernel: Literal["linear", "rbf", "sigmoid", "polynomial"] = "rbf",
     C: float = 0.5,  # noqa: N803
@@ -115,6 +116,7 @@ def plot_uncertainty(
         title: title of plot, defaults to "Uncertainty".
         x_label: Name of x-axis, "Feature 1".
         y_label: Name of y-axis,"Feature 2".
+        class_labels: Names of Classes for legend. Defaults to Class [i], where i is number of class.
         cmap_name: Colormap name, defaults to "coolwarm".
         kernel: Defaults to "rbf". Otherwise, chosoe "linaer", "polynomial", "sigmoid".
         C: Regularization parameter, defaults to 0.5. The lower, the more tolerant to outliers.
@@ -141,13 +143,18 @@ def plot_uncertainty(
 
     ax.set_title(title)
 
-    cmap = plt.get_cmap(cmap_name)
     unique_labels = np.unique(y)
+    n_classes = len(unique_labels)
+    default_names = tuple(f"Class {i + 1}" for i in range(n_classes))
+    legend_names = default_names if class_labels is None else tuple(class_labels)
+
+    cmap = plt.get_cmap(cmap_name)
+
     colors = cmap(np.linspace(0, 1, len(unique_labels)))
 
     for i, label in enumerate(unique_labels):
         mask = y == label
-        ax.scatter(X[mask, 0], X[mask, 1], s=20, color=colors[i], alpha=0.8, zorder=10, label=f"Class {i + 1}")
+        ax.scatter(X[mask, 0], X[mask, 1], s=20, color=colors[i], alpha=0.8, zorder=10, label=legend_names[i])
 
     clf = SVC(kernel=kernel, C=C, gamma=gamma)
     clf.fit(X, y)
@@ -158,3 +165,8 @@ def plot_uncertainty(
     if show:
         plt.show()
     return ax
+
+
+mu = [0, 0]
+mean = [1, 1]
+sigma = [[0.05, 0], [0, 0.5]]
