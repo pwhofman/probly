@@ -82,7 +82,7 @@ class ArrayDiscreteCredalSet(ArrayCategoricalCredalSet, DiscreteCredalSet[np.nda
     @property
     def dtype(self) -> np.dtype:
         """Return the data type of the credal set array."""
-        return self.array.dtype  # type: ignore[no-any-return]
+        return self.array.dtype
 
     @property
     def ndim(self) -> int:
@@ -92,7 +92,7 @@ class ArrayDiscreteCredalSet(ArrayCategoricalCredalSet, DiscreteCredalSet[np.nda
     @property
     def shape(self) -> tuple[int, ...]:
         """Return the shape of the credal set array."""
-        return self.array.shape[:-2]  # type: ignore[no-any-return]
+        return self.array.shape[:-2]
 
     def __len__(self) -> int:
         """Return the number of members in the credal set."""
@@ -121,11 +121,11 @@ class ArrayDiscreteCredalSet(ArrayCategoricalCredalSet, DiscreteCredalSet[np.nda
 
     def lower(self) -> np.ndarray:
         """Compute the lower envelope of the credal set."""
-        return np.min(self.array, axis=-2)  # type: ignore[no-any-return]
+        return np.min(self.array, axis=-2)
 
     def upper(self) -> np.ndarray:
         """Compute the upper envelope of the credal set."""
-        return np.max(self.array, axis=-2)  # type: ignore[no-any-return]
+        return np.max(self.array, axis=-2)
 
     def copy(self) -> Self:
         """Create a copy of the ArraySample.

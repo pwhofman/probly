@@ -583,7 +583,7 @@ def traverser[T](  # noqa: C901, PLR0912, PLR0915
         def _decorator(fn: LooseTraverser[T]) -> Traverser[T]:
             return traverser(
                 fn,
-                mode=mode,  # type: ignore[arg-type]
+                mode=mode,
                 traverse_if=traverse_if,
                 skip_if=skip_if,
                 vars=vars,

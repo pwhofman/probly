@@ -93,7 +93,7 @@ class ArraySample[D: Numeric](Sample[D], np.lib.mixins.NDArrayOperatorsMixin):
             in_sample_axis = sample.sample_axis
             if sample_axis not in ("auto", in_sample_axis):
                 sample_array = np.moveaxis(sample_array, in_sample_axis, sample_axis)  # type: ignore[arg-type]
-                in_sample_axis = sample_axis  # type: ignore[assignment]
+                in_sample_axis = sample_axis
             return cls(array=sample_array, sample_axis=in_sample_axis)
 
         return cls.from_iterable(sample.samples, sample_axis=sample_axis, dtype=dtype)
@@ -109,7 +109,7 @@ class ArraySample[D: Numeric](Sample[D], np.lib.mixins.NDArrayOperatorsMixin):
     @property
     def dtype(self) -> DTypeLike:
         """The data type of the underlying array."""
-        return self.array.dtype  # type: ignore[no-any-return]
+        return self.array.dtype
 
     @property
     def device(self) -> str:
@@ -129,7 +129,7 @@ class ArraySample[D: Numeric](Sample[D], np.lib.mixins.NDArrayOperatorsMixin):
     @property
     def shape(self) -> tuple[int, ...]:
         """The shape of the underlying array."""
-        return self.array.shape  # type: ignore[no-any-return]
+        return self.array.shape
 
     @property
     def size(self) -> int:
@@ -144,7 +144,7 @@ class ArraySample[D: Numeric](Sample[D], np.lib.mixins.NDArrayOperatorsMixin):
     @property
     def sample_size(self) -> int:
         """Return the number of samples."""
-        return self.array.shape[self.sample_axis]  # type: ignore[no-any-return]
+        return self.array.shape[self.sample_axis]
 
     @property
     def samples(self) -> np.ndarray:
@@ -156,17 +156,17 @@ class ArraySample[D: Numeric](Sample[D], np.lib.mixins.NDArrayOperatorsMixin):
     @override
     def sample_mean(self) -> D:
         """Compute the mean of the sample."""
-        return self.array.mean(axis=self.sample_axis)  # type: ignore[no-any-return]
+        return self.array.mean(axis=self.sample_axis)
 
     @override
     def sample_std(self, ddof: int = 1) -> D:
         """Compute the standard deviation of the sample."""
-        return self.array.std(axis=self.sample_axis, ddof=ddof)  # type: ignore[no-any-return]
+        return self.array.std(axis=self.sample_axis, ddof=ddof)
 
     @override
     def sample_var(self, ddof: int = 1) -> D:
         """Compute the variance of the sample."""
-        return self.array.var(axis=self.sample_axis, ddof=ddof)  # type: ignore[no-any-return]
+        return self.array.var(axis=self.sample_axis, ddof=ddof)
 
     @override
     def concat(self, other: Sample[D]) -> Self:

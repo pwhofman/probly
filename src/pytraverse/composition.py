@@ -310,7 +310,7 @@ class _AbstractSingledispatchTraverser[T: object, D](abc.ABC):
                     def partial_register(
                         traverser: RegisteredLooseTraverser[T, Any],
                     ) -> Traverser[T]:
-                        return self.register(cls, traverser, **kwargs)  # type: ignore[arg-type]
+                        return self.register(cls, traverser, **kwargs)
 
                     return partial_register
             else:
@@ -334,7 +334,7 @@ class _AbstractSingledispatchTraverser[T: object, D](abc.ABC):
         if not callable(traverser):
             msg = f"Expected a callable traverser, got {traverser!r}."
             raise TypeError(msg)
-        traverser = d.traverser(traverser, **kwargs)  # type: ignore[arg-type]
+        traverser = d.traverser(traverser, **kwargs)
 
         if cls is not None:
             return self._dispatch.register(cls, traverser)

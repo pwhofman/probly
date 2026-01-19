@@ -129,9 +129,9 @@ class Variable[V](ABC):
     def _get[T](self, state: State[T], d: GlobalState | StackState) -> V:
         if self.fallback is not None:
             if self.index in d:
-                return d[self.index]  # type: ignore[no-any-return]
+                return d[self.index]
             return self.fallback.get(state)
-        return d.get(self.index, self.default)  # type: ignore[no-any-return]
+        return d.get(self.index, self.default)
 
     @abstractmethod
     def get[T](self, state: State[T]) -> V:

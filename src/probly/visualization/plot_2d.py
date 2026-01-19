@@ -34,7 +34,7 @@ class IntervalVisualizer:
         title: str = "Interval Plot (2 Classes)",
         mle_flag: bool = True,
         credal_flag: bool = True,
-        ax: plt.Axes = None,
+        ax: plt.Axes | None = None,
     ) -> plt.Axes:
         """Plot the interval plot.
 

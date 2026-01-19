@@ -32,9 +32,9 @@ class TernaryVisualizer:
     def label_corners_and_vertices(
         self,
         ax: plt.Axes,
-        v1: np.array,
-        v2: np.array,
-        v3: np.array,
+        v1: np.ndarray,
+        v2: np.ndarray,
+        v3: np.ndarray,
         labels: list[str],
     ) -> None:
         """Labeling the corners and vertices."""
@@ -56,7 +56,7 @@ class TernaryVisualizer:
         probs: np.ndarray,
         labels: list[str],
         title: str = "Ternary Plot (3 Classes)",
-        ax: plt.Axes = None,
+        ax: plt.Axes | None = None,
         plot_hull: bool = True,
         plot_minmax: bool = True,
         **scatter_kwargs: object,
