@@ -9,12 +9,12 @@ import matplotlib.pyplot as plt
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
     from matplotlib.figure import Figure
-
-    from probly.evaluation.types import OodEvaluationResult
+    import numpy as np
 
 
 def plot_histogram(
-    results: OodEvaluationResult,
+    id_scores: np.ndarray,
+    ood_scores: np.ndarray,
     ax: Axes | None = None,
     bins: int = 50,
     title: str = "Score Distribution",
@@ -25,19 +25,15 @@ def plot_histogram(
     else:
         fig = ax.get_figure()
 
-    if results.id_scores is None or results.ood_scores is None:
-        msg = "Results object must contain raw scores for histogram."
-        raise ValueError(msg)
-
     ax.hist(
-        results.id_scores,
+        id_scores,
         bins=bins,
         alpha=0.6,
         density=True,
         label="In-Distribution",
     )
     ax.hist(
-        results.ood_scores,
+        ood_scores,
         bins=bins,
         alpha=0.6,
         density=True,
@@ -54,7 +50,10 @@ def plot_histogram(
 
 
 def plot_roc_curve(
-    results: OodEvaluationResult,
+    fpr: np.ndarray,
+    tpr: np.ndarray,
+    auroc: float,
+    fpr95: float | None = None,
     ax: Axes | None = None,
 ) -> Figure:
     """Plot ROC curve."""
@@ -63,15 +62,11 @@ def plot_roc_curve(
     else:
         fig = ax.get_figure()
 
-    if results.fpr is None or results.tpr is None:
-        msg = "Results object missing FPR/TPR arrays."
-        raise ValueError(msg)
+    label = f"AUROC = {auroc:.3f}"
+    if fpr95 is not None:
+        label += f" (FPR@95 = {fpr95:.3f})"
 
-    label = f"AUROC = {results.auroc:.3f}"
-    if results.fpr95 is not None:
-        label += f" (FPR@95 = {results.fpr95:.3f})"
-
-    ax.plot(results.fpr, results.tpr, lw=2, label=label)
+    ax.plot(fpr, tpr, lw=2, label=label)
     ax.plot([0, 1], [0, 1], linestyle="--", color="gray", label="Random")
 
     ax.set_xlim(0.0, 1.0)
@@ -86,7 +81,9 @@ def plot_roc_curve(
 
 
 def plot_pr_curve(
-    results: OodEvaluationResult,
+    recall: np.ndarray,
+    precision: np.ndarray,
+    aupr: float,
     ax: Axes | None = None,
 ) -> Figure:
     """Plot Precision-Recall curve."""
@@ -95,16 +92,12 @@ def plot_pr_curve(
     else:
         fig = ax.get_figure()
 
-    if results.precision is None or results.recall is None:
-        msg = "Results object missing Precision/Recall arrays."
-        raise ValueError(msg)
-
     ax.plot(
-        results.recall,
-        results.precision,
+        recall,
+        precision,
         lw=2,
         color="green",
-        label=f"AUPR = {results.aupr:.3f}",
+        label=f"AUPR = {aupr:.3f}",
     )
 
     ax.set_xlabel("Recall")
