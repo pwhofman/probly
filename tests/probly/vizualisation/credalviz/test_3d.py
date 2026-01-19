@@ -12,6 +12,16 @@ import pytest
 from probly.visualization.credalviz.plot_3d import TernaryVisualizer
 
 
+def test_probs_to_coords_3d_example_point() -> None:
+    """One xample point gets mapped correctly."""
+    viz = TernaryVisualizer()
+    probs = np.array([0.2, 0.3, 0.5])
+    x, y = viz.probs_to_coords_3d(probs)
+
+    assert x == pytest.approx(0.55)
+    assert y == pytest.approx(np.sqrt(3) / 4)
+
+
 def test_probs_to_coords_3d_maps_vertices_to_triangle_corners() -> None:
     """Vertices map to the three triangle corners in 2D."""
     viz = TernaryVisualizer()
@@ -40,7 +50,14 @@ def test_ternary_plot_uses_custom_labels_for_vertices() -> None:
     probs = np.array([[0.2, 0.3, 0.5]])
     labels = ["A", "B", "C"]
 
-    ax = viz.ternary_plot(probs, labels=labels, plot_hull=False)
+    ax = viz.ternary_plot(
+        probs,
+        labels=labels,
+        title="Title",
+        credal_flag=False,
+        mle_flag=False,
+        minmax_flag=False,
+    )
 
     texts = [t.get_text() for t in ax.texts]
     assert "A" in texts
@@ -54,7 +71,14 @@ def test_ternary_plot_raises_if_label_count_too_small() -> None:
     probs = np.array([[0.2, 0.3, 0.5]])
 
     with pytest.raises(IndexError):
-        viz.ternary_plot(probs, labels=["C1", "C2"], plot_hull=False)
+        viz.ternary_plot(
+            probs,
+            labels=["C1", "C2"],
+            title="Title",
+            credal_flag=False,
+            mle_flag=False,
+            minmax_flag=False,
+        )
 
 
 def test_ternary_plot_sets_title() -> None:
@@ -64,7 +88,14 @@ def test_ternary_plot_sets_title() -> None:
     labels = ["A", "B", "C"]
     title = "My Ternary Plot"
 
-    ax = viz.ternary_plot(probs, labels=labels, title=title, plot_hull=False)
+    ax = viz.ternary_plot(
+        probs,
+        labels=labels,
+        title=title,
+        credal_flag=False,
+        mle_flag=False,
+        minmax_flag=False,
+    )
 
     assert ax.get_title() == title
 
