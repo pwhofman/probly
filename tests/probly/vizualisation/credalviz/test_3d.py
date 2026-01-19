@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import matplotlib as mpl
+import matplotlib.pyplot as plt
 
 mpl.use("Agg")
 
@@ -12,8 +13,89 @@ import pytest
 from probly.visualization.credalviz.plot_3d import TernaryVisualizer
 
 
+def _legend_labels(ax: plt.Axes) -> list[str]:
+    """Return legend labels (empty list if no legend)."""
+    leg = ax.get_legend()
+    if leg is None:
+        return []
+    return [t.get_text() for t in leg.get_texts()]
+
+
+@pytest.fixture
+def viz() -> TernaryVisualizer:
+    return TernaryVisualizer()
+
+
+@pytest.fixture
+def labels() -> list[str]:
+    return ["A", "B", "C"]
+
+
+@pytest.fixture
+def example_probs() -> np.ndarray:
+    """Example probs for testing flags."""
+    return np.array(
+        [
+            [0.20, 0.30, 0.50],
+            [0.25, 0.35, 0.40],
+            [0.30, 0.25, 0.45],
+            [0.35, 0.30, 0.35],
+        ],
+        dtype=float,
+    )
+
+
+def test_legend_probabilities_only_when_all_flags_false(
+    viz: TernaryVisualizer, example_probs: np.ndarray, labels: list[str]
+) -> None:
+    """Tests if legend stays correct when no other label given."""
+    fig, ax = plt.subplots()
+
+    ax_out = viz.ternary_plot(
+        example_probs,
+        labels=labels,
+        title="Title",
+        credal_flag=False,
+        mle_flag=False,
+        minmax_flag=False,
+        ax=ax,
+    )
+    assert ax_out is ax
+
+    labs = _legend_labels(ax)
+    assert "Probabilities" in labs
+    assert "MLE" not in labs
+    assert "Credal set" not in labs
+    assert "Min envelope" not in labs
+    assert "Max envelope" not in labs
+
+    plt.close(fig)
+
+
+def test_legend_uses_custom_scatter_label(viz: TernaryVisualizer, example_probs: np.ndarray, labels: list[str]) -> None:
+    """Tests if custom label is used."""
+    fig, ax = plt.subplots()
+
+    viz.ternary_plot(
+        example_probs,
+        labels=labels,
+        title="Title",
+        credal_flag=False,
+        mle_flag=False,
+        minmax_flag=False,
+        ax=ax,
+        label="TestLabel",
+    )
+
+    labs = _legend_labels(ax)
+    assert "TestLabel" in labs
+    assert "Probabilities" not in labs
+
+    plt.close(fig)
+
+
 def test_probs_to_coords_3d_example_point() -> None:
-    """One xample point gets mapped correctly."""
+    """One example point gets mapped correctly."""
     viz = TernaryVisualizer()
     probs = np.array([0.2, 0.3, 0.5])
     x, y = viz.probs_to_coords_3d(probs)
