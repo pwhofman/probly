@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 import matplotlib as mpl
-import matplotlib.pyplot as plt
 
 mpl.use("Agg")
-
+import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
@@ -72,7 +71,7 @@ def test_legend_probabilities_only_when_all_flags_false(
     plt.close(fig)
 
 
-def test_legend_uses_custom_scatter_label(viz: TernaryVisualizer, example_probs: np.ndarray, labels: list[str]) -> None:
+def test_legend_uses_custom_probs_label(viz: TernaryVisualizer, example_probs: np.ndarray, labels: list[str]) -> None:
     """Tests if custom label is used."""
     fig, ax = plt.subplots()
 
@@ -92,6 +91,117 @@ def test_legend_uses_custom_scatter_label(viz: TernaryVisualizer, example_probs:
     assert "Probabilities" not in labs
 
     plt.close(fig)
+
+
+def test_legend_includes_all_when_all_flags_true(
+    viz: TernaryVisualizer, example_probs: np.ndarray, labels: list[str]
+) -> None:
+    """Tests if all labels are working and min/max only shows once."""
+    fig, ax = plt.subplots()
+
+    viz.ternary_plot(
+        example_probs,
+        labels=labels,
+        title="Title",
+        credal_flag=True,
+        mle_flag=True,
+        minmax_flag=True,
+        ax=ax,
+    )
+
+    labs = _legend_labels(ax)
+    assert "Probabilities" in labs
+    assert "MLE" in labs
+    assert "Credal set" in labs
+    assert labs.count("Min envelope") == 1
+    assert labs.count("Max envelope") == 1
+
+    plt.close(fig)
+
+
+def test_legend_only_mle(viz: TernaryVisualizer, example_probs: np.ndarray, labels: list[str]) -> None:
+    """Tests if all labels are working and min/max only shows once."""
+    fig, ax = plt.subplots()
+
+    viz.ternary_plot(
+        example_probs,
+        labels=labels,
+        title="Title",
+        credal_flag=False,
+        mle_flag=True,
+        minmax_flag=False,
+        ax=ax,
+    )
+
+    labs = _legend_labels(ax)
+    assert "Probabilities" in labs
+    assert "MLE" in labs
+    assert "Credal set" not in labs
+    assert "Min envelope" not in labs
+    assert "Max envelope" not in labs
+
+    plt.close(fig)
+
+
+def test_legend_only_credalhull(viz: TernaryVisualizer, example_probs: np.ndarray, labels: list[str]) -> None:
+    """Tests if labels are working if credalhull only true."""
+    fig, ax = plt.subplots()
+
+    viz.ternary_plot(
+        example_probs,
+        labels=labels,
+        title="Title",
+        credal_flag=True,
+        mle_flag=False,
+        minmax_flag=False,
+        ax=ax,
+    )
+
+    labs = _legend_labels(ax)
+    assert "Probabilities" in labs
+    assert "MLE" not in labs
+    assert "Credal set" in labs
+    assert "Min envelope" not in labs
+    assert "Max envelope" not in labs
+
+    plt.close(fig)
+
+
+def test_legend_only_minmax(viz: TernaryVisualizer, example_probs: np.ndarray, labels: list[str]) -> None:
+    """Tests if labels are working for min max."""
+    fig, ax = plt.subplots()
+
+    viz.ternary_plot(
+        example_probs,
+        labels=labels,
+        title="Title",
+        credal_flag=False,
+        mle_flag=False,
+        minmax_flag=True,
+        ax=ax,
+    )
+
+    labs = _legend_labels(ax)
+    assert "Probabilities" in labs
+    assert "MLE" not in labs
+    assert "Credal set" not in labs
+    assert labs.count("Min envelope") == 1
+    assert labs.count("Max envelope") == 1
+
+    plt.close(fig)
+
+
+def test_plot_convex_hull_collinear_points_falls_back_to_line() -> None:
+    """Collinear points should not crash and should draw a line."""
+    viz = TernaryVisualizer()
+
+    ts = np.linspace(0.1, 0.9, 10)
+    probs = np.array([[0.0, float(t), float(1.0 - t)] for t in ts])
+
+    ax = viz.plot_convex_hull(probs)
+
+    assert len(ax.lines) >= 1
+    assert len(ax.patches) == 0
 
 
 def test_probs_to_coords_3d_example_point() -> None:
