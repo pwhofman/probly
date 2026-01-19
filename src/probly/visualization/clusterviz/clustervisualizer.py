@@ -141,7 +141,7 @@ def plot_uncertainty(
     ax.set_xlabel(x_label)
     ax.set_ylabel(y_label)
 
-    ax.set_title(title)
+    ax.set_title(f"{title} (kernel: {kernel}, C: {C})")
 
     unique_labels = np.unique(y)
     n_classes = len(unique_labels)
@@ -159,7 +159,9 @@ def plot_uncertainty(
     clf = SVC(kernel=kernel, C=C, gamma=gamma)
     clf.fit(X, y)
 
-    ax.legend(loc="upper right")
+    ax.legend(loc="upper left", bbox_to_anchor=(1.18, 1.12), borderaxespad=0.0, frameon=True)
+    ax.figure.subplots_adjust(right=0.75, top=0.90)
+
     _plot_svm_beam(ax, clf, X, cmap)
 
     if show:
