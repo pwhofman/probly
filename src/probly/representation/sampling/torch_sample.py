@@ -15,14 +15,14 @@ class TorchTensorSample(Sample[torch.Tensor]):
         """Initialize the torch tensor sample."""
         self.tensor = torch.stack(samples).permute(1, 0, 2)  # we use the convention [instances, samples, classes]
 
-    def mean(self) -> torch.Tensor:
+    def sample_mean(self) -> torch.Tensor:
         """Compute the mean of the sample."""
         return self.tensor.mean(dim=1)
 
-    def std(self, ddof: int = 1) -> torch.Tensor:
+    def sample_std(self, ddof: int = 1) -> torch.Tensor:
         """Compute the standard deviation of the sample."""
         return self.tensor.std(dim=1, correction=ddof)
 
-    def var(self, ddof: int = 1) -> torch.Tensor:
+    def sample_var(self, ddof: int = 1) -> torch.Tensor:
         """Compute the variance of the sample."""
         return self.tensor.var(dim=1, correction=ddof)

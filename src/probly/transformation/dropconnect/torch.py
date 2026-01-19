@@ -10,7 +10,7 @@ from .common import register
 
 
 def replace_torch_dropconnect(obj: nn.Linear, p: float) -> DropConnectLinear:
-    """Replace a given layer by a DropConnectLinear layer."""
+    """Replace a given layer by a DropConnectLinear layer based on :cite:`mobinyDropConnectEffective2019`."""
     return DropConnectLinear(obj, p=p)
 
 

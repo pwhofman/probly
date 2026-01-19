@@ -85,9 +85,6 @@ class MultiVisualizer:
         self,
         probs: np.ndarray,
         labels: list[str],
-        title: str,
-        mle_flag: bool,
-        credal_flag: bool,
         ax: plt.Axes | None = None,
     ) -> plt.Axes:
         """General radar (spider) plot for credal predictions.
@@ -95,9 +92,6 @@ class MultiVisualizer:
         Args:
         probs: NumPy array with probabilities.
         labels: labels for the classes.
-        title: title of the plot.
-        mle_flag: Flag to indicate whether median of probabilities is shown.
-        credal_flag: Flag to indicate whether the credal band is shown.
         ax: Axes on which to create the radar chart.
         """
         n_classes = probs.shape[-1]
@@ -106,48 +100,35 @@ class MultiVisualizer:
         theta = radar_factory(n_classes, frame="polygon")
 
         if ax is None:
-            fig, ax = plt.subplots(figsize=(6, 6), subplot_kw={"projection": "radar"})
+            _, ax = plt.subplots(figsize=(6, 6), subplot_kw={"projection": "radar"})
 
         # Setup Axis
         ax.set_rgrids([0.2, 0.4, 0.6, 0.8, 1.0])
         ax.set_ylim(0.0, 1.0)
         ax.set_varlabels(labels)
 
-        max_class = np.argmax(probs, axis=1)
-        max_probs = np.max(probs, axis=1)
+        mean_probs = probs.mean(axis=0)
+        max_class = np.argmax(mean_probs)
+        ax.scatter(theta[max_class], mean_probs[max_class], s=80, color=cfg.RED, label="MLE")
 
-        ax.scatter(
-            theta[max_class],  # + jitter,
-            max_probs,
-            color=cfg.BLUE,
-            label="Probabilities",
-            zorder=3,
+        lower = probs.min(axis=0)
+        upper = probs.max(axis=0)
+        lower_c = np.append(lower, lower[0])
+        upper_c = np.append(upper, upper[0])
+        theta_c = np.append(theta, theta[0])
+
+        ax.fill_between(
+            theta_c,
+            lower_c,
+            upper_c,
+            alpha=0.30,
+            label="Credal band (lower-upper)",
         )
-        if mle_flag:
-            mean_probs = probs.mean(axis=0)
-            mean_max_class = np.argmax(mean_probs)
-            ax.scatter(theta[mean_max_class], mean_probs[mean_max_class], s=80, color=cfg.RED, label="MLE", zorder=4)
 
-        if credal_flag:
-            lower = probs.min(axis=0)
-            upper = probs.max(axis=0)
-            lower_c = np.append(lower, lower[0])
-            upper_c = np.append(upper, upper[0])
-            theta_c = np.append(theta, theta[0])
+        ax.plot(theta_c, lower_c, linestyle=cfg.MIN_MAX_LINESTYLE_1, linewidth=1.5, label="Lower bound")
+        ax.plot(theta_c, upper_c, linewidth=1.5, label="Upper bound")
 
-            ax.fill_between(
-                theta_c,
-                lower_c,
-                upper_c,
-                alpha=0.30,
-                label="Credal band (lower-upper)",
-                zorder=2,
-            )
-
-            ax.plot(theta_c, lower_c, linestyle=cfg.MIN_MAX_LINESTYLE_1, linewidth=1.5, label="Lower bound")
-            ax.plot(theta_c, upper_c, linewidth=1.5, label="Upper bound")
-
-        ax.set_title(title, pad=20)
+        ax.set_title(f"Spider Plot ({n_classes} Classes)", pad=20)
         ax.legend(loc="upper right", bbox_to_anchor=(1.3, 1.1))
         plt.tight_layout()
 
