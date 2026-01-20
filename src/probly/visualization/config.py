@@ -7,11 +7,12 @@ from matplotlib.colors import Colormap, LinearSegmentedColormap
 __all__ = [
     "BLUE",
     "CLASS_LABLES_FONTSIZE",
+    "COLORBAR_LABEL",
+    "COLORBAR_LABEL_FONTSIZE",
+    "COLORBAR_LABEL_LOC",
+    "COLORBAR_LABEL_PAD",
+    "COLORBAR_LABEL_ROTATION",
     "COLORBAR_TICKS",
-    "COLORBAR_TITLE",
-    "COLORBAR_TITLE_FONTSIZE",
-    "COLORBAR_TITLE_LOC",
-    "COLORBAR_TITLE_PAD",
     "FILL_ALPHA",
     "HULL_EDGE",
     "HULL_EDGE_WIDTH",
@@ -61,23 +62,28 @@ _MIN_MAX_STYLES = {
 }
 PROBLY_CMAP_COLORS: tuple[str, str] = (BLUE, RED)
 PROBLY_CMAP: Colormap = LinearSegmentedColormap.from_list("probly_colors", PROBLY_CMAP_COLORS)
-COLORBAR_TITLE: str = "Uncertainty:"
-COLORBAR_TITLE_LOC: str = "left"
-COLORBAR_TITLE_PAD: float = 10
-COLORBAR_TITLE_FONTSIZE: int = 11
+COLORBAR_LABEL: str = "Uncertainty:"
+COLORBAR_LABEL_LOC: str = "left"
+COLORBAR_LABEL_ROTATION: float = 90
+COLORBAR_LABEL_PAD: float = 10
+COLORBAR_LABEL_FONTSIZE: int = 11
 
 COLORBAR_TICKS: tuple[float, ...] = (0.0, 0.2, 0.4, 0.6, 0.8, 1.0)
 
 
-def style_colorbar(cbar: object) -> None:
+def style_colorbar(
+    cbar: object,
+    *,
+    ticks: tuple[float, ...] = COLORBAR_TICKS,
+    label: str = COLORBAR_LABEL,
+) -> None:
     """Apply probly default style to a matplotlib colorbar."""
-    cbar.set_ticks(COLORBAR_TICKS)
-    cbar.ax.set_title(
-        COLORBAR_TITLE,
-        loc=COLORBAR_TITLE_LOC,
-        pad=COLORBAR_TITLE_PAD,
-        fontsize=COLORBAR_TITLE_FONTSIZE,
+    cbar.set_ticks(ticks)
+    cbar.set_label(
+        label, rotation=COLORBAR_LABEL_ROTATION, labelpad=COLORBAR_LABEL_PAD, fontsize=COLORBAR_LABEL_FONTSIZE
     )
+    cbar.ax.yaxis.set_label_position("right")
+    cbar.ax.yaxis.label.set_verticalalignment("center")
 
 
 def choose_min_max_style(value: int) -> tuple[str, str]:
