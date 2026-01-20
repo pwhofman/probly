@@ -1,4 +1,4 @@
-"""Visualizing the uncertainty between two 2D clusters."""
+"""Visualizing the margin-based uncertainty between two 2D clusters."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ def _check_shape(input_data: np.ndarray) -> np.ndarray:
     Args:
         input_data: input data with shape (n_samples, 2).
     """
-    msg_type = "Input must be a numpy array."
+    msg_type = "Input must be a NumPy Array."
     msg_empty = "Input must not be empty."
     msg_shape = "Input must have shape (n_samples, 2)."
     if not isinstance(input_data, np.ndarray):
