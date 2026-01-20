@@ -17,7 +17,7 @@ def _check_shape(input_data: np.ndarray) -> np.ndarray:
     Args:
         input_data: input data with shape (n_samples, 2).
     """
-    msg_type = "Input must be a numpy array."
+    msg_type = "Input must be a NumPy array."
     msg_empty = "Input must not be empty."
     msg_shape = "Input must have shape (n_samples, 2)."
     if not isinstance(input_data, np.ndarray):
@@ -33,11 +33,11 @@ def _2_cluster_to_y(cluster1: np.ndarray, cluster2: np.ndarray) -> np.ndarray:
     """Helper method to convert 2 clusters into one array with labels for SVM.
 
     Args:
-        cluster1: 2D numpy array with shape (n_samples, 2).
-        cluster2: 2D numpy array with shape (n_samples, 2).
+        cluster1: 2D NumPy array with shape (n_samples, 2).
+        cluster2: 2D NumPy array with shape (n_samples, 2).
 
     Returns:
-        One 1D numpy array with shape (n_samples, ) only consisting of 0s and 1s.
+        One 1D NumPy array with shape (n_samples, ) only consisting of 0s and 1s.
     """
     input1 = _check_shape(cluster1)
     input2 = _check_shape(cluster2)
@@ -54,11 +54,11 @@ def _2_cluster_to_x(cluster1: np.ndarray, cluster2: np.ndarray) -> np.ndarray:
     """Helper method to convert 2 clusters to one cluster with all samples.
 
     Args:
-        cluster1: 2D numpy array with shape (n_samples, 2).
-        cluster2: 2D numpy array with shape (n_samples, 2).
+        cluster1: 2D NumPy array with shape (n_samples, 2).
+        cluster2: 2D NumPy array with shape (n_samples, 2).
 
     Returns:
-        One 2D numpy array with shape (n_samples, 2).
+        One 2D NumPy array with shape (n_samples, 2).
     """
     input1 = _check_shape(cluster1)
     input2 = _check_shape(cluster2)
@@ -72,7 +72,7 @@ def _plot_svm_beam(ax: plt.Axes, clf: SVC, X: np.ndarray, cmap: Colormap) -> Non
     Args:
         ax: matplotlib axes object.
         clf: SVC classifier.
-        X: 2D numpy array with shape (n_samples, 2).
+        X: 2D NumPy array with shape (n_samples, 2).
         cmap: matplotlib colormap object.
     """
     x_min, x_max = X[:, 0].min() - 0.5, X[:, 0].max() + 0.5
@@ -110,15 +110,15 @@ def plot_uncertainty(
     """Method to plot uncertainty between two 2D clusters.
 
     Args:
-        input_1: First 2D numpy array with shape (n_samples, 2).
-        input_2: Second 2D numpy array with shape (n_samples, 2).
+        input_1: First 2D NumPy array with shape (n_samples, 2).
+        input_2: Second 2D NumPy array with shape (n_samples, 2).
         ax: Matplotlib axes object.
         title: Title of plot, defaults to "Uncertainty".
         x_label: Name of x-axis, defaults to "Feature 1".
         y_label: Name of y-axis, defaults to "Feature 2".
         class_labels: Names of classes for legend. Defaults to Class [i], where i is number of class.
         cmap_name: Colormap name, defaults to "coolwarm".
-        kernel: Defaults to "rbf". Otherwise, choose "linearr", "polynomial", "sigmoid".
+        kernel: Defaults to "rbf". Otherwise, choose "linear", "polynomial", "sigmoid".
         C: Regularization parameter, defaults to 0.5. The lower, the more tolerant to outliers. Cannot be below 0.0.
         gamma:  Kernel coefficient controlling the influence radius of samples.
                 Higher values lead to more local decision boundaries.
