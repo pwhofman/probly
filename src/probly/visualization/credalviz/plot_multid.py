@@ -115,8 +115,6 @@ class MultiVisualizer:
         if ax is None:
             _, ax = plt.subplots(figsize=(6, 6), subplot_kw={"projection": "radar"})
 
-        # def spiderplot_axis(self, ) -> None:
-
         # Setup Axis with line for better visibility
         ax.set_rgrids([0.2, 0.4, 0.6, 0.8, 1.0])
         ax.set_ylim(0.0, 1.0)
