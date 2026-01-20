@@ -12,6 +12,7 @@ import probly.visualization.config as cfg
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
 
+
 class CoverageEfficiencyVisualizer:
     """Class to visualize the trade-off between coverage and set size (efficiency)."""
 
@@ -71,6 +72,8 @@ class CoverageEfficiencyVisualizer:
 
         # Compute metrics
         coverages, efficiencies = self._compute_metrics(probs, targets, alphas)
+        n_classes = probs.shape[1]
+        efficiency_norm = 1.0 - (efficiencies - 1.0) / (n_classes - 1.0)
 
         # --- Plot Coverage (Primary Y-Axis) ---
         ax.plot(
@@ -100,17 +103,17 @@ class CoverageEfficiencyVisualizer:
         ax2 = ax.twinx()
         line2 = ax2.plot(
             confidence_levels,
-            efficiencies,
+            efficiency_norm,
             color=cfg.RED,
             linewidth=cfg.HULL_LINE_WIDTH,
             linestyle=cfg.MIN_MAX_LINESTYLE_2,
-            label="Mean Set Size",
+            label="Efficiency",
             zorder=2,
         )
 
-        ax2.set_ylabel("Mean Set Size (Efficiency)", color=cfg.RED)
+        ax2.set_ylabel("Efficiency", color=cfg.RED)
         ax2.tick_params(axis="y", labelcolor=cfg.RED)
-        ax2.set_ylim(0.9, probs.shape[1] + 0.5)
+        ax2.set_ylim(1.05, -0.05)
 
         # --- Combine Legends ---
         lines = line1 + line2
@@ -132,6 +135,7 @@ class CoverageEfficiencyVisualizer:
 
 # --- DEMO / TEST SECTION ---
 
+
 def generate_mock_data(n_samples: int = 2000, n_classes: int = 20) -> tuple[np.ndarray, np.ndarray]:
     """Generates synthetic data."""
     np.random.seed(42)  # noqa: NPY002
@@ -148,8 +152,8 @@ def generate_mock_data(n_samples: int = 2000, n_classes: int = 20) -> tuple[np.n
 
     return probs, targets
 
-if __name__ == "__main__":
 
+if __name__ == "__main__":
     probs_mock, targets_mock = generate_mock_data(n_samples=2000, n_classes=20)
 
     viz = CoverageEfficiencyVisualizer()
@@ -163,7 +167,6 @@ if __name__ == "__main__":
         title="Demo: Coverage vs. Efficiency",
         ax=ax,
     )
-
 
     plt.tight_layout()
     plt.show()
