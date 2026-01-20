@@ -30,7 +30,7 @@ def _check_shape(input_data: np.ndarray) -> np.ndarray:
 
 
 def _2_cluster_to_y(cluster1: np.ndarray, cluster2: np.ndarray) -> np.ndarray:
-    """Helper method to convert 2 clusters one array with labels for SVM.
+    """Helper method to convert 2 clusters into one array with labels for SVM.
 
     Args:
         cluster1: 2D numpy array with shape (n_samples, 2).
@@ -112,15 +112,15 @@ def plot_uncertainty(
     Args:
         input_1: First 2D numpy array with shape (n_samples, 2).
         input_2: Second 2D numpy array with shape (n_samples, 2).
-        ax: matplotlib axes object.
-        title: title of plot, defaults to "Uncertainty".
-        x_label: Name of x-axis, "Feature 1".
-        y_label: Name of y-axis,"Feature 2".
-        class_labels: Names of Classes for legend. Defaults to Class [i], where i is number of class.
+        ax: Matplotlib axes object.
+        title: Title of plot, defaults to "Uncertainty".
+        x_label: Name of x-axis, defaults to "Feature 1".
+        y_label: Name of y-axis, defaults to "Feature 2".
+        class_labels: Names of classes for legend. Defaults to Class [i], where i is number of class.
         cmap_name: Colormap name, defaults to "coolwarm".
-        kernel: Defaults to "rbf". Otherwise, chosoe "linaer", "polynomial", "sigmoid".
-        C: Regularization parameter, defaults to 0.5. The lower, the more tolerant to outliers.
-        gamma: Kernel coefficient controlling the influence radius of samples.
+        kernel: Defaults to "rbf". Otherwise, choose "linearr", "polynomial", "sigmoid".
+        C: Regularization parameter, defaults to 0.5. The lower, the more tolerant to outliers. Cannot be below 0.0.
+        gamma:  Kernel coefficient controlling the influence radius of samples.
                 Higher values lead to more local decision boundaries.
         show: Flag to show the plot.
     """
