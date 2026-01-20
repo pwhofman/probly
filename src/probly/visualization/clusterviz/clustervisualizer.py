@@ -18,7 +18,7 @@ def _check_shape(input_data: np.ndarray) -> np.ndarray:
     Args:
         input_data: input data with shape (n_samples, 2).
     """
-    msg_type = "Input must be a NumPy array."
+    msg_type = "Input must be a NumPy Array."
     msg_empty = "Input must not be empty."
     msg_shape = "Input must have shape (n_samples, 2)."
     if not isinstance(input_data, np.ndarray):
@@ -101,7 +101,7 @@ def plot_uncertainty(
     x_label: str = "Feature 1",
     y_label: str = "Feature 2",
     class_labels: tuple[str, str] | None = None,
-    kernel: Literal["linear", "rbf", "sigmoid", "polynomial"] = "rbf",
+    kernel: Literal["linear", "rbf", "sigmoid"] = "rbf",
     C: float = 0.5,  # noqa: N803
     gamma: float | Literal["auto", "scale"] = "scale",
     show: bool = True,
@@ -129,9 +129,16 @@ def plot_uncertainty(
     y = _2_cluster_to_y(input_1, input_2)
 
     X = _check_shape(X)  # noqa: N806
-    msg_wrong_gamma = "gamma has to be >= 0.0"
-    if gamma < 0.0:
-        raise ValueError(msg_wrong_gamma)
+    msg_wrong_gamma = "gamma has to be >= 0.0 or one of {'auto', 'scale'}"
+
+    if isinstance(gamma, (int, float)):
+        if gamma < 0.0:
+            raise ValueError(msg_wrong_gamma)
+    elif isinstance(gamma, str):
+        if gamma not in {"auto", "scale"}:
+            raise ValueError(msg_wrong_gamma)
+    else:
+        raise TypeError(msg_wrong_gamma)
     msg_wrong_c = "C has to be > 0.0"
     if C < 0.0:
         raise ValueError(msg_wrong_c)
