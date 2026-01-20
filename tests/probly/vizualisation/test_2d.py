@@ -12,7 +12,7 @@ from probly.visualization.plot_2d import IntervalVisualizer
 
 
 def test_probs_to_coords_2d_edge_values() -> None:
-    """probs_to_coords_2d maps [0,1] to x=1 and y=0."""
+    """probs_to_coords_2d maps [0, 1] to x=1 and y=0."""
     viz = IntervalVisualizer()
     probs = np.array([0.0, 1.0])
 
@@ -23,7 +23,7 @@ def test_probs_to_coords_2d_edge_values() -> None:
 
 
 def test_interval_plot_returns_axes_and_sets_title_and_labels() -> None:
-    """interval_plot returns Axes, sets title, and uses the first two labels."""
+    """interval_plot returns Axes, sets the title, and uses the first two labels."""
     viz = IntervalVisualizer()
     probs = np.array([[0.4, 0.6], [0.2, 0.8]])
     labels = ["C1", "C2", "C3", "C4"]
@@ -55,7 +55,7 @@ def test_interval_plot_adds_legend_entry() -> None:
 
 
 def test_interval_plot_raises_if_labels_too_short() -> None:
-    """interval_plot fails if fewer than two labels are provided (current behavior)."""
+    """interval_plot fails if fewer than two labels are provided."""
     viz = IntervalVisualizer()
     probs = np.array([[0.4, 0.6]])
 
