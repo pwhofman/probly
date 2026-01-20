@@ -129,6 +129,9 @@ def plot_uncertainty(
     y = _2_cluster_to_y(input_1, input_2)
 
     X = _check_shape(X)  # noqa: N806
+    msg_wrong_gamma = "gamma has to be >= 0.0"
+    if gamma < 0.0:
+        raise ValueError(msg_wrong_gamma)
     msg_wrong_c = "C has to be > 0.0"
     if C < 0.0:
         raise ValueError(msg_wrong_c)
