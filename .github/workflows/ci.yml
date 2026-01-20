@@ -148,9 +148,9 @@ jobs:
                uv run ruff check .
                uv run ruff format --check .
 
-        -   name: Run MyPy Static Type Check
+        -   name: Run ty Static Type Check
             run: |
-               uv run mypy src/
+               uv run ty check
 
         -   name: Execute Unit Tests and Measure Coverage
             run: |
