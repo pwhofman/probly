@@ -13,6 +13,8 @@ from matplotlib.spines import Spine
 from matplotlib.transforms import Affine2D
 import numpy as np
 
+import probly.visualization.config as cfg
+
 
 def radar_factory(num_vars: int, frame: str = "circle") -> np.ndarray:  # noqa: C901
     """Create a radar chart with `num_vars` axes."""
@@ -58,7 +60,7 @@ def radar_factory(num_vars: int, frame: str = "circle") -> np.ndarray:  # noqa: 
             if frame == "circle":
                 return Circle((0.5, 0.5), 0.5)
             if frame == "polygon":
-                return RegularPolygon((0.5, 0.5), num_vars, radius=0.5, edgecolor="k")
+                return RegularPolygon((0.5, 0.5), num_vars, radius=0.5, edgecolor=cfg.BLACK)
             msg = f"Unknown value for 'frame': {frame}"
             raise ValueError(msg)
 
@@ -98,16 +100,33 @@ class MultiVisualizer:
         theta = radar_factory(n_classes, frame="polygon")
 
         if ax is None:
-            fig, ax = plt.subplots(figsize=(6, 6), subplot_kw={"projection": "radar"})
+            _, ax = plt.subplots(figsize=(6, 6), subplot_kw={"projection": "radar"})
 
         # Setup Axis
         ax.set_rgrids([0.2, 0.4, 0.6, 0.8, 1.0])
         ax.set_ylim(0.0, 1.0)
         ax.set_varlabels(labels)
 
-        probs_flat = probs.sum(axis=0)
-        max_class = np.argmax(probs_flat)
-        ax.scatter(theta[max_class], probs_flat[max_class], s=80, color="red", label="MLE")
+        mean_probs = probs.mean(axis=0)
+        max_class = np.argmax(mean_probs)
+        ax.scatter(theta[max_class], mean_probs[max_class], s=80, color=cfg.RED, label="MLE")
+
+        lower = probs.min(axis=0)
+        upper = probs.max(axis=0)
+        lower_c = np.append(lower, lower[0])
+        upper_c = np.append(upper, upper[0])
+        theta_c = np.append(theta, theta[0])
+
+        ax.fill_between(
+            theta_c,
+            lower_c,
+            upper_c,
+            alpha=0.30,
+            label="Credal band (lower-upper)",
+        )
+
+        ax.plot(theta_c, lower_c, linestyle=cfg.MIN_MAX_LINESTYLE_1, linewidth=1.5, label="Lower bound")
+        ax.plot(theta_c, upper_c, linewidth=1.5, label="Upper bound")
 
         ax.set_title(f"Spider Plot ({n_classes} Classes)", pad=20)
         ax.legend(loc="upper right", bbox_to_anchor=(1.3, 1.1))

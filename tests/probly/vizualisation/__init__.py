@@ -1,1 +1,1 @@
-"""Integration and unit tests for visualization."""
+"""Tests for Uncertainty Visualization."""

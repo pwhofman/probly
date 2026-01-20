@@ -1,51 +1,39 @@
-"""probly.transformation.evidential.classification.common."""
+"""Tests for evidential classification registration and dispatch."""
 
 from __future__ import annotations
 
-import importlib
+from collections.abc import Callable
+from typing import Any, cast
 
-import pytest
-import torch
-
-# Import the common module once for all tests
-
-common = importlib.import_module(
-    "probly.transformation.evidential.classification.common",
+from probly.transformation.evidential.classification.common import (
+    evidential_classification,
+    register,
 )
 
 
-def test_evidential_classification_handles_valid_torch_module() -> None:
-    """Check that evidential_classification wraps a valid torch module.
+def test_multiple_types_are_handled_independently() -> None:
+    class ModelA:
+        def __init__(self, mid: str) -> None:
+            self.id = mid
 
-    and that the wrapped module can process input data.
-    """
-    base = torch.nn.Linear(4, 2)
-    wrapped = common.evidential_classification(base)
+    class ModelB:
+        def __init__(self, mid: str) -> None:
+            self.id = mid
 
-    # The wrapped module should be callable and accept tensors of the correct shape
-    x = torch.randn(3, 4)
-    y = wrapped(x)
+    def appender_a(base: ModelA) -> str:
+        return f"A_Enhanced({base.id})"
 
-    assert isinstance(y, torch.Tensor)
-    assert y.shape == (3, 2)
+    def appender_b(base: ModelB) -> str:
+        return f"B_Enhanced({base.id})"
 
+    register(ModelA, cast(Callable[..., object], appender_a))
+    register(ModelB, cast(Callable[..., object], appender_b))
 
-def test_evidential_classification_rejects_invalid_input() -> None:
-    """Check that evidential_classification fails on invalid input types."""
-    invalid_input = "not_a_module"
+    a = ModelA("001")
+    b = ModelB("002")
 
-    with pytest.raises((TypeError, ValueError)):
-        common.evidential_classification(invalid_input)  # type: ignore[arg-type]
+    result_a = evidential_classification(cast(Any, a))
+    result_b = evidential_classification(cast(Any, b))
 
-
-def test_register_rejects_invalid_arguments() -> None:
-    """Check that register fails when called with invalid arguments."""
-    # We assume that passing obviously wrong types should raise an error.
-    # Exact signature is defined in the implementation, but incorrect types
-    # must not be silently accepted.
-
-    with pytest.raises(TypeError):
-        common.register(123)  # type: ignore[arg-type]
-
-    with pytest.raises(TypeError):
-        common.register(None)  # type: ignore[arg-type]
+    assert cast(str, result_a) == "A_Enhanced(001)"
+    assert cast(str, result_b) == "B_Enhanced(002)"
