@@ -1,6 +1,6 @@
 """Generic functional datastructure traverser utilities."""
 
-from . import composition, core, decorators, generic
+from . import composition, core, decorators, function, generic
 
 ## Core
 
@@ -38,3 +38,9 @@ generic_traverser = generic.generic_traverser
 CLONE = generic.CLONE
 TRAVERSE_KEYS = generic.TRAVERSE_KEYS
 TRAVERSE_REVERSED = generic.TRAVERSE_REVERSED
+
+## Function traverser
+
+function_traverser = function.function_traverser
+MODIFY_FUNCTION_WRAPPERS = function.MODIFY_WRAPPERS
+CLONE_FUNCTIONS = function.CLONE
