@@ -87,6 +87,8 @@ sphinx_gallery_conf = {
     "filename_pattern": r"plot_.*\.py",
     "plot_gallery": True,
     "download_all_examples": False,
+    # Avoid generating .ipynb alongside .rst to prevent duplicate-doc warnings.
+    "notebook_extensions": set(),
     # Don't kill the whole build if one example errors
     "abort_on_example_error": False,
     "default_thumb_file": str(DOCS_DIR / "_static" / "logo" / "logo_light.png"),
@@ -167,10 +169,11 @@ html_sidebars = {
 html_show_sourcelink = False
 
 # -- Autodoc -----------------------------------------------------------------
-autosummary_generate = False
+autosummary_generate = True
 autodoc_default_options = {
     "show-inheritance": True,
     "members": True,
+    "ignore-module-all": True,
     "inherited-members": True,
     "member-order": "groupwise",
     "special-members": "__call__",
