@@ -6,9 +6,10 @@ from typing import Literal
 
 from matplotlib.colors import Colormap  # noqa: TC002
 import matplotlib.pyplot as plt
-from matplotlib.ticker import MaxNLocator
 import numpy as np
 from sklearn.svm import SVC
+
+import probly.visualization.config as cfg
 
 
 def _check_shape(input_data: np.ndarray) -> np.ndarray:
@@ -80,17 +81,16 @@ def _plot_svm_beam(ax: plt.Axes, clf: SVC, X: np.ndarray, cmap: Colormap) -> Non
 
     xx, yy = np.meshgrid(np.linspace(x_min, x_max, 500), np.linspace(y_min, y_max, 500))
     grid = np.stack([xx.ravel(), yy.ravel()], axis=1)
-    margin = clf.decision_function(grid)
-    margin = np.abs(margin)
-    margin = margin.reshape(xx.shape)
-    margin /= margin.max()
+    margin = np.abs(clf.decision_function(grid)).reshape(xx.shape)
 
-    margin_probs = np.exp(-margin)
-    contour = ax.contourf(xx, yy, margin_probs, levels=200, cmap=cmap, alpha=0.8)
+    uncertainty = np.exp(-margin)
+    umin = float(uncertainty.min())
+    umax = float(uncertainty.max())
+    uncertainty = (uncertainty - umin) / (umax - umin + 1e-12)
+    contour = ax.contourf(xx, yy, uncertainty, levels=200, cmap=cmap, alpha=0.8)
 
-    cbar = plt.colorbar(contour, ax=ax, label="Uncertainty")
-    cbar.locator = MaxNLocator(nbins=5)
-    cbar.update_ticks()
+    cbar = ax.figure.colorbar(contour, ax=ax)
+    cfg.style_colorbar(cbar, label="Uncertainty")
 
 
 def plot_uncertainty(
@@ -101,7 +101,6 @@ def plot_uncertainty(
     x_label: str = "Feature 1",
     y_label: str = "Feature 2",
     class_labels: tuple[str, str] | None = None,
-    cmap_name: str = "coolwarm",
     kernel: Literal["linear", "rbf", "sigmoid", "polynomial"] = "rbf",
     C: float = 0.5,  # noqa: N803
     gamma: float | Literal["auto", "scale"] = "scale",
@@ -117,8 +116,7 @@ def plot_uncertainty(
         x_label: Name of x-axis, defaults to "Feature 1".
         y_label: Name of y-axis, defaults to "Feature 2".
         class_labels: Names of classes for legend. Defaults to Class [i], where i is number of class.
-        cmap_name: Colormap name, defaults to "coolwarm".
-        kernel: Defaults to "rbf". Otherwise, choose "linear", "polynomial", "sigmoid".
+        kernel: Defaults to "rbf". Otherwise, choose "linear" or "sigmoid".
         C: Regularization parameter, defaults to 0.5. The lower, the more tolerant to outliers. Cannot be below 0.0.
         gamma:  Kernel coefficient controlling the influence radius of samples.
                 Higher values lead to more local decision boundaries.
@@ -148,7 +146,7 @@ def plot_uncertainty(
     default_names = tuple(f"Class {i + 1}" for i in range(n_classes))
     legend_names = default_names if class_labels is None else tuple(class_labels)
 
-    cmap = plt.get_cmap(cmap_name)
+    cmap = cfg.PROBLY_CMAP
 
     colors = cmap(np.linspace(0, 1, len(unique_labels)))
 
