@@ -57,7 +57,6 @@ suppress_warnings = [
     "ref.doc",
     "ref.python",
     "misc.highlighting_failure",
-    "myst.header",
     "autosummary",
     "toc.not_readable",
     "docutils",
