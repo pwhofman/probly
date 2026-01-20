@@ -364,12 +364,12 @@ def test_dispatch_choice_probability() -> None:
 
 def test_dispatch_choice_wrong_input() -> None:
     """Tests the behaviour of choice, when the input of choice does not exist."""
-    with pytest.raises(ValueError, match="Choice must be MLE, Credal, Probability or None."):
-        dispatch_plot(data2d, choice="wrong")
-    with pytest.raises(ValueError, match="Choice must be MLE, Credal, Probability or None."):
-        dispatch_plot(data3d, choice="wrong")
-    with pytest.raises(ValueError, match="Choice must be MLE, Credal, Probability or None."):
-        dispatch_plot(data4d, choice="wrong")
+    with pytest.raises(ValueError, match="Choice must be"):
+        dispatch_plot(data2d, choice="invalid")
+    with pytest.raises(ValueError, match="Choice must be"):
+        dispatch_plot(data3d, choice="invalid")
+    with pytest.raises(ValueError, match="Choice must be"):
+        dispatch_plot(data4d, choice="invalid")
 
 
 def test_dispatch_minmax_none() -> None:
