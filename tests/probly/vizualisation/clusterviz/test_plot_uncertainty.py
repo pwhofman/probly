@@ -213,3 +213,15 @@ def test_plot_uncertainty_gamma_float(create_cluster1, create_cluster2, gamma):
     )
 
     assert ax is not None
+
+
+def test_plot_uncertainty_invalid_gamma_float(create_cluster1, create_cluster2):
+    """Raises ValueError if gamma is < 0.0."""
+    with pytest.raises(ValueError, match="gamma has to be >= 0.0 or one of {'auto', 'scale'}"):
+        plot_uncertainty(create_cluster1, create_cluster2, gamma=-0.1, show=False)
+
+
+def test_plot_uncertainty_invalid_gamma_string(create_cluster1, create_cluster2):
+    """Raises ValueError if gamma is neither auto nor scale."""
+    with pytest.raises(ValueError, match="gamma has to be >= 0.0 or one of {'auto', 'scale'}"):
+        plot_uncertainty(create_cluster1, create_cluster2, gamma="wrong_string", show=False)
