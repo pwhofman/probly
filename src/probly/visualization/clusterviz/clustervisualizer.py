@@ -1,4 +1,4 @@
-"""Visualizing the margin-based uncertainty between two 2D clusters."""
+"""Visualizing the uncertainty between two 2D clusters."""
 
 from __future__ import annotations
 
@@ -6,9 +6,10 @@ from typing import Literal
 
 from matplotlib.colors import Colormap  # noqa: TC002
 import matplotlib.pyplot as plt
-from matplotlib.ticker import MaxNLocator
 import numpy as np
 from sklearn.svm import SVC
+
+import probly.visualization.config as cfg
 
 
 def _check_shape(input_data: np.ndarray) -> np.ndarray:
@@ -17,7 +18,7 @@ def _check_shape(input_data: np.ndarray) -> np.ndarray:
     Args:
         input_data: input data with shape (n_samples, 2).
     """
-    msg_type = "Input must be a NumPy Array."
+    msg_type = "Input must be a NumPy array."
     msg_empty = "Input must not be empty."
     msg_shape = "Input must have shape (n_samples, 2)."
     if not isinstance(input_data, np.ndarray):
@@ -30,14 +31,14 @@ def _check_shape(input_data: np.ndarray) -> np.ndarray:
 
 
 def _2_cluster_to_y(cluster1: np.ndarray, cluster2: np.ndarray) -> np.ndarray:
-    """Helper method to convert 2 clusters one array with labels for SVM.
+    """Helper method to convert 2 clusters into one array with labels for SVM.
 
     Args:
-        cluster1: 2D numpy array with shape (n_samples, 2).
-        cluster2: 2D numpy array with shape (n_samples, 2).
+        cluster1: 2D NumPy array with shape (n_samples, 2).
+        cluster2: 2D NumPy array with shape (n_samples, 2).
 
     Returns:
-        One 1D numpy array with shape (n_samples, ) only consisting of 0s and 1s.
+        One 1D NumPy array with shape (n_samples, ) only consisting of 0s and 1s.
     """
     input1 = _check_shape(cluster1)
     input2 = _check_shape(cluster2)
@@ -54,11 +55,11 @@ def _2_cluster_to_x(cluster1: np.ndarray, cluster2: np.ndarray) -> np.ndarray:
     """Helper method to convert 2 clusters to one cluster with all samples.
 
     Args:
-        cluster1: 2D numpy array with shape (n_samples, 2).
-        cluster2: 2D numpy array with shape (n_samples, 2).
+        cluster1: 2D NumPy array with shape (n_samples, 2).
+        cluster2: 2D NumPy array with shape (n_samples, 2).
 
     Returns:
-        One 2D numpy array with shape (n_samples, 2).
+        One 2D NumPy array with shape (n_samples, 2).
     """
     input1 = _check_shape(cluster1)
     input2 = _check_shape(cluster2)
@@ -72,7 +73,7 @@ def _plot_svm_beam(ax: plt.Axes, clf: SVC, X: np.ndarray, cmap: Colormap) -> Non
     Args:
         ax: matplotlib axes object.
         clf: SVC classifier.
-        X: 2D numpy array with shape (n_samples, 2).
+        X: 2D NumPy array with shape (n_samples, 2).
         cmap: matplotlib colormap object.
     """
     x_min, x_max = X[:, 0].min() - 0.5, X[:, 0].max() + 0.5
@@ -80,17 +81,16 @@ def _plot_svm_beam(ax: plt.Axes, clf: SVC, X: np.ndarray, cmap: Colormap) -> Non
 
     xx, yy = np.meshgrid(np.linspace(x_min, x_max, 500), np.linspace(y_min, y_max, 500))
     grid = np.stack([xx.ravel(), yy.ravel()], axis=1)
-    margin = clf.decision_function(grid)
-    margin = np.abs(margin)
-    margin = margin.reshape(xx.shape)
-    margin /= margin.max()
+    margin = np.abs(clf.decision_function(grid)).reshape(xx.shape)
 
-    margin_probs = np.exp(-margin)
-    contour = ax.contourf(xx, yy, margin_probs, levels=200, cmap=cmap, alpha=0.8)
+    uncertainty = np.exp(-margin)
+    umin = float(uncertainty.min())
+    umax = float(uncertainty.max())
+    uncertainty = (uncertainty - umin) / (umax - umin + 1e-12)
+    contour = ax.contourf(xx, yy, uncertainty, levels=200, cmap=cmap, alpha=0.8)
 
-    cbar = plt.colorbar(contour, ax=ax, label="Uncertainty")
-    cbar.locator = MaxNLocator(nbins=5)
-    cbar.update_ticks()
+    cbar = ax.figure.colorbar(contour, ax=ax)
+    cfg.style_colorbar(cbar, label="Uncertainty")
 
 
 def plot_uncertainty(
@@ -101,7 +101,6 @@ def plot_uncertainty(
     x_label: str = "Feature 1",
     y_label: str = "Feature 2",
     class_labels: tuple[str, str] | None = None,
-    cmap_name: str = "coolwarm",
     kernel: Literal["linear", "rbf", "sigmoid", "polynomial"] = "rbf",
     C: float = 0.5,  # noqa: N803
     gamma: float | Literal["auto", "scale"] = "scale",
@@ -110,17 +109,16 @@ def plot_uncertainty(
     """Method to plot uncertainty between two 2D clusters.
 
     Args:
-        input_1: First 2D numpy array with shape (n_samples, 2).
-        input_2: Second 2D numpy array with shape (n_samples, 2).
-        ax: matplotlib axes object.
-        title: title of plot, defaults to "Uncertainty".
-        x_label: Name of x-axis, "Feature 1".
-        y_label: Name of y-axis,"Feature 2".
-        class_labels: Names of Classes for legend. Defaults to Class [i], where i is number of class.
-        cmap_name: Colormap name, defaults to "coolwarm".
-        kernel: Defaults to "rbf". Otherwise, chosoe "linaer", "polynomial", "sigmoid".
-        C: Regularization parameter, defaults to 0.5. The lower, the more tolerant to outliers.
-        gamma: Kernel coefficient controlling the influence radius of samples.
+        input_1: First 2D NumPy array with shape (n_samples, 2).
+        input_2: Second 2D NumPy array with shape (n_samples, 2).
+        ax: Matplotlib axes object.
+        title: Title of plot, defaults to "Uncertainty".
+        x_label: Name of x-axis, defaults to "Feature 1".
+        y_label: Name of y-axis, defaults to "Feature 2".
+        class_labels: Names of classes for legend. Defaults to Class [i], where i is number of class.
+        kernel: Defaults to "rbf". Otherwise, choose "linear" or "sigmoid".
+        C: Regularization parameter, defaults to 0.5. The lower, the more tolerant to outliers. Cannot be below 0.0.
+        gamma:  Kernel coefficient controlling the influence radius of samples.
                 Higher values lead to more local decision boundaries.
         show: Flag to show the plot.
     """
@@ -131,6 +129,9 @@ def plot_uncertainty(
     y = _2_cluster_to_y(input_1, input_2)
 
     X = _check_shape(X)  # noqa: N806
+    msg_wrong_gamma = "gamma has to be >= 0.0"
+    if gamma < 0.0:
+        raise ValueError(msg_wrong_gamma)
     msg_wrong_c = "C has to be > 0.0"
     if C < 0.0:
         raise ValueError(msg_wrong_c)
@@ -148,7 +149,7 @@ def plot_uncertainty(
     default_names = tuple(f"Class {i + 1}" for i in range(n_classes))
     legend_names = default_names if class_labels is None else tuple(class_labels)
 
-    cmap = plt.get_cmap(cmap_name)
+    cmap = cfg.PROBLY_CMAP
 
     colors = cmap(np.linspace(0, 1, len(unique_labels)))
 

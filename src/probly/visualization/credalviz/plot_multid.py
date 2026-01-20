@@ -113,9 +113,7 @@ class MultiVisualizer:
         theta = radar_factory(n_classes, frame="polygon")
 
         if ax is None:
-            fig, ax = plt.subplots(figsize=(6, 6), subplot_kw={"projection": "radar"})
-
-        # def spiderplot_axis(self, ) -> None:
+            _, ax = plt.subplots(figsize=(6, 6), subplot_kw={"projection": "radar"})
 
         # Setup Axis with line for better visibility
         ax.set_rgrids([0.2, 0.4, 0.6, 0.8, 1.0])
