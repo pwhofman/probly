@@ -7,5 +7,6 @@ pytest_plugins = [
     "tests.probly.fixtures.torch_models",
     "tests.probly.fixtures.torch_data",
     "tests.probly.fixtures.flax_models",
+    "tests.probly.fixtures.sklearn_models",
     "tests.probly.fixtures.samples",
 ]
