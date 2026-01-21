@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from unittest.mock import patch
 
 import matplotlib as mpl
@@ -185,7 +186,7 @@ def test_plot_uncertainty_valid_C(create_cluster1, create_cluster2):  # noqa: N8
 
 def test_plot_uncertainty_invalid_C(create_cluster1, create_cluster2):  # noqa: N802
     """Tests that invalid C input return ValueError."""
-    with pytest.raises(ValueError, match="C has to be > 0.0"):
+    with pytest.raises(ValueError, match=re.escape("C has to be > 0.0")):
         plot_uncertainty(create_cluster1, create_cluster2, C=-1.0, show=False)
 
 
@@ -217,11 +218,11 @@ def test_plot_uncertainty_gamma_float(create_cluster1, create_cluster2, gamma):
 
 def test_plot_uncertainty_invalid_gamma_float(create_cluster1, create_cluster2):
     """Raises ValueError if gamma is < 0.0."""
-    with pytest.raises(ValueError, match="gamma has to be >= 0.0 or one of {'auto', 'scale'}"):
+    with pytest.raises(ValueError, match=re.escape("gamma has to be >= 0.0 or one of {'auto', 'scale'}")):
         plot_uncertainty(create_cluster1, create_cluster2, gamma=-0.1, show=False)
 
 
 def test_plot_uncertainty_invalid_gamma_string(create_cluster1, create_cluster2):
     """Raises ValueError if gamma is neither auto nor scale."""
-    with pytest.raises(ValueError, match="gamma has to be >= 0.0 or one of {'auto', 'scale'}"):
+    with pytest.raises(ValueError, match=re.escape("gamma has to be >= 0.0 or one of {'auto', 'scale'}")):
         plot_uncertainty(create_cluster1, create_cluster2, gamma="wrong_string", show=False)

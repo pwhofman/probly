@@ -6,8 +6,8 @@ import matplotlib as mpl
 
 mpl.use("Agg")
 
-import matplotlib.pyplot as plt
 from matplotlib.collections import PathCollection, PolyCollection
+import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
@@ -90,10 +90,7 @@ def test_spider_plot_mle_scatter_is_at_argmax_of_mean_probs() -> None:
     mean_probs = probs.mean(axis=0)
     max_class = int(np.argmax(mean_probs))
 
-    mle_candidates = [
-        c for c in ax.collections
-        if isinstance(c, PathCollection) and c.get_label() == "MLE"
-    ]
+    mle_candidates = [c for c in ax.collections if isinstance(c, PathCollection) and c.get_label() == "MLE"]
     assert len(mle_candidates) == 1
 
     offsets = mle_candidates[0].get_offsets()
@@ -222,5 +219,5 @@ def test_create_credal_plot_length_mismatch_raises() -> None:
     labels = ["A", "B", "C"]
     datasets = np.array([[0.1, 0.2, 0.3, 0.4]])
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Number of labels"):
         create_credal_plot(datasets, labels=labels)

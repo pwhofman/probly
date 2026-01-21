@@ -1,4 +1,4 @@
-"""Demo for Coverage-Efficiency plot using OOD-style labels (0=ID, 1=OOD)."""  # noqa: INP001
+"""Demo for Coverage-Efficiency plot using OOD-style labels (0=ID, 1=OOD)."""
 
 from __future__ import annotations
 

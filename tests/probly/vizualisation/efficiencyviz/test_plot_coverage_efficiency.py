@@ -73,7 +73,7 @@ def test_plot_coverage_efficiency_existing_ax(sample_data: tuple[np.ndarray, np.
     probs, targets = sample_data
     viz = CoverageEfficiencyVisualizer()
 
-    fig, ax_input = plt.subplots()
+    _, ax_input = plt.subplots()
     ax_output = viz.plot_coverage_efficiency(probs, targets, ax=ax_input)
 
     if ax_output is not ax_input:

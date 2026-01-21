@@ -1,4 +1,4 @@
-"""Plotting for Coverage and Efficiency metrics."""  # noqa: INP001
+"""Plotting for Coverage and Efficiency metrics."""
 
 from __future__ import annotations
 
@@ -64,7 +64,7 @@ class CoverageEfficiencyVisualizer:
     ) -> Axes:
         """Create a dual-axis plot showing Coverage and Efficiency over Confidence Levels."""
         if ax is None:
-            fig, ax = plt.subplots(figsize=(8, 5))
+            _, ax = plt.subplots(figsize=(8, 5))
 
         # Define range of confidence levels
         alphas = np.linspace(0.001, 0.999, 100)
