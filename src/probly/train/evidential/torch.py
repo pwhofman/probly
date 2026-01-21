@@ -150,7 +150,8 @@ def _postnet_loss(
     class_count: torch.Tensor | None = None,
     **_: dict[str, Any],
 ) -> torch.Tensor:
-    return loss_fn(outputs, y, flow, class_count)
+    loss, _ = loss_fn(outputs, y, flow, class_count)
+    return loss
 
 
 @compute_loss.register("NatPostNet")
