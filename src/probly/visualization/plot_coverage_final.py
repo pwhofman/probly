@@ -73,6 +73,8 @@ class CoverageEfficiencyVisualizer:
         # Compute metrics
         coverages, efficiencies = self._compute_metrics(probs, targets, alphas)
         n_classes = probs.shape[1]
+
+        # Normalized set size: 1.0 = Best (size 1), 0.0 = Worst (size N)
         efficiency_norm = 1.0 - (efficiencies - 1.0) / (n_classes - 1.0)
 
         # --- Plot Coverage (Primary Y-Axis) ---
@@ -97,7 +99,9 @@ class CoverageEfficiencyVisualizer:
         ax.set_xlabel(r"Target Confidence Level ($1 - \alpha$)")
         ax.set_ylabel("Empirical Coverage", color=cfg.BLUE)
         ax.tick_params(axis="y", labelcolor=cfg.BLUE)
-        ax.set_ylim(0, 1.05)
+
+        # Coverage Axis inverted: 0 at top, 1 at bottom
+        ax.set_ylim(1.05, -0.05)
 
         # --- Plot Efficiency (Secondary Y-Axis) ---
         ax2 = ax.twinx()
@@ -107,23 +111,25 @@ class CoverageEfficiencyVisualizer:
             color=cfg.RED,
             linewidth=cfg.HULL_LINE_WIDTH,
             linestyle=cfg.MIN_MAX_LINESTYLE_2,
-            label="Efficiency",
+            label="Efficiency (1 - Norm. Set Size)",
             zorder=2,
         )
 
         ax2.set_ylabel("Efficiency", color=cfg.RED)
         ax2.tick_params(axis="y", labelcolor=cfg.RED)
-        ax2.set_ylim(1.05, -0.05)
+
+        # Efficiency Axis Normal: 1 at top, 0 at bottom
+        ax2.set_ylim(-0.05, 1.05)
 
         # --- Combine Legends ---
         lines = line1 + line2
         labels_legend = [l.get_label() for l in lines]  # noqa: E741
-        ax.legend(lines, labels_legend, loc="lower right")
+
+        ax.legend(lines, labels_legend, loc="upper right")
 
         ax.set_title(title, pad=15)
 
         # --- FIX: Safe Grid Style ---
-        # Prüft, ob der Style aus der Config gültig ist. Wenn nicht (z.B. '..'), nutze ':'
         valid_styles = ["-", "--", "-.", ":", "solid", "dashed", "dashdot", "dotted"]
         raw_style = getattr(cfg, "PROB_LINESTYLE", ":")
         grid_style = raw_style if raw_style in valid_styles else ":"
@@ -131,42 +137,3 @@ class CoverageEfficiencyVisualizer:
         ax.grid(True, linestyle=grid_style, alpha=0.3)
 
         return ax
-
-
-# --- DEMO / TEST SECTION ---
-
-
-def generate_mock_data(n_samples: int = 2000, n_classes: int = 20) -> tuple[np.ndarray, np.ndarray]:
-    """Generates synthetic data."""
-    np.random.seed(42)  # noqa: NPY002
-    targets = np.random.randint(0, n_classes, size=n_samples)  # noqa: NPY002
-    logits = np.random.randn(n_samples, n_classes)  # noqa: NPY002
-
-    scale = np.random.uniform(0.5, 2.5, size=(n_samples, 1))  # noqa: NPY002
-    for i in range(n_samples):
-        logits[i, targets[i]] += np.random.uniform(2.0, 5.0)  # noqa: NPY002
-
-    logits = logits * scale
-    exp_logits = np.exp(logits)
-    probs = exp_logits / np.sum(exp_logits, axis=1, keepdims=True)
-
-    return probs, targets
-
-
-if __name__ == "__main__":
-    probs_mock, targets_mock = generate_mock_data(n_samples=2000, n_classes=20)
-
-    viz = CoverageEfficiencyVisualizer()
-
-    # Einzelfenster-Fix:
-    fig, ax = plt.subplots(figsize=(10, 6))
-
-    viz.plot_coverage_efficiency(
-        probs_mock,
-        targets_mock,
-        title="Demo: Coverage vs. Efficiency",
-        ax=ax,
-    )
-
-    plt.tight_layout()
-    plt.show()
