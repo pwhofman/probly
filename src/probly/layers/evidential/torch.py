@@ -225,12 +225,12 @@ class RadialFlowLayer2(nn.Module):
 class SimpleHead(nn.Module):
     """Simple classification head outputting class evidence."""
 
-    def __init__(self, latent_dim: int, num_classes: int) -> None:  # noqa: D107
+    def __init__(self, latent_dim: int, hidden_dim: int = 128, num_classes: int = 10) -> None:  # noqa: D107
         super().__init__()
         self.net = nn.Sequential(
-            nn.Linear(latent_dim, 128),
+            nn.Linear(latent_dim, hidden_dim),
             nn.ReLU(),
-            nn.Linear(128, num_classes),
+            nn.Linear(hidden_dim, num_classes),
         )
 
     def forward(self, z: torch.Tensor) -> torch.Tensor:  # noqa: D102
@@ -349,14 +349,14 @@ class MLPEncoder(nn.Module):
 class EvidentialHead(nn.Module):
     """Head that converts encoded features into evidential Normal-Gamma parameters."""
 
-    def __init__(self, feature_dim: int) -> None:
+    def __init__(self, latent_dim: int) -> None:
         """Initialize the head.
 
         Args:
-            feature_dim: Dimension of input features coming from the encoder.
+            latent_dim: Dimension of input features coming from the encoder.
         """
         super().__init__()
-        self.linear = nn.Linear(feature_dim, 4)
+        self.linear = nn.Linear(latent_dim, 4)
 
     def forward(self, features: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         """Convert features into (mu, kappa, alpha, beta).
