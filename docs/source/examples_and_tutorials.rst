@@ -649,4 +649,3 @@ Summary (V)
 ------------
 
 This example is the worked counterpart of the mixture-model recipe in :ref:`advanced_topics`.
-
