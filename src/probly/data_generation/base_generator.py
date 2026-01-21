@@ -4,8 +4,6 @@ This file defines the abstract BaseDataGenerator interface used to run a
 model over a dataset, collect statistics, and persist results.
 """
 
-# ruff: noqa: INP001
-
 from __future__ import annotations
 
 from abc import ABC, abstractmethod

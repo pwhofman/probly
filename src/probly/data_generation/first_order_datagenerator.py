@@ -3,8 +3,6 @@
 General implementation using pure Python constructs (no torch dependency).
 """
 
-# ruff: noqa: INP001
-
 from __future__ import annotations
 
 from dataclasses import dataclass

@@ -3,8 +3,16 @@ from __future__ import annotations
 from collections.abc import Iterable
 import random
 
-import jax.nn as jnn
-import jax.numpy as jnp
+try:
+    import jax.nn as jnn
+    import jax.numpy as jnp
+except ModuleNotFoundError:
+    import pytest
+
+    pytest.skip(
+        "JAX not installed so skipping JAX-dependent tests.",
+        allow_module_level=True,
+    )
 import pytest
 
 from probly.data_generation.jax_first_order_generator import (

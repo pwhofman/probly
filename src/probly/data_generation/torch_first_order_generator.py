@@ -1,7 +1,5 @@
 """Torch FirstOrder data generator."""
 
-# ruff: noqa: INP001
-
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Mapping

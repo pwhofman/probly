@@ -4,7 +4,6 @@ Runs a JAX model over input arrays, collects simple statistics, and
 provides helpers to persist results.
 """
 
-# ruff: noqa: INP001
 from __future__ import annotations
 
 import json

@@ -4,7 +4,6 @@ Runs a PyTorch model over a dataset, collects simple statistics, and
 provides helpers to persist results.
 """
 
-# ruff: noqa: INP001
 from __future__ import annotations
 
 import json

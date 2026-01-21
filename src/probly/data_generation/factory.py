@@ -1,4 +1,3 @@
-# noqa: INP001
 """Factory for creating framework-specific data generators.
 
 Selects an appropriate BaseDataGenerator implementation based on the
