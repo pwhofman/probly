@@ -1,4 +1,4 @@
-"""Coverage-Efficiency visualization for ID vs. OOD data."""  # noqa: INP001
+"""Coverage-Efficiency visualization for ID vs. OOD data."""
 
 from __future__ import annotations
 
