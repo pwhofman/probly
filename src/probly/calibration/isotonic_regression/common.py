@@ -13,11 +13,16 @@ if TYPE_CHECKING:
 
 
 @lazydispatch
-def _isotonic_factory(base: object, device: object) -> type[Any]:
-    message = f"No Isotonic Regression implementation for base={type(base)}, device={type(device)}"
+def _isotonic_factory(base_model: object, use_logits: bool) -> type[Any]:
+    message = f"No Isotonic Regression implementation for base={type(base_model)}, use_logits={use_logits}."
     raise NotImplementedError(message)
 
 
 def register_isotonic_factory(key: LazyType) -> Callable:
     """Returns a decorator to register a class in the isotonic factory."""
     return _isotonic_factory.register(key)
+
+
+def isotonic_regression(base: object, use_logits: bool) -> object:
+    """Dispatches different implementations for isotonic regression."""
+    return _isotonic_factory(base, use_logits)

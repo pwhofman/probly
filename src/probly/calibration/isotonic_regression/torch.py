@@ -8,6 +8,8 @@ import numpy as np
 from sklearn.isotonic import IsotonicRegression
 from torch import Tensor, as_tensor, cat, nn, no_grad, sigmoid, softmax, unique
 
+from probly.calibration.isotonic_regression import common
+
 if TYPE_CHECKING:
     from torch.utils.data import DataLoader
 
@@ -146,3 +148,8 @@ class IsotonicRegressionCalibrator:
 
         value_error_str = f"Binary Model should output shape (N,2), (N,1), (N,), not {tuple(logits.shape)}"
         raise ValueError(value_error_str)
+
+
+@common.register_isotonic_factory(nn.Module)
+def _(_base_model: nn.Module, _use_logits: bool) -> IsotonicRegressionCalibrator:
+    return IsotonicRegressionCalibrator(base_model=_base_model, use_logits=_use_logits)
