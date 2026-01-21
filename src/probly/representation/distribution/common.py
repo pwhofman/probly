@@ -41,3 +41,14 @@ class Distribution(ABC):
         **kwargs,
     ) -> Distribution:
         """Create a distribution from its natural parameters."""'''
+
+
+class DirichletDistribution(Distribution):
+    """Base class for Dirichlet distributions."""
+
+    type: DistributionType = "dirichlet"
+
+    @property
+    @abstractmethod
+    def alphas(self) -> np.ndarray:
+        """Get the concentration parameters of the Dirichlet distribution."""
