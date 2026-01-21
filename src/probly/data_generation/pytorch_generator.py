@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any, cast
 
 import torch
 from torch.utils.data import DataLoader, Dataset
@@ -17,6 +17,9 @@ from torch.utils.data import DataLoader, Dataset
 from .base_generator import BaseDataGenerator
 
 logger = logging.getLogger(__name__)
+
+if TYPE_CHECKING:
+    from collections.abc import Sized
 
 
 class PyTorchDataGenerator(BaseDataGenerator[torch.nn.Module, Dataset, str | None]):
@@ -77,10 +80,12 @@ class PyTorchDataGenerator(BaseDataGenerator[torch.nn.Module, Dataset, str | Non
 
         accuracy = (pred_classes == labels).float().mean().item()
 
+        dataset_size: int = len(cast("Sized", self.dataset))
+
         self.results = {
             "info": {
                 "framework": "pytorch",
-                "dataset_size": len(self.dataset),
+                "dataset_size": dataset_size,
                 "batch_size": self.batch_size,
             },
             "metrics": {
@@ -100,7 +105,7 @@ class PyTorchDataGenerator(BaseDataGenerator[torch.nn.Module, Dataset, str | Non
         return self.results
 
     def _count(self, tensor: torch.Tensor) -> dict[int, int]:
-        counts = {}
+        counts: dict[int, int] = {}
         for val in tensor.tolist():
             key = int(val)
             counts[key] = counts.get(key, 0) + 1
@@ -130,3 +135,7 @@ class PyTorchDataGenerator(BaseDataGenerator[torch.nn.Module, Dataset, str | Non
         else:
             logger.info("Results loaded from %s", path)
         return self.results
+
+
+if TYPE_CHECKING:  # avoid ruff checking issue
+    from collections.abc import Sized
