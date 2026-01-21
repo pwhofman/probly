@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Literal, Self
+from typing import TYPE_CHECKING, Any, Literal, Self, override
 
 import numpy as np
+from scipy import special
 
 from probly.representation.distribution.common import DirichletDistribution
 
@@ -89,6 +90,19 @@ class ArrayDirichletDistribution(
     def T(self) -> Self:  # noqa: N802
         """The transposed version of the distribution."""
         return np.transpose(self)  # type: ignore[no-any-return]
+
+    @property
+    @override
+    def entropy(self) -> float:
+        """Compute the entropy of the Dirichlet distribution."""
+        alpha_0 = np.sum(self.alphas, axis=-1)
+        K = self.alphas.shape[-1]  # noqa: N806
+
+        log_beta = np.sum(special.gammaln(self.alphas), axis=-1) - special.gammaln(alpha_0)
+        digamma_sum = (alpha_0 - K) * special.digamma(alpha_0)
+        digamma_individual = np.sum((self.alphas - 1) * special.digamma(self.alphas), axis=-1)
+
+        return log_beta + digamma_sum - digamma_individual  # type: ignore[no-any-return]
 
     def __setitem__(
         self,
