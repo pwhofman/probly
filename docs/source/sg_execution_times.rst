@@ -6,7 +6,7 @@
 
 Computation times
 =================
-**00:00.366** total execution time for 9 files **from all galleries**:
+**00:00.364** total execution time for 9 files **from all galleries**:
 
 .. container::
 
@@ -39,23 +39,23 @@ Computation times
      - 00:00.060
      - 0.0
    * - :ref:`sphx_glr_auto_examples_plot_gallery_smoke_test.py` (``../../examples/plot_gallery_smoke_test.py``)
-     - 00:00.047
+     - 00:00.051
      - 0.0
    * - :ref:`sphx_glr_auto_examples_plot_uncertainty_quantification.py` (``../../examples/plot_uncertainty_quantification.py``)
-     - 00:00.044
+     - 00:00.043
      - 0.0
    * - :ref:`sphx_glr_auto_examples_plot_samples_with_array_sample.py` (``../../examples/plot_samples_with_array_sample.py``)
      - 00:00.029
      - 0.0
    * - :ref:`sphx_glr_auto_examples_plot_intro_uncertainty_glimpse.py` (``../../examples/plot_intro_uncertainty_glimpse.py``)
-     - 00:00.028
+     - 00:00.027
      - 0.0
    * - :ref:`sphx_glr_auto_examples_plot_using_predict_protocol.py` (``../../examples/plot_using_predict_protocol.py``)
-     - 00:00.028
+     - 00:00.026
      - 0.0
    * - :ref:`sphx_glr_auto_examples_plot_intro_threshold_decision.py` (``../../examples/plot_intro_threshold_decision.py``)
      - 00:00.026
      - 0.0
    * - :ref:`sphx_glr_auto_examples_plot_create_sample_dispatch.py` (``../../examples/plot_create_sample_dispatch.py``)
-     - 00:00.026
+     - 00:00.025
      - 0.0
