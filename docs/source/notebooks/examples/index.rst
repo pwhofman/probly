@@ -9,6 +9,7 @@ Notebook Examples
    bayesian_transformation
    dropconnect_transformation
    dropout_transformation
+   dropout_tutorial
    ensemble_transformation
    evidential_classification_transformation
    evidential_regression_transformation
