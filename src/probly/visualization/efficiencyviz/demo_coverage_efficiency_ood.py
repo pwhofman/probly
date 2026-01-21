@@ -1,11 +1,11 @@
-"""Demo for Coverage-Efficiency plot using OOD-style labels (0=ID, 1=OOD)."""
+"""Demo for Coverage-Efficiency plot using OOD-style labels (0=ID, 1=OOD)."""  # noqa: INP001
 
 from __future__ import annotations
 
 import matplotlib.pyplot as plt
 import numpy as np
 
-from probly.visualization.coverage_efficiency_ood import plot_coverage_efficiency_from_ood_labels
+from probly.visualization.efficiencyviz.coverage_efficiency_ood import plot_coverage_efficiency_from_ood_labels
 
 
 def main() -> None:

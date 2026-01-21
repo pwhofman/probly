@@ -9,7 +9,7 @@ import pytest
 
 mpl.use("Agg")
 
-from probly.visualization.plot_coverage_efficiency import CoverageEfficiencyVisualizer
+from probly.visualization.efficiencyviz.plot_coverage_efficiency import CoverageEfficiencyVisualizer
 
 
 @pytest.fixture

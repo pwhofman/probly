@@ -9,7 +9,7 @@ import pytest
 
 mpl.use("Agg")
 
-from probly.visualization.coverage_efficiency_ood import (
+from probly.visualization.efficiencyviz.coverage_efficiency_ood import (
     plot_coverage_efficiency_from_ood_labels,
     plot_coverage_efficiency_id_ood,
 )

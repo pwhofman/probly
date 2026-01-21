@@ -1,4 +1,4 @@
-"""Plotting for Coverage and Efficiency metrics."""
+"""Plotting for Coverage and Efficiency metrics."""  # noqa: INP001
 
 from __future__ import annotations
 

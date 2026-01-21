@@ -1,4 +1,4 @@
-"""Coverage-Efficiency visualization for ID vs. OOD data."""
+"""Coverage-Efficiency visualization for ID vs. OOD data."""  # noqa: INP001
 
 from __future__ import annotations
 
@@ -6,7 +6,8 @@ from typing import TYPE_CHECKING
 
 import matplotlib.pyplot as plt
 import numpy as np
-from plot_coverage_efficiency import CoverageEfficiencyVisualizer
+
+from probly.visualization.efficiencyviz.plot_coverage_efficiency import CoverageEfficiencyVisualizer
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
