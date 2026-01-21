@@ -70,7 +70,6 @@ class ArrayGaussian(Distribution):
         )
         return ArraySample(array=samples, sample_axis=0)'''
 
-    @property
     def __array_namespace__(self) -> object:
         """Return the array namespace used by this distribution (NumPy)."""
         return np
