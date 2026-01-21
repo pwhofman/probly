@@ -5,7 +5,7 @@ from __future__ import annotations
 import torch
 from torch import nn
 
-from probly.layers.evidential.torch import RadialFlowDensity
+from probly.layers.evidential.torch import EncoderMnist, RadialFlowDensity, SimpleHead
 
 
 class NatPN(nn.Module):
@@ -137,3 +137,29 @@ class GaussianHead(nn.Module):
             "log_pz": log_pz,
             "precision": precision,
         }
+
+
+class SimpleCNN(nn.Module):
+    """Simple CNN model for evidential classification."""
+
+    def __init__(  # noqa: D107
+        self,
+        encoder: nn.Module | None = None,
+        head: nn.Module | None = None,
+        latent_dim: int = 32,
+        num_classes: int = 10,
+    ) -> None:
+        super().__init__()
+
+        if encoder is None:
+            encoder = EncoderMnist(latent_dim=latent_dim)
+
+        if head is None:
+            head = SimpleHead(latent_dim=latent_dim, num_classes=num_classes)
+
+        self.encoder = encoder
+        self.head = head
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:  # noqa: D102
+        z = self.encoder(x)
+        return self.head(z)

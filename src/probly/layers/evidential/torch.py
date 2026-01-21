@@ -222,7 +222,22 @@ class RadialFlowLayer2(nn.Module):
         return z_new, log_abs_det
 
 
-class Encoder(nn.Module):
+class SimpleHead(nn.Module):
+    """Simple classification head outputting class evidence."""
+
+    def __init__(self, latent_dim: int, num_classes: int) -> None:  # noqa: D107
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(latent_dim, 128),
+            nn.ReLU(),
+            nn.Linear(128, num_classes),
+        )
+
+    def forward(self, z: torch.Tensor) -> torch.Tensor:  # noqa: D102
+        return F.softplus(self.net(z))
+
+
+class EncoderMnist(nn.Module):
     """Simple encoder mapping MNIST images to a low-dimensional latent vector z."""
 
     def __init__(self, latent_dim: int = 2) -> None:  # noqa: D107
