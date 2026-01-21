@@ -240,13 +240,13 @@ class SimpleHead(nn.Module):
 class EncoderMnist(nn.Module):
     """Simple encoder mapping MNIST images to a low-dimensional latent vector z."""
 
-    def __init__(self, latent_dim: int = 2) -> None:  # noqa: D107
+    def __init__(self, input_dim: int = 784, hidden_dim: int = 256, latent_dim: int = 2) -> None:  # noqa: D107
         super().__init__()
         self.net = nn.Sequential(
             nn.Flatten(),  # [B, 1, 28, 28] -> [B, 784]
-            nn.Linear(28 * 28, 256),
+            nn.Linear(input_dim, hidden_dim),
             nn.ReLU(),
-            nn.Linear(256, latent_dim),  # [B, latent_dim]
+            nn.Linear(hidden_dim, latent_dim),  # [B, latent_dim]
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
