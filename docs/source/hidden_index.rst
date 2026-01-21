@@ -5,7 +5,6 @@
    :hidden:
 
    api
-   api/probly
    examples/fashionmnist_ood_ensemble
    examples/label_relaxation_calibration
    examples/sklearn_selective_prediction
