@@ -1,4 +1,5 @@
 """Base module with the purpose of codesharing for platt, vector and temperature scaling."""
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -50,7 +51,7 @@ class _LogitScaler(nn.Module, ABC):
         """Calibration loss."""
         raise NotImplementedError
 
-    def fit(self,calibration_set: DataLoader,learning_rate: float = 0.01,max_iter: int = 50) -> None:
+    def fit(self, calibration_set: DataLoader, learning_rate: float = 0.01, max_iter: int = 50) -> None:
         logits, labels = torch_collect_outputs(self.base, calibration_set, self.device)
 
         optimizer = torch.optim.LBFGS(

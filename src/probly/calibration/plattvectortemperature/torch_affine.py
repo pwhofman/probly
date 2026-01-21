@@ -1,4 +1,5 @@
 """Platt and vector scaling extension of base."""
+
 from __future__ import annotations
 
 import torch
@@ -21,7 +22,7 @@ class TorchAffine(_LogitScaler):
 
     def _scale_logits(self, logits: Tensor) -> Tensor:
         if self.num_classes != logits.shape[1]:
-            msg="The given parameter num_classes does not match the actual number of classes."
+            msg = "The given parameter num_classes does not match the actual number of classes."
             raise ValueError(msg)
         if self.num_classes == 1 and logits.ndim == 1:
             logits = logits.unsqueeze(1)

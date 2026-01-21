@@ -1,4 +1,5 @@
 """Temperature scaling extension of base."""
+
 from __future__ import annotations
 
 import torch
@@ -25,6 +26,7 @@ class TorchTemperature(_LogitScaler):
 
     def _loss_fn(self, logits: Tensor, labels: Tensor) -> Tensor:
         return nn.functional.cross_entropy(logits, labels.long())
+
 
 @common.register_temperature_factory(nn.Module)
 def _(_base: nn.Module) -> type[TorchTemperature]:
