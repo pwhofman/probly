@@ -89,9 +89,7 @@ def test_interval_plot_returns_axes_and_sets_title(
     plt.close(fig)
 
 
-def test_interval_plot_uses_custom_labels_for_endpoints(
-    viz: IntervalVisualizer, example_probs: np.ndarray
-) -> None:
+def test_interval_plot_uses_custom_labels_for_endpoints(viz: IntervalVisualizer, example_probs: np.ndarray) -> None:
     """Custom labels appear in the plot texts."""
     labels = ["Left", "Right"]
 
@@ -145,9 +143,7 @@ def test_legend_probabilities_only_when_all_flags_false(
     plt.close(fig)
 
 
-def test_legend_only_mle(
-    viz: IntervalVisualizer, example_probs: np.ndarray, labels: list[str]
-) -> None:
+def test_legend_only_mle(viz: IntervalVisualizer, example_probs: np.ndarray, labels: list[str]) -> None:
     """Legend contains probabilities and MLE only."""
     fig, ax = plt.subplots()
 
@@ -168,9 +164,7 @@ def test_legend_only_mle(
     plt.close(fig)
 
 
-def test_legend_only_credal(
-    viz: IntervalVisualizer, example_probs: np.ndarray, labels: list[str]
-) -> None:
+def test_legend_only_credal(viz: IntervalVisualizer, example_probs: np.ndarray, labels: list[str]) -> None:
     """Legend contains probabilities and credal band only."""
     fig, ax = plt.subplots()
 
