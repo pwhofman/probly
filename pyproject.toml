@@ -192,10 +192,7 @@ convention = "google"
 ]
 "examples/*.py" = [
     "T201",
-<<<<<<< HEAD
     "D205",
-=======
->>>>>>> upstream/main
 ]
 
 # Use isort-compatible settings
