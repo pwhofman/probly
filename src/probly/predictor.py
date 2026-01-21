@@ -15,8 +15,14 @@ class Predictor[In, KwIn, Out](Protocol):
         """Call the wrapper with input data."""
         ...
 
+    def predict(self, *args: In, **kwargs: Unpack[KwIn]) -> Out:
+        """Predict method for the wrapper."""
+        ...
+
 
 @lazydispatch
 def predict[In, KwIn, Out](predictor: Predictor[In, KwIn, Out], *args: In, **kwargs: Unpack[KwIn]) -> Out:
     """Generic predict function."""
+    if hasattr(predictor, "predict"):
+        return predictor.predict(*args, **kwargs)
     return predictor(*args, **kwargs)
