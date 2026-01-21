@@ -1,0 +1,7 @@
+Examples Gallery
+================
+
+This gallery contains example scripts demonstrating the usage of probly
+and its uncertainty quantification features.
+
+Each example is fully executable and rendered automatically by Sphinx-Gallery.

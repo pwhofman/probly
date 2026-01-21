@@ -1,0 +1,63 @@
+name: CI Documentation Check
+
+# TRIGGERING AND ENVIRONMENT SETUP
+on:
+  pull_request:
+  push:
+    branches: [main, user_guide]
+  workflow_dispatch:
+
+jobs:
+  docs_build_check:
+    name: "Sphinx Clean Build Validation (Python ${{ matrix.python-version }})"
+    runs-on: ubuntu-latest
+
+
+    strategy:
+      matrix:
+        python-version: ["3.12"]
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python and uv
+        id: setup-uv-python
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'uv'
+
+      - name: Install Pandoc (for Markdown processing)
+        run: sudo apt-get update && sudo apt-get install -y pandoc
+
+      - name: Install dependencies (uv sync)
+        run: uv sync --dev
+
+      - name: Copy project files to docs/source folder
+        run: |
+          cp .github/CONTRIBUTING.md docs/source/contributing.md
+          cp -r notebooks/examples/ docs/source/
+
+
+      # DOCUMENTATION BUILD AND INTEGRITY CHECKS
+      - name: Build documentation with warnings as errors (Main Check)
+        working-directory: ./docs
+        run: |
+          uv run sphinx-build -W --keep-going -b html source build/html
+        continue-on-error: false
+
+      - name: Run doctests
+        working-directory: ./docs
+        run: |
+          uv run sphinx-build -b doctest source build/doctest
+        continue-on-error: false
+
+      - name: Upload build artifacts on failure
+
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-build-output
+          path: docs/build/
+          retention-days: 7
