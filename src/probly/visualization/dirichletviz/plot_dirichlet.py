@@ -63,7 +63,6 @@ class TernaryVisualizer:
         coords = np.array([tri_area(xy, p) for p in pairs]) / area
         return np.clip(coords, tol, 1.0 - tol)
 
-
     class Dirichlet:
         """Dirichlet distribution."""
 
@@ -74,9 +73,7 @@ class TernaryVisualizer:
             alpha: Dirichlet concentration parameters.
             """
             self.alpha = np.asarray(alpha)
-            self.coef = gamma(np.sum(self.alpha)) / np.prod(
-                [gamma(a) for a in self.alpha]
-            )
+            self.coef = gamma(np.sum(self.alpha)) / np.prod([gamma(a) for a in self.alpha])
 
         def pdf(self, x: np.ndarray) -> float:
             """Compute the Dirichlet pdf.
@@ -86,10 +83,7 @@ class TernaryVisualizer:
 
             return: Pdf value.
             """
-            return self.coef * np.prod(
-                [xx ** (aa - 1) for xx, aa in zip(x, self.alpha, strict=False)]
-            )
-
+            return self.coef * np.prod([xx ** (aa - 1) for xx, aa in zip(x, self.alpha, strict=False)])
 
     def label_corners_and_vertices(
         self,
@@ -101,12 +95,9 @@ class TernaryVisualizer:
 
         # Corner labels
         offset = 0.06
-        ax.text(v1[0] + 0.02, v1[1] - offset, labels[0],
-                ha="right", va="top", fontsize=12)
-        ax.text(v2[0] + 0.02, v2[1] - offset, labels[1],
-                ha="left", va="top", fontsize=12)
-        ax.text(v3[0], v3[1] + offset, labels[2],
-                ha="center", va="bottom", fontsize=12)
+        ax.text(v1[0] + 0.02, v1[1] - offset, labels[0], ha="right", va="top", fontsize=12)
+        ax.text(v2[0] + 0.02, v2[1] - offset, labels[1], ha="left", va="top", fontsize=12)
+        ax.text(v3[0], v3[1] + offset, labels[2], ha="center", va="bottom", fontsize=12)
 
         # Vertex labels
         edge_label = "0.0 / 1.0"
@@ -151,7 +142,6 @@ class TernaryVisualizer:
                     fontsize=8,
                 )
 
-
     def dirichlet_plot(  # noqa: D417
         self,
         alpha: np.ndarray,
@@ -184,10 +174,7 @@ class TernaryVisualizer:
 
         dist = self.Dirichlet(alpha)
 
-        pvals = [
-            dist.pdf(self.xy_to_barycentric(np.array(xy)))
-            for xy in zip(trimesh.x, trimesh.y, strict=False)
-        ]
+        pvals = [dist.pdf(self.xy_to_barycentric(np.array(xy))) for xy in zip(trimesh.x, trimesh.y, strict=False)]
 
         if ax is None:
             _, ax = plt.subplots(figsize=(6, 6))
