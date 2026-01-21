@@ -5,7 +5,7 @@ from __future__ import annotations
 import torch
 from torch import nn
 
-from probly.layers.evidential.torch import EncoderMnist, EvidentialHead, RadialFlowDensity, SimpleHead
+from probly.layers.evidential.torch import EncoderMnist, EvidentialHead, MLPEncoder, RadialFlowDensity, SimpleHead
 
 
 class NatPN(nn.Module):
@@ -168,9 +168,12 @@ class SimpleCNN(nn.Module):
 class EvidentialRegressionModel(nn.Module):
     """Full evidential regression model combining encoder and evidential head."""
 
-    def __init__(self, encoder: nn.Module) -> None:
+    def __init__(self, encoder: nn.Module | None = None) -> None:
         """Initialize the full model."""
         super().__init__()
+        if encoder is None:
+            encoder = MLPEncoder(feature_dim=32)
+
         self.encoder = encoder
         self.head = EvidentialHead(feature_dim=encoder.feature_dim)
 
