@@ -311,31 +311,67 @@ class RadialFlowDensity(nn.Module):
         return logp
 
 
-class EvidentialRegression(nn.Module):
-    """Evidential regression model.
+class MLPEncoder(nn.Module):
+    """Simple MLP encoder used to transform inputs into feature embeddings.
 
-    Outputs parameters of a 1D Normal-Inverse-Gamma / Normal-Gamma:
-    mu, kappa, alpha, beta.
+    This module contains no evidential logic.
     """
 
-    def __init__(self) -> None:
-        """Initialize MLP architecture for evidential regression."""
+    def __init__(self, input_dim: int = 1, hidden_dim: int = 64, feature_dim: int = 64) -> None:
+        """Initialize the encoder.
+
+        Args:
+            input_dim: Size of input features.
+            hidden_dim: Number of neurons in hidden layers.
+            feature_dim: Dimension of the output feature representation.
+        """
         super().__init__()
-        self.layers = nn.Sequential(
-            nn.Linear(1, 64),
+        self.feature_dim = feature_dim
+        self.net = nn.Sequential(
+            nn.Linear(input_dim, hidden_dim),
             nn.ReLU(),
-            nn.Linear(64, 64),
+            nn.Linear(hidden_dim, feature_dim),
             nn.ReLU(),
-            nn.Linear(64, 4),
         )
 
-    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-        """Return mu, kappa, alpha, beta parameters for the predictive NIG."""
-        out = self.layers(x)
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Compute feature embedding.
 
-        mu = out[:, 0:1]
-        kappa = F.softplus(out[:, 1:2])  # ≥ 0
-        alpha = F.softplus(out[:, 2:3]) + 1.0  # > 1
-        beta = F.softplus(out[:, 3:4])  # > 0
+        Args:
+            x: Input tensor of shape (N, input_dim).
+
+        Returns:
+            Feature tensor of shape (N, feature_dim).
+        """
+        return self.net(x)
+
+
+class EvidentialHead(nn.Module):
+    """Head that converts encoded features into evidential Normal-Gamma parameters."""
+
+    def __init__(self, feature_dim: int) -> None:
+        """Initialize the head.
+
+        Args:
+            feature_dim: Dimension of input features coming from the encoder.
+        """
+        super().__init__()
+        self.linear = nn.Linear(feature_dim, 4)
+
+    def forward(self, features: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        """Convert features into (mu, kappa, alpha, beta).
+
+        Args:
+            features: Feature tensor (N, feature_dim)
+
+        Returns:
+            Tuple of four tensors representing Normal-Gamma parameters.
+        """
+        raw = self.linear(features)
+
+        mu = raw[:, 0:1]
+        kappa = F.softplus(raw[:, 1:2])
+        alpha = F.softplus(raw[:, 2:3]) + 1.0
+        beta = F.softplus(raw[:, 3:4])
 
         return mu, kappa, alpha, beta
