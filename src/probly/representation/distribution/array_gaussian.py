@@ -32,7 +32,7 @@ class ArrayGaussian(Distribution):
             raise ValueError(msg)
         if np.any(var <= 0):
             var_error = "Variance must be positive"
-        raise ValueError(var_error)
+            raise ValueError(var_error)
 
         object.__setattr__(self, "mean", mean)
         object.__setattr__(self, "var", var)
