@@ -506,3 +506,147 @@ Summary (III)
 ---------------
 
 In this example, you used ``probly`` to construct both a homogeneous ensemble and a ``MixedEnsemble`` combining different model types. The MixedEnsemble may capture complementary model behaviour and can therefore improve robustness and calibration in some settings :cite:`opitz1999popular,ovadia2019trust`. By providing a unified abstraction for homogeneous and heterogeneous ensembles, ``probly`` makes it straightforward to explore such design choices in practical applications.
+
+4. Hierarchical model (grouped data) with ``probly``
+====================================================
+
+What you will learn (IV)
+----------------------------
+
+In this tutorial, you will learn the hierarchical-model recipe described in :ref:`advanced_topics` (partial pooling across groups).
+
+Prerequisites
+-------------
+
+You need data with a group index (e.g. schools, hospitals, stores) and a supervised target.
+
+Step 1: Prepare grouped data
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You need inputs ``x``, targets ``y``, and an integer group id ``g`` per observation.
+
+.. code-block:: python
+
+   import numpy as np
+
+   rng = np.random.default_rng(0)
+   G = 8
+   n_per_g = 30
+   g = np.repeat(np.arange(G), n_per_g)
+   x = rng.normal(size=G * n_per_g)
+
+   mu_true = 0.0
+   tau_true = 1.0
+   a_true = rng.normal(loc=mu_true, scale=tau_true, size=G)
+   y = a_true[g] + 0.5 * x + rng.normal(scale=0.5, size=x.shape)
+
+
+Step 2: Specify a hierarchical structure
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Group-level parameters share hyperparameters, as in :ref:`advanced_topics` (Hierarchical models).
+
+.. code-block:: python
+
+   # Pseudo-structure:
+   # mu ~ Normal(0, 1)
+   # tau ~ PositiveTransform(...)      # optional transformation from :ref:`advanced_topics`
+   # a_g ~ Normal(mu, tau)
+   # b ~ Normal(0, 1)
+   # sigma ~ PositiveTransform(...)
+   # y_i ~ Normal(a_{g[i]} + b * x_i, sigma)
+
+
+Step 3: Fit / infer
+~~~~~~~~~~~~~~~~~~~
+
+Run your chosen probly inference method (optimisation or sampling) and use batching if needed; see :ref:`advanced_topics` (Working with Large Models, Performance & Efficiency).
+
+.. code-block:: python
+
+   # model = ...
+   # result = probly.fit(model, data=...)
+   # or: posterior = probly.sample(model, data=...)
+   pass
+
+
+Step 4: Interpret partial pooling
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Inspect uncertainty for global parameters (``mu``, ``tau``) and per-group parameters (``a_g``), and check shrinkage toward ``mu``.
+
+This tutorial intentionally omits visualisations; interpret results via parameter summaries,
+credible intervals, and posterior predictive checks (as described in :ref:`advanced_topics`).
+
+Summary (IV)
+------------
+
+This example is the worked counterpart of the hierarchical-model recipe in :ref:`advanced_topics`.
+
+
+
+5. Mixture model (multi-modal data) with ``probly``
+===================================================
+
+What you will learn (V)
+----------------------------
+
+In this tutorial, you will learn the mixture-model recipe described in :ref:`advanced_topics` (latent components + responsibilities).
+
+Prerequisites
+-------------
+
+You need data that is plausibly multi-modal (e.g. clustered points, regimes, or mixed populations).
+
+Step 1: Prepare multi-modal data
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: python
+
+   import numpy as np
+
+   rng = np.random.default_rng(1)
+   n = 400
+   z = rng.integers(0, 2, size=n)  # latent component
+   x = rng.normal(loc=np.where(z == 0, -2.0, 2.0), scale=0.7, size=n)
+
+
+Step 2: Specify a mixture structure
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This follows :ref:`advanced_topics` (Mixture models).
+
+.. code-block:: python
+
+   # Pseudo-structure:
+   # w ~ Simplex(...)                  # mixture weights
+   # mu_k ~ Normal(0, 5)
+   # sigma_k ~ PositiveTransform(...)
+   # x_i ~ sum_k w_k * Normal(mu_k, sigma_k)
+
+
+Step 3: Fit / infer
+~~~~~~~~~~~~~~~~~~~
+
+Fit weights and component parameters and compute responsibilities if needed.
+
+.. code-block:: python
+
+   # posterior = probly.sample(...)
+   # responsibilities = p(z=k | x_i, posterior)
+   pass
+
+
+Step 4: Interpret components and uncertainty
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Report uncertainty in mixture weights and component parameters, and identify ambiguous points via responsibilities.
+
+This tutorial intentionally omits visualisations; interpret results via posterior summaries,
+credible intervals, and responsibility statistics (as described in :ref:`advanced_topics`).
+
+Summary (V)
+------------
+
+This example is the worked counterpart of the mixture-model recipe in :ref:`advanced_topics`.
+

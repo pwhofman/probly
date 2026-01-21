@@ -66,6 +66,21 @@ templates_path = ["_templates"]
 # Notebooks: don't execute during docs build
 nb_execution_mode = "off"
 
+# Bibliography
+exclude_patterns = [
+    "_build",
+    "Thumbs.db",
+    ".DS_Store",
+    "**/*.py",
+    "**/*.json",
+    "**/*.zip",
+    "**/*.md5",
+    # Prefer Sphinx-Gallery .rst over generated notebooks/markdown in auto_examples.
+    "auto_examples/*.ipynb",
+    "auto_examples/**/*.ipynb",
+    "auto_examples/*.md",
+    "auto_examples/**/*.md",
+]
 
 bibtex_bibfiles = ["references.bib"]
 bibtex_default_style = "alpha"
@@ -89,6 +104,7 @@ sphinx_gallery_conf = {
     "download_all_examples": False,
     # Avoid generating .ipynb alongside .rst to prevent duplicate-doc warnings.
     "notebook_extensions": set(),
+    "run_stale_examples": True,
     # Don't kill the whole build if one example errors
     "abort_on_example_error": False,
     "default_thumb_file": str(DOCS_DIR / "_static" / "logo" / "logo_light.png"),
