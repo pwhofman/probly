@@ -50,11 +50,20 @@ extensions = [
 ]
 
 suppress_warnings = [
+<<<<<<< HEAD
+=======
+    "toc.not_included",
+>>>>>>> upstream/main
     "autodoc.import_object",
     "autodoc",
     "ref.ref",
     "ref.doc",
     "ref.python",
+<<<<<<< HEAD
+=======
+    "misc.highlighting_failure",
+    "myst.header",
+>>>>>>> upstream/main
     "autosummary",
     "toc.not_readable",
     "docutils",
@@ -66,6 +75,7 @@ templates_path = ["_templates"]
 nb_execution_mode = "off"
 
 # Bibliography
+<<<<<<< HEAD
 exclude_patterns = [
     "_build",
     "Thumbs.db",
@@ -81,6 +91,9 @@ exclude_patterns = [
     "auto_examples/**/*.md",
 ]
 
+=======
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "**/*.py", "**/*.json", "**/*.zip", "**/*.md5"]
+>>>>>>> upstream/main
 bibtex_bibfiles = ["references.bib"]
 bibtex_default_style = "alpha"
 
@@ -101,9 +114,12 @@ sphinx_gallery_conf = {
     "filename_pattern": r"plot_.*\.py",
     "plot_gallery": True,
     "download_all_examples": False,
+<<<<<<< HEAD
     # Avoid generating .ipynb alongside .rst to prevent duplicate-doc warnings.
     "notebook_extensions": set(),
     "run_stale_examples": True,
+=======
+>>>>>>> upstream/main
     # Don't kill the whole build if one example errors
     "abort_on_example_error": False,
     "default_thumb_file": str(DOCS_DIR / "_static" / "logo" / "logo_light.png"),
