@@ -1,0 +1,453 @@
+make: Entering directory '/home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs'
+Running Sphinx v8.2.3
+loading translations [en]... done
+making output directory... done
+Using Sphinx-Gallery to convert rst text blocks to markdown for .ipynb files.
+checking bibtex cache... out of date
+parsing bibtex file /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/references.bib... parsed 76 entries
+[autosummary] generating autosummary for: advanced_topics.rst, api.rst, contributing.rst, core_concepts.rst, examples_and_tutorials.rst, faq.rst, hidden_index.rst, index.rst, installation.rst, introduction.rst, ..., notebooks/examples/train_evidential_classification.ipynb, notebooks/examples/train_evidential_regression.ipynb, notebooks/examples/utilities_and_layers/custom_loss_functions.ipynb, notebooks/examples/utilities_and_layers/index.rst, notebooks/examples/utilities_and_layers/metrics.ipynb, notebooks/examples/utilities_and_layers/probabilistic_layers.ipynb, notebooks/examples/utilities_and_layers/utility_functions.ipynb, references.rst, sg_execution_times.rst, user_guide.rst
+[autosummary] generating autosummary for: /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.rst
+[autosummary] generating autosummary for: /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.datasets.rst, /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.evaluation.rst, /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.layers.rst, /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.lazy_types.rst, /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.plot.rst, /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.predictor.rst, /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.quantification.rst, /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.representation.rst, /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.train.rst, /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.transformation.rst, /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.traverse_nn.rst, /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.utils.rst, /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.visualization.rst
+[autosummary] generating autosummary for: /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.datasets.torch.rst, /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.evaluation.metrics.rst, /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.evaluation.tasks.rst, /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.layers.flax.rst, /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.layers.torch.rst, /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.plot.credal.rst, /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.quantification.classification.rst, /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.quantification.regression.rst, /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.representation.credal_set.rst, /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.representation.distribution.rst, ..., /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.utils.probabilities.rst, /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.utils.sets.rst, /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.utils.switchdispatch.rst, /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.utils.torch.rst, /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.visualization.config.rst, /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.visualization.create_credal.rst, /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.visualization.input_handling.rst, /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.visualization.plot_2d.rst, /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.visualization.plot_3d.rst, /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.visualization.plot_multid.rst
+[autosummary] generating autosummary for: /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.representation.credal_set.array.rst, /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.representation.credal_set.array_functions.rst, /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.representation.credal_set.common.rst, /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.representation.sampling.array_sample.rst, /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.representation.sampling.array_sample_axis_tracking.rst, /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.representation.sampling.array_sample_functions.rst, /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.representation.sampling.common_sample.rst, /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.representation.sampling.flax_sampler.rst, /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.representation.sampling.jax_sample.rst, /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.representation.sampling.sample.rst, /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.representation.sampling.sampler.rst, /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.representation.sampling.torch_sample.rst, /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.representation.sampling.torch_sampler.rst, /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.train.bayesian.torch.rst, /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.train.calibration.torch.rst, /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.train.evidential.torch.rst, /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.transformation.evidential.classification.rst, /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.transformation.evidential.regression.rst
+[autosummary] generating autosummary for: /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.transformation.evidential.classification.common.rst, /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.transformation.evidential.classification.torch.rst, /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.transformation.evidential.regression.common.rst, /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.transformation.evidential.regression.torch.rst
+generating gallery...
+generating gallery for auto_examples... [ 11%] plot_gallery_smoke_test.py
+generating gallery for auto_examples... [ 22%] plot_uncertainty_quantification.py
+generating gallery for auto_examples... [ 33%] plot_intro_uncertainty_glimpse.py
+generating gallery for auto_examples... [ 44%] plot_create_sample_dispatch.py
+generating gallery for auto_examples... [ 56%] plot_epistemic_vs_aleatoric.py
+generating gallery for auto_examples... [ 67%] plot_intro_threshold_decision.py
+generating gallery for auto_examples... [ 78%] plot_using_predict_protocol.py
+generating gallery for auto_examples... [ 89%] plot_samples_with_array_sample.py
+generating gallery for auto_examples... [100%] plot_selective_prediction.py
+
+generating gallery for auto_examples/cc_examples... 
+computation time summary:
+    - ../../examples/plot_selective_prediction.py:         0.32 sec   0.0 MB
+    - ../../examples/plot_epistemic_vs_aleatoric.py:       0.29 sec   0.0 MB
+    - ../../examples/plot_uncertainty_quantification.py:   0.27 sec   0.0 MB
+    - ../../examples/plot_gallery_smoke_test.py:           0.23 sec   0.0 MB
+    - ../../examples/plot_intro_threshold_decision.py:     0.20 sec   0.0 MB
+    - ../../examples/plot_samples_with_array_sample.py:    0.19 sec   0.0 MB
+    - ../../examples/plot_intro_uncertainty_glimpse.py:    0.16 sec   0.0 MB
+    - ../../examples/plot_using_predict_protocol.py:       0.16 sec   0.0 MB
+    - ../../examples/plot_create_sample_dispatch.py:       0.16 sec   0.0 MB
+loading intersphinx inventory 'python3' from https://docs.python.org/3/objects.inv ...
+loading intersphinx inventory 'numpy' from https://numpy.org/doc/stable/objects.inv ...
+loading intersphinx inventory 'scipy' from https://docs.scipy.org/doc/scipy/objects.inv ...
+loading intersphinx inventory 'matplotlib' from https://matplotlib.org/stable/objects.inv ...
+loading intersphinx inventory 'PIL' from https://pillow.readthedocs.io/en/stable/objects.inv ...
+loading intersphinx inventory 'torch' from https://pytorch.org/docs/stable/objects.inv ...
+intersphinx inventory has moved: https://pytorch.org/docs/stable/objects.inv -> https://docs.pytorch.org/docs/stable/objects.inv
+myst v4.0.1: MdParserConfig(commonmark_only=False, gfm_only=False, enable_extensions=set(), disable_syntax=[], all_links_external=False, links_external_new_tab=False, url_schemes=('http', 'https', 'mailto', 'ftp'), ref_domains=None, fence_as_directive=set(), number_code_blocks=[], title_to_header=False, heading_anchors=0, heading_slug_func=None, html_meta={}, footnote_sort=True, footnote_transition=True, words_per_minute=200, substitutions={}, linkify_fuzzy_links=True, dmath_allow_labels=True, dmath_allow_space=True, dmath_allow_digits=True, dmath_double_inline=False, update_mathjax=True, mathjax_classes='tex2jax_process|mathjax_process|math|output_area', enable_checkboxes=False, suppress_warnings=[], highlight_code_blocks=True)
+myst-nb v1.2.0: NbParserConfig(custom_formats={}, metadata_key='mystnb', cell_metadata_key='mystnb', kernel_rgx_aliases={}, eval_name_regex='^[a-zA-Z_][a-zA-Z0-9_]*$', execution_mode='off', execution_cache_path='', execution_excludepatterns=(), execution_timeout=30, execution_in_temp=False, execution_allow_errors=False, execution_raise_on_error=False, execution_show_tb=False, merge_streams=False, render_plugin='default', remove_code_source=False, remove_code_outputs=False, code_prompt_show='Show code cell {type}', code_prompt_hide='Hide code cell {type}', number_source_lines=False, output_stderr='show', render_text_lexer='myst-ansi', render_error_lexer='ipythontb', render_image_options={}, render_figure_options={}, render_markdown_format='commonmark', output_folder='build', append_css=True, metadata_to_fm=False)
+Using jupyter-cache at: /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/build/.jupyter_cache
+building [mo]: targets for 0 po files that are out of date
+writing output... 
+building [html]: targets for 43 source files that are out of date
+updating environment: [new config] 126 added, 0 changed, 0 removed
+reading sources... [  1%] advanced_topics
+reading sources... [  2%] api
+reading sources... [  2%] api/probly
+reading sources... [  3%] api/probly.datasets
+reading sources... [  4%] api/probly.datasets.torch
+reading sources... [  5%] api/probly.evaluation
+reading sources... [  6%] api/probly.evaluation.metrics
+reading sources... [  6%] api/probly.evaluation.tasks
+reading sources... [  7%] api/probly.layers
+reading sources... [  8%] api/probly.layers.flax
+reading sources... [  9%] api/probly.layers.torch
+reading sources... [ 10%] api/probly.lazy_types
+reading sources... [ 10%] api/probly.plot
+reading sources... [ 11%] api/probly.plot.credal
+reading sources... [ 12%] api/probly.predictor
+reading sources... [ 13%] api/probly.quantification
+reading sources... [ 13%] api/probly.quantification.classification
+reading sources... [ 14%] api/probly.quantification.regression
+reading sources... [ 15%] api/probly.representation
+reading sources... [ 16%] api/probly.representation.credal_set
+reading sources... [ 17%] api/probly.representation.credal_set.array
+reading sources... [ 17%] api/probly.representation.credal_set.array_functions
+reading sources... [ 18%] api/probly.representation.credal_set.common
+reading sources... [ 19%] api/probly.representation.distribution
+reading sources... [ 20%] api/probly.representation.representer
+reading sources... [ 21%] api/probly.representation.sampling
+reading sources... [ 21%] api/probly.representation.sampling.array_sample
+reading sources... [ 22%] api/probly.representation.sampling.array_sample_axis_tracking
+reading sources... [ 23%] api/probly.representation.sampling.array_sample_functions
+reading sources... [ 24%] api/probly.representation.sampling.common_sample
+reading sources... [ 25%] api/probly.representation.sampling.flax_sampler
+reading sources... [ 25%] api/probly.representation.sampling.jax_sample
+reading sources... [ 26%] api/probly.representation.sampling.sample
+reading sources... [ 27%] api/probly.representation.sampling.sampler
+reading sources... [ 28%] api/probly.representation.sampling.torch_sample
+reading sources... [ 29%] api/probly.representation.sampling.torch_sampler
+reading sources... [ 29%] api/probly.train
+reading sources... [ 30%] api/probly.train.bayesian
+reading sources... [ 31%] api/probly.train.bayesian.torch
+reading sources... [ 32%] api/probly.train.calibration
+reading sources... [ 33%] api/probly.train.calibration.torch
+reading sources... [ 33%] api/probly.train.evidential
+reading sources... [ 34%] api/probly.train.evidential.torch
+reading sources... [ 35%] api/probly.transformation
+reading sources... [ 36%] api/probly.transformation.bayesian
+reading sources... [ 37%] api/probly.transformation.dropconnect
+reading sources... [ 37%] api/probly.transformation.dropout
+reading sources... [ 38%] api/probly.transformation.ensemble
+reading sources... [ 39%] api/probly.transformation.evidential
+reading sources... [ 40%] api/probly.transformation.evidential.classification
+reading sources... [ 40%] api/probly.transformation.evidential.classification.common
+reading sources... [ 41%] api/probly.transformation.evidential.classification.torch
+reading sources... [ 42%] api/probly.transformation.evidential.regression
+reading sources... [ 43%] api/probly.transformation.evidential.regression.common
+reading sources... [ 44%] api/probly.transformation.evidential.regression.torch
+reading sources... [ 44%] api/probly.traverse_nn
+reading sources... [ 45%] api/probly.traverse_nn.common
+reading sources... [ 46%] api/probly.traverse_nn.flax
+reading sources... [ 47%] api/probly.traverse_nn.torch
+reading sources... [ 48%] api/probly.utils
+reading sources... [ 48%] api/probly.utils.errors
+reading sources... [ 49%] api/probly.utils.probabilities
+reading sources... [ 50%] api/probly.utils.sets
+reading sources... [ 51%] api/probly.utils.switchdispatch
+reading sources... [ 52%] api/probly.utils.torch
+reading sources... [ 52%] api/probly.visualization
+reading sources... [ 53%] api/probly.visualization.config
+reading sources... [ 54%] api/probly.visualization.create_credal
+reading sources... [ 55%] api/probly.visualization.input_handling
+reading sources... [ 56%] api/probly.visualization.plot_2d
+reading sources... [ 56%] api/probly.visualization.plot_3d
+reading sources... [ 57%] api/probly.visualization.plot_multid
+reading sources... [ 58%] auto_examples/cc_examples/index
+reading sources... [ 59%] auto_examples/cc_examples/sg_execution_times
+reading sources... [ 60%] auto_examples/index
+reading sources... [ 60%] auto_examples/plot_create_sample_dispatch
+reading sources... [ 61%] auto_examples/plot_epistemic_vs_aleatoric
+reading sources... [ 62%] auto_examples/plot_gallery_smoke_test
+reading sources... [ 63%] auto_examples/plot_intro_threshold_decision
+reading sources... [ 63%] auto_examples/plot_intro_uncertainty_glimpse
+reading sources... [ 64%] auto_examples/plot_samples_with_array_sample
+reading sources... [ 65%] auto_examples/plot_selective_prediction
+reading sources... [ 66%] auto_examples/plot_uncertainty_quantification
+reading sources... [ 67%] auto_examples/plot_using_predict_protocol
+reading sources... [ 67%] auto_examples/sg_execution_times
+reading sources... [ 68%] contributing
+reading sources... [ 69%] core_concepts
+reading sources... [ 70%] examples_and_tutorials
+reading sources... [ 71%] faq
+reading sources... [ 71%] hidden_index
+reading sources... [ 72%] index
+reading sources... [ 73%] installation
+reading sources... [ 74%] introduction
+reading sources... [ 75%] main_components
+reading sources... [ 75%] methods
+reading sources... [ 76%] notebooks/examples/bayesian_transformation
+reading sources... [ 77%] notebooks/examples/dropconnect_transformation
+reading sources... [ 78%] notebooks/examples/dropout_transformation
+reading sources... [ 79%] notebooks/examples/dropout_tutorial
+reading sources... [ 79%] notebooks/examples/ensemble_transformation
+reading sources... [ 80%] notebooks/examples/evaluation_and_quantification/calibration_metrics
+reading sources... [ 81%] notebooks/examples/evaluation_and_quantification/index
+reading sources... [ 82%] notebooks/examples/evaluation_and_quantification/interpretation_techniques
+reading sources... [ 83%] notebooks/examples/evaluation_and_quantification/visualization_tools
+reading sources... [ 83%] notebooks/examples/evidential_classification_transformation
+reading sources... [ 84%] notebooks/examples/evidential_regression_transformation
+reading sources... [ 85%] notebooks/examples/fashionmnist_ood_ensemble
+reading sources... [ 86%] notebooks/examples/index
+reading sources... [ 87%] notebooks/examples/label_relaxation_calibration
+reading sources... [ 87%] notebooks/examples/lazy_dispatch_test
+reading sources... [ 88%] notebooks/examples/multilib_demo
+reading sources... [ 89%] notebooks/examples/pytraverse_tutorial
+reading sources... [ 90%] notebooks/examples/sklearn_selective_prediction
+reading sources... [ 90%] notebooks/examples/synthethic_regression_dropout
+reading sources... [ 91%] notebooks/examples/temperature_scaling_calibration
+reading sources... [ 92%] notebooks/examples/train_bnn_classification
+reading sources... [ 93%] notebooks/examples/train_evidential_classification
+reading sources... [ 94%] notebooks/examples/train_evidential_regression
+reading sources... [ 94%] notebooks/examples/utilities_and_layers/custom_loss_functions
+reading sources... [ 95%] notebooks/examples/utilities_and_layers/index
+reading sources... [ 96%] notebooks/examples/utilities_and_layers/metrics
+reading sources... [ 97%] notebooks/examples/utilities_and_layers/probabilistic_layers
+reading sources... [ 98%] notebooks/examples/utilities_and_layers/utility_functions
+reading sources... [ 98%] references
+reading sources... [ 99%] sg_execution_times
+reading sources... [100%] user_guide
+
+looking for now-outdated files... none found
+pickling environment... done
+checking consistency... /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/api/probly.rst: document is referenced in multiple toctrees: ['api', 'hidden_index'], selecting: hidden_index <- api/probly
+/home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/methods.md: document is referenced in multiple toctrees: ['hidden_index', 'index'], selecting: index <- methods
+done
+preparing documents... done
+copying assets... 
+copying downloadable files... [  6%] auto_examples/plot_create_sample_dispatch.py
+copying downloadable files... [ 11%] auto_examples/plot_create_sample_dispatch.zip
+copying downloadable files... [ 17%] auto_examples/plot_epistemic_vs_aleatoric.py
+copying downloadable files... [ 22%] auto_examples/plot_epistemic_vs_aleatoric.zip
+copying downloadable files... [ 28%] auto_examples/plot_gallery_smoke_test.py
+copying downloadable files... [ 33%] auto_examples/plot_gallery_smoke_test.zip
+copying downloadable files... [ 39%] auto_examples/plot_intro_threshold_decision.py
+copying downloadable files... [ 44%] auto_examples/plot_intro_threshold_decision.zip
+copying downloadable files... [ 50%] auto_examples/plot_intro_uncertainty_glimpse.py
+copying downloadable files... [ 56%] auto_examples/plot_intro_uncertainty_glimpse.zip
+copying downloadable files... [ 61%] auto_examples/plot_samples_with_array_sample.py
+copying downloadable files... [ 67%] auto_examples/plot_samples_with_array_sample.zip
+copying downloadable files... [ 72%] auto_examples/plot_selective_prediction.py
+copying downloadable files... [ 78%] auto_examples/plot_selective_prediction.zip
+copying downloadable files... [ 83%] auto_examples/plot_uncertainty_quantification.py
+copying downloadable files... [ 89%] auto_examples/plot_uncertainty_quantification.zip
+copying downloadable files... [ 94%] auto_examples/plot_using_predict_protocol.py
+copying downloadable files... [100%] auto_examples/plot_using_predict_protocol.zip
+
+copying static files... 
+Writing evaluated template result to /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/build/html/_static/documentation_options.js
+Writing evaluated template result to /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/build/html/_static/language_data.js
+Writing evaluated template result to /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/build/html/_static/basic.css
+Writing evaluated template result to /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/build/html/_static/copybutton.js
+copying static files: done
+copying extra files... 
+copying extra files: done
+copying assets: done
+writing output... [  1%] advanced_topics
+writing output... [  2%] api
+writing output... [  2%] api/probly
+writing output... [  3%] api/probly.datasets
+writing output... [  4%] api/probly.datasets.torch
+writing output... [  5%] api/probly.evaluation
+writing output... [  6%] api/probly.evaluation.metrics
+writing output... [  6%] api/probly.evaluation.tasks
+writing output... [  7%] api/probly.layers
+writing output... [  8%] api/probly.layers.flax
+writing output... [  9%] api/probly.layers.torch
+writing output... [ 10%] api/probly.lazy_types
+writing output... [ 10%] api/probly.plot
+writing output... [ 11%] api/probly.plot.credal
+writing output... [ 12%] api/probly.predictor
+writing output... [ 13%] api/probly.quantification
+writing output... [ 13%] api/probly.quantification.classification
+writing output... [ 14%] api/probly.quantification.regression
+writing output... [ 15%] api/probly.representation
+writing output... [ 16%] api/probly.representation.credal_set
+writing output... [ 17%] api/probly.representation.credal_set.array
+writing output... [ 17%] api/probly.representation.credal_set.array_functions
+writing output... [ 18%] api/probly.representation.credal_set.common
+writing output... [ 19%] api/probly.representation.distribution
+writing output... [ 20%] api/probly.representation.representer
+writing output... [ 21%] api/probly.representation.sampling
+writing output... [ 21%] api/probly.representation.sampling.array_sample
+writing output... [ 22%] api/probly.representation.sampling.array_sample_axis_tracking
+writing output... [ 23%] api/probly.representation.sampling.array_sample_functions
+writing output... [ 24%] api/probly.representation.sampling.common_sample
+writing output... [ 25%] api/probly.representation.sampling.flax_sampler
+writing output... [ 25%] api/probly.representation.sampling.jax_sample
+writing output... [ 26%] api/probly.representation.sampling.sample
+writing output... [ 27%] api/probly.representation.sampling.sampler
+writing output... [ 28%] api/probly.representation.sampling.torch_sample
+writing output... [ 29%] api/probly.representation.sampling.torch_sampler
+writing output... [ 29%] api/probly.train
+writing output... [ 30%] api/probly.train.bayesian
+writing output... [ 31%] api/probly.train.bayesian.torch
+writing output... [ 32%] api/probly.train.calibration
+writing output... [ 33%] api/probly.train.calibration.torch
+writing output... [ 33%] api/probly.train.evidential
+writing output... [ 34%] api/probly.train.evidential.torch
+writing output... [ 35%] api/probly.transformation
+writing output... [ 36%] api/probly.transformation.bayesian
+writing output... [ 37%] api/probly.transformation.dropconnect
+writing output... [ 37%] api/probly.transformation.dropout
+writing output... [ 38%] api/probly.transformation.ensemble
+writing output... [ 39%] api/probly.transformation.evidential
+writing output... [ 40%] api/probly.transformation.evidential.classification
+writing output... [ 40%] api/probly.transformation.evidential.classification.common
+writing output... [ 41%] api/probly.transformation.evidential.classification.torch
+writing output... [ 42%] api/probly.transformation.evidential.regression
+writing output... [ 43%] api/probly.transformation.evidential.regression.common
+writing output... [ 44%] api/probly.transformation.evidential.regression.torch
+writing output... [ 44%] api/probly.traverse_nn
+writing output... [ 45%] api/probly.traverse_nn.common
+writing output... [ 46%] api/probly.traverse_nn.flax
+writing output... [ 47%] api/probly.traverse_nn.torch
+writing output... [ 48%] api/probly.utils
+writing output... [ 48%] api/probly.utils.errors
+writing output... [ 49%] api/probly.utils.probabilities
+writing output... [ 50%] api/probly.utils.sets
+writing output... [ 51%] api/probly.utils.switchdispatch
+writing output... [ 52%] api/probly.utils.torch
+writing output... [ 52%] api/probly.visualization
+writing output... [ 53%] api/probly.visualization.config
+writing output... [ 54%] api/probly.visualization.create_credal
+writing output... [ 55%] api/probly.visualization.input_handling
+writing output... [ 56%] api/probly.visualization.plot_2d
+writing output... [ 56%] api/probly.visualization.plot_3d
+writing output... [ 57%] api/probly.visualization.plot_multid
+writing output... [ 58%] auto_examples/cc_examples/index
+writing output... [ 59%] auto_examples/cc_examples/sg_execution_times
+writing output... [ 60%] auto_examples/index
+writing output... [ 60%] auto_examples/plot_create_sample_dispatch
+writing output... [ 61%] auto_examples/plot_epistemic_vs_aleatoric
+writing output... [ 62%] auto_examples/plot_gallery_smoke_test
+writing output... [ 63%] auto_examples/plot_intro_threshold_decision
+writing output... [ 63%] auto_examples/plot_intro_uncertainty_glimpse
+writing output... [ 64%] auto_examples/plot_samples_with_array_sample
+writing output... [ 65%] auto_examples/plot_selective_prediction
+writing output... [ 66%] auto_examples/plot_uncertainty_quantification
+writing output... [ 67%] auto_examples/plot_using_predict_protocol
+writing output... [ 67%] auto_examples/sg_execution_times
+writing output... [ 68%] contributing
+writing output... [ 69%] core_concepts
+writing output... [ 70%] examples_and_tutorials
+writing output... [ 71%] faq
+writing output... [ 71%] hidden_index
+writing output... [ 72%] index
+writing output... [ 73%] installation
+writing output... [ 74%] introduction
+writing output... [ 75%] main_components
+writing output... [ 75%] methods
+writing output... [ 76%] notebooks/examples/bayesian_transformation
+writing output... [ 77%] notebooks/examples/dropconnect_transformation
+writing output... [ 78%] notebooks/examples/dropout_transformation
+writing output... [ 79%] notebooks/examples/dropout_tutorial
+writing output... [ 79%] notebooks/examples/ensemble_transformation
+writing output... [ 80%] notebooks/examples/evaluation_and_quantification/calibration_metrics
+writing output... [ 81%] notebooks/examples/evaluation_and_quantification/index
+writing output... [ 82%] notebooks/examples/evaluation_and_quantification/interpretation_techniques
+writing output... [ 83%] notebooks/examples/evaluation_and_quantification/visualization_tools
+writing output... [ 83%] notebooks/examples/evidential_classification_transformation
+writing output... [ 84%] notebooks/examples/evidential_regression_transformation
+writing output... [ 85%] notebooks/examples/fashionmnist_ood_ensemble
+writing output... [ 86%] notebooks/examples/index
+writing output... [ 87%] notebooks/examples/label_relaxation_calibration
+writing output... [ 87%] notebooks/examples/lazy_dispatch_test
+writing output... [ 88%] notebooks/examples/multilib_demo
+writing output... [ 89%] notebooks/examples/pytraverse_tutorial
+writing output... [ 90%] notebooks/examples/sklearn_selective_prediction
+writing output... [ 90%] notebooks/examples/synthethic_regression_dropout
+writing output... [ 91%] notebooks/examples/temperature_scaling_calibration
+writing output... [ 92%] notebooks/examples/train_bnn_classification
+writing output... [ 93%] notebooks/examples/train_evidential_classification
+writing output... [ 94%] notebooks/examples/train_evidential_regression
+writing output... [ 94%] notebooks/examples/utilities_and_layers/custom_loss_functions
+writing output... [ 95%] notebooks/examples/utilities_and_layers/index
+writing output... [ 96%] notebooks/examples/utilities_and_layers/metrics
+writing output... [ 97%] notebooks/examples/utilities_and_layers/probabilistic_layers
+writing output... [ 98%] notebooks/examples/utilities_and_layers/utility_functions
+writing output... [ 98%] references
+writing output... [ 99%] sg_execution_times
+writing output... [100%] user_guide
+
+generating indices... genindex py-modindex done
+highlighting module code... [  2%] probly.datasets.torch
+highlighting module code... [  5%] probly.evaluation.metrics
+highlighting module code... [  7%] probly.evaluation.tasks
+highlighting module code... [  9%] probly.layers.flax
+highlighting module code... [ 11%] probly.layers.torch
+highlighting module code... [ 14%] probly.plot.credal
+highlighting module code... [ 16%] probly.predictor
+highlighting module code... [ 18%] probly.quantification.classification
+highlighting module code... [ 20%] probly.quantification.regression
+highlighting module code... [ 23%] probly.representation.credal_set.array
+highlighting module code... [ 25%] probly.representation.credal_set.common
+highlighting module code... [ 27%] probly.representation.representer
+highlighting module code... [ 30%] probly.representation.sampling.array_sample
+highlighting module code... [ 32%] probly.representation.sampling.array_sample_axis_tracking
+highlighting module code... [ 34%] probly.representation.sampling.array_sample_functions
+highlighting module code... [ 36%] probly.representation.sampling.common_sample
+highlighting module code... [ 39%] probly.representation.sampling.flax_sampler
+highlighting module code... [ 41%] probly.representation.sampling.jax_sample
+highlighting module code... [ 43%] probly.representation.sampling.sampler
+highlighting module code... [ 45%] probly.representation.sampling.torch_sample
+highlighting module code... [ 48%] probly.representation.sampling.torch_sampler
+highlighting module code... [ 50%] probly.train.bayesian.torch
+highlighting module code... [ 52%] probly.train.calibration.torch
+highlighting module code... [ 55%] probly.train.evidential.torch
+highlighting module code... [ 57%] probly.transformation.bayesian.common
+highlighting module code... [ 59%] probly.transformation.dropconnect.common
+highlighting module code... [ 61%] probly.transformation.dropout.common
+highlighting module code... [ 64%] probly.transformation.ensemble.common
+highlighting module code... [ 66%] probly.transformation.evidential.classification.common
+highlighting module code... [ 68%] probly.transformation.evidential.classification.torch
+highlighting module code... [ 70%] probly.transformation.evidential.regression.common
+highlighting module code... [ 73%] probly.transformation.evidential.regression.torch
+highlighting module code... [ 75%] probly.traverse_nn.common
+highlighting module code... [ 77%] probly.utils.errors
+highlighting module code... [ 80%] probly.utils.probabilities
+highlighting module code... [ 82%] probly.utils.sets
+highlighting module code... [ 84%] probly.utils.switchdispatch
+highlighting module code... [ 86%] probly.utils.torch
+highlighting module code... [ 89%] probly.visualization.config
+highlighting module code... [ 91%] probly.visualization.create_credal
+highlighting module code... [ 93%] probly.visualization.input_handling
+highlighting module code... [ 95%] probly.visualization.plot_2d
+highlighting module code... [ 98%] probly.visualization.plot_3d
+highlighting module code... [100%] probly.visualization.plot_multid
+
+writing additional pages... search done
+copying images... [  4%] auto_examples/images/thumb/sphx_glr_plot_create_sample_dispatch_thumb.png
+copying images... [  7%] auto_examples/images/thumb/sphx_glr_plot_gallery_smoke_test_thumb.png
+copying images... [ 11%] auto_examples/images/thumb/sphx_glr_plot_samples_with_array_sample_thumb.png
+copying images... [ 14%] auto_examples/images/thumb/sphx_glr_plot_using_predict_protocol_thumb.png
+copying images... [ 18%] _static/transformation.png
+copying images... [ 21%] _static/large_models.png
+copying images... [ 25%] auto_examples/images/thumb/sphx_glr_plot_uncertainty_quantification_thumb.png
+copying images... [ 29%] auto_examples/images/thumb/sphx_glr_plot_intro_uncertainty_glimpse_thumb.png
+copying images... [ 32%] auto_examples/images/thumb/sphx_glr_plot_epistemic_vs_aleatoric_thumb.png
+copying images... [ 36%] auto_examples/images/thumb/sphx_glr_plot_intro_threshold_decision_thumb.png
+copying images... [ 39%] auto_examples/images/thumb/sphx_glr_plot_selective_prediction_thumb.png
+copying images... [ 43%] _static/Epistemische.png
+copying images... [ 46%] _static/Aleatorische.png
+copying images... [ 50%] _static/Accuracy-Rejection-Curve.png
+copying images... [ 54%] _static/Credal_Set.png
+copying images... [ 57%] _static/mc_dropout_example.png
+copying images... [ 61%] _static/subensemble_comparison.png
+copying images... [ 64%] _static/mixed_ensemble_comparison.png
+copying images... [ 68%] ../build/jupyter_execute/b35c75ee517381829b978860f61056fd0bde74950ab2b6f1e1d4d3831d023514.png
+copying images... [ 71%] ../build/jupyter_execute/ed7280cf1ed7f9454fcb41732aa4896519a536e5004ae6160b35a04e4e723ab8.png
+copying images... [ 75%] ../build/jupyter_execute/b0edf82eeb9feacd6b7849ec01e36ad6ceefc260c2eb917ce70a913564e590f2.png
+copying images... [ 79%] ../build/jupyter_execute/b2b8bbb3190f492ca15e077308759d3a8f1fa54b52410628b8dbd5b9ef118260.png
+copying images... [ 82%] ../build/jupyter_execute/c0be30d7c0cf56ba1802f221150dc2b9a3e4956ceef45b177d067dc80e5a4349.png
+copying images... [ 86%] ../build/jupyter_execute/a755a423570fdd4fb17a6e01c70f6ad8ab8f826af09ca6335c2ec20299cc8c2a.png
+copying images... [ 89%] ../build/jupyter_execute/debb10bb57c94921302581222ee316ba19a7fe22cdfa6fadace876dc968aa331.png
+copying images... [ 93%] ../build/jupyter_execute/fc53eecd8056576e8f540161515483e273252cb9671e9c8a6667c619449d3755.png
+copying images... [ 96%] ../build/jupyter_execute/63a31c25d2a1a36d44298f7c82a52054f5dc6e9c75431e30feba0642688fa054.png
+copying images... [100%] ../build/jupyter_execute/6dda1916944730f52c5b32e217d11be5b7c014b6c6f4dc769f8fc991187ef0a9.png
+
+dumping search index in English (code: en)... done
+dumping object inventory... done
+
+====================== slowest reading durations =======================
+4.147 api/probly.train.evidential.torch
+3.130 api/probly.layers.torch
+1.695 api/probly.train.calibration.torch
+0.963 notebooks/examples/synthethic_regression_dropout
+0.884 api/probly.representation.sampling.common_sample
+
+Sphinx-Gallery successfully executed 9 out of 9 files subselected by:
+
+    gallery_conf["filename_pattern"] = 'plot_.*\\.py'
+    gallery_conf["ignore_pattern"]   = '__init__\\.py'
+
+after excluding 0 files that had previously been run (based on MD5).
+
+embedding documentation hyperlinks...
+embedding documentation hyperlinks for auto_examples... [  8%] plot_samples_with_array_sample.html
+embedding documentation hyperlinks for auto_examples... [ 15%] plot_using_predict_protocol.html
+embedding documentation hyperlinks for auto_examples... [ 23%] plot_gallery_smoke_test.html
+embedding documentation hyperlinks for auto_examples... [ 31%] plot_selective_prediction.html
+embedding documentation hyperlinks for auto_examples... [ 38%] plot_intro_uncertainty_glimpse.html
+embedding documentation hyperlinks for auto_examples... [ 46%] plot_intro_threshold_decision.html
+embedding documentation hyperlinks for auto_examples... [ 54%] plot_epistemic_vs_aleatoric.html
+embedding documentation hyperlinks for auto_examples... [ 62%] plot_create_sample_dispatch.html
+embedding documentation hyperlinks for auto_examples... [ 69%] index.html
+embedding documentation hyperlinks for auto_examples... [ 77%] plot_uncertainty_quantification.html
+embedding documentation hyperlinks for auto_examples... [ 85%] sg_execution_times.html
+embedding documentation hyperlinks for auto_examples... [ 92%] index.html
+embedding documentation hyperlinks for auto_examples... [100%] sg_execution_times.html
+
+embedding documentation hyperlinks for auto_examples/cc_examples... [ 50%] index.html
+embedding documentation hyperlinks for auto_examples/cc_examples... [100%] sg_execution_times.html
+
+build succeeded.
+
+The HTML pages are in build/html.
+make: Leaving directory '/home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs'
