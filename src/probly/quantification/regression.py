@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 
 def total_variance(probs: npt.NDArray[np.floating]) -> npt.NDArray[np.floating]:
-    """Compute total variance as the total uncertainty using variance-based measures.
+    """Compute total variance as total uncertainty based on :cite:`depewegDecompositionUncertainty2018`.
 
     Assumes that the input is from a distribution over parameters of
     a normal distribution. The first element of the parameter vector is the mean
@@ -70,7 +70,7 @@ def variance_conditional_expectation(probs: np.ndarray) -> np.ndarray:
 
 
 def total_differential_entropy(probs: np.ndarray) -> np.ndarray:
-    """Compute total differential entropy as the epistemic uncertainty using entropy-based measures.
+    """Compute total differential entropy as epistemic uncertainty based on :cite:`depewegDecompositionUncertainty2018`.
 
     Assume that the input is from a distribution over parameters of
     a normal distribution. The first element of the parameter vector is the mean
