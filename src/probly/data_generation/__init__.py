@@ -23,13 +23,14 @@ try:
         FirstOrderDataset as JaxFirstOrderDataset,
         output_dataloader as jax_output_dataloader,
     )
+
     _JAX_AVAILABLE = True
 except ModuleNotFoundError:
     # If running under pytest, skip JAX-dependent tests at module import.
     if "pytest" in _sys.modules:
-        import pytest as _pytest
+        import pytest
 
-        _pytest.skip(
+        pytest.skip(
             "JAX not installed so skipping JAX-dependent tests.",
             allow_module_level=True,
         )
@@ -46,8 +47,8 @@ __all__ = [
 ]
 
 if _JAX_AVAILABLE:
-    __all__.extend([
+    __all__ += [
         "JaxFirstOrderDataGenerator",
         "JaxFirstOrderDataset",
         "jax_output_dataloader",
-    ])
+    ]
