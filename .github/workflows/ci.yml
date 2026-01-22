@@ -150,7 +150,7 @@ jobs:
 
         -   name: Install dependencies (for ty)
             run: |
-                uv sync --only-group all_ml
+                uv sync --group all_ml
 
         -   name: Run ty Static Type Check
             run: |
