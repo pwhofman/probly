@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 import joblib
 import numpy as np
+from numpy.typing import NDArray
 from scipy.optimize import minimize
 from scipy.stats import entropy
 from tqdm import tqdm
@@ -30,7 +31,7 @@ def total_entropy(probs: np.ndarray, base: float = 2) -> np.ndarray:
         te: numpy.ndarray of shape (n_instances,)
 
     """
-    te = entropy(probs.mean(axis=1), axis=1, base=base)
+    te: NDArray = entropy(probs.mean(axis=1), axis=1, base=base)
     return te
 
 
@@ -46,7 +47,7 @@ def conditional_entropy(probs: np.ndarray, base: float = 2) -> np.ndarray:
         ce: numpy.ndarray of shape (n_instances,)
 
     """
-    ce = entropy(probs, axis=2, base=base).mean(axis=1)
+    ce: NDArray = entropy(probs, axis=2, base=base).mean(axis=1)
     return ce
 
 
@@ -64,7 +65,7 @@ def mutual_information(probs: np.ndarray, base: float = 2) -> np.ndarray:
     """
     probs_mean = probs.mean(axis=1)
     probs_mean = np.repeat(np.expand_dims(probs_mean, 1), repeats=probs.shape[1], axis=1)
-    mi = entropy(probs, probs_mean, axis=2, base=base).mean(axis=1)
+    mi: NDArray = entropy(probs, probs_mean, axis=2, base=base).mean(axis=1)
     return mi
 
 
@@ -82,7 +83,7 @@ def expected_loss(probs: np.ndarray, loss_fn: Callable[[np.ndarray, np.ndarray |
 
     """
     mean = np.mean(probs, axis=1)
-    el = np.sum(mean * loss_fn(mean, None), axis=1)
+    el: NDArray = np.sum(mean * loss_fn(mean, None), axis=1)
     return el
 
 
@@ -99,7 +100,7 @@ def expected_entropy(probs: np.ndarray, loss_fn: Callable[[np.ndarray, np.ndarra
         ee: numpy.ndarray, shape (n_instances,)
 
     """
-    ee = np.mean(np.sum(probs * loss_fn(probs, None), axis=2), axis=1)
+    ee: NDArray = np.mean(np.sum(probs * loss_fn(probs, None), axis=2), axis=1)
     return ee
 
 
@@ -120,7 +121,7 @@ def expected_divergence(
 
     """
     mean = np.mean(probs, axis=1)
-    ed = np.sum(mean * loss_fn(mean, None), axis=1) - np.mean(np.sum(probs * loss_fn(probs, None), axis=2), axis=1)
+    ed: NDArray = np.sum(mean * loss_fn(mean, None), axis=1) - np.mean(np.sum(probs * loss_fn(probs, None), axis=2), axis=1)
     return ed
 
 
@@ -137,7 +138,7 @@ def total_variance(probs: np.ndarray) -> np.ndarray:
 
     """
     probs_mean = probs.mean(axis=1)
-    tv = np.sum(probs_mean * (1 - probs_mean), axis=1)
+    tv: NDArray = np.sum(probs_mean * (1 - probs_mean), axis=1)
     return tv
 
 
@@ -153,7 +154,7 @@ def expected_conditional_variance(probs: np.ndarray) -> np.ndarray:
         ecv: numpy.ndarray, shape (n_instances,)
 
     """
-    ecv = np.sum(np.mean(probs * (1 - probs), axis=1), axis=1)
+    ecv: NDArray = np.sum(np.mean(probs * (1 - probs), axis=1), axis=1)
     return ecv
 
 
@@ -170,7 +171,7 @@ def variance_conditional_expectation(probs: np.ndarray) -> np.ndarray:
 
     """
     probs_mean = probs.mean(axis=1, keepdims=True)
-    vce = np.sum(np.mean(probs * (probs - probs_mean), axis=1), axis=1)
+    vce: NDArray = np.sum(np.mean(probs * (probs - probs_mean), axis=1), axis=1)
     return vce
 
 
@@ -187,7 +188,7 @@ def total_uncertainty_distance(probs: np.ndarray) -> np.ndarray:
 
     """
     probs_mean = probs.mean(axis=1)
-    tu = 1 - np.max(probs_mean, axis=1)
+    tu: NDArray = 1 - np.max(probs_mean, axis=1)
     return tu
 
 
@@ -203,7 +204,7 @@ def aleatoric_uncertainty_distance(probs: np.ndarray) -> np.ndarray:
         au: numpy.ndarray of shape (n_instances,)
 
     """
-    au = 1 - np.mean(np.max(probs, axis=2), axis=1)
+    au: NDArray = 1 - np.mean(np.max(probs, axis=2), axis=1)
     return au
 
 
@@ -226,7 +227,7 @@ def epistemic_uncertainty_distance(probs: np.ndarray) -> np.ndarray:
     x0 = probs.mean(axis=1)
     constraints = {"type": "eq", "fun": lambda x: np.sum(x) - 1}
     bounds = [(0, 1)] * probs.shape[2]
-    eu = np.empty(probs.shape[0])
+    eu: NDArray = np.empty(probs.shape[0])
     for i in tqdm(range(probs.shape[0]), desc="Instances"):
         res = minimize(fun=fun, x0=x0[i], bounds=bounds, constraints=constraints, args=probs[i])
         eu[i] = 0.5 * res.fun
@@ -259,11 +260,11 @@ def upper_entropy(probs: np.ndarray, base: float = 2, n_jobs: int | None = None)
         res = minimize(fun=fun, x0=x0[i], bounds=bounds, constraints=constraints)
         return float(-res.fun)
 
+    ue: NDArray
     if n_jobs:
-        ue = joblib.Parallel(n_jobs=n_jobs)(
+        ue = np.array(joblib.Parallel(n_jobs=n_jobs)(
             joblib.delayed(compute_upper_entropy)(i) for i in tqdm(range(probs.shape[0]), desc="Instances")
-        )
-        ue = np.array(ue)
+        ))
     else:
         ue = np.empty(probs.shape[0])
         for i in tqdm(range(probs.shape[0]), desc="Instances"):
@@ -301,11 +302,11 @@ def lower_entropy(probs: np.ndarray, base: float = 2, n_jobs: int | None = None)
         res = minimize(fun=fun, x0=x0[i], bounds=bounds, constraints=constraints)
         return float(res.fun)
 
+    le: NDArray
     if n_jobs:
-        le = joblib.Parallel(n_jobs=n_jobs)(
+        le = np.array(joblib.Parallel(n_jobs=n_jobs)(
             joblib.delayed(compute_lower_entropy)(i) for i in tqdm(range(probs.shape[0]), desc="Instances")
-        )
-        le = np.array(le)
+        ))
     else:
         le = np.empty(probs.shape[0])
         for i in tqdm(range(probs.shape[0]), desc="Instances"):
@@ -339,11 +340,11 @@ def upper_entropy_convex_hull(probs: np.ndarray, base: float = 2, n_jobs: int | 
         res = minimize(fun=fun, args=probs[i], x0=w0, bounds=bounds, constraints=constraints)
         return float(-res.fun)
 
+    ue: NDArray
     if n_jobs:
-        ue = joblib.Parallel(n_jobs=n_jobs)(
+        ue = np.array(joblib.Parallel(n_jobs=n_jobs)(
             joblib.delayed(compute_upper_entropy_convex_hull)(i) for i in tqdm(range(probs.shape[0]), desc="Instances")
-        )
-        ue = np.array(ue)
+        ))
     else:
         ue = np.empty(probs.shape[0])
         for i in tqdm(range(probs.shape[0]), desc="Instances"):
@@ -377,11 +378,11 @@ def lower_entropy_convex_hull(probs: np.ndarray, base: float = 2, n_jobs: int | 
         res = minimize(fun=fun, args=probs[i], x0=w0, bounds=bounds, constraints=constraints)
         return float(res.fun)
 
+    le: NDArray
     if n_jobs:
-        le = joblib.Parallel(n_jobs=n_jobs)(
+        le = np.array(joblib.Parallel(n_jobs=n_jobs)(
             joblib.delayed(compute_lower_entropy_convex_hull)(i) for i in tqdm(range(probs.shape[0]), desc="Instances")
-        )
-        le = np.array(le)
+        ))
     else:
         le = np.empty(probs.shape[0])
         for i in tqdm(range(probs.shape[0]), desc="Instances"):
@@ -402,7 +403,7 @@ def generalized_hartley(probs: np.ndarray, base: float = 2) -> np.ndarray:
         gh: Generalized Hartley measures values of shape (n_instances,).
 
     """
-    gh = np.zeros(probs.shape[0])
+    gh: NDArray = np.zeros(probs.shape[0])
     idxs = list(range(probs.shape[2]))  # list of class indices
     ps_a = powerset(idxs)  # powerset of all indices
     ps_a.pop(0)  # remove empty set
@@ -422,7 +423,7 @@ def evidential_uncertainty(evidences: np.ndarray) -> np.ndarray:
         eu: Evidential uncertainty values of shape (n_instances,).
 
     """
-    strengths = np.sum(evidences + 1.0, axis=1)
-    k = np.full(evidences.shape[0], evidences.shape[1])
-    eu = k / strengths
+    strengths: NDArray = np.sum(evidences + 1.0, axis=1)
+    k: NDArray = np.full(evidences.shape[0], evidences.shape[1])
+    eu: NDArray = k / strengths
     return eu

@@ -24,7 +24,7 @@ def _enforce_fitted_already(obj: BaseEstimator, state: State) -> tuple[BaseEstim
     """
     if not hasattr(obj, "n_features_in_"):
         raise ValueError(
-            msg="The sklearn estimator must be fitted already before sampling.",
+            "The sklearn estimator must be fitted already before sampling.",
         )
     return obj, state
 

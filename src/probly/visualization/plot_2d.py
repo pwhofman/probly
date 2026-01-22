@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from matplotlib.axes import Axes
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -34,8 +35,8 @@ class IntervalVisualizer:
         title: str = "Interval Plot (2 Classes)",
         mle_flag: bool = True,
         credal_flag: bool = True,
-        ax: plt.Axes = None,
-    ) -> plt.Axes:
+        ax: Axes | None = None,
+    ) -> Axes:
         """Plot the interval plot.
 
         Args:

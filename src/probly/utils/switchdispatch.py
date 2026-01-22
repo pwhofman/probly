@@ -20,7 +20,7 @@ class switchdispatch[C: Callable]:  # noqa: N801
     rather than type.
 
     Example:
-    ```python
+```python
         @switchdispatch
         def func(x):
             return "default"
@@ -36,7 +36,7 @@ class switchdispatch[C: Callable]:  # noqa: N801
         print(func(1))  # Output: "one"
         print(func(2))  # Output: "two"
         print(func(3))  # Output: "default"
-    ```
+```
     """
 
     def __init__(self, func: C) -> None:
@@ -57,7 +57,9 @@ class switchdispatch[C: Callable]:  # noqa: N801
         f: C | None = None,
     ) -> C | Callable[[C], C]:
         """Register a new function for the given key."""
-        return self.multi_register([key], f)  # type: ignore[arg-type]
+        if f is None:
+            return self.multi_register([key])
+        return self.multi_register([key], f)
 
     @overload
     def multi_register(self, keys: Iterable[object]) -> Callable[[C], C]: ...

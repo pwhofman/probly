@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import numpy as np
+from numpy.typing import NDArray
 from scipy.optimize import linprog
 from tqdm import tqdm
 
@@ -157,6 +158,7 @@ def log_loss(probs: np.ndarray, targets: np.ndarray) -> float | np.ndarray:
         loss: The log loss.
 
     """
+    loss: float | NDArray
     if targets is None:
         loss = -np.log(probs)
     else:
@@ -178,6 +180,7 @@ def brier_score(probs: np.ndarray, targets: np.ndarray) -> float | np.ndarray:
         loss: The Brier score.
 
     """
+    loss: float | NDArray
     if targets is None:
         loss = 1 - 2 * probs + np.sum(probs**2, -1)[..., None]
     else:
@@ -197,6 +200,7 @@ def zero_one_loss(probs: np.ndarray, targets: np.ndarray) -> float | np.ndarray:
         loss: The zero-one loss.
 
     """
+    loss: float | NDArray
     if targets is None:
         loss = probs != np.max(probs, axis=-1)[..., None]
     else:
@@ -218,6 +222,7 @@ def spherical_score(probs: np.ndarray, targets: np.ndarray) -> float | np.ndarra
         loss: The spherical score.
 
     """
+    loss: float | NDArray
     if targets is None:
         loss = 1 - probs / np.sqrt(np.sum(probs**2, -1))[..., None]
     else:

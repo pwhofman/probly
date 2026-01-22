@@ -6,6 +6,7 @@ import itertools
 from typing import TYPE_CHECKING
 
 import numpy as np
+from numpy.typing import NDArray
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -34,8 +35,9 @@ def capacity(q: np.ndarray, a: Iterable[int]) -> np.ndarray:
         min_capacity: numpy.ndarray, shape (n_instances,), capacity of q given a
 
     """
-    selected_sum = np.sum(q[:, :, a], axis=2)
-    min_capacity = np.min(selected_sum, axis=1)
+    a_list = list(a)
+    selected_sum: NDArray = np.sum(q[:, :, a_list], axis=2)  # type: ignore[index]
+    min_capacity: NDArray = np.min(selected_sum, axis=1)
     return min_capacity
 
 
@@ -51,7 +53,7 @@ def moebius(q: np.ndarray, a: Iterable[int]) -> np.ndarray:
     """
     ps_a = powerset(a)  # powerset of A
     ps_a.pop(0)  # remove empty set
-    m_a = np.zeros(q.shape[0])
+    m_a: NDArray = np.zeros(q.shape[0])
     for b in ps_a:
         dl = len(set(a) - set(b))
         m_a += ((-1) ** dl) * capacity(q, b)

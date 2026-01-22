@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from matplotlib.axes import Axes
 import matplotlib.pyplot as plt
 import numpy as np  # noqa: TC002
 
@@ -13,7 +14,7 @@ def create_credal_plot(
     labels: list[str] | None = None,
     *,
     show: bool = True,
-) -> plt.Axes | None:
+) -> Axes | None:
     """One method for the user to call; Refers to correct plotting method via input_handling.
 
     Args:

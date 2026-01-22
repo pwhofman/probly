@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 if TYPE_CHECKING:
-    import matplotlib.pyplot as plt
+    from matplotlib.axes import Axes
 
 from probly.visualization.plot_2d import IntervalVisualizer
 from probly.visualization.plot_3d import TernaryVisualizer
@@ -76,7 +76,7 @@ def normalize_input(input_data: np.ndarray) -> np.ndarray:
 def dispatch_plot(
     input_data: np.ndarray,
     labels: list[str] | None = None,
-) -> plt.Axes:
+) -> Axes:
     """Selects and executes the correct plotting function based on class count.
 
     Args:

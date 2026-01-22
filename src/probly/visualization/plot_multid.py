@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from matplotlib.axes import Axes
 from matplotlib.patches import Circle, RegularPolygon
 from matplotlib.path import Path
 from matplotlib.projections import register_projection
@@ -23,7 +24,7 @@ def radar_factory(num_vars: int, frame: str = "circle") -> np.ndarray:  # noqa: 
     class RadarTransform(PolarAxes.PolarTransform):
         def transform_path_non_affine(self, path: Path) -> Path:
             # Note: _interpolation_steps is internal logic needed for this projection hack
-            if path._interpolation_steps > 1:  # noqa: SLF001
+            if path._interpolation_steps > 1:  # noqa: SLF001  # type: ignore[attr-defined]
                 path = path.interpolated(num_vars)
             return Path(self.transform(path.vertices), path.codes)
 
@@ -85,8 +86,8 @@ class MultiVisualizer:
         self,
         probs: np.ndarray,
         labels: list[str],
-        ax: plt.Axes | None = None,
-    ) -> plt.Axes:
+        ax: Axes | None = None,
+    ) -> Axes:
         """General radar (spider) plot for credal predictions.
 
         Args:
@@ -102,10 +103,11 @@ class MultiVisualizer:
         if ax is None:
             _, ax = plt.subplots(figsize=(6, 6), subplot_kw={"projection": "radar"})
 
-        # Setup Axis
-        ax.set_rgrids([0.2, 0.4, 0.6, 0.8, 1.0])
+        # Setup Axis - cast to PolarAxes for the radar-specific methods
+        ax_polar: PolarAxes = ax  # type: ignore[assignment]
+        ax_polar.set_rgrids([0.2, 0.4, 0.6, 0.8, 1.0])
         ax.set_ylim(0.0, 1.0)
-        ax.set_varlabels(labels)
+        ax_polar.set_varlabels(labels)
 
         mean_probs = probs.mean(axis=0)
         max_class = np.argmax(mean_probs)

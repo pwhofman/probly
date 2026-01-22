@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+from matplotlib.axes import Axes
 import matplotlib.patheffects as PathEffects
+from matplotlib.patches import Polygon
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.spatial import ConvexHull
@@ -31,10 +33,10 @@ class TernaryVisualizer:
 
     def label_corners_and_vertices(
         self,
-        ax: plt.Axes,
-        v1: np.array,
-        v2: np.array,
-        v3: np.array,
+        ax: Axes,
+        v1: np.ndarray,
+        v2: np.ndarray,
+        v3: np.ndarray,
         labels: list[str],
     ) -> None:
         """Labeling the corners and vertices."""
@@ -42,25 +44,25 @@ class TernaryVisualizer:
         c2 = f"{labels[1]}"
         c3 = f"{labels[2]}"
         offset_x = 0.06
-        ax.text(v1[0] + 0.02, v1[1] - offset_x, c1, ha="right", va="top", fontsize=12)
-        ax.text(v2[0] + 0.02, v2[1] - offset_x, c2, ha="left", va="top", fontsize=12)
-        ax.text(v3[0], v3[1] + offset_x, c3, ha="center", va="bottom", fontsize=12)
+        ax.text(v1[0] + 0.02, v1[1] - offset_x, c1, ha="right", va="top", fontsize=12)  # type: ignore[index]
+        ax.text(v2[0] + 0.02, v2[1] - offset_x, c2, ha="left", va="top", fontsize=12)  # type: ignore[index]
+        ax.text(v3[0], v3[1] + offset_x, c3, ha="center", va="bottom", fontsize=12)  # type: ignore[index]
 
         edge_lable = "0.0 / 1.0"
-        ax.text(v1[0], v1[1], edge_lable, ha="right", va="top", fontsize=8)
-        ax.text(v2[0], v2[1], edge_lable, ha="left", va="top", fontsize=8)
-        ax.text(v3[0], v3[1], edge_lable, ha="center", va="bottom", fontsize=8)
+        ax.text(v1[0], v1[1], edge_lable, ha="right", va="top", fontsize=8)  # type: ignore[index]
+        ax.text(v2[0], v2[1], edge_lable, ha="left", va="top", fontsize=8)  # type: ignore[index]
+        ax.text(v3[0], v3[1], edge_lable, ha="center", va="bottom", fontsize=8)  # type: ignore[index]
 
     def ternary_plot(
         self,
         probs: np.ndarray,
         labels: list[str],
         title: str = "Ternary Plot (3 Classes)",
-        ax: plt.Axes = None,
+        ax: Axes | None = None,
         plot_hull: bool = True,
         plot_minmax: bool = True,
         **scatter_kwargs: object,
-    ) -> plt.Axes:
+    ) -> Axes:
         """Plot ternary scatter points.
 
         Args:
@@ -90,8 +92,8 @@ class TernaryVisualizer:
 
         edges = [(v1, v2, "axis A"), (v2, v3, "axis B"), (v3, v1, "axis C")]
 
-        triangle_x = [v1[0], v2[0], v3[0], v1[0]]
-        triangle_y = [v1[1], v2[1], v3[1], v1[1]]
+        triangle_x = [v1[0], v2[0], v3[0], v1[0]]  # type: ignore[index]
+        triangle_y = [v1[1], v2[1], v3[1], v1[1]]  # type: ignore[index]
 
         ax.plot(triangle_x, triangle_y, color=cfg.BLACK)
         ax.axis("off")
@@ -106,7 +108,7 @@ class TernaryVisualizer:
 
         for p, q, axis_name in edges:  # noqa: B007
             edge_vec = q - p
-            normal = np.array([-edge_vec[1], edge_vec[0]])
+            normal = np.array([-edge_vec[1], edge_vec[0]])  # type: ignore[index]
             normal = normal / np.linalg.norm(normal)
 
             for t in tick_values[1:-1]:
@@ -115,14 +117,14 @@ class TernaryVisualizer:
                 tick_start = pos - normal * (tick_length / 2)
                 tick_end = pos + normal * (tick_length / 2)
                 ax.plot(
-                    [tick_start[0], tick_end[0]],
-                    [tick_start[1], tick_end[1]],
+                    [tick_start[0], tick_end[0]],  # type: ignore[index]
+                    [tick_start[1], tick_end[1]],  # type: ignore[index]
                     color=cfg.BLACK,
                 )
                 label_pos = pos + normal * label_offset
                 ax.text(
-                    label_pos[0],
-                    label_pos[1],
+                    label_pos[0],  # type: ignore[index]
+                    label_pos[1],  # type: ignore[index]
                     f"{t:.1f}",
                     ha="center",
                     va="center",
@@ -146,7 +148,7 @@ class TernaryVisualizer:
 
         return ax
 
-    def draw_prob_line(self, ax: plt.Axes) -> None:
+    def draw_prob_line(self, ax: Axes) -> None:
         """Mini demo: draw probability axes through one fixed example point.
 
         Args:
@@ -190,8 +192,8 @@ class TernaryVisualizer:
     def plot_convex_hull(
         self,
         probs: np.ndarray,
-        ax: plt.Axes = None,
-    ) -> plt.Axes:
+        ax: Axes | None = None,
+    ) -> Axes:
         """Draw the convex hull around the points.
 
         Handles special cases:
@@ -233,7 +235,7 @@ class TernaryVisualizer:
 
             hull_pts = coords[hull.vertices]
 
-            poly = plt.Polygon(
+            poly = Polygon(
                 hull_pts,
                 closed=True,
                 facecolor=cfg.HULL_FACE,
@@ -259,7 +261,7 @@ class TernaryVisualizer:
 
     def _draw_constant_probability_line(
         self,
-        ax: plt.Axes,
+        ax: Axes,
         index: int,
         value: float,
         color: str = "red",
@@ -305,7 +307,7 @@ class TernaryVisualizer:
     def plot_minmax_lines(
         self,
         probs: np.ndarray,
-        ax: plt.Axes,
+        ax: Axes,
     ) -> None:
         """Draw min/max probability lines for each class.
 

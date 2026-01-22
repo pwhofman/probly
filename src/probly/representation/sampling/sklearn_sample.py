@@ -28,7 +28,7 @@ class SklearnSample(Sample[np.ndarray]):
     sample_axis: int
     array: np.ndarray
 
-    def from_iterable(
+    def from_iterable(  # type: ignore[override]
         self,
         samples: Iterable[Numeric],
         sample_axis: SampleAxis = "auto",

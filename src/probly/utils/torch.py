@@ -39,10 +39,10 @@ def torch_reset_all_parameters(module: torch.nn.Module) -> None:
 
     """
     if hasattr(module, "reset_parameters"):
-        module.reset_parameters()  # type: ignore[operator]
+        module.reset_parameters()
     for child in module.children():
         if hasattr(child, "reset_parameters"):
-            child.reset_parameters()  # type: ignore[operator]
+            child.reset_parameters()
 
 
 def temperature_softmax(logits: torch.Tensor, temperature: float | torch.Tensor) -> torch.Tensor:
