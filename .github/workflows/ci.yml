@@ -150,7 +150,7 @@ jobs:
 
         -   name: Run ty Static Type Check
             run: |
-               uv run ty check
+               uv run ty check --force-exclude
 
         -   name: Execute Unit Tests and Measure Coverage
             run: |
