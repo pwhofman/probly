@@ -22,7 +22,7 @@ generating gallery for auto_examples... [ 78%] plot_using_predict_protocol.py
 generating gallery for auto_examples... [ 89%] plot_samples_with_array_sample.py
 generating gallery for auto_examples... [100%] plot_selective_prediction.py
 
-generating gallery for auto_examples/cc_examples... 
+generating gallery for auto_examples/cc_examples...
 computation time summary:
     - ../../examples/plot_selective_prediction.py:         0.32 sec   0.0 MB
     - ../../examples/plot_epistemic_vs_aleatoric.py:       0.29 sec   0.0 MB
@@ -44,7 +44,7 @@ myst v4.0.1: MdParserConfig(commonmark_only=False, gfm_only=False, enable_extens
 myst-nb v1.2.0: NbParserConfig(custom_formats={}, metadata_key='mystnb', cell_metadata_key='mystnb', kernel_rgx_aliases={}, eval_name_regex='^[a-zA-Z_][a-zA-Z0-9_]*$', execution_mode='off', execution_cache_path='', execution_excludepatterns=(), execution_timeout=30, execution_in_temp=False, execution_allow_errors=False, execution_raise_on_error=False, execution_show_tb=False, merge_streams=False, render_plugin='default', remove_code_source=False, remove_code_outputs=False, code_prompt_show='Show code cell {type}', code_prompt_hide='Hide code cell {type}', number_source_lines=False, output_stderr='show', render_text_lexer='myst-ansi', render_error_lexer='ipythontb', render_image_options={}, render_figure_options={}, render_markdown_format='commonmark', output_folder='build', append_css=True, metadata_to_fm=False)
 Using jupyter-cache at: /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/build/.jupyter_cache
 building [mo]: targets for 0 po files that are out of date
-writing output... 
+writing output...
 building [html]: targets for 43 source files that are out of date
 updating environment: [new config] 126 added, 0 changed, 0 removed
 reading sources... [  1%] advanced_topics
@@ -180,7 +180,7 @@ checking consistency... /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/d
 /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/source/methods.md: document is referenced in multiple toctrees: ['hidden_index', 'index'], selecting: index <- methods
 done
 preparing documents... done
-copying assets... 
+copying assets...
 copying downloadable files... [  6%] auto_examples/plot_create_sample_dispatch.py
 copying downloadable files... [ 11%] auto_examples/plot_create_sample_dispatch.zip
 copying downloadable files... [ 17%] auto_examples/plot_epistemic_vs_aleatoric.py
@@ -200,13 +200,13 @@ copying downloadable files... [ 89%] auto_examples/plot_uncertainty_quantificati
 copying downloadable files... [ 94%] auto_examples/plot_using_predict_protocol.py
 copying downloadable files... [100%] auto_examples/plot_using_predict_protocol.zip
 
-copying static files... 
+copying static files...
 Writing evaluated template result to /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/build/html/_static/documentation_options.js
 Writing evaluated template result to /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/build/html/_static/language_data.js
 Writing evaluated template result to /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/build/html/_static/basic.css
 Writing evaluated template result to /home/navi/Documents/LMU/sem3/praktikum/projekt/probly/docs/build/html/_static/copybutton.js
 copying static files: done
-copying extra files... 
+copying extra files...
 copying extra files: done
 copying assets: done
 writing output... [  1%] advanced_topics
