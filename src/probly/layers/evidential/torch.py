@@ -560,3 +560,85 @@ class PostNetHead(nn.Module):
         logits = self.linear(z)
         alpha = torch.nn.functional.softplus(logits) + 1.0  # shape [B, C]
         return alpha
+
+
+# IRD
+class DirichletMLPEncoder(nn.Module):
+    """Simple MLP encoder for transforming inputs into feature embeddings.
+
+    This module contains no evidential logic, only feature extraction.
+    """
+
+    def __init__(
+        self,
+        input_dim: int,
+        hidden_dim: int = 128,
+        latent_dim: int = 128,
+    ) -> None:
+        """Initialize the MLP encoder.
+
+        Args:
+            input_dim: Size of input features (flattened or 1D).
+            hidden_dim: Number of neurons in hidden layers (default: 128).
+            latent_dim: Dimension of output feature representation (default: 128).
+        """
+        super().__init__()
+        self.latent_dim = latent_dim
+        self.net = nn.Sequential(
+            nn.Linear(input_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Dropout(0.2),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Dropout(0.2),
+            nn.Linear(hidden_dim, latent_dim),
+            nn.ReLU(),
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Compute feature embedding.
+
+        Args:
+            x: Input tensor of shape (batch_size, input_dim).
+
+        Returns:
+            Feature tensor of shape (batch_size, latent_dim).
+        """
+        return self.net(x)
+
+
+class IRDHead(nn.Module):
+    """Head that converts encoded features into Dirichlet concentration parameters (alpha).
+
+    For multi-class classification, this head outputs K alpha values (one per class),
+    where alpha forms a K-dimensional Dirichlet distribution.
+    """
+
+    def __init__(self, latent_dim: int, num_classes: int) -> None:
+        """Initialize the Dirichlet head.
+
+        Args:
+            latent_dim: Dimension of input features from the encoder.
+            num_classes: Number of output classes (K in Dirichlet(a)).
+        """
+        super().__init__()
+        self.num_classes = num_classes
+        self.linear = nn.Linear(latent_dim, num_classes)
+
+    def forward(self, features: torch.Tensor) -> torch.Tensor:
+        """Convert features into Dirichlet concentration parameters (alpha).
+
+        Args:
+            features: Feature tensor (batch_size, latent_dim) from encoder.
+
+        Returns:
+            Alpha parameters of shape (batch_size, num_classes), all > 0.
+        """
+        # Linear projection to num_classes dimensions
+        logits = self.linear(features)
+
+        # Ensure alpha > 0 by applying softplus and adding small offset
+        # alpha = softplus(logits) + 1.0 ensures all values >= 1.0
+        alpha = F.softplus(logits) + 1.0
+
+        return alpha
