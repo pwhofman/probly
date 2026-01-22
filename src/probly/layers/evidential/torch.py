@@ -518,10 +518,16 @@ class GaussianHead(nn.Module):
 
 
 class FlattenMLPEncoder(nn.Module):
-    """Flatten + 2-layer MLP encoder producing a latent vector z."""
+    """Flatten + MLP encoder that maps an input tensor to a latent vector z."""
 
-    def __init__(self, input_dim: int = 1, hidden_dim: int = 64, latent_dim: int = 64) -> None:
-        """Initialize the Encoder."""
+    def __init__(self, input_dim: int = 784, hidden_dim: int = 256, latent_dim: int = 6) -> None:
+        """Initialize the encoder.
+
+        Args:
+            input_dim: number of input features after flattening.
+            hidden_dim: width of the hidden layer.
+            latent_dim: Dimension of the output latent representation.
+        """
         super().__init__()
         self.latent_dim = latent_dim
         self.net = nn.Sequential(
@@ -529,37 +535,18 @@ class FlattenMLPEncoder(nn.Module):
             nn.Linear(input_dim, hidden_dim),
             nn.ReLU(),
             nn.Linear(hidden_dim, latent_dim),
-            nn.ReLU(),
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Forward pass to compute latent vector z.
+        """Compute latent vector z.
 
         Args:
-            x: Input tensor of shape (B, ...)
+            x: Input tensor of shape (B, ...) where B is batch size
 
         Returns:
-            z: Latent tensor of shape (B, latent_dim).
+            Latent tensor of shape (B, latent_dim).
         """
         return self.net(x)
-
-
-class PostNetHead(nn.Module):
-    """Head that maps latent features to class-wise Dirichlet parameters."""
-
-    def __init__(self, latent_dim: int, num_classes: int) -> None:
-        """Initialize the the head."""
-        super().__init__()
-        self.linear = nn.Linear(latent_dim, num_classes)
-
-    def forward(self, z: torch.Tensor) -> torch.Tensor:
-        """Returns:
-        alpha: (B, num_classes) Dirichlet concentrations.
-        """  # noqa: D205
-        # Raw evidence -> positive Dirichlet parameters
-        logits = self.linear(z)
-        alpha = torch.nn.functional.softplus(logits) + 1.0  # shape [B, C]
-        return alpha
 
 
 # IRD
