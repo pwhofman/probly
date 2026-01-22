@@ -60,12 +60,19 @@ class JackknifeCVBase(ConformalPredictor):
         return np.asarray(x, dtype=float)
 
     def _get_cv_splitter(self, n_samples: int) -> Any:  # noqa: ANN401
+        """Return the cross-validation splitter."""
         if self.cv is None:
             return LeaveOneOut()
+
         if isinstance(self.cv, int):
             if self.cv == -1 or self.cv >= n_samples:
                 return LeaveOneOut()
+
+            if self.cv < 2:
+                msg = f"cv must be >= 2 (or -1 for LeaveOneOut), got {self.cv}"
+                raise ValueError(msg)
             return KFold(n_splits=self.cv, shuffle=True, random_state=self.random_state)
+
         if hasattr(self.cv, "split"):
             return self.cv
         msg = f"Unknown cv type: {type(self.cv)}"
@@ -77,6 +84,7 @@ class JackknifeCVBase(ConformalPredictor):
         splitter = self._get_cv_splitter(n_samples)
         assignments = np.full(n_samples, -1, dtype=int)
         fold_count = 0
+
         for fold_idx, (_, test_idx) in enumerate(splitter.split(x, y)):
             assignments[test_idx] = fold_idx
             fold_count = fold_idx + 1
@@ -275,7 +283,7 @@ class JackknifePlusClassifier(JackknifeCVBase, ConformalClassifier):
         prediction_sets = np.zeros((n_test, n_classes), dtype=bool)
         required_count = (1.0 - alpha) * (n_cal + 1)
         for calibration_index in range(n_classes):
-            calibration_label = self.classes[calibration_index]  # type: ignore[index]
+            calibration_label = self.classes[calibration_index]
             if self.score_func is not None:
                 flat_probs = probs_aligned.reshape(-1, n_classes)
                 flat_labels = np.full(flat_probs.shape[0], calibration_label)

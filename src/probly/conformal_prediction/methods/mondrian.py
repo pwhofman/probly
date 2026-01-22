@@ -24,8 +24,8 @@ from probly.conformal_prediction.scores.lac.common import accretive_completion
 from probly.conformal_prediction.utils.quantile import calculate_quantile
 
 # Group functions
-RegionFunc = Callable[[Sequence[Any]], npt.NDArray[np.int_]]
-ClassFunc = Callable[[Sequence[Any], Sequence[Any] | None], npt.NDArray[np.int_]]
+RegionFunc = Callable[[Sequence[Any]], npt.NDArray[np.int_] | Sequence[int]]
+ClassFunc = Callable[[Sequence[Any], Sequence[Any] | None], npt.NDArray[np.int_] | Sequence[int]]
 
 
 class GroupedConformalBase(ConformalPredictor):
@@ -37,18 +37,27 @@ class GroupedConformalBase(ConformalPredictor):
 
     score: Score
     group_func: ClassFunc
-    group_thresholds: dict[int, float]
 
-    def __init__(self, model: Predictor) -> None:
+    # thresholds per group
+    group_thresholds: dict[int, float | np.floating]
+    group_thresholds_lower: dict[int, float | np.floating]
+    group_thresholds_upper: dict[int, float | np.floating]
+    is_asymmetric: bool
+
+    def __init__(self, model: Predictor, group_func: ClassFunc) -> None:
         """Initialize base conformal predictor."""
         super().__init__(model=model)
+        self.group_func = group_func
         self.group_thresholds = {}
+        self.group_thresholds_lower = {}
+        self.group_thresholds_upper = {}
+        self.is_asymmetric = False
 
     @staticmethod
     def to_numpy(data: Any) -> npt.NDArray[np.floating]:  # noqa: ANN401
         """Convert tensor or array-like to numpy array."""
         if torch is not None and isinstance(data, Tensor):
-            return data.detach().cpu().numpy()
+            return cast("npt.NDArray[np.floating]", data.detach().cpu().numpy())
         return np.asarray(data, dtype=float)
 
     def calibrate(
@@ -123,12 +132,32 @@ class GroupedConformalBase(ConformalPredictor):
         if not self.group_thresholds:
             return np.full(n_samples, np.inf)
 
-        max_threshold = max(self.group_thresholds.values())
+        # fallback: use max threshold among calibrated groups
+        max_threshold = max(self.group_thresholds.values())  # type: ignore[type-var]
 
         for i, group_id in enumerate(group_ids_np):
             thresholds[i] = self.group_thresholds.get(int(group_id), max_threshold)
 
         return thresholds
+
+    def _get_thresholds_per_sample_asym(
+        self,
+        group_ids_np: npt.NDArray[np.int_],
+    ) -> tuple[npt.NDArray[np.floating], npt.NDArray[np.floating]]:
+        """Assign asymmetric thresholds (lower/upper) per sample."""
+        n_samples = group_ids_np.shape[0]
+        threshold_lower = np.empty(n_samples, dtype=float)
+        threshold_upper = np.empty(n_samples, dtype=float)
+
+        max_lower = max(self.group_thresholds_lower.values()) if self.group_thresholds_lower else np.inf  # type: ignore[type-var]
+        max_upper = max(self.group_thresholds_upper.values()) if self.group_thresholds_upper else np.inf  # type: ignore[type-var]
+
+        for i, group_id in enumerate(group_ids_np):
+            gid = int(group_id)
+            threshold_lower[i] = self.group_thresholds_lower.get(gid, max_lower)
+            threshold_upper[i] = self.group_thresholds_upper.get(gid, max_upper)
+
+        return threshold_lower, threshold_upper
 
 
 class MondrianConformalClassifier(GroupedConformalBase, ConformalClassifier):
@@ -144,16 +173,16 @@ class MondrianConformalClassifier(GroupedConformalBase, ConformalClassifier):
         use_accretive: bool = False,
     ) -> None:
         """Create Mondrian conformal predictor for classification."""
-        super().__init__(model=model)
+        # wrap region_func to match ClassFunc signature
+        super().__init__(model=model, group_func=lambda x, _y=None: region_func(x))
         self.score = score
         self.use_accretive = use_accretive
-        self.group_func = lambda x, _y=None: region_func(x)
 
     def predict(
         self,
         x_test: Sequence[Any],
         alpha: float,  # noqa: ARG002
-        probs: Any = None,  # noqa: ANN401
+        probs: npt.NDArray[np.floating] | None = None,
     ) -> npt.NDArray[np.bool_]:
         """Return Mondrian prediction sets."""
         if not self.is_calibrated or not self.group_thresholds:
@@ -180,20 +209,19 @@ class MondrianConformalClassifier(GroupedConformalBase, ConformalClassifier):
 
         if self.use_accretive:
             if probs is None:
-                probs = predict_probs(self.model, x_test)
-            probs_np = self.to_numpy(probs)
+                probs_raw: npt.NDArray[np.floating] = predict_probs(self.model, x_test)
+                probs_np = self.to_numpy(probs_raw)
+            else:
+                probs_np = probs
             prediction_sets = accretive_completion(prediction_sets, probs_np)
 
-        return prediction_sets
+        return prediction_sets.astype(bool)
 
 
 class MondrianConformalRegressor(GroupedConformalBase, ConformalRegressor):
     """Mondrian (region-wise) conformal predictor for regression."""
 
     score: RegressionScore
-    group_thresholds_lower: dict[int, float]
-    group_thresholds_upper: dict[int, float]
-    is_cqr: bool
 
     def __init__(
         self,
@@ -202,89 +230,8 @@ class MondrianConformalRegressor(GroupedConformalBase, ConformalRegressor):
         region_func: RegionFunc,
     ) -> None:
         """Create Mondrian conformal predictor for regression."""
-        super().__init__(model=model)
+        super().__init__(model=model, group_func=lambda x, _y=None: region_func(x))
         self.score = score
-        self.group_func = lambda x, _y=None: region_func(x)
-        self.group_thresholds_lower = {}
-        self.group_thresholds_upper = {}
-        self.is_asymmetric = False
-
-    def calibrate(
-        self,
-        x_cal: Sequence[Any],
-        y_cal: Sequence[Any],
-        alpha: float,
-    ) -> float:
-        """Calibrate thresholds per region."""
-        nonconformity_scores = self.score.calibration_nonconformity(x_cal, y_cal)
-        scores_np = self.to_numpy(nonconformity_scores)
-
-        regions = self.group_func(x_cal, y_cal)
-        regions_np = np.asarray(regions, dtype=int)
-
-        if regions_np.shape[0] != scores_np.shape[0]:
-            msg = "Region ids and scores must have same length."
-            raise ValueError(msg)
-
-        # determine if symmetric or asymmetric thresholds
-        if scores_np.ndim == 1 or (scores_np.ndim == 2 and scores_np.shape[1] == 1):
-            # standard: one threshold per region (symmetric)
-            self.is_asymmetric = False
-            scores_flat = scores_np.flatten()
-            self.group_thresholds = {}
-            unique_regions = np.unique(regions_np)
-
-            for region_id in unique_regions:
-                region_mask = regions_np == region_id
-                scores_in_region = scores_flat[region_mask]
-
-                if scores_in_region.size > 0:
-                    self.group_thresholds[int(region_id)] = calculate_quantile(scores_in_region, alpha)
-
-        elif scores_np.ndim == 2 and scores_np.shape[1] == 2:
-            # asymmetric: two thresholds per region (CQR)
-            self.is_asymmetric = True
-            self.group_thresholds_lower = {}
-            self.group_thresholds_upper = {}
-
-            unique_regions = np.unique(regions_np)
-            alpha_lower = alpha / 2
-            alpha_upper = 1 - alpha / 2
-
-            for region_id in unique_regions:
-                region_mask = regions_np == region_id
-
-                scores_lower = scores_np[region_mask, 0]
-                scores_upper = scores_np[region_mask, 1]
-
-                if scores_lower.size > 0:
-                    self.group_thresholds_lower[int(region_id)] = calculate_quantile(scores_lower, alpha_lower)
-                    self.group_thresholds_upper[int(region_id)] = calculate_quantile(scores_upper, alpha_upper)
-        else:
-            msg = f"Score shape {scores_np.shape} not supported."
-            raise ValueError(msg)
-
-        self.is_calibrated = True
-        return alpha
-
-    def _get_thresholds_per_sample_asym(
-        self,
-        region_ids_np: npt.NDArray[np.int_],
-    ) -> tuple[npt.NDArray[np.floating], npt.NDArray[np.floating]]:
-        """Assign asymmetric thresholds (lower/upper) per sample."""
-        n_samples = region_ids_np.shape[0]
-        threshold_lower = np.empty(n_samples, dtype=float)
-        threshold_upper = np.empty(n_samples, dtype=float)
-
-        max_lower = max(self.group_thresholds_lower.values()) if self.group_thresholds_lower else np.inf
-        max_upper = max(self.group_thresholds_upper.values()) if self.group_thresholds_upper else np.inf
-
-        for i, region_id in enumerate(region_ids_np):
-            region_id_int = int(region_id)
-            threshold_lower[i] = self.group_thresholds_lower.get(region_id_int, max_lower)
-            threshold_upper[i] = self.group_thresholds_upper.get(region_id_int, max_upper)
-
-        return threshold_lower, threshold_upper
 
     def predict(
         self,
@@ -299,13 +246,13 @@ class MondrianConformalRegressor(GroupedConformalBase, ConformalRegressor):
         y_hat = self.model(x_test)
         y_hat_np = self.to_numpy(y_hat)
 
+        region_ids = self.group_func(x_test, None)
+        region_ids_np = np.asarray(region_ids, dtype=int)
+
         if self.is_asymmetric:
             if y_hat_np.ndim != 2 or y_hat_np.shape[1] != 2:
                 msg = "Asymmetric intervals expect model output shape (N, 2)."
                 raise ValueError(msg)
-
-            region_ids = self.group_func(x_test, None)
-            region_ids_np = np.asarray(region_ids, dtype=int)
 
             if not self.group_thresholds_lower or not self.group_thresholds_upper:
                 msg = "Asymmetric thresholds not calibrated."
@@ -317,9 +264,6 @@ class MondrianConformalRegressor(GroupedConformalBase, ConformalRegressor):
             upper = y_hat_np[:, 1] + threshold_upper
         else:
             y_hat_flat = y_hat_np.flatten()
-
-            region_ids = self.group_func(x_test, None)
-            region_ids_np = np.asarray(region_ids, dtype=int)
 
             if not self.group_thresholds:
                 msg = "Standard threshold is not calibrated."
