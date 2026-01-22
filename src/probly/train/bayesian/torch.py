@@ -31,7 +31,9 @@ def kl_divergence_traverser(
 def collect_kl_divergence(model: Predictor) -> torch.Tensor:
     """Collect the KL divergence of the Bayesian model by summing the KL divergence of each Bayesian layer."""
     _, state = traverse_with_state(
-        model, nn_compose(kl_divergence_traverser), init={KL_DIVERGENCE: torch.Tensor([0.0])}
+        model,
+        nn_compose(kl_divergence_traverser),
+        init={KL_DIVERGENCE: 0.0},
     )
     return state[KL_DIVERGENCE]
 
