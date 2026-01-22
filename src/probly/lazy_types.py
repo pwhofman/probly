@@ -9,4 +9,3 @@ FLAX_MODULE = "flax.nnx.module.Module"
 JAX_ARRAY = "jax.Array"
 
 SKLEARN_MODULE = "sklearn.base.BaseEstimator"
-SKLEARN_ARRAY = "numpy.ndarray"
