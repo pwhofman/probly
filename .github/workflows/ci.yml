@@ -148,10 +148,14 @@ jobs:
                uv run ruff check .
                uv run ruff format --check .
 
+        -   name: Install dependencies (for ty)
+            run: |
+                uv sync --only-group all_ml
+
         -   name: Run ty Static Type Check
             run: |
-               uv run ty check --force-exclude
+                uv run ty check --force-exclude
 
         -   name: Execute Unit Tests and Measure Coverage
             run: |
-               uv run pytest --cov=src/probly --cov-report=xml
+                uv run pytest --cov=src/probly --cov-report=xml
