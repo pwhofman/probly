@@ -5,7 +5,7 @@ from __future__ import annotations
 import torch
 from torch import nn
 
-from probly.layers.evidential.torch import EncoderMnist, EvidentialHead, MLPEncoder, RadialFlowDensity, SimpleHead
+import probly.layers.evidential.torch as t
 
 
 class NatPN(nn.Module):
@@ -25,7 +25,7 @@ class NatPN(nn.Module):
         self.encoder = encoder
         self.head = head
 
-        self.flow = RadialFlowDensity(
+        self.flow = t.RadialFlowDensity(
             dim=latent_dim,
             flow_length=flow_length,
         )
@@ -152,10 +152,10 @@ class SimpleCNN(nn.Module):
         super().__init__()
 
         if encoder is None:
-            encoder = EncoderMnist(latent_dim=latent_dim)
+            encoder = t.EncoderMnist(latent_dim=latent_dim)
 
         if head is None:
-            head = SimpleHead(latent_dim=latent_dim, num_classes=num_classes)
+            head = t.SimpleHead(latent_dim=latent_dim, num_classes=num_classes)
 
         self.encoder = encoder
         self.head = head
@@ -172,12 +172,59 @@ class EvidentialRegressionModel(nn.Module):
         """Initialize the full model."""
         super().__init__()
         if encoder is None:
-            encoder = MLPEncoder(feature_dim=32)
+            encoder = t.MLPEncoder(feature_dim=32)
 
         self.encoder = encoder
-        self.head = EvidentialHead(feature_dim=encoder.feature_dim)
+        self.head = t.EvidentialHead(feature_dim=encoder.feature_dim)
 
     def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         """Forward pass through encoder and head."""
         features = self.encoder(x)
         return self.head(features)
+
+
+class PostNetModel(nn.Module):
+    """Posterior Network model: encoder + Dirichlet head.
+
+    Returns latent z.
+    Flow stays external and is used only in postnet_loss.
+    """
+
+    def __init__(
+        self,
+        encoder: nn.Module | None = None,
+        num_classes: int = 10,
+        latent_dim: int = 32,
+        head: nn.Module | None = None,
+        input_dim: int | None = None,
+    ) -> None:
+        """Encoder + head for PostNet."""
+        super().__init__()
+
+        # Default encoder if none provided (like EvidentialRegressionModel)
+        if encoder is None:
+            if input_dim is None:
+                msg = "PostNetModel: either provide encoder or input_dim."
+                raise ValueError(msg)
+            encoder = t.FlattenMLPEncoder(input_dim=input_dim, hidden_dim=64, latent_dim=latent_dim)
+
+        if not hasattr(encoder, "latent_dim"):
+            msg = "Encoder must define `latent_dim`."
+            raise ValueError(msg)
+
+        self.encoder = encoder
+        self.latent_dim = encoder.latent_dim
+        self.num_classes = num_classes
+
+        # Default head if none provided
+        if head is None:
+            head = t.PostNetHead(latent_dim=self.latent_dim, num_classes=num_classes)
+        self.head = head
+
+    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        """Return latent z.
+
+        z: [B, latent_dim] → goes to flow.log_prob(z)
+        """
+        z = self.encoder(x)
+        return z
