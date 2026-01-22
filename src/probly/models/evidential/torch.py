@@ -122,53 +122,6 @@ class EvidentialRegressionModel(nn.Module):
         return self.head(features)
 
 
-class PostNetModel(nn.Module):
-    """Posterior Network model: encoder + Dirichlet head.
-
-    Returns latent z.
-    Flow stays external and is used only in postnet_loss.
-    """
-
-    def __init__(
-        self,
-        encoder: nn.Module | None = None,
-        num_classes: int = 10,
-        latent_dim: int = 32,
-        head: nn.Module | None = None,
-        input_dim: int | None = None,
-    ) -> None:
-        """Encoder + head for PostNet."""
-        super().__init__()
-
-        # Default encoder if none provided (like EvidentialRegressionModel)
-        if encoder is None:
-            if input_dim is None:
-                msg = "PostNetModel: either provide encoder or input_dim."
-                raise ValueError(msg)
-            encoder = t.FlattenMLPEncoder(input_dim=input_dim, hidden_dim=64, latent_dim=latent_dim)
-
-        if not hasattr(encoder, "latent_dim"):
-            msg = "Encoder must define `latent_dim`."
-            raise ValueError(msg)
-
-        self.encoder = encoder
-        self.latent_dim = encoder.latent_dim
-        self.num_classes = num_classes
-
-        # Default head if none provided
-        if head is None:
-            head = t.PostNetHead(latent_dim=self.latent_dim, num_classes=num_classes)
-        self.head = head
-
-    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        """Return latent z.
-
-        z: [B, latent_dim] → goes to flow.log_prob(z)
-        """
-        z = self.encoder(x)
-        return z
-
-
 class DirichletClassificationModel(nn.Module):
     """Full model combining encoder and Dirichlet head for evidential classification.
 
@@ -211,3 +164,38 @@ class DirichletClassificationModel(nn.Module):
         features = self.encoder(x)
         alpha = self.head(features)
         return alpha
+
+
+class PostNetModel(nn.Module):
+    """Posterior Network model containing encoder + flow."""
+
+    def __init__(
+        self,
+        encoder: nn.Module | None = None,
+        flow: nn.Module | None = None,
+        input_dim: int = 784,
+        hidden_dim: int = 256,
+        latent_dim: int = 6,
+    ) -> None:
+        """Initialize a Posterior Network model."""
+        super().__init__()
+
+        if encoder is None:
+            encoder = t.FlattenMLPEncoder(input_dim=input_dim, hidden_dim=hidden_dim, latent_dim=latent_dim)
+
+        if flow is None:
+            flow = t.BatchedRadialFlowDensity(num_classes=10, dim=latent_dim, flow_length=6)
+
+        self.encoder = encoder
+        self.flow = flow
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Encode inputs into latent representations.
+
+        Args:
+            x: Input tensor of shape (B, ...) where B is batch size.
+
+        Returns:
+            Latent tensor z of shape (B, latent_dim).
+        """
+        return self.encoder(x)

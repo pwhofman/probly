@@ -21,7 +21,6 @@ def unified_evidential_train(
     dataloader: DataLoader,
     loss_fn: Callable[..., torch.Tensor] | None = None,
     oodloader: DataLoader | None = None,
-    flow: nn.Module | None = None,
     class_count: torch.Tensor | None = None,
     epochs: int = 5,
     lr: float = 1e-3,
@@ -48,9 +47,6 @@ def unified_evidential_train(
             Pytorch.Dataloader providing the Out-Of-Distributtion training samples and corresponding labels.
             This is only required for certain modes such as "PrNet"
 
-        flow:
-            Optional normalizing flow module used by posterior network-based methods like "PostNet"
-
         class_count:
             Tensor containing the number of samples per class.
 
@@ -70,25 +66,17 @@ def unified_evidential_train(
         But prints the total-losses per Epoch.
     """
     model = model.to(device)  # moves the model to the correct device (GPU or CPU)
-    if flow is not None:
-        flow = flow.to(device)
 
     if mode == "PostNet":
-        if flow is None:
+        if not hasattr(model, "flow"):
             msg = "PostNet mode requires a flow module."
             raise ValueError(msg)
-        optimizer = torch.optim.Adam(
-            list(model.parameters()) + list(flow.parameters()),
-            lr=lr,
-        )
-    else:
+
         optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
     # repeats the training function for a defined number of epochs
     for epoch in range(epochs):
         model.train()  # call of train important for models like dropout
-        if flow is not None and mode == "PostNet":
-            flow.train()
         total_loss = 0.0  # track total_loss to calculate average loss per epoch
 
         for x_raw, y_raw in dataloader:
@@ -107,7 +95,6 @@ def unified_evidential_train(
                 y=y,
                 device=torch.device(device),
                 oodloader=oodloader,
-                flow=flow,
                 class_count=class_count,
             )  # computes the loss based on the selected mode
 
@@ -131,7 +118,6 @@ def compute_loss(
     _y: torch.Tensor,
     _device: torch.device,
     _oodloader: DataLoader | None = None,
-    _flow: nn.Module | None = None,
     _class_count: torch.Tensor | None = None,
 ) -> torch.Tensor:
     """Dispatch function for computing the loss based on the selected mode via switchdispatch."""
@@ -146,10 +132,11 @@ def _postnet_loss(
     y: torch.Tensor,
     outputs: torch.Tensor,
     loss_fn: Callable[..., torch.Tensor],
-    flow: nn.Module,
+    model: nn.Module,
     class_count: torch.Tensor | None = None,
     **_: dict[str, Any],
 ) -> torch.Tensor:
+    flow = model.flow
     loss, _ = loss_fn(outputs, y, flow, class_count)
     return loss
 
