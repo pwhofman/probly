@@ -167,3 +167,47 @@ class PostNetModel(nn.Module):
         """
         z = self.encoder(x)
         return z
+
+
+class DirichletClassificationModel(nn.Module):
+    """Full model combining encoder and Dirichlet head for evidential classification.
+
+    This model learns to output Dirichlet concentration parameters (alpha)
+    for each input, enabling uncertainty quantification via the Dirichlet distribution.
+    """
+
+    def __init__(
+        self,
+        input_dim: int,
+        num_classes: int,
+        hidden_dim: int = 128,
+        latent_dim: int = 128,
+    ) -> None:
+        """Initialize the full Dirichlet classification model.
+
+        Args:
+            input_dim: Size of input features (flattened).
+            num_classes: Number of output classes.
+            hidden_dim: Hidden dimension for encoder (default: 128).
+            latent_dim: Latent dimension for encoder (default: 128).
+        """
+        super().__init__()
+        self.encoder = t.DirichletMLPEncoder(
+            input_dim=input_dim,
+            hidden_dim=hidden_dim,
+            latent_dim=latent_dim,
+        )
+        self.head = t.IRDHead(latent_dim=latent_dim, num_classes=num_classes)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Forward pass through encoder and head.
+
+        Args:
+            x: Input tensor of shape (batch_size, input_dim).
+
+        Returns:
+            Alpha parameters of shape (batch_size, num_classes).
+        """
+        features = self.encoder(x)
+        alpha = self.head(features)
+        return alpha
