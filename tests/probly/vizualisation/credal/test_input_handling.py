@@ -10,7 +10,7 @@ import pytest
 # Use a non-interactive backend so tests do not open GUI windows.
 mpl.use("Agg")
 
-from probly.visualization.credalviz.input_handling import (
+from probly.visualization.credal.input_handling import (
     check_num_classes,
     check_shape,
     dispatch_plot,

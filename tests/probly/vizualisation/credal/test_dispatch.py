@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 
 mpl.use("Agg")
-from probly.visualization.credalviz.input_handling import (
+from probly.visualization.credal.input_handling import (
     IntervalVisualizer,
     MultiVisualizer,
     TernaryVisualizer,
@@ -59,21 +59,21 @@ def test_checks_delegation_to_correct_visualizer() -> None:
             assert ax == return_value
 
     _create_mock_class_to_check_delegation(
-        "probly.visualization.credalviz.input_handling.IntervalVisualizer",
+        "probly.visualization.credal.input_handling.IntervalVisualizer",
         "interval_plot",
         "interval_ax",
         data2d,
     )
 
     _create_mock_class_to_check_delegation(
-        "probly.visualization.credalviz.input_handling.TernaryVisualizer",
+        "probly.visualization.credal.input_handling.TernaryVisualizer",
         "ternary_plot",
         "ternary_ax",
         data3d,
     )
 
     _create_mock_class_to_check_delegation(
-        "probly.visualization.credalviz.input_handling.MultiVisualizer",
+        "probly.visualization.credal.input_handling.MultiVisualizer",
         "spider_plot",
         "multi_ax",
         data4d,
@@ -97,20 +97,20 @@ def test_dispatch_default_labels() -> None:
             assert label_arg["labels"] == labels
 
     _create_mock_class_to_check_labels_default(
-        "probly.visualization.credalviz.input_handling.IntervalVisualizer",
+        "probly.visualization.credal.input_handling.IntervalVisualizer",
         "interval_plot",
         data2d,
         ["C1", "C2"],
     )
 
     _create_mock_class_to_check_labels_default(
-        "probly.visualization.credalviz.input_handling.TernaryVisualizer",
+        "probly.visualization.credal.input_handling.TernaryVisualizer",
         "ternary_plot",
         data3d,
         ["C1", "C2", "C3"],
     )
     _create_mock_class_to_check_labels_default(
-        "probly.visualization.credalviz.input_handling.MultiVisualizer",
+        "probly.visualization.credal.input_handling.MultiVisualizer",
         "spider_plot",
         data4d,
         ["C1", "C2", "C3", "C4"],
@@ -134,20 +134,20 @@ def test_dispatch_custom_labels() -> None:
             assert label_arg["labels"] is labels
 
     _create_mock_class_to_check_labels_custom(
-        "probly.visualization.credalviz.input_handling.IntervalVisualizer",
+        "probly.visualization.credal.input_handling.IntervalVisualizer",
         "interval_plot",
         data2d,
         ["Class A", "Class B"],
     )
 
     _create_mock_class_to_check_labels_custom(
-        "probly.visualization.credalviz.input_handling.TernaryVisualizer",
+        "probly.visualization.credal.input_handling.TernaryVisualizer",
         "ternary_plot",
         data3d,
         ["Class A", "Class B", "Class C"],
     )
     _create_mock_class_to_check_labels_custom(
-        "probly.visualization.credalviz.input_handling.MultiVisualizer",
+        "probly.visualization.credal.input_handling.MultiVisualizer",
         "spider_plot",
         data4d,
         ["Class A", "Class B", "Class C", "Class D"],
@@ -181,20 +181,20 @@ def test_dispatch_default_title() -> None:
             assert title_arg["title"] == title
 
     _create_mock_class_to_check_title_default(
-        "probly.visualization.credalviz.input_handling.IntervalVisualizer",
+        "probly.visualization.credal.input_handling.IntervalVisualizer",
         "interval_plot",
         data2d,
         "Credal Plot (2 Classes)",
     )
 
     _create_mock_class_to_check_title_default(
-        "probly.visualization.credalviz.input_handling.TernaryVisualizer",
+        "probly.visualization.credal.input_handling.TernaryVisualizer",
         "ternary_plot",
         data3d,
         "Credal Plot (3 Classes)",
     )
     _create_mock_class_to_check_title_default(
-        "probly.visualization.credalviz.input_handling.MultiVisualizer",
+        "probly.visualization.credal.input_handling.MultiVisualizer",
         "spider_plot",
         data4d,
         "Credal Plot (4 Classes)",
@@ -218,20 +218,20 @@ def test_dispatch_custom_title() -> None:
             assert title_arg["title"] is title
 
     _create_mock_class_to_check_title_custom(
-        "probly.visualization.credalviz.input_handling.IntervalVisualizer",
+        "probly.visualization.credal.input_handling.IntervalVisualizer",
         "interval_plot",
         data2d,
         "Interval Plot",
     )
 
     _create_mock_class_to_check_title_custom(
-        "probly.visualization.credalviz.input_handling.TernaryVisualizer",
+        "probly.visualization.credal.input_handling.TernaryVisualizer",
         "ternary_plot",
         data3d,
         "Ternary Plot",
     )
     _create_mock_class_to_check_title_custom(
-        "probly.visualization.credalviz.input_handling.MultiVisualizer",
+        "probly.visualization.credal.input_handling.MultiVisualizer",
         "spider_plot",
         data4d,
         "Spider Plot",
@@ -251,19 +251,19 @@ def test_dispatch_choice_none() -> None:
             assert choice_args["credal_flag"] is True
 
     _create_mock_class_to_check_choice_none(
-        "probly.visualization.credalviz.input_handling.IntervalVisualizer",
+        "probly.visualization.credal.input_handling.IntervalVisualizer",
         "interval_plot",
         data2d,
     )
 
     _create_mock_class_to_check_choice_none(
-        "probly.visualization.credalviz.input_handling.TernaryVisualizer",
+        "probly.visualization.credal.input_handling.TernaryVisualizer",
         "ternary_plot",
         data3d,
     )
 
     _create_mock_class_to_check_choice_none(
-        "probly.visualization.credalviz.input_handling.MultiVisualizer",
+        "probly.visualization.credal.input_handling.MultiVisualizer",
         "spider_plot",
         data4d,
     )
@@ -282,19 +282,19 @@ def test_dispatch_choice_mle() -> None:
             assert choice_args["credal_flag"] is False
 
     _create_mock_class_to_check_choice_mle(
-        "probly.visualization.credalviz.input_handling.IntervalVisualizer",
+        "probly.visualization.credal.input_handling.IntervalVisualizer",
         "interval_plot",
         data2d,
     )
 
     _create_mock_class_to_check_choice_mle(
-        "probly.visualization.credalviz.input_handling.TernaryVisualizer",
+        "probly.visualization.credal.input_handling.TernaryVisualizer",
         "ternary_plot",
         data3d,
     )
 
     _create_mock_class_to_check_choice_mle(
-        "probly.visualization.credalviz.input_handling.MultiVisualizer",
+        "probly.visualization.credal.input_handling.MultiVisualizer",
         "spider_plot",
         data4d,
     )
@@ -313,19 +313,19 @@ def test_dispatch_choice_credal() -> None:
             assert choice_args["credal_flag"] is True
 
     _create_mock_class_to_check_choice_credal(
-        "probly.visualization.credalviz.input_handling.IntervalVisualizer",
+        "probly.visualization.credal.input_handling.IntervalVisualizer",
         "interval_plot",
         data2d,
     )
 
     _create_mock_class_to_check_choice_credal(
-        "probly.visualization.credalviz.input_handling.TernaryVisualizer",
+        "probly.visualization.credal.input_handling.TernaryVisualizer",
         "ternary_plot",
         data3d,
     )
 
     _create_mock_class_to_check_choice_credal(
-        "probly.visualization.credalviz.input_handling.MultiVisualizer",
+        "probly.visualization.credal.input_handling.MultiVisualizer",
         "spider_plot",
         data4d,
     )
@@ -344,19 +344,19 @@ def test_dispatch_choice_probability() -> None:
             assert choice_args["credal_flag"] is False
 
     _create_mock_class_to_check_choice_probability(
-        "probly.visualization.credalviz.input_handling.IntervalVisualizer",
+        "probly.visualization.credal.input_handling.IntervalVisualizer",
         "interval_plot",
         data2d,
     )
 
     _create_mock_class_to_check_choice_probability(
-        "probly.visualization.credalviz.input_handling.TernaryVisualizer",
+        "probly.visualization.credal.input_handling.TernaryVisualizer",
         "ternary_plot",
         data3d,
     )
 
     _create_mock_class_to_check_choice_probability(
-        "probly.visualization.credalviz.input_handling.MultiVisualizer",
+        "probly.visualization.credal.input_handling.MultiVisualizer",
         "spider_plot",
         data4d,
     )
@@ -374,7 +374,7 @@ def test_dispatch_choice_wrong_input() -> None:
 
 def test_dispatch_minmax_none() -> None:
     """Tests the behaviour of minmax, when minmax is None."""
-    with patch("probly.visualization.credalviz.input_handling.TernaryVisualizer") as mock_class:
+    with patch("probly.visualization.credal.input_handling.TernaryVisualizer") as mock_class:
         mock_instance = mock_class.return_value
         dispatch_plot(data3d, minmax=None)
         _, minmax_args = mock_instance.ternary_plot.call_args
@@ -383,7 +383,7 @@ def test_dispatch_minmax_none() -> None:
 
 def test_dispatch_minmax_true_credal_false() -> None:
     """Tests the behaviour of minmax, when minmax is True, but credal_flag is False."""
-    with patch("probly.visualization.credalviz.input_handling.TernaryVisualizer") as mock_class:
+    with patch("probly.visualization.credal.input_handling.TernaryVisualizer") as mock_class:
         mock_instance = mock_class.return_value
         dispatch_plot(data3d, choice="MLE", minmax=True)
         _, minmax_args = mock_instance.ternary_plot.call_args
@@ -392,7 +392,7 @@ def test_dispatch_minmax_true_credal_false() -> None:
 
 def test_dispatch_minmax_true_credal_true() -> None:
     """Tests the behaviour of minmax, when minmax is True and credal_flag is True."""
-    with patch("probly.visualization.credalviz.input_handling.TernaryVisualizer") as mock_class:
+    with patch("probly.visualization.credal.input_handling.TernaryVisualizer") as mock_class:
         mock_instance = mock_class.return_value
         dispatch_plot(data3d, choice="Credal", minmax=True)
         _, minmax_args = mock_instance.ternary_plot.call_args

@@ -11,8 +11,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
-from probly.visualization.credalviz.credal_visualization import create_credal_plot
-from probly.visualization.credalviz.plot_multid import MultiVisualizer
+from probly.visualization.credal.credal_visualization import create_credal_plot
+from probly.visualization.credal.plot_multid import MultiVisualizer
 
 
 def _spider(

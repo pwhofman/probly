@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 import matplotlib.pyplot as plt
 import numpy as np
 
-from probly.visualization.efficiencyviz.plot_coverage_efficiency import CoverageEfficiencyVisualizer
+from probly.visualization.efficiency.plot_coverage_efficiency import CoverageEfficiencyVisualizer
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes

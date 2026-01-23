@@ -5,7 +5,7 @@ from __future__ import annotations
 from matplotlib import pyplot as plt
 import numpy as np
 
-from probly.visualization.dirichletviz.plot_dirichlet import TernaryVisualizer
+from probly.visualization.dirichlet.plot_dirichlet import TernaryVisualizer
 
 
 def create_dirichlet_plot(
