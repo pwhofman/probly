@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
-from probly.visualization.credalviz.plot_3d import TernaryVisualizer
+from probly.visualization.credal.plot_3d import TernaryVisualizer
 
 
 def _legend_labels(ax: plt.Axes) -> list[str]:

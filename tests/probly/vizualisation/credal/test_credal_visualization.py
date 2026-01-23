@@ -11,8 +11,8 @@ import pytest
 
 mpl.use("Agg")
 
-import probly.visualization.credalviz.credal_visualization as credalviz
-from probly.visualization.credalviz.credal_visualization import create_credal_plot
+import probly.visualization.credal.credal_visualization as credalviz
+from probly.visualization.credal.credal_visualization import create_credal_plot
 
 data2d = np.array(
     [
@@ -57,21 +57,21 @@ def test_checks_delegation_to_correct_visualizer() -> None:
             assert ax == return_value
 
     _create_mock_class(
-        "probly.visualization.credalviz.input_handling.IntervalVisualizer",
+        "probly.visualization.credal.input_handling.IntervalVisualizer",
         "interval_plot",
         "interval_ax",
         data2d,
     )
 
     _create_mock_class(
-        "probly.visualization.credalviz.input_handling.TernaryVisualizer",
+        "probly.visualization.credal.input_handling.TernaryVisualizer",
         "ternary_plot",
         "ternary_ax",
         data3d,
     )
 
     _create_mock_class(
-        "probly.visualization.credalviz.input_handling.MultiVisualizer",
+        "probly.visualization.credal.input_handling.MultiVisualizer",
         "spider_plot",
         "multi_ax",
         data4d,

@@ -10,7 +10,7 @@ from typing import cast
 import matplotlib.pyplot as plt
 import numpy as np
 
-from probly.visualization.credalviz.credal_visualization import create_credal_plot
+from probly.visualization.credal.credal_visualization import create_credal_plot
 
 
 def _assert_plot_created(ax: plt.Axes | None) -> None:

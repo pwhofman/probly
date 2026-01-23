@@ -9,9 +9,9 @@ import numpy as np
 if TYPE_CHECKING:
     import matplotlib.pyplot as plt
 
-from probly.visualization.credalviz.plot_2d import IntervalVisualizer
-from probly.visualization.credalviz.plot_3d import TernaryVisualizer
-from probly.visualization.credalviz.plot_multid import MultiVisualizer
+from probly.visualization.credal.plot_2d import IntervalVisualizer
+from probly.visualization.credal.plot_3d import TernaryVisualizer
+from probly.visualization.credal.plot_multid import MultiVisualizer
 
 
 def check_num_classes(input_data: np.ndarray) -> int:

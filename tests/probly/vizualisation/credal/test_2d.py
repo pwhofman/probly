@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
-from probly.visualization.credalviz.plot_2d import IntervalVisualizer
+from probly.visualization.credal.plot_2d import IntervalVisualizer
 
 
 def _legend_labels(ax: plt.Axes) -> list[str]:

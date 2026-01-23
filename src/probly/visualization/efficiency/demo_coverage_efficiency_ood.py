@@ -5,7 +5,7 @@ from __future__ import annotations
 import matplotlib.pyplot as plt
 import numpy as np
 
-from probly.visualization.efficiencyviz.coverage_efficiency_ood import plot_coverage_efficiency_from_ood_labels
+from probly.visualization.efficiency.coverage_efficiency_ood import plot_coverage_efficiency_from_ood_labels
 
 
 def main() -> None:

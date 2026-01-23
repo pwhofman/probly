@@ -1,4 +1,4 @@
-"""Tests main API for clusterviz."""
+"""Tests main API for clustermargin."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
-from probly.visualization.clusterviz.clustervisualizer import plot_uncertainty
+from probly.visualization.clustermargin.clustervisualizer import plot_uncertainty
 
 # Use a non-interactive backend so tests do not open GUI windows.
 mpl.use("Agg")
