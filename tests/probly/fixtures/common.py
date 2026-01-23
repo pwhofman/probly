@@ -15,4 +15,7 @@ def dummy_predictor() -> Predictor:
         def __call__(self, x: float) -> float:
             return x
 
+        def predict(self, x: float) -> float:
+            return self.__call__(x)
+
     return DummyPredictor()
