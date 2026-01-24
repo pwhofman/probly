@@ -27,3 +27,4 @@ repos:
         pass_filenames: false
         args: [ --python=.venv/ ]
         additional_dependencies: [ ty ]
+        stages: [pre-commit] # make sure it runs only during pre-commit for now
