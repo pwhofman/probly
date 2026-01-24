@@ -1,3 +1,5 @@
+"""Integration tests to check front to end functionality."""
+
 from __future__ import annotations
 
 import matplotlib as mpl
