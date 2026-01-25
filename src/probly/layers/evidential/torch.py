@@ -458,38 +458,6 @@ class GaussianHead(nn.Module):
         }
 
 
-class FlattenMLPEncoder(nn.Module):
-    """Flatten + MLP encoder that maps an input tensor to a latent vector z."""
-
-    def __init__(self, input_dim: int = 784, hidden_dim: int = 256, latent_dim: int = 6) -> None:
-        """Initialize the encoder.
-
-        Args:
-            input_dim: number of input features after flattening.
-            hidden_dim: width of the hidden layer.
-            latent_dim: Dimension of the output latent representation.
-        """
-        super().__init__()
-        self.latent_dim = latent_dim
-        self.net = nn.Sequential(
-            nn.Flatten(start_dim=1),
-            nn.Linear(input_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Linear(hidden_dim, latent_dim),
-        )
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Compute latent vector z.
-
-        Args:
-            x: Input tensor of shape (B, ...) where B is batch size
-
-        Returns:
-            Latent tensor of shape (B, latent_dim).
-        """
-        return self.net(x)
-
-
 class IRDHead(nn.Module):
     """Head that converts encoded features into Dirichlet concentration parameters (alpha).
 

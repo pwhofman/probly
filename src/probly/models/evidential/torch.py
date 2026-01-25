@@ -174,15 +174,10 @@ class PostNetModel(nn.Module):
         self,
         encoder: nn.Module | None = None,
         flow: nn.Module | None = None,
-        input_dim: int = 784,
-        hidden_dim: int = 256,
         latent_dim: int = 6,
     ) -> None:
         """Initialize a Posterior Network model."""
         super().__init__()
-
-        if encoder is None:
-            encoder = t.FlattenMLPEncoder(input_dim=input_dim, hidden_dim=hidden_dim, latent_dim=latent_dim)
 
         if flow is None:
             flow = t.BatchedRadialFlowDensity(num_classes=10, dim=latent_dim, flow_length=6)
