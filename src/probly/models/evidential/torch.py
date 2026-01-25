@@ -90,9 +90,6 @@ class SimpleCNN(nn.Module):
     ) -> None:
         super().__init__()
 
-        if encoder is None:
-            encoder = t.EncoderMnist(latent_dim=latent_dim)
-
         if head is None:
             head = t.SimpleHead(latent_dim=latent_dim, num_classes=num_classes)
 

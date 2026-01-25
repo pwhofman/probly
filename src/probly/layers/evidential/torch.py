@@ -237,30 +237,6 @@ class SimpleHead(nn.Module):
         return F.softplus(self.net(z))
 
 
-class EncoderMnist(nn.Module):
-    """Simple encoder mapping MNIST images to a low-dimensional latent vector z."""
-
-    def __init__(self, input_dim: int = 784, hidden_dim: int = 256, latent_dim: int = 2) -> None:  # noqa: D107
-        super().__init__()
-        self.net = nn.Sequential(
-            nn.Flatten(),  # [B, 1, 28, 28] -> [B, 784]
-            nn.Linear(input_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Linear(hidden_dim, latent_dim),  # [B, latent_dim]
-        )
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Encode a batch of images into latent vectors z.
-
-        Args:
-            x: Tensor of shape [B, 1, 28, 28].
-
-        Returns:
-            z: Tensor of shape [B, latent_dim].
-        """
-        return self.net(x)
-
-
 class RadialFlowDensity(nn.Module):
     """Normalizing flow density p(z) using a stack of radial flows."""
 

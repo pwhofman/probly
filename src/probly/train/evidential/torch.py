@@ -67,12 +67,11 @@ def unified_evidential_train(
     """
     model = model.to(device)  # moves the model to the correct device (GPU or CPU)
 
-    if mode == "PostNet":
-        if not hasattr(model, "flow"):
-            msg = "PostNet mode requires a flow module."
-            raise ValueError(msg)
+    if mode == "PostNet" and not hasattr(model, "flow"):
+        msg = "PostNet mode requires a flow module."
+        raise ValueError(msg)
 
-        optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
     # repeats the training function for a defined number of epochs
     for epoch in range(epochs):
