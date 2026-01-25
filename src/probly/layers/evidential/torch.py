@@ -490,51 +490,6 @@ class FlattenMLPEncoder(nn.Module):
         return self.net(x)
 
 
-# IRD
-class DirichletMLPEncoder(nn.Module):
-    """Simple MLP encoder for transforming inputs into feature embeddings.
-
-    This module contains no evidential logic, only feature extraction.
-    """
-
-    def __init__(
-        self,
-        input_dim: int,
-        hidden_dim: int = 128,
-        latent_dim: int = 128,
-    ) -> None:
-        """Initialize the MLP encoder.
-
-        Args:
-            input_dim: Size of input features (flattened or 1D).
-            hidden_dim: Number of neurons in hidden layers (default: 128).
-            latent_dim: Dimension of output feature representation (default: 128).
-        """
-        super().__init__()
-        self.latent_dim = latent_dim
-        self.net = nn.Sequential(
-            nn.Linear(input_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Dropout(0.2),
-            nn.Linear(hidden_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Dropout(0.2),
-            nn.Linear(hidden_dim, latent_dim),
-            nn.ReLU(),
-        )
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Compute feature embedding.
-
-        Args:
-            x: Input tensor of shape (batch_size, input_dim).
-
-        Returns:
-            Feature tensor of shape (batch_size, latent_dim).
-        """
-        return self.net(x)
-
-
 class IRDHead(nn.Module):
     """Head that converts encoded features into Dirichlet concentration parameters (alpha).
 
