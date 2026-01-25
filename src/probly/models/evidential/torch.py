@@ -104,14 +104,18 @@ class SimpleCNN(nn.Module):
 class EvidentialRegressionModel(nn.Module):
     """Full evidential regression model combining encoder and evidential head."""
 
-    def __init__(self, encoder: nn.Module | None = None) -> None:
+    def __init__(
+        self,
+        encoder: nn.Module | None = None,
+        head: nn.Module | None = None,
+    ) -> None:
         """Initialize the full model."""
         super().__init__()
-        if encoder is None:
-            encoder = t.MLPEncoder(feature_dim=32)
+
+        if head is None:
+            self.head = t.EvidentialHead(latent_dim=encoder.latent_dim)
 
         self.encoder = encoder
-        self.head = t.EvidentialHead(feature_dim=encoder.feature_dim)
 
     def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         """Forward pass through encoder and head."""

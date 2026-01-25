@@ -287,41 +287,6 @@ class RadialFlowDensity(nn.Module):
         return logp
 
 
-class MLPEncoder(nn.Module):
-    """Simple MLP encoder used to transform inputs into feature embeddings.
-
-    This module contains no evidential logic.
-    """
-
-    def __init__(self, input_dim: int = 1, hidden_dim: int = 64, feature_dim: int = 64) -> None:
-        """Initialize the encoder.
-
-        Args:
-            input_dim: Size of input features.
-            hidden_dim: Number of neurons in hidden layers.
-            feature_dim: Dimension of the output feature representation.
-        """
-        super().__init__()
-        self.feature_dim = feature_dim
-        self.net = nn.Sequential(
-            nn.Linear(input_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Linear(hidden_dim, feature_dim),
-            nn.ReLU(),
-        )
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Compute feature embedding.
-
-        Args:
-            x: Input tensor of shape (N, input_dim).
-
-        Returns:
-            Feature tensor of shape (N, feature_dim).
-        """
-        return self.net(x)
-
-
 class EvidentialHead(nn.Module):
     """Head that converts encoded features into evidential Normal-Gamma parameters."""
 
