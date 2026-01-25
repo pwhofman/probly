@@ -205,9 +205,7 @@ class ConvDPN(nn.Module):
         encoder: nn.Module | None = None,
         head: nn.Module | None = None,
         *,
-        in_channels: int = 1,
         conv_channels: list[int] | None = None,
-        input_shape: tuple[int, int] = (28, 28),
         latent_dim: int = 256,
         num_classes: int = 10,
     ) -> None:
@@ -216,14 +214,6 @@ class ConvDPN(nn.Module):
 
         if conv_channels is None:
             conv_channels = [64, 128]
-
-        if encoder is None:
-            encoder = t.ConvEncoder(
-                in_channels=in_channels,
-                conv_channels=conv_channels,
-                latent_dim=latent_dim,
-                input_shape=input_shape,
-            )
 
         if head is None:
             head = t.SimpleDirichletHead(
