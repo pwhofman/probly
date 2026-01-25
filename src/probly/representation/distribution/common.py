@@ -7,10 +7,6 @@ from typing import TYPE_CHECKING, Literal
 
 if TYPE_CHECKING:
     import numpy as np
-    # from probly.representation.sampling.array_sample import ArraySample wenn auf stand von probly main
-
-if TYPE_CHECKING:
-    import numpy as np
 
 type DistributionType = Literal["gaussian", "dirichlet"]
 
@@ -25,30 +21,29 @@ class Distribution(ABC):
     def entropy(self) -> float:
         """Compute entropy."""
 
-    @abstractmethod
-    def sample(
-        self,
-        size: int,
-    ) -> np.ndarray:  # müssen main aktualisieren dann sollte da als Rückgabewert ArraySample stehen
-        """Draw samples from the distribution."""
-
-    '''@classmethod
-    @abstractmethod
-    def from_parameters(
-        cls,
-        *args,
-        dtype: DTypeLike | None = None,
-        **kwargs,
-    ) -> Distribution:
-        """Create a distribution from its natural parameters."""'''
-
 
 class DirichletDistribution(Distribution):
     """Base class for Dirichlet distributions."""
 
-    type: DistributionType = "dirichlet"
+    type: Literal["dirichlet"] = "dirichlet"
 
     @property
     @abstractmethod
     def alphas(self) -> np.ndarray:
         """Get the concentration parameters of the Dirichlet distribution."""
+
+
+class GaussianDistribution(Distribution):
+    """Base class for Gaussian distributions."""
+
+    type: Literal["gaussian"] = "gaussian"
+
+    @property
+    @abstractmethod
+    def mean(self) -> np.ndarray:
+        """Get the mean parameters."""
+
+    @property
+    @abstractmethod
+    def var(self) -> np.ndarray:
+        """Get the var parameters."""

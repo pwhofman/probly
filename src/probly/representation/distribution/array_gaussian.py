@@ -3,24 +3,25 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Self
+from typing import TYPE_CHECKING, Literal, Self, cast, override
 
+from matplotlib.pylab import ArrayLike
 import numpy as np
 
-from probly.representation.distribution.common import Distribution, DistributionType
+from probly.representation.distribution.common import GaussianDistribution
 
 if TYPE_CHECKING:
     from numpy.typing import ArrayLike, DTypeLike
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class ArrayGaussian(Distribution):
+class ArrayGaussian(GaussianDistribution):
     """Gaussian distribution with array parameters."""
 
     mean: np.ndarray
     var: np.ndarray
 
-    type: DistributionType = "gaussian"
+    type: Literal["gaussian"] = "gaussian"
 
     def __post_init__(self) -> None:
         """Validate shapes and variances."""
@@ -37,12 +38,6 @@ class ArrayGaussian(Distribution):
         object.__setattr__(self, "mean", mean)
         object.__setattr__(self, "var", var)
 
-    @property
-    def entropy(self) -> float:
-        """Return the total differential entropy of the Gaussian distribution."""
-        var = self.var
-        return float(0.5 * np.log(2 * np.e * np.pi * var).sum())
-
     @classmethod
     def from_parameters(
         cls,
@@ -53,8 +48,14 @@ class ArrayGaussian(Distribution):
         """Create an ArrayGaussian from mean and variance parameters."""
         mean_arr = np.asarray(mean, dtype=dtype if dtype is not None else float)
         var_arr = np.asarray(var, dtype=mean_arr.dtype)
-
         return cls(mean=mean_arr, var=var_arr)
+
+    @property
+    @override
+    def entropy(self) -> float:
+        """Return the total differential entropy of the Gaussian distribution."""
+        var = self.var
+        return float(0.5 * np.log(2 * np.e * np.pi * var).sum())
 
     '''def sample(self, size: int) -> ArraySample[np.ndarray]:
         """Draw samples and wrap them in an ArraySample.
@@ -72,7 +73,25 @@ class ArrayGaussian(Distribution):
 
     def __array_namespace__(self) -> object:
         """Return the array namespace used by this distribution (NumPy)."""
-        return np
+        return self.mean.__array_namespace__()
+
+    def copy(self) -> Self:
+        """Create a copy of the gaussian distribution."""
+        return type(self)(
+            mean=self.mean.copy(),
+            var=self.var.copy(),
+        )
+
+    def __array__(
+        self,
+        dtype: DTypeLike | None = None,
+        copy: bool | None = None,
+    ) -> np.ndarray:
+        """Represent the distribution as stacked [mean, var] on the last axis."""
+        stacked = np.stack([self.mean, self.var], axis=-1)
+        if dtype is None and not copy:
+            return stacked
+        return np.asarray(stacked, dtype=dtype, copy=copy)
 
     @property
     def ndim(self) -> int:
@@ -82,7 +101,7 @@ class ArrayGaussian(Distribution):
     @property
     def shape(self) -> tuple[int, ...]:
         """The shape of the underlying array."""
-        return tuple[int, ...](self.mean.shape)
+        return tuple(self.mean.shape)
 
     @property
     def size(self) -> int:
@@ -103,13 +122,32 @@ class ArrayGaussian(Distribution):
         return self.mean.dtype
 
     @property
-    def mT(self) -> Self:  # noqa: N802
-        """Return a new ArrayGaussian with matrix-transposed parameters."""
-        mean_t = np.matrix_transpose(self.mean)
-        var_t = np.matrix_transpose(self.var)
-        return type(self)(mean=mean_t, var=var_t)
-
-    @property
     def device(self) -> str:
         """Return the hardware device on which the arrays reside (CPU for NumPy)."""
-        return "cpu"
+        return cast("str", self.mean.device)
+
+    def __getitem__(self, index: int | slice | tuple | np.ndarray) -> Self:
+        """Return a sliced view of this Gaussian."""
+        return type(self)(
+            mean=self.mean[index],
+            var=self.var[index],
+        )
+
+    def __len__(self) -> int:
+        """Return the length of the underlying mean array."""
+        return len(self.mean)
+
+    def __repr__(self) -> str:
+        """Return a debug representation of the Gaussian."""
+        cls_name = type(self).__name__
+        return f"{cls_name}(mean={self.mean!r}, var={self.var!r}, type={self.type!r})"
+
+    def __eq__(self, other: object) -> bool:
+        """Compare two Gaussians by their parameters."""
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return np.array_equal(self.mean, other.mean) and np.array_equal(self.var, other.var) and self.type == other.type
+
+    def __hash__(self) -> int:
+        """Compute the hash of the distribution."""
+        return super().__hash__()  # type: ignore[no-any-return]

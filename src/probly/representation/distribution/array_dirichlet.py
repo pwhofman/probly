@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class ArrayDirichletDistribution(
+class ArrayDirichlet(
     DirichletDistribution,
     np.lib.mixins.NDArrayOperatorsMixin,
 ):
@@ -110,7 +110,7 @@ class ArrayDirichletDistribution(
         value: Self | np.ndarray,
     ) -> None:
         """Set a subset of the distribution by index."""
-        if isinstance(value, ArrayDirichletDistribution):
+        if isinstance(value, ArrayDirichlet):
             self.alphas[index] = value.alphas
         else:
             self.alphas[index] = value
@@ -133,14 +133,14 @@ class ArrayDirichletDistribution(
         **kwargs: Any,  # noqa: ANN401
     ) -> Any:  # noqa: ANN401
         """Handle numpy ufuncs."""
-        alphas_inputs = [x.alphas if isinstance(x, ArrayDirichletDistribution) else x for x in inputs]
+        alphas_inputs = [x.alphas if isinstance(x, ArrayDirichlet) else x for x in inputs]
 
         if method in ("__call__", "reduce", "reduceat", "accumulate") and "out" in kwargs:
             outs = kwargs["out"]
             if outs is not None:
                 if not isinstance(outs, tuple):
                     outs = (outs,)
-                kwargs["out"] = tuple(o.alphas if isinstance(o, ArrayDirichletDistribution) else o for o in outs)
+                kwargs["out"] = tuple(o.alphas if isinstance(o, ArrayDirichlet) else o for o in outs)
         else:
             outs = None
 
@@ -167,7 +167,7 @@ class ArrayDirichletDistribution(
 
     def __eq__(self, value: Any) -> Self:  # type: ignore[override]  # noqa: ANN401, PYI032
         """Vectorized equality comparison."""
-        if isinstance(value, ArrayDirichletDistribution):
+        if isinstance(value, ArrayDirichlet):
             return np.equal(self.alphas, value.alphas)  # type: ignore[no-any-return]
         return np.equal(self.alphas, value)  # type: ignore[no-any-return]
 
