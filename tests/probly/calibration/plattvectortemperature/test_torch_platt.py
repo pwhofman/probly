@@ -10,10 +10,12 @@ from probly.calibration.plattvectortemperature.torch_affine import TorchAffine
 ReturnTypeModelFixture = tuple[TorchAffine, nn.Module]
 ReturnTypeLoaderFixture = tuple[DataLoader, Tensor]
 
+
 @pytest.fixture
 def torch_custom_model() -> nn.Sequential:
     # Must match x.shape[1] from loader
-    return nn.Sequential(nn.Linear(10, 1)) 
+    return nn.Sequential(nn.Linear(10, 1))
+
 
 @pytest.fixture
 def setup_model(torch_custom_model: nn.Sequential) -> ReturnTypeModelFixture:
@@ -22,6 +24,7 @@ def setup_model(torch_custom_model: nn.Sequential) -> ReturnTypeModelFixture:
     affine_model = TorchAffine(base, num_classes=1)
     return affine_model, base
 
+
 @pytest.fixture
 def setup_calibration_loader() -> ReturnTypeLoaderFixture:
     """Set up a small binary dataset and loader."""
@@ -29,6 +32,7 @@ def setup_calibration_loader() -> ReturnTypeLoaderFixture:
     y = torch.randint(0, 2, (20,))
     loader = DataLoader(TensorDataset(x, y), batch_size=10)
     return loader, x
+
 
 def test_forward(setup_model: ReturnTypeModelFixture, setup_calibration_loader: ReturnTypeLoaderFixture) -> None:
     """Check if forward returns scaled logits."""
@@ -41,7 +45,11 @@ def test_forward(setup_model: ReturnTypeModelFixture, setup_calibration_loader: 
     expected = logits * affine_model.w + affine_model.b
     assert torch.allclose(scaled_logits, expected, atol=1e-5)
 
-def test_fit_updates_parameters(setup_model: ReturnTypeModelFixture, setup_calibration_loader: ReturnTypeLoaderFixture) -> None:
+
+def test_fit_updates_parameters(
+    setup_model: ReturnTypeModelFixture,
+    setup_calibration_loader: ReturnTypeLoaderFixture,
+) -> None:
     """Check if fit updates Platt scaling parameters."""
     affine_model, _ = setup_model
     loader, _ = setup_calibration_loader
@@ -56,7 +64,11 @@ def test_fit_updates_parameters(setup_model: ReturnTypeModelFixture, setup_calib
     assert not torch.allclose(affine_model.w, initial_w)
     assert not torch.allclose(affine_model.b, initial_b)
 
-def test_predict_returns_probabilities(setup_model: ReturnTypeModelFixture, setup_calibration_loader: ReturnTypeLoaderFixture) -> None:
+
+def test_predict_returns_probabilities(
+    setup_model: ReturnTypeModelFixture,
+    setup_calibration_loader: ReturnTypeLoaderFixture,
+) -> None:
     """Check that predict returns valid probabilities between 0 and 1."""
     affine_model, _ = setup_model
     _, x = setup_calibration_loader
