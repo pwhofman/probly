@@ -199,3 +199,46 @@ class PostNetModel(nn.Module):
             Latent tensor z of shape (B, latent_dim).
         """
         return self.encoder(x)
+
+
+class ConvDPN(nn.Module):
+    """Dirichlet Prior Network with modular encoder and head."""
+
+    def __init__(
+        self,
+        encoder: nn.Module | None = None,
+        head: nn.Module | None = None,
+        *,
+        in_channels: int = 1,
+        conv_channels: list[int] | None = None,
+        input_shape: tuple[int, int] = (28, 28),
+        latent_dim: int = 256,
+        num_classes: int = 10,
+    ) -> None:
+        """Initialize the convolutional Dirichlet Prior Network."""
+        super().__init__()
+
+        if conv_channels is None:
+            conv_channels = [64, 128]
+
+        if encoder is None:
+            encoder = t.ConvEncoder(
+                in_channels=in_channels,
+                conv_channels=conv_channels,
+                latent_dim=latent_dim,
+                input_shape=input_shape,
+            )
+
+        if head is None:
+            head = t.SimpleDirichletHead(
+                latent_dim=latent_dim,
+                num_classes=num_classes,
+            )
+
+        self.encoder = encoder
+        self.head = head
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Compute Dirichlet parameters for input samples."""
+        z = self.encoder(x)
+        return self.head(z)

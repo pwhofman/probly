@@ -629,3 +629,68 @@ class IRDHead(nn.Module):
         alpha = F.softplus(logits) + 1.0
 
         return alpha
+
+
+class ConvEncoder(nn.Module):
+    """Generic convolutional encoder mapping images to latent features."""
+
+    def __init__(
+        self,
+        in_channels: int,
+        conv_channels: list[int],
+        latent_dim: int,
+        input_shape: tuple[int, int],
+    ) -> None:
+        """Initialize a configurable convolutional encoder."""
+        super().__init__()
+
+        layers = []
+        c_in = in_channels
+
+        for c_out in conv_channels:
+            layers.extend(
+                [
+                    nn.Conv2d(c_in, c_out, kernel_size=3, padding=1),
+                    nn.ReLU(),
+                    nn.MaxPool2d(2),
+                ]
+            )
+            c_in = c_out
+
+        self.features = nn.Sequential(*layers)
+
+        # Infer flattened feature dimension dynamically
+        with torch.no_grad():
+            dummy = torch.zeros(1, in_channels, *input_shape)
+            feat = self.features(dummy)
+            flattened_dim = feat.view(1, -1).size(1)
+
+        self.projection = nn.Sequential(
+            nn.Flatten(),
+            nn.Linear(flattened_dim, latent_dim),
+            nn.ReLU(),
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Encode inputs into latent feature representations."""
+        x = self.features(x)
+        z = self.projection(x)
+        return z
+
+
+class SimpleDirichletHead(nn.Module):
+    """Head mapping latent features to Dirichlet concentration parameters."""
+
+    def __init__(self, latent_dim: int, num_classes: int) -> None:
+        """Initialize the Dirichlet classification head."""
+        super().__init__()
+
+        self.net = nn.Sequential(
+            nn.Linear(latent_dim, 256),
+            nn.ReLU(),
+            nn.Linear(256, num_classes),
+        )
+
+    def forward(self, z: torch.Tensor) -> torch.Tensor:
+        """Produce positive Dirichlet concentration parameters."""
+        return F.softplus(self.net(z)) + 1e-3
