@@ -2,14 +2,19 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import matplotlib.pyplot as plt
 import numpy as np
 
 import probly.visualization.config as cfg
 
+if TYPE_CHECKING:
+    from matplotlib.axes import Axes
+
 
 class IntervalVisualizer:
-    """Class to collect all the geometric plots."""
+    """Class to create 2d plots."""
 
     def __init__(self) -> None:  # noqa: D107
         pass
@@ -34,8 +39,8 @@ class IntervalVisualizer:
         title: str,
         mle_flag: bool,
         credal_flag: bool,
-        ax: plt.Axes = None,
-    ) -> plt.Axes:
+        ax: Axes | None = None,
+    ) -> Axes:
         """Plot the interval plot.
 
         Args:
