@@ -2,12 +2,18 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+from matplotlib.patches import Polygon
 import matplotlib.patheffects as PathEffects
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.spatial import ConvexHull
 
 import probly.visualization.config as cfg
+
+if TYPE_CHECKING:
+    from matplotlib.axes import Axes
 
 
 class TernaryVisualizer:
@@ -16,13 +22,13 @@ class TernaryVisualizer:
     def __init__(self) -> None:
         """Initialize the class."""
 
-    def probs_to_coords_3d(self, probs: np.ndarray) -> tuple:
+    def probs_to_coords_3d(self, probs: np.ndarray) -> tuple[float, float]:
         """Convert ternary probabilities to 2D coordinates.
 
         Args:
         probs: the ternary probabilities.
 
-        return: Tuple containing the 2D coordinates.
+        return: Tuple containing the 2D coordinates as float.
         """
         _, p2, p3 = probs
         x = p2 + 0.5 * p3
@@ -31,10 +37,10 @@ class TernaryVisualizer:
 
     def label_corners_and_vertices(
         self,
-        ax: plt.Axes,
-        v1: np.array,
-        v2: np.array,
-        v3: np.array,
+        ax: Axes,
+        v1: np.ndarray,
+        v2: np.ndarray,
+        v3: np.ndarray,
         labels: list[str],
     ) -> None:
         """Labeling the corners and vertices."""
@@ -59,9 +65,9 @@ class TernaryVisualizer:
         credal_flag: bool,
         mle_flag: bool,
         minmax_flag: bool,
-        ax: plt.Axes = None,
+        ax: Axes | None = None,
         **scatter_kwargs: object,
-    ) -> plt.Axes:
+    ) -> Axes:
         """Plot ternary scatter points.
 
         Args:
@@ -155,7 +161,7 @@ class TernaryVisualizer:
         ax.legend(loc="upper right", frameon=True, fontsize=9)
         return ax
 
-    def draw_mle_prob_line(self, probs: np.narray, ax: plt.Axes) -> None:
+    def draw_mle_prob_line(self, probs: np.ndarray, ax: Axes) -> None:
         """Draw probability axes for MLE for better readability.
 
         Args:
@@ -196,8 +202,8 @@ class TernaryVisualizer:
     def plot_convex_hull(
         self,
         probs: np.ndarray,
-        ax: plt.Axes = None,
-    ) -> plt.Axes:
+        ax: Axes | None = None,
+    ) -> Axes:
         """Draw the convex hull around the points.
 
         Handles special cases:
@@ -239,7 +245,7 @@ class TernaryVisualizer:
 
             hull_pts = coords[hull.vertices]
 
-            poly = plt.Polygon(
+            poly = Polygon(
                 hull_pts,
                 closed=True,
                 facecolor=cfg.HULL_FACE,
@@ -266,7 +272,7 @@ class TernaryVisualizer:
 
     def _draw_constant_probability_line(
         self,
-        ax: plt.Axes,
+        ax: Axes,
         index: int,
         value: float,
         style_key: int,
@@ -313,7 +319,7 @@ class TernaryVisualizer:
     def plot_minmax_lines(
         self,
         probs: np.ndarray,
-        ax: plt.Axes,
+        ax: Axes,
     ) -> None:
         """Draw min/max probability lines for each class.
 
