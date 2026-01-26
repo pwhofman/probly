@@ -5,7 +5,7 @@ from __future__ import annotations
 from unittest.mock import patch
 
 import matplotlib as mpl
-import matplotlib.pyplot as plt
+import matplotlib.axes as mplaxes
 import numpy as np
 import pytest
 
@@ -86,7 +86,7 @@ def test_show_false_returns_object() -> None:
             ax = create_credal_plot(data, show=False)
             mock_show.assert_not_called()
             assert ax is not None
-            assert isinstance(ax, plt.Axes)
+            assert isinstance(ax, mplaxes.Axes)
 
     _create_mock_show_false(data2d)
     _create_mock_show_false(data3d)
@@ -101,18 +101,18 @@ def test_show_true_shows_plot() -> None:
             ax = create_credal_plot(data, show=True)
             mock_show.assert_called_once()
             assert ax is not None
-            assert isinstance(ax, plt.Axes)
+            assert isinstance(ax, mplaxes.Axes)
 
     _create_mock_show_true(data2d)
     _create_mock_show_true(data3d)
     _create_mock_show_true(data4d)
 
 
-def test_simulated_error(monkeypatch) -> None:
+def test_simulated_error(monkeypatch: pytest.MonkeyPatch) -> None:
     """Catches a simulated error to test that the function would throw an error."""
     error_msg = "crash"
 
-    def _fake_dispatch(*args: object, **kwargs: object):  # noqa:ARG001
+    def _fake_dispatch(*args: object, **kwargs: object) -> None:  # noqa:ARG001
         raise ValueError(error_msg)
 
     monkeypatch.setattr(credalviz, "dispatch_plot", _fake_dispatch)

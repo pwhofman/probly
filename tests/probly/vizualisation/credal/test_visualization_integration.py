@@ -7,16 +7,18 @@ mpl.use("Agg")
 from pathlib import Path
 from typing import cast
 
+import matplotlib.axes as mplaxes
+from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 import numpy as np
 
 from probly.visualization.credal.credal_visualization import create_credal_plot
 
 
-def _assert_plot_created(ax: plt.Axes | None) -> None:
+def _assert_plot_created(ax: mplaxes.Axes | None) -> None:
     """Assert that a plot was created (Axes returned or at least a Figure exists)."""
     if ax is not None:
-        assert isinstance(ax, plt.Axes)
+        assert isinstance(ax, mplaxes.Axes)
         ax.figure.clf()
         return
 
@@ -31,7 +33,7 @@ def test_integration_2_classes_interval_plot() -> None:
     2 classes should trigger the 2D interval plot.
     """
     data = np.array([[0.5, 0.5], [0.2, 0.8]])
-    ax = cast(plt.Axes | None, create_credal_plot(data))
+    ax = cast(mplaxes.Axes | None, create_credal_plot(data))
     _assert_plot_created(ax)
 
 
@@ -41,7 +43,7 @@ def test_integration_3_classes_ternary_plot() -> None:
     3 classes should trigger the ternary plot.
     """
     data = np.array([[0.2, 0.3, 0.5], [0.7, 0.2, 0.1]])
-    ax = cast(plt.Axes | None, create_credal_plot(data))
+    ax = cast(mplaxes.Axes | None, create_credal_plot(data))
     _assert_plot_created(ax)
 
 
@@ -56,7 +58,7 @@ def test_integration_5_classes_spider_plot() -> None:
             [0.05, 0.4, 0.2, 0.1, 0.25],
         ],
     )
-    ax = cast(plt.Axes | None, create_credal_plot(data))
+    ax = cast(mplaxes.Axes | None, create_credal_plot(data))
     _assert_plot_created(ax)
 
 
@@ -66,9 +68,9 @@ def test_integration_plot_can_be_saved(tmp_path: Path) -> None:
     The created plot should be saveable via savefig.
     """
     data = np.array([[0.2, 0.3, 0.5], [0.7, 0.2, 0.1]])
-    ax = cast(plt.Axes | None, create_credal_plot(data))
+    ax = cast(mplaxes.Axes | None, create_credal_plot(data))
 
-    fig = ax.figure if ax is not None else plt.gcf()
+    fig = cast(Figure, ax.figure if ax is not None else plt.gcf())
 
     out = tmp_path / "credal_plot.png"
     fig.savefig(out)

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import TYPE_CHECKING, Literal, cast
 
 from matplotlib.colors import Colormap  # noqa: TC002
 import matplotlib.pyplot as plt
@@ -10,6 +10,9 @@ import numpy as np
 from sklearn.svm import SVC
 
 import probly.visualization.config as cfg
+
+if TYPE_CHECKING:
+    from matplotlib.axes import Axes
 
 
 def _check_shape(input_data: np.ndarray) -> np.ndarray:
@@ -48,7 +51,7 @@ def _2_cluster_to_y(cluster1: np.ndarray, cluster2: np.ndarray) -> np.ndarray:
             np.ones(len(input2), dtype=int),
         )
     )
-    return y
+    return cast("np.ndarray", y)
 
 
 def _2_cluster_to_x(cluster1: np.ndarray, cluster2: np.ndarray) -> np.ndarray:
@@ -67,7 +70,7 @@ def _2_cluster_to_x(cluster1: np.ndarray, cluster2: np.ndarray) -> np.ndarray:
     return stacked_cluster
 
 
-def _plot_svm_beam(ax: plt.Axes, clf: SVC, X: np.ndarray, cmap: Colormap) -> None:  # noqa: N803
+def _plot_svm_beam(ax: Axes, clf: SVC, X: np.ndarray, cmap: Colormap) -> None:  # noqa: N803
     """Helper method that contains SVM logic to depict uncertainty between two 2D clusters.
 
     Args:
@@ -96,7 +99,7 @@ def _plot_svm_beam(ax: plt.Axes, clf: SVC, X: np.ndarray, cmap: Colormap) -> Non
 def plot_uncertainty(
     input_1: np.ndarray,
     input_2: np.ndarray,
-    ax: plt.Axes = None,
+    ax: Axes | None = None,
     title: str = "Uncertainty",
     x_label: str = "Feature 1",
     y_label: str = "Feature 2",
@@ -105,7 +108,7 @@ def plot_uncertainty(
     C: float = 0.5,  # noqa: N803
     gamma: float | Literal["auto", "scale"] = "scale",
     show: bool = True,
-) -> plt.Axes:
+) -> Axes:
     """Method to plot uncertainty between two 2D clusters.
 
     Args:

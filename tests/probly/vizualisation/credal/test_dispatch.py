@@ -399,17 +399,17 @@ def test_dispatch_minmax_true_credal_true() -> None:
         assert minmax_args["minmax_flag"] is True
 
 
-def test_simulated_error(monkeypatch) -> None:
+def test_simulated_error(monkeypatch: pytest.MonkeyPatch) -> None:
     """Catches a simulated error to test that the function would throw an error."""
     error_msg = "crash"
 
-    def _fake_interval(*args: object, **kwargs: object):  # noqa:ARG001
+    def _fake_interval(*args: object, **kwargs: object) -> None:  # noqa:ARG001
         raise ValueError(error_msg)
 
-    def _fake_ternary(*args: object, **kwargs: object):  # noqa:ARG001
+    def _fake_ternary(*args: object, **kwargs: object) -> None:  # noqa:ARG001
         raise ValueError(error_msg)
 
-    def _fake_spider(*args: object, **kwargs: object):  # noqa:ARG001
+    def _fake_spider(*args: object, **kwargs: object) -> None:  # noqa:ARG001
         raise ValueError(error_msg)
 
     def _set_monkeypatch(method_class: object, method_name: str, method_fake: object) -> None:
