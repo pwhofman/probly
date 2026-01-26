@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from matplotlib.patches import Polygon
 import matplotlib.patheffects as PathEffects
@@ -66,7 +66,7 @@ class TernaryVisualizer:
         mle_flag: bool,
         minmax_flag: bool,
         ax: Axes | None = None,
-        **scatter_kwargs: object,
+        **scatter_kwargs: Any,  # noqa: ANN401
     ) -> Axes:
         """Plot ternary scatter points.
 
