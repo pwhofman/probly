@@ -9,6 +9,9 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader as TorchDataLoader
 
+pytest.importorskip("flax")
+pytest.importorskip("jax")
+
 FlaxSetupReturnType = tuple[nnx.Module, jax.Array, jax.Array]
 TorchSetupReturnType = tuple[nn.Module, TorchDataLoader, TorchDataLoader]
 
