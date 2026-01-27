@@ -8,7 +8,7 @@ import jax.numpy as jnp
 from probly.calibration.plattvectortemperature.flax_affine import AffineScalingFlax
 
 
-def test_forward(flax_setup_binary):
+def test_forward(flax_setup_binary) -> None:
     base, inputs, _ = flax_setup_binary
     platt_model = AffineScalingFlax(base, num_classes=1)
 
@@ -23,7 +23,8 @@ def test_forward(flax_setup_binary):
     assert platt_model.b.shape == (1,)
     assert jnp.allclose(logits_scaled, logits_expected, atol=1e-5)
 
-def test_fit(flax_setup_binary):
+
+def test_fit(flax_setup_binary) -> None:
     base, inputs, labels = flax_setup_binary
     platt_model = AffineScalingFlax(base, num_classes=1)
 
@@ -36,7 +37,8 @@ def test_fit(flax_setup_binary):
     assert not jnp.allclose(platt_model.w, w_unoptimized)
     assert not jnp.allclose(platt_model.b, b_unoptimized)
 
-def test_predict(flax_setup_binary):
+
+def test_predict(flax_setup_binary) -> None:
     base, inputs, _ = flax_setup_binary
     platt_model = AffineScalingFlax(base, num_classes=1)
 

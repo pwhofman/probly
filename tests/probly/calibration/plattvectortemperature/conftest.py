@@ -2,28 +2,30 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
-
 from flax import nnx
 import jax
 import pytest
 import torch
 from torch import nn
+from torch.utils.data import DataLoader as TorchDataLoader
 
-JaxDataLoader = Iterable[tuple[jax.Array, jax.Array]]
-SetupReturnType = tuple[nnx.Module, nnx.Module, JaxDataLoader, Iterable[tuple[jax.Array, jax.Array]]]
+FlaxSetupReturnType = tuple[nnx.Module, jax.Array, jax.Array]
+TorchSetupReturnType = tuple[nn.Module, TorchDataLoader, TorchDataLoader]
+
 
 @pytest.fixture
-def flax_binary_model():
+def flax_binary_model() -> nnx.Sequential:
     return nnx.Sequential(
         nnx.Linear(2, 1, rngs=nnx.Rngs(0)),
     )
 
+
 @pytest.fixture
-def flax_multiclass_model():
+def flax_multiclass_model() -> nnx.Sequential:
     return nnx.Sequential(
         nnx.Linear(2, 3, rngs=nnx.Rngs(0)),
     )
+
 
 @pytest.fixture
 def torch_binary_model() -> nn.Sequential:
@@ -31,15 +33,16 @@ def torch_binary_model() -> nn.Sequential:
         nn.Linear(10, 1),
     )
 
+
 @pytest.fixture
-def torch_multiclass_model():
+def torch_multiclass_model() -> nn.Sequential:
     return nn.Sequential(
         nn.Linear(2, 3),
     )
 
 
 @pytest.fixture
-def flax_setup_binary(flax_binary_model: nnx.Module):
+def flax_setup_binary(flax_binary_model: nnx.Module) -> FlaxSetupReturnType:
     base = flax_binary_model
 
     key = jax.random.PRNGKey(0)
@@ -52,8 +55,9 @@ def flax_setup_binary(flax_binary_model: nnx.Module):
 
     return base, inputs, labels
 
+
 @pytest.fixture
-def flax_setup_multiclass(flax_multiclass_model: nnx.Module):
+def flax_setup_multiclass(flax_multiclass_model: nnx.Module) -> FlaxSetupReturnType:
     base = flax_multiclass_model
 
     key = jax.random.PRNGKey(0)
@@ -66,8 +70,9 @@ def flax_setup_multiclass(flax_multiclass_model: nnx.Module):
 
     return base, inputs, labels
 
+
 @pytest.fixture
-def torch_setup_multiclass(torch_multiclass_model: nn.Module):
+def torch_setup_multiclass(torch_multiclass_model: nn.Module) -> TorchSetupReturnType:
     base = torch_multiclass_model
 
     inputs = torch.randn(20, 2)

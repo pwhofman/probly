@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader, TensorDataset
 from probly.calibration.plattvectortemperature.torch_affine import TorchAffine
 
 
-def test_forward(torch_setup_multiclass):
+def test_forward(torch_setup_multiclass) -> None:
     base, inputs, _ = torch_setup_multiclass
 
     vector_model = TorchAffine(base, num_classes=3)
@@ -24,7 +24,8 @@ def test_forward(torch_setup_multiclass):
     assert vector_model.b.shape == (3,)
     assert torch.allclose(logits_scaled, logits_expected, atol=1e-5)
 
-def test_fit(torch_setup_multiclass):
+
+def test_fit(torch_setup_multiclass) -> None:
     base, inputs, labels = torch_setup_multiclass
 
     vector_model = TorchAffine(base, num_classes=3)
@@ -38,7 +39,8 @@ def test_fit(torch_setup_multiclass):
     assert vector_model.w.values != w_unoptimized
     assert vector_model.b.values != b_unoptimized
 
-def test_predict(torch_setup_multiclass):
+
+def test_predict(torch_setup_multiclass) -> None:
     base, inputs, _ = torch_setup_multiclass
     vector_model = TorchAffine(base, num_classes=3)
 
