@@ -1160,7 +1160,7 @@ least one **worked example**:
   predictive intervals over time, and shows how to evaluate them :cite:`hyndmanForecastingPrinciples2018`.
 
 For each advanced pattern in this chapter, there is at least one worked example in the
-:ref:`examples_tutorials` file.
+:ref:`examples_and_tutorials` file.
 
 7. Summary
 ----------
