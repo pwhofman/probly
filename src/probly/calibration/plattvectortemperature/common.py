@@ -41,6 +41,6 @@ def register_affine_factory(key: LazyType) -> Callable:
 
 
 def affine(base: object, num_classes: int) -> object:
-    """Dispatches to the correct temperature scaling implementation."""
+    """Dispatches to the correct affine scaling implementation (Platt for binary, Vector for multi-class)."""
     implementation: type[Any] = _affine_factory(base, num_classes)
     return implementation(base, num_classes)
