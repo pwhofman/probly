@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
 
 if TYPE_CHECKING:
-    import matplotlib.pyplot as plt
+    from matplotlib.axes import Axes
 
 from probly.visualization.credal.plot_2d import IntervalVisualizer
 from probly.visualization.credal.plot_3d import TernaryVisualizer
@@ -43,7 +43,6 @@ def check_shape(input_data: np.ndarray) -> np.ndarray:
     msg5 = "All probabilities must be positive."
     msg6 = "Input must have more than one class."
 
-    # Validates that input_data is either a 2D or 3D NumPy Array.
     if not isinstance(input_data, np.ndarray):
         raise TypeError(msg1)
     if input_data.size == 0:
@@ -51,13 +50,11 @@ def check_shape(input_data: np.ndarray) -> np.ndarray:
     if input_data.ndim < 2:
         raise ValueError(msg3)
 
-    # Validates the input probabilities.
     if not np.allclose(input_data.sum(axis=-1), 1):
         raise ValueError(msg4)
     if (input_data < 0).any():
         raise ValueError(msg5)
 
-    # Validates that more than one class exists.
     if input_data.shape[-1] < 2:
         raise ValueError(msg6)
 
@@ -112,7 +109,7 @@ def dispatch_plot(
     title: str | None = None,
     choice: str | None = None,
     minmax: bool | None = None,
-) -> plt.Axes:
+) -> Axes:
     """Selects and executes the correct plotting function based on class count.
 
     Args:
@@ -122,13 +119,10 @@ def dispatch_plot(
         choice: Allows either "MLE", "Credal", "Probability" or None.
         minmax: Enables to show the Min/Max lines for ternary plots.
     """
-    # Validates input.
     input_data = check_shape(input_data)
 
-    # Normalizes input.
     points = normalize_input(input_data)
 
-    # Counts the number of classes to refer correctly
     n_classes = check_num_classes(points)
 
     if labels is None:
@@ -145,7 +139,7 @@ def dispatch_plot(
 
     if minmax is None or (minmax is True and credal_flag is False):
         minmax = False
-    # Depending on number of classes chooses correct plotting function.
+
     if n_classes == 2:
         viz = IntervalVisualizer()
         return viz.interval_plot(points, labels=labels, title=title, mle_flag=mle_flag, credal_flag=credal_flag)
@@ -163,4 +157,6 @@ def dispatch_plot(
         return ax
 
     multi = MultiVisualizer()
-    return multi.spider_plot(points, labels=labels, title=title, mle_flag=mle_flag, credal_flag=credal_flag)
+    return cast(
+        "Axes", multi.spider_plot(points, labels=labels, title=title, mle_flag=mle_flag, credal_flag=credal_flag)
+    )
