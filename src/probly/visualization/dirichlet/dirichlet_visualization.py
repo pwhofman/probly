@@ -2,10 +2,16 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from matplotlib import pyplot as plt
 import numpy as np
 
-from probly.visualization.dirichlet.plot_dirichlet import TernaryVisualizer
+if TYPE_CHECKING:
+    from matplotlib.axes import Axes
+
+
+from probly.visualization.dirichlet.plot_dirichlet import DirichletTernaryVisualizer
 
 
 def create_dirichlet_plot(
@@ -14,7 +20,7 @@ def create_dirichlet_plot(
     title: str | None = None,
     *,
     show: bool = True,
-) -> plt.Axes | None:
+) -> Axes | None:
     """Create a ternary Dirichlet distribution plot.
 
     Args:
@@ -34,7 +40,7 @@ def create_dirichlet_plot(
     if title is None:
         title = f"Dirichlet Distribution (α = {alpha.tolist()})"  # noqa: RUF001
 
-    visualizer = TernaryVisualizer()
+    visualizer = DirichletTernaryVisualizer()
     ax = visualizer.dirichlet_plot(
         alpha=alpha,
         labels=labels,
