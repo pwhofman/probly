@@ -226,14 +226,15 @@ def spherical_score(probs: np.ndarray, targets: np.ndarray) -> float | np.ndarra
         loss = np.mean(loss)
     return loss
 
+
 def expected_calibration_error_binary(
     probs: np.ndarray,
     labels: np.ndarray,
     num_bins: int = 10,
 ) -> float:
-    """
-    Expected Calibration Error (ECE) for binary classifiers
-    with sigmoid outputs.
+    """Expected Calibration Error (ECE) for binary classifiers.
+
+    This function works with sigmoid outputs.
 
     probs: shape (N,) or (N, 1) — sigmoid probabilities
     labels: shape (N,) — binary labels {0,1}
