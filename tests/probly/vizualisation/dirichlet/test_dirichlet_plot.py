@@ -8,12 +8,12 @@ from matplotlib.axes import Axes
 import matplotlib.pyplot as plt
 import numpy as np
 
-from probly.visualization.dirichlet.plot_dirichlet import TernaryVisualizer
+from probly.visualization.dirichlet.plot_dirichlet import DirichletTernaryVisualizer
 
 
 def test_triangle_corners_returns_correct_shape_and_values() -> None:
     """triangle_corners returns the three fixed simplex corners."""
-    viz = TernaryVisualizer()
+    viz = DirichletTernaryVisualizer()
     corners = viz.triangle_corners()
 
     assert corners.shape == (3, 2)
@@ -24,7 +24,7 @@ def test_triangle_corners_returns_correct_shape_and_values() -> None:
 
 def test_xy_to_barycentric_returns_valid_coordinates() -> None:
     """xy_to_barycentric returns valid barycentric coordinates."""
-    viz = TernaryVisualizer()
+    viz = DirichletTernaryVisualizer()
 
     point = np.array([0.4, 0.2])
     bary = viz.xy_to_barycentric(point)
@@ -38,7 +38,7 @@ def test_xy_to_barycentric_returns_valid_coordinates() -> None:
 def test_dirichlet_pdf_is_positive() -> None:
     """Dirichlet pdf returns a positive value for valid input."""
     alpha = np.array([2.0, 3.0, 4.0])
-    dist = TernaryVisualizer.Dirichlet(alpha)
+    dist = DirichletTernaryVisualizer.Dirichlet(alpha)
 
     x = np.array([0.2, 0.3, 0.5])
     value = dist.pdf(x)
@@ -48,7 +48,7 @@ def test_dirichlet_pdf_is_positive() -> None:
 
 def test_label_corners_and_vertices_adds_texts() -> None:
     """label_corners_and_vertices adds text labels to the axes."""
-    viz = TernaryVisualizer()
+    viz = DirichletTernaryVisualizer()
     fig, ax = plt.subplots()
 
     viz.label_corners_and_vertices(ax, ["A", "B", "C"])
@@ -59,7 +59,7 @@ def test_label_corners_and_vertices_adds_texts() -> None:
 
 def test_dirichlet_plot_returns_axes_and_sets_title() -> None:
     """dirichlet_plot returns Axes and sets the given title."""
-    viz = TernaryVisualizer()
+    viz = DirichletTernaryVisualizer()
     alpha = np.array([2.0, 2.0, 2.0])
 
     ax = viz.dirichlet_plot(alpha=alpha, labels=["A", "B", "C"], title="Test Dirichlet Plot")
