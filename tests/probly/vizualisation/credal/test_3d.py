@@ -5,14 +5,18 @@ from __future__ import annotations
 import matplotlib as mpl
 
 mpl.use("Agg")
+from typing import TYPE_CHECKING
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
+if TYPE_CHECKING:
+    from matplotlib.axes import Axes
 from probly.visualization.credal.plot_3d import TernaryVisualizer
 
 
-def _legend_labels(ax: plt.Axes) -> list[str]:
+def _legend_labels(ax: Axes) -> list[str]:
     """Return legend labels (empty list if no legend)."""
     leg = ax.get_legend()
     if leg is None:
@@ -192,7 +196,7 @@ def test_legend_only_minmax(viz: TernaryVisualizer, example_probs: np.ndarray, l
 
 
 def test_plot_convex_hull_collinear_points_falls_back_to_line() -> None:
-    """Collinear points should not crash and should draw a line."""
+    """Colinear points should not crash and should draw a line."""
     viz = TernaryVisualizer()
 
     ts = np.linspace(0.1, 0.9, 10)
