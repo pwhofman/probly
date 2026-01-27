@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import matplotlib as mpl
-import matplotlib.pyplot as plt
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 import numpy as np
 import pytest
 
@@ -48,10 +49,10 @@ def test_plot_id_ood_execution(id_ood_data: dict[str, np.ndarray]) -> None:
         title_ood="OOD Test",
     )
 
-    if not isinstance(fig, plt.Figure):
+    if not isinstance(fig, Figure):
         msg = "Expected Figure object."
         raise AssertionError(msg)  # noqa: TRY004
-    if not isinstance(ax1, plt.Axes) or not isinstance(ax2, plt.Axes):
+    if not isinstance(ax1, Axes) or not isinstance(ax2, Axes):
         msg = "Expected Axes objects."
         raise AssertionError(msg)  # noqa: TRY004
 
@@ -76,7 +77,7 @@ def test_plot_from_ood_labels_execution() -> None:
         probs=probs, targets=targets, ood_labels=ood_labels, id_label=0, ood_label=1
     )
 
-    if not isinstance(fig, plt.Figure):
+    if not isinstance(fig, Figure):
         msg = "Expected Figure object."
         raise AssertionError(msg)  # noqa: TRY004
     if len(axes) != 2:
