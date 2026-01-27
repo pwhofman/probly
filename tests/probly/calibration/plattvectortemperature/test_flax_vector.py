@@ -8,7 +8,7 @@ import jax.numpy as jnp
 from probly.calibration.plattvectortemperature.flax_affine import AffineScalingFlax
 
 
-def test_forward(flax_setup_multiclass) -> None:
+def test_forward(flax_setup_multiclass: nnx.Module) -> None:
     base, inputs, _ = flax_setup_multiclass
     vector_model = AffineScalingFlax(base, num_classes=3)
 
@@ -24,7 +24,7 @@ def test_forward(flax_setup_multiclass) -> None:
     assert jnp.allclose(logits_scaled, logits_expected, atol=1e-5)
 
 
-def test_fit(flax_setup_multiclass) -> None:
+def test_fit(flax_setup_multiclass: nnx.Module) -> None:
     base, inputs, labels = flax_setup_multiclass
     vector_model = AffineScalingFlax(base, num_classes=3)
 
@@ -38,7 +38,7 @@ def test_fit(flax_setup_multiclass) -> None:
     assert not jnp.allclose(vector_model.b, b_unoptimized)
 
 
-def test_predict(flax_setup_multiclass) -> None:
+def test_predict(flax_setup_multiclass: nnx.Module) -> None:
     base, inputs, _ = flax_setup_multiclass
     vector_model = AffineScalingFlax(base, num_classes=3)
 
