@@ -24,8 +24,10 @@ class TorchAffine(_LogitScaler):
         if self.num_classes != logits.shape[1]:
             msg = "The given parameter num_classes does not match the actual number of classes."
             raise ValueError(msg)
+
         if self.num_classes == 1 and logits.ndim == 1:
             logits = logits.unsqueeze(1)
+
         return logits * self.w + self.b
 
     def _parameters_to_optimize(self) -> list[nn.Parameter]:
@@ -34,7 +36,9 @@ class TorchAffine(_LogitScaler):
     def _loss_fn(self, logits: Tensor, labels: Tensor) -> Tensor:
         if self.num_classes == 1:
             labels = labels.float().unsqueeze(1)
+
             return nn.functional.binary_cross_entropy_with_logits(logits, labels)
+
         return nn.functional.cross_entropy(logits, labels.long())
 
 

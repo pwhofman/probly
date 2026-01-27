@@ -12,15 +12,9 @@ ReturnTypeLoaderFixture = tuple[DataLoader, Tensor]
 
 
 @pytest.fixture
-def torch_custom_model() -> nn.Sequential:
-    # Must match x.shape[1] from loader
-    return nn.Sequential(nn.Linear(10, 1))
-
-
-@pytest.fixture
-def setup_model(torch_custom_model: nn.Sequential) -> ReturnTypeModelFixture:
+def setup_model(torch_binary_model: nn.Sequential) -> ReturnTypeModelFixture:
     """Set up a TorchAffine (Platt scaling) model."""
-    base = torch_custom_model
+    base = torch_binary_model
     affine_model = TorchAffine(base, num_classes=1)
     return affine_model, base
 

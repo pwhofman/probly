@@ -16,8 +16,8 @@ class AffineScalingFlax(_ScalerFlax):
         """Initialize Wrapper with w and biases."""
         super().__init__(base, num_classes)
 
-        self.w = nnx.Param(jnp.array((num_classes,), dtype=jnp.float32))
-        self.b = nnx.Param(jnp.array((num_classes,), dtype=jnp.float32))
+        self.w = nnx.Param(jnp.ones((num_classes,), dtype=jnp.float32))
+        self.b = nnx.Param(jnp.zeros((num_classes,), dtype=jnp.float32))
 
     def _scale_logits(self, logits: jax.Array) -> jax.Array:
         if self.num_classes == 1 and logits.ndim == 1:
