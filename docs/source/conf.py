@@ -53,7 +53,6 @@ suppress_warnings = [
     "toc.not_included",
     "autodoc.import_object",
     "autodoc",
-    "ref.doc",
     "ref.python",
     "autosummary",
 ]
