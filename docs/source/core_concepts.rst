@@ -20,8 +20,8 @@ Short, focused examples for the concepts in this section:
    ../../examples/plot_uncertainty_quantification.py
    ../../examples/plot_selective_prediction.py
 
-1.1 What Is Uncertainty?
 
+1.1 What Is Uncertainty?
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 In standard machine learning pipelines a model outputs a **single prediction**
