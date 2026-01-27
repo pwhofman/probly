@@ -31,15 +31,14 @@ Below are the links to the Python notebooks describing the primary transformatio
 
 Dropout-based uncertainty leverages the interpretation of dropout as approximate Bayesian inference.
 By enabling dropout at test time (Monte Carlo Dropout), you can generate multiple stochastic forward passes
-to estimate model uncertainty.
-
+to estimate model uncertainty. For further information and a detailed explanation, refer to the notebook:
 :doc:`Dropout Transformation <notebooks/examples/dropout_transformation>`
 
 1.2 DropConnect
 ^^^^^^^^^^^^^^^^^^^^
 
 DropConnect extends dropout by randomly dropping weights instead of activations, often providing improved
-uncertainty estimates while maintaining computational efficiency.
+uncertainty estimates while maintaining computational efficiency. For further information and a detailed explanation, refer to the notebook:
 
 :doc:`DropConnect Transformation <notebooks/examples/dropconnect_transformation>`
 
@@ -48,7 +47,7 @@ uncertainty estimates while maintaining computational efficiency.
 
 The Bayesian transformation converts deterministic weights to probabilistic distributions, enabling fully
 principled Bayesian neural networks. This approach provides theoretically grounded uncertainty estimates but
-at increased computational cost.
+at increased computational cost. For further information and a detailed explanation, refer to the notebook:
 
 :doc:`Bayesian Transformation <notebooks/examples/bayesian_transformation>`
 
@@ -57,7 +56,7 @@ at increased computational cost.
 
 Ensemble transformations create multiple independent models trained on different data subsets or with
 different initializations. By aggregating predictions across ensemble members, you obtain diverse uncertainty
-estimates that often perform well in practice.
+estimates that often perform well in practice. For further information and a detailed explanation, refer to the notebook:
 
 :doc:`Ensemble Transformation <notebooks/examples/ensemble_transformation>`
 
@@ -414,16 +413,15 @@ Comprehensive tutorials are available in ``notebooks/examples/unified_evidential
 - ``deep_evidential_regression_summary.ipynb`` — Deep Evidential Regression (Amini et al., 2020) with Normal-Inverse-Gamma distributions and aleatoric/epistemic uncertainty
 - ``Regression_Prior_Networks (4).ipynb`` — Regression Prior Networks (Malinin et al., 2020) with Normal-Wishart distributions and unified DER+RPN loss
 
-For the basic evidential transformation tutorials, see:
-
+For further information and a detailed explanation on evidential regression, refer to the notebook:
 :doc:`Evidential Regression Transformation <notebooks/examples/evidential_regression_transformation>`
 
 
-1.5.2 Evidential Classification
+1.5.7 Evidential Classification
 """""""""""""""""""""""""""""""""""
 For classification, evidential classification learns a Dirichlet distribution over class probabilities,
 enabling sophisticated uncertainty quantification for multi-class prediction tasks.
-
+For further information and a detailed explanation, refer to the notebook:
 :doc:`Evidential Classification Transformation <notebooks/examples/evidential_classification_transformation>`
 
 
