@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from matplotlib.colors import Colormap, LinearSegmentedColormap
+
+if TYPE_CHECKING:
+    from matplotlib.colorbar import Colorbar
 
 __all__ = [
     "BLUE",
@@ -72,7 +77,7 @@ COLORBAR_TICKS: tuple[float, ...] = (0.0, 0.2, 0.4, 0.6, 0.8, 1.0)
 
 
 def style_colorbar(
-    cbar: object,
+    cbar: Colorbar,
     *,
     ticks: tuple[float, ...] = COLORBAR_TICKS,
     label: str = COLORBAR_LABEL,
