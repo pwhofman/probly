@@ -1,8 +1,7 @@
 .. _main_components:
 
-****************
 Main Components
-****************
+==================
 ``probly`` is designed to bridge the gap between standard deterministic deep
 learning and probabilistic modeling. Instead of requiring you to rewrite your
 models from scratch to account for uncertainty, ``probly`` provides a modular
@@ -13,7 +12,7 @@ estimation pipeline: **Transformation**, **Representation**,
 and **Quantification**.
 
 1. Transformations
-========================
+----------------------
 
 
 The core of ``probly`` lies in its **Transformations**. These functions take a standard, deterministic PyTorch
@@ -28,7 +27,7 @@ implementation complexity. Whether you need fast approximate uncertainty or more
 Below are the links to the Python notebooks describing the primary transformations available in the library:
 
 1.1 Dropout
-~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^
 
 Dropout-based uncertainty leverages the interpretation of dropout as approximate Bayesian inference.
 By enabling dropout at test time (Monte Carlo Dropout), you can generate multiple stochastic forward passes
@@ -37,7 +36,7 @@ to estimate model uncertainty.
 :doc:`Dropout Transformation <notebooks/examples/dropout_transformation>`
 
 1.2 DropConnect
-~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^
 
 DropConnect extends dropout by randomly dropping weights instead of activations, often providing improved
 uncertainty estimates while maintaining computational efficiency.
@@ -45,7 +44,7 @@ uncertainty estimates while maintaining computational efficiency.
 :doc:`DropConnect Transformation <notebooks/examples/dropconnect_transformation>`
 
 1.3 Bayesian
-~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^
 
 The Bayesian transformation converts deterministic weights to probabilistic distributions, enabling fully
 principled Bayesian neural networks. This approach provides theoretically grounded uncertainty estimates but
@@ -54,7 +53,7 @@ at increased computational cost.
 :doc:`Bayesian Transformation <notebooks/examples/bayesian_transformation>`
 
 1.4 Ensemble
-~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^
 
 Ensemble transformations create multiple independent models trained on different data subsets or with
 different initializations. By aggregating predictions across ensemble members, you obtain diverse uncertainty
@@ -63,7 +62,7 @@ estimates that often perform well in practice.
 :doc:`Ensemble Transformation <notebooks/examples/ensemble_transformation>`
 
 1.5 Evidential
-~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^
 
 Evidential methods model uncertainty by learning the parameters of a higher-order distribution
 over predictions. Unlike dropout or ensemble methods that require multiple forward passes,
@@ -76,8 +75,7 @@ This approach provides a principled framework for capturing both **aleatoric unc
 simultaneously :cite:`sensoyEvidentialDeep2018`.
 
 1.5.1 Implemented Methods
-----------------------------
-
+""""""""""""""""""""""""""
 ``probly`` supports seven evidential deep learning methods through a unified interface:
 
 **Classification Methods**
@@ -108,7 +106,7 @@ simultaneously :cite:`sensoyEvidentialDeep2018`.
 
 
 1.5.2 Unified Evidential Training
-----------------------------------
+"""""""""""""""""""""""""""""""""""
 
 The ``unified_evidential_train`` function in ``probly.train.evidential.common`` provides
 a single interface for training all seven evidential methods:
@@ -197,7 +195,7 @@ a single interface for training all seven evidential methods:
 
 
 1.5.3 Evidential Layers
-------------------------
+"""""""""""""""""""""""""""
 
 The ``probly.layers.evidential.torch`` module provides specialized layers for evidential models.
 
@@ -258,7 +256,7 @@ MLP model for evidential regression that outputs Normal-Inverse-Gamma parameters
 
 
 1.5.4 Loss Functions
----------------------
+"""""""""""""""""""""""
 
 Loss functions are available in ``probly.train.evidential.torch``.
 
@@ -365,7 +363,7 @@ Regression Prior Networks loss combining DER on ID data with KL to prior on OOD:
 
 
 1.5.5 Uncertainty Interpretation
----------------------------------
+"""""""""""""""""""""""""""""""""""""
 
 **Classification (Dirichlet)**
 
@@ -404,7 +402,7 @@ For evidential regression, the model outputs (μ, κ, α, β):
 
 
 1.5.6 Tutorial Notebooks
--------------------------
+"""""""""""""""""""""""""""""
 
 Comprehensive tutorials are available in ``notebooks/examples/unified_evidential_train/``:
 
@@ -422,7 +420,7 @@ For the basic evidential transformation tutorials, see:
 
 
 1.5.2 Evidential Classification
---------------------------------------
+"""""""""""""""""""""""""""""""""""
 For classification, evidential classification learns a Dirichlet distribution over class probabilities,
 enabling sophisticated uncertainty quantification for multi-class prediction tasks.
 
@@ -430,7 +428,7 @@ enabling sophisticated uncertainty quantification for multi-class prediction tas
 
 
 2. Utilities and Layers
-================================
+--------------------------
 
 
 Beyond transformations, ``probly`` offers a comprehensive suite of **Utilities and Layers** that facilitate
@@ -461,7 +459,7 @@ effectively train, evaluate, and deploy them within the same unified framework.
 
 
 3. Evaluation and Quantification
-========================================
+-----------------------------------
 
 Finally, ``probly`` provides comprehensive tools for **Evaluation and Quantification** of uncertainty estimates.
 This includes rigorous methods to assess the calibration of uncertainty estimates, techniques to visualize
@@ -487,7 +485,7 @@ model outputs.
 
 
 **Conclusion**
-==============
+-----------------
 By providing a comprehensive suite of tools across these three pillars—Transformations, Utilities & Layers,
 and Evaluation & Quantification—``probly`` aims to make uncertainty estimation accessible and practical
 for a wide range of machine learning applications, from research prototyping to production deployment.
