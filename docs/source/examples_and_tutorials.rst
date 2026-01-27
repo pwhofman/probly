@@ -333,7 +333,7 @@ In this example, ``probly`` was used to create both a full Ensemble and a SubEns
 
 
 3. MixedEnsemble with ``probly``
-------------------------------
+---------------------------------
 
 What you will learn (III)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

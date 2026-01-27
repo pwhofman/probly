@@ -58,7 +58,6 @@ suppress_warnings = [
     "ref.python",
     "autosummary",
     "toc.not_readable",
-    "docutils",
 ]
 
 templates_path = ["_templates"]

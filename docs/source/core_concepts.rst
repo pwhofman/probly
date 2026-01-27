@@ -12,7 +12,7 @@ building trustworthy models. Probly provides tools to work with uncertainty in a
 structured and unified way.
 
 Mini gallery (quick links)
--------------------------
+----------------------------
 Short, focused examples for the concepts in this section:
 
 .. minigallery::

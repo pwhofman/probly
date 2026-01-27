@@ -1,5 +1,5 @@
 Utilities and Layers
-===================
+======================
 
 .. toctree::
    :maxdepth: 1
