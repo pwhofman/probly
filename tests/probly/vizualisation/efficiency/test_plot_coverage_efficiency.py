@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import matplotlib as mpl
+from matplotlib.axes import Axes
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
@@ -39,7 +40,7 @@ def test_plot_coverage_efficiency_execution(sample_data: tuple[np.ndarray, np.nd
 
     ax = viz.plot_coverage_efficiency(probs, targets)
 
-    if not isinstance(ax, plt.Axes):
+    if not isinstance(ax, Axes):
         msg = "Expected matplotlib Axes object."
         raise AssertionError(msg)  # noqa: TRY004
 
@@ -73,7 +74,7 @@ def test_plot_coverage_efficiency_existing_ax(sample_data: tuple[np.ndarray, np.
     probs, targets = sample_data
     viz = CoverageEfficiencyVisualizer()
 
-    _, ax_input = plt.subplots()
+    _fig, ax_input = plt.subplots()
     ax_output = viz.plot_coverage_efficiency(probs, targets, ax=ax_input)
 
     if ax_output is not ax_input:

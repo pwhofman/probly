@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -48,6 +48,18 @@ def _validate_shapes(
         if labels.shape[0] != probs.shape[0]:
             msg = "labels must have the same length N as probs/targets."
             raise ValueError(msg)
+
+
+def _scores_from_probs(probs: np.ndarray) -> np.ndarray:
+    """Compute a per-sample score from class probabilities (max confidence).
+
+    Args:
+        probs: Array of shape (N, C) with class probabilities.
+
+    Returns:
+        Array of shape (N,) with max probability per sample.
+    """
+    return cast("np.ndarray", np.max(probs, axis=1))
 
 
 def plot_coverage_efficiency_id_ood(
