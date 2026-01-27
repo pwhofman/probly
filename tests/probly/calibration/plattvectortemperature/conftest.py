@@ -2,15 +2,16 @@
 
 from __future__ import annotations
 
-from flax import nnx
-import jax
 import pytest
-import torch
-from torch import nn
-from torch.utils.data import DataLoader as TorchDataLoader
 
 pytest.importorskip("flax")
 pytest.importorskip("jax")
+
+from flax import nnx
+import jax
+import torch
+from torch import nn
+from torch.utils.data import DataLoader as TorchDataLoader
 
 FlaxSetupReturnType = tuple[nnx.Module, jax.Array, jax.Array]
 TorchSetupReturnType = tuple[nn.Module, TorchDataLoader, TorchDataLoader]
