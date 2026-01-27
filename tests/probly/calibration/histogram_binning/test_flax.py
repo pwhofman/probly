@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-import jax.numpy as jnp
 import pytest
 
-from probly.calibration.histogram_binning.flax import HistogramBinningFlax
+pytest.importorskip("jax")
 
-jax = pytest.importorskip("jax")
+import jax.numpy as jnp
+
+from probly.calibration.histogram_binning.flax import HistogramBinningFlax
 
 
 class TestNetworkArchitectures:
