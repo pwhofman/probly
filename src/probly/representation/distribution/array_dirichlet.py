@@ -104,24 +104,6 @@ class ArrayDirichlet(
         digamma_individual = np.sum((self.alphas - 1) * special.digamma(self.alphas), axis=-1)
 
         return log_beta + digamma_sum - digamma_individual  # type: ignore[no-any-return]
-    def sample(
-        self,
-        num_samples: int = 1,
-        rng: np.random.Generator | None = None,
-    ) -> ArraySample:
-        """Sample from the Dirichlet distribution (NumPy backend)."""
-        if rng is None:
-            rng = np.random.default_rng()
-
-        gammas = rng.gamma(
-            shape=self.alphas,
-            scale=1.0,
-            size=(num_samples,) + self.alphas.shape,
-        )
-
-        samples = gammas / np.sum(gammas, axis=-1, keepdims=True)
-
-        return ArraySample(samples=samples)
 
     def sample(
         self,
@@ -135,7 +117,7 @@ class ArrayDirichlet(
         gammas = rng.gamma(
             shape=self.alphas,
             scale=1.0,
-            size=(num_samples,) + self.alphas.shape,
+            size=(num_samples, *self.alphas.shape),
         )
 
         samples = gammas / np.sum(gammas, axis=-1, keepdims=True)
