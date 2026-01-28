@@ -5,13 +5,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal, Self, cast, override
 
-from matplotlib.pylab import ArrayLike
 import numpy as np
 
 from probly.representation.distribution.common import GaussianDistribution
+from probly.representation.sampling.array_sample import ArraySample
 
 if TYPE_CHECKING:
     from numpy.typing import ArrayLike, DTypeLike
+
+_rng = np.random.default_rng()
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
@@ -63,6 +65,17 @@ class ArrayGaussian(GaussianDistribution, np.lib.mixins.NDArrayOperatorsMixin):
         """Return the total differential entropy of the Gaussian distribution."""
         var = self.var
         return float(0.5 * np.log(2 * np.e * np.pi * var).sum())
+
+    @override
+    def sample(self, size: int) -> ArraySample[np.ndarray]:
+        """Draw samples and wrap them in an ArraySample (sample_axis=0)."""
+        std = np.sqrt(self.var)
+        samples = _rng.normal(
+            loc=self.mean,
+            scale=std,
+            size=(size, *self.mean.shape),
+        )
+        return ArraySample(array=samples, sample_axis=0)
 
     def __array_namespace__(self) -> object:
         """Return the array namespace used by this distribution (NumPy)."""
