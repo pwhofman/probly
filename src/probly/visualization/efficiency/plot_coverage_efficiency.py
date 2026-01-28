@@ -59,7 +59,17 @@ class CoverageEfficiencyVisualizer:
         title: str = "Coverage vs. Efficiency",
         ax: Axes | None = None,
     ) -> Axes:
-        """Create a dual-axis plot showing Coverage and Efficiency over Confidence Levels."""
+        """Create a dual-axis plot showing Coverage and Efficiency over Confidence Levels.
+
+        Args:
+            probs: Array of predicted probabilities with shape (n_samples, n_classes).
+            targets: True labels as a 1D array of shape (n_samples,).
+            title: Plot title. Defaults to "Coverage vs. Efficiency".
+            ax: Matplotlib Axes to draw the plot on. If None, a new figure and axes are created.
+
+        Returns:
+            Matplotlib Axes containing the coverage-efficiency plot.
+        """
         if ax is None:
             _fig, ax = plt.subplots(figsize=(8, 5))
 
