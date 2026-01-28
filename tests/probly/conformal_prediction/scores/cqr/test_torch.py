@@ -47,7 +47,7 @@ class SimpleQuantileNet(nn.Module):
         """Run forward pass."""
         x = F.relu(self.fc1(x))
         # Mypy treats torch.Tensor as Any due to conditional import, so we ignore the warning
-        return cast(torch.Tensor, self.fc2(x))  # type: ignore[no-any-return]
+        return cast(torch.Tensor, self.fc2(x))
 
 
 class TorchModelWrapper:
@@ -71,7 +71,7 @@ class TorchModelWrapper:
         # 2. Forward pass
         # We detach() so it can be converted back to numpy by CQRScore later if needed
         # Mypy treats torch.Tensor as Any due to conditional import, so we ignore the warning
-        return cast(torch.Tensor, self.model(x).detach())  # type: ignore[no-any-return]
+        return cast(torch.Tensor, self.model(x).detach())
 
 
 def quantile_loss(preds: torch.Tensor, target: torch.Tensor, alpha: float = 0.1) -> torch.Tensor:
@@ -240,7 +240,7 @@ class TestCQRScoreTorch:
         y_pred = torch.tensor([[4.0, 6.0]])
 
         # This calls the lazy dispatch mechanism
-        scores = cqr_score_func(y_true, y_pred)  # type: ignore[var-annotated]
+        scores = cqr_score_func(y_true, y_pred)
 
         assert isinstance(scores, torch.Tensor)
         assert scores.item() == 0.0
