@@ -57,20 +57,6 @@ class ArrayGaussian(GaussianDistribution):
         var = self.var
         return float(0.5 * np.log(2 * np.e * np.pi * var).sum())
 
-    '''def sample(self, size: int) -> ArraySample[np.ndarray]:
-        """Draw samples and wrap them in an ArraySample.
-
-        Returns an ArraySample with sample_axis=0.
-        """
-        std = np.sqrt(self.var)
-
-        samples = np.random.normal(
-            loc=self.mean,
-            scale=std,
-            size=(size,) + self.mean.shape,
-        )
-        return ArraySample(array=samples, sample_axis=0)'''
-
     def __array_namespace__(self) -> object:
         """Return the array namespace used by this distribution (NumPy)."""
         return self.mean.__array_namespace__()
