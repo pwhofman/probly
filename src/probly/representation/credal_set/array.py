@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any, Literal, Self, override
 
 import numpy as np
 
-from probly.representation.credal_set.common import CategoricalCredalSet, DiscreteCredalSet
+from probly.representation.credal_set.common import CategoricalCredalSet, DiscreteCredalSet, ProbabilityIntervals
 from probly.representation.sampling.sample import ArraySample
 
 if TYPE_CHECKING:
@@ -155,4 +155,162 @@ class ArrayDiscreteCredalSet(ArrayCategoricalCredalSet, DiscreteCredalSet[np.nda
 
     def __hash__(self) -> int:
         """Compute the hash of the ArraySample."""
+        return super().__hash__()
+
+
+@dataclass(frozen=True, slots=True, weakref_slot=True)
+class ArrayProbabilityIntervals(ArrayCategoricalCredalSet, ProbabilityIntervals[np.ndarray]):
+    """A credal set defined by probability intervals over outcomes.
+
+    This represents uncertainty through lower and upper probability bounds for each class.
+    The intervals are stored as a numpy array of shape (..., 2, num_classes) where
+    the second-to-last axis holds [lower_bounds, upper_bounds].
+    """
+
+    intervals: np.ndarray
+
+    @override
+    @classmethod
+    def from_array_sample(
+        cls,
+        sample: ArraySample[np.ndarray],
+        distribution_axis: int = -1,
+    ) -> Self:
+        """Create probability intervals from a sample by computing min/max bounds.
+
+        Args:
+            sample: The sample to extract intervals from.
+            distribution_axis: Which axis contains the categorical probabilities.
+
+        Returns:
+            A new ArrayProbabilityIntervals instance.
+        """
+        if distribution_axis < 0:
+            distribution_axis += sample.ndim - 1
+
+        # Get all samples in shape (..., num_samples, num_classes)
+        samples_array = np.moveaxis(sample.samples, distribution_axis + 1, -1)
+
+        # Compute lower and upper bounds across samples
+        lower_bounds = np.min(samples_array, axis=-2)
+        upper_bounds = np.max(samples_array, axis=-2)
+
+        # Stack to create (..., 2, num_classes) shape
+        intervals = np.stack([lower_bounds, upper_bounds], axis=-2)
+
+        return cls(intervals=intervals)
+
+    def __array_namespace__(self) -> Any:  # noqa: ANN401
+        """Get the array namespace of the underlying intervals."""
+        return self.intervals.__array_namespace__()
+
+    @property
+    def device(self) -> str:
+        """Return the device where the intervals are stored."""
+        return self.intervals.device
+
+    @property
+    def dtype(self) -> np.dtype:
+        """Return the data type of the intervals."""
+        return self.intervals.dtype  # type: ignore[no-any-return]
+
+    @property
+    def ndim(self) -> int:
+        """Return the number of dimensions (excluding the interval and class dimensions)."""
+        return self.intervals.ndim - 2
+
+    @property
+    def shape(self) -> tuple[int, ...]:
+        """Return the shape (excluding the interval and class dimensions)."""
+        return self.intervals.shape[:-2]  # type: ignore[no-any-return]
+
+    @property
+    def num_classes(self) -> int:
+        """Return the number of classes."""
+        return self.intervals.shape[-1]  # type: ignore[no-any-return]
+
+    def __len__(self) -> int:
+        """Return the length of the first dimension."""
+        shape = self.shape
+
+        if len(shape) == 0:
+            msg = "len() of unsized credal set"
+            raise TypeError(msg)
+
+        return shape[0]
+
+    def __array__(self, dtype: DTypeLike = None, copy: bool | None = None) -> np.ndarray:
+        """Get the underlying intervals as a numpy array.
+
+        Args:
+            dtype: Desired data type.
+            copy: Whether to return a copy.
+
+        Returns:
+            The underlying intervals array.
+        """
+        if dtype is None and not copy:
+            return self.intervals
+
+        return np.asarray(self.intervals, dtype=dtype, copy=copy)
+
+    @override
+    def lower(self) -> np.ndarray:
+        """Get the lower probability bounds for each class."""
+        return self.intervals[..., 0, :]  # type: ignore[no-any-return]
+
+    @override
+    def upper(self) -> np.ndarray:
+        """Get the upper probability bounds for each class."""
+        return self.intervals[..., 1, :]  # type: ignore[no-any-return]
+
+    def width(self) -> np.ndarray:
+        """Compute the width of each probability interval.
+
+        Returns:
+            Array of interval widths for each class.
+        """
+        return self.upper() - self.lower()
+
+    def contains(self, probabilities: np.ndarray) -> np.ndarray:
+        """Check if given probabilities fall within the intervals.
+
+        Args:
+            probabilities: Probability distributions to check, shape (..., num_classes).
+
+        Returns:
+            Boolean array indicating whether each probability is contained.
+        """
+        lower = self.lower()
+        upper = self.upper()
+        return np.all((probabilities >= lower) & (probabilities <= upper), axis=-1)  # type: ignore[no-any-return]
+
+    def copy(self) -> Self:
+        """Create a copy of the intervals.
+
+        Returns:
+            A new ArrayProbabilityIntervals with copied data.
+        """
+        return type(self)(intervals=self.intervals.copy())
+
+    def to_device(self, device: Literal["cpu"]) -> Self:
+        """Move the intervals to a specified device.
+
+        Args:
+            device: Target device.
+
+        Returns:
+            A new ArrayProbabilityIntervals on the specified device.
+        """
+        if device == self.device:
+            return self
+
+        return type(self)(intervals=self.intervals.to_device(device))
+
+    def __eq__(self, value: Any) -> Self:  # type: ignore[override]  # noqa: ANN401, PYI032
+        """Vectorized equality comparison."""
+        return np.equal(self, value)  # type: ignore[return-value]
+
+    def __hash__(self) -> int:
+        """Compute the hash of the intervals."""
         return super().__hash__()
