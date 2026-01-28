@@ -46,7 +46,7 @@ class ArrayCategoricalCredalSet(CategoricalCredalSet[np.ndarray], metaclass=ABCM
         raise NotImplementedError(msg)
 
 
-@dataclass(frozen=True, slots=True, weakref_slot=False)
+@dataclass(frozen=True, slots=True, weakref_slot=True)
 class ArrayDiscreteCredalSet(ArrayCategoricalCredalSet, DiscreteCredalSet[np.ndarray]):
     """A discrete credal set over a finite set of distributions stored in a numpy array.
 

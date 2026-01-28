@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 type Numeric = np.number | np.ndarray | float | int
 
 
-@dataclass(frozen=True, slots=True, weakref_slot=False)
+@dataclass(frozen=True, slots=True, weakref_slot=True)
 class ArraySample[D: Numeric](Sample[D], np.lib.mixins.NDArrayOperatorsMixin):
     """A sample of predictions stored in a numpy array."""
 
