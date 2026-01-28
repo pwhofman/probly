@@ -5,7 +5,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal, Self, cast, override
 
-
 import numpy as np
 
 from probly.representation.distribution.common import GaussianDistribution

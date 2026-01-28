@@ -56,7 +56,6 @@ def test_from_parameters_creates_instance() -> None:
     np.testing.assert_array_equal(dist.var, np.array(var_list, dtype=float))
 
 
-
 def test_array_properties() -> None:
     """Test shape, ndim, size delegation."""
     shape = (2, 3)
@@ -79,7 +78,6 @@ def test_transpose_property() -> None:
     dist = ArrayGaussian(mean, var)
     transposed = dist.T
 
-
     assert isinstance(transposed, ArrayGaussian)
     assert transposed.shape == (2, 2)
     np.testing.assert_array_equal(transposed.mean, mean.T)
@@ -98,7 +96,8 @@ def test_matrix_transpose_property() -> None:
     expected_mean = np.transpose(mean)
     np.testing.assert_array_equal(t_dist.mean, expected_mean)
 
-def test_sample_function() -> None :
+
+def test_sample_function() -> None:
     """Test the sampling function returns."""
     shape = (2,)
     dist = ArrayGaussian(np.zeros(shape), np.ones(shape))
@@ -110,10 +109,9 @@ def test_sample_function() -> None :
     assert samples.array.shape == (n_samples, *shape)
     assert samples.sample_axis == 0
 
+
 def test_sample_statistics() -> None:
-    """
-    Check if the samples actually follow the Gaussian distribution statistically.
-    """
+    """Check if the samples actually follow the Gaussian distribution statistically."""
     mean_val = 10.0
     var_val = 4.0
     dist = ArrayGaussian(np.array([mean_val]), np.array([var_val]))
@@ -125,6 +123,7 @@ def test_sample_statistics() -> None:
     assert np.mean(samples) == pytest.approx(mean_val, abs=0.05)
     assert np.var(samples) == pytest.approx(var_val, abs=0.05)
 
+
 def test_entropy() -> None:
     """Test if entropy calculation works properly."""
     mean = np.array([0])
@@ -134,6 +133,7 @@ def test_entropy() -> None:
 
     expected = 0.5 * np.log(2 * np.pi * np.e * var)
     assert dist.entropy == pytest.approx(expected)
+
 
 def test_slice() -> None:
     """Test slicing via __getitem__ returns a new ArrayGaussian."""
