@@ -14,7 +14,7 @@ from probly.representation.sampling.array_sample_functions import (
     array_sample_internals,
     track_sample_axis_after_reduction,
 )
-from probly.representation.sampling.common_sample import Sample, SampleAxis
+from probly.representation.sampling.common_sample import Sample, SampleAxis, create_sample
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -69,6 +69,8 @@ class ArraySample[D: Numeric](Sample[D], np.lib.mixins.NDArrayOperatorsMixin):
             if dtype is not None:
                 samples = samples.astype(dtype)
         else:
+            if hasattr(samples, "__array__"):
+                return cls.from_iterable(np.asarray(samples, dtype=dtype), sample_axis=sample_axis)
             if not isinstance(samples, Sequence):
                 samples = list(samples)
             if sample_axis == "auto":
@@ -339,3 +341,6 @@ class ArraySample[D: Numeric](Sample[D], np.lib.mixins.NDArrayOperatorsMixin):
 def _(array: ArraySample) -> tuple[np.ndarray, int]:
     """Get the sample dimension of an ArraySample."""
     return array.array, array.sample_axis
+
+
+create_sample.register(np.number | np.ndarray | float | int, ArraySample.from_iterable)
