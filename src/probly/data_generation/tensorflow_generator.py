@@ -89,7 +89,7 @@ class TensorFlowDataGenerator(BaseDataGenerator[tf.keras.Model, tf.data.Dataset,
         return self.results
 
     def _count(self, values: np.ndarray) -> dict[int, int]:
-        counts = {}
+        counts: dict[int, int] = {}
         for val in values.tolist():
             key = int(val)
             counts[key] = counts.get(key, 0) + 1

@@ -6,23 +6,59 @@ framework argument ("pytorch", "tensorflow", or "jax").
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Literal, overload
 
 from .jax_generator import JAXDataGenerator
 from .pytorch_generator import PyTorchDataGenerator
 from .tensorflow_generator import TensorFlowDataGenerator
 
 if TYPE_CHECKING:  # import for type checking only
+    from collections.abc import Callable
+
+    import tensorflow as tf
+    import torch
+    from torch.utils.data import Dataset as TorchDataset
+
     from .base_generator import BaseDataGenerator
+
+
+@overload
+def create_data_generator(
+    framework: Literal["pytorch"],
+    model: torch.nn.Module,
+    dataset: TorchDataset[Any],
+    batch_size: int = 32,
+    device: str | None = None,
+) -> PyTorchDataGenerator: ...
+
+
+@overload
+def create_data_generator(
+    framework: Literal["tensorflow"],
+    model: tf.keras.Model,
+    dataset: tf.data.Dataset,
+    batch_size: int = 32,
+    device: str | None = None,
+) -> TensorFlowDataGenerator: ...
+
+
+@overload
+def create_data_generator(
+    framework: Literal["jax"],
+    model: Callable[[Any], Any],
+    dataset: tuple[Any, Any],
+    batch_size: int = 32,
+    device: str | None = None,
+) -> JAXDataGenerator: ...
 
 
 def create_data_generator(
     framework: str,
-    model: object,
-    dataset: object,
+    model: Any,
+    dataset: Any,
     batch_size: int = 32,
     device: str | None = None,
-) -> BaseDataGenerator[object, object, str | None]:
+) -> BaseDataGenerator[Any, Any, str | None]:
     """Create a data generator based on the selected framework."""
     framework = framework.lower()
 

@@ -6,6 +6,7 @@ provides helpers to persist results.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 import json
 import logging
 from pathlib import Path
@@ -19,12 +20,12 @@ from .base_generator import BaseDataGenerator
 logger = logging.getLogger(__name__)
 
 
-class JAXDataGenerator(BaseDataGenerator[object, tuple[object, object], str | None]):
+class JAXDataGenerator(BaseDataGenerator[Callable[[jnp.ndarray], jnp.ndarray], tuple[object, object], str | None]):
     """Data generator for JAX models."""
 
     def __init__(
         self,
-        model: object,  # JAX model function (callable)
+        model: Callable[[jnp.ndarray], jnp.ndarray],  # JAX model function (callable)
         dataset: tuple[object, object],  # (x, y) as numpy or jax arrays
         batch_size: int = 32,
         device: str | None = None,
@@ -76,7 +77,7 @@ class JAXDataGenerator(BaseDataGenerator[object, tuple[object, object], str | No
         return self.results
 
     def _count(self, values: jnp.ndarray) -> dict[int, int]:
-        counts = {}
+        counts: dict[int, int] = {}
         for val in values.tolist():
             key = int(val)
             counts[key] = counts.get(key, 0) + 1

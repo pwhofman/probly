@@ -7,7 +7,7 @@ from dataclasses import dataclass
 import json
 import logging
 from pathlib import Path
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 import warnings
 
 import torch
@@ -32,6 +32,10 @@ def _is_probabilities(x: torch.Tensor, atol: float = 1e-4) -> bool:
         return False
     sums = x.sum(dim=-1)
     return bool(torch.allclose(sums, torch.ones_like(sums), atol=atol, rtol=0))
+
+
+if TYPE_CHECKING:  # typing-only import to satisfy Ruff's TC rules
+    from collections.abc import Sized
 
 
 @dataclass
@@ -139,10 +143,10 @@ class FirstOrderDataGenerator:
         # Remember Blatt3: Prepare the loader
         if isinstance(dataset_or_loader, torch.utils.data.DataLoader):
             loader = dataset_or_loader
-            dataset_len = len(loader.dataset) if loader.dataset is not None else None
+            dataset_len = len(cast("Sized", loader.dataset)) if loader.dataset is not None else None
         else:
             dataset = cast("Dataset", dataset_or_loader)
-            dataset_len = len(dataset)
+            dataset_len = len(cast("Sized", dataset))
             loader = torch.utils.data.DataLoader(dataset, batch_size=self.batch_size, shuffle=False)
 
         if isinstance(self.model, torch.nn.Module):
@@ -273,7 +277,7 @@ class FirstOrderDataset(Dataset):
         self.distributions: dict[int, list[float]] = {int(k): list(v) for k, v in distributions.items()}
         self.input_getter = input_getter
 
-        n = len(base_dataset)
+        n = len(cast("Sized", base_dataset))
         if len(self.distributions) != n:
             warnings.warn(
                 (
@@ -285,7 +289,7 @@ class FirstOrderDataset(Dataset):
 
     def __len__(self) -> int:
         """Return number of samples in the base dataset."""
-        return len(self.base_dataset)
+        return len(cast("Sized", self.base_dataset))
 
     def _get_input(self, sample: object) -> object:
         """Extract input from a sample, using input_getter if provided."""
