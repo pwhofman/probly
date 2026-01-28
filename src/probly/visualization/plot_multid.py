@@ -100,7 +100,7 @@ class MultiVisualizer:
         theta = radar_factory(n_classes, frame="polygon")
 
         if ax is None:
-            fig, ax = plt.subplots(figsize=(6, 6), subplot_kw={"projection": "radar"})
+            _, ax = plt.subplots(figsize=(6, 6), subplot_kw={"projection": "radar"})
 
         # Setup Axis
         ax.set_rgrids([0.2, 0.4, 0.6, 0.8, 1.0])

@@ -2,12 +2,20 @@
 
 from __future__ import annotations
 
-import matplotlib.pyplot as plt
+from typing import TYPE_CHECKING
+
 import mpltern  # noqa: F401, required for ternary projection, do not remove
 import numpy as np
 
+if TYPE_CHECKING:
+    from matplotlib.axes import Axes
+    from matplotlib.figure import Figure
+    import matplotlib.pyplot as plt
+else:
+    import matplotlib.pyplot as plt
 
-def simplex_plot(probs: np.ndarray) -> tuple[plt.Figure, plt.Axes]:
+
+def simplex_plot(probs: np.ndarray) -> tuple[Figure, Axes]:
     """Plot probability distributions on the simplex.
 
     Args:
@@ -23,7 +31,7 @@ def simplex_plot(probs: np.ndarray) -> tuple[plt.Figure, plt.Axes]:
     return fig, ax
 
 
-def credal_set_plot(probs: np.ndarray) -> tuple[plt.Figure, plt.Axes]:
+def credal_set_plot(probs: np.ndarray) -> tuple[Figure, Axes]:
     """Plot credal sets based on intervals of lower and upper probabilities.
 
     Args:
