@@ -1,4 +1,4 @@
-"""One method for the user to call."""
+"""Public API to plot 2d, 3d or multidimensional data as credal sets."""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ def create_credal_plot(
     *,
     show: bool = True,
 ) -> Axes:
-    """One method for the user to call; refers to the correct plotting method via input_handling.
+    """Public API for credal sets; refers to the correct plotting method via input_handling.
 
     Args:
         input_data: NumPy array with probabilities.

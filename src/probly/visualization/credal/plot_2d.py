@@ -23,9 +23,10 @@ class IntervalVisualizer:
         """Convert 2D probabilities to 2D coordinates.
 
         Args:
-        probs: probability vector for 2 classes.
+            probs: probability vector for 2 classes.
 
-        returns: cartesian coordinates.
+        Returns:
+            cartesian coordinates.
         """
         _, p2 = probs
         x = p2
@@ -44,14 +45,15 @@ class IntervalVisualizer:
         """Plot the interval plot.
 
         Args:
-        probs: probability vector for 2 classes.
-        labels: labels for the interval plot.
-        title: title of the plot.
-        mle_flag: Flag to indicate whether median of probabilities is shown.
-        credal_flag: Flag to indicate whether min/max interval is shown.
-        ax: matplotlib axes.Axes.
+            probs: probability vector for 2 classes.
+            labels: labels for the interval plot.
+            title: title of the plot.
+            mle_flag: Flag to indicate whether median of probabilities is shown.
+            credal_flag: Flag to indicate whether min/max interval is shown.
+            ax: matplotlib axes.Axes.
 
-        returns: plot.
+        Returns:
+            interval plot.
         """
         coords = np.array([self.probs_to_coords_2d(p) for p in probs])
 

@@ -1,4 +1,4 @@
-"""Visualizing the uncertainty between two 2D clusters."""
+"""Visualizing the uncertainty between two 2D clusters. Derived from margin-based confidence."""
 
 from __future__ import annotations
 
@@ -41,7 +41,7 @@ def _2_cluster_to_y(cluster1: np.ndarray, cluster2: np.ndarray) -> np.ndarray:
         cluster2: 2D NumPy array with shape (n_samples, 2).
 
     Returns:
-        One 1D NumPy array with shape (n_samples, ) only consisting of 0s and 1s.
+        One 1D NumPy array with shape (n_labels, ) only consisting of 0s and 1s.
     """
     input1 = _check_shape(cluster1)
     input2 = _check_shape(cluster2)
@@ -55,7 +55,7 @@ def _2_cluster_to_y(cluster1: np.ndarray, cluster2: np.ndarray) -> np.ndarray:
 
 
 def _2_cluster_to_x(cluster1: np.ndarray, cluster2: np.ndarray) -> np.ndarray:
-    """Helper method to convert 2 clusters to one cluster with all samples.
+    """Helper method to convert 2 clusters into one cluster with all samples.
 
     Args:
         cluster1: 2D NumPy array with shape (n_samples, 2).
@@ -71,7 +71,7 @@ def _2_cluster_to_x(cluster1: np.ndarray, cluster2: np.ndarray) -> np.ndarray:
 
 
 def _plot_svm_beam(ax: Axes, clf: SVC, X: np.ndarray, cmap: Colormap) -> None:  # noqa: N803
-    """Helper method that contains SVM logic to depict uncertainty between two 2D clusters.
+    """Helper method with SVM logic to depict margin-based confidence, adjusted to uncertainty between two 2D clusters.
 
     Args:
         ax: matplotlib axes object.

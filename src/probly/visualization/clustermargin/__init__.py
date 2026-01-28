@@ -1,4 +1,4 @@
-"""Package for a simple 2D Uncertainty Visualization."""
+"""Package for a simple 2D margin-based confidence derived uncertainty Visualization."""
 
 from .clustervisualizer import plot_uncertainty
 
