@@ -18,7 +18,7 @@ def check_num_classes(input_data: np.ndarray) -> int:
     """Checks number of classes.
 
     Args:
-        input_data: array with last dimension equal to the number of classes.
+        input_data: Array with last dimension equal to the number of classes.
 
     Returns:
         Number of classes.
@@ -65,7 +65,7 @@ def normalize_input(input_data: np.ndarray) -> np.ndarray:
     """Normalizes input data.
 
     Args:
-        input_data: array with last dimension equal to the number of classes.
+        input_data: Array with last dimension equal to the number of classes.
 
     Returns:
         2D NumPy array with normalized input data.

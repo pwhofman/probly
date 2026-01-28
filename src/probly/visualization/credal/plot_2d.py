@@ -23,10 +23,10 @@ class IntervalVisualizer:
         """Convert 2D probabilities to 2D coordinates.
 
         Args:
-            probs: probability vector for 2 classes.
+            probs: Probability vector for 2 classes.
 
         Returns:
-            cartesian coordinates.
+            Cartesian coordinates as tuple.
         """
         _, p2 = probs
         x = p2
@@ -45,15 +45,15 @@ class IntervalVisualizer:
         """Plot the interval plot.
 
         Args:
-            probs: probability vector for 2 classes.
-            labels: labels for the interval plot.
-            title: title of the plot.
+            probs: Probability vector for 2 classes.
+            labels: Labels for the interval plot.
+            title: Title of the plot.
             mle_flag: Flag to indicate whether median of probabilities is shown.
             credal_flag: Flag to indicate whether min/max interval is shown.
-            ax: matplotlib axes.Axes.
+            ax: Axes to draw the plot on. If None, a new Axes is created.
 
         Returns:
-            interval plot.
+            Interval plot.
         """
         coords = np.array([self.probs_to_coords_2d(p) for p in probs])
 
@@ -102,7 +102,16 @@ class IntervalVisualizer:
         edges = [(e1, e2, "A")]
 
         def lerp(p: np.ndarray, q: np.ndarray, t: float) -> np.ndarray:
-            """Linear Interpolation for line values."""
+            """Linear Interpolation for line values.
+
+            Args:
+                p: NumPy Array representing starting point.
+                q: NumPy Array representing ending point.
+                t: Interpolation parameter in [0, 1], where 0 returns p and 1 returns q.
+
+            Returns:
+                Interpolated point between p and q.
+            """
             return (1 - t) * p + t * q
 
         for p, q, axis_name in edges:  # noqa: B007
