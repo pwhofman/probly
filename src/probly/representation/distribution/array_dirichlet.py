@@ -104,6 +104,7 @@ class ArrayDirichlet(
         digamma_individual = np.sum((self.alphas - 1) * special.digamma(self.alphas), axis=-1)
 
         return log_beta + digamma_sum - digamma_individual  # type: ignore[no-any-return]
+
     def sample(
         self,
         num_samples: int = 1,
@@ -116,7 +117,7 @@ class ArrayDirichlet(
         gammas = rng.gamma(
             shape=self.alphas,
             scale=1.0,
-            size=(num_samples,) + self.alphas.shape,
+            size=(num_samples, *self.alphas.shape),
         )
 
         samples = gammas / np.sum(gammas, axis=-1, keepdims=True)
