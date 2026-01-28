@@ -123,7 +123,7 @@ class MultiVisualizer:
         if ax is None:
             _, ax = plt.subplots(figsize=(6, 6), subplot_kw={"projection": "radar"})
 
-        ax_any = cast(Any, ax)
+        ax_any = cast("Any", ax)
 
         ax_any.set_rgrids([0.2, 0.4, 0.6, 0.8, 1.0])
         ax_any.set_ylim(0.0, 1.0)
@@ -237,10 +237,9 @@ class MultiVisualizer:
                 label="Upper bound",
             )
 
-        assert ax is not None
         spiderplot_axis_with_ticks(ax, theta, n_vars=n_classes, draw_tick_marks=True)
         ax.set_title(title, pad=20)
         ax.legend(loc="upper right", bbox_to_anchor=(1.3, 1.1))
         plt.tight_layout()
-        
+
         return ax
