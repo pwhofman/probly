@@ -25,7 +25,7 @@ class IsotonicRegressionCalibrator:
             use_logits: A switch allowing to return logits or probabilities
 
         """
-        self.model = base_model
+        self.model = base_model.to("cpu")
         self.use_logits = use_logits
         self.calibrator: list[IsotonicRegression] = []
 
@@ -92,6 +92,7 @@ class IsotonicRegressionCalibrator:
             calibrated_probs: The calibrated probabilities for the prediction
 
         """
+        x = x.to("cpu")
         self.model.eval()
 
         with no_grad():
