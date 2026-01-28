@@ -38,7 +38,8 @@ class DirichletTernaryVisualizer:
             xy: Cartesian coordinates inside the triangle.
             tol: Numerical tolerance to avoid simplex boundaries.
 
-        Returns: Barycentric coordinates.
+        Returns:
+            Barycentric coordinates.
         """
         corners = self.triangle_corners()
 
@@ -189,7 +190,6 @@ class DirichletTernaryVisualizer:
         ax: Axes | None = None,
         subdiv: int = 7,
         nlevels: int = 200,
-        cmap: str = "viridis",
         **contour_kwargs: Any,  # noqa: ANN401
     ) -> Axes:
         """Plot Dirichlet pdf contours on a ternary simplex.
@@ -224,7 +224,7 @@ class DirichletTernaryVisualizer:
             trimesh,
             pvals,
             nlevels,
-            cmap=cmap,
+            cmap=cfg.PROBLY_CMAP,
             **contour_kwargs,
         )
 
