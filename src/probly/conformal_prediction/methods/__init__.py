@@ -1,11 +1,10 @@
 """Conformal Prediction methods implementation."""
 
+from probly.conformal_prediction.methods.class_conditional import ClassConditionalClassifier, ClassConditionalRegressor
 from probly.conformal_prediction.methods.common import ConformalClassifier, ConformalRegressor, Predictor, predict_probs
 from probly.conformal_prediction.methods.cvplus import CVPlusClassifier, CVPlusRegressor
 from probly.conformal_prediction.methods.jackknife import JackknifePlusClassifier, JackknifePlusRegressor
 from probly.conformal_prediction.methods.mondrian import (
-    ClassConditionalClassifier,
-    ClassConditionalRegressor,
     GroupedConformalBase,
     MondrianConformalClassifier,
     MondrianConformalRegressor,

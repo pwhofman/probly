@@ -9,7 +9,7 @@ import numpy as np
 import numpy.typing as npt
 import pytest
 
-from probly.conformal_prediction.scores.saps.common import SAPSScore, saps_score_func, saps_score_func_batch
+from probly.conformal_prediction.scores.saps.common import SAPSScore, saps_score_func
 
 
 class MockModel:
@@ -77,7 +77,7 @@ def test_saps_score_func_batch_basic() -> None:
     labels = np.array([0, 1], dtype=int)
     us = np.array([0.5, 0.5], dtype=float)
 
-    scores = saps_score_func_batch(probs, labels, lambda_val=0.1, us=us)
+    scores = saps_score_func(probs, labels, lambda_val=0.1, us=us)
 
     assert isinstance(scores, np.ndarray)
     assert scores.shape == (2,)
@@ -98,7 +98,7 @@ def test_saps_score_func_batch_without_us() -> None:
     )
     labels = np.array([0, 1], dtype=int)
 
-    scores = saps_score_func_batch(probs, labels, lambda_val=0.1, us=None)
+    scores = saps_score_func(probs, labels, lambda_val=0.1, us=None)
 
     assert isinstance(scores, np.ndarray)
     assert scores.shape == (2,)
@@ -235,7 +235,7 @@ def test_saps_score_func_batch_edge_case_large_batch() -> None:
     probs = rng.dirichlet(np.ones(n_classes), size=n_samples).astype(np.float32)
     labels = rng.integers(0, n_classes, size=n_samples)
 
-    scores = saps_score_func_batch(probs, labels, lambda_val=0.1)
+    scores = saps_score_func(probs, labels, lambda_val=0.1)
 
     assert scores.shape == (n_samples,)
     assert np.all(scores >= 0)
