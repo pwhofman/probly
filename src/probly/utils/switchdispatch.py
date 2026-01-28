@@ -19,8 +19,8 @@ class switchdispatch[C: Callable]:  # noqa: N801
     Similar to functools.singledispatch, but dispatches based on equality
     rather than type.
 
-    Example:
-```python
+    .. code-block:: python
+
         @switchdispatch
         def func(x):
             return "default"
@@ -36,7 +36,6 @@ class switchdispatch[C: Callable]:  # noqa: N801
         print(func(1))  # Output: "one"
         print(func(2))  # Output: "two"
         print(func(3))  # Output: "default"
-```
     """
 
     def __init__(self, func: C) -> None:

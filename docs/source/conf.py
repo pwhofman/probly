@@ -53,14 +53,7 @@ suppress_warnings = [
     "toc.not_included",
     "autodoc.import_object",
     "autodoc",
-    "ref.ref",
-    "ref.doc",
-    "ref.python",
-    "misc.highlighting_failure",
-    "myst.header",
     "autosummary",
-    "toc.not_readable",
-    "docutils",
 ]
 
 templates_path = ["_templates"]
