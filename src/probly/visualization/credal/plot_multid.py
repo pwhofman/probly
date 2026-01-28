@@ -237,13 +237,10 @@ class MultiVisualizer:
                 label="Upper bound",
             )
 
-<<<<<<< HEAD
         assert ax is not None
-=======
->>>>>>> d273c72731fd02211c2caf878ae3a612c15159a1
         spiderplot_axis_with_ticks(ax, theta, n_vars=n_classes, draw_tick_marks=True)
         ax.set_title(title, pad=20)
         ax.legend(loc="upper right", bbox_to_anchor=(1.3, 1.1))
         plt.tight_layout()
-
+        
         return ax
