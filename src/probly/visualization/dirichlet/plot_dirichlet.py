@@ -35,15 +35,23 @@ class DirichletTernaryVisualizer:
         """Convert Cartesian coordinates to barycentric coordinates.
 
         Args:
-        xy: Cartesian coordinates inside the triangle.
-        tol: Numerical tolerance to avoid simplex boundaries.
+            xy: Cartesian coordinates inside the triangle.
+            tol: Numerical tolerance to avoid simplex boundaries.
 
-        return: Barycentric coordinates.
+        Returns:
+            Barycentric coordinates.
         """
         corners = self.triangle_corners()
 
         def to3(v: np.ndarray) -> np.ndarray:
-            """Promote 2D vector to 3D."""
+            """Promote 2D vector to 3D.
+
+            Args:
+                v: A 2D vector of shape (2,).
+
+            Returns:
+                A 3D vector of shape (3,) with z-component set to 0.0.
+            """
             return np.array([v[0], v[1], 0.0])
 
         area = float(
@@ -59,6 +67,15 @@ class DirichletTernaryVisualizer:
         pairs = [corners[np.roll(range(3), -i)[1:]] for i in range(3)]
 
         def tri_area(point: np.ndarray, pair: np.ndarray) -> float:
+            """Compute area of a triangle defined by 'point' and two vertices.
+
+            Args:
+                point: A 2D point (shape (2,)).
+                pair: Two 2D vertices (shape (2, 2)).
+
+            Returns:
+                The triangle area as a float.
+            """
             area = 0.5 * np.linalg.norm(
                 np.cross(
                     to3(pair[0] - point),
@@ -87,9 +104,10 @@ class DirichletTernaryVisualizer:
             """Compute the Dirichlet pdf.
 
             Args:
-            x: Barycentric coordinates.
+                x: Barycentric coordinates.
 
-            return: Pdf value.
+            Returns:
+                The PDF value at x as a float.
             """
             return float(self.coef * np.prod([xx ** (aa - 1) for xx, aa in zip(x, self.alpha, strict=False)]))
 
@@ -98,7 +116,12 @@ class DirichletTernaryVisualizer:
         ax: Axes,
         labels: list[str],
     ) -> None:
-        """Label corners, vertices, and edge ticks."""
+        """Label corners, vertices, and edge ticks.
+
+        Args:
+            ax: Matplotlib Axes to annotate.
+            labels: Three labels corresponding to the simplex corners.
+        """
         v1, v2, v3 = self.triangle_corners()
 
         # Corner labels
@@ -120,7 +143,16 @@ class DirichletTernaryVisualizer:
         label_offset = -0.05
 
         def lerp(p: np.ndarray, q: np.ndarray, t: float) -> np.ndarray:
-            """Linear interpolation."""
+            """Linearly interpolate between two points.
+
+            Args:
+                p: Start point.
+                q: End point.
+                t: Interpolation parameter.
+
+            Returns:
+                Interpolated point.
+            """
             return (1.0 - t) * p + t * q
 
         for p, q in edges:
@@ -158,21 +190,21 @@ class DirichletTernaryVisualizer:
         ax: Axes | None = None,
         subdiv: int = 7,
         nlevels: int = 200,
-        cmap: str = "viridis",
         **contour_kwargs: Any,  # noqa: ANN401
     ) -> Axes:
         """Plot Dirichlet pdf contours on a ternary simplex.
 
         Args:
-        alpha: Dirichlet concentration parameters.
-        labels: the labels of the ternary corners.
-        title: title of the plot.
-        ax: matplotlib axes.Axes to plot on.
-        subdiv: triangular mesh subdivision depth.
-        nlevels: number of contour levels.
-        cmap: matplotlib colormap.
+            alpha: Dirichlet concentration parameters.
+            labels: Labels of the ternary corners.
+            title: Title of the plot.
+            ax: Matplotlib axes.Axes to plot on.
+            subdiv: Triangular mesh subdivision depth.
+            nlevels: Number of contour levels.
+            cmap: Matplotlib colormap.
 
-        returns: Ternary plot with Dirichlet contours.
+        Returns:
+            Ternary plot with Dirichlet contours.
         """
         corners = self.triangle_corners()
         triangle = tri.Triangulation(corners[:, 0], corners[:, 1])
@@ -192,7 +224,7 @@ class DirichletTernaryVisualizer:
             trimesh,
             pvals,
             nlevels,
-            cmap=cmap,
+            cmap=cfg.PROBLY_CMAP,
             **contour_kwargs,
         )
 

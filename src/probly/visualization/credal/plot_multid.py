@@ -24,7 +24,15 @@ if TYPE_CHECKING:
 
 
 def radar_factory(num_vars: int, frame: str = "circle") -> np.ndarray:  # noqa: C901
-    """Create a radar chart with `num_vars` axes."""
+    """Create a radar chart with `num_vars` axes.
+
+    Args:
+        num_vars: Number of variables (axes) in the radar chart.
+        frame: Shape of the frame, either ``"circle"`` or ``"polygon"``.
+
+    Returns:
+        Array of angles (theta) corresponding to each variable axis.
+    """
     theta = np.linspace(0, 2 * np.pi, num_vars, endpoint=False)
 
     class RadarTransform(PolarAxes.PolarTransform):
@@ -43,12 +51,21 @@ def radar_factory(num_vars: int, frame: str = "circle") -> np.ndarray:  # noqa: 
             self.set_theta_zero_location("N")
 
         def fill(self, *args: object, **kwargs: object) -> list[Polygon]:
-            """Override fill to handle closed polygons by default."""
+            """Override fill to handle closed polygons by default.
+
+            Returns:
+                List of Polygon objects created by the fill operation.
+            """
             closed = kwargs.pop("closed", True)
             return super().fill(*args, closed=closed, **kwargs)
 
-        def plot(self, *args: object, **kwargs: object) -> list[Line2D]:
-            lines = super().plot(*args, **kwargs)  # type: ignore[arg-type]
+        def plot(self, *args: Any, **kwargs: Any) -> list[Line2D]:  # noqa: ANN401
+            """Plot lines on the radar chart and automatically close them.
+
+            Returns:
+                List of Line2D objects added to the axes.
+            """
+            lines = super().plot(*args, **kwargs)
             for line in lines:
                 self._close_line(line)
             return lines
@@ -65,6 +82,11 @@ def radar_factory(num_vars: int, frame: str = "circle") -> np.ndarray:  # noqa: 
                 line.set_data(x, y)
 
         def set_varlabels(self, labels: list[str]) -> None:
+            """Set labels for each variable axis.
+
+            Args:
+                labels: List of axis labels in angular order.
+            """
             self.set_thetagrids(np.degrees(theta), labels)
 
         def _gen_axes_patch(self) -> Patch:
@@ -92,7 +114,7 @@ def radar_factory(num_vars: int, frame: str = "circle") -> np.ndarray:  # noqa: 
 class MultiVisualizer:
     """Class to create multidimensional plots."""
 
-    def spider_plot(
+    def spider_plot(  # noqa: PLR0915
         self,
         probs: np.ndarray,
         labels: list[str],
@@ -140,6 +162,16 @@ class MultiVisualizer:
             tick_values: list[float] | None = None,
             draw_tick_marks: bool = True,
         ) -> None:
+            """Draw reference axis between class 1 and 2 and place 0..1 labels scaled to polygon boundary.
+
+            Args:
+                ax_in: Matplotlib Axes on which to draw the reference axis.
+                theta_in: Array of angular positions for each class.
+                n_vars: Number of variables (classes).
+                tick_values: Optional list of tick values in the interval [0, 1].
+                draw_tick_marks: Whether to draw small tick marks along the axis.
+            """
+            # For a regular n-gon frame, the radius to the middle of an edge is cos(pi/n)
             ref_theta2 = 0.5 * (theta_in[0] + theta_in[1])
             r_max = float(np.cos(np.pi / n_vars))
 

@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 
 class TernaryVisualizer:
-    """Class to collect all the geometric plots."""
+    """Class to create ternary visualization."""
 
     def __init__(self) -> None:
         """Initialize the class."""
@@ -26,9 +26,10 @@ class TernaryVisualizer:
         """Convert ternary probabilities to 2D coordinates.
 
         Args:
-        probs: the ternary probabilities.
+            probs: Probability vector for 3 classes.
 
-        return: Tuple containing the 2D coordinates as float.
+        Return:
+            Tuple containing the 2D coordinates as float.
         """
         _, p2, p3 = probs
         x = p2 + 0.5 * p3
@@ -43,7 +44,15 @@ class TernaryVisualizer:
         v3: np.ndarray,
         labels: list[str],
     ) -> None:
-        """Labeling the corners and vertices."""
+        """Label the corners and vertices of a simplex.
+
+        Args:
+            ax: Matplotlib Axes on which the labels are drawn.
+            v1: Coordinates of the first vertex.
+            v2: Coordinates of the second vertex.
+            v3: Coordinates of the third vertex.
+            labels: Text labels for the three vertices, ordered as (v1, v2, v3).
+        """
         c1 = f"{labels[0]}"
         c2 = f"{labels[1]}"
         c3 = f"{labels[2]}"
@@ -71,16 +80,17 @@ class TernaryVisualizer:
         """Plot ternary scatter points.
 
         Args:
-        probs: the ternary probabilities.
-        labels: the labels of the ternary points.
-        title: title of the plot.
-        mle_flag: Flag to indicate whether median of probabilities is shown.
-        credal_flag: Flag to indicate whether convex hull is shown.
-        minmax_flag: bool defaulted to true, which optionally draws upper and lower probability envelopes.
-        scatter_kwargs: keyword arguments passed to scatter_kwargs.
-        ax: matplotlib axes.Axes to plot on.
+            probs: Probability vector for 3 classes.
+            labels: The labels for the ternary points.
+            title: Title of the plot.
+            mle_flag: Flag to indicate whether median of probabilities is shown.
+            credal_flag: Flag to indicate whether convex hull is shown.
+            minmax_flag: Bool defaulted to true, which optionally draws upper and lower probability envelopes.
+            scatter_kwargs: Keyword arguments passed to scatter_kwargs.
+            ax: Axes to draw the plot on. If None, a new Axes is created.
 
-        returns: Ternary plot with scattered points.
+        Returns:
+            Ternary plot with scattered points.
         """
         coords = np.array([self.probs_to_coords_3d(x) for x in probs])
 
@@ -165,8 +175,8 @@ class TernaryVisualizer:
         """Draw probability axes for MLE for better readability.
 
         Args:
-        ax: Axes to draw on
-        probs: given probabilities to calculate MLE
+            probs: Array of probability vectors used to compute the MLE.
+            ax: Matplotlib Axes on which the MLE point and lines are drawn.
         """
         tmp_mle = probs.mean(axis=0)
         mle_sum = tmp_mle.sum()
@@ -212,14 +222,15 @@ class TernaryVisualizer:
         - >= 3 points (polygon)
 
         Args:
-        probs: Array of probabilities
-        ax: Axes to draw on
-        facecolor: Color of the convex hull
-        alpha: Opacity of the convex hull
-        edgecolor: Color of the outline
-        linewidth: Width of the convex hull
+            probs: Array of probabilities.
+            ax: Axes to draw on.
+            facecolor: Color of the convex hull.
+            alpha: Opacity of the convex hull.
+            edgecolor: Color of the outline.
+            linewidth: Width of the convex hull.
 
-        returns: Plot with convex hull.
+        Returns:
+            Plot with convex hull.
         """
         coords = np.array([self.probs_to_coords_3d(p) for p in probs])
 
@@ -281,6 +292,13 @@ class TernaryVisualizer:
         """Draw a line of constant probability p[index] = value.
 
         The line is parallel to the edge opposite the corresponding vertex.
+
+        Args:
+            ax: Matplotlib Axes on which the line is drawn.
+            index: Index of the probability component to keep constant (0, 1, or 2).
+            value: Fixed probability value for the selected component.
+            style_key: Key used to select line color and style.
+            label: Optional label for the line (used in the legend).
         """
         if value <= 0 or value >= 1:
             return  # Degenerate, coincides with triangle boundary
@@ -324,6 +342,10 @@ class TernaryVisualizer:
         """Draw min/max probability lines for each class.
 
         Up to 6 lines total (min & max for 3 classes).
+
+        Args:
+            probs: Array of probability vectors used to compute min/max values.
+            ax: Matplotlib Axes on which the envelope lines are drawn.
         """
         p_min = probs.min(axis=0)
         p_max = probs.max(axis=0)

@@ -2,18 +2,22 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import matplotlib as mpl
 
 mpl.use("Agg")
-import matplotlib.axes as mplaxes
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
+if TYPE_CHECKING:
+    from matplotlib.axes import Axes
+
 from probly.visualization.credal.plot_2d import IntervalVisualizer
 
 
-def _legend_labels(ax: mplaxes.Axes) -> list[str]:
+def _legend_labels(ax: Axes) -> list[str]:
     """Return legend labels (empty list if no legend)."""
     leg = ax.get_legend()
     if leg is None:

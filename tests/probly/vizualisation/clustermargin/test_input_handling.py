@@ -8,7 +8,6 @@ import pytest
 
 from probly.visualization.clustermargin.clustervisualizer import _2_cluster_to_x, _2_cluster_to_y, _check_shape
 
-# Use a non-interactive backend so tests do not open GUI windows.
 mpl.use("Agg")
 
 

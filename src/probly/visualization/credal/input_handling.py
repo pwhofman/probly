@@ -1,4 +1,4 @@
-"""Input Handling here."""
+"""Manages input as well as dispatch to correct plot."""
 
 from __future__ import annotations
 
@@ -15,26 +15,26 @@ from probly.visualization.credal.plot_multid import MultiVisualizer
 
 
 def check_num_classes(input_data: np.ndarray) -> int:
-    """Checks number of classes and refers to respective function.
+    """Checks number of classes.
 
     Args:
-    input_data: array with last dimension equal to the number of classes.
+        input_data: Array with last dimension equal to the number of classes.
 
     Returns:
-    Number of classes.
+        Number of classes.
     """
     n_classes = int(input_data.shape[-1])
     return n_classes
 
 
 def check_shape(input_data: np.ndarray) -> np.ndarray:
-    """Sanity check.
+    """Sanity check for input data.
 
     Args:
-    input_data: Minimum 2D NumPy array with probability vector.
+        input_data: Minimum 2D NumPy array with probability vector.
 
     Returns:
-    input_data or Error Message.
+        input_data or Error Message.
     """
     msg1 = "Input must be a NumPy Array."
     msg2 = "Input must not be empty."
@@ -62,13 +62,13 @@ def check_shape(input_data: np.ndarray) -> np.ndarray:
 
 
 def normalize_input(input_data: np.ndarray) -> np.ndarray:
-    """Normalize input data.
+    """Normalizes input data.
 
     Args:
-        input_data: array with last dimension equal to the number of classes.
+        input_data: Array with last dimension equal to the number of classes.
 
     Returns:
-    2D NumPy array with normalized input data.
+        2D NumPy array with normalized input data.
     """
     if input_data.ndim >= 3:
         input_data = input_data.reshape(-1, input_data.shape[-1])
@@ -82,7 +82,10 @@ def _choice_flag_result(
     """Helper function to evaluate the user's choice what to show.
 
     Args:
-        choice: Input String should be either "MLE", "Credal", "Probability" or None.
+        choice: Input String; should be either "MLE", "Credal", "Probability" or None.
+
+    Returns:
+        mle_flag, credal_flag as tuple[bool, bool].
     """
     match choice:
         case None:

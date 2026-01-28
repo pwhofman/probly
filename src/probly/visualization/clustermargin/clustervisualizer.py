@@ -1,4 +1,4 @@
-"""Visualizing the uncertainty between two 2D clusters."""
+"""Visualizing the uncertainty between two 2D clusters. Derived from margin-based confidence."""
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ def _check_shape(input_data: np.ndarray) -> np.ndarray:
     """Sanity check of input shape.
 
     Args:
-        input_data: input data with shape (n_samples, 2).
+        input_data: Input data with shape (n_samples, 2).
     """
     msg_type = "Input must be a NumPy Array."
     msg_empty = "Input must not be empty."
@@ -41,7 +41,7 @@ def _2_cluster_to_y(cluster1: np.ndarray, cluster2: np.ndarray) -> np.ndarray:
         cluster2: 2D NumPy array with shape (n_samples, 2).
 
     Returns:
-        One 1D NumPy array with shape (n_samples, ) only consisting of 0s and 1s.
+        One 1D NumPy array with shape (n_labels, ) only consisting of 0s and 1s.
     """
     input1 = _check_shape(cluster1)
     input2 = _check_shape(cluster2)
@@ -55,7 +55,7 @@ def _2_cluster_to_y(cluster1: np.ndarray, cluster2: np.ndarray) -> np.ndarray:
 
 
 def _2_cluster_to_x(cluster1: np.ndarray, cluster2: np.ndarray) -> np.ndarray:
-    """Helper method to convert 2 clusters to one cluster with all samples.
+    """Helper method to convert 2 clusters into one cluster with all samples.
 
     Args:
         cluster1: 2D NumPy array with shape (n_samples, 2).
@@ -71,13 +71,13 @@ def _2_cluster_to_x(cluster1: np.ndarray, cluster2: np.ndarray) -> np.ndarray:
 
 
 def _plot_svm_beam(ax: Axes, clf: SVC, X: np.ndarray, cmap: Colormap) -> None:  # noqa: N803
-    """Helper method that contains SVM logic to depict uncertainty between two 2D clusters.
+    """Helper method with SVM logic to depict margin-based confidence, adjusted to uncertainty between two 2D clusters.
 
     Args:
-        ax: matplotlib axes object.
-        clf: SVC classifier.
-        X: 2D NumPy array with shape (n_samples, 2).
-        cmap: matplotlib colormap object.
+        ax: Matplotlib Axes to draw the uncertainty contour on.
+        clf: Trained SVC classifier.
+        X: 2D array of input samples with shape (n_samples, 2).
+        cmap: Matplotlib colormap used to visualize uncertainty.
     """
     x_min, x_max = X[:, 0].min() - 0.5, X[:, 0].max() + 0.5
     y_min, y_max = X[:, 1].min() - 0.5, X[:, 1].max() + 0.5
@@ -114,16 +114,19 @@ def plot_uncertainty(
     Args:
         input_1: First 2D NumPy array with shape (n_samples, 2).
         input_2: Second 2D NumPy array with shape (n_samples, 2).
-        ax: Matplotlib axes object.
+        ax: Matplotlib Axes to draw the plot on. If None, a new figure and axes are created.
         title: Title of plot, defaults to "Uncertainty".
         x_label: Name of x-axis, defaults to "Feature 1".
         y_label: Name of y-axis, defaults to "Feature 2".
-        class_labels: Names of classes for legend. Defaults to Class [i], where i is number of class.
-        kernel: Defaults to "rbf". Otherwise, choose "linear" or "sigmoid".
-        C: Regularization parameter, defaults to 0.5. The lower, the more tolerant to outliers. Cannot be below 0.0.
-        gamma:  Kernel coefficient controlling the influence radius of samples.
-                Higher values lead to more local decision boundaries.
-        show: Flag to show the plot.
+        class_labels: Optional names for the two classes. Defaults to ("Class 1", "Class 2").
+        kernel: SVM kernel type, one of {"linear", "rbf", "sigmoid"}. Default is "rbf".
+        C: SVM regularization parameter. Must be > 0.0. Lower values tolerate more outliers.
+        gamma: Kernel coefficient controlling the influence radius of samples.
+               Must be >= 0.0, or one of {"auto", "scale"}. Higher values create more local decision boundaries.
+        show: Whether to display the plot immediately.
+
+    Returns:
+        The Matplotlib Axes containing the uncertainty plot.
     """
     if ax is None:
         _, ax = plt.subplots(figsize=(6, 6))
