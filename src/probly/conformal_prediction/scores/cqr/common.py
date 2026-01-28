@@ -53,9 +53,9 @@ def cqr_score_func[T](y_true: T, y_pred: T) -> npt.NDArray[np.floating]:
     # Standard CQR nonconformity: distance to the interval [lower, upper]
     diff_lower = lower - y_np
     diff_upper = y_np - upper
-    zeros = np.zeros_like(diff_lower)
 
-    scores = np.maximum.reduce((diff_lower, diff_upper, zeros))
+    # allow negative values (reduce interval width)
+    scores = np.maximum(diff_lower, diff_upper)
     return scores.astype(float)  # type: ignore[no-any-return]
 
 

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -163,7 +163,7 @@ class SplitConformalClassifier(SplitConformalPredictor, ConformalClassifier):
             raise RuntimeError(msg)
 
         # compute scores for test instances
-        scores = self.score.predict_nonconformity(x_test)  # shape: matrix (n_instances, n_labels)
+        scores = self.score.predict_nonconformity(x_test, probs=probs)  # shape: matrix (n_instances, n_labels)
 
         if scores.ndim != 2:
             msg = "predict_nonconformity must return 2D-Matrix (n_instances, n_labels)."
@@ -223,19 +223,26 @@ class SplitConformalRegressor(SplitConformalPredictor, ConformalRegressor):
         elif scores_np.ndim == 2 and scores_np.shape[1] == 2:
             # asymmetric residuals: two thresholds
             self.is_asymmetric = True
-            alpha_tail = alpha / 2  # Bonferroni split per side
+            alpha_lower = alpha / 2  # Bonferroni split per side
+            alpha_upper = 1 - alpha / 2
+
             scores_lower = scores_np[:, 0]
             scores_upper = scores_np[:, 1]
-            self.threshold_lower = calculate_quantile(scores_lower, alpha_tail)
-            self.threshold_upper = calculate_quantile(scores_upper, alpha_tail)
+
+            self.threshold_lower = calculate_quantile(scores_lower, alpha_lower)
+            self.threshold_upper = calculate_quantile(scores_upper, alpha_upper)
             self.threshold = None
         else:
             msg = f"Score shape {scores_np.shape} not supported. Expected (n,), (n,1), or (n,2)."
             raise ValueError(msg)
 
         self.is_calibrated = True
-        # return any float
-        return self.threshold if self.threshold is not None else alpha
+        # return main threshold for compatibility
+        if self.threshold is not None:
+            return self.threshold
+        if self.threshold_lower is not None and self.threshold_upper is not None:
+            return (self.threshold_lower + self.threshold_upper) / 2  # average
+        return alpha  # fallback
 
     def predict(
         self,
@@ -269,4 +276,6 @@ class SplitConformalRegressor(SplitConformalPredictor, ConformalRegressor):
         if self.threshold is None:
             msg = "Symmetric threshold not calibrated."
             raise RuntimeError(msg)
-        return self.score.construct_intervals(y_hat_np, self.threshold)
+
+        result = self.score.construct_intervals(y_hat_np, self.threshold)
+        return cast("npt.NDArray[np.floating]", np.asarray(result, dtype=float))

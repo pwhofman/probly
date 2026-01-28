@@ -15,7 +15,7 @@ def cqr_score_torch(y_true: Tensor, y_pred: Tensor) -> Tensor:
 
     This implementation preserves gradients for backpropagation.
     """
-    # Ensure y_true is flat (N,)
+    # ensure y_true is flat (N,)
     y = y_true.reshape(-1)
 
     # y_pred must be (N, 2)
@@ -23,21 +23,16 @@ def cqr_score_torch(y_true: Tensor, y_pred: Tensor) -> Tensor:
         msg = f"y_pred must have shape (n_samples, 2), got {y_pred.shape}"
         raise ValueError(msg)
 
-    # Extract lower and upper quantiles
+    # extract lower and upper quantiles
     lower = y_pred[:, 0]
     upper = y_pred[:, 1]
 
-    # Calculate differences (preserving gradients)
+    # calculate differences (preserving gradients)
     diff_lower = lower - y
     diff_upper = y - upper
 
-    # Element-wise maximum of the two differences
-    # equivalent to np.maximum(diff_lower, diff_upper)
-    max_diff = torch.maximum(diff_lower, diff_upper)
-
-    # Apply ReLU logic: max(value, 0)
-    # torch.clamp is differentiable
-    scores = torch.clamp(max_diff, min=0.0)
+    # compute CQR scores
+    scores = torch.maximum(diff_lower, diff_upper)
 
     return scores
 

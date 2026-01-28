@@ -69,7 +69,7 @@ class ClassConditionalClassifier(GroupedConformalBase, ConformalClassifier):
                 # ensure float for the array
                 thresholds_array[int(class_id)] = float(threshold)
 
-            thresholds = thresholds_array[None, :]  # (N, C)<=(1, C): broadcasting thresholds to all samples
+        thresholds = thresholds_array[None, :]  # (N, C)<=(1, C): broadcasting thresholds to all samples
         prediction_sets = scores_np <= thresholds
 
         if self.use_accretive:

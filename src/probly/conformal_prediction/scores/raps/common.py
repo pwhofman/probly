@@ -8,12 +8,13 @@ import numpy as np
 import numpy.typing as npt
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Sequence
+    from collections.abc import Callable
 
     from lazy_dispatch.isinstance import LazyType
+    from probly.conformal_prediction.methods.common import Predictor
 
 from lazy_dispatch import lazydispatch
-from probly.conformal_prediction.methods.common import Predictor, predict_probs
+from probly.conformal_prediction.scores.common import ClassificationScore
 
 
 @lazydispatch
@@ -57,7 +58,7 @@ def register(cls: LazyType, func: Callable) -> None:
     raps_score_func.register(cls=cls, func=func)
 
 
-class RAPSScore:
+class RAPSScore(ClassificationScore):
     """Regularized Adaptive Prediction Sets (RAPS) nonconformity score."""
 
     def __init__(
@@ -70,58 +71,27 @@ class RAPSScore:
         random_state: int | None = None,
     ) -> None:
         """Initialize RAPS score with regularization parameters and optional randomization."""
-        self.model = model
         self.lambda_reg = lambda_reg
         self.k_reg = k_reg
         self.epsilon = epsilon
         self.randomize = randomize
         self.rng = np.random.default_rng(random_state)
 
-    def calibration_nonconformity(
-        self,
-        x_cal: Sequence[Any],
-        y_cal: Sequence[Any],
-    ) -> npt.NDArray[np.floating]:
-        """Compute calibration scores."""
-        # get probabilities from model
-        probs: npt.NDArray[np.floating] = predict_probs(self.model, x_cal)
-        # get raps scores for all labels
-        all_scores: npt.NDArray[np.floating] = raps_score_func(probs, self.lambda_reg, self.k_reg, self.epsilon)
+        super().__init__(model=model, score_func=self._compute_score)
 
-        # convert to numpy arrays
-        scores_np = np.asarray(all_scores, dtype=float)
-        probs_np = np.asarray(probs, dtype=float)
-        labels_np = np.asarray(y_cal, dtype=int)
+    def _compute_score(self, probs: Any) -> Any:  # noqa: ANN401
+        """Calculate RAPS scores with optional randomization U-term."""
+        # base RAPS scores
+        scores: Any = raps_score_func(
+            probs,
+            lambda_reg=self.lambda_reg,
+            k_reg=self.k_reg,
+            epsilon=self.epsilon,
+        )
 
-        # extract scores for true labels
-        idx = np.arange(len(labels_np))
-        nonconformity: npt.NDArray[np.floating] = scores_np[idx, labels_np]
-
-        # optional randomization (like APS)
+        # extract probabilities of true labels
         if self.randomize:
-            u = self.rng.random(size=len(labels_np))
-            true_probs = probs_np[idx, labels_np]
-            nonconformity = nonconformity - (u * true_probs)
+            u = self.rng.random(size=(scores.shape[0], 1))
+            scores = scores - (u * probs)
 
-        return nonconformity
-
-    def predict_nonconformity(
-        self,
-        x_test: Sequence[Any],
-        probs: npt.NDArray[np.floating] | None = None,
-    ) -> npt.NDArray[np.floating]:
-        """Compute RAPS scores for all labels."""
-        if probs is None:
-            probs = predict_probs(self.model, x_test)
-
-        # get raps scores for all labels
-        all_scores: npt.NDArray[np.floating] = raps_score_func(probs, self.lambda_reg, self.k_reg, self.epsilon)
-        scores_np = np.asarray(all_scores, dtype=float)
-
-        # optional randomization
-        if self.randomize:
-            probs_np = np.asarray(probs, dtype=float)
-            u = self.rng.random(size=(scores_np.shape[0], 1))
-            scores_np = scores_np - (u * probs_np)
-
-        return scores_np
+        return scores

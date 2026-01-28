@@ -130,7 +130,8 @@ class GroupedConformalBase(ConformalPredictor):
 
         # use max threshold as fallback for not calibrated groups
         if not self.group_thresholds:
-            return np.full(n_samples, np.inf)
+            msg = "No groups calibrated. Call calibrate() before prediction."
+            raise RuntimeError(msg)
 
         # fallback: use max threshold among calibrated groups
         max_threshold = max(self.group_thresholds.values())  # type: ignore[type-var]

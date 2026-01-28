@@ -29,10 +29,11 @@ def empirical_coverage(
         raise ValueError(msg)
     correct_inclusion = 0
 
-    for i in range(n_instances):
-        true_label = int(true_labels[i])
-        if 0 <= true_label < prediction_sets.shape[1] and prediction_sets[i, true_label]:
-            correct_inclusion += 1  # assuming labels are 0-indexed
+    indices = np.arange(len(true_labels))
+    if np.any((true_labels < 0) | (true_labels >= prediction_sets.shape[1])):
+        msg = "true_labels contains indices outside prediction_sets bounds"
+        raise ValueError(msg)
+    correct_inclusion = np.sum(prediction_sets[indices, true_labels])  # assuming labels are 0-indexed
 
     coverage = correct_inclusion / n_instances
     return float(coverage)

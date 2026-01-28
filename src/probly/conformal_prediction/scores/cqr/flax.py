@@ -35,9 +35,8 @@ def cqr_score_jax(y_true: Array, y_pred: Array) -> Array:
 
     diff_lower = lower - y_true
     diff_upper = y_true - upper
-    zeros = jnp.zeros_like(diff_lower)
 
-    scores = jnp.maximum(jnp.maximum(diff_lower, diff_upper), zeros)
+    scores = jnp.maximum(diff_lower, diff_upper)
     return scores
 
 
