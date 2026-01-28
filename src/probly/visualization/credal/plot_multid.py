@@ -39,7 +39,6 @@ def radar_factory(num_vars: int, frame: str = "circle") -> np.ndarray:  # noqa: 
         PolarTransform = RadarTransform
 
         def __init__(self, *args: object, **kwargs: object) -> None:
-            # Matplotlib stubs for PolarAxes.__init__ are too strict; this is the standard workaround.
             super().__init__(*args, **kwargs)  # type: ignore[arg-type]
             self.set_theta_zero_location("N")
 
@@ -57,7 +56,6 @@ def radar_factory(num_vars: int, frame: str = "circle") -> np.ndarray:  # noqa: 
         def _close_line(self, line: Line2D) -> None:
             x_raw, y_raw = line.get_data()
 
-            # Ensure numeric ndarrays so mypy allows indexing
             x: NDArray[np.floating[Any]] = np.asarray(x_raw, dtype=float)
             y: NDArray[np.floating[Any]] = np.asarray(y_raw, dtype=float)
 
@@ -103,15 +101,29 @@ class MultiVisualizer:
         credal_flag: bool,
         ax: Axes | None = None,
     ) -> Axes:
-        """General radar (spider) plot for credal predictions."""
+        """General radar (spider) plot for credal predictions.
+
+        Args:
+            probs: NumPy array of shape (N, C) with class probabilities per sample,
+                where N is the number of samples and C is the number of classes.
+            labels: Labels for the classes. Must have length C.
+            title: Title of the plot.
+            mle_flag: If True, a point for the mean probability vector (MLE-style summary)
+                is shown.
+            credal_flag: If True, the credal band (min-max envelope across samples) is shown.
+            ax: Optional Matplotlib Axes to draw into. If provided, it should be a radar
+                projection Axes. If None, a new figure and radar Axes are created.
+
+        Returns:
+            The Matplotlib Axes containing the spider plot.
+        """
         n_classes = int(probs.shape[-1])
         theta = radar_factory(n_classes, frame="polygon")
 
         if ax is None:
             _, ax = plt.subplots(figsize=(6, 6), subplot_kw={"projection": "radar"})
 
-        # At runtime this is our RadarAxes; stubs don't know extra methods -> cast locally (allowed by Ruff).
-        ax_any = cast("Any", ax)
+        ax_any = cast(Any, ax)
 
         ax_any.set_rgrids([0.2, 0.4, 0.6, 0.8, 1.0])
         ax_any.set_ylim(0.0, 1.0)
@@ -225,7 +237,6 @@ class MultiVisualizer:
                 label="Upper bound",
             )
 
-        # `ax` is definitely not None now
         assert ax is not None
         spiderplot_axis_with_ticks(ax, theta, n_vars=n_classes, draw_tick_marks=True)
         ax.set_title(title, pad=20)
