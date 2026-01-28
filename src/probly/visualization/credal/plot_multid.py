@@ -21,7 +21,15 @@ if TYPE_CHECKING:
 
 
 def radar_factory(num_vars: int, frame: str = "circle") -> np.ndarray:  # noqa: C901
-    """Create a radar chart with `num_vars` axes."""
+    """Create a radar chart with `num_vars` axes.
+
+    Args:
+        num_vars: Number of variables (axes) in the radar chart.
+        frame: Shape of the frame, either ``"circle"`` or ``"polygon"``.
+
+    Returns:
+        Array of angles (theta) corresponding to each variable axis.
+    """
     theta = np.linspace(0, 2 * np.pi, num_vars, endpoint=False)
 
     class RadarTransform(PolarAxes.PolarTransform):
@@ -41,12 +49,21 @@ def radar_factory(num_vars: int, frame: str = "circle") -> np.ndarray:  # noqa: 
             self.set_theta_zero_location("N")
 
         def fill(self, *args: object, **kwargs: object) -> list[Polygon]:
-            """Override fill to handle closed polygons by default."""
+            """Override fill to handle closed polygons by default.
+
+            Returns:
+                List of Polygon objects created by the fill operation.
+            """
             closed = kwargs.pop("closed", True)
             result = super().fill(*args, closed=closed, **kwargs)
             return cast("list[Polygon]", result)
 
         def plot(self, *args: object, **kwargs: object) -> list[Line2D]:
+            """Plot lines on the radar chart and automatically close them.
+
+            Returns:
+                List of Line2D objects added to the axes.
+            """
             result = super().plot(*args, **kwargs)
             lines = cast("list[Line2D]", result)
             for line in lines:
@@ -61,6 +78,11 @@ def radar_factory(num_vars: int, frame: str = "circle") -> np.ndarray:  # noqa: 
                 line.set_data(x, y)
 
         def set_varlabels(self, labels: list[str]) -> None:
+            """Set labels for each variable axis.
+
+            Args:
+                labels: List of axis labels in angular order.
+            """
             self.set_thetagrids(np.degrees(theta), labels)
 
         def _gen_axes_patch(self) -> Patch:
@@ -100,12 +122,15 @@ class MultiVisualizer:
         """General radar (spider) plot for credal predictions.
 
         Args:
-        probs: NumPy array with probabilities.
-        labels: labels for the classes.
-        title: title of the plot.
-        mle_flag: Flag to indicate whether median of probabilities is shown.
-        credal_flag: Flag to indicate whether the credal band is shown.
-        ax: Axes on which to create the radar chart.
+            probs: Array of probability vectors of shape (n_samples, n_classes).
+            labels: Class labels corresponding to the radar axes.
+            title: Title of the plot.
+            mle_flag: Flag to indicate whether median of probabilities is shown.
+            credal_flag: Flag to indicate whether the credal band is shown.
+            ax: Matplotlib Axes to draw on. If None, a new radar Axes is created.
+
+        Returns:
+            The Matplotlib Axes containing the radar plot.
         """
         n_classes = probs.shape[-1]
 
@@ -130,7 +155,15 @@ class MultiVisualizer:
             tick_values: list[float] | None = None,
             draw_tick_marks: bool = True,
         ) -> None:
-            """Draw reference axis between class 1 and 2 and place 0..1 labels scaled to polygon boundary."""
+            """Draw reference axis between class 1 and 2 and place 0..1 labels scaled to polygon boundary.
+
+            Args:
+                ax: Matplotlib Axes on which to draw the reference axis.
+                theta: Array of angular positions for each class.
+                n_vars: Number of variables (classes).
+                tick_values: Optional list of tick values in the interval [0, 1].
+                draw_tick_marks: Whether to draw small tick marks along the axis.
+            """
             # Midpoint angle between class 1 and 2 (in radians)
             ref_theta = 0.5 * (theta[0] + theta[1])
 
