@@ -188,7 +188,6 @@ class DirichletTernaryVisualizer:
             fig, ax = plt.subplots(figsize=(6, 6))
             fig.subplots_adjust(bottom=0.25)
 
-
         ax.tricontourf(
             trimesh,
             pvals,
