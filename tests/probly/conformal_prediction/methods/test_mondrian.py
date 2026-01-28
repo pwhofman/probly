@@ -10,7 +10,7 @@ import numpy.typing as npt
 import pytest
 import torch
 
-from src.probly.conformal_prediction.methods.mondrian import (
+from probly.conformal_prediction.methods.mondrian import (
     GroupedConformalBase,
     MondrianConformalClassifier,
     MondrianConformalRegressor,
