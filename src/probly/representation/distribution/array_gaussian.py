@@ -15,13 +15,20 @@ if TYPE_CHECKING:
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class ArrayGaussian(GaussianDistribution):
+class ArrayGaussian(GaussianDistribution, np.lib.mixins.NDArrayOperatorsMixin):
     """Gaussian distribution with array parameters."""
 
     mean: np.ndarray
     var: np.ndarray
 
     type: Literal["gaussian"] = "gaussian"
+
+    allowed_types: tuple[type[np.ndarray] | type[np.generic] | type[float] | type[int], ...] = (
+        np.ndarray,
+        np.generic,
+        float,
+        int,
+    )
 
     def __post_init__(self) -> None:
         """Validate shapes and variances."""
@@ -57,20 +64,6 @@ class ArrayGaussian(GaussianDistribution):
         var = self.var
         return float(0.5 * np.log(2 * np.e * np.pi * var).sum())
 
-    '''def sample(self, size: int) -> ArraySample[np.ndarray]:
-        """Draw samples and wrap them in an ArraySample.
-
-        Returns an ArraySample with sample_axis=0.
-        """
-        std = np.sqrt(self.var)
-
-        samples = np.random.normal(
-            loc=self.mean,
-            scale=std,
-            size=(size,) + self.mean.shape,
-        )
-        return ArraySample(array=samples, sample_axis=0)'''
-
     def __array_namespace__(self) -> object:
         """Return the array namespace used by this distribution (NumPy)."""
         return self.mean.__array_namespace__()
@@ -92,6 +85,47 @@ class ArrayGaussian(GaussianDistribution):
         if dtype is None and not copy:
             return stacked
         return np.asarray(stacked, dtype=dtype, copy=copy)
+
+    def __array_ufunc__(self, ufunc: np.ufunc, method: str, *inputs: object, **kwargs: object) -> Self:
+        """Arithmetical operations for Gaussian."""
+        if ufunc is not np.add or method != "__call__":  # just + for now
+            return NotImplemented
+
+        out = kwargs.get("out", ())
+
+        for x in (*inputs, *out):
+            if not isinstance(x, (*self.allowed_types, type(self))):
+                return NotImplemented
+
+        unpacked: list[np.ndarray | float | int] = []
+        gaussians: list[ArrayGaussian] = []
+
+        for x in inputs:  # array with just means
+            if isinstance(x, type(self)):
+                gaussians.append(x)
+                unpacked.append(x.mean)
+            else:
+                unpacked.append(x)  # type: ignore[arg-type]
+
+        if not gaussians:
+            return NotImplemented
+
+        new_mean = ufunc(*unpacked, **{k: v for k, v in kwargs.items() if k != "out"})
+
+        base = gaussians[0]
+        new_var = base.var
+
+        result = type(self)(mean=np.asarray(new_mean), var=np.asarray(new_var))
+
+        if kwargs.get("out"):
+            out_gaussian = kwargs["out"][0]
+            if isinstance(out_gaussian, type(self)):
+                object.__setattr__(out_gaussian, "mean", result.mean)
+                object.__setattr__(out_gaussian, "var", result.var)
+                return out_gaussian
+            return NotImplemented
+
+        return result
 
     @property
     def ndim(self) -> int:
