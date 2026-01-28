@@ -13,7 +13,6 @@ import pytest
 
 from probly.visualization.clustermargin.clustervisualizer import plot_uncertainty
 
-# Use a non-interactive backend so tests do not open GUI windows.
 mpl.use("Agg")
 
 
