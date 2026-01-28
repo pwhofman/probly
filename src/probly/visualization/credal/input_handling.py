@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -160,6 +160,4 @@ def dispatch_plot(
         return ax
 
     multi = MultiVisualizer()
-    return cast(
-        "Axes", multi.spider_plot(points, labels=labels, title=title, mle_flag=mle_flag, credal_flag=credal_flag)
-    )
+    return multi.spider_plot(points, labels=labels, title=title, mle_flag=mle_flag, credal_flag=credal_flag)
