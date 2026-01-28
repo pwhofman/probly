@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 if TYPE_CHECKING:
     import numpy as np
+
+    from probly.representation.sampling.common_sample import Sample
 
 type DistributionType = Literal["gaussian", "dirichlet"]
 
@@ -20,6 +22,10 @@ class Distribution(ABC):
     @abstractmethod
     def entropy(self) -> float:
         """Compute entropy."""
+
+    @abstractmethod
+    def sample(self, size: int) -> Sample[Any]:
+        """Draw samples from Distribution."""
 
 
 class DirichletDistribution(Distribution):
