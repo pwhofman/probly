@@ -185,7 +185,9 @@ class DirichletTernaryVisualizer:
         pvals = [dist.pdf(self.xy_to_barycentric(np.array(xy))) for xy in zip(trimesh.x, trimesh.y, strict=False)]
 
         if ax is None:
-            _, ax = plt.subplots(figsize=(6, 6))
+            fig, ax = plt.subplots(figsize=(6, 6))
+            fig.subplots_adjust(bottom=0.25)
+
 
         ax.tricontourf(
             trimesh,
@@ -207,6 +209,6 @@ class DirichletTernaryVisualizer:
         ax.set_xlim(-0.1, 1.1)
         ax.set_ylim(-0.1, np.sqrt(3) / 2)
         ax.axis("off")
-        ax.set_title(title, pad=20)
+        ax.set_title(title, pad=40)
 
         return ax
