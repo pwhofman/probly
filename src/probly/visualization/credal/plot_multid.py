@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, cast
 
-from matplotlib.patches import Circle, Patch, Polygon, RegularPolygon
+from matplotlib.patches import Circle, Polygon, RegularPolygon
 from matplotlib.path import Path
 import matplotlib.patheffects as PathEffects
 from matplotlib.projections import register_projection
@@ -17,7 +17,10 @@ import numpy as np
 import probly.visualization.config as cfg
 
 if TYPE_CHECKING:
+    from matplotlib.axes import Axes
     from matplotlib.lines import Line2D
+    from matplotlib.patches import Patch
+    from numpy.typing import NDArray
 
 
 def radar_factory(num_vars: int, frame: str = "circle") -> np.ndarray:  # noqa: C901
@@ -26,7 +29,6 @@ def radar_factory(num_vars: int, frame: str = "circle") -> np.ndarray:  # noqa: 
 
     class RadarTransform(PolarAxes.PolarTransform):
         def transform_path_non_affine(self, path: Path) -> Path:
-            # Note: _interpolation_steps is internal logic needed for this projection hack
             interpolation_steps = getattr(path, "_interpolation_steps", 1)
             if interpolation_steps > 1:
                 path = path.interpolated(num_vars)
@@ -37,24 +39,26 @@ def radar_factory(num_vars: int, frame: str = "circle") -> np.ndarray:  # noqa: 
         PolarTransform = RadarTransform
 
         def __init__(self, *args: object, **kwargs: object) -> None:
-            super().__init__(*args, **kwargs)
+            super().__init__(*args, **kwargs)  # type: ignore[arg-type]
             self.set_theta_zero_location("N")
 
         def fill(self, *args: object, **kwargs: object) -> list[Polygon]:
             """Override fill to handle closed polygons by default."""
             closed = kwargs.pop("closed", True)
-            result = super().fill(*args, closed=closed, **kwargs)
-            return cast("list[Polygon]", result)
+            return super().fill(*args, closed=closed, **kwargs)
 
         def plot(self, *args: object, **kwargs: object) -> list[Line2D]:
-            result = super().plot(*args, **kwargs)
-            lines = cast("list[Line2D]", result)
+            lines = super().plot(*args, **kwargs)  # type: ignore[arg-type]
             for line in lines:
                 self._close_line(line)
             return lines
 
         def _close_line(self, line: Line2D) -> None:
-            x, y = line.get_data()
+            x_raw, y_raw = line.get_data()
+
+            x: NDArray[np.floating[Any]] = np.asarray(x_raw, dtype=float)
+            y: NDArray[np.floating[Any]] = np.asarray(y_raw, dtype=float)
+
             if x[0] != x[-1]:
                 x = np.append(x, x[0])
                 y = np.append(y, y[0])
@@ -71,9 +75,9 @@ def radar_factory(num_vars: int, frame: str = "circle") -> np.ndarray:  # noqa: 
             msg = f"Unknown value for 'frame': {frame}"
             raise ValueError(msg)
 
-        def _gen_axes_spines(self) -> Patch:
+        def _gen_axes_spines(self) -> dict[str, Spine]:
             if frame == "circle":
-                return super()._gen_axes_spines()
+                return cast("dict[str, Spine]", super()._gen_axes_spines())
             if frame == "polygon":
                 spine = Spine(axes=self, spine_type="circle", path=Path.unit_regular_polygon(num_vars))
                 spine.set_transform(Affine2D().scale(0.5).translate(0.5, 0.5) + self.transAxes)
@@ -95,46 +99,48 @@ class MultiVisualizer:
         title: str,
         mle_flag: bool,
         credal_flag: bool,
-        ax: plt.Axes | None = None,
-    ) -> plt.Axes:
+        ax: Axes | None = None,
+    ) -> Axes:
         """General radar (spider) plot for credal predictions.
 
         Args:
-        probs: NumPy array with probabilities.
-        labels: labels for the classes.
-        title: title of the plot.
-        mle_flag: Flag to indicate whether median of probabilities is shown.
-        credal_flag: Flag to indicate whether the credal band is shown.
-        ax: Axes on which to create the radar chart.
-        """
-        n_classes = probs.shape[-1]
+            probs: NumPy array of shape (N, C) with class probabilities per sample,
+                where N is the number of samples and C is the number of classes.
+            labels: Labels for the classes. Must have length C.
+            title: Title of the plot.
+            mle_flag: If True, a point for the mean probability vector (MLE-style summary)
+                is shown.
+            credal_flag: If True, the credal band (min-max envelope across samples) is shown.
+            ax: Optional Matplotlib Axes to draw into. If provided, it should be a radar
+                projection Axes. If None, a new figure and radar Axes are created.
 
-        # Use the factory from spider.py
+        Returns:
+            The Matplotlib Axes containing the spider plot.
+        """
+        n_classes = int(probs.shape[-1])
         theta = radar_factory(n_classes, frame="polygon")
 
         if ax is None:
             _, ax = plt.subplots(figsize=(6, 6), subplot_kw={"projection": "radar"})
 
-        # Setup Axis with line for better visibility
-        ax.set_rgrids([0.2, 0.4, 0.6, 0.8, 1.0])
-        ax.set_ylim(0.0, 1.0)
-        ax.set_varlabels(labels)
-        ref_theta = 0.5 * (theta[0] + theta[1])  # midpoint in radians
-        ax.set_rlabel_position(np.degrees(ref_theta))
-        ax.set_yticklabels([])
+        ax_any = cast("Any", ax)
+
+        ax_any.set_rgrids([0.2, 0.4, 0.6, 0.8, 1.0])
+        ax_any.set_ylim(0.0, 1.0)
+        ax_any.set_varlabels(labels)
+
+        ref_theta = 0.5 * (theta[0] + theta[1])
+        ax_any.set_rlabel_position(np.degrees(ref_theta))
+        ax_any.set_yticklabels([])
 
         def spiderplot_axis_with_ticks(
-            ax: plt.Axes,
-            theta: np.ndarray,
+            ax_in: Axes,
+            theta_in: np.ndarray,
             n_vars: int,
             tick_values: list[float] | None = None,
             draw_tick_marks: bool = True,
         ) -> None:
-            """Draw reference axis between class 1 and 2 and place 0..1 labels scaled to polygon boundary."""
-            # Midpoint angle between class 1 and 2 (in radians)
-            ref_theta = 0.5 * (theta[0] + theta[1])
-
-            # For a regular n-gon frame, the radius to the middle of an edge is cos(pi/n)
+            ref_theta2 = 0.5 * (theta_in[0] + theta_in[1])
             r_max = float(np.cos(np.pi / n_vars))
 
             if tick_values is None:
@@ -142,18 +148,16 @@ class MultiVisualizer:
 
             axis_color = cfg.BLACK
 
-            # Draw axis line only until polygon boundary
-            (axis_line,) = ax.plot(
-                [ref_theta, ref_theta],
+            (axis_line,) = ax_in.plot(
+                [ref_theta2, ref_theta2],
                 [0.0, r_max],
                 color=axis_color,
                 alpha=0.8,
                 linewidth=0.5,
                 zorder=2,
             )
-            axis_line.set_clip_path(ax.patch)
+            axis_line.set_clip_path(ax_in.patch)
 
-            # Labels + optional tick marks, all scaled into [0, r_max]
             for t in tick_values:
                 if t < 0 or t > 1:
                     continue
@@ -161,17 +165,17 @@ class MultiVisualizer:
 
                 if draw_tick_marks and t not in (0.0, 1.0):
                     dtheta = 0.015
-                    (tm,) = ax.plot(
-                        [ref_theta - dtheta, ref_theta + dtheta],
+                    (tm,) = ax_in.plot(
+                        [ref_theta2 - dtheta, ref_theta2 + dtheta],
                         [r, r],
                         color=axis_color,
                         linewidth=1.5,
                         zorder=5,
                     )
-                    tm.set_clip_path(ax.patch)
+                    tm.set_clip_path(ax_in.patch)
 
-                txt = ax.text(
-                    ref_theta,
+                txt = ax_in.text(
+                    ref_theta2,
                     r,
                     f"{t:g}",
                     color=cfg.WHITE,
@@ -180,23 +184,25 @@ class MultiVisualizer:
                     va="center",
                     zorder=7,
                 )
-                txt.set_clip_path(ax.patch)
+                txt.set_clip_path(ax_in.patch)
                 txt.set_path_effects([PathEffects.withStroke(linewidth=2, foreground=cfg.BLACK)])
 
         max_class = np.argmax(probs, axis=1)
         max_probs = np.max(probs, axis=1)
 
-        ax.scatter(
-            theta[max_class],  # + jitter,
-            max_probs,
-            color=cfg.BLUE,
-            label="Probabilities",
-            zorder=3,
-        )
+        ax_any.scatter(theta[max_class], max_probs, color=cfg.BLUE, label="Probabilities", zorder=3)
+
         if mle_flag:
             mean_probs = probs.mean(axis=0)
-            mean_max_class = np.argmax(mean_probs)
-            ax.scatter(theta[mean_max_class], mean_probs[mean_max_class], s=80, color=cfg.RED, label="MLE", zorder=4)
+            mean_max_class = int(np.argmax(mean_probs))
+            ax_any.scatter(
+                theta[mean_max_class],
+                mean_probs[mean_max_class],
+                s=80,
+                color=cfg.RED,
+                label="MLE",
+                zorder=4,
+            )
 
         if credal_flag:
             lower = probs.min(axis=0)
@@ -205,7 +211,7 @@ class MultiVisualizer:
             upper_c = np.append(upper, upper[0])
             theta_c = np.append(theta, theta[0])
 
-            ax.fill_between(
+            ax_any.fill_between(
                 theta_c,
                 lower_c,
                 upper_c,
@@ -214,7 +220,7 @@ class MultiVisualizer:
                 zorder=2,
             )
 
-            ax.plot(
+            ax_any.plot(
                 theta_c,
                 lower_c,
                 linestyle=cfg.MIN_MAX_LINESTYLE_1,
@@ -222,7 +228,7 @@ class MultiVisualizer:
                 linewidth=1.5,
                 label="Lower bound",
             )
-            ax.plot(
+            ax_any.plot(
                 theta_c,
                 upper_c,
                 linestyle=cfg.MIN_MAX_LINESTYLE_2,
@@ -230,6 +236,7 @@ class MultiVisualizer:
                 linewidth=1.5,
                 label="Upper bound",
             )
+
         spiderplot_axis_with_ticks(ax, theta, n_vars=n_classes, draw_tick_marks=True)
         ax.set_title(title, pad=20)
         ax.legend(loc="upper right", bbox_to_anchor=(1.3, 1.1))
