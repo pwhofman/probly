@@ -72,7 +72,7 @@ class TestAPSScoreTorch:
     def test_apsscore_with_torch_model(self, simple_model: nn.Module) -> None:
         """Test APSScore with PyTorch model."""
         # create APSScore with the model
-        score = APSScore(model=simple_model, randomize=False, random_state=42)
+        score = APSScore(model=simple_model, randomize=False)
 
         # create some test data
         rng = np.random.default_rng(42)
@@ -95,7 +95,7 @@ class TestAPSScoreTorch:
 
     def test_apsscore_with_randomization(self, simple_model: nn.Module) -> None:
         """Test APSScore with randomization enabled."""
-        score = APSScore(model=simple_model, randomize=True, random_state=42)
+        score = APSScore(model=simple_model, randomize=True)
 
         rng = np.random.default_rng(42)
         x_calib = rng.random((20, 5), dtype=np.float32)
@@ -141,7 +141,7 @@ class TestAPSScoreTorch:
         y_full = rng.integers(0, 3, size=150)
 
         # create splitter
-        splitter = SplitConformal(calibration_ratio=0.3, random_state=42)
+        splitter = SplitConformal(calibration_ratio=0.3)
 
         # split manually
         x_train, y_train, x_cal, y_cal = splitter.split(x_full, y_full)
@@ -170,7 +170,6 @@ class TestAPSScoreTorch:
             x,
             y,
             test_size=0.2,
-            random_state=42,
             stratify=y,
         )
 
@@ -178,7 +177,6 @@ class TestAPSScoreTorch:
             x_temp,
             y_temp,
             test_size=0.25,
-            random_state=42,
             stratify=y_temp,
         )
 
@@ -207,7 +205,7 @@ class TestAPSScoreTorch:
             optimizer.step()
 
         # create score and predictor
-        score = APSScore(model=model, randomize=False, random_state=42)
+        score = APSScore(model=model, randomize=False)
         predictor = SplitConformalClassifier(model=model, score=score)
 
         # calibrate
@@ -235,8 +233,8 @@ class TestAPSScoreTorch:
     def test_with_different_random_states(self, simple_model: nn.Module) -> None:
         """Test reproducibility with different random states."""
         # create two scores with same random state
-        score1 = APSScore(model=simple_model, randomize=True, random_state=42)
-        score2 = APSScore(model=simple_model, randomize=True, random_state=42)
+        score1 = APSScore(model=simple_model, randomize=True)
+        score2 = APSScore(model=simple_model, randomize=True)
 
         rng = np.random.default_rng(42)
         x_data = rng.random((20, 5), dtype=np.float32)
@@ -249,7 +247,7 @@ class TestAPSScoreTorch:
         assert np.allclose(scores1, scores2)
 
         # different random state should give different results
-        score3 = APSScore(model=simple_model, randomize=True, random_state=123)
+        score3 = APSScore(model=simple_model, randomize=True)
         scores3 = score3.calibration_nonconformity(x_data, y_data)
 
         # with randomization, they should be different
@@ -257,8 +255,8 @@ class TestAPSScoreTorch:
 
     def test_with_and_without_randomization(self, simple_model: nn.Module) -> None:
         """Compare scores with and without randomization."""
-        score_no_rand = APSScore(model=simple_model, randomize=False, random_state=42)
-        score_with_rand = APSScore(model=simple_model, randomize=True, random_state=42)
+        score_no_rand = APSScore(model=simple_model, randomize=False)
+        score_with_rand = APSScore(model=simple_model, randomize=True)
 
         rng = np.random.default_rng(42)
         x_data = rng.random((10, 5), dtype=np.float32)
@@ -298,7 +296,7 @@ class TestAPSScoreTorch:
 
     def test_apsscore_output_types(self, simple_model: nn.Module) -> None:
         """Test that APSScore outputs have correct dtypes and types."""
-        score = APSScore(model=simple_model, randomize=False, random_state=42)
+        score = APSScore(model=simple_model, randomize=False)
 
         rng = np.random.default_rng(42)
         x_calib = rng.random((10, 5), dtype=np.float32)
@@ -345,7 +343,6 @@ class TestAPSScoreTorch:
                 x,
                 y,
                 test_size=0.3,
-                random_state=seed,
                 stratify=y,
             )
 
@@ -353,7 +350,6 @@ class TestAPSScoreTorch:
                 x_temp,
                 y_temp,
                 test_size=0.25,
-                random_state=seed,
                 stratify=y_temp,
             )
 
@@ -385,7 +381,7 @@ class TestAPSScoreTorch:
             model.eval()  # set model to evaluation mode
 
             # create score and predictor
-            score = APSScore(model=model, randomize=False, random_state=seed)
+            score = APSScore(model=model, randomize=False)
             predictor = SplitConformalClassifier(model=model, score=score)
 
             # calibrate

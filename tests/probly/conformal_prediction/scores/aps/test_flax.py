@@ -145,7 +145,7 @@ class TestAPSScoreFlax:
 
     def test_apsscore_with_flax_model(self, flax_predictor: FlaxPredictor) -> None:
         """Test APSScore with Flax model."""
-        score = APSScore(model=flax_predictor, randomize=False, random_state=42)
+        score = APSScore(model=flax_predictor, randomize=False)
 
         # create test data
         rng = np.random.default_rng(42)
@@ -192,8 +192,8 @@ class TestAPSScoreFlax:
     def test_with_different_random_states(self, flax_predictor: FlaxPredictor) -> None:
         """Test reproducibility with different random states."""
         # create two scores with same random state
-        score1 = APSScore(model=flax_predictor, randomize=True, random_state=42)
-        score2 = APSScore(model=flax_predictor, randomize=True, random_state=42)
+        score1 = APSScore(model=flax_predictor, randomize=True)
+        score2 = APSScore(model=flax_predictor, randomize=True)
 
         rng = np.random.default_rng(42)
         x_data = rng.random((20, 10), dtype=np.float32)
@@ -206,7 +206,7 @@ class TestAPSScoreFlax:
         assert np.allclose(scores1, scores2)
 
         # different random state should give different results
-        score3 = APSScore(model=flax_predictor, randomize=True, random_state=123)
+        score3 = APSScore(model=flax_predictor, randomize=True)
         scores3 = score3.calibration_nonconformity(x_data, y_data)
 
         # with randomization, they should be different
@@ -214,8 +214,8 @@ class TestAPSScoreFlax:
 
     def test_with_and_without_randomization(self, flax_predictor: FlaxPredictor) -> None:
         """Compare scores with and without randomization."""
-        score_no_rand = APSScore(model=flax_predictor, randomize=False, random_state=42)
-        score_with_rand = APSScore(model=flax_predictor, randomize=True, random_state=42)
+        score_no_rand = APSScore(model=flax_predictor, randomize=False)
+        score_with_rand = APSScore(model=flax_predictor, randomize=True)
 
         rng = np.random.default_rng(42)
         x_data = rng.random((10, 10), dtype=np.float32)
@@ -244,7 +244,7 @@ class TestAPSScoreFlax:
         y_full = rng.integers(0, 3, size=150)
 
         # create splitter
-        splitter = SplitConformal(calibration_ratio=0.3, random_state=42)
+        splitter = SplitConformal(calibration_ratio=0.3)
 
         # split manually
         x_train, y_train, x_cal, y_cal = splitter.split(x_full, y_full)
@@ -273,7 +273,6 @@ class TestAPSScoreFlax:
             x,
             y,
             test_size=0.2,
-            random_state=42,
             stratify=y,
         )
 
@@ -281,7 +280,6 @@ class TestAPSScoreFlax:
             x_temp,
             y_temp,
             test_size=0.25,
-            random_state=42,
             stratify=y_temp,
         )
 
@@ -310,7 +308,7 @@ class TestAPSScoreFlax:
         predictor_wrapper = FlaxPredictor(model, cast(FrozenDict[str, Any], {}))
 
         # create score and predictor
-        score = APSScore(model=predictor_wrapper, randomize=False, random_state=42)
+        score = APSScore(model=predictor_wrapper, randomize=False)
         predictor = SplitConformalClassifier(model=predictor_wrapper, score=score)
 
         # calibrate
@@ -348,7 +346,6 @@ class TestAPSScoreFlax:
                 x,
                 y,
                 test_size=0.3,
-                random_state=seed,
                 stratify=y,
             )
 
@@ -356,7 +353,6 @@ class TestAPSScoreFlax:
                 x_temp,
                 y_temp,
                 test_size=0.25,
-                random_state=seed,
                 stratify=y_temp,
             )
 
@@ -385,7 +381,7 @@ class TestAPSScoreFlax:
             predictor_wrapper = FlaxPredictor(model, cast(FrozenDict[str, Any], {}))
 
             # create and calibrate predictor
-            score = APSScore(model=predictor_wrapper, randomize=False, random_state=seed)
+            score = APSScore(model=predictor_wrapper, randomize=False)
             predictor = SplitConformalClassifier(model=predictor_wrapper, score=score)
 
             threshold = predictor.calibrate(x_calib_scaled, y_calib, alpha=0.1)

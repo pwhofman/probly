@@ -112,7 +112,7 @@ def test_saps_score_func_batch_without_us() -> None:
 def test_sapsscore_calibration() -> None:
     """Test SAPSScore calibration."""
     model = MockModel()
-    score = SAPSScore(model, lambda_val=0.1, random_state=42)
+    score = SAPSScore(model, lambda_val=0.1)
 
     x_cal = np.array([[1, 2], [3, 4], [5, 6]])
     y_cal = np.array([0, 1, 2])
@@ -128,7 +128,7 @@ def test_sapsscore_calibration() -> None:
 def test_sapsscore_prediction() -> None:
     """Test SAPSScore prediction."""
     model = MockModel(probs=np.array([[0.8, 0.1, 0.1]]))
-    score = SAPSScore(model, lambda_val=0.1, random_state=42)
+    score = SAPSScore(model, lambda_val=0.1)
 
     x_test = np.array([[1, 2], [3, 4]])
     prediction_scores = score.predict_nonconformity(x_test)
@@ -142,9 +142,8 @@ def test_sapsscore_prediction() -> None:
 def test_sapsscore_with_different_lambda() -> None:
     """Test SAPSScore with different lambda values."""
     model = MockModel(probs=np.array([[0.5, 0.3, 0.2]]))
-
-    score_small_lambda = SAPSScore(model, lambda_val=0.01, random_state=42)
-    score_large_lambda = SAPSScore(model, lambda_val=0.5, random_state=42)
+    score_small_lambda = SAPSScore(model, lambda_val=0.01)
+    score_large_lambda = SAPSScore(model, lambda_val=0.5)
 
     x_cal = np.array([[1, 2]])
     y_cal = np.array([1])  # rank 2
@@ -158,7 +157,7 @@ def test_sapsscore_with_different_lambda() -> None:
 def test_sapsscore_provided_probs() -> None:
     """Test SAPSScore with provided probabilities."""
     model = MockModel(probs=np.array([[0.33, 0.33, 0.34]]))
-    score = SAPSScore(model, lambda_val=0.1, random_state=42)
+    score = SAPSScore(model, lambda_val=0.1)
 
     x_test = np.array([[1, 2], [3, 4]])
     provided_probs = np.array(
@@ -182,9 +181,8 @@ def test_sapsscore_provided_probs() -> None:
 def test_sapsscore_reproducibility() -> None:
     """Test SAPSScore reproducibility with same seed."""
     model = MockModel()
-
-    score1 = SAPSScore(model, lambda_val=0.1, random_state=42)
-    score2 = SAPSScore(model, lambda_val=0.1, random_state=42)
+    score1 = SAPSScore(model, lambda_val=0.1)
+    score2 = SAPSScore(model, lambda_val=0.1)
 
     x_cal = np.array([[1, 2], [3, 4]])
     y_cal = np.array([0, 1])
@@ -328,7 +326,7 @@ def test_saps_score_func_with_extreme_lambda() -> None:
 def test_sapsscore_output_ranges() -> None:
     """Test SAPSScore output ranges."""
     model = MockModel(probs=np.array([[0.8, 0.15, 0.05]]))
-    score = SAPSScore(model, lambda_val=0.1, random_state=42)
+    score = SAPSScore(model, lambda_val=0.1)
 
     x_test = np.array([[1, 2]])
     scores = score.predict_nonconformity(x_test)

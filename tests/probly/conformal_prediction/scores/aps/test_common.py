@@ -52,7 +52,7 @@ def test_aps_score_func_basic() -> None:
 def test_apsscore_calibration() -> None:
     """Test APSScore calibration."""
     model = MockModel()
-    score = APSScore(model, randomize=False, random_state=42)
+    score = APSScore(model, randomize=False)
 
     x_cal = np.array([[1, 2], [3, 4], [5, 6]])
     y_cal = np.array([0, 1, 2])
@@ -70,7 +70,7 @@ def test_apsscore_calibration() -> None:
 def test_apsscore_prediction() -> None:
     """Test APSScore prediction."""
     model = MockModel()
-    score = APSScore(model, randomize=False, random_state=42)
+    score = APSScore(model, randomize=False)
 
     x_test = np.array([[1, 2], [3, 4]])
     prediction_scores = score.predict_nonconformity(x_test)
@@ -83,7 +83,7 @@ def test_apsscore_prediction() -> None:
 def test_apsscore_with_randomization() -> None:
     """Test APSScore with randomization enabled."""
     model = MockModel()
-    score = APSScore(model, randomize=True, random_state=42)
+    score = APSScore(model, randomize=True)
 
     x_cal = np.array([[1, 2], [3, 4], [5, 6]])
     y_cal = np.array([0, 1, 2])
@@ -173,8 +173,8 @@ def test_aps_score_func_boundary_conditions() -> None:
 def test_apsscore_randomization_reproducibility() -> None:
     """Test APSScore randomization with same seed produces same results."""
     model = MockModel()
-    score1 = APSScore(model, randomize=True, random_state=42)
-    score2 = APSScore(model, randomize=True, random_state=42)
+    score1 = APSScore(model, randomize=True)
+    score2 = APSScore(model, randomize=True)
 
     x_cal = np.array([[1, 2], [3, 4], [5, 6]])
     y_cal = np.array([0, 1, 2])
@@ -185,7 +185,7 @@ def test_apsscore_randomization_reproducibility() -> None:
     assert np.allclose(scores1, scores2), "same seed should produce same results"
 
     # different seed should produce different results
-    score3 = APSScore(model, randomize=True, random_state=123)
+    score3 = APSScore(model, randomize=True)
     scores3 = score3.calibration_nonconformity(x_cal, y_cal)
 
     assert not np.allclose(scores1, scores3), "different seeds should produce different results"
@@ -194,8 +194,8 @@ def test_apsscore_randomization_reproducibility() -> None:
 def test_apsscore_with_and_without_randomization_comparison() -> None:
     """Compare APSScore with and without randomization."""
     model = MockModel()
-    score_no_rand = APSScore(model, randomize=False, random_state=42)
-    score_with_rand = APSScore(model, randomize=True, random_state=42)
+    score_no_rand = APSScore(model, randomize=False)
+    score_with_rand = APSScore(model, randomize=True)
 
     x_cal = np.array([[1, 2], [3, 4], [5, 6]])
     y_cal = np.array([0, 1, 2])
@@ -216,7 +216,7 @@ def test_apsscore_with_and_without_randomization_comparison() -> None:
 def test_apsscore_prediction_output_types() -> None:
     """Test APSScore prediction output types and shapes."""
     model = MockModel()
-    score = APSScore(model, randomize=False, random_state=42)
+    score = APSScore(model, randomize=False)
 
     x_test = np.array([[1, 2], [3, 4]])
     prediction_scores = score.predict_nonconformity(x_test)
@@ -247,7 +247,7 @@ def test_aps_score_func_multiple_classes() -> None:
 def test_apsscore_with_different_label_values() -> None:
     """Test APSScore with different label values."""
     model = MockModel(probs=np.array([[0.33, 0.33, 0.34], [0.25, 0.5, 0.25]]))
-    score = APSScore(model, randomize=False, random_state=42)
+    score = APSScore(model, randomize=False)
 
     x_cal = np.array([[1, 2], [3, 4]])
     # different label values

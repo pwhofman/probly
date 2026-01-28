@@ -50,7 +50,7 @@ def test_raps_score_func_basic() -> None:
 def test_rapsscore_calibration() -> None:
     """Test RAPSScore calibration."""
     model = MockModel()
-    score = RAPSScore(model, lambda_reg=0.1, k_reg=0, random_state=42)
+    score = RAPSScore(model, lambda_reg=0.1, k_reg=0)
 
     x_cal = np.array([[1, 2], [3, 4], [5, 6]])
     y_cal = np.array([0, 1, 2])
@@ -64,7 +64,7 @@ def test_rapsscore_calibration() -> None:
 def test_rapsscore_prediction() -> None:
     """Test RAPSScore prediction."""
     model = MockModel()
-    score = RAPSScore(model, lambda_reg=0.1, k_reg=0, random_state=42)
+    score = RAPSScore(model, lambda_reg=0.1, k_reg=0)
 
     x_test = np.array([[1, 2], [3, 4]])
     prediction_scores = score.predict_nonconformity(x_test)
@@ -76,8 +76,8 @@ def test_rapsscore_prediction() -> None:
 def test_rapsscore_with_different_lambda() -> None:
     """Test RAPSScore with different regularization parameters."""
     model = MockModel()
-    score_low_reg = RAPSScore(model, lambda_reg=0.01, k_reg=0, random_state=42)
-    score_high_reg = RAPSScore(model, lambda_reg=1.0, k_reg=0, random_state=42)
+    score_low_reg = RAPSScore(model, lambda_reg=0.01, k_reg=0)
+    score_high_reg = RAPSScore(model, lambda_reg=1.0, k_reg=0)
 
     x_cal = np.array([[1, 2], [3, 4], [5, 6]])
     y_cal = np.array([0, 1, 2])
@@ -164,8 +164,8 @@ def test_raps_score_func_boundary_conditions() -> None:
 def test_rapsscore_reproducibility_with_seed() -> None:
     """Test RAPSScore with same seed produces same results."""
     model = MockModel()
-    score1 = RAPSScore(model, lambda_reg=0.1, k_reg=0, random_state=42)
-    score2 = RAPSScore(model, lambda_reg=0.1, k_reg=0, random_state=42)
+    score1 = RAPSScore(model, lambda_reg=0.1, k_reg=0)
+    score2 = RAPSScore(model, lambda_reg=0.1, k_reg=0)
 
     x_cal = np.array([[1, 2], [3, 4], [5, 6]])
     y_cal = np.array([0, 1, 2])
@@ -176,7 +176,7 @@ def test_rapsscore_reproducibility_with_seed() -> None:
     assert np.allclose(scores1, scores2), "same seed should produce same results"
 
     # different seed should produce different results
-    score3 = RAPSScore(model, lambda_reg=0.1, k_reg=0, random_state=123)
+    score3 = RAPSScore(model, lambda_reg=0.1, k_reg=0)
     scores3 = score3.calibration_nonconformity(x_cal, y_cal)
 
     assert not np.allclose(scores1, scores3), "different seeds should produce different results"
@@ -185,8 +185,8 @@ def test_rapsscore_reproducibility_with_seed() -> None:
 def test_rapsscore_with_different_k_reg() -> None:
     """Test RAPSScore with different k_reg (minimum set size)."""
     model = MockModel()
-    score_k0 = RAPSScore(model, lambda_reg=0.1, k_reg=0, random_state=42)
-    score_k1 = RAPSScore(model, lambda_reg=0.1, k_reg=1, random_state=42)
+    score_k0 = RAPSScore(model, lambda_reg=0.1, k_reg=0)
+    score_k1 = RAPSScore(model, lambda_reg=0.1, k_reg=1)
 
     x_cal = np.array([[1, 2], [3, 4], [5, 6]])
     y_cal = np.array([0, 1, 2])
@@ -205,7 +205,7 @@ def test_rapsscore_with_different_k_reg() -> None:
 def test_rapsscore_prediction_output_types() -> None:
     """Test RAPSScore prediction output types and shapes."""
     model = MockModel()
-    score = RAPSScore(model, lambda_reg=0.1, k_reg=0, random_state=42)
+    score = RAPSScore(model, lambda_reg=0.1, k_reg=0)
 
     x_test = np.array([[1, 2], [3, 4]])
     prediction_scores = score.predict_nonconformity(x_test)
@@ -236,7 +236,7 @@ def test_raps_score_func_multiple_classes() -> None:
 def test_rapsscore_with_different_label_values() -> None:
     """Test RAPSScore with different label values."""
     model = MockModel(probs=np.array([[0.33, 0.33, 0.34], [0.25, 0.5, 0.25]]))
-    score = RAPSScore(model, lambda_reg=0.1, k_reg=0, random_state=42)
+    score = RAPSScore(model, lambda_reg=0.1, k_reg=0)
 
     x_cal = np.array([[1, 2], [3, 4]])
     # different label values
@@ -251,8 +251,8 @@ def test_rapsscore_with_different_label_values() -> None:
 def test_rapsscore_with_different_epsilon() -> None:
     """Test RAPSScore with different epsilon (stability parameter) values."""
     model = MockModel()
-    score_low_eps = RAPSScore(model, lambda_reg=0.1, k_reg=0, epsilon=0.001, random_state=42)
-    score_high_eps = RAPSScore(model, lambda_reg=0.1, k_reg=0, epsilon=0.1, random_state=42)
+    score_low_eps = RAPSScore(model, lambda_reg=0.1, k_reg=0, epsilon=0.001)
+    score_high_eps = RAPSScore(model, lambda_reg=0.1, k_reg=0, epsilon=0.1)
 
     x_cal = np.array([[1, 2], [3, 4], [5, 6]])
     y_cal = np.array([0, 1, 2])
@@ -273,8 +273,8 @@ def test_rapsscore_with_different_epsilon() -> None:
 def test_rapsscore_with_randomization() -> None:
     """Test RAPSScore with randomization enabled."""
     model = MockModel()
-    score_rand = RAPSScore(model, lambda_reg=0.1, k_reg=0, randomize=True, random_state=42)
-    score_no_rand = RAPSScore(model, lambda_reg=0.1, k_reg=0, randomize=False, random_state=42)
+    score_rand = RAPSScore(model, lambda_reg=0.1, k_reg=0, randomize=True)
+    score_no_rand = RAPSScore(model, lambda_reg=0.1, k_reg=0, randomize=False)
 
     x_cal = np.array([[1, 2], [3, 4], [5, 6]])
     y_cal = np.array([0, 1, 2])

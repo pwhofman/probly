@@ -73,7 +73,7 @@ class TestSAPSScoreTorch:
     def test_sapsscore_with_torch(self, simple_model: nn.Module) -> None:
         """Test SAPS score with PyTorch models."""
         # create SAPSScore
-        score = SAPSScore(model=simple_model, lambda_val=0.1, random_state=42)
+        score = SAPSScore(model=simple_model, lambda_val=0.1)
 
         # create test data
         rng = np.random.default_rng(42)
@@ -97,9 +97,9 @@ class TestSAPSScoreTorch:
     def test_sapsscore_with_different_lambda(self, simple_model: nn.Module) -> None:
         """Test SAPS score with different lambda values."""
         # test with small lambda
-        small_lambda = SAPSScore(model=simple_model, lambda_val=0.01, random_state=42)
+        small_lambda = SAPSScore(model=simple_model, lambda_val=0.01)
         # test with large lambda
-        large_lambda = SAPSScore(model=simple_model, lambda_val=0.5, random_state=42)
+        large_lambda = SAPSScore(model=simple_model, lambda_val=0.5)
 
         rng = np.random.default_rng(42)
         x_calib = rng.random((20, 5), dtype=np.float32)
@@ -147,7 +147,7 @@ class TestSAPSScoreTorch:
         y_full = rng.integers(0, 3, size=150)
 
         # create splitter
-        splitter = SplitConformal(calibration_ratio=0.3, random_state=42)
+        splitter = SplitConformal(calibration_ratio=0.3)
 
         # split manually
         x_train, y_train, x_calib, y_calib = splitter.split(x_full, y_full)
@@ -213,7 +213,7 @@ class TestSAPSScoreTorch:
             optimizer.step()
 
         # create score and predictor
-        score = SAPSScore(model=model, lambda_val=0.1, random_state=42)
+        score = SAPSScore(model=model, lambda_val=0.1)
         predictor = SplitConformalClassifier(model=model, score=score)
 
         # calibrate
@@ -241,8 +241,8 @@ class TestSAPSScoreTorch:
     def test_with_different_random_states(self, simple_model: nn.Module) -> None:
         """Test reproducibility with different random states."""
         # create two scores with same random state
-        score1 = SAPSScore(model=simple_model, lambda_val=0.1, random_state=42)
-        score2 = SAPSScore(model=simple_model, lambda_val=0.1, random_state=42)
+        score1 = SAPSScore(model=simple_model, lambda_val=0.1)
+        score2 = SAPSScore(model=simple_model, lambda_val=0.1)
 
         rng = np.random.default_rng(42)
         x_data = rng.random((20, 5), dtype=np.float32)
@@ -255,7 +255,7 @@ class TestSAPSScoreTorch:
         assert np.allclose(scores1, scores2)
 
         # different random state should give different results
-        score3 = SAPSScore(model=simple_model, lambda_val=0.1, random_state=123)
+        score3 = SAPSScore(model=simple_model, lambda_val=0.1)
         scores3 = score3.calibration_nonconformity(x_data, y_data)
 
         # with randomization, they should be different
@@ -283,7 +283,7 @@ class TestSAPSScoreTorch:
 
     def test_sapsscore_output_types(self, simple_model: nn.Module) -> None:
         """Test that SAPSScore outputs have correct dtypes and types."""
-        score = SAPSScore(model=simple_model, lambda_val=0.1, random_state=42)
+        score = SAPSScore(model=simple_model, lambda_val=0.1)
 
         rng = np.random.default_rng(42)
         x_calib = rng.random((10, 5), dtype=np.float32)
@@ -370,7 +370,7 @@ class TestSAPSScoreTorch:
             model.eval()
 
             # create score and predictor
-            score = SAPSScore(model=model, lambda_val=0.1, random_state=seed)
+            score = SAPSScore(model=model, lambda_val=0.1)
             predictor = SplitConformalClassifier(model=model, score=score)
 
             # calibrate
