@@ -10,10 +10,12 @@ import numpy.typing as npt
 from lazy_dispatch import lazydispatch
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Sequence
+    from collections.abc import Callable
 
     from lazy_dispatch.isinstance import LazyType
     from probly.conformal_prediction.methods.common import Predictor
+
+from probly.conformal_prediction.scores.common import RegressionScore
 
 
 @lazydispatch
@@ -54,8 +56,9 @@ def cqr_score_func[T](y_true: T, y_pred: T) -> npt.NDArray[np.floating]:
     diff_lower = lower - y_np
     diff_upper = y_np - upper
 
-    # allow negative values (reduce interval width)
+    # CQR: score is 0 if y in [lower, upper], else distance to nearest bound
     scores = np.maximum(diff_lower, diff_upper)
+    scores = np.where(scores < 0, 0.0, scores)
     return scores.astype(float)  # type: ignore[no-any-return]
 
 
@@ -73,7 +76,7 @@ def register(cls: LazyType, func: Callable[..., Any]) -> None:
     cqr_score_func.register(cls=cls, func=func)
 
 
-class CQRScore:
+class CQRScore(RegressionScore):
     """Backend-agnostic Conformalized Quantile Regression (CQR) score.
 
     This class wraps :func:`cqr_score_func` and a regression-style
@@ -84,64 +87,14 @@ class CQRScore:
 
     def __init__(self, model: Predictor) -> None:
         """Initialize CQR score with a quantile regression model."""
-        self.model = model
 
-    def _predict_intervals(
-        self,
-        x: Sequence[Any],
-        y_pred: npt.NDArray[np.floating] | None = None,
-    ) -> npt.NDArray[np.floating]:
-        """Return predicted quantile intervals as a NumPy array."""
-        # Fixes SIM108: Use ternary operator
-        raw_pred = self.model(x) if y_pred is None else y_pred
+        def cqr_score_func_predict(
+            y_true: npt.NDArray[np.floating], y_pred: npt.NDArray[np.floating]
+        ) -> npt.NDArray[np.floating]:
+            # Use the same logic as cqr_score_func, but always return shape (N, 1) for predict_nonconformity
+            scores: npt.NDArray[np.floating] = cqr_score_func(y_true, y_pred)
+            if scores.ndim == 1:
+                scores = scores.reshape(-1, 1)
+            return scores
 
-        pred_np = np.asarray(raw_pred, dtype=float)
-        if pred_np.ndim != 2 or pred_np.shape[1] != 2:
-            msg = f"Model outputs for CQR must have shape (n_samples, 2), got {pred_np.shape}"
-            raise ValueError(msg)
-        return pred_np
-
-    def calibration_nonconformity(
-        self,
-        x_cal: Sequence[Any],
-        y_cal: Sequence[Any],
-        y_pred: npt.NDArray[np.floating] | None = None,
-    ) -> npt.NDArray[np.floating]:
-        """Compute 1D CQR nonconformity scores on calibration data.
-
-        Parameters
-        ----------
-        x_cal:
-            Calibration inputs.
-        y_cal:
-            Calibration targets.
-        y_pred:
-            Optional pre-computed predicted intervals, shape ``(n_samples, 2)``.
-            If ``None``, they are obtained from ``self.model``.
-        """
-        intervals = self._predict_intervals(x_cal, y_pred=y_pred)
-        y_np = np.asarray(y_cal, dtype=float).reshape(-1)
-
-        if len(y_np) != intervals.shape[0]:
-            msg = f"y_cal and predicted intervals must have same length, got {len(y_np)} and {intervals.shape[0]}"
-            raise ValueError(msg)
-
-        scores: npt.NDArray[np.floating] = cqr_score_func(y_np, intervals)
-        return np.asarray(scores, dtype=float)
-
-    def predict_nonconformity(
-        self,
-        x_test: Sequence[Any],
-        y_pred: npt.NDArray[np.floating] | None = None,
-    ) -> npt.NDArray[np.floating]:
-        """Return a 2D score matrix for compatibility with the Score protocol.
-
-        For regression, there is typically a single target dimension, so we
-        expose a single-column score matrix whose entries are the widths of
-        the predicted intervals, ``q_hi - q_lo``. This keeps the API shape
-        consistent with other scores while remaining meaningful for regression.
-        """
-        intervals = self._predict_intervals(x_test, y_pred=y_pred)
-        widths = intervals[:, 1] - intervals[:, 0]
-        widths = np.asarray(widths, dtype=float).reshape(-1, 1)
-        return widths
+        super().__init__(model=model, score_func=cqr_score_func_predict)

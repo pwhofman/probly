@@ -50,22 +50,20 @@ class APSScore(ClassificationScore):
         self,
         model: Predictor,
         randomize: bool = True,
+        seed: int = 42,
     ) -> None:
-        """Initialize APS score with optional randomization."""
+        """Initialize APS score with optional randomization and reproducible seed."""
         self.randomize = randomize
-        self.rng = np.random.default_rng()
+        self.rng = np.random.default_rng(seed if randomize else None)
 
         def compute_score(probs: Any) -> Any:  # noqa: ANN401
             """Calculate APS scores with randomization U-term."""
-            # randomization if enabled
-            scores: Any = aps_score_func(probs)
-
-            # extract probabilities of true labels
+            probs_np = probs.detach().cpu().numpy() if hasattr(probs, "detach") else np.asarray(probs)
+            scores: Any = aps_score_func(probs_np)
             if self.randomize:
                 u = self.rng.random(size=(scores.shape[0], 1))
-                # get the probabilities corresponding to the true labels
-                scores = scores - (u * probs)
-
-            return scores
+                scores = scores - (u * probs_np)
+            # Always return np.ndarray
+            return np.asarray(scores)
 
         super().__init__(model=model, score_func=compute_score)

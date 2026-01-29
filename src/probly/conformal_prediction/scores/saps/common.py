@@ -46,8 +46,9 @@ def saps_score_func[T](
     ranks = ranks_zero_based + 1  # +1 for 1-based rank
 
     scores = np.where(ranks == 1, u_np * max_probs, max_probs + (ranks - 2 + u_np) * lambda_val)
-
-    return scores
+    # Ensure non-negative and correct shape
+    scores = np.where(scores < 0, 0.0, scores)
+    return np.asarray(scores, dtype=float)
 
 
 def register(cls: LazyType, func: Callable) -> None:
@@ -62,12 +63,11 @@ class SAPSScore(ClassificationScore):
         self,
         model: Predictor,
         lambda_val: float = 0.1,
-        random_state: int | None = None,
+        random_state: int | None = 42,
     ) -> None:
-        """Initialize SAPS score."""
+        """Initialize SAPS score with reproducible random_state by default."""
         self.lambda_val = lambda_val
         self.rng = np.random.default_rng(random_state)
-
         super().__init__(model=model, score_func=self._compute_score)
 
     def _compute_score(self, probs: Any) -> Any:  # noqa: ANN401

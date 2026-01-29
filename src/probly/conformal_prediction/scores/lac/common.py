@@ -71,4 +71,9 @@ class LACScore(ClassificationScore):
 
     def __init__(self, model: Predictor) -> None:
         """Initialize LAC score with model."""
-        super().__init__(model=model, score_func=lac_score_func)
+
+        def lac_score_func_numpy(probs: npt.NDArray[np.floating]) -> npt.NDArray[np.floating]:
+            arr = np.asarray(probs, dtype=float)
+            return 1.0 - arr
+
+        super().__init__(model=model, score_func=lac_score_func_numpy)

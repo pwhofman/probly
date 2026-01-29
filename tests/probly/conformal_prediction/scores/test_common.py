@@ -20,6 +20,7 @@ class MockScore(ClassificationScore):
     def __init__(self, fixed_score: float = 0.5) -> None:
         """Initialize mock score with fixed value."""
         self.fixed_score = fixed_score
+        super().__init__(model=lambda _: None, score_func=lambda _: np.ones((len(_), 3), dtype=float) * fixed_score)
 
     def calibration_nonconformity(
         self,
@@ -47,6 +48,7 @@ class MockRegressionScore(RegressionScore):
     def __init__(self, fixed_score: float = 0.5) -> None:
         """Initialize mock regression score with fixed value."""
         self.fixed_score = fixed_score
+        super().__init__(model=lambda _: None, score_func=lambda y, _: np.ones(len(y), dtype=float) * fixed_score)
 
     def calibration_nonconformity(
         self,

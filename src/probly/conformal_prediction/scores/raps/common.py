@@ -81,17 +81,14 @@ class RAPSScore(ClassificationScore):
 
     def _compute_score(self, probs: Any) -> Any:  # noqa: ANN401
         """Calculate RAPS scores with optional randomization U-term."""
-        # base RAPS scores
+        probs_np = probs.detach().cpu().numpy() if hasattr(probs, "detach") else np.asarray(probs)
         scores: Any = raps_score_func(
-            probs,
+            probs_np,
             lambda_reg=self.lambda_reg,
             k_reg=self.k_reg,
             epsilon=self.epsilon,
         )
-
-        # extract probabilities of true labels
         if self.randomize:
             u = self.rng.random(size=(scores.shape[0], 1))
-            scores = scores - (u * probs)
-
-        return scores
+            scores = scores - (u * probs_np)
+        return np.asarray(scores)

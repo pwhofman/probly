@@ -47,8 +47,9 @@ class MockClassificationScore:
         x_test: Sequence[Any],
         probs: Any = None,  # noqa: ANN401, ARG002
     ) -> npt.NDArray[np.floating]:
-        k = 3  # 3 classes
-        return np.random.default_rng(42).random((len(x_test), k))
+        n = len(x_test)
+        k = self.model.n_classes if hasattr(self.model, "n_classes") else 3
+        return np.random.default_rng(42).random((n, k))
 
 
 class MockRegressionModel:

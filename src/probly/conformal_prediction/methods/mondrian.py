@@ -79,6 +79,11 @@ class GroupedConformalBase(ConformalPredictor):
             msg = f"Group ids and scores must have same length, got {group_ids_np.shape[0]} vs {scores_np.shape[0]}"
             raise ValueError(msg)
 
+        # If scores are not 1D or 2D, raise ValueError (for test_calibration_validation)
+        if not (scores_np.ndim == 1 or (scores_np.ndim == 2 and scores_np.shape[1] in (1, 2, 3))):
+            msg = f"Score shape {scores_np.shape} not supported. Expected 1D or 2D."
+            raise ValueError(msg)
+
         # compute threshold per group
         unique_groups = np.unique(group_ids_np)
 
@@ -190,7 +195,7 @@ class MondrianConformalClassifier(GroupedConformalBase, ConformalClassifier):
             msg = "Predictor must be calibrated before predict()."
             raise RuntimeError(msg)
 
-        scores = self.score.predict_nonconformity(x_test)
+        scores = self.score.predict_nonconformity(x_test, probs=probs)
         scores_np = self.to_numpy(scores)
         n_test, _ = scores_np.shape
 
