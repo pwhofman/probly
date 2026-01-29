@@ -527,4 +527,4 @@ class PrNetHead(nn.Module):
 
     def forward(self, z: torch.Tensor) -> torch.Tensor:
         """Produce positive Dirichlet concentration parameters."""
-        return F.softplus(self.net(z)) + 1e-3
+        return F.softplus(self.net(z)) + 1.0
