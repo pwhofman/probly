@@ -92,7 +92,7 @@ class NormalInverseGammaLinear(nn.Module):
 class BatchedRadialFlowLayer(nn.Module):
     """Single radial flow transformation shared across all classes."""
 
-    def __init__(self, num_classes: int, latent_dim: int) -> None:
+    def __init__(self, latent_dim: int, num_classes: int) -> None:
         """Initialize parameters for a radial flow transform."""
         super().__init__()
         self.num_classes = num_classes
@@ -136,7 +136,7 @@ class BatchedRadialFlowLayer(nn.Module):
 class BatchedRadialFlowDensity(nn.Module):
     """Radial-flow density estimator that computes P(z|c) for all classes."""
 
-    def __init__(self, num_classes: int, latent_dim: int, flow_length: int = 6) -> None:
+    def __init__(self, latent_dim: int, num_classes: int, flow_length: int = 6) -> None:
         """Create a sequence of radial flow layers and base distribution."""
         super().__init__()
         self.num_classes = num_classes
@@ -225,7 +225,7 @@ class RadialFlowLayer(nn.Module):
 class EDLHead(nn.Module):
     """Simple classification head outputting class evidence."""
 
-    def __init__(self, latent_dim: int, hidden_dim: int = 128, num_classes: int = 10) -> None:  # noqa: D107
+    def __init__(self, latent_dim: int, num_classes: int = 10, hidden_dim: int = 128) -> None:  # noqa: D107
         super().__init__()
         self.net = nn.Sequential(
             nn.Linear(latent_dim, hidden_dim),
@@ -234,7 +234,9 @@ class EDLHead(nn.Module):
         )
 
     def forward(self, z: torch.Tensor) -> torch.Tensor:  # noqa: D102
-        return F.softplus(self.net(z))
+        alpha = F.softplus(self.net(z)) + 1.0
+
+        return alpha
 
 
 class RadialFlowDensity(nn.Module):
