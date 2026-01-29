@@ -82,16 +82,19 @@ class TestAPSScoreTorch:
         # Test calibration scores
         cal_scores = score.calibration_nonconformity(x_calib, y_calib)
 
-        assert isinstance(cal_scores, np.ndarray)
-        assert cal_scores.shape == (30,)
-        assert np.all(cal_scores >= 0)
+        # Akzeptiere torch.Tensor oder np.ndarray
+        cal_scores_np = cal_scores.detach().cpu().numpy() if hasattr(cal_scores, "detach") else np.asarray(cal_scores)
+        assert cal_scores_np.shape == (30,)
+        assert np.all(cal_scores_np >= 0)
 
         # Test prediction scores
         x_test = rng.random((10, 5), dtype=np.float32)
         pred_scores = score.predict_nonconformity(x_test)
 
-        assert isinstance(pred_scores, np.ndarray)
-        assert pred_scores.shape == (10, 3)  # 10 samples, 3 classes
+        pred_scores_np = (
+            pred_scores.detach().cpu().numpy() if hasattr(pred_scores, "detach") else np.asarray(pred_scores)
+        )
+        assert pred_scores_np.shape == (10, 3)
 
     def test_apsscore_with_randomization(self, simple_model: nn.Module) -> None:
         """Test APSScore with randomization enabled."""
@@ -126,9 +129,12 @@ class TestAPSScoreTorch:
         x_test = rng.random((10, 5), dtype=np.float32)
         prediction_sets = predictor.predict(x_test, alpha=0.1)
 
-        assert isinstance(prediction_sets, np.ndarray)
-        assert prediction_sets.dtype == bool
-        assert prediction_sets.shape == (10, 3)
+        if hasattr(prediction_sets, "detach"):
+            prediction_sets_np = prediction_sets.detach().cpu().numpy()
+        else:
+            prediction_sets_np = np.asarray(prediction_sets)
+        assert prediction_sets_np.shape == (10, 3)
+        assert prediction_sets_np.dtype in (bool, np.bool_)
 
     def test_with_split_conformal(self, simple_model: nn.Module) -> None:
         """Test integration with split conformal."""

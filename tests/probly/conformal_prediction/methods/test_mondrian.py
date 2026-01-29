@@ -51,12 +51,13 @@ class MockClassificationScore:
         """Return random nonconformity scores for calibration."""
         n_samples = len(x_cal)
         rng = np.random.default_rng(42)
-        return rng.random((n_samples, self.n_classes))
+        # Mondrian erwartet 1D-Array (n_samples,)
+        return rng.random(n_samples)
 
     def predict_nonconformity(self, x_test: Sequence[Any]) -> npt.NDArray[np.floating]:
         n_samples = len(x_test)
         rng = np.random.default_rng(42)
-        return rng.random((n_samples, self.n_classes))
+        return rng.random(n_samples)
 
 
 class MockRegressionScore:

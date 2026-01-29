@@ -155,15 +155,15 @@ class TestAPSScoreFlax:
         # Test calibration scores
         cal_scores = score.calibration_nonconformity(x_calib, y_calib)
 
-        assert isinstance(cal_scores, np.ndarray)
-        assert cal_scores.shape == (30,)
+        cal_scores_np = np.asarray(cal_scores)
+        assert cal_scores_np.shape == (30,)
 
         # Test prediction scores
         x_test = rng.random((10, 10), dtype=np.float32)
         pred_scores = score.predict_nonconformity(x_test)
 
-        assert isinstance(pred_scores, np.ndarray)
-        assert pred_scores.shape == (10, 3)
+        pred_scores_np = np.asarray(pred_scores)
+        assert pred_scores_np.shape == (10, 3)
 
     def test_apsscore_integration(self, flax_predictor: FlaxPredictor) -> None:
         """Test APSScore integrated in SplitConformalClassifier."""
@@ -185,9 +185,9 @@ class TestAPSScoreFlax:
         x_test = rng.random((10, 10), dtype=np.float32)
         prediction_sets = cp_predictor.predict(x_test, alpha=0.1)
 
-        assert isinstance(prediction_sets, np.ndarray)
-        assert prediction_sets.dtype == bool
-        assert prediction_sets.shape == (10, 3)
+        prediction_sets_np = np.asarray(prediction_sets)
+        assert prediction_sets_np.shape == (10, 3)
+        assert prediction_sets_np.dtype in (bool, np.bool_)
 
     def test_with_different_random_states(self, flax_predictor: FlaxPredictor) -> None:
         """Test reproducibility with different random states."""

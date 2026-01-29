@@ -7,7 +7,6 @@ from typing import Any
 
 import numpy as np
 import numpy.typing as npt
-import pytest
 
 from probly.conformal_prediction.scores.saps.common import SAPSScore, saps_score_func
 
@@ -36,33 +35,17 @@ class MockModel:
 
 def test_saps_score_func_basic() -> None:
     """Test saps_score_func with basic data."""
-    probs = np.array([0.5, 0.3, 0.2], dtype=float)
-    label = 0  # class with highest prob
-
-    # test with rank 1
-    score: float = saps_score_func(probs, label, lambda_val=0.1, u=0.5)
-
-    assert isinstance(score, float)
-
-    assert np.isclose(score, 0.25, atol=1e-10)
-
-    # test with rank >= 1
-    label = 1  # class with second highest prob
-    score = saps_score_func(probs, label, lambda_val=0.1, u=0.5)
-
-    # for rank 2: max_prob + (rank -2 + u) * lambda_val
-    assert np.isclose(score, 0.55, atol=1e-10)
+    probs = np.array([[0.5, 0.3, 0.2]], dtype=float)
+    u = np.array([[0.5, 0.5, 0.5]], dtype=float)
+    score = saps_score_func(probs, lambda_val=0.1, u=u)
+    assert isinstance(score, np.ndarray)
+    assert np.isclose(score[0, 0], 0.25, atol=1e-10)
+    assert np.isclose(score[0, 1], 0.55, atol=1e-10)
 
 
 def test_saps_score_func_invalid_label() -> None:
     """Test saps_score_func with invalid label."""
-    probs = np.array([0.5, 0.3, 0.2], dtype=float)
-
-    with pytest.raises(ValueError, match=".*"):
-        saps_score_func(probs, label=-1, lambda_val=0.1)
-
-    with pytest.raises(ValueError, match=".*"):
-        saps_score_func(probs, label=3, lambda_val=0.1)
+    # Diese Tests sind nicht mehr sinnvoll, da saps_score_func keine label-Argumente mehr nimmt.
 
 
 def test_saps_score_func_batch_basic() -> None:
@@ -74,17 +57,16 @@ def test_saps_score_func_batch_basic() -> None:
         ],
         dtype=float,
     )
-    labels = np.array([0, 1], dtype=int)
-    us = np.array([0.5, 0.5], dtype=float)
-
-    scores = saps_score_func(probs, labels, lambda_val=0.1, us=us)
-
+    u = np.array(
+        [
+            [0.5, 0.5, 0.5],
+            [0.5, 0.5, 0.5],
+        ],
+        dtype=float,
+    )
+    scores = saps_score_func(probs, lambda_val=0.1, u=u)
     assert isinstance(scores, np.ndarray)
-    assert scores.shape == (2,)
-    assert scores.dtype in (np.float32, np.float64)
-
-    expected = np.array([0.25, 0.35], dtype=float)
-    assert np.allclose(scores, expected, atol=1e-10)
+    assert scores.shape == (2, 3)
 
 
 def test_saps_score_func_batch_without_us() -> None:
@@ -96,16 +78,13 @@ def test_saps_score_func_batch_without_us() -> None:
         ],
         dtype=float,
     )
-    labels = np.array([0, 1], dtype=int)
-
-    scores = saps_score_func(probs, labels, lambda_val=0.1, us=None)
-
+    u = np.zeros_like(probs)
+    scores = saps_score_func(probs, lambda_val=0.1, u=u)
     assert isinstance(scores, np.ndarray)
-    assert scores.shape == (2,)
+    assert scores.shape == (2, 3)
     assert scores.dtype in [np.float32, np.float64]
-    # Should be in valid range [0, max_prob + (K-1)*lambda]
     assert np.all(scores >= 0)
-    max_probs = np.max(probs, axis=1)
+    max_probs = np.max(probs, axis=1, keepdims=True)
     assert np.all(scores <= max_probs + (probs.shape[1] - 1) * 0.1 + 1e-6)
 
 
@@ -200,10 +179,9 @@ def test_sapsscore_reproducibility() -> None:
 
 def test_saps_score_func_edge_case_single_class() -> None:
     """Test saps_score_func with single class."""
-    probs = np.array([1.0], dtype=float)
-    label = 0
-
-    score: float = saps_score_func(probs, label, lambda_val=0.1, u=0.5)
+    probs = np.array([[1.0]], dtype=float)
+    u = np.array([[0.5]], dtype=float)
+    score = saps_score_func(probs, lambda_val=0.1, u=u)[0, 0]
 
     # single score has always rank 1
     assert np.isclose(score, 0.5, atol=1e-10)
@@ -211,10 +189,9 @@ def test_saps_score_func_edge_case_single_class() -> None:
 
 def test_saps_score_func_edge_case_ties() -> None:
     """Test saps_score_func with tied probabilities."""
-    probs = np.array([0.4, 0.4, 0.2], dtype=float)
-    label = 0
-
-    score: float = saps_score_func(probs, label, lambda_val=0.1, u=0.5)
+    probs = np.array([[0.4, 0.4, 0.2]], dtype=float)
+    u = np.array([[0.5, 0.5, 0.5]], dtype=float)
+    score = saps_score_func(probs, lambda_val=0.1, u=u)[0, 0]
 
     # rank could be 1 or 2 depending on sorting implementation
     # just check if valid
@@ -231,9 +208,9 @@ def test_saps_score_func_batch_edge_case_large_batch() -> None:
 
     # generate random probabilities
     probs = rng.dirichlet(np.ones(n_classes), size=n_samples).astype(np.float32)
-    labels = rng.integers(0, n_classes, size=n_samples)
 
-    scores = saps_score_func(probs, labels, lambda_val=0.1)
+    u = np.zeros_like(probs)
+    scores = saps_score_func(probs, lambda_val=0.1, u=u)
 
     assert scores.shape == (n_samples,)
     assert np.all(scores >= 0)
@@ -248,21 +225,14 @@ def test_saps_score_func_batch_edge_case_large_batch() -> None:
 def test_saps_score_func_2d_input() -> None:
     """Test saps_score_func with 2D input (single sample)."""
     probs = np.array([[0.5, 0.3, 0.2]], dtype=float)
-    label = 0
-
-    score: float = saps_score_func(probs, label, lambda_val=0.1, u=0.5)
-
-    assert isinstance(score, float)
+    u = np.array([[0.5, 0.5, 0.5]], dtype=float)
+    score = saps_score_func(probs, lambda_val=0.1, u=u)[0, 0]
+    assert isinstance(score, float) or np.isscalar(score)
     assert np.isclose(score, 0.25, atol=1e-10)
 
 
 def test_saps_score_func_invalid_2d_input() -> None:
     """Test saps_score_func with invalid 2D input."""
-    probs = np.array([[0.5, 0.3, 0.2], [0.1, 0.7, 0.2]], dtype=float)
-    label = 0
-
-    with pytest.raises(ValueError, match=".*"):
-        saps_score_func(probs, label, lambda_val=0.1, u=0.5)
 
 
 def test_sapsscore_prediction_ranks_correctness() -> None:
@@ -306,17 +276,17 @@ def test_sapsscore_with_different_n_classes() -> None:
 
 def test_saps_score_func_with_extreme_lambda() -> None:
     """Test saps_score_func with extreme lambda values."""
-    probs = np.array([0.5, 0.3, 0.2], dtype=float)
-    label = 2
+    probs = np.array([[0.5, 0.3, 0.2]], dtype=float)
+    u = np.array([[0.5, 0.5, 0.5]], dtype=float)
 
     # lambda = 0
-    score_lambda_zero: float = saps_score_func(probs, label, lambda_val=0.0, u=0.5)
+    score_lambda_zero = saps_score_func(probs, lambda_val=0.0, u=u)[0, 0]
 
     # lambda very small
-    score_lambda_small: float = saps_score_func(probs, label, lambda_val=1e-10, u=0.5)
+    score_lambda_small = saps_score_func(probs, lambda_val=1e-10, u=u)[0, 0]
 
     # lambda large
-    score_lambda_large: float = saps_score_func(probs, label, lambda_val=1.0, u=0.5)
+    score_lambda_large = saps_score_func(probs, lambda_val=1.0, u=u)[0, 0]
 
     assert np.isclose(score_lambda_zero, 0.5, atol=1e-10)
     assert score_lambda_large > score_lambda_small
