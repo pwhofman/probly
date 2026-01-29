@@ -59,7 +59,6 @@ def make_ood_target_alpha(
     mu = torch.full(
         (batch_size, num_classes),
         1.0 / num_classes,
-        device="cpu",
     )
 
     return mu * alpha0
@@ -107,9 +106,8 @@ def predictive_probs(alpha: Tensor) -> Tensor:
 # ============================================================================
 
 
-def evidential_log_loss(inputs: Tensor, targets: Tensor) -> Tensor:
+def evidential_log_loss(alphas: Tensor, targets: Tensor) -> Tensor:
     """Evidential Log Loss from Sensoy et al. (2018)."""
-    alphas = inputs + 1.0
     strengths = alphas.sum(dim=1)
 
     loss = torch.mean(torch.log(strengths) - torch.log(alphas[torch.arange(targets.size(0)), targets]))
@@ -117,9 +115,8 @@ def evidential_log_loss(inputs: Tensor, targets: Tensor) -> Tensor:
     return loss
 
 
-def evidential_ce_loss(inputs: Tensor, targets: Tensor) -> Tensor:
+def evidential_ce_loss(alphas: Tensor, targets: Tensor) -> Tensor:
     """Evidential Cross Entropy Loss."""
-    alphas = inputs + 1.0
     strengths = alphas.sum(dim=1)
 
     loss = torch.mean(torch.digamma(strengths) - torch.digamma(alphas[torch.arange(targets.size(0)), targets]))
@@ -127,11 +124,10 @@ def evidential_ce_loss(inputs: Tensor, targets: Tensor) -> Tensor:
     return loss
 
 
-def evidential_mse_loss(inputs: Tensor, targets: Tensor) -> Tensor:
+def evidential_mse_loss(alphas: Tensor, targets: Tensor) -> Tensor:
     """Evidential Mean Squared Error Loss."""
-    alphas = inputs + 1.0
     strengths = alphas.sum(dim=1)
-    y = F.one_hot(targets, inputs.size(1))
+    y = F.one_hot(targets, alphas.size(1))
     p = alphas / strengths[:, None]
 
     err = (y - p) ** 2
@@ -142,14 +138,13 @@ def evidential_mse_loss(inputs: Tensor, targets: Tensor) -> Tensor:
     return loss
 
 
-def evidential_kl_divergence(inputs: Tensor, targets: Tensor) -> Tensor:
+def evidential_kl_divergence(alphas: Tensor, targets: Tensor) -> Tensor:
     """Evidential KL Divergence Loss."""
-    alphas = inputs + 1.0
-    y = F.one_hot(targets, inputs.size(1))
+    y = F.one_hot(targets, alphas.size(1))
     alphas_tilde = y + (1 - y) * alphas
     strengths_tilde = alphas_tilde.sum(dim=1)
 
-    k = torch.full((inputs.size(0),), inputs.size(1), device=inputs.device)
+    k = torch.full((alphas.size(0),), alphas.size(1), device=alphas.device)
 
     first = torch.lgamma(strengths_tilde) - torch.lgamma(k) - torch.sum(torch.lgamma(alphas_tilde), dim=1)
     second = torch.sum(
