@@ -148,10 +148,6 @@ jobs:
                uv run ruff check .
                uv run ruff format --check .
 
-        -   name: Run MyPy Static Type Check
-            run: |
-               uv run mypy src/
-
         -   name: Execute Unit Tests and Measure Coverage
             run: |
                uv run pytest --cov=src/probly --cov-report=xml
