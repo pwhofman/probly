@@ -35,7 +35,7 @@ def test_count_method(mock_model, mock_dataset):
 
     # Create a test tensor
     test_tensor = torch.tensor([0, 1, 1, 2, 2, 2])
-    counts = gen._count(test_tensor)  # noqa: SLF001
+    counts = gen._count(test_tensor)
 
     assert counts == {0: 1, 1: 2, 2: 3}
     assert isinstance(counts[0], int)
