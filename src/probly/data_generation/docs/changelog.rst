@@ -5,7 +5,7 @@ Changelog
 [2026-01-20] - Dokumentationsformat
 ==============================================
 
-Dokumentation von Markdown zu reStructuredText 
+Dokumentation von Markdown zu reStructuredText
 --------------------------------------------------------
 
 **Hauptänderungen:**

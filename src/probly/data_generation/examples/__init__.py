@@ -8,6 +8,6 @@ from .first_order_generator import (
 
 __all__ = [
     "FirstOrderDataGenerator",
-    "FirstOrderDataset", 
+    "FirstOrderDataset",
     "output_fo_dataloader",
 ]
