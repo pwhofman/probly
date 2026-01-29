@@ -202,20 +202,12 @@ def rpn_distillation_loss(
 
 
 def postnet_loss(
-    z: Tensor,
+    alpha: Tensor,
     y: Tensor,
-    flow: t.BatchedRadialFlowDensity,
-    class_counts: Tensor,
     entropy_weight: float = 1e-5,
 ) -> torch.Tensor:
     """Posterior Networks (PostNet) loss."""
-    log_dens = flow.log_prob(z)  # [B,C]
-    dens = log_dens.exp()
-
-    beta = dens * class_counts.unsqueeze(0)
-    alpha = beta + 1.0
     alpha0 = alpha.sum(dim=1)
-
     digamma = torch.digamma
     batch_idx = torch.arange(len(y), device=y.device)
     expected_ce = digamma(alpha0) - digamma(alpha[batch_idx, y])
@@ -224,7 +216,7 @@ def postnet_loss(
 
     loss = (expected_ce - entropy_weight * entropy).mean()
 
-    return loss, alpha
+    return loss
 
 
 def lp_fn(alpha: torch.Tensor, y: torch.Tensor, p: float = 2.0) -> torch.Tensor:
