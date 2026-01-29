@@ -129,7 +129,7 @@ def _postnet_loss(
     _mode: str,
     *,
     y: torch.Tensor,
-    outputs: torch.Tensor,
+    outputs: tuple[torch.Tensor, torch.Tensor, torch.Tensor],
     loss_fn: Callable[..., torch.Tensor],
     **_: dict[str, Any],
 ) -> torch.Tensor:
@@ -142,7 +142,7 @@ def _natpostnet_loss(
     _mode: str,
     *,
     y: torch.Tensor,
-    outputs: tuple[torch.Tensor, torch.Tensor, torch.Tensor],
+    outputs: torch.Tensor,
     loss_fn: Callable[..., torch.Tensor],
     **_: dict[str, Any],
 ) -> torch.Tensor:
