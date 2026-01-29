@@ -1,16 +1,15 @@
-import os
+from __future__ import annotations
+
+import importlib.util as importlib_util
+from pathlib import Path
+
 import numpy as np
 import pytest
 
 
 def _has_jax():
-    """Used to check whether JAX is installed in the runtime environment; if not, skip the entire test suite to avoid CI failures."""
-    try:
-        import jax  # noqa: F401
-        import jax.numpy as jnp  # noqa: F401
-        return True
-    except Exception:
-        return False
+    """Return True if JAX is available; otherwise False."""
+    return (importlib_util.find_spec("jax") is not None) and (importlib_util.find_spec("jax.numpy") is not None)
 
 
 # -----------------------------
@@ -23,19 +22,19 @@ pytestmark = pytest.mark.skipif(not _has_jax(), reason="jax is not installed")
 
 
 # -----------------------------
-# [Functional correctness / main path] Round-trip save–load cycle test
+# [Functional correctness / main path] Round-trip save-load cycle test
 # Purpose:
 # 1) Verify that the round-trip from JAX array dict -> save (.npz) -> load -> JAX array dict is reversible
 # 2) Verify key invariants: key set, shape, dtype, and values remain identical (baseline for scientific reproducibility)
 # 3) Also cover: automatic .npz suffix appending, automatic directory creation, and device_put to a specified device
 # -----------------------------
 def test_jax_generator_save_load_roundtrip(tmp_path):
-    import jax
-    import jax.numpy as jnp
+    import jax  # noqa: PLC0415
+    import jax.numpy as jnp  # noqa: PLC0415
 
     # According to your project structure: from <pkg>.jax_generator import JAXGenerator
     # Here we use relative import: assuming the test and generator are in the same package
-    from .jax_generator import JAXGenerator
+    from .jax_generator import JAXGenerator  # noqa: PLC0415
 
     gen = JAXGenerator()
 
@@ -49,12 +48,12 @@ def test_jax_generator_save_load_roundtrip(tmp_path):
     gen.save_distributions(
         tensor_dict=tensor_dict,
         save_path=str(save_path),
-        create_dir=True,   # Coverage: directory should be created automatically if it does not exist
+        create_dir=True,  # Coverage: directory should be created automatically if it does not exist
         verbose=False,
     )
 
     expected_file = str(save_path) + ".npz"
-    assert os.path.exists(expected_file)
+    assert Path(expected_file).exists()
 
     # Coverage: explicit device parameter (even if only CPU is available, device_put should still work)
     loaded = gen.load_distributions(load_path=expected_file, device="cpu:0", verbose=False)
@@ -63,8 +62,8 @@ def test_jax_generator_save_load_roundtrip(tmp_path):
     assert set(loaded.keys()) == set(tensor_dict.keys())
 
     # Shape / dtype / value consistency
-    for k in tensor_dict.keys():
-        x = np.asarray(jax.device_get(tensor_dict[k]))
+    for k, v in tensor_dict.items():
+        x = np.asarray(jax.device_get(v))
         y = np.asarray(jax.device_get(loaded[k]))
         assert x.shape == y.shape
         assert x.dtype == y.dtype
@@ -78,8 +77,9 @@ def test_jax_generator_save_load_roundtrip(tmp_path):
 # - Fail early: provide a clear error at the generator level instead of a hard-to-trace numpy error
 # -----------------------------
 def test_jax_generator_rejects_non_mapping_keys(tmp_path):
-    import jax.numpy as jnp
-    from .jax_generator import JAXGenerator
+    import jax.numpy as jnp  # noqa: PLC0415
+
+    from .jax_generator import JAXGenerator  # noqa: PLC0415
 
     gen = JAXGenerator()
 
@@ -95,7 +95,7 @@ def test_jax_generator_rejects_non_mapping_keys(tmp_path):
 # - Ensure device_get / device_put behavior is well-defined and avoid cross-framework data contamination
 # -----------------------------
 def test_jax_generator_rejects_non_jax_values(tmp_path):
-    from .jax_generator import JAXGenerator
+    from .jax_generator import JAXGenerator  # noqa: PLC0415
 
     gen = JAXGenerator()
 
@@ -111,7 +111,7 @@ def test_jax_generator_rejects_non_jax_values(tmp_path):
 # - Fail early with a clear error to reduce debugging cost
 # --------sssss---------------------
 def test_jax_generator_load_missing_file(tmp_path):
-    from .jax_generator import JAXGenerator
+    from .jax_generator import JAXGenerator  # noqa: PLC0415
 
     gen = JAXGenerator()
 
@@ -126,12 +126,12 @@ def test_jax_generator_load_missing_file(tmp_path):
 # - Fail early with a readable error instead of obscure numpy exceptions
 # -----------------------------
 def test_jax_generator_load_requires_npz_suffix(tmp_path):
-    from .jax_generator import JAXGenerator
+    from .jax_generator import JAXGenerator  # noqa: PLC0415
 
     gen = JAXGenerator()
 
     p = tmp_path / "bad.ext"
     p.write_text("not a npz")
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=r".*\\.npz.*"):
         gen.load_distributions(str(p), verbose=False)
