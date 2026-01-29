@@ -92,13 +92,13 @@ class NormalInverseGammaLinear(nn.Module):
 class BatchedRadialFlowLayer(nn.Module):
     """Single radial flow transformation shared across all classes."""
 
-    def __init__(self, num_classes: int, dim: int) -> None:
+    def __init__(self, num_classes: int, latent_dim: int) -> None:
         """Initialize parameters for a radial flow transform."""
         super().__init__()
         self.c = num_classes
-        self.dim = dim
+        self.latent_dim = latent_dim
 
-        self.x0 = nn.Parameter(torch.zeros(self.c, self.dim))
+        self.x0 = nn.Parameter(torch.zeros(self.c, self.latent_dim))
         self.alpha_prime = nn.Parameter(torch.zeros(self.c))
         self.beta_prime = nn.Parameter(torch.zeros(self.c))
 
@@ -106,7 +106,7 @@ class BatchedRadialFlowLayer(nn.Module):
 
     def reset_parameters(self) -> None:
         """Reset learnable parameters with a small uniform init."""
-        stdv = 1.0 / math.sqrt(self.dim)
+        stdv = 1.0 / math.sqrt(self.latent_dim)
         self.x0.data.uniform_(-stdv, stdv)
         self.alpha_prime.data.uniform_(-stdv, stdv)
         self.beta_prime.data.uniform_(-stdv, stdv)
@@ -126,7 +126,7 @@ class BatchedRadialFlowLayer(nn.Module):
 
         z_new = zc + beta_h.unsqueeze(-1) * diff
 
-        term1 = (self.dim - 1) * torch.log1p(beta_h)
+        term1 = (self.latent_dim - 1) * torch.log1p(beta_h)
         term2 = torch.log1p(beta_h + beta.unsqueeze(1) * h_prime * r)
         log_abs_det = term1 + term2
 
@@ -136,22 +136,22 @@ class BatchedRadialFlowLayer(nn.Module):
 class BatchedRadialFlowDensity(nn.Module):
     """Radial-flow density estimator that computes P(z|c) for all classes."""
 
-    def __init__(self, num_classes: int, dim: int, flow_length: int = 6) -> None:
+    def __init__(self, num_classes: int, latent_dim: int, flow_length: int = 6) -> None:
         """Create a sequence of radial flow layers and base distribution."""
         super().__init__()
         self.c = num_classes
-        self.dim = dim
+        self.latent_dim = latent_dim
 
         self.layers = nn.ModuleList(
-            [BatchedRadialFlowLayer(num_classes, dim) for _ in range(flow_length)],
+            [BatchedRadialFlowLayer(num_classes, latent_dim) for _ in range(flow_length)],
         )
 
-        self.log_base_const = -0.5 * self.dim * math.log(2 * math.pi)
+        self.log_base_const = -0.5 * self.latent_dim * math.log(2 * math.pi)
 
     def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """Expand input x for all classes and apply flow layers."""
         B = x.size(0)  # noqa: N806
-        zc = x.unsqueeze(0).expand(self.c, B, self.dim)
+        zc = x.unsqueeze(0).expand(self.c, B, self.latent_dim)
         sum_log_jac = torch.zeros(self.c, B, device=x.device)
 
         for layer in self.layers:
@@ -173,14 +173,14 @@ class BatchedRadialFlowDensity(nn.Module):
 class RadialFlowLayer(nn.Module):
     """Single radial flow layer for a latent vector z ∈ R^D."""
 
-    def __init__(self, dim: int) -> None:  # noqa: D107
+    def __init__(self, latent_dim: int) -> None:  # noqa: D107
         super().__init__()
-        self.dim = dim
+        self.latent_dim = latent_dim
 
         # Learnable parameters:
         # - x0: center of the radial transformation (vector in R^D)
         # - alpha_prime, beta_prime: unconstrained scalars that we transform to valid alpha, beta
-        self.x0 = nn.Parameter(torch.zeros(dim))
+        self.x0 = nn.Parameter(torch.zeros(latent_dim))
         self.alpha_prime = nn.Parameter(torch.zeros(1))
         self.beta_prime = nn.Parameter(torch.zeros(1))
 
@@ -215,7 +215,7 @@ class RadialFlowLayer(nn.Module):
 
         # Log determinant of the Jacobian:
         # formula derived in Rezende & Mohamed (2015)
-        term1 = (self.dim - 1) * torch.log1p(beta_h)  # [B]
+        term1 = (self.latent_dim - 1) * torch.log1p(beta_h)  # [B]
         term2 = torch.log1p(beta_h + beta * h_prime * r)  # [B]
         log_abs_det = term1 + term2  # [B]
 
@@ -240,13 +240,13 @@ class EDLHead(nn.Module):
 class RadialFlowDensity(nn.Module):
     """Normalizing flow density p(z) using a stack of radial flows."""
 
-    def __init__(self, dim: int, flow_length: int = 4) -> None:  # noqa: D107
+    def __init__(self, latent_dim: int, flow_length: int = 4) -> None:  # noqa: D107
         super().__init__()
-        self.dim = dim
-        self.layers = nn.ModuleList([RadialFlowLayer(dim=dim) for _ in range(flow_length)])
+        self.latent_dim = latent_dim
+        self.layers = nn.ModuleList([RadialFlowLayer(latent_dim=latent_dim) for _ in range(flow_length)])
 
         # Constant term for log N(z|0, I): -0.5 * D * log(2π)
-        self.log_base_const = -0.5 * self.dim * math.log(2 * math.pi)
+        self.log_base_const = -0.5 * self.latent_dim * math.log(2 * math.pi)
 
     def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """Apply all flow layers to x.
@@ -396,7 +396,7 @@ class NatPNHead(nn.Module):
         }
 
 
-class GaussianHead(nn.Module):
+class NatPNRegressionHead(nn.Module):
     """Gaussian posterior head for evidential regression.
 
     Takes latent representations and outputs mean and variance for Gaussian
