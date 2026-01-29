@@ -51,7 +51,7 @@ def test_initialization(mock_model, mock_dataset):
 
 
 def test_generate_logic(mock_model, mock_dataset):
-    ds, x, y = mock_dataset
+    ds, _, _ = mock_dataset
     gen = PyTorchDataGenerator(mock_model, ds, batch_size=2)
     results = gen.generate()
 
