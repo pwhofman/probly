@@ -8,7 +8,7 @@ from torch import nn
 import probly.layers.evidential.torch as t
 
 
-class NatPN(nn.Module):
+class NatPNModel(nn.Module):
     """Natural Posterior Network for evidential deep learning with normalizing flows.
 
     Combines encoder, normalizing flow density, and head for uncertainty quantification.
@@ -34,7 +34,7 @@ class NatPN(nn.Module):
         super().__init__()
 
         if head is None:
-            head = t.DirichletHead(latent_dim=latent_dim, num_classes=10)
+            head = t.NatPNHead(latent_dim=latent_dim, num_classes=10)
 
         self.encoder = encoder
         self.head = head
@@ -78,8 +78,8 @@ class NatPN(nn.Module):
         )
 
 
-class SimpleCNN(nn.Module):
-    """Simple CNN model for evidential classification."""
+class EDLModel(nn.Module):
+    """Simple model for EDL classification."""
 
     def __init__(  # noqa: D107
         self,
@@ -91,7 +91,7 @@ class SimpleCNN(nn.Module):
         super().__init__()
 
         if head is None:
-            head = t.SimpleHead(latent_dim=latent_dim, num_classes=num_classes)
+            head = t.EDLHead(latent_dim=latent_dim, num_classes=num_classes)
 
         self.encoder = encoder
         self.head = head
@@ -113,7 +113,7 @@ class EvidentialRegressionModel(nn.Module):
         super().__init__()
 
         if head is None:
-            self.head = t.EvidentialHead(latent_dim=encoder.latent_dim)
+            self.head = t.RegressionHead(latent_dim=encoder.latent_dim)
 
         self.encoder = encoder
 
@@ -123,7 +123,7 @@ class EvidentialRegressionModel(nn.Module):
         return self.head(features)
 
 
-class DirichletClassificationModel(nn.Module):
+class IRDModel(nn.Module):
     """Full model combining encoder and Dirichlet head for evidential classification.
 
     This model learns to output Dirichlet concentration parameters (alpha)

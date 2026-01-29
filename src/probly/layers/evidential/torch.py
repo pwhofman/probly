@@ -89,7 +89,7 @@ class NormalInverseGammaLinear(nn.Module):
 
 
 # radial flows
-class RadialFlowLayer(nn.Module):
+class BatchedRadialFlowLayer(nn.Module):
     """Single radial flow transformation shared across all classes."""
 
     def __init__(self, num_classes: int, dim: int) -> None:
@@ -143,7 +143,7 @@ class BatchedRadialFlowDensity(nn.Module):
         self.dim = dim
 
         self.layers = nn.ModuleList(
-            [RadialFlowLayer(num_classes, dim) for _ in range(flow_length)],
+            [BatchedRadialFlowLayer(num_classes, dim) for _ in range(flow_length)],
         )
 
         self.log_base_const = -0.5 * self.dim * math.log(2 * math.pi)
@@ -170,7 +170,7 @@ class BatchedRadialFlowDensity(nn.Module):
         return logp.transpose(0, 1)  # [B,C]
 
 
-class RadialFlowLayer2(nn.Module):
+class RadialFlowLayer(nn.Module):
     """Single radial flow layer for a latent vector z ∈ R^D."""
 
     def __init__(self, dim: int) -> None:  # noqa: D107
@@ -222,7 +222,7 @@ class RadialFlowLayer2(nn.Module):
         return z_new, log_abs_det
 
 
-class SimpleHead(nn.Module):
+class EDLHead(nn.Module):
     """Simple classification head outputting class evidence."""
 
     def __init__(self, latent_dim: int, hidden_dim: int = 128, num_classes: int = 10) -> None:  # noqa: D107
@@ -243,7 +243,7 @@ class RadialFlowDensity(nn.Module):
     def __init__(self, dim: int, flow_length: int = 4) -> None:  # noqa: D107
         super().__init__()
         self.dim = dim
-        self.layers = nn.ModuleList([RadialFlowLayer2(dim=dim) for _ in range(flow_length)])
+        self.layers = nn.ModuleList([RadialFlowLayer(dim=dim) for _ in range(flow_length)])
 
         # Constant term for log N(z|0, I): -0.5 * D * log(2π)
         self.log_base_const = -0.5 * self.dim * math.log(2 * math.pi)
@@ -287,7 +287,7 @@ class RadialFlowDensity(nn.Module):
         return logp
 
 
-class EvidentialHead(nn.Module):
+class RegressionHead(nn.Module):
     """Head that converts encoded features into evidential Normal-Gamma parameters."""
 
     def __init__(self, latent_dim: int) -> None:
@@ -318,7 +318,7 @@ class EvidentialHead(nn.Module):
         return mu, kappa, alpha, beta
 
 
-class DirichletHead(nn.Module):
+class NatPNHead(nn.Module):
     """Dirichlet posterior head for evidential classification.
 
     Takes latent representations and outputs Dirichlet parameters for uncertainty
