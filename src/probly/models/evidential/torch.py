@@ -184,33 +184,60 @@ class IRDModel(nn.Module):
 
 
 class PostNetModel(nn.Module):
-    """Posterior Network model containing encoder + flow."""
+    """Posterior Network model containing encoder and class-conditional flows."""
 
     def __init__(
         self,
         encoder: nn.Module | None = None,
-        flow: nn.Module | None = None,
+        num_classes: int = 10,
         latent_dim: int = 6,
+        flow: t.BatchedRadialFlowDensity | None = None,
+        class_counts: torch.Tensor | None = None,
     ) -> None:
-        """Initialize a Posterior Network model."""
-        super().__init__()
-
-        if flow is None:
-            flow = t.BatchedRadialFlowDensity(num_classes=10, latent_dim=latent_dim, flow_length=6)
-
-        self.encoder = encoder
-        self.flow = flow
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Encode inputs into latent representations.
+        """Initialize a Posterior Network model.
 
         Args:
-            x: Input tensor of shape (B, ...) where B is batch size.
+            encoder: Encoder mapping inputs to a latent space.
+            num_classes: Number of output classes.
+            latent_dim: Dimensionality of the latent space.
+            flow: Class-conditional normalizing flow. If None, a default flow is used.
+            class_counts: Empirical class counts used as a prior. If None, assumes a uniform prior.
+        """
+        super().__init__()
+        self.encoder = encoder
+        self.num_classes = num_classes
+        self.latent_dim = latent_dim
+
+        if flow is None:
+            flow = t.BatchedRadialFlowDensity(num_classes=num_classes, latent_dim=latent_dim, flow_length=6)
+        self.flow = flow
+
+        if class_counts is None:
+            class_counts = torch.ones(num_classes)
+        self.register_buffer("class_counts", class_counts)
+
+    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        """Forward pass of the Posterior Network.
+
+        Args:
+            x: Input tensor of shape (batch_size, ...) compatible with the encoder.
 
         Returns:
-            Latent tensor z of shape (B, latent_dim).
+            alpha: Dirichlet concentration parameters of shape.
+            p_mean: Predictive mean of the Dirichlet distribution.
+            z: Latent representation of the input.
         """
-        return self.encoder(x)
+        z = self.encoder(x)
+
+        log_dens = self.flow.log_prob(z)
+        dens = log_dens.exp()
+
+        beta = dens * self.class_counts.unsqueeze(0)
+        alpha = beta + 1.0
+        alpha0 = alpha.sum(dim=1, keepdim=True)
+        p_mean = alpha / alpha0
+
+        return alpha, p_mean, z
 
 
 class PrNetModel(nn.Module):

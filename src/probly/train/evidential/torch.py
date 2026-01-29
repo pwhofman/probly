@@ -129,15 +129,12 @@ def _postnet_loss(
     _mode: str,
     *,
     y: torch.Tensor,
-    outputs: torch.Tensor,
+    outputs: tuple[torch.Tensor, torch.Tensor, torch.Tensor],
     loss_fn: Callable[..., torch.Tensor],
-    model: nn.Module,
-    class_count: torch.Tensor | None = None,
     **_: dict[str, Any],
 ) -> torch.Tensor:
-    flow = model.flow
-    loss, _ = loss_fn(outputs, y, flow, class_count)
-    return loss
+    alpha, _, _ = outputs
+    return loss_fn(alpha, y)
 
 
 @compute_loss.register("NatPostNet")
