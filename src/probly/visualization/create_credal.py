@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from matplotlib.axes import Axes
 import matplotlib.pyplot as plt
 import numpy as np  # noqa: TC002
 
 from probly.visualization.input_handling import dispatch_plot
+
+if TYPE_CHECKING:
+    from matplotlib.axes import Axes
 
 
 def create_credal_plot(

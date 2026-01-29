@@ -2,14 +2,18 @@
 
 from __future__ import annotations
 
-from matplotlib.axes import Axes
-import matplotlib.patheffects as PathEffects
+from typing import TYPE_CHECKING
+
 from matplotlib.patches import Polygon
+import matplotlib.patheffects as PathEffects
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.spatial import ConvexHull
 
 import probly.visualization.config as cfg
+
+if TYPE_CHECKING:
+    from matplotlib.axes import Axes
 
 
 class TernaryVisualizer:

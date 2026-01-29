@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
-from matplotlib.axes import Axes
+from typing import TYPE_CHECKING
+
 import matplotlib.pyplot as plt
 import numpy as np
 
 import probly.visualization.config as cfg
+
+if TYPE_CHECKING:
+    from matplotlib.axes import Axes
 
 
 class IntervalVisualizer:

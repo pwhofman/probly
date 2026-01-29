@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from matplotlib.axes import Axes
 from matplotlib.patches import Circle, RegularPolygon
 from matplotlib.path import Path
 from matplotlib.projections import register_projection
@@ -15,6 +14,9 @@ from matplotlib.transforms import Affine2D
 import numpy as np
 
 import probly.visualization.config as cfg
+
+if TYPE_CHECKING:
+    from matplotlib.axes import Axes
 
 
 def radar_factory(num_vars: int, frame: str = "circle") -> np.ndarray:  # noqa: C901

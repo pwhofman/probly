@@ -2,8 +2,13 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 from numpy.typing import NDArray
+
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
 
 
 def differential_entropy_gaussian(sigma2: float | np.ndarray, base: float = 2) -> float | np.ndarray:
@@ -41,7 +46,9 @@ def kl_divergence_gaussian(
         kl_div: float or numpy.ndarray shape (n_instances,), KL-divergence between the two Gaussian distributions
 
     """
-    kl_div: float | NDArray = 0.5 * np.log(sigma22 / sigma21) / np.log(base) + (sigma21 + (mu1 - mu2) ** 2) / (2 * sigma22) - 0.5
+    kl_div: float | NDArray = (
+        0.5 * np.log(sigma22 / sigma21) / np.log(base) + (sigma21 + (mu1 - mu2) ** 2) / (2 * sigma22) - 0.5
+    )
     return kl_div
 
 

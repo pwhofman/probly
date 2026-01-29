@@ -6,10 +6,11 @@ import itertools
 from typing import TYPE_CHECKING
 
 import numpy as np
-from numpy.typing import NDArray
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
+
+    from numpy.typing import NDArray
 
 
 def powerset(iterable: Iterable[int]) -> list[tuple[()]]:

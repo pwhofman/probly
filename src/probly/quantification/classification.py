@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING
 
 import joblib
 import numpy as np
-from numpy.typing import NDArray
 from scipy.optimize import minimize
 from scipy.stats import entropy
 from tqdm import tqdm
@@ -15,6 +14,8 @@ from probly.utils import moebius, powerset
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+
+    from numpy.typing import NDArray
 
 MINIMIZE_EPS = 1e-3  # A small epsilon to avoid problems when the initial solution of minimize is exactly uniform
 
@@ -121,7 +122,9 @@ def expected_divergence(
 
     """
     mean = np.mean(probs, axis=1)
-    ed: NDArray = np.sum(mean * loss_fn(mean, None), axis=1) - np.mean(np.sum(probs * loss_fn(probs, None), axis=2), axis=1)
+    ed: NDArray = np.sum(mean * loss_fn(mean, None), axis=1) - np.mean(
+        np.sum(probs * loss_fn(probs, None), axis=2), axis=1
+    )
     return ed
 
 
@@ -262,9 +265,11 @@ def upper_entropy(probs: np.ndarray, base: float = 2, n_jobs: int | None = None)
 
     ue: NDArray
     if n_jobs:
-        ue = np.array(joblib.Parallel(n_jobs=n_jobs)(
-            joblib.delayed(compute_upper_entropy)(i) for i in tqdm(range(probs.shape[0]), desc="Instances")
-        ))
+        ue = np.array(
+            joblib.Parallel(n_jobs=n_jobs)(
+                joblib.delayed(compute_upper_entropy)(i) for i in tqdm(range(probs.shape[0]), desc="Instances")
+            )
+        )
     else:
         ue = np.empty(probs.shape[0])
         for i in tqdm(range(probs.shape[0]), desc="Instances"):
@@ -304,9 +309,11 @@ def lower_entropy(probs: np.ndarray, base: float = 2, n_jobs: int | None = None)
 
     le: NDArray
     if n_jobs:
-        le = np.array(joblib.Parallel(n_jobs=n_jobs)(
-            joblib.delayed(compute_lower_entropy)(i) for i in tqdm(range(probs.shape[0]), desc="Instances")
-        ))
+        le = np.array(
+            joblib.Parallel(n_jobs=n_jobs)(
+                joblib.delayed(compute_lower_entropy)(i) for i in tqdm(range(probs.shape[0]), desc="Instances")
+            )
+        )
     else:
         le = np.empty(probs.shape[0])
         for i in tqdm(range(probs.shape[0]), desc="Instances"):
@@ -342,9 +349,12 @@ def upper_entropy_convex_hull(probs: np.ndarray, base: float = 2, n_jobs: int | 
 
     ue: NDArray
     if n_jobs:
-        ue = np.array(joblib.Parallel(n_jobs=n_jobs)(
-            joblib.delayed(compute_upper_entropy_convex_hull)(i) for i in tqdm(range(probs.shape[0]), desc="Instances")
-        ))
+        ue = np.array(
+            joblib.Parallel(n_jobs=n_jobs)(
+                joblib.delayed(compute_upper_entropy_convex_hull)(i)
+                for i in tqdm(range(probs.shape[0]), desc="Instances")
+            )
+        )
     else:
         ue = np.empty(probs.shape[0])
         for i in tqdm(range(probs.shape[0]), desc="Instances"):
@@ -380,9 +390,12 @@ def lower_entropy_convex_hull(probs: np.ndarray, base: float = 2, n_jobs: int | 
 
     le: NDArray
     if n_jobs:
-        le = np.array(joblib.Parallel(n_jobs=n_jobs)(
-            joblib.delayed(compute_lower_entropy_convex_hull)(i) for i in tqdm(range(probs.shape[0]), desc="Instances")
-        ))
+        le = np.array(
+            joblib.Parallel(n_jobs=n_jobs)(
+                joblib.delayed(compute_lower_entropy_convex_hull)(i)
+                for i in tqdm(range(probs.shape[0]), desc="Instances")
+            )
+        )
     else:
         le = np.empty(probs.shape[0])
         for i in tqdm(range(probs.shape[0]), desc="Instances"):

@@ -5,12 +5,12 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import numpy as np
-from numpy.typing import NDArray
 
 from probly.utils import differential_entropy_gaussian, kl_divergence_gaussian
 
 if TYPE_CHECKING:
     import numpy.typing as npt
+    from numpy.typing import NDArray
 
 
 def total_variance(probs: npt.NDArray[np.floating]) -> npt.NDArray[np.floating]:
