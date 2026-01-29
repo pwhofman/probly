@@ -1,8 +1,18 @@
 from __future__ import annotations
 
+import importlib.util as importlib_util
 from pathlib import Path
 
 import pytest
+
+
+def _has_jax():
+    """Return True if JAX is available; otherwise False."""
+    return (importlib_util.find_spec("jax") is not None) and (importlib_util.find_spec("jax.numpy") is not None)
+
+
+# If JAX is not available, skip this modules tests
+pytestmark = pytest.mark.skipif(not _has_jax(), reason="jax is not installed")
 
 
 def _get_jax_data_generator_or_skip(required_methods: tuple[str, ...] = ()):
@@ -22,12 +32,7 @@ def _get_jax_data_generator_or_skip(required_methods: tuple[str, ...] = ()):
 
 
 def _make_dummy_model():
-    try:
-        import jax.numpy as jnp  # noqa: PLC0415
-    except Exception:  # noqa: BLE001
-        import numpy as np  # noqa: PLC0415
-
-        jnp = np
+    import jax.numpy as jnp  # noqa: PLC0415
 
     def model(x: jnp.ndarray) -> jnp.ndarray:
         # Simple linear logits: two classes, logits favor class 1 when sum(x) > 0
@@ -38,12 +43,7 @@ def _make_dummy_model():
 
 
 def test_jax_generator_generate_and_metrics():
-    try:
-        import jax.numpy as jnp  # noqa: PLC0415
-    except Exception:  # noqa: BLE001
-        import numpy as np  # noqa: PLC0415
-
-        jnp = np
+    import jax.numpy as jnp  # noqa: PLC0415
 
     jax_data_generator_cls = _get_jax_data_generator_or_skip(("generate",))
 
@@ -70,12 +70,7 @@ def test_jax_generator_generate_and_metrics():
 
 
 def test_jax_generator_save_load_roundtrip(tmp_path):
-    try:
-        import jax.numpy as jnp  # noqa: PLC0415
-    except Exception:  # noqa: BLE001
-        import numpy as np  # noqa: PLC0415
-
-        jnp = np
+    import jax.numpy as jnp  # noqa: PLC0415
 
     jax_data_generator_cls = _get_jax_data_generator_or_skip(("generate", "save", "load"))
 
