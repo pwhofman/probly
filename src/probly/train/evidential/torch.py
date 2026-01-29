@@ -131,7 +131,6 @@ def _postnet_loss(
     y: torch.Tensor,
     outputs: torch.Tensor,
     loss_fn: Callable[..., torch.Tensor],
-    model: nn.Module,
     **_: dict[str, Any],
 ) -> torch.Tensor:
     alpha, _, _ = outputs

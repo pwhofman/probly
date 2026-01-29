@@ -2,16 +2,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 import torch
 from torch import Tensor, nn
 from torch.distributions import Dirichlet
 from torch.nn import functional as F
 from torch.special import digamma, gammaln
-
-if TYPE_CHECKING:
-    from probly.layers.evidential import torch as t
 
 
 def normal_wishart_log_prob(
