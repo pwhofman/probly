@@ -139,11 +139,11 @@ class BatchedRadialFlowDensity(nn.Module):
     def __init__(self, latent_dim: int, num_classes: int, flow_length: int = 6) -> None:
         """Create a sequence of radial flow layers and base distribution."""
         super().__init__()
-        self.num_classes = num_classes
         self.latent_dim = latent_dim
+        self.num_classes = num_classes
 
         self.layers = nn.ModuleList(
-            [BatchedRadialFlowLayer(num_classes, latent_dim) for _ in range(flow_length)],
+            [BatchedRadialFlowLayer(latent_dim, num_classes) for _ in range(flow_length)],
         )
 
         self.log_base_const = -0.5 * self.latent_dim * math.log(2 * math.pi)
@@ -223,9 +223,16 @@ class RadialFlowLayer(nn.Module):
 
 
 class EDLHead(nn.Module):
-    """Simple classification head outputting class evidence."""
+    """outputs Dirichlet concentration parameters (alpha)."""
 
-    def __init__(self, latent_dim: int, num_classes: int = 10, hidden_dim: int = 128) -> None:  # noqa: D107
+    def __init__(self, latent_dim: int, num_classes: int = 10, hidden_dim: int = 128) -> None:
+        """Initialize the EDLHead.
+
+        Args:
+            latent_dim: Dimension of the input latent vector.
+            num_classes: Number of output classes. Defaults to 10.
+            hidden_dim: Dimension of the hidden layer. Defaults to 128.
+        """
         super().__init__()
         self.net = nn.Sequential(
             nn.Linear(latent_dim, hidden_dim),
@@ -233,7 +240,15 @@ class EDLHead(nn.Module):
             nn.Linear(hidden_dim, num_classes),
         )
 
-    def forward(self, z: torch.Tensor) -> torch.Tensor:  # noqa: D102
+    def forward(self, z: torch.Tensor) -> torch.Tensor:
+        """Forward pass to compute Dirichlet concentration parameters (alpha).
+
+        Args:
+            z: Input latent tensor.
+
+        Returns:
+            torch.Tensor: Dirichlet concentration parameters (alpha).
+        """
         alpha = F.softplus(self.net(z)) + 1.0
 
         return alpha

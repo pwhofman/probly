@@ -81,13 +81,21 @@ class NatPNModel(nn.Module):
 class EDLModel(nn.Module):
     """Simple model for EDL classification."""
 
-    def __init__(  # noqa: D107
+    def __init__(
         self,
         encoder: nn.Module | None = None,
         head: nn.Module | None = None,
         latent_dim: int = 32,
         num_classes: int = 10,
     ) -> None:
+        """Initialize the EDLModel for evidential classification.
+
+        Args:
+            encoder: Encoder module mapping inputs to latent space.
+            head: Head module for evidential output (defaults to EDLHead).
+            latent_dim: Dimension of the latent space.
+            num_classes: Number of output classes.
+        """
         super().__init__()
 
         if head is None:
@@ -96,7 +104,15 @@ class EDLModel(nn.Module):
         self.encoder = encoder
         self.head = head
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:  # noqa: D102
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Forward pass through encoder and head.
+
+        Args:
+            x: Input tensor compatible with the encoder.
+
+        Returns:
+            Output tensor from the head module.
+        """
         z = self.encoder(x)
         return self.head(z)
 
