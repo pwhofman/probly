@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable
 from typing import Any, Literal, Unpack
 
-from probly.lazy_types import FLAX_MODULE, TORCH_MODULE
+from probly.lazy_types import FLAX_MODULE, SKLEARN_MODULE, TORCH_MODULE
 from probly.predictor import Predictor, predict
 from probly.representation.representer import Representer
 from probly.traverse_nn import nn_compose
@@ -29,6 +29,11 @@ def _(_: type) -> None:
 @sampling_preparation_traverser.delayed_register(FLAX_MODULE)
 def _(_: type) -> None:
     from . import flax_sampler as flax_sampler  # noqa: PLC0414, PLC0415
+
+
+@sampling_preparation_traverser.delayed_register(SKLEARN_MODULE)
+def _(_: type) -> None:
+    from . import sklearn_sampler as sklearn_sampler  # noqa: PLC0414, PLC0415
 
 
 def get_sampling_predictor[In, KwIn, Out](
