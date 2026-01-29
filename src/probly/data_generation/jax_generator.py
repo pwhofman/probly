@@ -12,12 +12,30 @@ import logging
 from pathlib import Path
 from typing import Any
 
-import jax
-import jax.numpy as jnp
+# Optional JAX import with NumPy fallback
+try:
+    import jax
+    import jax.numpy as jnp
+
+    _JAX_AVAILABLE = True
+except ImportError:
+    _JAX_AVAILABLE = False
+    jax: Any | None = None
+    import numpy as np
+
+    jnp = np
 
 from .base_generator import BaseDataGenerator
 
 logger = logging.getLogger(__name__)
+
+
+def _softmax_np(a: jnp.ndarray, axis: int = 1) -> jnp.ndarray:
+    # Numerically stable softmax for NumPy fallback
+    max_a = jnp.max(a, axis=axis, keepdims=True)
+    exp_a = jnp.exp(a - max_a)
+    sum_exp = jnp.sum(exp_a, axis=axis, keepdims=True)
+    return exp_a / sum_exp
 
 
 class JAXDataGenerator(BaseDataGenerator[Callable[[jnp.ndarray], jnp.ndarray], tuple[object, object], str | None]):
@@ -48,7 +66,7 @@ class JAXDataGenerator(BaseDataGenerator[Callable[[jnp.ndarray], jnp.ndarray], t
 
         # forward pass (assume classification logits)
         logits = self.model(x)
-        probs = jax.nn.softmax(logits, axis=1)
+        probs = jax.nn.softmax(logits, axis=1) if _JAX_AVAILABLE else _softmax_np(logits, axis=1)
 
         pred_classes = jnp.argmax(probs, axis=1)
         confidences = jnp.max(probs, axis=1)
