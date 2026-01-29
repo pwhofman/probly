@@ -197,7 +197,7 @@ class PostNetModel(nn.Module):
         return self.encoder(x)
 
 
-class ConvDPN(nn.Module):
+class PrNetModel(nn.Module):
     """Dirichlet Prior Network with modular encoder and head."""
 
     def __init__(

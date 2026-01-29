@@ -495,17 +495,17 @@ class IRDHead(nn.Module):
         return alpha
 
 
-class SimpleDirichletHead(nn.Module):
+class PrNetHead(nn.Module):
     """Head mapping latent features to Dirichlet concentration parameters."""
 
-    def __init__(self, latent_dim: int, num_classes: int) -> None:
+    def __init__(self, latent_dim: int, num_classes: int, hidden_dim: int = 256) -> None:
         """Initialize the Dirichlet classification head."""
         super().__init__()
 
         self.net = nn.Sequential(
-            nn.Linear(latent_dim, 256),
+            nn.Linear(latent_dim, hidden_dim),
             nn.ReLU(),
-            nn.Linear(256, num_classes),
+            nn.Linear(hidden_dim, num_classes),
         )
 
     def forward(self, z: torch.Tensor) -> torch.Tensor:
