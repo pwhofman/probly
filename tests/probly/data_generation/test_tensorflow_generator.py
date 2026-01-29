@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import numpy as np
-import tensorflow as tf
+import pytest
 
-from probly.data_generation.tensorflow_generator import TensorFlowDataGenerator
+tf = pytest.importorskip("tensorflow", reason="TensorFlow not installed")
+
+from probly.data_generation.tensorflow_generator import TensorFlowDataGenerator  # noqa: E402
 
 
 def create_simple_model():
