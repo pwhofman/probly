@@ -1,14 +1,7 @@
 from __future__ import annotations
 
 import numpy as np
-
-# ruff: noqa: E402
-import pytest
-
-tf = pytest.importorskip(
-    "tensorflow",
-    reason="TensorFlow is an optional dependency and not available in this environment",
-)
+import tensorflow as tf
 
 from probly.data_generation.tensorflow_generator import TensorFlowDataGenerator
 
