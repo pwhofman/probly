@@ -40,7 +40,7 @@ class NatPNModel(nn.Module):
         self.head = head
 
         self.flow = t.RadialFlowDensity(
-            dim=latent_dim,
+            latent_dim=latent_dim,
             flow_length=flow_length,
         )
 
@@ -180,7 +180,7 @@ class PostNetModel(nn.Module):
         super().__init__()
 
         if flow is None:
-            flow = t.BatchedRadialFlowDensity(num_classes=10, dim=latent_dim, flow_length=6)
+            flow = t.BatchedRadialFlowDensity(num_classes=10, latent_dim=latent_dim, flow_length=6)
 
         self.encoder = encoder
         self.flow = flow
@@ -216,7 +216,7 @@ class PrNetModel(nn.Module):
             conv_channels = [64, 128]
 
         if head is None:
-            head = t.SimpleDirichletHead(
+            head = t.PrNetHead(
                 latent_dim=latent_dim,
                 num_classes=num_classes,
             )

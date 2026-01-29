@@ -95,12 +95,12 @@ class BatchedRadialFlowLayer(nn.Module):
     def __init__(self, num_classes: int, latent_dim: int) -> None:
         """Initialize parameters for a radial flow transform."""
         super().__init__()
-        self.c = num_classes
+        self.num_classes = num_classes
         self.latent_dim = latent_dim
 
-        self.x0 = nn.Parameter(torch.zeros(self.c, self.latent_dim))
-        self.alpha_prime = nn.Parameter(torch.zeros(self.c))
-        self.beta_prime = nn.Parameter(torch.zeros(self.c))
+        self.x0 = nn.Parameter(torch.zeros(self.num_classes, self.latent_dim))
+        self.alpha_prime = nn.Parameter(torch.zeros(self.num_classes))
+        self.beta_prime = nn.Parameter(torch.zeros(self.num_classes))
 
         self.reset_parameters()
 
@@ -139,7 +139,7 @@ class BatchedRadialFlowDensity(nn.Module):
     def __init__(self, num_classes: int, latent_dim: int, flow_length: int = 6) -> None:
         """Create a sequence of radial flow layers and base distribution."""
         super().__init__()
-        self.c = num_classes
+        self.num_classes = num_classes
         self.latent_dim = latent_dim
 
         self.layers = nn.ModuleList(
@@ -151,8 +151,8 @@ class BatchedRadialFlowDensity(nn.Module):
     def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """Expand input x for all classes and apply flow layers."""
         B = x.size(0)  # noqa: N806
-        zc = x.unsqueeze(0).expand(self.c, B, self.latent_dim)
-        sum_log_jac = torch.zeros(self.c, B, device=x.device)
+        zc = x.unsqueeze(0).expand(self.num_classes, B, self.latent_dim)
+        sum_log_jac = torch.zeros(self.num_classes, B, device=x.device)
 
         for layer in self.layers:
             zc, log_j = layer(zc)
