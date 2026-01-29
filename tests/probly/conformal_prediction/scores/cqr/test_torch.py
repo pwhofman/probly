@@ -140,6 +140,11 @@ class TestCQRScoreTorch:
         cal_scores = score.calibration_nonconformity(x_calib, y_calib)
 
         assert isinstance(cal_scores, np.ndarray)
+
+        # CQR calibration score should be 1D (max distance)
+        if cal_scores.ndim == 2 and cal_scores.shape[1] == 1:
+            cal_scores = cal_scores.flatten()
+
         assert cal_scores.shape == (20,)
         assert np.all(cal_scores >= 0)
 

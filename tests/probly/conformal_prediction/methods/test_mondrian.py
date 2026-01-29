@@ -48,13 +48,12 @@ class MockClassificationScore:
         self.n_classes = n_classes
 
     def calibration_nonconformity(self, x_cal: Sequence[Any], _y_cal: Sequence[Any]) -> npt.NDArray[np.floating]:
-        """Return random nonconformity scores for calibration."""
+        """Return random 1D nonconformity scores for calibration (shape (n_samples,))."""
         n_samples = len(x_cal)
-        # Always return shape (n_samples, n_classes) for classifier
         rng = np.random.default_rng(42)
-        return rng.random((n_samples, self.n_classes))
+        return rng.random(n_samples)
 
-    def predict_nonconformity(self, x_test: Sequence[Any]) -> npt.NDArray[np.floating]:
+    def predict_nonconformity(self, x_test: Sequence[Any], _probs: Any = None) -> npt.NDArray[np.floating]:  # noqa: ANN401
         n_samples = len(x_test)
         # Always return shape (n_samples, n_classes) for classifier
         rng = np.random.default_rng(42)
@@ -74,7 +73,7 @@ class MockRegressionScore:
         rng = np.random.default_rng(42)
         if self.is_cqr:
             return rng.random((n_samples, 2))
-        return rng.random((n_samples, 1))
+        return rng.random((n_samples,))
 
     # add predict_nonconformity for completeness as base class uses it sometimes
     def predict_nonconformity(self, x_test: Sequence[Any]) -> npt.NDArray[np.floating]:

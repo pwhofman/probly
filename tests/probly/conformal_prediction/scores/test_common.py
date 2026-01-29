@@ -20,12 +20,16 @@ class MockScore(ClassificationScore):
     def __init__(self, fixed_score: float = 0.5) -> None:
         """Initialize mock score with fixed value."""
         self.fixed_score = fixed_score
-        super().__init__(model=lambda _: None, score_func=lambda _: np.ones((len(_), 3), dtype=float) * fixed_score)
+        super().__init__(
+            model=lambda x: np.zeros((len(x), 3)),
+            score_func=lambda probs: np.ones(probs.shape) * fixed_score,
+        )
 
     def calibration_nonconformity(
         self,
         x_cal: Sequence[Any],
         _y_cal: Sequence[Any],
+        probs: Any = None,  # noqa: ANN401, ARG002
     ) -> npt.NDArray[np.floating]:
         """Return fixed scores for calibration."""
         n = len(x_cal) if hasattr(x_cal, "__len__") else 1
@@ -34,7 +38,7 @@ class MockScore(ClassificationScore):
     def predict_nonconformity(
         self,
         x_test: Sequence[Any],
-        probs: Any = None,  # noqa: ARG002, ANN401
+        probs: Any = None,  # noqa: ANN401, ARG002
     ) -> npt.NDArray[np.floating]:
         """Return fixed score matrix for prediction."""
         n = len(x_test) if hasattr(x_test, "__len__") else 1
@@ -48,12 +52,16 @@ class MockRegressionScore(RegressionScore):
     def __init__(self, fixed_score: float = 0.5) -> None:
         """Initialize mock regression score with fixed value."""
         self.fixed_score = fixed_score
-        super().__init__(model=lambda _: None, score_func=lambda y, _: np.ones(len(y), dtype=float) * fixed_score)
+        super().__init__(
+            model=lambda x: np.zeros(len(x)),
+            score_func=lambda y, _yp: np.ones(len(y)) * fixed_score,
+        )
 
     def calibration_nonconformity(
         self,
         x_cal: Sequence[Any],
         _y_cal: Sequence[Any],
+        y_pred: Any = None,  # noqa: ANN401, ARG002
     ) -> npt.NDArray[np.floating]:
         """Return fixed scores for calibration."""
         n = len(x_cal) if hasattr(x_cal, "__len__") else 1
@@ -267,6 +275,7 @@ def test_score_inheritance() -> None:
             self,
             _x_cal: Sequence[Any],
             _y_cal: Sequence[Any],
+            probs: Any = None,  # noqa: ANN401, ARG002
         ) -> npt.NDArray[np.floating]:
             """Custom calibration."""
             return np.array([1.0, 2.0, 3.0], dtype=float)
@@ -274,13 +283,13 @@ def test_score_inheritance() -> None:
         def predict_nonconformity(
             self,
             x_test: Sequence[Any],
-            probs: Any = None,  # noqa: ARG002, ANN401
+            probs: Any = None,  # noqa: ANN401, ARG002
         ) -> npt.NDArray[np.floating]:
             """Custom prediction."""
             n = len(x_test) if hasattr(x_test, "__len__") else 1
             return np.ones((n, 4), dtype=float) * 0.5
 
-    score = CustomScore()
+    score = CustomScore(model=lambda x: x, score_func=lambda x: x)
 
     # should implement all required methods
     cal_scores = score.calibration_nonconformity([], [])
@@ -507,10 +516,14 @@ def test_regression_score_inheritance() -> None:
     class CustomRegressionScore(RegressionScore):
         """Custom regression score implementation."""
 
+        def __init__(self) -> None:
+            super().__init__(model=lambda x: np.zeros(len(x)), score_func=lambda y, _: np.ones(len(y)) * 0.5)
+
         def calibration_nonconformity(
             self,
             _x_cal: Sequence[Any],
             _y_cal: Sequence[Any],
+            y_pred: Any = None,  # noqa: ANN401, ARG002
         ) -> npt.NDArray[np.floating]:
             """Custom calibration."""
             return np.array([1.0, 2.0, 3.0], dtype=float)

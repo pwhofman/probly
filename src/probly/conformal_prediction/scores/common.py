@@ -1,4 +1,3 @@
-# src/probly/conformal_prediction/scores/common.py
 """Common structures for conformal prediction scores."""
 
 from __future__ import annotations
@@ -185,7 +184,7 @@ class ClassificationScore(ClassificationScoreProtocol):
         true_scores = scores.gather(1, labels.view(-1, 1)).squeeze(1)
 
         # convert to numpy at the end
-        return true_scores.cpu().numpy()
+        return cast("npt.NDArray[np.floating]", true_scores.cpu().numpy())
 
     def _extract_jax_scores(self, scores: jax.Array, y: Any) -> npt.NDArray[np.floating]:  # noqa: ANN401
         """Extract true label scores using JAX (TPU/GPU-friendly)."""
@@ -198,7 +197,7 @@ class ClassificationScore(ClassificationScoreProtocol):
 
         # convert to numpy for quantile calculation
         result = np.asarray(true_scores, dtype=float)
-        return result
+        return cast("npt.NDArray[np.floating]", result)
 
 
 class RegressionScore(RegressionScoreProtocol):
@@ -228,28 +227,29 @@ class RegressionScore(RegressionScoreProtocol):
         self,
         x_cal: Sequence[Any],
         y_cal: Sequence[Any],
+        y_pred: Any | None = None,  # noqa: ANN401
     ) -> npt.NDArray[np.floating]:
         """Compute calibration scores."""
         # get predictions (stays on device)
-        predictions = self.model(x_cal)
+        predictions = y_pred if y_pred is not None else self.model(x_cal)
 
         # PyTorch
         if TORCH_AVAILABLE and isinstance(predictions, torch.Tensor):
             y_cal_tensor = torch.as_tensor(y_cal, device=predictions.device)
             scores = self.score_func(y_cal_tensor, predictions)
-            return scores.cpu().numpy()
+            return cast("npt.NDArray[np.floating]", scores.cpu().numpy())
 
         # JAX / Flax
         if JAX_AVAILABLE and isinstance(predictions, jax.Array):
             y_cal_jax = jnp.asarray(y_cal)
             scores = self.score_func(y_cal_jax, predictions)
-            return np.asarray(scores, dtype=float)
+            return cast("npt.NDArray[np.floating]", np.asarray(scores, dtype=float))
 
         # NumPy fallback
         predictions_np = np.asarray(predictions, dtype=float)
         y_cal_np = np.asarray(y_cal, dtype=float)
         scores = self.score_func(y_cal_np, predictions_np)
-        return np.asarray(scores, dtype=float)
+        return cast("npt.NDArray[np.floating]", np.asarray(scores, dtype=float))
 
     def predict_nonconformity(
         self,

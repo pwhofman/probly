@@ -26,6 +26,10 @@ class MockClassificationModel:
         n = len(x) if hasattr(x, "__len__") else 1
         return np.ones((n, self.n_classes), dtype=float) / self.n_classes
 
+    def predict(self, x: Sequence[Any]) -> npt.NDArray[np.floating]:
+        """Alias for __call__."""
+        return self.__call__(x)
+
 
 class MockClassificationScore:
     """Mock classification score for testing."""
@@ -34,9 +38,15 @@ class MockClassificationScore:
         """Initialize with model."""
         self.model = model
 
-    def calibration_nonconformity(self, x_cal: Sequence[Any], y_cal: Sequence[Any]) -> npt.NDArray[np.floating]:
+    def calibration_nonconformity(
+        self,
+        x_cal: Sequence[Any],
+        y_cal: Sequence[Any],
+        probs: Any = None,  # noqa: ANN401
+    ) -> npt.NDArray[np.floating]:
         # simulate scores based on predictions
-        probs = self.model(x_cal)
+        if probs is None:
+            probs = self.model(x_cal)
         y_np = np.asarray(y_cal, dtype=int)
         # return 1 - probability of true class
         result = (1.0 - probs[np.arange(len(y_cal)), y_np]).astype(float)
@@ -45,11 +55,10 @@ class MockClassificationScore:
     def predict_nonconformity(
         self,
         x_test: Sequence[Any],
-        probs: Any = None,  # noqa: ANN401, ARG002
+        _probs: Any = None,  # noqa: ANN401
     ) -> npt.NDArray[np.floating]:
-        n = len(x_test)
-        k = self.model.n_classes if hasattr(self.model, "n_classes") else 3
-        return np.random.default_rng(42).random((n, k))
+        k = 3  # 3 classes
+        return np.random.default_rng(42).random((len(x_test), k))
 
 
 class MockRegressionModel:
@@ -67,7 +76,12 @@ class MockRegressionScore:
         """Initialize with model."""
         self.model = model
 
-    def calibration_nonconformity(self, x_cal: Sequence[Any], y_cal: Sequence[Any]) -> npt.NDArray[np.floating]:
+    def calibration_nonconformity(
+        self,
+        x_cal: Sequence[Any],
+        y_cal: Sequence[Any],
+        _y_pred: Any = None,  # noqa: ANN401
+    ) -> npt.NDArray[np.floating]:
         predictions = self.model(x_cal)
         y_np = np.asarray(y_cal, dtype=float)
         # return absolute errors
@@ -222,8 +236,7 @@ class TestClassConditionalClassifier:
         model = MockClassificationModel(n_classes=1)
         score = MockClassificationScore(model)
 
-        def single_class_func(x: Sequence[Any], y: Sequence[Any] | None = None) -> npt.NDArray[np.int_]:
-            del y  # Unused parameter
+        def single_class_func(x: Sequence[Any], _y: Sequence[Any] | None = None) -> npt.NDArray[np.int_]:  # _y
             return np.zeros(len(x), dtype=int)
 
         classifier = ClassConditionalClassifier(
@@ -317,8 +330,7 @@ class TestClassConditionalRegressor:
         model = MockRegressionModel()
         score = MockRegressionScore(model)
 
-        def constant_class_func(x: Sequence[Any], y: Sequence[Any] | None = None) -> npt.NDArray[np.int_]:
-            del y  # Unused parameter
+        def constant_class_func(x: Sequence[Any], _y: Sequence[Any] | None = None) -> npt.NDArray[np.int_]:  # _y
             # all samples in same class
             return np.ones(len(x), dtype=int) * 5
 
@@ -355,7 +367,7 @@ def test_class_conditional_vs_mondrian_differences() -> None:
         def predict_nonconformity(
             self,
             x_test: Sequence[Any],
-            probs: Any = None,  # noqa: ANN401, ARG002
+            _probs: Any = None,  # noqa: ANN401
         ) -> npt.NDArray[np.floating]:
             return np.random.default_rng(42).random((len(x_test), 3))
 

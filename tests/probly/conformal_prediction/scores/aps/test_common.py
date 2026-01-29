@@ -171,23 +171,21 @@ def test_aps_score_func_boundary_conditions() -> None:
 
 
 def test_apsscore_randomization_reproducibility() -> None:
-    """Test APSScore randomization with same seed produces same results."""
+    """Test APSScore randomization reproducibility."""
     model = MockModel()
-    score1 = APSScore(model, randomize=True)
-    score2 = APSScore(model, randomize=True)
+
+    score1 = APSScore(model, randomize=True, random_state=1)
+    score2 = APSScore(model, randomize=True, random_state=1)
+    score3 = APSScore(model, randomize=True, random_state=2)
 
     x_cal = np.array([[1, 2], [3, 4], [5, 6]])
     y_cal = np.array([0, 1, 2])
 
     scores1 = score1.calibration_nonconformity(x_cal, y_cal)
     scores2 = score2.calibration_nonconformity(x_cal, y_cal)
-
-    assert np.allclose(scores1, scores2), "same seed should produce same results"
-
-    # different seed should produce different results
-    score3 = APSScore(model, randomize=True)
     scores3 = score3.calibration_nonconformity(x_cal, y_cal)
 
+    assert np.allclose(scores1, scores2), "same seed should produce same results"
     assert not np.allclose(scores1, scores3), "different seeds should produce different results"
 
 
