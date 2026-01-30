@@ -11,15 +11,13 @@ import probly.layers.evidential.torch as t
 class NatPNModel(nn.Module):
     """Natural Posterior Network for evidential deep learning with normalizing flows.
 
-    Combines encoder, normalizing flow density, and head for uncertainty quantification.
-    Users can provide custom encoders for different data modalities.
+    Combines encoder, normalizing flow density, and head for uncertainty quantification
+    following Charpentier et al., 2022. Users can provide custom encoders for different
+    data modalities.
 
-    Args:
-        encoder: Encoder module mapping raw inputs to latent space.
-        head: Head module (DirichletHead for classification, GaussianHead for regression).
-        latent_dim: Dimension of the latent space.
-        flow_length: Number of radial flow layers. Defaults to 4.
-        certainty_budget: Budget for certainty calibration. If None, defaults to latent_dim.
+    Reference:
+        Charpentier et al., "Natural Posterior Network", NeurIPS 2022.
+        https://arxiv.org/abs/2105.04471
     """
 
     def __init__(
@@ -30,7 +28,17 @@ class NatPNModel(nn.Module):
         flow_length: int = 4,
         certainty_budget: float = 2.0,
     ) -> None:
-        """Initialize the NatPN model."""
+        """Initialize the NatPN model.
+
+        Args:
+            encoder: Encoder mapping inputs to a latent space.
+            head: Prediction head operating on latent features. If None,
+                a default classification head is used.
+            latent_dim: Dimensionality of the latent space. If None, inferred
+                from the encoder.
+            flow_length: Number of radial flow layers.
+            certainty_budget: Budget controlling certainty calibration.
+        """
         super().__init__()
 
         if latent_dim is None:
@@ -82,7 +90,16 @@ class NatPNModel(nn.Module):
 
 
 class EDLModel(nn.Module):
-    """Simple model for EDL classification."""
+    """Simple model for evidential deep learning (EDL) classification.
+
+    Combines an encoder with an evidential prediction head to model
+    classification uncertainty following Sensoy et al. (2018).
+
+    Reference:
+        Sensoy et al., "Evidential Deep Learning to Quantify Classification Uncertainty",
+        NeurIPS 2018.
+        https://arxiv.org/abs/1806.01768
+    """
 
     def __init__(
         self,
@@ -124,7 +141,18 @@ class EDLModel(nn.Module):
 
 
 class EvidentialRegressionModel(nn.Module):
-    """Full evidential regression model combining encoder and evidential head."""
+    """Full evidential regression model combining encoder and evidential head.
+
+    Implements evidential regression for uncertainty-aware prediction, inspired by
+    Deep Evidential Regression and Regression Prior Networks.
+
+    References:
+        Amini et al., "Deep Evidential Regression", NeurIPS 2020.
+        https://arxiv.org/abs/1910.02600
+
+        Malinin et al., "Regression Prior Networks", NeurIPS 2020.
+        https://arxiv.org/abs/2006.11590
+    """
 
     def __init__(
         self,
@@ -132,7 +160,15 @@ class EvidentialRegressionModel(nn.Module):
         head: nn.Module | None = None,
         latent_dim: int | None = None,
     ) -> None:
-        """Initialize the full model."""
+        """Initialize the EvidentialRegressionModel.
+
+        Args:
+            encoder: Encoder module mapping inputs to a latent space.
+            head: Evidential regression head producing distribution parameters.
+                If None, defaults to ``t.RegressionHead``.
+            latent_dim: Dimensionality of the latent space. If None, inferred
+                from ``encoder.latent_dim``.
+        """
         super().__init__()
 
         if latent_dim is None:
@@ -151,10 +187,15 @@ class EvidentialRegressionModel(nn.Module):
 
 
 class IRDModel(nn.Module):
-    """Full model combining encoder and Dirichlet head for evidential classification.
+    """Full model for evidential classification using Dirichlet outputs.
 
-    This model learns to output Dirichlet concentration parameters (alpha)
-    for each input, enabling uncertainty quantification via the Dirichlet distribution.
+    Combines an encoder with a Dirichlet head to produce concentration
+    parameters for uncertainty-aware classification following
+    Tsiligkaridis (2019).
+
+    Reference:
+        Tsiligkaridis, "Information Robust Dirichlet Networks", 2019.
+        https://arxiv.org/abs/1910.04819
     """
 
     def __init__(
@@ -164,12 +205,13 @@ class IRDModel(nn.Module):
         latent_dim: int = 128,
         num_classes: int = 10,
     ) -> None:
-        """Initialize the full Dirichlet classification model.
+        """Initialize the IRDModel for Dirichlet-based classification.
 
         Args:
             encoder: Encoder module mapping inputs to latent space.
             head: Dirichlet head module mapping latent features to alpha parameters.
-            latent_dim: Latent dimension for encoder (default: 128).
+                If None, defaults to ``t.IRDHead``.
+            latent_dim: Dimensionality of the latent space.
             num_classes: Number of output classes.
         """
         super().__init__()
@@ -195,7 +237,16 @@ class IRDModel(nn.Module):
 
 
 class PostNetModel(nn.Module):
-    """Posterior Network model containing encoder and class-conditional flows."""
+    """Posterior Network model for evidential classification.
+
+    Combines an encoder with class-conditional normalizing flows to model
+    uncertainty-aware predictions following Malinin and Gales (2020).
+
+    Reference:
+        Malinin and Gales, "Posterior Networks: Uncertainty Estimation without
+        OOD Samples via Density-Based Pseudo-Counts", NeurIPS 2020.
+        https://arxiv.org/abs/2006.09239
+    """
 
     def __init__(
         self,
@@ -211,8 +262,8 @@ class PostNetModel(nn.Module):
             encoder: Encoder mapping inputs to a latent space.
             latent_dim: Dimensionality of the latent space.
             num_classes: Number of output classes.
-            flow: Class-conditional normalizing flow. If None, a default flow is used.
-            class_counts: Empirical class counts used as a prior. If None, assumes a uniform prior.
+            flow: Class-conditional normalizing flow.
+            class_counts: Empirical class counts used as a prior.
         """
         super().__init__()
         self.encoder = encoder
@@ -252,7 +303,16 @@ class PostNetModel(nn.Module):
 
 
 class PrNetModel(nn.Module):
-    """Dirichlet Prior Network with modular encoder and head."""
+    """Dirichlet Prior Network model for evidential classification.
+
+    Combines an encoder with a Dirichlet Prior Network head to model
+    distributional uncertainty following Malinin and Gales (2018).
+
+    Reference:
+        Malinin and Gales, "Predictive Uncertainty Estimation via Prior Networks",
+        NeurIPS 2018.
+        https://arxiv.org/abs/1802.10501
+    """
 
     def __init__(
         self,
@@ -261,7 +321,15 @@ class PrNetModel(nn.Module):
         latent_dim: int = 256,
         num_classes: int = 10,
     ) -> None:
-        """Initialize the convolutional Dirichlet Prior Network."""
+        """Initialize the Dirichlet Prior Network model.
+
+        Args:
+            encoder: Encoder module mapping inputs to latent space.
+            head: Dirichlet Prior Network head producing concentration parameters.
+                If None, defaults to ``t.PrNetHead``.
+            latent_dim: Dimensionality of the latent space.
+            num_classes: Number of output classes.
+        """
         super().__init__()
 
         if head is None:
