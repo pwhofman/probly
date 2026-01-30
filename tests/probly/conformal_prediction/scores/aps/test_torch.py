@@ -157,7 +157,7 @@ class TestAPSScoreTorch:
         splitter = SplitConformal(calibration_ratio=0.3)
 
         # split manually
-        x_train, y_train, x_cal, y_cal = splitter.split(x_full, y_full)
+        _x_train, _y_train, x_cal, y_cal = splitter.split(x_full, y_full)
 
         # calibrate
         predictor.calibrate(x_cal, y_cal, alpha=0.1)

@@ -64,7 +64,7 @@ def test_saps_with_iris_dataset() -> None:
         stratify=y,
     )
 
-    x_train, x_calib, y_train, y_calib = train_test_split(
+    _x_train, x_calib, y_train, y_calib = train_test_split(
         x_temp,
         y_temp,
         test_size=0.25,

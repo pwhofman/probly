@@ -170,11 +170,11 @@ class TestSAPSScoreTorch:
         splitter: SplitConformal = SplitConformal(calibration_ratio=0.3)
 
         # split manually
-        x_train: np.ndarray
-        y_train: np.ndarray
+        _x_train: np.ndarray
+        _y_train: np.ndarray
         x_calib: np.ndarray
         y_calib: np.ndarray
-        x_train, y_train, x_calib, y_calib = splitter.split(x_full, y_full)
+        _x_train, _y_train, x_calib, y_calib = splitter.split(x_full, y_full)
 
         # calibrate
         predictor.calibrate(x_calib, y_calib, alpha=0.1)
