@@ -112,6 +112,8 @@ class ClassificationScore(ClassificationScoreProtocol):
         self,
         model: Predictor,
         score_func: Callable[[Any], Any],
+        randomize: bool = False,
+        random_state: int | None = None,
     ) -> None:
         """Initialize classification score.
 
@@ -119,9 +121,13 @@ class ClassificationScore(ClassificationScoreProtocol):
         model: The prediction model.
         score_func: Function that takes probabilities and returns score matrix.
                     Randomization (for APS/SAPS) MUST be built into this function.
+        randomize: Whether to use randomization (for reproducibility).
+        random_state: Seed for randomization.
         """
         self.model = model
         self.score_func = score_func
+        self.randomize = randomize
+        self.rng = np.random.default_rng(random_state) if randomize else None
 
     def calibration_nonconformity(
         self,
@@ -137,8 +143,27 @@ class ClassificationScore(ClassificationScoreProtocol):
         # compute scores using the score function
         all_scores = self.score_func(probs)
 
-        # extract scores for true labels (efficient, backend-aware)
+        if self.randomize and self.rng is not None:
+            # convert to numpy for randomization
 
+            n_samples = all_scores.shape[0]
+            u_np = self.rng.random(size=(n_samples, 1))
+
+            if TORCH_AVAILABLE and isinstance(all_scores, torch.Tensor):
+                u_torch = torch.as_tensor(u_np, dtype=all_scores.dtype, device=all_scores.device)
+                result = all_scores = all_scores - u_torch * torch.as_tensor(
+                    probs, dtype=all_scores.dtype, device=all_scores.device
+                )
+
+            elif JAX_AVAILABLE and isinstance(all_scores, jax.Array):
+                u_jax = jnp.asarray(u_np, dtype=all_scores.dtype)
+                result = all_scores = all_scores - u_jax * probs
+
+            else:
+                result = all_scores = all_scores - u_np * np.asarray(probs)
+            all_scores = result
+
+        # extract scores for true labels (efficient, backend-aware)
         # PyTorch
         if TORCH_AVAILABLE and isinstance(all_scores, torch.Tensor):
             return self._extract_torch_scores(all_scores, y_cal)
@@ -244,7 +269,6 @@ class RegressionScore(RegressionScoreProtocol):
             y_cal_jax = jnp.asarray(y_cal)
             scores = self.score_func(y_cal_jax, predictions)
             return cast("npt.NDArray[np.floating]", np.asarray(scores, dtype=float))
-
         # NumPy fallback
         predictions_np = np.asarray(predictions, dtype=float)
         y_cal_np = np.asarray(y_cal, dtype=float)

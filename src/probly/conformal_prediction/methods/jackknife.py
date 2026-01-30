@@ -320,6 +320,7 @@ class JackknifePlusClassifier(JackknifeCVBase, ConformalClassifier):
         prediction_sets = np.zeros((n_test, n_classes), dtype=bool)
         # compute the required count threshold
         required_count = (1.0 - alpha) * (n_cal + 1)
+        required_count = max(0, required_count)
 
         for class_idx in range(n_classes):
             label = self.classes[class_idx]

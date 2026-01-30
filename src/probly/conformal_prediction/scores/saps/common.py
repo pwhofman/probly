@@ -7,6 +7,8 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+    from numpy.random import Generator
+
     from lazy_dispatch.isinstance import LazyType
     from probly.conformal_prediction.methods.common import Predictor
 
@@ -46,8 +48,7 @@ def saps_score_func[T](
     ranks = ranks_zero_based + 1  # +1 for 1-based rank
 
     scores = np.where(ranks == 1, u_np * max_probs, max_probs + (ranks - 2 + u_np) * lambda_val)
-    # Ensure non-negative and correct shape
-    scores = np.where(scores < 0, 0.0, scores)
+
     return np.asarray(scores, dtype=float)
 
 
@@ -59,6 +60,8 @@ def register(cls: LazyType, func: Callable) -> None:
 class SAPSScore(ClassificationScore):
     """Sorted Adaptive Prediction Sets (SAPS) nonconformity score."""
 
+    rng: Generator
+
     def __init__(
         self,
         model: Predictor,
@@ -68,21 +71,19 @@ class SAPSScore(ClassificationScore):
         """Initialize SAPS score with reproducible random_state by default."""
         self.lambda_val = lambda_val
         self.rng = np.random.default_rng(random_state)
-        super().__init__(model=model, score_func=self._compute_score)
+        super().__init__(model=model, score_func=self.compute_score, randomize=False)
 
-    def _compute_score(self, probs: Any) -> Any:  # noqa: ANN401
+    def compute_score(self, probs: Any) -> Any:  # noqa: ANN401
         """Calculate SAPS scores with randomization U-term."""
         n_samples = probs.shape[0]
         n_classes = probs.shape[1]
 
-        # randomization
+        # randomization: generate u values for each sample and class in [0,1)
         u = self.rng.random(size=(n_samples, n_classes))
 
         # get the scores from the SAPS score function
-        scores: Any = saps_score_func(
+        return saps_score_func(
             probs,
             lambda_val=self.lambda_val,
             u=u,
         )
-
-        return scores

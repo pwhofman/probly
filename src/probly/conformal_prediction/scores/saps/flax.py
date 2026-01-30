@@ -25,25 +25,22 @@ def saps_score_jax(
         float: SAPS nonconformity score.
     """
     # convert to jax arrays
-    u = jnp.asarray(u, dtype=probs.dtype)
+    probs = jnp.asarray(probs, dtype=float)
+    u = jnp.asarray(u, dtype=float)
 
     # get max probabilities for each sample
     max_probs = jnp.max(probs, axis=1, keepdims=True)
 
     # get ranks for each label, argsort along axis=1 in descending order
     sort_idx = jnp.argsort(-probs, axis=1)
-
     # find the rank (1-based) of each label
     # compare each position in sorted_indices with the corresponding label
     ranks_zero_based = jnp.argsort(sort_idx, axis=1)
     ranks = ranks_zero_based + 1  # +1 for 1-based rank
 
-    term_rank1 = u * max_probs
-    term_rank_other = max_probs + (ranks - 2 + u) * lambda_val
+    scores = jnp.where(ranks == 1, u * max_probs, max_probs + (ranks - 2 + u) * lambda_val)
 
-    scores = jnp.where(ranks == 1, term_rank1, term_rank_other)
-
-    return scores
+    return jnp.asarray(scores, dtype=float)
 
 
 # register the implementation

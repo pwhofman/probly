@@ -50,20 +50,23 @@ class APSScore(ClassificationScore):
         self,
         model: Predictor,
         randomize: bool = True,
-        seed: int = 42,
+        random_state: int | None = None,
     ) -> None:
         """Initialize APS score with optional randomization and reproducible seed."""
         self.randomize = randomize
-        self.rng = np.random.default_rng(seed if randomize else None)
+        self.rng = np.random.default_rng(random_state) if randomize else None
 
         def compute_score(probs: Any) -> Any:  # noqa: ANN401
             """Calculate APS scores with randomization U-term."""
-            probs_np = probs.detach().cpu().numpy() if hasattr(probs, "detach") else np.asarray(probs)
-            scores: Any = aps_score_func(probs_np)
-            if self.randomize:
-                u = self.rng.random(size=(scores.shape[0], 1))
-                scores = scores - (u * probs_np)
-            # Always return np.ndarray
-            return np.asarray(scores)
+            scores: Any = aps_score_func(probs)
+            if self.randomize and self.rng is not None:
+                # adjust scores with randomization term and convert to numpy
+                scores_np = np.asarray(scores)
+                probs_np = np.asarray(probs)
+                n_samples = scores_np.shape[0]
+                u = self.rng.random(size=(n_samples, 1))
+                scores = scores_np - (u * probs_np)
+            # return scores as is for the backend
+            return scores
 
         super().__init__(model=model, score_func=compute_score)

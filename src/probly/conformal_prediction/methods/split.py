@@ -113,7 +113,7 @@ class SplitConformalPredictor(ConformalPredictor):
         """Convert tensor to NumPy on CPU (float dtype)."""
         if torch is not None and isinstance(x, Tensor):
             return x.detach().cpu().numpy()
-        return np.asarray(x, dtype=float)
+        return cast("npt.NDArray[np.floating]", np.asarray(x, dtype=float))
 
     def calibrate(
         self,
@@ -226,10 +226,10 @@ class SplitConformalRegressor(SplitConformalPredictor, ConformalRegressor):
             alpha_lower = alpha / 2  # Bonferroni split per side
             alpha_upper = 1 - alpha / 2
 
-            scores_lower = scores_np[:, 0]
+            scores_lower = -scores_np[:, 0]
             scores_upper = scores_np[:, 1]
 
-            self.threshold_lower = calculate_quantile(scores_lower, alpha_lower)
+            self.threshold_lower = -calculate_quantile(scores_lower, alpha_lower)
             self.threshold_upper = calculate_quantile(scores_upper, alpha_upper)
             self.threshold = None
         else:
@@ -268,7 +268,7 @@ class SplitConformalRegressor(SplitConformalPredictor, ConformalRegressor):
             if self.threshold_lower is None or self.threshold_upper is None:
                 msg = "Asymmetric thresholds not calibrated."
                 raise RuntimeError(msg)
-            lower = y_hat_np[:, 0] - self.threshold_lower
+            lower = y_hat_np[:, 0] + self.threshold_lower
             upper = y_hat_np[:, 1] + self.threshold_upper
             return np.stack([lower, upper], axis=1)
 

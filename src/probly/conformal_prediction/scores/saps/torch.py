@@ -25,28 +25,24 @@ def saps_score_torch(
     if not isinstance(u, torch.Tensor):
         u = torch.tensor(u, device=probs.device, dtype=probs.dtype)
 
+    # convert to torch tensors
+    probs = torch.asarray(probs, dtype=torch.float)
+    u = torch.asarray(u, dtype=torch.float)
+
     # get max probabilities for each sample
     max_probs = torch.max(probs, dim=1, keepdim=True).values
 
     # get ranks for each label, argsort along axis=1 in descending order
-    sort_idx = torch.argsort(probs, dim=1, descending=True)
+    sort_idx = torch.argsort(-probs, dim=1)
 
     # find the rank (1-based) of each label
     # compare each position in sorted_indices with the corresponding label
     ranks_zero_based = torch.argsort(sort_idx, dim=1)
-    ranks = ranks_zero_based + 1  # (N, K) +1 for 1-based rank
+    ranks = ranks_zero_based + 1  # +1 for 1-based rank
 
-    term_rank1 = u * max_probs
-    term_rank_other = max_probs + (ranks - 2 + u) * lambda_val
+    scores = torch.where(ranks == 1, u * max_probs, max_probs + (ranks - 2 + u) * lambda_val)
 
-    # compute scores based on ranks
-    scores = torch.where(
-        ranks == 1,
-        term_rank1,
-        term_rank_other,
-    )
-
-    return scores
+    return torch.asarray(scores, dtype=torch.float)
 
 
 register(torch.Tensor, saps_score_torch)

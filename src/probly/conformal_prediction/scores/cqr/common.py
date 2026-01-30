@@ -56,10 +56,7 @@ def cqr_score_func[T](y_true: T, y_pred: T) -> npt.NDArray[np.floating]:
     diff_lower = lower - y_np
     diff_upper = y_np - upper
 
-    # CQR: score is 0 if y in [lower, upper], else distance to nearest bound
-    scores = np.maximum(diff_lower, diff_upper)
-    scores = np.where(scores < 0, 0.0, scores)
-    return scores.astype(float)  # type: ignore[no-any-return]
+    return np.column_stack([diff_lower, diff_upper])
 
 
 def register(cls: LazyType, func: Callable[..., Any]) -> None:
@@ -88,7 +85,7 @@ class CQRScore(RegressionScore):
     def __init__(self, model: Predictor) -> None:
         """Initialize CQR score with a quantile regression model."""
 
-        def cqr_score_func_predict(
+        def compute_score(
             y_true: npt.NDArray[np.floating], y_pred: npt.NDArray[np.floating]
         ) -> npt.NDArray[np.floating]:
             # Use the same logic as cqr_score_func, but always return shape (N, 1) for predict_nonconformity
@@ -97,4 +94,4 @@ class CQRScore(RegressionScore):
                 scores = scores.reshape(-1, 1)
             return scores
 
-        super().__init__(model=model, score_func=cqr_score_func_predict)
+        super().__init__(model=model, score_func=compute_score)

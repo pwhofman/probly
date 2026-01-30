@@ -74,21 +74,13 @@ class RAPSScore(ClassificationScore):
         self.lambda_reg = lambda_reg
         self.k_reg = k_reg
         self.epsilon = epsilon
-        self.randomize = randomize
-        self.rng = np.random.default_rng(random_state)
+        super().__init__(model=model, score_func=self.compute_score, randomize=randomize, random_state=random_state)
 
-        super().__init__(model=model, score_func=self._compute_score)
-
-    def _compute_score(self, probs: Any) -> Any:  # noqa: ANN401
+    def compute_score(self, probs: Any) -> Any:  # noqa: ANN401
         """Calculate RAPS scores with optional randomization U-term."""
-        probs_np = probs.detach().cpu().numpy() if hasattr(probs, "detach") else np.asarray(probs)
-        scores: Any = raps_score_func(
-            probs_np,
+        return raps_score_func(
+            probs,
             lambda_reg=self.lambda_reg,
             k_reg=self.k_reg,
             epsilon=self.epsilon,
         )
-        if self.randomize:
-            u = self.rng.random(size=(scores.shape[0], 1))
-            scores = scores - (u * probs_np)
-        return np.asarray(scores)

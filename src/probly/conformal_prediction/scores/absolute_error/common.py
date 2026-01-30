@@ -10,14 +10,16 @@ if TYPE_CHECKING:
     from lazy_dispatch.isinstance import LazyType
     from probly.conformal_prediction.methods.common import Predictor
 
+import numpy as np
+
 from lazy_dispatch.singledispatch import lazydispatch
 from probly.conformal_prediction.scores.common import RegressionScore
 
 
 @lazydispatch
-def absolute_error_score_func(y_true: Any, y_pred: Any) -> Any:  # noqa: ANN401
+def absolute_error_score_func[T](y_true: T, y_pred: T) -> Any:  # noqa: ANN401
     """Compute absolute error |y - y_hat|."""
-    return abs(y_true - y_pred)
+    return np.abs(y_true - y_pred)  # type: ignore[operator]
 
 
 def register(cls: LazyType, func: Callable) -> None:
