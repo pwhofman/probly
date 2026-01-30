@@ -799,25 +799,25 @@ def rpn_ng_kl(
 
 
 def pn_loss(model: nn.Module, x_in: torch.Tensor, y_in: torch.Tensor, x_ood: torch.Tensor) -> torch.Tensor:
-    """Paired in-distribution and out-of-distribution loss for Posterior Networks.
+    """Paired ID/OOD training loss for Dirichlet Prior Networks.
 
-    Computes the combined loss for one training step using paired
-    in-distribution (ID) and out-of-distribution (OOD) mini-batches, as
-    proposed by Charpentier et al. (2020).
+    Combines KL divergence to sharp in-distribution targets and flat
+    out-of-distribution targets, with an additional cross-entropy term
+    for classification stability.
 
     Reference:
-        Charpentier et al., "Posterior Networks: Uncertainty Estimation without
-        OOD Samples via Density-Based Pseudo-Counts", NeurIPS 2020.
-        https://arxiv.org/abs/2006.09239
+        Malinin and Gales, "Predictive Uncertainty Estimation via Prior Networks",
+        NeurIPS 2018.
+        https://arxiv.org/abs/1802.10501
 
     Args:
         model: Network mapping inputs to Dirichlet concentration parameters.
-        x_in: In-distribution inputs for the current step, shape (B, ...).
+        x_in: In-distribution inputs, shape (B, ...).
         y_in: In-distribution class labels, shape (B,).
-        x_ood: Out-of-distribution inputs for the current step, shape (B_ood, ...).
+        x_ood: Out-of-distribution inputs, shape (B_ood, ...).
 
     Returns:
-        Scalar paired ID+OOD Posterior Networks loss.
+        Scalar paired ID+OOD Prior Networks loss.
     """
     # ID forward
     alpha_in = model(x_in)
