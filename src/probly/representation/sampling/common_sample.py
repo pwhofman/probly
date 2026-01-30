@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Literal, Protocol, Self, TypedDict, Unpack
+from typing import TYPE_CHECKING, Any, Literal, Protocol, Self, TypedDict, Unpack
+
+from lazy_dispatch.singledispatch import lazydispatch
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
@@ -127,3 +129,25 @@ class ListSample[T](list[T], Sample[T]):
     def concat(self, other: Sample[T]) -> Self:
         """Creates a new sample by concatenating another sample to this sample."""
         return type(self)(self + list(other.samples))
+
+
+def first_dispatchable_sample(samples: Iterable, **_kwargs: Unpack[SampleParams]) -> Any:  # noqa: ANN401
+    """Get the first dispatchable sample from an iterable of samples.
+
+    Args:
+        samples: The predictions to create the sample from.
+        kwargs: Parameters for sample creation.
+
+    Returns:
+        The first dispatchable sample.
+    """
+    try:
+        return samples[0]  # type: ignore[index]
+    except Exception:  # noqa: BLE001
+        return None
+
+
+create_sample = lazydispatch[SampleFactory, Sample](
+    ListSample.from_iterable,
+    dispatch_on=first_dispatchable_sample,
+)
