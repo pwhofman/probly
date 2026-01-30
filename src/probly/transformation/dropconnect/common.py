@@ -19,21 +19,30 @@ P = GlobalVariable[float]("P", "The probability of dropconnect.")
 type RNG = int | Rngs | RngStream
 
 RNGS = GlobalVariable[RNG]("RNGS", "rngs for flax layer initialization")
+RNG_COLLECTION = GlobalVariable[str]("RNG_COLLECTION", "rng_collection for flax layer initialization")
 
 dropconnect_traverser = lazydispatch_traverser[object](name="dropconnect_traverser")
 
 
 def register(cls: LazyType, traverser: RegisteredLooseTraverser) -> None:
     """Register a class to be replaced by DropConnect layers."""
-    dropconnect_traverser.register(cls=cls, traverser=traverser, skip_if=is_first_layer, vars={"p": P, "rngs": RNGS})
+    dropconnect_traverser.register(
+        cls=cls,
+        traverser=traverser,
+        skip_if=is_first_layer,
+        vars={"p": P, "rng_collection": RNG_COLLECTION, "rngs": RNGS},
+    )
 
 
-def dropconnect[T: Predictor](base: T, p: float = 0.25, rngs: Rngs | RngStream | int = 1) -> T:
+def dropconnect[T: Predictor](
+    base: T, p: float = 0.25, rng_collection: str = "dropconnect", rngs: Rngs | RngStream | int = 1
+) -> T:
     """Create a DropConnect predictor from a base predictor based on :cite:`mobinyDropConnectEffective2019`.
 
     Args:
         base: The base model to be used for dropout.
         p: The probability of dropping out a neuron. Default is 0.25.
+        rng_collection: Optional str for flax layer initialization. Default is "dropconnect".
         rngs: Optional rngs for flax layer initialization (types: rnglib.Rngs | rnglib.RngStream | int), default: 1.
 
     Returns:
@@ -42,4 +51,6 @@ def dropconnect[T: Predictor](base: T, p: float = 0.25, rngs: Rngs | RngStream |
     if p < 0 or p > 1:
         msg = f"The probability p must be between 0 and 1, but got {p} instead."
         raise ValueError(msg)
-    return traverse(base, nn_compose(dropconnect_traverser), init={P: p, CLONE: True, RNGS: rngs})
+    return traverse(
+        base, nn_compose(dropconnect_traverser), init={P: p, CLONE: True, RNG_COLLECTION: rng_collection, RNGS: rngs}
+    )
