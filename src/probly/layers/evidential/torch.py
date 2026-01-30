@@ -184,14 +184,14 @@ class RadialFlowLayer(nn.Module):
         self.alpha_prime = nn.Parameter(torch.zeros(1))
         self.beta_prime = nn.Parameter(torch.zeros(1))
 
-    def forward(self, z: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        """Apply the radial flow to latent inputs z.
+    def forward(self, features: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        """Apply the radial flow to latent inputs features.
 
         Args:
-            z: Tensor of shape [B, D].
+            features: Tensor of shape [B, D].
 
         Returns:
-            z_new: Transformed latent tensor, shape [B, D].
+            features_new: Transformed latent tensor, shape [B, D].
             log_abs_det: Log-absolute determinant of the Jacobian, shape [B].
         """
         # Ensure alpha > 0 and beta > -alpha for invertibility
@@ -202,7 +202,7 @@ class RadialFlowLayer(nn.Module):
         x0 = self.x0  # [D]
 
         # Difference from the center
-        diff = z - x0  # [B, D]
+        diff = features - x0  # [B, D]
         r = diff.norm(dim=-1)  # Distance to center, shape [B]
 
         # Radial flow scalar functions h(r) and h'(r)
@@ -211,7 +211,7 @@ class RadialFlowLayer(nn.Module):
         beta_h = beta * h  # [B]
 
         # Apply the radial flow transformation:
-        z_new = z + beta_h.unsqueeze(-1) * diff  # [B, D]
+        features_new = features + beta_h.unsqueeze(-1) * diff  # [B, D]
 
         # Log determinant of the Jacobian:
         # formula derived in Rezende & Mohamed (2015)
@@ -219,7 +219,7 @@ class RadialFlowLayer(nn.Module):
         term2 = torch.log1p(beta_h + beta * h_prime * r)  # [B]
         log_abs_det = term1 + term2  # [B]
 
-        return z_new, log_abs_det
+        return features_new, log_abs_det
 
 
 class EDLHead(nn.Module):
@@ -240,16 +240,16 @@ class EDLHead(nn.Module):
             nn.Linear(hidden_dim, num_classes),
         )
 
-    def forward(self, z: torch.Tensor) -> torch.Tensor:
+    def forward(self, features: torch.Tensor) -> torch.Tensor:
         """Forward pass to compute Dirichlet concentration parameters (alpha).
 
         Args:
-            z: Input latent tensor.
+            features: Input latent tensor.
 
         Returns:
             torch.Tensor: Dirichlet concentration parameters (alpha).
         """
-        alpha = F.softplus(self.net(z)) + 1.0
+        alpha = F.softplus(self.net(features)) + 1.0
 
         return alpha
 
@@ -272,17 +272,17 @@ class RadialFlowDensity(nn.Module):
             x: Tensor of shape [B, D].
 
         Returns:
-            z: Transformed latent tensor after all flows, shape [B, D].
+            features: Transformed latent tensor after all flows, shape [B, D].
             sum_log_jac: Summed log-det Jacobian across flows, shape [B].
         """
-        z = x
-        sum_log_jac = torch.zeros(z.size(0), device=z.device)
+        features = x
+        sum_log_jac = torch.zeros(features.size(0), device=features.device)
 
         for layer in self.layers:
-            z, log_j = layer(z)
+            features, log_j = layer(features)
             sum_log_jac = sum_log_jac + log_j
 
-        return z, sum_log_jac
+        return features, sum_log_jac
 
     def log_prob(self, x: torch.Tensor) -> torch.Tensor:
         """Compute log p(x) under the flow-based density.
@@ -294,10 +294,10 @@ class RadialFlowDensity(nn.Module):
             logp: Log-density log p(x), shape [B].
         """
         # Apply flow
-        z, sum_log_jac = self.forward(x)
+        features, sum_log_jac = self.forward(x)
 
         # Base log-prob under N(0, I): -0.5 * (D * log(2π) + ||z||^2)
-        base_logp = self.log_base_const - 0.5 * (z**2).sum(dim=-1)  # [B]
+        base_logp = self.log_base_const - 0.5 * (features**2).sum(dim=-1)  # [B]
 
         # Add the log-determinant of the Jacobian
         logp = base_logp + sum_log_jac  # [B]
@@ -335,7 +335,7 @@ class RegressionHead(nn.Module):
         return mu, kappa, alpha, beta
 
 
-class NatPNHead(nn.Module):
+class NatPNClassHead(nn.Module):
     """Dirichlet posterior head for evidential classification.
 
     Takes latent representations and outputs Dirichlet parameters for uncertainty
@@ -377,25 +377,25 @@ class NatPNHead(nn.Module):
 
     def forward(
         self,
-        z: torch.Tensor,
+        features: torch.Tensor,
         log_pz: torch.Tensor,
         certainty_budget: float,
     ) -> dict[str, torch.Tensor]:
         """Compute Dirichlet parameters for evidential classification.
 
         Args:
-            z: Latent representations of shape [B, latent_dim].
+            features: Latent representations of shape [B, latent_dim].
             log_pz: Log probability from density estimator of shape [B].
             certainty_budget: Budget parameter for evidence scaling.
 
         Returns:
             Dictionary containing:
                 - alpha: Dirichlet parameters [B, num_classes]
-                - z: Input latent representations
+                - features: Input latent representations
                 - log_pz: Log density values
                 - evidence: Scaled evidence [B, num_classes]
         """
-        logits = self.classifier(z)  # [B, C]
+        logits = self.classifier(features)  # [B, C]
         chi = torch.softmax(logits, dim=-1)  # [B, C]
 
         # Total evidence n(x)
@@ -407,13 +407,13 @@ class NatPNHead(nn.Module):
 
         return {
             "alpha": alpha,  # Dirichlet parameters
-            "z": z,
+            "features": features,
             "log_pz": log_pz,
             "evidence": evidence,
         }
 
 
-class NatPNRegressionHead(nn.Module):
+class NatPNRegHead(nn.Module):
     """Gaussian posterior head for evidential regression.
 
     Takes latent representations and outputs mean and variance for Gaussian
@@ -438,14 +438,14 @@ class NatPNRegressionHead(nn.Module):
 
     def forward(
         self,
-        z: torch.Tensor,
+        features: torch.Tensor,
         log_pz: torch.Tensor,
         certainty_budget: float,
     ) -> dict[str, torch.Tensor]:
         """Compute Gaussian parameters for evidential regression.
 
         Args:
-            z: Latent representations of shape [B, latent_dim].
+            features: Latent representations of shape [B, latent_dim].
             log_pz: Log probability from density estimator of shape [B].
             certainty_budget: Budget parameter for precision scaling.
 
@@ -453,12 +453,12 @@ class NatPNRegressionHead(nn.Module):
             Dictionary containing:
                 - mean: Predicted mean [B, out_dim]
                 - var: Predicted variance [B, out_dim]
-                - z: Input latent representations
+                - features: Input latent representations
                 - log_pz: Log density values
                 - precision: Scaled precision [B, out_dim]
         """
-        mean = self.mean_net(z)  # [B, D]
-        log_var = self.log_var_net(z)  # [B, D]
+        mean = self.mean_net(features)  # [B, D]
+        log_var = self.log_var_net(features)  # [B, D]
 
         # Epistemic uncertainty via density scaling
         precision = certainty_budget * log_pz.exp().unsqueeze(-1)
@@ -469,7 +469,7 @@ class NatPNRegressionHead(nn.Module):
         return {
             "mean": mean,
             "var": var,
-            "z": z,
+            "features": features,
             "log_pz": log_pz,
             "precision": precision,
         }
@@ -525,6 +525,6 @@ class PrNetHead(nn.Module):
             nn.Linear(hidden_dim, num_classes),
         )
 
-    def forward(self, z: torch.Tensor) -> torch.Tensor:
+    def forward(self, features: torch.Tensor) -> torch.Tensor:
         """Produce positive Dirichlet concentration parameters."""
-        return F.softplus(self.net(z)) + 1.0
+        return F.softplus(self.net(features)) + 1.0

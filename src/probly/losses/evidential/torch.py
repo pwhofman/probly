@@ -122,7 +122,7 @@ def evidential_ce_loss(alphas: Tensor, targets: Tensor) -> Tensor:
 def evidential_mse_loss(alphas: Tensor, targets: Tensor) -> Tensor:
     """Evidential Mean Squared Error Loss."""
     strengths = alphas.sum(dim=1)
-    y = F.one_hot(targets, alphas.size(1))
+    y = F.one_hot(targets, alphas.size(1)).float()
     p = alphas / strengths[:, None]
 
     err = (y - p) ** 2

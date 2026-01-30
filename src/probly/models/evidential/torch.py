@@ -26,15 +26,18 @@ class NatPNModel(nn.Module):
         self,
         encoder: nn.Module,
         head: nn.Module | None = None,
-        latent_dim: int = 2,
+        latent_dim: int | None = None,
         flow_length: int = 4,
         certainty_budget: float = 2.0,
     ) -> None:
         """Initialize the NatPN model."""
         super().__init__()
 
+        if latent_dim is None:
+            latent_dim = encoder.latent_dim
+
         if head is None:
-            head = t.NatPNHead(latent_dim=latent_dim, num_classes=10)
+            head = t.NatPNClassHead(latent_dim=latent_dim, num_classes=10)
 
         self.encoder = encoder
         self.head = head
@@ -68,11 +71,11 @@ class NatPNModel(nn.Module):
             Dictionary with predictions from the head (including alpha for classification,
             or mean/var for regression) along with latent space information.
         """
-        z = self.encoder(x)  # [B, latent_dim]
-        log_pz = self.flow.log_prob(z)  # [B]
+        features = self.encoder(x)  # [B, latent_dim]
+        log_pz = self.flow.log_prob(features)  # [B]
 
         return self.head(
-            z=z,
+            features=features,
             log_pz=log_pz,
             certainty_budget=self.certainty_budget,
         )
@@ -83,9 +86,9 @@ class EDLModel(nn.Module):
 
     def __init__(
         self,
-        encoder: nn.Module | None = None,
+        encoder: nn.Module,
         head: nn.Module | None = None,
-        latent_dim: int = 32,
+        latent_dim: int | None = None,
         num_classes: int = 10,
     ) -> None:
         """Initialize the EDLModel for evidential classification.
@@ -97,6 +100,9 @@ class EDLModel(nn.Module):
             num_classes: Number of output classes.
         """
         super().__init__()
+
+        if latent_dim is None:
+            latent_dim = encoder.latent_dim
 
         if head is None:
             head = t.EDLHead(latent_dim=latent_dim, num_classes=num_classes)
@@ -113,8 +119,8 @@ class EDLModel(nn.Module):
         Returns:
             Output tensor from the head module.
         """
-        z = self.encoder(x)
-        return self.head(z)
+        features = self.encoder(x)
+        return self.head(features)
 
 
 class EvidentialRegressionModel(nn.Module):
@@ -122,16 +128,21 @@ class EvidentialRegressionModel(nn.Module):
 
     def __init__(
         self,
-        encoder: nn.Module | None = None,
+        encoder: nn.Module,
         head: nn.Module | None = None,
+        latent_dim: int | None = None,
     ) -> None:
         """Initialize the full model."""
         super().__init__()
 
+        if latent_dim is None:
+            latent_dim = encoder.latent_dim
+
         if head is None:
-            self.head = t.RegressionHead(latent_dim=encoder.latent_dim)
+            head = t.RegressionHead(latent_dim=latent_dim)
 
         self.encoder = encoder
+        self.head = head
 
     def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         """Forward pass through encoder and head."""
@@ -148,23 +159,23 @@ class IRDModel(nn.Module):
 
     def __init__(
         self,
-        encoder: nn.Module | None = None,
+        encoder: nn.Module,
         head: nn.Module | None = None,
-        num_classes: int = 10,
         latent_dim: int = 128,
+        num_classes: int = 10,
     ) -> None:
         """Initialize the full Dirichlet classification model.
 
         Args:
             encoder: Encoder module mapping inputs to latent space.
             head: Dirichlet head module mapping latent features to alpha parameters.
-            num_classes: Number of output classes.
             latent_dim: Latent dimension for encoder (default: 128).
+            num_classes: Number of output classes.
         """
         super().__init__()
 
         if head is None:
-            self.head = t.IRDHead(latent_dim=latent_dim, num_classes=num_classes)
+            head = t.IRDHead(latent_dim=latent_dim, num_classes=num_classes)
 
         self.encoder = encoder
         self.head = head
@@ -188,9 +199,9 @@ class PostNetModel(nn.Module):
 
     def __init__(
         self,
-        encoder: nn.Module | None = None,
-        num_classes: int = 10,
+        encoder: nn.Module,
         latent_dim: int = 6,
+        num_classes: int = 10,
         flow: t.BatchedRadialFlowDensity | None = None,
         class_counts: torch.Tensor | None = None,
     ) -> None:
@@ -198,8 +209,8 @@ class PostNetModel(nn.Module):
 
         Args:
             encoder: Encoder mapping inputs to a latent space.
-            num_classes: Number of output classes.
             latent_dim: Dimensionality of the latent space.
+            num_classes: Number of output classes.
             flow: Class-conditional normalizing flow. If None, a default flow is used.
             class_counts: Empirical class counts used as a prior. If None, assumes a uniform prior.
         """
@@ -227,9 +238,9 @@ class PostNetModel(nn.Module):
             p_mean: Predictive mean of the Dirichlet distribution.
             z: Latent representation of the input.
         """
-        z = self.encoder(x)
+        features = self.encoder(x)
 
-        log_dens = self.flow.log_prob(z)
+        log_dens = self.flow.log_prob(features)
         dens = log_dens.exp()
 
         beta = dens * self.class_counts.unsqueeze(0)
@@ -237,7 +248,7 @@ class PostNetModel(nn.Module):
         alpha0 = alpha.sum(dim=1, keepdim=True)
         p_mean = alpha / alpha0
 
-        return alpha, p_mean, z
+        return alpha, p_mean, features
 
 
 class PrNetModel(nn.Module):
@@ -245,18 +256,13 @@ class PrNetModel(nn.Module):
 
     def __init__(
         self,
-        encoder: nn.Module | None = None,
+        encoder: nn.Module,
         head: nn.Module | None = None,
-        *,
-        conv_channels: list[int] | None = None,
         latent_dim: int = 256,
         num_classes: int = 10,
     ) -> None:
         """Initialize the convolutional Dirichlet Prior Network."""
         super().__init__()
-
-        if conv_channels is None:
-            conv_channels = [64, 128]
 
         if head is None:
             head = t.PrNetHead(
@@ -269,5 +275,5 @@ class PrNetModel(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Compute Dirichlet parameters for input samples."""
-        z = self.encoder(x)
-        return self.head(z)
+        features = self.encoder(x)
+        return self.head(features)
