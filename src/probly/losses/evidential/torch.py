@@ -9,35 +9,6 @@ from torch.nn import functional as F
 from torch.special import digamma, gammaln
 
 
-def normal_wishart_log_prob(
-    _m: Tensor,
-    _l_precision: Tensor,
-    _kappa: Tensor,
-    _nu: Tensor,
-    mu_k: Tensor,
-    _var_k: Tensor,
-) -> Tensor:
-    """Placeholder Normal-Wishart log-probability implementation.
-
-    Used by Regression Prior Network (RPN) distillation to compute a
-    Normal-Wishart log-likelihood term for ensemble teacher predictions.
-    This implementation currently acts as a stub and returns zero-valued
-    log-probabilities.
-
-    Args:
-        _m: Mean parameter of the Normal-Wishart prior (unused placeholder).
-        _l_precision: Precision parameter of the prior (unused placeholder).
-        _kappa: Scaling parameter of the prior (unused placeholder).
-        _nu: Degrees of freedom of the prior (unused placeholder).
-        mu_k: Mean prediction of an ensemble component.
-        _var_k: Variance of the ensemble component (unused placeholder).
-
-    Returns:
-        Zero tensor (placeholder).
-    """
-    return torch.zeros_like(mu_k)
-
-
 def make_in_domain_target_alpha(y: Tensor) -> Tensor:
     """Construct target Dirichlet distribution for in-distribution samples.
 
@@ -301,39 +272,41 @@ def evidential_regression_regularization(inputs: dict[str, Tensor], targets: Ten
     return loss
 
 
-def rpn_distillation_loss(
-    rpn_params: tuple[Tensor, Tensor, Tensor, Tensor],
-    mus: list[Tensor],
-    variances: list[Tensor],
-) -> Tensor:
-    """Regression Prior Network (RPN) distillation loss.
+def pn_loss(model: nn.Module, x_in: torch.Tensor, y_in: torch.Tensor, x_ood: torch.Tensor) -> torch.Tensor:
+    """Paired ID/OOD training loss for Dirichlet Prior Networks.
 
-    Used in Regression Prior Networks to distill ensemble teacher predictions
-    into a student model by minimizing a Normal-Wishart-based divergence term,
-    as proposed by Malinin et al. (2020).
+    Combines KL divergence to sharp in-distribution targets and flat
+    out-of-distribution targets, with an additional cross-entropy term
+    for classification stability.
 
     Reference:
-        Malinin et al., "Regression Prior Networks",
-        NeurIPS 2020.
-        https://arxiv.org/abs/2006.11590
+        Malinin and Gales, "Predictive Uncertainty Estimation via Prior Networks",
+        NeurIPS 2018.
+        https://arxiv.org/abs/1802.10501
 
     Args:
-        rpn_params: Tuple of Normal-Wishart prior parameters
-            ``(m, l_precision, kappa, nu)`` produced by the student model.
-        mus: List of mean predictions from ensemble teacher models.
-        variances: List of predictive variances from ensemble teacher models.
+        model: Network mapping inputs to Dirichlet concentration parameters.
+        x_in: In-distribution inputs, shape (B, ...).
+        y_in: In-distribution class labels, shape (B,).
+        x_ood: Out-of-distribution inputs, shape (B_ood, ...).
 
     Returns:
-        Scalar RPN distillation loss averaged over ensemble members.
+        Scalar paired ID+OOD Prior Networks loss.
     """
-    m, l_precision, kappa, nu = rpn_params
-    losses: list[Tensor] = []
+    # ID forward
+    alpha_in = model(x_in)
+    alpha_target_in = make_in_domain_target_alpha(y_in).to(alpha_in.device)
+    kl_in = kl_dirichlet(alpha_target_in, alpha_in).mean()
 
-    for mu_k, var_k in zip(mus, variances, strict=False):
-        logp = normal_wishart_log_prob(m, l_precision, kappa, nu, mu_k, var_k)
-        losses.append(-logp.mean())
+    probs_in = predictive_probs(alpha_in)
+    ce_term = F.nll_loss(torch.log(probs_in + 1e-8), y_in)
 
-    loss = torch.stack(losses).mean()
+    # OOD forward
+    alpha_ood = model(x_ood)
+    alpha_target_ood = make_ood_target_alpha(x_ood.size(0)).to(alpha_ood.device)
+    kl_ood = kl_dirichlet(alpha_target_ood, alpha_ood).mean()
+
+    loss = kl_in + kl_ood + 0.1 * ce_term
 
     return loss
 
@@ -369,6 +342,130 @@ def postnet_loss(
     entropy = Dirichlet(alpha).entropy()
 
     loss = (expected_ce - entropy_weight * entropy).mean()
+
+    return loss
+
+
+def natpn_loss(
+    alpha: torch.Tensor,
+    y: torch.Tensor,
+    entropy_weight: float = 1e-4,
+) -> torch.Tensor:
+    """Natural Posterior Network (NatPN) classification loss.
+
+    Implements the Dirichlet-Categorical Bayesian loss with an entropy
+    regularizer as proposed by Charpentier et al. (2022).
+
+    Reference:
+        Charpentier et al., "Natural Posterior Network",
+        NeurIPS 2022.
+        https://arxiv.org/abs/2105.04471
+
+    Args:
+        alpha: Posterior Dirichlet concentration parameters, shape (B, C).
+        y: Ground-truth class labels, shape (B,) with values in [0, C-1].
+        entropy_weight: Weight controlling the strength of the entropy
+            regularization term.
+
+    Returns:
+        Scalar NatPN loss averaged over the batch.
+    """
+    # Total concentration alpha0 per sample
+    alpha0 = alpha.sum(dim=-1)  # [B]
+
+    # Digamma function
+    digamma = torch.digamma
+
+    # Expected negative log-likelihood for each sample:
+    # E[-log p(y)] = ψ(alpha0) - ψ(alpha_y)
+    idx = torch.arange(y.size(0), device=y.device)
+    expected_nll = digamma(alpha0) - digamma(alpha[idx, y])  # [B]
+
+    # Entropy of Dirichlet posterior
+    dir_dist = Dirichlet(alpha)
+    entropy = dir_dist.entropy()  # [B]
+
+    loss = (expected_nll - entropy_weight * entropy).mean()
+
+    return loss
+
+
+def ird_loss(
+    alpha: torch.Tensor,
+    y: torch.Tensor,
+    adversarial_alpha: torch.Tensor | None = None,
+    p: float = 2.0,
+    lam: float = 1.0,
+    gamma: float = 1.0,
+    normalize: bool = True,
+) -> torch.Tensor:
+    """Information Robust Dirichlet (IRD) loss for predictive uncertainty estimation.
+
+    Implements the loss proposed by Tsiligkaridis (2019), combining an
+    Lp calibration term, a trigamma-based regularization term, and an
+    optional entropy-based adversarial regularizer.
+
+    Reference:
+        Tsiligkaridis, "Information Robust Dirichlet Networks for Predictive Uncertainty Estimation",
+        2019.
+        https://arxiv.org/abs/1910.04819
+
+    Args:
+        alpha: Dirichlet concentration parameters, shape (B, K).
+        y: One-hot encoded class labels, shape (B, K).
+        adversarial_alpha: Dirichlet concentration parameters for adversarial inputs,
+            shape (B_a, K).
+        p: Lp norm exponent controlling calibration strength.
+        lam: Weight of the regularization term.
+        gamma: Weight of the entropy regularization term.
+        normalize: Whether to normalize loss terms by batch size.
+
+    Returns:
+        Scalar IRD loss summed over all input examples.
+    """
+    # Input validation
+    if alpha.dim() != 2 or y.dim() != 2:
+        msg = f"alpha and y must be 2D, got {alpha.dim()}, {y.dim()}"
+        raise ValueError(msg)
+
+    if alpha.shape != y.shape:
+        msg = f"alpha and y shape mismatch: {alpha.shape} vs {y.shape}"
+        raise ValueError(msg)
+
+    if not torch.all(alpha > 0):
+        msg = f"All alpha values must be > 0, got min={alpha.min().item()}"
+        raise ValueError(msg)
+
+    # Compute Loss Components
+    lp_term = lp_fn(alpha, y, p)
+    reg_term = regularization_fn(alpha, y)
+
+    if adversarial_alpha is not None:
+        if adversarial_alpha.dim() != 2:
+            msg = f"adversarial_alpha must be 2D, got {adversarial_alpha.dim()}"
+            raise ValueError(msg)
+
+        if adversarial_alpha.shape[1] != alpha.shape[1]:
+            msg1 = "adversarial_alpha must have same number of classes as alpha: "
+            msg2 = f"{adversarial_alpha.shape[1]} vs {alpha.shape[1]}"
+            raise ValueError(msg1 + msg2)
+
+        entropy_term = dirichlet_entropy(adversarial_alpha)
+    else:
+        entropy_term = 0.0
+
+    # Normalize by batch sizes for stable training across different batch sizes
+    if normalize:
+        b = alpha.shape[0]
+        k = alpha.shape[1]
+        lp_term = lp_term / b
+        reg_term = reg_term / (b * k)
+
+        if adversarial_alpha is not None and isinstance(entropy_term, torch.Tensor):
+            b_a = adversarial_alpha.shape[0]
+            entropy_term = entropy_term / b_a
+
+    loss = lp_term + lam * reg_term - gamma * entropy_term
 
     return loss
 
@@ -534,130 +631,6 @@ def dirichlet_entropy(alpha: torch.Tensor) -> torch.Tensor:
     return loss
 
 
-def ird_loss(
-    alpha: torch.Tensor,
-    y: torch.Tensor,
-    adversarial_alpha: torch.Tensor | None = None,
-    p: float = 2.0,
-    lam: float = 1.0,
-    gamma: float = 1.0,
-    normalize: bool = True,
-) -> torch.Tensor:
-    """Information Robust Dirichlet (IRD) loss for predictive uncertainty estimation.
-
-    Implements the loss proposed by Tsiligkaridis (2019), combining an
-    Lp calibration term, a trigamma-based regularization term, and an
-    optional entropy-based adversarial regularizer.
-
-    Reference:
-        Tsiligkaridis, "Information Robust Dirichlet Networks for Predictive Uncertainty Estimation",
-        2019.
-        https://arxiv.org/abs/1910.04819
-
-    Args:
-        alpha: Dirichlet concentration parameters, shape (B, K).
-        y: One-hot encoded class labels, shape (B, K).
-        adversarial_alpha: Dirichlet concentration parameters for adversarial inputs,
-            shape (B_a, K).
-        p: Lp norm exponent controlling calibration strength.
-        lam: Weight of the regularization term.
-        gamma: Weight of the entropy regularization term.
-        normalize: Whether to normalize loss terms by batch size.
-
-    Returns:
-        Scalar IRD loss summed over all input examples.
-    """
-    # Input validation
-    if alpha.dim() != 2 or y.dim() != 2:
-        msg = f"alpha and y must be 2D, got {alpha.dim()}, {y.dim()}"
-        raise ValueError(msg)
-
-    if alpha.shape != y.shape:
-        msg = f"alpha and y shape mismatch: {alpha.shape} vs {y.shape}"
-        raise ValueError(msg)
-
-    if not torch.all(alpha > 0):
-        msg = f"All alpha values must be > 0, got min={alpha.min().item()}"
-        raise ValueError(msg)
-
-    # Compute Loss Components
-    lp_term = lp_fn(alpha, y, p)
-    reg_term = regularization_fn(alpha, y)
-
-    if adversarial_alpha is not None:
-        if adversarial_alpha.dim() != 2:
-            msg = f"adversarial_alpha must be 2D, got {adversarial_alpha.dim()}"
-            raise ValueError(msg)
-
-        if adversarial_alpha.shape[1] != alpha.shape[1]:
-            msg1 = "adversarial_alpha must have same number of classes as alpha: "
-            msg2 = f"{adversarial_alpha.shape[1]} vs {alpha.shape[1]}"
-            raise ValueError(msg1 + msg2)
-
-        entropy_term = dirichlet_entropy(adversarial_alpha)
-    else:
-        entropy_term = 0.0
-
-    # Normalize by batch sizes for stable training across different batch sizes
-    if normalize:
-        b = alpha.shape[0]
-        k = alpha.shape[1]
-        lp_term = lp_term / b
-        reg_term = reg_term / (b * k)
-
-        if adversarial_alpha is not None and isinstance(entropy_term, torch.Tensor):
-            b_a = adversarial_alpha.shape[0]
-            entropy_term = entropy_term / b_a
-
-    loss = lp_term + lam * reg_term - gamma * entropy_term
-
-    return loss
-
-
-def natpn_loss(
-    alpha: torch.Tensor,
-    y: torch.Tensor,
-    entropy_weight: float = 1e-4,
-) -> torch.Tensor:
-    """Natural Posterior Network (NatPN) classification loss.
-
-    Implements the Dirichlet-Categorical Bayesian loss with an entropy
-    regularizer as proposed by Charpentier et al. (2022).
-
-    Reference:
-        Charpentier et al., "Natural Posterior Network",
-        NeurIPS 2022.
-        https://arxiv.org/abs/2105.04471
-
-    Args:
-        alpha: Posterior Dirichlet concentration parameters, shape (B, C).
-        y: Ground-truth class labels, shape (B,) with values in [0, C-1].
-        entropy_weight: Weight controlling the strength of the entropy
-            regularization term.
-
-    Returns:
-        Scalar NatPN loss averaged over the batch.
-    """
-    # Total concentration alpha0 per sample
-    alpha0 = alpha.sum(dim=-1)  # [B]
-
-    # Digamma function
-    digamma = torch.digamma
-
-    # Expected negative log-likelihood for each sample:
-    # E[-log p(y)] = ψ(alpha0) - ψ(alpha_y)
-    idx = torch.arange(y.size(0), device=y.device)
-    expected_nll = digamma(alpha0) - digamma(alpha[idx, y])  # [B]
-
-    # Entropy of Dirichlet posterior
-    dir_dist = Dirichlet(alpha)
-    entropy = dir_dist.entropy()  # [B]
-
-    loss = (expected_nll - entropy_weight * entropy).mean()
-
-    return loss
-
-
 def der_loss(
     y: Tensor,
     mu: Tensor,
@@ -702,6 +675,53 @@ def der_loss(
     reg = torch.abs(y - mu) * evidence
 
     loss = (lnll + lam * reg).mean()
+
+    return loss
+
+
+def rpn_loss(
+    model: nn.Module,
+    x_id: Tensor,
+    y_id: Tensor,
+    x_ood: Tensor,
+    lam_der: float = 0.01,
+    lam_rpn: float = 50.0,
+) -> Tensor:
+    """Paired in-distribution and out-of-distribution loss for Regression Prior Networks.
+
+    Computes the Regression Prior Network (RPN) training objective using
+    paired in-distribution (ID) and out-of-distribution (OOD) mini-batches.
+    The loss combines a supervised Deep Evidential Regression (DER) term
+    on ID data with a KL regularization term that pushes OOD predictions
+    back toward the Normal-Gamma prior.
+
+    Reference:
+        Malinin et al., "Regression Prior Networks",
+        NeurIPS 2020.
+        https://arxiv.org/abs/2006.11590
+
+    Args:
+        model: Regression model returning (mu, kappa, alpha, beta) for each input.
+        x_id: In-distribution inputs, shape (B_id, ...).
+        y_id: In-distribution regression targets, shape (B_id,) or compatible.
+        x_ood: Out-of-distribution inputs, shape (B_ood, ...).
+        lam_der: Weight of the DER evidence regularization term.
+        lam_rpn: Weight of the RPN prior-matching KL term.
+
+    Returns:
+        Scalar paired ID+OOD Regression Prior Network loss.
+    """
+    # --- ID forward + supervised DER ---
+    mu_id, kappa_id, alpha_id, beta_id = model(x_id)
+    loss_id = der_loss(y_id, mu_id, kappa_id, alpha_id, beta_id, lam=lam_der)
+
+    # --- OOD forward + KL to prior (revert to prior / be uninformative) ---
+    mu_ood, kappa_ood, alpha_ood, beta_ood = model(x_ood)
+    mu0, k0, a0, b0 = rpn_prior(mu_ood.shape, mu_ood.device)
+
+    loss_ood = rpn_ng_kl(mu_ood, kappa_ood, alpha_ood, beta_ood, mu0, k0, a0, b0)
+
+    loss = loss_id + lam_rpn * loss_ood
 
     return loss
 
@@ -794,91 +814,5 @@ def rpn_ng_kl(
     )
 
     loss = (term_mu + term_kappa + term_gamma).mean()
-
-    return loss
-
-
-def pn_loss(model: nn.Module, x_in: torch.Tensor, y_in: torch.Tensor, x_ood: torch.Tensor) -> torch.Tensor:
-    """Paired ID/OOD training loss for Dirichlet Prior Networks.
-
-    Combines KL divergence to sharp in-distribution targets and flat
-    out-of-distribution targets, with an additional cross-entropy term
-    for classification stability.
-
-    Reference:
-        Malinin and Gales, "Predictive Uncertainty Estimation via Prior Networks",
-        NeurIPS 2018.
-        https://arxiv.org/abs/1802.10501
-
-    Args:
-        model: Network mapping inputs to Dirichlet concentration parameters.
-        x_in: In-distribution inputs, shape (B, ...).
-        y_in: In-distribution class labels, shape (B,).
-        x_ood: Out-of-distribution inputs, shape (B_ood, ...).
-
-    Returns:
-        Scalar paired ID+OOD Prior Networks loss.
-    """
-    # ID forward
-    alpha_in = model(x_in)
-    alpha_target_in = make_in_domain_target_alpha(y_in).to(alpha_in.device)
-    kl_in = kl_dirichlet(alpha_target_in, alpha_in).mean()
-
-    probs_in = predictive_probs(alpha_in)
-    ce_term = F.nll_loss(torch.log(probs_in + 1e-8), y_in)
-
-    # OOD forward
-    alpha_ood = model(x_ood)
-    alpha_target_ood = make_ood_target_alpha(x_ood.size(0)).to(alpha_ood.device)
-    kl_ood = kl_dirichlet(alpha_target_ood, alpha_ood).mean()
-
-    loss = kl_in + kl_ood + 0.1 * ce_term
-
-    return loss
-
-
-def rpn_loss(
-    model: nn.Module,
-    x_id: Tensor,
-    y_id: Tensor,
-    x_ood: Tensor,
-    lam_der: float = 0.01,
-    lam_rpn: float = 50.0,
-) -> Tensor:
-    """Paired in-distribution and out-of-distribution loss for Regression Prior Networks.
-
-    Computes the Regression Prior Network (RPN) training objective using
-    paired in-distribution (ID) and out-of-distribution (OOD) mini-batches.
-    The loss combines a supervised Deep Evidential Regression (DER) term
-    on ID data with a KL regularization term that pushes OOD predictions
-    back toward the Normal-Gamma prior.
-
-    Reference:
-        Malinin et al., "Regression Prior Networks",
-        NeurIPS 2020.
-        https://arxiv.org/abs/2006.11590
-
-    Args:
-        model: Regression model returning (mu, kappa, alpha, beta) for each input.
-        x_id: In-distribution inputs, shape (B_id, ...).
-        y_id: In-distribution regression targets, shape (B_id,) or compatible.
-        x_ood: Out-of-distribution inputs, shape (B_ood, ...).
-        lam_der: Weight of the DER evidence regularization term.
-        lam_rpn: Weight of the RPN prior-matching KL term.
-
-    Returns:
-        Scalar paired ID+OOD Regression Prior Network loss.
-    """
-    # --- ID forward + supervised DER ---
-    mu_id, kappa_id, alpha_id, beta_id = model(x_id)
-    loss_id = der_loss(y_id, mu_id, kappa_id, alpha_id, beta_id, lam=lam_der)
-
-    # --- OOD forward + KL to prior (revert to prior / be uninformative) ---
-    mu_ood, kappa_ood, alpha_ood, beta_ood = model(x_ood)
-    mu0, k0, a0, b0 = rpn_prior(mu_ood.shape, mu_ood.device)
-
-    loss_ood = rpn_ng_kl(mu_ood, kappa_ood, alpha_ood, beta_ood, mu0, k0, a0, b0)
-
-    loss = loss_id + lam_rpn * loss_ood
 
     return loss

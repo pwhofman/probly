@@ -8,6 +8,168 @@ from torch import nn
 import probly.layers.evidential.torch as t
 
 
+class EDLModel(nn.Module):
+    """Simple model for evidential deep learning (EDL) classification.
+
+    Combines an encoder with an evidential prediction head to model
+    classification uncertainty following Sensoy et al. (2018).
+
+    Reference:
+        Sensoy et al., "Evidential Deep Learning to Quantify Classification Uncertainty",
+        NeurIPS 2018.
+        https://arxiv.org/abs/1806.01768
+    """
+
+    def __init__(
+        self,
+        encoder: nn.Module,
+        head: nn.Module | None = None,
+        latent_dim: int | None = None,
+        num_classes: int = 10,
+    ) -> None:
+        """Initialize the EDLModel for evidential classification.
+
+        Args:
+            encoder: Encoder module mapping inputs to latent space.
+            head: Head module for evidential output (defaults to EDLHead).
+            latent_dim: Dimension of the latent space.
+            num_classes: Number of output classes.
+        """
+        super().__init__()
+
+        if latent_dim is None:
+            latent_dim = encoder.latent_dim
+
+        if head is None:
+            head = t.EDLHead(latent_dim=latent_dim, num_classes=num_classes)
+
+        self.encoder = encoder
+        self.head = head
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Forward pass through encoder and head.
+
+        Args:
+            x: Input tensor compatible with the encoder.
+
+        Returns:
+            Output tensor from the head module.
+        """
+        features = self.encoder(x)
+        return self.head(features)
+
+
+class PrNetModel(nn.Module):
+    """Dirichlet Prior Network model for evidential classification.
+
+    Combines an encoder with a Dirichlet Prior Network head to model
+    distributional uncertainty following Malinin and Gales (2018).
+
+    Reference:
+        Malinin and Gales, "Predictive Uncertainty Estimation via Prior Networks",
+        NeurIPS 2018.
+        https://arxiv.org/abs/1802.10501
+    """
+
+    def __init__(
+        self,
+        encoder: nn.Module,
+        head: nn.Module | None = None,
+        latent_dim: int = 256,
+        num_classes: int = 10,
+    ) -> None:
+        """Initialize the Dirichlet Prior Network model.
+
+        Args:
+            encoder: Encoder module mapping inputs to latent space.
+            head: Dirichlet Prior Network head producing concentration parameters.
+                If None, defaults to ``t.PrNetHead``.
+            latent_dim: Dimensionality of the latent space.
+            num_classes: Number of output classes.
+        """
+        super().__init__()
+
+        if head is None:
+            head = t.PrNetHead(
+                latent_dim=latent_dim,
+                num_classes=num_classes,
+            )
+
+        self.encoder = encoder
+        self.head = head
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Compute Dirichlet parameters for input samples."""
+        features = self.encoder(x)
+        return self.head(features)
+
+
+class PostNetModel(nn.Module):
+    """Posterior Network model for evidential classification.
+
+    Combines an encoder with class-conditional normalizing flows to model
+    uncertainty-aware predictions following Malinin and Gales (2020).
+
+    Reference:
+        Malinin and Gales, "Posterior Networks: Uncertainty Estimation without
+        OOD Samples via Density-Based Pseudo-Counts", NeurIPS 2020.
+        https://arxiv.org/abs/2006.09239
+    """
+
+    def __init__(
+        self,
+        encoder: nn.Module,
+        latent_dim: int = 6,
+        num_classes: int = 10,
+        flow: t.BatchedRadialFlowDensity | None = None,
+        class_counts: torch.Tensor | None = None,
+    ) -> None:
+        """Initialize a Posterior Network model.
+
+        Args:
+            encoder: Encoder mapping inputs to a latent space.
+            latent_dim: Dimensionality of the latent space.
+            num_classes: Number of output classes.
+            flow: Class-conditional normalizing flow.
+            class_counts: Empirical class counts used as a prior.
+        """
+        super().__init__()
+        self.encoder = encoder
+        self.num_classes = num_classes
+        self.latent_dim = latent_dim
+
+        if flow is None:
+            flow = t.BatchedRadialFlowDensity(num_classes=num_classes, latent_dim=latent_dim, flow_length=6)
+        self.flow = flow
+
+        if class_counts is None:
+            class_counts = torch.ones(num_classes)
+        self.register_buffer("class_counts", class_counts)
+
+    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        """Forward pass of the Posterior Network.
+
+        Args:
+            x: Input tensor of shape (batch_size, ...) compatible with the encoder.
+
+        Returns:
+            alpha: Dirichlet concentration parameters of shape.
+            p_mean: Predictive mean of the Dirichlet distribution.
+            z: Latent representation of the input.
+        """
+        features = self.encoder(x)
+
+        log_dens = self.flow.log_prob(features)
+        dens = log_dens.exp()
+
+        beta = dens * self.class_counts.unsqueeze(0)
+        alpha = beta + 1.0
+        alpha0 = alpha.sum(dim=1, keepdim=True)
+        p_mean = alpha / alpha0
+
+        return alpha, p_mean, features
+
+
 class NatPNModel(nn.Module):
     """Natural Posterior Network for evidential deep learning with normalizing flows.
 
@@ -89,103 +251,6 @@ class NatPNModel(nn.Module):
         )
 
 
-class EDLModel(nn.Module):
-    """Simple model for evidential deep learning (EDL) classification.
-
-    Combines an encoder with an evidential prediction head to model
-    classification uncertainty following Sensoy et al. (2018).
-
-    Reference:
-        Sensoy et al., "Evidential Deep Learning to Quantify Classification Uncertainty",
-        NeurIPS 2018.
-        https://arxiv.org/abs/1806.01768
-    """
-
-    def __init__(
-        self,
-        encoder: nn.Module,
-        head: nn.Module | None = None,
-        latent_dim: int | None = None,
-        num_classes: int = 10,
-    ) -> None:
-        """Initialize the EDLModel for evidential classification.
-
-        Args:
-            encoder: Encoder module mapping inputs to latent space.
-            head: Head module for evidential output (defaults to EDLHead).
-            latent_dim: Dimension of the latent space.
-            num_classes: Number of output classes.
-        """
-        super().__init__()
-
-        if latent_dim is None:
-            latent_dim = encoder.latent_dim
-
-        if head is None:
-            head = t.EDLHead(latent_dim=latent_dim, num_classes=num_classes)
-
-        self.encoder = encoder
-        self.head = head
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Forward pass through encoder and head.
-
-        Args:
-            x: Input tensor compatible with the encoder.
-
-        Returns:
-            Output tensor from the head module.
-        """
-        features = self.encoder(x)
-        return self.head(features)
-
-
-class EvidentialRegressionModel(nn.Module):
-    """Full evidential regression model combining encoder and evidential head.
-
-    Implements evidential regression for uncertainty-aware prediction, inspired by
-    Deep Evidential Regression and Regression Prior Networks.
-
-    References:
-        Amini et al., "Deep Evidential Regression", NeurIPS 2020.
-        https://arxiv.org/abs/1910.02600
-
-        Malinin et al., "Regression Prior Networks", NeurIPS 2020.
-        https://arxiv.org/abs/2006.11590
-    """
-
-    def __init__(
-        self,
-        encoder: nn.Module,
-        head: nn.Module | None = None,
-        latent_dim: int | None = None,
-    ) -> None:
-        """Initialize the EvidentialRegressionModel.
-
-        Args:
-            encoder: Encoder module mapping inputs to a latent space.
-            head: Evidential regression head producing distribution parameters.
-                If None, defaults to ``t.RegressionHead``.
-            latent_dim: Dimensionality of the latent space. If None, inferred
-                from ``encoder.latent_dim``.
-        """
-        super().__init__()
-
-        if latent_dim is None:
-            latent_dim = encoder.latent_dim
-
-        if head is None:
-            head = t.RegressionHead(latent_dim=latent_dim)
-
-        self.encoder = encoder
-        self.head = head
-
-    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-        """Forward pass through encoder and head."""
-        features = self.encoder(x)
-        return self.head(features)
-
-
 class IRDModel(nn.Module):
     """Full model for evidential classification using Dirichlet outputs.
 
@@ -236,112 +301,47 @@ class IRDModel(nn.Module):
         return alpha
 
 
-class PostNetModel(nn.Module):
-    """Posterior Network model for evidential classification.
+class EvidentialRegressionModel(nn.Module):
+    """Full evidential regression model combining encoder and evidential head.
 
-    Combines an encoder with class-conditional normalizing flows to model
-    uncertainty-aware predictions following Malinin and Gales (2020).
+    Implements evidential regression for uncertainty-aware prediction, inspired by
+    Deep Evidential Regression and Regression Prior Networks.
 
-    Reference:
-        Malinin and Gales, "Posterior Networks: Uncertainty Estimation without
-        OOD Samples via Density-Based Pseudo-Counts", NeurIPS 2020.
-        https://arxiv.org/abs/2006.09239
-    """
+    References:
+        Amini et al., "Deep Evidential Regression", NeurIPS 2020.
+        https://arxiv.org/abs/1910.02600
 
-    def __init__(
-        self,
-        encoder: nn.Module,
-        latent_dim: int = 6,
-        num_classes: int = 10,
-        flow: t.BatchedRadialFlowDensity | None = None,
-        class_counts: torch.Tensor | None = None,
-    ) -> None:
-        """Initialize a Posterior Network model.
-
-        Args:
-            encoder: Encoder mapping inputs to a latent space.
-            latent_dim: Dimensionality of the latent space.
-            num_classes: Number of output classes.
-            flow: Class-conditional normalizing flow.
-            class_counts: Empirical class counts used as a prior.
-        """
-        super().__init__()
-        self.encoder = encoder
-        self.num_classes = num_classes
-        self.latent_dim = latent_dim
-
-        if flow is None:
-            flow = t.BatchedRadialFlowDensity(num_classes=num_classes, latent_dim=latent_dim, flow_length=6)
-        self.flow = flow
-
-        if class_counts is None:
-            class_counts = torch.ones(num_classes)
-        self.register_buffer("class_counts", class_counts)
-
-    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        """Forward pass of the Posterior Network.
-
-        Args:
-            x: Input tensor of shape (batch_size, ...) compatible with the encoder.
-
-        Returns:
-            alpha: Dirichlet concentration parameters of shape.
-            p_mean: Predictive mean of the Dirichlet distribution.
-            z: Latent representation of the input.
-        """
-        features = self.encoder(x)
-
-        log_dens = self.flow.log_prob(features)
-        dens = log_dens.exp()
-
-        beta = dens * self.class_counts.unsqueeze(0)
-        alpha = beta + 1.0
-        alpha0 = alpha.sum(dim=1, keepdim=True)
-        p_mean = alpha / alpha0
-
-        return alpha, p_mean, features
-
-
-class PrNetModel(nn.Module):
-    """Dirichlet Prior Network model for evidential classification.
-
-    Combines an encoder with a Dirichlet Prior Network head to model
-    distributional uncertainty following Malinin and Gales (2018).
-
-    Reference:
-        Malinin and Gales, "Predictive Uncertainty Estimation via Prior Networks",
-        NeurIPS 2018.
-        https://arxiv.org/abs/1802.10501
+        Malinin et al., "Regression Prior Networks", NeurIPS 2020.
+        https://arxiv.org/abs/2006.11590
     """
 
     def __init__(
         self,
         encoder: nn.Module,
         head: nn.Module | None = None,
-        latent_dim: int = 256,
-        num_classes: int = 10,
+        latent_dim: int | None = None,
     ) -> None:
-        """Initialize the Dirichlet Prior Network model.
+        """Initialize the EvidentialRegressionModel.
 
         Args:
-            encoder: Encoder module mapping inputs to latent space.
-            head: Dirichlet Prior Network head producing concentration parameters.
-                If None, defaults to ``t.PrNetHead``.
-            latent_dim: Dimensionality of the latent space.
-            num_classes: Number of output classes.
+            encoder: Encoder module mapping inputs to a latent space.
+            head: Evidential regression head producing distribution parameters.
+                If None, defaults to ``t.RegressionHead``.
+            latent_dim: Dimensionality of the latent space. If None, inferred
+                from ``encoder.latent_dim``.
         """
         super().__init__()
 
+        if latent_dim is None:
+            latent_dim = encoder.latent_dim
+
         if head is None:
-            head = t.PrNetHead(
-                latent_dim=latent_dim,
-                num_classes=num_classes,
-            )
+            head = t.RegressionHead(latent_dim=latent_dim)
 
         self.encoder = encoder
         self.head = head
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Compute Dirichlet parameters for input samples."""
+    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        """Forward pass through encoder and head."""
         features = self.encoder(x)
         return self.head(features)
