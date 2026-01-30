@@ -534,7 +534,7 @@ def dirichlet_entropy(alpha: torch.Tensor) -> torch.Tensor:
     return loss
 
 
-def loss_ird(
+def ird_loss(
     alpha: torch.Tensor,
     y: torch.Tensor,
     adversarial_alpha: torch.Tensor | None = None,
@@ -794,61 +794,6 @@ def rpn_ng_kl(
     )
 
     loss = (term_mu + term_kappa + term_gamma).mean()
-
-    return loss
-
-
-def dirichlet_prior_networks_loss(
-    alpha_pred: torch.Tensor,
-    y: torch.Tensor,
-    alpha_ood: torch.Tensor | None = None,
-    *,
-    ce_weight: float = 0.1,
-    num_classes: int | None = None,
-) -> torch.Tensor:
-    """Dirichlet Prior Networks (DPN) loss for uncertainty-aware classification.
-
-    Implements the training objective proposed by Malinin and Gales (2018),
-    combining KL divergence to sharp in-distribution targets, optional KL
-    divergence to flat out-of-distribution targets, and a cross-entropy
-    stabilizing term.
-
-    Reference:
-        Malinin and Gales, "Predictive Uncertainty Estimation via Prior Networks",
-        NeurIPS 2018.
-        https://arxiv.org/abs/1802.10501
-
-    Args:
-        alpha_pred: Predicted Dirichlet concentration parameters, shape (B, C).
-        y: Ground-truth class labels, shape (B,).
-        alpha_ood: Predicted Dirichlet parameters for out-of-distribution inputs,
-            shape (B_ood, C).
-        ce_weight: Weight of the cross-entropy stabilizer term.
-        num_classes: Number of classes. If None, inferred from ``alpha_pred``.
-
-    Returns:
-        Scalar Dirichlet Prior Networks loss.
-    """
-    num_classes = num_classes or alpha_pred.shape[1]
-
-    # In-distribution loss: KL(target_sharp || predicted)
-    alpha_target_in = make_in_domain_target_alpha(y)
-    kl_in = kl_dirichlet(alpha_target_in, alpha_pred).mean()
-
-    # Cross-entropy term for classification stability
-    probs_in = predictive_probs(alpha_pred)
-    ce_term = F.nll_loss(torch.log(probs_in + 1e-8), y)
-
-    loss = kl_in + ce_weight * ce_term
-
-    # OOD loss: KL(target_flat || predicted)
-    if alpha_ood is not None:
-        alpha_target_ood = make_ood_target_alpha(
-            batch_size=alpha_ood.size(0),
-            num_classes=num_classes,
-        )
-        kl_ood = kl_dirichlet(alpha_target_ood, alpha_ood).mean()
-        loss = loss + kl_ood
 
     return loss
 
