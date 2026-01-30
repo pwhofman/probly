@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import torch
 
-from probly.conformal_prediction.scores.raps.common import test_raps_score_func_basic
+from probly.conformal_prediction.scores.raps.common import raps_score_func
 from probly.conformal_prediction.scores.raps.torch import raps_score_torch
 
 
@@ -39,8 +39,6 @@ def test_raps_score_torch_consistency_with_numpy() -> None:
     torch_probs = torch.tensor(np_probs)
 
     # Get scores from both implementations
-    from probly.conformal_prediction.scores.raps.common import raps_score_func
-
     np_scores = raps_score_func(np_probs, lambda_reg=0.1, k_reg=0)
     torch_scores = raps_score_torch(torch_probs, lambda_reg=0.1, k_reg=0)
 
@@ -252,9 +250,11 @@ def test_raps_score_torch_monotonic_with_probability() -> None:
 
     # Get scores in probability order
     sorted_scores = scores[0, sorted_indices]
+    assert torch.all(torch.diff(sorted_scores) >= 0), (
+        f"Scores should be non-decreasing when sorted by probability: {sorted_scores}"
+    )
 
-    # In RAPS, cumulative sum should be non-decreasing
-    # But highest probability class should have lowest score
+    # highest probability class should have lowest score
     assert scores[0, 0] <= scores[0, 1]  # 0.6 vs 0.25
     assert scores[0, 0] <= scores[0, 2]  # 0.6 vs 0.15
 
@@ -347,7 +347,7 @@ def test_raps_torch_iris_like_dispatch_matches_backend() -> None:
     """raps_score_func should dispatch to Torch backend and match raps_score_torch."""
     probs = _iris_like_probs_torch()
 
-    s_dispatch = test_raps_score_func_basic(probs, lambda_reg=0.1, k_reg=1, epsilon=0.01)
+    s_dispatch = raps_score_func(probs, lambda_reg=0.1, k_reg=1, epsilon=0.01)
     s_backend = raps_score_torch(probs, lambda_reg=0.1, k_reg=1, epsilon=0.01)
 
     assert isinstance(s_dispatch, torch.Tensor)
@@ -360,7 +360,7 @@ def test_raps_torch_iris_like_consistency_with_numpy() -> None:
     probs = _iris_like_probs_torch()
     probs_np = probs.detach().cpu().numpy()
 
-    s_np = test_raps_score_func_basic(probs_np, lambda_reg=0.1, k_reg=1, epsilon=0.01)
+    s_np = raps_score_func(probs_np, lambda_reg=0.1, k_reg=1, epsilon=0.01)
     s_torch = raps_score_torch(probs, lambda_reg=0.1, k_reg=1, epsilon=0.01)
 
     assert np.allclose(s_torch.detach().cpu().numpy(), s_np, rtol=1e-5, atol=1e-6)

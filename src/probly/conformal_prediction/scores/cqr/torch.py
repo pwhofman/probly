@@ -37,7 +37,4 @@ def cqr_score_torch(y_true: Tensor, y_pred: Tensor) -> Tensor:
     return scores
 
 
-# Register implementation for PyTorch Tensors
-# FIX: Register directly with the class 'torch.Tensor' instead of LazyType.
-# This avoids 'TypeAliasType not callable' errors in Python 3.12+.
 register(torch.Tensor, cqr_score_torch)

@@ -78,6 +78,9 @@ class SAPSScore(ClassificationScore):
         n_samples = probs.shape[0]
         n_classes = probs.shape[1]
 
+        if self.rng is None:
+            self.rng = np.random.default_rng(42)
+
         # randomization: generate u values for each sample and class in [0,1)
         u = self.rng.random(size=(n_samples, n_classes))
 

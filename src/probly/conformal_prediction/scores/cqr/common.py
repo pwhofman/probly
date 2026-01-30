@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 import numpy.typing as npt
@@ -56,7 +56,7 @@ def cqr_score_func[T](y_true: T, y_pred: T) -> npt.NDArray[np.floating]:
     diff_lower = lower - y_np
     diff_upper = y_np - upper
 
-    return np.column_stack([diff_lower, diff_upper])
+    return cast("npt.NDArray[np.floating]", np.maximum(diff_lower, diff_upper))
 
 
 def register(cls: LazyType, func: Callable[..., Any]) -> None:
@@ -84,14 +84,17 @@ class CQRScore(RegressionScore):
 
     def __init__(self, model: Predictor) -> None:
         """Initialize CQR score with a quantile regression model."""
+        super().__init__(model=model, score_func=self.compute_score)
 
-        def compute_score(
-            y_true: npt.NDArray[np.floating], y_pred: npt.NDArray[np.floating]
-        ) -> npt.NDArray[np.floating]:
-            # Use the same logic as cqr_score_func, but always return shape (N, 1) for predict_nonconformity
-            scores: npt.NDArray[np.floating] = cqr_score_func(y_true, y_pred)
-            if scores.ndim == 1:
-                scores = scores.reshape(-1, 1)
-            return scores
-
-        super().__init__(model=model, score_func=compute_score)
+    def compute_score(
+        self,
+        y_true: npt.NDArray[np.floating],
+        y_pred: npt.NDArray[np.floating],
+    ) -> npt.NDArray[np.floating]:
+        """Compute CQR nonconformity scores."""
+        # Use the same logic as cqr_score_func, but always return shape (N, 1) for predict_nonconformity
+        scores: npt.NDArray[np.floating] = cqr_score_func(y_true, y_pred)
+        if scores.ndim == 1:
+            # ensure shape (N, 1)
+            return scores.reshape(-1, 1)
+        return np.asarray(scores)

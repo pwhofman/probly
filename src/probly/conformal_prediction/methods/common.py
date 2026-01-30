@@ -152,12 +152,13 @@ class ConformalClassifier(ConformalPredictor, ABC):
     """Base class for Classification Conformal Prediction."""
 
     @abstractmethod
-    def predict(self, x_test: Sequence[Any], alpha: float) -> npt.NDArray[np.bool_]:
+    def predict(self, x_test: Sequence[Any], alpha: float, probs: Any | None = None) -> npt.NDArray[np.bool_]:  # noqa: ANN401
         """Generate prediction sets as boolean matrix (n_samples, n_classes) at given significance level.
 
         Args:
             x_test (Sequence[Any]): Test input data.
             alpha (float): Significance level for prediction sets.
+            probs (Any | None): Optional precomputed probabilities from the model.
         """
         raise NotImplementedError
 

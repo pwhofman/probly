@@ -55,9 +55,9 @@ class FlaxPredictor:
         else:
             x_array = jnp.array(np.asarray(x), dtype=jnp.float32)
 
-        output = self.model(x_array)  # type: ignore[operator]
+        output = self.model(x_array)
         logits = output[0] if isinstance(output, tuple) else output
-        return cast(Array, logits)
+        return (Array, logits)
 
     def predict(self, x: Any) -> Array:  # noqa: ANN401
         """Alias for __call__."""

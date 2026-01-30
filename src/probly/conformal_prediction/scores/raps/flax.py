@@ -24,27 +24,27 @@ def raps_score_jax(
     """
     n_samples, n_classes = probs.shape
 
-    # Sort class indices by descending probability (per sample)
+    # sort class indices by descending probability (per sample)
     srt_idx = jnp.argsort(-probs, axis=1)
 
-    # Reorder probabilities into sorted order
+    # reorder probabilities into sorted order
     srt_probs = jnp.take_along_axis(probs, srt_idx, axis=1)
 
     # cumulative sums along sorted order
     cumsum_probs = jnp.cumsum(srt_probs, axis=1)
 
-    # Rank-based regularization in sorted space:
-    # Penalty depends on the rank (1..K) and starts after the first k_reg+1 entries.
+    # rank-based regularization in sorted space:
+    # penalty depends on the rank (1..K) and starts after the first k_reg+1 entries.
     ranks = jnp.arange(1, n_classes + 1, dtype=probs.dtype).reshape(1, -1)  # (1, K)
     penalty = lambda_reg * jnp.maximum(jnp.array(0.0, dtype=probs.dtype), ranks - k_reg - 1)
 
-    # Small constant added to all entries
+    # small constant added to all entries
     epsilon_penalty = epsilon * jnp.ones((n_samples, n_classes), dtype=probs.dtype)
 
-    # Combine components in sorted space
+    # combine components in sorted space
     reg_cumsum = cumsum_probs + penalty + epsilon_penalty
 
-    # Map back to original class order (no in-place writes)
+    # map back to original class order (no in-place writes)
     inv_idx = jnp.argsort(srt_idx, axis=1)
     return jnp.take_along_axis(reg_cumsum, inv_idx, axis=1)
 

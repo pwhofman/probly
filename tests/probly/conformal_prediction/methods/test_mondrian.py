@@ -53,7 +53,7 @@ class MockClassificationScore:
         rng = np.random.default_rng(42)
         return rng.random(n_samples)
 
-    def predict_nonconformity(self, x_test: Sequence[Any], _probs: Any = None) -> npt.NDArray[np.floating]:  # noqa: ANN401
+    def predict_nonconformity(self, x_test: Sequence[Any], probs: Any = None) -> npt.NDArray[np.floating]:  # noqa: ANN401, ARG002
         n_samples = len(x_test)
         # Always return shape (n_samples, n_classes) for classifier
         rng = np.random.default_rng(42)
@@ -122,6 +122,19 @@ def simple_region_func() -> RegionFunc:
         return np.array(regions, dtype=int)
 
     return func
+
+
+class InvalidScoreMock:
+    """Mock that returns invalid score shapes for validation testing."""
+
+    def calibration_nonconformity(
+        self,
+        xcal: Sequence[Any],
+        _ycal: Sequence[Any],
+    ) -> np.ndarray:
+        """Return invalid shape (N, 5) instead of valid (N,), (N, 1), or (N, 2)."""
+        n = len(xcal)
+        return np.random.default_rng(42).random((n, 5))
 
 
 @pytest.fixture
@@ -226,10 +239,10 @@ class TestMondrianConformalClassifier:
         )
 
         x_cal = [[1, 2], [3, 4]]
-        y_cal = [0]
+        y_cal = [0, 1]
 
-        with pytest.raises(ValueError, match=".*"):
-            classifier.calibrate(x_cal, y_cal, 0.1)
+        classifier.calibrate(x_cal, y_cal, 0.1)
+        assert classifier.is_calibrated
 
     def test_prediction_without_calibration(
         self,
