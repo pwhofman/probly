@@ -10,7 +10,7 @@ import jax.numpy as jnp
 
 
 class DropConnectLinear(nnx.Module):
-    """Custom Linear layer with DropConnect applied to weights during training.
+    """Custom Linear layer with DropConnect applied to weights during training based on :cite:`aminiDeepEvidential2020`.
 
     Attributes:
         kernel: nnx.Param, weight matrix of the layer.
