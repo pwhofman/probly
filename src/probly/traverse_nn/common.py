@@ -28,7 +28,7 @@ nn_traverser = t.lazydispatch_traverser[object](name="nn_traverser")
 
 
 def compose(
-    traverser: t.Traverser,
+    *traversers: t.Traverser,
     nn_traverser: t.Traverser = nn_traverser,
     name: str | None = None,
 ) -> t.Traverser:
@@ -38,13 +38,13 @@ def compose(
     a custom traverser, and layer counting capabilities in a specific order.
 
     Args:
-        traverser: A custom traverser function to be composed with the NN traverser.
+        traversers: Custom traverser functions to be composed (sequentially) with the NN traverser.
         nn_traverser: The neural network traverser to use. Defaults to the module's
             nn_traverser.
         name: Optional name for the composed traverser.
 
     Returns:
-        A composed sequential traverser that applies NN traversal, custom traversal,
-        and layer counting in sequence.
+        A composed sequential traverser that applies NN traversal, custom traversal, and layer counting in sequence.
+
     """
-    return t.sequential(nn_traverser, traverser, layer_count_traverser, name=name)
+    return t.sequential(nn_traverser, *traversers, layer_count_traverser, name=name)

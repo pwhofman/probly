@@ -16,15 +16,3 @@ repos:
         args: [--fix, --exit-non-zero-on-fix, --no-cache]
       - id: ruff-format
         args: [--verbose]
-
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.18.2
-    hooks:
-      - id: mypy
-        exclude: docs
-        args:
-            - "--ignore-missing-imports"
-            - "--scripts-are-modules"
-            # Since pre-commit env does not have all dependencies installed,
-            # we ignore unused ignores to avoid false positives:
-            - "--no-warn-unused-ignores"

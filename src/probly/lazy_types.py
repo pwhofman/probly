@@ -7,3 +7,5 @@ TORCH_TENSOR = "torch.Tensor"
 
 FLAX_MODULE = "flax.nnx.module.Module"
 JAX_ARRAY = "jax.Array"
+
+SKLEARN_MODULE = "sklearn.base.BaseEstimator"
