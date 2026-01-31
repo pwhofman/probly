@@ -391,7 +391,7 @@ class TestAPSScoreTorch:
             x_train_tensor = torch.tensor(x_train_scaled)
             y_train_tensor = torch.tensor(y_train, dtype=torch.long)
 
-            for _ in range(200):  # train longer for more stable coverage
+            for _ in range(500):  # train longer for more stable coverage
                 optimizer.zero_grad()
                 outputs = model(x_train_tensor)
                 loss = criterion(outputs, y_train_tensor)
