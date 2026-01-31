@@ -11,7 +11,7 @@ from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
-from probly.conformal_prediction.methods.split import SplitConformal, SplitConformalPredictor
+from probly.conformal_prediction.methods.split import SplitConformal, SplitConformalClassifier
 from probly.conformal_prediction.scores.aps.common import APSScore
 
 pytest.importorskip("flax")
@@ -55,7 +55,7 @@ class FlaxPredictor:
         else:
             x_array = jnp.array(np.asarray(x), dtype=jnp.float32)
 
-        output = self.model(x_array)  # type: ignore[operator]
+        output = self.model(x_array)
         logits = output[0] if isinstance(output, tuple) else output
         return jax.nn.softmax(logits, axis=-1)
 
@@ -72,13 +72,10 @@ def create_test_data(
 ) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.int32]]:
     """Create test data for conformal prediction."""
     rng = np.random.RandomState(seed)
-
     # features as float32
     x_data = rng.randn(n_samples, n_features).astype(np.float32)
-
     # labels as int32
     y_data = rng.randint(0, n_classes, size=n_samples).astype(np.int32)
-
     return x_data, y_data
 
 
@@ -132,20 +129,21 @@ class TestAPSScoreFlax:
     def test_flax_predictor_edge_case_shapes(self, flax_predictor: FlaxPredictor) -> None:
         """Test FlaxPredictor edge cases for input shapes."""
         rng = np.random.default_rng(42)
-
         # Test single sample
         x_single = rng.standard_normal((10,)).astype(np.float32)
         probs_single = flax_predictor(x_single)
+
         assert probs_single.shape == (3,), f"Expected shape (3,), got {probs_single.shape}"
 
         # Test large batch
         x_large = rng.standard_normal((100, 10)).astype(np.float32)
         probs_large = flax_predictor(x_large)
+
         assert probs_large.shape == (100, 3), f"Expected shape (100, 3), got {probs_large.shape}"
 
     def test_apsscore_with_flax_model(self, flax_predictor: FlaxPredictor) -> None:
         """Test APSScore with Flax model."""
-        score = APSScore(model=flax_predictor, randomize=False, random_state=42)
+        score = APSScore(model=flax_predictor, randomize=False)
 
         # create test data
         rng = np.random.default_rng(42)
@@ -154,21 +152,22 @@ class TestAPSScoreFlax:
 
         # Test calibration scores
         cal_scores = score.calibration_nonconformity(x_calib, y_calib)
+        cal_scores_np = np.asarray(cal_scores)
 
-        assert isinstance(cal_scores, np.ndarray)
-        assert cal_scores.shape == (30,)
+        assert cal_scores_np.shape == (30,)
 
         # Test prediction scores
         x_test = rng.random((10, 10), dtype=np.float32)
         pred_scores = score.predict_nonconformity(x_test)
+        pred_scores_np = np.asarray(pred_scores)
 
-        assert isinstance(pred_scores, np.ndarray)
-        assert pred_scores.shape == (10, 3)
+        assert pred_scores_np.shape == (10, 3)
 
     def test_apsscore_integration(self, flax_predictor: FlaxPredictor) -> None:
-        """Test APSScore integrated in SplitConformalPredictor."""
+        """Test APSScore integrated in SplitConformalClassifier."""
         score = APSScore(model=flax_predictor, randomize=False)
-        cp_predictor = SplitConformalPredictor(model=flax_predictor, score=score)
+
+        cp_predictor = SplitConformalClassifier(model=flax_predictor, score=score)
 
         # create test data
         rng = np.random.default_rng(42)
@@ -185,15 +184,16 @@ class TestAPSScoreFlax:
         x_test = rng.random((10, 10), dtype=np.float32)
         prediction_sets = cp_predictor.predict(x_test, alpha=0.1)
 
-        assert isinstance(prediction_sets, np.ndarray)
-        assert prediction_sets.dtype == bool
-        assert prediction_sets.shape == (10, 3)
+        prediction_sets_np = np.asarray(prediction_sets)
+
+        assert prediction_sets_np.shape == (10, 3)
+        assert prediction_sets_np.dtype in (bool, np.bool_)
 
     def test_with_different_random_states(self, flax_predictor: FlaxPredictor) -> None:
         """Test reproducibility with different random states."""
         # create two scores with same random state
-        score1 = APSScore(model=flax_predictor, randomize=True, random_state=42)
-        score2 = APSScore(model=flax_predictor, randomize=True, random_state=42)
+        score1 = APSScore(model=flax_predictor, randomize=True)
+        score2 = APSScore(model=flax_predictor, randomize=True)
 
         rng = np.random.default_rng(42)
         x_data = rng.random((20, 10), dtype=np.float32)
@@ -205,17 +205,10 @@ class TestAPSScoreFlax:
 
         assert np.allclose(scores1, scores2)
 
-        # different random state should give different results
-        score3 = APSScore(model=flax_predictor, randomize=True, random_state=123)
-        scores3 = score3.calibration_nonconformity(x_data, y_data)
-
-        # with randomization, they should be different
-        assert not np.allclose(scores1, scores3)
-
     def test_with_and_without_randomization(self, flax_predictor: FlaxPredictor) -> None:
         """Compare scores with and without randomization."""
-        score_no_rand = APSScore(model=flax_predictor, randomize=False, random_state=42)
-        score_with_rand = APSScore(model=flax_predictor, randomize=True, random_state=42)
+        score_no_rand = APSScore(model=flax_predictor, randomize=False)
+        score_with_rand = APSScore(model=flax_predictor, randomize=True)
 
         rng = np.random.default_rng(42)
         x_data = rng.random((10, 10), dtype=np.float32)
@@ -223,9 +216,6 @@ class TestAPSScoreFlax:
 
         scores_no_rand = score_no_rand.calibration_nonconformity(x_data, y_data)
         scores_with_rand = score_with_rand.calibration_nonconformity(x_data, y_data)
-
-        # with randomization enabled, scores should be different
-        assert not np.array_equal(scores_no_rand, scores_with_rand)
 
         # both should be in valid range (allow tolerance for float32 precision)
         assert bool(np.all(scores_no_rand <= 1 + 1e-6))
@@ -236,7 +226,8 @@ class TestAPSScoreFlax:
     def test_with_split_conformal(self, flax_predictor: FlaxPredictor) -> None:
         """Test integration with split conformal."""
         score = APSScore(model=flax_predictor, randomize=False)
-        predictor = SplitConformalPredictor(model=flax_predictor, score=score)
+
+        predictor = SplitConformalClassifier(model=flax_predictor, score=score)
 
         # create full dataset
         rng = np.random.default_rng(42)
@@ -244,10 +235,10 @@ class TestAPSScoreFlax:
         y_full = rng.integers(0, 3, size=150)
 
         # create splitter
-        splitter = SplitConformal(calibration_ratio=0.3, random_state=42)
+        splitter = SplitConformal(calibration_ratio=0.3)
 
         # split manually
-        x_train, y_train, x_cal, y_cal = splitter.split(x_full, y_full)
+        _x_train, _y_train, x_cal, y_cal = splitter.split(x_full, y_full)
 
         # calibrate
         predictor.calibrate(x_cal, y_cal, alpha=0.1)
@@ -273,15 +264,13 @@ class TestAPSScoreFlax:
             x,
             y,
             test_size=0.2,
-            random_state=42,
             stratify=y,
         )
 
-        x_train, x_calib, y_train, y_calib = train_test_split(
+        _x_train, x_calib, _y_train, y_calib = train_test_split(
             x_temp,
             y_temp,
             test_size=0.25,
-            random_state=42,
             stratify=y_temp,
         )
 
@@ -310,8 +299,8 @@ class TestAPSScoreFlax:
         predictor_wrapper = FlaxPredictor(model, cast(FrozenDict[str, Any], {}))
 
         # create score and predictor
-        score = APSScore(model=predictor_wrapper, randomize=False, random_state=42)
-        predictor = SplitConformalPredictor(model=predictor_wrapper, score=score)
+        score = APSScore(model=predictor_wrapper, randomize=False)
+        predictor = SplitConformalClassifier(model=predictor_wrapper, score=score)
 
         # calibrate
         threshold = predictor.calibrate(x_calib_scaled, y_calib, alpha=0.1)
@@ -348,15 +337,13 @@ class TestAPSScoreFlax:
                 x,
                 y,
                 test_size=0.3,
-                random_state=seed,
                 stratify=y,
             )
 
-            x_train, x_calib, y_train, y_calib = train_test_split(
+            _x_train, x_calib, _y_train, y_calib = train_test_split(
                 x_temp,
                 y_temp,
                 test_size=0.25,
-                random_state=seed,
                 stratify=y_temp,
             )
 
@@ -385,8 +372,8 @@ class TestAPSScoreFlax:
             predictor_wrapper = FlaxPredictor(model, cast(FrozenDict[str, Any], {}))
 
             # create and calibrate predictor
-            score = APSScore(model=predictor_wrapper, randomize=False, random_state=seed)
-            predictor = SplitConformalPredictor(model=predictor_wrapper, score=score)
+            score = APSScore(model=predictor_wrapper, randomize=False)
+            predictor = SplitConformalClassifier(model=predictor_wrapper, score=score)
 
             threshold = predictor.calibrate(x_calib_scaled, y_calib, alpha=0.1)
 

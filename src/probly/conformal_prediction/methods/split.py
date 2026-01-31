@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from probly.conformal_prediction.scores.common import Score
+    from probly.conformal_prediction.scores.common import ClassificationScore, RegressionScore, Score
 
 
 import numpy as np
@@ -15,7 +15,13 @@ import numpy.typing as npt
 import torch
 from torch import Tensor
 
-from probly.conformal_prediction.methods.common import ConformalPredictor, Predictor, predict_probs
+from probly.conformal_prediction.methods.common import (
+    ConformalClassifier,
+    ConformalPredictor,
+    ConformalRegressor,
+    Predictor,
+    predict_probs,
+)
 from probly.conformal_prediction.scores.lac.common import accretive_completion
 from probly.conformal_prediction.utils.quantile import calculate_quantile
 
@@ -91,18 +97,23 @@ class SplitConformal:
 
 
 class SplitConformalPredictor(ConformalPredictor):
-    """Generic split conformal predictor for classification."""
+    """Generic split conformal predictor base class."""
+
+    score: Score
 
     def __init__(
         self,
         model: Predictor,
-        score: Score,
-        use_accretive: bool = False,
     ) -> None:
         """Create a split conformal predictor."""
         super().__init__(model=model)
-        self.score = score
-        self.use_accretive = use_accretive
+
+    @staticmethod
+    def to_numpy(x: Any) -> npt.NDArray[np.floating]:  # noqa: ANN401
+        """Convert tensor to NumPy on CPU (float dtype)."""
+        if torch is not None and isinstance(x, Tensor):
+            return x.detach().cpu().numpy()
+        return cast("npt.NDArray[np.floating]", np.asarray(x, dtype=float))
 
     def calibrate(
         self,
@@ -115,18 +126,30 @@ class SplitConformalPredictor(ConformalPredictor):
         self.nonconformity_scores = self.score.calibration_nonconformity(x_cal, y_cal)
 
         # ensure scores are on CPU/Numpy for quantile calculation
-        scores_for_quantile = self.nonconformity_scores
-        if torch is not None and isinstance(scores_for_quantile, Tensor):
-            scores_for_quantile = scores_for_quantile.detach().cpu().numpy()
-        else:
-            # covers numpy + jax
-            scores_for_quantile = np.asarray(scores_for_quantile)
+        scores_np = self.to_numpy(self.nonconformity_scores)
 
         # calculate quantile threshold
-        self.threshold = calculate_quantile(scores_for_quantile, alpha)
+        self.threshold = calculate_quantile(scores_np, alpha)
 
         self.is_calibrated = True
         return self.threshold
+
+
+class SplitConformalClassifier(SplitConformalPredictor, ConformalClassifier):
+    """Generic split conformal predictor for classification."""
+
+    score: ClassificationScore
+
+    def __init__(
+        self,
+        model: Predictor,
+        score: ClassificationScore,
+        use_accretive: bool = False,
+    ) -> None:
+        """Create a split conformal predictor for classification."""
+        super().__init__(model=model)
+        self.score = score
+        self.use_accretive = use_accretive
 
     def predict(
         self,
@@ -139,18 +162,15 @@ class SplitConformalPredictor(ConformalPredictor):
             msg = "Predictor must be calibrated before predict()."
             raise RuntimeError(msg)
 
-        # compute scores (either using existing probs or predicting new ones inside score)
-        scores = self.score.predict_nonconformity(x_test)  # shape: matrix (n_instances, n_labels)
+        # compute scores for test instances
+        scores = self.score.predict_nonconformity(x_test, probs=probs)  # shape: matrix (n_instances, n_labels)
 
         if scores.ndim != 2:
             msg = "predict_nonconformity must return 2D-Matrix (n_instances, n_labels)."
             raise ValueError(msg)
 
-        # convert scores to Numpy for comparison with threshold
-        if torch is not None and isinstance(scores, Tensor):
-            scores_np = scores.detach().cpu().numpy()
-        else:
-            scores_np = np.asarray(scores)
+        # convert scores to NumPy for comparison with threshold
+        scores_np = self.to_numpy(scores)
 
         # sets defined: label included when score <= threshold
         prediction_sets = scores_np <= self.threshold  # bool-Array (n_instances, n_labels)
@@ -158,11 +178,104 @@ class SplitConformalPredictor(ConformalPredictor):
         # accretive completion for empty sets
         if self.use_accretive:
             probs = predict_probs(self.model, x_test)
-
-            if torch is not None and isinstance(probs, Tensor):
-                probs = probs.detach().cpu().numpy()
-
-            probs_np = np.asarray(probs)
+            probs_np = self.to_numpy(probs)
             prediction_sets = accretive_completion(prediction_sets, probs_np)
 
         return prediction_sets
+
+
+class SplitConformalRegressor(SplitConformalPredictor, ConformalRegressor):
+    """Generic split conformal predictor for regression."""
+
+    score: RegressionScore
+
+    def __init__(
+        self,
+        model: Predictor,
+        score: RegressionScore,
+    ) -> None:
+        """Create a split conformal predictor for regression."""
+        super().__init__(model=model)
+        self.score = score
+        self.is_asymmetric: bool = False
+        self.threshold_lower: float | None = None
+        self.threshold_upper: float | None = None
+
+    def calibrate(
+        self,
+        x_cal: Sequence[Any],
+        y_cal: Sequence[Any],
+        alpha: float,
+    ) -> float:
+        """Calibrate thresholds for regression (supports symmetric and CQR)."""
+        self.nonconformity_scores = self.score.calibration_nonconformity(x_cal, y_cal)
+        # ensure numpy array
+        scores_np = SplitConformalPredictor.to_numpy(self.nonconformity_scores)
+
+        # determine if symmetric or asymmetric thresholds
+        if scores_np.ndim == 1 or (scores_np.ndim == 2 and scores_np.shape[1] == 1):
+            # standard symmetric residuals: single threshold
+            self.is_asymmetric = False
+            scores_flat = scores_np.flatten()
+            self.threshold = calculate_quantile(scores_flat, alpha)
+            self.threshold_lower = None
+            self.threshold_upper = None
+        elif scores_np.ndim == 2 and scores_np.shape[1] == 2:
+            # asymmetric residuals: two thresholds
+            self.is_asymmetric = True
+            alpha_lower = alpha / 2  # Bonferroni split per side
+            alpha_upper = 1 - alpha / 2
+
+            scores_lower = -scores_np[:, 0]
+            scores_upper = scores_np[:, 1]
+
+            self.threshold_lower = -calculate_quantile(scores_lower, alpha_lower)
+            self.threshold_upper = calculate_quantile(scores_upper, alpha_upper)
+            self.threshold = None
+        else:
+            msg = f"Score shape {scores_np.shape} not supported. Expected (n,), (n,1), or (n,2)."
+            raise ValueError(msg)
+
+        self.is_calibrated = True
+        # return main threshold for compatibility
+        if self.threshold is not None:
+            return self.threshold
+        if self.threshold_lower is not None and self.threshold_upper is not None:
+            return (self.threshold_lower + self.threshold_upper) / 2  # average
+        return alpha  # fallback
+
+    def predict(
+        self,
+        x_test: Sequence[Any],
+        alpha: float,  # noqa: ARG002
+    ) -> npt.NDArray[np.floating]:
+        """Return prediction intervals as a (n_instances, 2)-matrix [lower, upper]."""
+        if not self.is_calibrated:
+            msg = "Predictor must be calibrated before predict()."
+            raise RuntimeError(msg)
+
+        # get model predictions
+        y_hat = self.model(x_test)
+
+        # convert predictions to NumPy for interval construction
+        y_hat_np = SplitConformalPredictor.to_numpy(y_hat)
+
+        if self.is_asymmetric:
+            # expect model to return (N, 2): [lower_quantile, upper_quantile]
+            if y_hat_np.ndim != 2 or y_hat_np.shape[1] != 2:
+                msg = f"Asymmetric intervals expect model output shape (N, 2), got {y_hat_np.shape}"
+                raise ValueError(msg)
+            if self.threshold_lower is None or self.threshold_upper is None:
+                msg = "Asymmetric thresholds not calibrated."
+                raise RuntimeError(msg)
+            lower = y_hat_np[:, 0] + self.threshold_lower
+            upper = y_hat_np[:, 1] + self.threshold_upper
+            return np.stack([lower, upper], axis=1)
+
+        # symmetric intervals via score helper
+        if self.threshold is None:
+            msg = "Symmetric threshold not calibrated."
+            raise RuntimeError(msg)
+
+        result = self.score.construct_intervals(y_hat_np, self.threshold)
+        return cast("npt.NDArray[np.floating]", np.asarray(result, dtype=float))
