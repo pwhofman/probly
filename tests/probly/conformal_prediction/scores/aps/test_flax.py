@@ -238,7 +238,7 @@ class TestAPSScoreFlax:
         splitter = SplitConformal(calibration_ratio=0.3)
 
         # split manually
-        _x_train, y_train, x_cal, y_cal = splitter.split(x_full, y_full)
+        _x_train, _y_train, x_cal, y_cal = splitter.split(x_full, y_full)
 
         # calibrate
         predictor.calibrate(x_cal, y_cal, alpha=0.1)
@@ -267,7 +267,7 @@ class TestAPSScoreFlax:
             stratify=y,
         )
 
-        _x_train, x_calib, y_train, y_calib = train_test_split(
+        _x_train, x_calib, _y_train, y_calib = train_test_split(
             x_temp,
             y_temp,
             test_size=0.25,
@@ -340,7 +340,7 @@ class TestAPSScoreFlax:
                 stratify=y,
             )
 
-            _x_train, x_calib, y_train, y_calib = train_test_split(
+            _x_train, x_calib, _y_train, y_calib = train_test_split(
                 x_temp,
                 y_temp,
                 test_size=0.25,
