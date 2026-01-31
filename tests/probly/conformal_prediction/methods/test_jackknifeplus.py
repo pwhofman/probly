@@ -9,7 +9,7 @@ import numpy as np
 import numpy.typing as npt
 import pytest
 
-from probly.conformal_prediction.methods.jackknife import (
+from probly.conformal_prediction.methods.jackknifeplus import (
     JackknifePlusClassifier,
     JackknifePlusRegressor,
 )

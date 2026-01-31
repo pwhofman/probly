@@ -3,7 +3,7 @@
 from probly.conformal_prediction.methods.class_conditional import ClassConditionalClassifier, ClassConditionalRegressor
 from probly.conformal_prediction.methods.common import ConformalClassifier, ConformalPredictor, ConformalRegressor
 from probly.conformal_prediction.methods.cvplus import CVPlusClassifier, CVPlusRegressor
-from probly.conformal_prediction.methods.jackknife import (
+from probly.conformal_prediction.methods.jackknifeplus import (
     JackknifeCVBase,
     JackknifePlusClassifier,
     JackknifePlusRegressor,

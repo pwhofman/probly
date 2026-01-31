@@ -13,7 +13,7 @@ from probly.conformal_prediction.methods.cvplus import (
     CVPlusClassifier,
     CVPlusRegressor,
 )
-from probly.conformal_prediction.methods.jackknife import (
+from probly.conformal_prediction.methods.jackknifeplus import (
     JackknifePlusClassifier,
     JackknifePlusRegressor,
 )

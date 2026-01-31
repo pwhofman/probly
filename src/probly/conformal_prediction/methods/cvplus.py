@@ -8,12 +8,12 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
     from probly.conformal_prediction.methods.common import Predictor
-    from probly.conformal_prediction.methods.jackknife import (
+    from probly.conformal_prediction.methods.jackknifeplus import (
         IntervalFunc,
         ScoreFunc,
     )
 
-from probly.conformal_prediction.methods.jackknife import (
+from probly.conformal_prediction.methods.jackknifeplus import (
     JackknifePlusClassifier,
     JackknifePlusRegressor,
 )
