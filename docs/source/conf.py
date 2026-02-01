@@ -75,6 +75,9 @@ exclude_patterns = [
     "auto_examples/**/*.ipynb",
     "auto_examples/*.md",
     "auto_examples/**/*.md",
+    # Exclude top-level notebooks directory
+    "../../notebooks",
+    "../../notebooks/**",
 ]
 
 bibtex_bibfiles = ["references.bib"]
