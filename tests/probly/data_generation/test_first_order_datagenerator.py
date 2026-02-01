@@ -4,6 +4,9 @@ from collections.abc import Iterable
 import math
 import random
 
+import numpy as np
+import pytest
+
 from probly.data_generation.first_order_datagenerator import (
     FirstOrderDataGenerator,
     FirstOrderDataset,
@@ -103,11 +106,11 @@ def test_generator_init_and_run() -> None:
     # is each entry a list of probabilities with correct length
     for i in range(len(dataset)):
         row = dists[i]
-        assert isinstance(row, list)
-        assert len(row) == n_classes
+        assert isinstance(row, np.ndarray)
+        assert row.shape[-1] == n_classes
         # probabilities in [0,1] and sum approx 1
-        assert all(0.0 <= p <= 1.0 for p in row)
-        assert abs(sum(row) - 1.0) < 1e-4
+        assert bool(np.all((row >= 0.0) & (row <= 1.0)))
+        assert float(np.sum(row)) == pytest.approx(1.0, abs=1e-4)
 
     # (Removed inactive persistence test to keep test file clean.)
 
@@ -128,9 +131,9 @@ def test_first_order_dataset_and_dataloader_with_targets() -> None:
         x, y, p = firstorderdatasets[i]
         assert isinstance(x, list)
         assert isinstance(y, int)
-        assert isinstance(p, list)
-        assert len(p) == n_classes
-        assert abs(sum(p) - 1.0) < 1e-4
+        assert isinstance(p, np.ndarray)
+        assert p.shape[-1] == n_classes
+        assert float(np.sum(p)) == pytest.approx(1.0, abs=1e-4)
 
     # DataLoader integration
     loader = output_dataloader(dataset, dists, batch_size=4, shuffle=False)
@@ -139,8 +142,8 @@ def test_first_order_dataset_and_dataloader_with_targets() -> None:
     x, y, p = batch[0]
     assert isinstance(x, list)
     assert isinstance(y, int)
-    assert isinstance(p, list)
-    assert len(p) == n_classes
+    assert isinstance(p, np.ndarray)
+    assert p.shape[-1] == n_classes
     assert len(batch) <= 4  # first batch size
 
 
@@ -169,16 +172,16 @@ def test_first_order_dataset_and_dataloader_input_only_no_labels() -> None:
     # Single sample
     x, p = firstorderdatasets[0]
     assert isinstance(x, list)
-    assert isinstance(p, list)
-    assert len(p) == n_classes
+    assert isinstance(p, np.ndarray)
+    assert p.shape[-1] == n_classes
 
     # DataLoader
     loader = output_dataloader(dataset, dists, batch_size=5, shuffle=False)
     batch = next(iter(loader))
     x0, p0 = batch[0]
     assert isinstance(x0, list)
-    assert isinstance(p0, list)
-    assert len(p0) == n_classes
+    assert isinstance(p0, np.ndarray)
+    assert p0.shape[-1] == n_classes
 
 
 SampleWithLabel = tuple[list[float], int, list[float]]

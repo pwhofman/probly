@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
-import json
 import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
@@ -13,6 +12,11 @@ import warnings
 import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset
+
+# Reuse Basic Python general implementation for shared behaviors
+from .first_order_datagenerator import (
+    FirstOrderDataGenerator as PyFirstOrderDataGenerator,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +43,7 @@ if TYPE_CHECKING:  # typing-only import to satisfy Ruff's TC rules
 
 
 @dataclass
-class FirstOrderDataGenerator:
+class FirstOrderDataGenerator(PyFirstOrderDataGenerator):
     """Version First-Order data generator.
 
     Parameters
@@ -73,6 +77,7 @@ class FirstOrderDataGenerator:
     output_transform: Callable[[torch.Tensor], torch.Tensor] | None = None
     input_getter: Callable[[Any], Any] | None = None
     model_name: str | None = None
+    return_torch: bool = True
 
     def to_device(self, x: object) -> object:
         """Move tensor/nested tensors to the same device if applicable."""
@@ -114,17 +119,15 @@ class FirstOrderDataGenerator:
             return sample[0]
         return sample
 
-    def extract_input(self, sample: object) -> object:
-        """Deprecated name use prepares_batch_inp() instead."""
-        return self.prepares_batch_inp(sample)
+    # Removed deprecated alias; use prepares_batch_inp()
 
     @torch.no_grad()
-    def generate_distributions(
+    def generate_distributions(  # noqa: C901
         self,
         dataset_or_loader: object,
         *,
         progress: bool = True,
-    ) -> dict[int, list[float]]:
+    ) -> object:
         """Generate per-sample probability distributions.
 
         Parameters
@@ -173,14 +176,16 @@ class FirstOrderDataGenerator:
             if probs.ndim == 1:
                 probs = probs.unsqueeze(0)
 
-            probs_np = probs.detach().cpu().numpy()
+            # Ensure 2D
+            if probs.ndim == 1:
+                probs = probs.unsqueeze(0)
 
-            batch_size = probs_np.shape[0]
-            for i in range(batch_size):
+            batch_size_local = probs.shape[0]
+            rows = probs.detach().cpu()
+            for i in range(batch_size_local):
                 idx = start_idx + i
-                distributions[idx] = probs_np[i].tolist()
-
-            start_idx += batch_size
+                distributions[idx] = rows[i] if self.return_torch else rows[i].tolist()
+            start_idx += batch_size_local
             if progress:
                 logger.info("[FirstOrderDataGenerator] Batch %d/%d", batch_idx + 1, total_batches)
 
@@ -201,6 +206,35 @@ class FirstOrderDataGenerator:
 
         return distributions
 
+    # Explicit pass-through to base JSON save/load for discoverability & unified interface
+    def save_distributions(
+        self,
+        path: str | Path,
+        distributions: Mapping[int, Iterable[float]],
+        *,
+        meta: dict[str, Any] | None = None,
+    ) -> None:
+        """Pass-through to base JSON save_distributions implementation.
+
+        Kept here for users to know you can use this.
+        """
+        return super().save_distributions(path, distributions, meta=meta)
+
+    def load_distributions(self, path: str | Path) -> tuple[dict[int, torch.Tensor], dict[str, Any]]:
+        """Load distributions from JSON and return Torch tensors.
+
+        Returns:
+        -------
+        (distributions, meta)
+            distributions: dict[int, torch.Tensor]
+            meta: dict with any metadata saved alongside distributions
+        """
+        dists_list, meta = super().load_distributions(path)
+        dists_tensor: dict[int, torch.Tensor] = {
+            int(k): torch.tensor(v, dtype=torch.float32) for k, v in dists_list.items()
+        }
+        return dists_tensor, meta
+
     def get_posterior_distributions(self) -> dict[str, dict[str, torch.Tensor]]:
         """Extracts u and p from all BayesLinear layers — issue #241.
 
@@ -218,45 +252,6 @@ class FirstOrderDataGenerator:
                 distributions[base_name]["rho"] = param.detach().clone()
 
         return distributions
-
-    # JSON save/load methods
-    def save_distributions(
-        self,
-        path: str | Path,
-        distributions: Mapping[int, Iterable[float]],
-        *,
-        meta: dict[str, Any] | None = None,
-    ) -> None:
-        """Save distributions and minimal metadata as JSON."""
-        path = Path(path)
-        serializable = {
-            "meta": {
-                "model_name": self.model_name,
-                **(meta or {}),
-            },
-            "distributions": {str(k): list(v) for k, v in distributions.items()},
-        }
-        path.parent.mkdir(parents=True, exist_ok=True)
-        with path.open("w", encoding="utf-8") as f:
-            json.dump(serializable, f, ensure_ascii=False)
-
-    def load_distributions(self, path: str | Path) -> tuple[dict[int, list[float]], dict[str, Any]]:
-        """Load distributions and metadata from JSON.
-
-        Returns:
-        -------
-        (distributions, meta)
-            distributions: dict[int, list[float]]
-            meta: dict with any metadata saved alongside distributions
-        """
-        path = Path(path)
-        with path.open("r", encoding="utf-8") as f:
-            obj = json.load(f)
-        meta = obj.get("meta", {}) or {}
-        dists_raw = obj.get("distributions", {}) or {}
-        # Convert keys back to int
-        distributions: dict[int, list[float]] = {int(k): list(v) for k, v in dists_raw.items()}
-        return distributions, meta
 
 
 class FirstOrderDataset(Dataset):

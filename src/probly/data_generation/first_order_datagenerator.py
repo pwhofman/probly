@@ -14,8 +14,12 @@ import random
 from typing import TYPE_CHECKING, Any, Protocol, cast
 import warnings
 
+import numpy as np
+
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
+
+    from numpy.typing import NDArray
 
 logger = logging.getLogger(__name__)
 
@@ -61,6 +65,49 @@ def _to_batch_outputs(outputs: object) -> list[list[float]]:
     return [[float(cast("Any", outputs))]]
 
 
+def _to_batch_array(outputs: object) -> np.ndarray:
+    # Normalize various output shapes into a 2D numpy array of shape (batch, classes)
+    if outputs is None:
+        return np.empty((0, 0), dtype=float)
+    if isinstance(outputs, (list, tuple)):
+        if len(outputs) == 0:
+            return np.empty((0, 0), dtype=float)
+        first = outputs[0]
+        if isinstance(first, (int, float)):
+            arr = np.asarray(outputs, dtype=float)
+            return arr[np.newaxis, :]
+        return np.asarray(outputs, dtype=float)
+    # Fallback: scalar or unknown object -> single-sample, one element vector
+    return np.array([[float(cast("Any", outputs))]], dtype=float)
+
+
+def _is_probabilities_array(arr: np.ndarray, atol: float = 1e-4) -> bool:
+    if arr.size == 0:
+        return False
+    if arr.ndim == 1:
+        arr = arr[np.newaxis, :]
+    if arr.ndim != 2:
+        return False
+    within_bounds = (arr >= -atol).all() and (arr <= (1.0 + atol)).all()
+    if not within_bounds:
+        return False
+    row_sums = arr.sum(axis=1)
+    return np.abs(row_sums - 1.0).max() <= atol
+
+
+def _softmax_array(arr: np.ndarray) -> np.ndarray:
+    if arr.size == 0:
+        return arr.astype(float)
+    if arr.ndim == 1:
+        arr = arr[np.newaxis, :]
+    x = arr - arr.max(axis=1, keepdims=True)
+    exps = np.exp(x)
+    sums = exps.sum(axis=1, keepdims=True)
+    out = np.zeros_like(exps)
+    np.divide(exps, sums, where=(sums > 0), out=out)
+    return out
+
+
 @dataclass
 class FirstOrderDataGenerator:
     """General backend first-order data generator."""
@@ -72,24 +119,29 @@ class FirstOrderDataGenerator:
     output_transform: Callable[[Any], Any] | None = None
     input_getter: Callable[[Any], Any] | None = None
     model_name: str | None = None
+    return_numpy: bool = True
 
-    def to_probs(self, outputs: object) -> list[list[float]]:
+    def to_probs(self, outputs: object) -> object:
         """Convert raw model outputs to probability rows."""
         if self.output_transform is not None:
             transformed = self.output_transform(outputs)
-            return _to_batch_outputs(transformed)
+            batch_arr = _to_batch_array(transformed)
+        else:
+            batch_arr = _to_batch_array(outputs)
 
         mode = (self.output_mode or "auto").lower()
-        batch = _to_batch_outputs(outputs)
 
         if mode == "probs":
-            return batch
-        if mode == "logits":
-            return [_softmax_row(row) for row in batch]
-        if mode == "auto":
-            return batch if _is_probabilities(batch) else [_softmax_row(row) for row in batch]
-        msg = f"Invalid output_mode '{self.output_mode}'. Expected one of: 'auto', 'logits', 'probs'."
-        raise ValueError(msg)
+            probs = batch_arr
+        elif mode == "logits":
+            probs = _softmax_array(batch_arr)
+        elif mode == "auto":
+            probs = batch_arr if _is_probabilities_array(batch_arr) else _softmax_array(batch_arr)
+        else:
+            msg = f"Invalid output_mode '{self.output_mode}'. Expected one of: 'auto', 'logits', 'probs'."
+            raise ValueError(msg)
+
+        return probs if self.return_numpy else probs.tolist()
 
     def prepares_batch_inp(self, sample: object) -> object:
         """Extract the model input from a dataset sample.
@@ -113,7 +165,7 @@ class FirstOrderDataGenerator:
         dataset_or_loader: object,
         *,
         progress: bool = True,
-    ) -> dict[int, list[float]]:
+    ) -> object:
         """Generate per-sample distributions for a dataset or loader."""
         # Prepare loader
         if isinstance(dataset_or_loader, SimpleDataLoader):
@@ -124,7 +176,7 @@ class FirstOrderDataGenerator:
             dataset_len = len(dataset)
             loader = SimpleDataLoader(dataset, batch_size=self.batch_size, shuffle=False)
 
-        distributions: dict[int, list[float]] = {}
+        distributions: dict[int, object] = {}
         start_idx = 0
         total_batches = len(loader)
         for batch_idx, batch in enumerate(loader):
@@ -135,12 +187,19 @@ class FirstOrderDataGenerator:
             outputs = self.model(inputs)
             probs_batch = self.to_probs(outputs)
 
-            batch_size = len(probs_batch)
-            for i in range(batch_size):
-                idx = start_idx + i
-                distributions[idx] = probs_batch[i]
-
-            start_idx += batch_size
+            if isinstance(probs_batch, list):
+                batch_size_local = len(probs_batch)
+                for i in range(batch_size_local):
+                    idx = start_idx + i
+                    distributions[idx] = probs_batch[i]
+                start_idx += batch_size_local
+            else:
+                arr = cast("NDArray", probs_batch)
+                batch_size_local = arr.shape[0]
+                for i in range(batch_size_local):
+                    idx = start_idx + i
+                    distributions[idx] = arr[i]
+                start_idx += batch_size_local
             if progress:
                 logger.info("[FirstOrderDataGenerator] Batch %d/%d", batch_idx + 1, total_batches)
 
@@ -197,11 +256,18 @@ class FirstOrderDataset:
         base_dataset: DatasetLike,
         distributions: Mapping[int, Iterable[float]],
         input_getter: Callable[[object], object] | None = None,
+        return_numpy: bool = True,
     ) -> None:
         """Initialize with base dataset and index-aligned distributions."""
         self.base_dataset = base_dataset
-        self.distributions: dict[int, list[float]] = {int(k): list(v) for k, v in distributions.items()}
+        if return_numpy:
+            self.distributions: dict[int, object] = {
+                int(k): np.asarray(list(v), dtype=float) for k, v in distributions.items()
+            }
+        else:
+            self.distributions = {int(k): list(v) for k, v in distributions.items()}
         self.input_getter = input_getter
+        self.return_numpy = return_numpy
 
         n = len(base_dataset)
         if len(self.distributions) != n:
@@ -280,13 +346,16 @@ def output_dataloader(
     num_workers: int = 0,
     pin_memory: bool = False,
     input_getter: Callable[[Any], Any] | None = None,
+    return_numpy: bool = True,
 ) -> SimpleDataLoader:
     """Create a loader that yields inputs (and labels if present) with distributions.
 
     Note: `num_workers` and `pin_memory` are kept for API parity with Torch but ignored here.
     """
     _ = (num_workers, pin_memory)
-    firstorderdataset = FirstOrderDataset(base_dataset, distributions, input_getter=input_getter)
+    firstorderdataset = FirstOrderDataset(
+        base_dataset, distributions, input_getter=input_getter, return_numpy=return_numpy
+    )
     return SimpleDataLoader(firstorderdataset, batch_size=batch_size, shuffle=shuffle)
 
 
