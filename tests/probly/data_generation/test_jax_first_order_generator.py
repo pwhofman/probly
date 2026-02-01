@@ -392,7 +392,7 @@ def test_jax_output_dataloader_ragged_inputs_and_shuffle_determinism() -> None:
 
     # Deterministic with same seed
     loader2 = output_dataloader(base, dists, batch_size=3, shuffle=True, seed=0, device="cpu")
-    inpt_batch2, lbl_batch2, dist_batch2 = next(iter(loader2))
+    inpt_batch2, _lbl_batch2, dist_batch2 = next(iter(loader2))
     ids1 = [sample["id"] for sample in inpt_batch]
     ids2 = [sample["id"] for sample in inpt_batch2]
     assert ids1 == ids2
@@ -400,7 +400,7 @@ def test_jax_output_dataloader_ragged_inputs_and_shuffle_determinism() -> None:
 
     # Different seed should change order
     loader3 = output_dataloader(base, dists, batch_size=3, shuffle=True, seed=123, device="cpu")
-    inpt_batch3, lbl_batch3, dist_batch3 = next(iter(loader3))
+    inpt_batch3, _lbl_batch3, _dist_batch3 = next(iter(loader3))
     ids3 = [sample["id"] for sample in inpt_batch3]
     assert ids1 != ids3
 

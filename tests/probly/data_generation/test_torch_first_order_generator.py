@@ -209,7 +209,7 @@ def test_generate_distributions_with_external_dataloader_and_callable_model() ->
         return [0.1, 0.2, 0.3, 0.4]
 
     gen_bad = FirstOrderDataGenerator(model=bad_model, device="cpu", batch_size=2, output_mode="probs")
-    with pytest.raises(TypeError, match="Model must return a torch.Tensor"):
+    with pytest.raises(TypeError, match=r"Model must return a torch\.Tensor"):
         _ = gen_bad.generate_distributions(loader, progress=False)
 
 
@@ -350,7 +350,7 @@ def test_pt_save_and_load_helpers(tmp_path: Path) -> None:
         path.parent.rmdir()
 
     # Invalid suffix
-    with pytest.raises(ValueError, match="File suffix must be '.pt' or '.pth'."):
+    with pytest.raises(ValueError, match=r"File suffix must be '\.pt' or '\.pth'\."):
         save_distributions_pt(data, str(tmp_path / "bad.txt"), verbose=False)
 
     # File not found
