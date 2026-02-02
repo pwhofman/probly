@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Any
+
+from matplotlib.patches import Polygon
 import matplotlib.patheffects as PathEffects
 import matplotlib.pyplot as plt
 import numpy as np
@@ -9,20 +12,24 @@ from scipy.spatial import ConvexHull
 
 import probly.visualization.config as cfg
 
+if TYPE_CHECKING:
+    from matplotlib.axes import Axes
+
 
 class TernaryVisualizer:
-    """Class to collect all the geometric plots."""
+    """Class to create ternary visualization."""
 
     def __init__(self) -> None:
         """Initialize the class."""
 
-    def probs_to_coords_3d(self, probs: np.ndarray) -> tuple:
+    def probs_to_coords_3d(self, probs: np.ndarray) -> tuple[float, float]:
         """Convert ternary probabilities to 2D coordinates.
 
         Args:
-        probs: the ternary probabilities.
+            probs: Probability vector for 3 classes.
 
-        return: Tuple containing the 2D coordinates.
+        Return:
+            Tuple containing the 2D coordinates as float.
         """
         _, p2, p3 = probs
         x = p2 + 0.5 * p3
@@ -31,13 +38,21 @@ class TernaryVisualizer:
 
     def label_corners_and_vertices(
         self,
-        ax: plt.Axes,
-        v1: np.array,
-        v2: np.array,
-        v3: np.array,
+        ax: Axes,
+        v1: np.ndarray,
+        v2: np.ndarray,
+        v3: np.ndarray,
         labels: list[str],
     ) -> None:
-        """Labeling the corners and vertices."""
+        """Label the corners and vertices of a simplex.
+
+        Args:
+            ax: Matplotlib Axes on which the labels are drawn.
+            v1: Coordinates of the first vertex.
+            v2: Coordinates of the second vertex.
+            v3: Coordinates of the third vertex.
+            labels: Text labels for the three vertices, ordered as (v1, v2, v3).
+        """
         c1 = f"{labels[0]}"
         c2 = f"{labels[1]}"
         c3 = f"{labels[2]}"
@@ -46,33 +61,36 @@ class TernaryVisualizer:
         ax.text(v2[0] + 0.02, v2[1] - offset_x, c2, ha="left", va="top", fontsize=12)
         ax.text(v3[0], v3[1] + offset_x, c3, ha="center", va="bottom", fontsize=12)
 
-        edge_lable = "0.0 / 1.0"
-        ax.text(v1[0], v1[1], edge_lable, ha="right", va="top", fontsize=8)
-        ax.text(v2[0], v2[1], edge_lable, ha="left", va="top", fontsize=8)
-        ax.text(v3[0], v3[1], edge_lable, ha="center", va="bottom", fontsize=8)
+        edge_label = "0.0 / 1.0"
+        ax.text(v1[0], v1[1], edge_label, ha="right", va="top", fontsize=8)
+        ax.text(v2[0], v2[1], edge_label, ha="left", va="top", fontsize=8)
+        ax.text(v3[0], v3[1], edge_label, ha="center", va="bottom", fontsize=8)
 
     def ternary_plot(
         self,
         probs: np.ndarray,
         labels: list[str],
-        title: str = "Ternary Plot (3 Classes)",
-        ax: plt.Axes = None,
-        plot_hull: bool = True,
-        plot_minmax: bool = True,
-        **scatter_kwargs: object,
-    ) -> plt.Axes:
+        title: str,
+        credal_flag: bool,
+        mle_flag: bool,
+        minmax_flag: bool,
+        ax: Axes | None = None,
+        **scatter_kwargs: Any,  # noqa: ANN401
+    ) -> Axes:
         """Plot ternary scatter points.
 
         Args:
-        probs: the ternary probabilities.
-        labels: the labels of the ternary points.
-        title: fixed title of the plot.
-        scatter_kwargs: keyword arguments passed to scatter_kwargs.
-        ax: matplotlib axes.Axes to plot on.
-        plot_hull: bool defaulted to true, which optionally draws a convex hull.
-        plot_minmax: bool defaulted to true, which optionally draws upper and lower probability envelopes.
+            probs: Probability vector for 3 classes.
+            labels: The labels for the ternary points.
+            title: Title of the plot.
+            mle_flag: Flag to indicate whether median of probabilities is shown.
+            credal_flag: Flag to indicate whether convex hull is shown.
+            minmax_flag: Bool defaulted to true, which optionally draws upper and lower probability envelopes.
+            scatter_kwargs: Keyword arguments passed to scatter_kwargs.
+            ax: Axes to draw the plot on. If None, a new Axes is created.
 
-        returns: Ternary plot with scattered points.
+        Returns:
+            Ternary plot with scattered points.
         """
         coords = np.array([self.probs_to_coords_3d(x) for x in probs])
 
@@ -133,35 +151,39 @@ class TernaryVisualizer:
         ax.set_ylim(-0.1, np.sqrt(3) / 2)
 
         # Scatter points
-        ax.scatter(coords[:, 0], coords[:, 1], **scatter_kwargs)
+        scatter_label = scatter_kwargs.pop("label", "Probabilities")
+        ax.scatter(coords[:, 0], coords[:, 1], label=scatter_label, **scatter_kwargs)
 
         ax.set_title(title, pad=20, y=-0.2)
 
-        if plot_hull:
+        if mle_flag:
+            mle = probs.mean(axis=0)
+            mle_x, mle_y = self.probs_to_coords_3d(mle)
+            ax.scatter(mle_x, mle_y, color=cfg.RED, s=50, zorder=5, label="MLE")
+            self.draw_mle_prob_line(probs, ax=ax)
+
+        if credal_flag:
             self.plot_convex_hull(probs, ax=ax)
 
         # Optionally draw second order max/min envelope lines
-        if plot_minmax:
+        if minmax_flag:
             self.plot_minmax_lines(probs, ax=ax)
-
+        ax.legend(loc="upper right", frameon=True, fontsize=9)
         return ax
 
-    def draw_prob_line(self, ax: plt.Axes) -> None:
-        """Mini demo: draw probability axes through one fixed example point.
+    def draw_mle_prob_line(self, probs: np.ndarray, ax: Axes) -> None:
+        """Draw probability axes for MLE for better readability.
 
         Args:
-        ax: Axes to draw on
-        Draws the three isolines through (a,b,c):
-        - constant a (parallel to BC)
-        - constant b (parallel to AC)
-        - constant c (parallel to AB).
+            probs: Array of probability vectors used to compute the MLE.
+            ax: Matplotlib Axes on which the MLE point and lines are drawn.
         """
-        # hard coded demo
-        example = np.array([0.25, 0.55, 0.20])
-        x, y = self.probs_to_coords_3d(example)
-        ax.scatter([x], [y], color=cfg.RED, s=30, zorder=5)
-
-        a, b, c = example
+        tmp_mle = probs.mean(axis=0)
+        mle_sum = tmp_mle.sum()
+        mle = tmp_mle / mle_sum
+        x, y = self.probs_to_coords_3d(mle)
+        ax.scatter([x], [y], color=cfg.RED, s=40, zorder=6)
+        a, b, c = mle
 
         # helper to draw lines
         def seg(p: np.ndarray, q: np.ndarray, *, color: str, lw: float = 2.0, alpha: float = 1.0) -> None:
@@ -178,20 +200,20 @@ class TernaryVisualizer:
             txt.set_path_effects([PathEffects.withStroke(linewidth=2, foreground=cfg.BLACK)])
 
         p_ac = np.array([a, 0.0, 1.0 - a])
-        seg(example, p_ac, color=cfg.BLUE, lw=1, alpha=1.0)
-        mid_lable(example, p_ac, f"a={a:.2f}")
+        seg(mle, p_ac, color=cfg.BLUE, lw=1, alpha=1.0)
+        mid_lable(mle, p_ac, f"a={a:.2f}")
         p_ba = np.array([1.0 - b, b, 0.0])
-        seg(p_ba, example, color=cfg.BLUE, lw=1, alpha=1.0)
-        mid_lable(p_ba, example, f"b={b:.2f}")
+        seg(p_ba, mle, color=cfg.BLUE, lw=1, alpha=1.0)
+        mid_lable(p_ba, mle, f"b={b:.2f}")
         p_cb = np.array([0.0, 1.0 - c, c])
-        seg(example, p_cb, color=cfg.BLUE, lw=1, alpha=1.0)
-        mid_lable(example, p_cb, f"c={c:.2f}")
+        seg(mle, p_cb, color=cfg.BLUE, lw=1, alpha=1.0)
+        mid_lable(mle, p_cb, f"c={c:.2f}")
 
     def plot_convex_hull(
         self,
         probs: np.ndarray,
-        ax: plt.Axes = None,
-    ) -> plt.Axes:
+        ax: Axes | None = None,
+    ) -> Axes:
         """Draw the convex hull around the points.
 
         Handles special cases:
@@ -200,14 +222,15 @@ class TernaryVisualizer:
         - >= 3 points (polygon)
 
         Args:
-        probs: Array of probabilities
-        ax: Axes to draw on
-        facecolor: Color of the convex hull
-        alpha: Opacity of the convex hull
-        edgecolor: Color of the outline
-        linewidth: Width of the convex hull
+            probs: Array of probabilities.
+            ax: Axes to draw on.
+            facecolor: Color of the convex hull.
+            alpha: Opacity of the convex hull.
+            edgecolor: Color of the outline.
+            linewidth: Width of the convex hull.
 
-        returns: Plot with convex hull.
+        Returns:
+            Plot with convex hull.
         """
         coords = np.array([self.probs_to_coords_3d(p) for p in probs])
 
@@ -233,13 +256,14 @@ class TernaryVisualizer:
 
             hull_pts = coords[hull.vertices]
 
-            poly = plt.Polygon(
+            poly = Polygon(
                 hull_pts,
                 closed=True,
                 facecolor=cfg.HULL_FACE,
                 edgecolor=cfg.HULL_EDGE,
                 alpha=cfg.FILL_ALPHA,
                 linewidth=cfg.HULL_LINE_WIDTH,
+                label="Credal set",
             )
             ax.add_patch(poly)
 
@@ -253,21 +277,28 @@ class TernaryVisualizer:
                 [coords[i, 1], coords[j, 1]],
                 color=cfg.HULL_EDGE,
                 linewidth=cfg.HULL_LINE_WIDTH,
+                label="Credal set",
             )
-        self.draw_prob_line(ax)
         return ax
 
     def _draw_constant_probability_line(
         self,
-        ax: plt.Axes,
+        ax: Axes,
         index: int,
         value: float,
-        color: str = "red",
-        linestyle: str = "--",
+        style_key: int,
+        label: str | None,
     ) -> None:
         """Draw a line of constant probability p[index] = value.
 
         The line is parallel to the edge opposite the corresponding vertex.
+
+        Args:
+            ax: Matplotlib Axes on which the line is drawn.
+            index: Index of the probability component to keep constant (0, 1, or 2).
+            value: Fixed probability value for the selected component.
+            style_key: Key used to select line color and style.
+            label: Optional label for the line (used in the legend).
         """
         if value <= 0 or value >= 1:
             return  # Degenerate, coincides with triangle boundary
@@ -292,24 +323,29 @@ class TernaryVisualizer:
 
         x1, y1 = self.probs_to_coords_3d(p_start)
         x2, y2 = self.probs_to_coords_3d(p_end)
-
+        color, linestyle = cfg.choose_min_max_style(style_key)
         ax.plot(
             [x1, x2],
             [y1, y2],
-            color=color,
-            linestyle=linestyle,
             linewidth=cfg.MIN_MAX_LINE_WIDTH,
             alpha=cfg.MIN_MAX_ALPHA,
+            color=color,
+            linestyle=linestyle,
+            label=label,
         )
 
     def plot_minmax_lines(
         self,
         probs: np.ndarray,
-        ax: plt.Axes,
+        ax: Axes,
     ) -> None:
         """Draw min/max probability lines for each class.
 
         Up to 6 lines total (min & max for 3 classes).
+
+        Args:
+            probs: Array of probability vectors used to compute min/max values.
+            ax: Matplotlib Axes on which the envelope lines are drawn.
         """
         p_min = probs.min(axis=0)
         p_max = probs.max(axis=0)
@@ -319,13 +355,13 @@ class TernaryVisualizer:
                 ax=ax,
                 index=i,
                 value=p_min[i],
-                color=cfg.RED,
-                linestyle=cfg.MIN_MAX_LINESTYLE_1,
+                style_key=1,
+                label="Min envelope" if i == 0 else None,
             )
             self._draw_constant_probability_line(
                 ax=ax,
                 index=i,
                 value=p_max[i],
-                color=cfg.BLUE,
-                linestyle=cfg.MIN_MAX_LINESTYLE_2,
+                style_key=2,
+                label="Max envelope" if i == 0 else None,
             )
