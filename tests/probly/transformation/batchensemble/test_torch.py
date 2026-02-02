@@ -107,3 +107,77 @@ class TestBatchEnsembleLayers:
                 # assert if the shapes are correct
                 assert batchensemble_layer_s == (num_members, batchensemble_in_channels)
                 assert batchensemble_layer_r == (num_members, batchensemble_out_channels)
+
+    def test_custom_model(self, torch_custom_model) -> None:
+        num_members = 5
+        model = batchensemble(torch_custom_model, num_members)
+
+        count_linear_original = count_layers(torch_custom_model, nn.Linear)
+        count_convolutional_original = count_layers(torch_custom_model, nn.Conv2d)
+        count_sequential_original = count_layers(torch_custom_model, nn.Sequential)
+
+        count_linear_modified = count_layers(model, nn.Linear)
+        count_convolutional_modified = count_layers(model, nn.Conv2d)
+        count_sequential_modified = count_layers(model, nn.Sequential)
+
+        count_batchensemblelinear_modified = count_layers(model, BatchEnsembleLinear)
+        count_batchensembleconv2d_modified = count_layers(model, BatchEnsembleConv2d)
+
+        assert isinstance(model, type(torch_custom_model))
+        assert not isinstance(model, nn.Sequential)
+        assert count_linear_modified == 0
+        assert count_convolutional_modified == 0
+        assert count_batchensemblelinear_modified == count_linear_original
+        assert count_batchensembleconv2d_modified == count_convolutional_original
+        assert count_sequential_modified == count_sequential_original
+
+
+class TestBatchEnsembleForwards:
+    """Test class for BatchEnsemble layer forwards."""
+
+    def test_batchensemble_layer_forwards(self) -> None:
+        """Tests forwards of BatchEnsembleLinear and BatchEnsembleConv2d."""
+        batch_size = 2
+        out_dim = 2
+        kernel_size = 1
+        x_linear = torch.ones(batch_size, out_dim)
+        x_conv2d = torch.ones(batch_size, out_dim, kernel_size, kernel_size)
+
+        num_members = 5
+        batchensemble_linear = batchensemble(
+            nn.Linear(out_dim, out_dim), num_members=num_members, use_base_weights=True
+        )
+        batchensemble_conv2d = batchensemble(
+            nn.Conv2d(out_dim, out_dim, kernel_size=kernel_size), num_members=num_members, use_base_weights=True
+        )
+
+        be_linear_out = batchensemble_linear(x_linear)
+        be_conv2d_out = batchensemble_conv2d(x_conv2d)
+
+        # check out not None
+        assert be_linear_out is not None
+        assert be_conv2d_out is not None
+
+        # check out shapes
+        assert be_linear_out.shape == (num_members, batch_size, out_dim)
+        assert be_conv2d_out.shape == (num_members, batch_size, out_dim, kernel_size, kernel_size)
+
+    def test_batchensemble_torch_custom_model_forward(self, torch_custom_model) -> None:
+        """Tests forward of transformed torch_custom_model."""
+        num_members = 5
+        batchensemble_model = batchensemble(
+            torch_custom_model,
+            num_members=num_members,
+            use_base_weights=True,
+        )
+
+        batch_size = 2
+        in_dim = 10
+        out_dim = 4
+
+        x = torch.ones(batch_size, in_dim)
+        out = batchensemble_model(x)
+
+        # check out not None and out shapes
+        assert out is not None
+        assert out.shape == (num_members, batch_size, out_dim)
