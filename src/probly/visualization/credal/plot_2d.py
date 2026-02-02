@@ -2,14 +2,19 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import matplotlib.pyplot as plt
 import numpy as np
 
 import probly.visualization.config as cfg
 
+if TYPE_CHECKING:
+    from matplotlib.axes import Axes
+
 
 class IntervalVisualizer:
-    """Class to collect all the geometric plots."""
+    """Class to create 2d plots."""
 
     def __init__(self) -> None:  # noqa: D107
         pass
@@ -18,9 +23,10 @@ class IntervalVisualizer:
         """Convert 2D probabilities to 2D coordinates.
 
         Args:
-        probs: probability vector for 2 classes.
+            probs: Probability vector for 2 classes.
 
-        returns: cartesian coordinates.
+        Returns:
+            Cartesian coordinates as tuple.
         """
         _, p2 = probs
         x = p2
@@ -31,22 +37,23 @@ class IntervalVisualizer:
         self,
         probs: np.ndarray,
         labels: list[str],
-        title: str = "Interval Plot (2 Classes)",
-        mle_flag: bool = True,
-        credal_flag: bool = True,
-        ax: plt.Axes = None,
-    ) -> plt.Axes:
+        title: str,
+        mle_flag: bool,
+        credal_flag: bool,
+        ax: Axes | None = None,
+    ) -> Axes:
         """Plot the interval plot.
 
         Args:
-        probs: probability vector for 2 classes.
-        labels: labels for the interval plot.
-        title: Fixed Title for the plot.
-        mle_flag: Flag to indicate whether median of probabilities is shown.
-        credal_flag: Flag to indicate whether min/max interval is shown.
-        ax: matplotlib axes.Axes.
+            probs: Probability vector for 2 classes.
+            labels: Labels for the interval plot.
+            title: Title of the plot.
+            mle_flag: Flag to indicate whether median of probabilities is shown.
+            credal_flag: Flag to indicate whether min/max interval is shown.
+            ax: Axes to draw the plot on. If None, a new Axes is created.
 
-        returns: plot.
+        Returns:
+            Interval plot.
         """
         coords = np.array([self.probs_to_coords_2d(p) for p in probs])
 
@@ -64,7 +71,15 @@ class IntervalVisualizer:
         if credal_flag:
             coord_max = np.max(coords[:, 0])
             coord_min = np.min(coords[:, 0])
-            ax.fill_betweenx(y_marg, coord_max, coord_min, color=cfg.BLUE, alpha=cfg.FILL_ALPHA, zorder=2)
+            ax.fill_betweenx(
+                y_marg,
+                coord_max,
+                coord_min,
+                color=cfg.BLUE,
+                alpha=cfg.FILL_ALPHA,
+                zorder=2,
+                label="Credal-band",
+            )
 
         ax.scatter(coords[:, 0], coords[:, 1], color=cfg.BLUE, zorder=3, label="Probabilities")
 
@@ -87,7 +102,16 @@ class IntervalVisualizer:
         edges = [(e1, e2, "A")]
 
         def lerp(p: np.ndarray, q: np.ndarray, t: float) -> np.ndarray:
-            """Linear Interpolation for line values."""
+            """Linear Interpolation for line values.
+
+            Args:
+                p: NumPy Array representing starting point.
+                q: NumPy Array representing ending point.
+                t: Interpolation parameter in [0, 1], where 0 returns p and 1 returns q.
+
+            Returns:
+                Interpolated point between p and q.
+            """
             return (1 - t) * p + t * q
 
         for p, q, axis_name in edges:  # noqa: B007
