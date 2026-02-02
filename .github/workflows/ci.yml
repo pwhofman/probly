@@ -145,8 +145,8 @@ jobs:
                 enable-cache: true
         -   name: Run Ruff Style and Linting Checks
             run: |
-               uv run ruff check .
-               uv run ruff format --check .
+               uv run ruff check
+               uv run ruff format --check
 
         -   name: Run ty Static Type Check
             run: uv run ty check
