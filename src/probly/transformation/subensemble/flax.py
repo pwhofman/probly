@@ -52,7 +52,7 @@ def generate_flax_subensemble(
     - using an obj as shared backbone, copying the head model num_heads times.
     Resets the parameters of each head.
     """
-    layers = [m for m in traverse(obj, subensemble_traverser) if isinstance(m, nnx.Module)]
+    layers = [m for m in traverse(obj, subensemble_traverser) if isinstance(m, nnx.Module)]  # ty: ignore
 
     if head_layer > len(layers):
         msg = f"head_layer {head_layer} must be less than to {len(layers)}"
@@ -74,13 +74,13 @@ def generate_flax_subensemble(
     # freeze backbone
     backbone.eval()
 
-    backbone_layers = [m for m in traverse(backbone, subensemble_traverser) if isinstance(m, nnx.Module)]
+    backbone_layers = [m for m in traverse(backbone, subensemble_traverser) if isinstance(m, nnx.Module)]  # ty: ignore
 
     subensemble = nnx.List(
         [
             nnx.Sequential(
                 nnx.Sequential(*backbone_layers),
-                nnx.Sequential(*[m for m in traverse(h, subensemble_traverser) if isinstance(m, nnx.Module)]),
+                nnx.Sequential(*[m for m in traverse(h, subensemble_traverser) if isinstance(m, nnx.Module)]),  # ty: ignore
             )
             for h in heads
         ],
