@@ -17,13 +17,13 @@ subensemble_traverser = singledispatch_traverser[nnx.Module](name="subensemble_t
 def _(obj: nnx.Module) -> nnx.List[nnx.Module]:
     children = nnx.List()
     for _, child in obj.iter_modules():
-        if hasattr(child, "in_features"):  # type: ignore[attr-defined]
+        if hasattr(child, "in_features"):
             children.append(child)
     return children
 
 
 @reset_traverser.register
-def _(obj: nnx.Module) -> nnx.Module:  # type: ignore[call-arg]
+def _(obj: nnx.Module) -> nnx.Module:
     if hasattr(obj, "reset_parameters"):
         obj.reset_parameters()  # type: ignore[operator]
     return obj

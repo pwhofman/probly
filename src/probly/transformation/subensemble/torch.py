@@ -13,7 +13,7 @@ subensemble_traverser = singledispatch_traverser[nn.Module](name="subensemble_tr
 
 
 @subensemble_traverser.register
-def _(obj: nn.Module) -> nn.Module:
+def _(obj: nn.Module) -> list[nn.Module]:
     return list(obj.children())
 
 
