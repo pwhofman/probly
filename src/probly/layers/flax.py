@@ -215,6 +215,15 @@ class BatchEnsembleLinear(nnx.Linear):
         Returns:
             jax.Array, Output of shape [E, B, out_features].
         """
+        kernel = self.kernel[...]
+        bias = self.bias[...] if self.bias is not None else None
+
+        inputs, kernel, bias = self.promote_dtype((inputs, kernel, bias), dtype=self.dtype)
+
+        dot_general_kwargs = {}
+        if self.preferred_element_type is not None:
+            dot_general_kwargs["preferred_element_type"] = self.preferred_element_type
+
         if inputs.ndim == 2:
             # If this is the first layer, expand to ensemble dimension
             inputs = jnp.expand_dims(inputs, axis=0)
@@ -225,10 +234,13 @@ class BatchEnsembleLinear(nnx.Linear):
         # Apply s
         inputs *= self.s[:, None, :]
         # Linear transformation
-        y = super().__call__(inputs)
-        # Remove bias
-        if self.use_bias:
-            y -= jnp.reshape(self.bias, (1,) * (y.ndim - 1) + (-1,))
+        y = self.dot_general(
+            inputs,
+            kernel,
+            (((inputs.ndim - 1,), (0,)), ((), ())),
+            precision=self.precision,
+            **dot_general_kwargs,
+        )
         # Apply r
         y = y * self.r[:, None, :]
         # Add bias
@@ -365,12 +377,12 @@ class BatchEnsembleConv(nnx.Conv):
         inputs *= self.s[s_r_dim]
         # Reshape to n-dimensional Convolution (ensemble_size * batch_size)
         x = inputs.reshape(inputs.shape[0] * inputs.shape[1], *inputs.shape[2:])
-        # Convolutional ...
+        # Convolutional Transformation
         y = super().__call__(x)
         # Remove bias
         if self.use_bias:
             bias = self.bias.reshape((1,) * (y.ndim - self.bias.ndim) + self.bias.shape)
-            y += bias
+            y -= bias
         # Reshape back to (ensemble_size, batch_size, (kernel_size), channel_size)
         y = y.reshape(inputs.shape[0], inputs.shape[1], *y.shape[1:])
         # Apply r
