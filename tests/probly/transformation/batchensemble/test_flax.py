@@ -24,10 +24,10 @@ class TestBatchEnsembleLayerAttributes:
 
         num_members = 2
         use_base_weights = False
-        s_mean = 1.0
-        s_std = 0.01
-        r_mean = 1.0
-        r_std = 0.01
+        s_mean = 0.99
+        s_std = 0.02
+        r_mean = 0.99
+        r_std = 0.02
         batchensemble_linear = batchensemble(
             base=linear_layer,
             num_members=num_members,
@@ -87,10 +87,10 @@ class TestBatchEnsembleLayerAttributes:
 
         num_members = 2
         use_base_weights = False
-        s_mean = 1.0
-        s_std = 0.01
-        r_mean = 1.0
-        r_std = 0.01
+        s_mean = 0.99
+        s_std = 0.02
+        r_mean = 0.99
+        r_std = 0.02
         batchensemble_conv = batchensemble(
             base=conv_layer,
             num_members=num_members,
@@ -266,6 +266,7 @@ class TestBatchEnsembleCalls:
         )  # num_members, batch_size , kernel_size(x, x, x), out_dim
 
     def test_batchensemble_flax_custom_model_call(self, flax_custom_model) -> None:
+        """Tests call of transformed flax_custom_model."""
         rngs = nnx.Rngs(0, params=1)
         num_members = 5
         batchensemble_model = batchensemble(
