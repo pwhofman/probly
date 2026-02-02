@@ -23,3 +23,4 @@ Notebook Examples
    train_bnn_classification
    train_evidential_classification
    train_evidential_regression
+   transformations_comparison
