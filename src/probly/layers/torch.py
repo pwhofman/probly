@@ -184,6 +184,7 @@ class BatchEnsembleConv2d(nn.Module):
             msg = f"Expected ensemble dim {self.num_members}, got {x.size(0)}"
             raise ValueError(msg)
 
+        x = x.clone()
         x *= self.s[:, None, :, None, None]
         e, b, c, h, w = x.shape
         x = x.reshape(e * b, c, h, w)
