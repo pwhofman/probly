@@ -356,22 +356,12 @@
 </pre></div>
 </div>
 </div>
-<div class="cell_output docutils container">
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&#39;Array&#39;
-</pre></div>
-</div>
-</div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
 
 <span class="nb">isinstance</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]),</span> <span class="n">jax</span><span class="o">.</span><span class="n">Array</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>True
 </pre></div>
 </div>
 </div>
@@ -392,41 +382,10 @@
 </pre></div>
 </div>
 </div>
-<div class="cell_output docutils container">
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Net(
-  (fc1): Linear(in_features=1, out_features=32, bias=True)
-  (fc2): Linear(in_features=32, out_features=32, bias=True)
-  (fc31): Linear(in_features=32, out_features=1, bias=True)
-  (fc32): Linear(in_features=32, out_features=1, bias=True)
-  (act): ReLU()
-)
-</pre></div>
-</div>
-</div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">drop_net</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Net(
-  (fc1): Linear(in_features=1, out_features=32, bias=True)
-  (fc2): Sequential(
-    (0): Dropout(p=0.1, inplace=False)
-    (1): Linear(in_features=32, out_features=32, bias=True)
-  )
-  (fc31): Sequential(
-    (0): Dropout(p=0.1, inplace=False)
-    (1): Linear(in_features=32, out_features=1, bias=True)
-  )
-  (fc32): Sequential(
-    (0): Dropout(p=0.1, inplace=False)
-    (1): Linear(in_features=32, out_features=1, bias=True)
-  )
-  (act): ReLU()
-)
 </pre></div>
 </div>
 </div>
@@ -435,11 +394,6 @@
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">drop_net</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
 <span class="n">drop_net</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([[</span><span class="mf">1.0</span><span class="p">]]))</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>tensor([[-0.0048,  0.5399]], grad_fn=&lt;CatBackward0&gt;)
 </pre></div>
 </div>
 </div>
@@ -452,11 +406,6 @@
 <span class="n">distribution</span> <span class="o">=</span> <span class="n">Distribution</span><span class="p">(</span><span class="n">drop_net</span><span class="p">)</span>
 <span class="n">outputs</span> <span class="o">=</span> <span class="n">distribution</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span><span class="o">.</span><span class="n">tensor</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">outputs</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>torch.Size([64, 20, 2])
 </pre></div>
 </div>
 </div>
@@ -498,53 +447,6 @@
 <span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">rand</span><span class="p">((</span><span class="mi">64</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
 <span class="n">outputs</span> <span class="o">=</span> <span class="n">ensemble_sampler</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">tensor</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">outputs</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
-<span class="ne">NotImplementedError</span><span class="g g-Whitespace">                       </span>Traceback (most recent call last)
-<span class="n">Cell</span> <span class="n">In</span><span class="p">[</span><span class="mi">19</span><span class="p">],</span> <span class="n">line</span> <span class="mi">4</span>
-<span class="g g-Whitespace">      </span><span class="mi">2</span> <span class="n">ensemble_sampler</span> <span class="o">=</span> <span class="n">EnsembleSampler</span><span class="p">(</span><span class="n">ensemble</span><span class="p">)</span>
-<span class="g g-Whitespace">      </span><span class="mi">3</span> <span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">rand</span><span class="p">((</span><span class="mi">64</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
-<span class="ne">----&gt; </span><span class="mi">4</span> <span class="n">outputs</span> <span class="o">=</span> <span class="n">ensemble_sampler</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">tensor</span>
-<span class="g g-Whitespace">      </span><span class="mi">5</span> <span class="nb">print</span><span class="p">(</span><span class="n">outputs</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
-
-<span class="nn">File ~/Documents/PhD/UncertaintyPackage/probly/src/probly/representation/sampling/sampler.py:129,</span> in <span class="ni">EnsembleSampler.sample</span><span class="nt">(self, *args, **kwargs)</span>
-<span class="g g-Whitespace">    </span><span class="mi">126</span> <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">In</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Unpack</span><span class="p">[</span><span class="n">KwIn</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Sample</span><span class="p">[</span><span class="n">Out</span><span class="p">]:</span>
-<span class="g g-Whitespace">    </span><span class="mi">127</span><span class="w">     </span><span class="sd">&quot;&quot;&quot;Sample from the ensemble predictor for a given input.&quot;&quot;&quot;</span>
-<span class="g g-Whitespace">    </span><span class="mi">128</span>     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sample_factory</span><span class="p">(</span>
-<span class="ne">--&gt; </span><span class="mi">129</span>         <span class="bp">self</span><span class="o">.</span><span class="n">predictor</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">),</span>
-<span class="g g-Whitespace">    </span><span class="mi">130</span>     <span class="p">)</span>
-
-<span class="nn">File ~/Documents/PhD/UncertaintyPackage/probly/.venv/lib/python3.13/site-packages/torch/nn/modules/module.py:1775,</span> in <span class="ni">Module._wrapped_call_impl</span><span class="nt">(self, *args, **kwargs)</span>
-<span class="g g-Whitespace">   </span><span class="mi">1773</span>     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compiled_call_impl</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>  <span class="c1"># type: ignore[misc]</span>
-<span class="g g-Whitespace">   </span><span class="mi">1774</span> <span class="k">else</span><span class="p">:</span>
-<span class="ne">-&gt; </span><span class="mi">1775</span>     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_call_impl</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-
-<span class="nn">File ~/Documents/PhD/UncertaintyPackage/probly/.venv/lib/python3.13/site-packages/torch/nn/modules/module.py:1786,</span> in <span class="ni">Module._call_impl</span><span class="nt">(self, *args, **kwargs)</span>
-<span class="g g-Whitespace">   </span><span class="mi">1781</span> <span class="c1"># If we don&#39;t have any hooks, we want to skip the rest of the logic in</span>
-<span class="g g-Whitespace">   </span><span class="mi">1782</span> <span class="c1"># this function, and just call forward.</span>
-<span class="g g-Whitespace">   </span><span class="mi">1783</span> <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_backward_hooks</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_backward_pre_hooks</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_forward_hooks</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_forward_pre_hooks</span>
-<span class="g g-Whitespace">   </span><span class="mi">1784</span>         <span class="ow">or</span> <span class="n">_global_backward_pre_hooks</span> <span class="ow">or</span> <span class="n">_global_backward_hooks</span>
-<span class="g g-Whitespace">   </span><span class="mi">1785</span>         <span class="ow">or</span> <span class="n">_global_forward_hooks</span> <span class="ow">or</span> <span class="n">_global_forward_pre_hooks</span><span class="p">):</span>
-<span class="ne">-&gt; </span><span class="mi">1786</span>     <span class="k">return</span> <span class="n">forward_call</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-<span class="g g-Whitespace">   </span><span class="mi">1788</span> <span class="n">result</span> <span class="o">=</span> <span class="kc">None</span>
-<span class="g g-Whitespace">   </span><span class="mi">1789</span> <span class="n">called_always_called_hooks</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
-
-<span class="nn">File ~/Documents/PhD/UncertaintyPackage/probly/.venv/lib/python3.13/site-packages/torch/nn/modules/module.py:399,</span> in <span class="ni">_forward_unimplemented</span><span class="nt">(self, *input)</span>
-<span class="g g-Whitespace">    </span><span class="mi">388</span> <span class="k">def</span><span class="w"> </span><span class="nf">_forward_unimplemented</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="nb">input</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="g g-Whitespace">    </span><span class="mi">389</span><span class="w">     </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Define the computation performed at every call.</span>
-<span class="g g-Whitespace">    </span><span class="mi">390</span><span class="sd"> </span>
-<span class="g g-Whitespace">    </span><span class="mi">391</span><span class="sd">     Should be overridden by all subclasses.</span>
-<span class="sd">   (...)</span>
-<span class="g g-Whitespace">    </span><span class="mi">397</span><span class="sd">         registered hooks while the latter silently ignores them.</span>
-<span class="g g-Whitespace">    </span><span class="mi">398</span><span class="sd">     &quot;&quot;&quot;</span>
-<span class="ne">--&gt; </span><span class="mi">399</span>     <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
-<span class="g g-Whitespace">    </span><span class="mi">400</span>         <span class="sa">f</span><span class="s1">&#39;Module [</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s1">] is missing the required &quot;forward&quot; function&#39;</span>
-<span class="g g-Whitespace">    </span><span class="mi">401</span>     <span class="p">)</span>
-
-<span class="ne">NotImplementedError</span>: Module [ModuleList] is missing the required &quot;forward&quot; function
 </pre></div>
 </div>
 </div>

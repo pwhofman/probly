@@ -1,0 +1,1806 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../../">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../../genindex.html" /><link rel="search" title="Search" href="../../search.html" />
+
+    <!-- Generated with Sphinx 8.2.3 and Furo 2024.08.06 -->
+        <title>Natural Posterior Network (NatPN) Tutorial in PyTorch - probly 0.3.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=354aac6f" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=d2d258e8" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?v=302659d7" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css?v=201d0c9a" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f8f8f8;
+  --color-code-foreground: black;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #272822;
+  --color-code-foreground: #f8f8f2;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #272822;
+  --color-code-foreground: #f8f8f2;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../../index.html"><div class="brand">probly 0.3.1 documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><div class="sidebar-scroll"><a class="sidebar-brand" href="../../index.html">
+  
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo only-light" src="../../_static/logo/logo_light.png" alt="Light Logo"/>
+    <img class="sidebar-logo only-dark" src="../../_static/logo/logo_dark.png" alt="Dark Logo"/>
+  </div>
+  
+  
+</a><form class="sidebar-search-container" method="get" action="../../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Content</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">The <code class="docutils literal notranslate"><span class="pre">probly</span></code> Python Package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core_concepts.html">Core Concepts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../main_components.html">Main Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../advanced_topics.html">Advanced Topics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples_and_tutorials.html">Examples and Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../methods.html">Implemented methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing to probly 🏔️</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../references.html">References and Further Reading</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../faq.html">FAQ and Troubleshooting</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Notebooks</span></p>
+<ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../notebooks/examples/index.html">Notebook Examples</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Notebook Examples</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../notebooks/examples/utilities_and_layers/index.html">Utilities and Layers</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Utilities and Layers</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../notebooks/examples/utilities_and_layers/custom_loss_functions.html">Custom Loss Functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../notebooks/examples/utilities_and_layers/metrics.html">Evaluation Metrics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../notebooks/examples/utilities_and_layers/probabilistic_layers.html">Key Probabilistic Layers in <code class="docutils literal notranslate"><span class="pre">probly</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../notebooks/examples/utilities_and_layers/utility_functions.html">Utility Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../notebooks/examples/evaluation_and_quantification/index.html">Evaluation and Quantification</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of Evaluation and Quantification</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../notebooks/examples/evaluation_and_quantification/calibration_metrics.html">Calibration Metrics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../notebooks/examples/evaluation_and_quantification/interpretation_techniques.html">Interpretation techniques</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../notebooks/examples/evaluation_and_quantification/visualization_tools.html">Visualisation Tools</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../notebooks/examples/bayesian_transformation.html">Bayesian Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../notebooks/examples/dropconnect_transformation.html">Dropconnect Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../notebooks/examples/dropout_transformation.html">Dropout Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../notebooks/examples/ensemble_transformation.html">Ensemble Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../notebooks/examples/evidential_classification_transformation.html">Evidential Classification Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../notebooks/examples/evidential_regression_transformation.html">Evidential Regression Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../notebooks/examples/fashionmnist_ood_ensemble.html">Out-of-Distribution Detection with an Ensemble</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../notebooks/examples/label_relaxation_calibration.html">Calibration with Label Relaxation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../notebooks/examples/lazy_dispatch_test.html">Lazy Dispatch Test</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../notebooks/examples/multilib_demo.html">Multilib Demo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../notebooks/examples/pytraverse_tutorial.html">A Brief Introduction to PyTraverse</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../notebooks/examples/sklearn_selective_prediction.html">Using probly with scikit-learn</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../notebooks/examples/temperature_scaling_calibration.html">Calibration using Temperature Scaling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../notebooks/examples/train_bnn_classification.html">Bayesian Neural Networks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../notebooks/examples/train_evidential_classification.html">Evidential Model for Classification</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../notebooks/examples/train_evidential_regression.html">Evidential Regression Model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../notebooks/examples/transformations_comparison.html">Transformation Comparison: Dropout vs DropConnect vs Ensemble vs Bayesian vs Evidential (PyTorch)</a></li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div><div style="text-align: center; margin-top: 1rem; margin-bottom: 1rem;">
+  <a href="https://github.com/pwhofman/probly" target="_blank" rel="noopener noreferrer" title="GitHub Repository">
+    <img src="../../_static/github-mark.svg" alt="GitHub Logo" width="28" height="28" style="display: inline-block;">
+  </a>
+</div>
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          
+
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="natural-posterior-network-natpn-tutorial-in-pytorch">
+<h1>Natural Posterior Network (NatPN) Tutorial in PyTorch<a class="headerlink" href="#natural-posterior-network-natpn-tutorial-in-pytorch" title="Link to this heading">¶</a></h1>
+<section id="a-detailed-notebook-ready-walkthrough-with-ood-uncertainty-check">
+<h2>A Detailed, Notebook-Ready Walkthrough with OOD Uncertainty Check<a class="headerlink" href="#a-detailed-notebook-ready-walkthrough-with-ood-uncertainty-check" title="Link to this heading">¶</a></h2>
+<p>This notebook is a step-by-step implementation and explanation of a simple Natural Posterior Network (NatPN) for classification with PyTorch.</p>
+<p>NatPN is a model that:</p>
+<ul class="simple">
+<li><p>Predicts a distribution over class probabilities, not just point predictions.</p></li>
+<li><p>Uses a conjugate prior (Dirichlet) for the categorical likelihood.</p></li>
+<li><p>Uses a normalizing flow over a latent space to turn density into evidence.</p></li>
+<li><p>Produces higher uncertainty for inputs that are far from the training data, without needing OOD samples in training.</p></li>
+</ul>
+<p>We will build this for a simple setting:</p>
+<ul class="simple">
+<li><p><strong>In-distribution (ID) dataset:</strong> MNIST (handwritten digits).</p></li>
+<li><p><strong>Out-of-distribution (OOD) dataset:</strong> FashionMNIST (clothing images).</p></li>
+</ul>
+<p>We will:</p>
+<ul class="simple">
+<li><p>Explain and implement the NatPN components (encoder, flow-based density, Dirichlet posterior).</p></li>
+<li><p>Define and explain a Bayesian NatPN loss.</p></li>
+<li><p>Implement a unified training function that could live in a <code class="docutils literal notranslate"><span class="pre">torch.py</span></code> module.</p></li>
+<li><p>Train the model, evaluate accuracy, and check uncertainty for ID vs OOD.</p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="table-of-contents">
+<h2>Table of Contents<a class="headerlink" href="#table-of-contents" title="Link to this heading">¶</a></h2>
+<ol class="arabic simple">
+<li><p><strong>Imports &amp; Setup</strong></p></li>
+<li><p><strong>Data Preparation</strong></p></li>
+<li><p><strong>Model Definition (NatPN Components)</strong></p>
+<ul class="simple">
+<li><p>Encoder: ( x \rightarrow z )</p></li>
+<li><p>Radial Flow Layer</p></li>
+<li><p>Radial Flow Density</p></li>
+<li><p>NatPNClassifier: Combining Everything</p></li>
+</ul>
+</li>
+<li><p><strong>NatPN Loss, Uncertainty &amp; Unified Training Function</strong></p>
+<ul class="simple">
+<li><p>NatPN Loss for Classification</p></li>
+<li><p>Predictions &amp; Uncertainty from Dirichlet</p></li>
+<li><p>Unified NatPN Training Function</p></li>
+</ul>
+</li>
+<li><p><strong>Training, Evaluation &amp; OOD Uncertainty Check</strong></p>
+<ul class="simple">
+<li><p>Initialize Model &amp; Train</p></li>
+<li><p>Accuracy on MNIST (ID)</p></li>
+<li><p>OOD Check: MNIST vs FashionMNIST</p></li>
+<li><p>Inspect Individual Batches</p></li>
+</ul>
+</li>
+<li><p><strong>Summary</strong></p></li>
+</ol>
+</section>
+</section>
+<section id="imports-setup">
+<h1>1. Imports &amp; Setup<a class="headerlink" href="#imports-setup" title="Link to this heading">¶</a></h1>
+<section id="explanation">
+<h2>Explanation<a class="headerlink" href="#explanation" title="Link to this heading">¶</a></h2>
+<p>In this section we:</p>
+<section id="import-core-pytorch-libraries">
+<h3>Import core PyTorch libraries:<a class="headerlink" href="#import-core-pytorch-libraries" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">torch</span></code> and <code class="docutils literal notranslate"><span class="pre">torch.nn</span></code> for tensors and neural network layers.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">DataLoader</span></code> to iterate over datasets in mini-batches.</p></li>
+</ul>
+</section>
+<section id="import-torchvision">
+<h3>Import torchvision:<a class="headerlink" href="#import-torchvision" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">torchvision.datasets</span></code> provides pre-defined datasets like MNIST and FashionMNIST.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">torchvision.transforms</span></code> provides transformations such as converting images to tensors.</p></li>
+</ul>
+</section>
+<section id="import-dirichlet-from-torch-distributions">
+<h3>Import <code class="docutils literal notranslate"><span class="pre">Dirichlet</span></code> from <code class="docutils literal notranslate"><span class="pre">torch.distributions</span></code>:<a class="headerlink" href="#import-dirichlet-from-torch-distributions" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>We use this for working with Dirichlet distributions, which serve as the conjugate prior/posterior for categorical likelihoods.</p></li>
+</ul>
+</section>
+<section id="decide-on-a-device">
+<h3>Decide on a device:<a class="headerlink" href="#decide-on-a-device" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;cuda&quot;</span></code> if a GPU is available.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;cpu&quot;</span></code> otherwise.</p></li>
+</ul>
+</section>
+<section id="optionally-import-typing-helpers">
+<h3>Optionally import typing helpers:<a class="headerlink" href="#optionally-import-typing-helpers" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">Optional</span></code>, <code class="docutils literal notranslate"><span class="pre">Tuple</span></code>, etc., for cleaner and more descriptive type hints.</p></li>
+</ul>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">nn</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torch.distributions</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dirichlet</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torch.utils.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataLoader</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torchvision</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torchvision.transforms</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">T</span>
+
+<span class="c1"># Choose device: use GPU if available, otherwise CPU.</span>
+<span class="n">device</span> <span class="o">=</span> <span class="s2">&quot;cuda&quot;</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s2">&quot;cpu&quot;</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Using device:&quot;</span><span class="p">,</span> <span class="n">device</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+</section>
+</section>
+<section id="data-preparation">
+<h1>2. Data Preparation<a class="headerlink" href="#data-preparation" title="Link to this heading">¶</a></h1>
+<section id="id1">
+<h2>Explanation<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h2>
+<p>NatPN is trained like a standard classifier, but with uncertainty-aware outputs.</p>
+<p>We need <strong>3 datasets</strong>:</p>
+<section id="training-data-id">
+<h3>1. Training data (ID)<a class="headerlink" href="#training-data-id" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><strong>MNIST</strong>, <code class="docutils literal notranslate"><span class="pre">train=True</span></code></p></li>
+<li><p>Contains handwritten digits (0–9)</p></li>
+</ul>
+</section>
+<section id="test-data-id">
+<h3>2. Test data (ID)<a class="headerlink" href="#test-data-id" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><strong>MNIST</strong>, <code class="docutils literal notranslate"><span class="pre">train=False</span></code></p></li>
+<li><p>Used for evaluating accuracy and in-distribution uncertainty</p></li>
+</ul>
+</section>
+<section id="ood-data">
+<h3>3. OOD data<a class="headerlink" href="#ood-data" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><strong>FashionMNIST</strong>, <code class="docutils literal notranslate"><span class="pre">train=False</span></code></p></li>
+<li><p>Has the same image shape (<strong>28×28, grayscale</strong>) but represents clothing instead of digits</p></li>
+<li><p>This makes it suitable for out-of-distribution uncertainty evaluation</p></li>
+</ul>
+</section>
+</section>
+<hr class="docutils" />
+<section id="what-we-do">
+<h2>What we do<a class="headerlink" href="#what-we-do" title="Link to this heading">¶</a></h2>
+<section id="apply-a-transform">
+<h3>Apply a transform:<a class="headerlink" href="#apply-a-transform" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Use <code class="docutils literal notranslate"><span class="pre">ToTensor()</span></code> to convert PIL images into PyTorch tensors</p></li>
+<li><p>Produces tensors of shape <strong>[1, 28, 28]</strong></p></li>
+<li><p>Pixel values are scaled to <strong>[0, 1]</strong></p></li>
+</ul>
+</section>
+</section>
+<hr class="docutils" />
+<section id="wrap-datasets-in-dataloader-objects">
+<h2>Wrap datasets in <code class="docutils literal notranslate"><span class="pre">DataLoader</span></code> objects:<a class="headerlink" href="#wrap-datasets-in-dataloader-objects" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">batch_size</span> <span class="pre">=</span> <span class="pre">256</span></code> to process 256 images per iteration</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">shuffle</span> <span class="pre">=</span> <span class="pre">True</span></code> for training so data order is randomized</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">shuffle</span> <span class="pre">=</span> <span class="pre">False</span></code> for evaluation since order does not matter</p></li>
+</ul>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Transform with correct normalization for MNIST &amp; FashionMNIST</span>
+<span class="n">transform</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">Compose</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="n">T</span><span class="o">.</span><span class="n">ToTensor</span><span class="p">(),</span>
+        <span class="n">T</span><span class="o">.</span><span class="n">Normalize</span><span class="p">((</span><span class="mf">0.1307</span><span class="p">,),</span> <span class="p">(</span><span class="mf">0.3081</span><span class="p">,)),</span>  <span class="c1"># IMPORTANT: consistent normalization</span>
+    <span class="p">],</span>
+<span class="p">)</span>
+
+<span class="c1"># In-distribution (ID) dataset: MNIST (train split)</span>
+<span class="n">train_data</span> <span class="o">=</span> <span class="n">torchvision</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">MNIST</span><span class="p">(</span>
+    <span class="n">root</span><span class="o">=</span><span class="s2">&quot;~/datasets&quot;</span><span class="p">,</span>
+    <span class="n">train</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">download</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">transform</span><span class="o">=</span><span class="n">transform</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># In-distribution (ID) dataset: MNIST (test split)</span>
+<span class="n">test_data</span> <span class="o">=</span> <span class="n">torchvision</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">MNIST</span><span class="p">(</span>
+    <span class="n">root</span><span class="o">=</span><span class="s2">&quot;~/datasets&quot;</span><span class="p">,</span>
+    <span class="n">train</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">download</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">transform</span><span class="o">=</span><span class="n">transform</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Out-of-distribution (OOD) dataset: FashionMNIST</span>
+<span class="n">ood_data</span> <span class="o">=</span> <span class="n">torchvision</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">FashionMNIST</span><span class="p">(</span>
+    <span class="n">root</span><span class="o">=</span><span class="s2">&quot;~/datasets&quot;</span><span class="p">,</span>
+    <span class="n">train</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">download</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">transform</span><span class="o">=</span><span class="n">transform</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># DataLoaders</span>
+<span class="n">train_loader</span> <span class="o">=</span> <span class="n">DataLoader</span><span class="p">(</span><span class="n">train_data</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">test_loader</span> <span class="o">=</span> <span class="n">DataLoader</span><span class="p">(</span><span class="n">test_data</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">ood_loader</span> <span class="o">=</span> <span class="n">DataLoader</span><span class="p">(</span><span class="n">ood_data</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Loaded MNIST (ID) and FashionMNIST (OOD).&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Train samples: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">train_data</span><span class="p">)</span><span class="si">}</span><span class="s2">, Test samples: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">test_data</span><span class="p">)</span><span class="si">}</span><span class="s2">, OOD samples: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">ood_data</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="model-definition-natpn-components">
+<h1>3. Model Definition (NatPN Components)<a class="headerlink" href="#model-definition-natpn-components" title="Link to this heading">¶</a></h1>
+<p>NatPN consists of three main pieces:</p>
+<hr class="docutils" />
+<section id="encoder-f">
+<h2><strong>1. Encoder  fφ</strong><a class="headerlink" href="#encoder-f" title="Link to this heading">¶</a></h2>
+<p>The encoder maps an input x into a latent representation z:</p>
+<p>fφ(x) → z</p>
+</section>
+<hr class="docutils" />
+<section id="density-model-p-z">
+<h2><strong>2. Density Model  p(z)</strong><a class="headerlink" href="#density-model-p-z" title="Link to this heading">¶</a></h2>
+<p>A normalizing-flow–based density estimator that produces a log-density value:</p>
+<p>log p(z)</p>
+<p>This density quantifies how likely the latent representation z is under the learned distribution and acts as evidence.</p>
+</section>
+<hr class="docutils" />
+<section id="dirichlet-head-decoder">
+<h2><strong>3. Dirichlet Head (Decoder)</strong><a class="headerlink" href="#dirichlet-head-decoder" title="Link to this heading">¶</a></h2>
+<p>The decoder uses the latent representation z together with density-based evidence to generate the Dirichlet parameters:</p>
+<p>α(x)</p>
+<p>These parameters define a Dirichlet distribution over class probabilities.</p>
+</section>
+<hr class="docutils" />
+<section id="with-the-dirichlet-parameters-x-we-can">
+<h2><strong>With the Dirichlet parameters α(x), we can:</strong><a class="headerlink" href="#with-the-dirichlet-parameters-x-we-can" title="Link to this heading">¶</a></h2>
+<section id="compute-posterior-mean-class-probabilities">
+<h3><strong>Compute posterior mean class probabilities</strong><a class="headerlink" href="#compute-posterior-mean-class-probabilities" title="Link to this heading">¶</a></h3>
+<p>Used as calibrated class probabilities.</p>
+</section>
+<section id="compute-uncertainty-measures">
+<h3><strong>Compute uncertainty measures</strong><a class="headerlink" href="#compute-uncertainty-measures" title="Link to this heading">¶</a></h3>
+<p>Such as:</p>
+<ul class="simple">
+<li><p>Entropy</p></li>
+<li><p>Total evidence</p></li>
+<li><p>Dirichlet concentration</p></li>
+</ul>
+<p>These quantify predictive uncertainty and help distinguish between in-distribution and out-of-distribution samples.</p>
+</section>
+</section>
+</section>
+<section id="encoder-x-z">
+<h1>3.1 Encoder:  x → z<a class="headerlink" href="#encoder-x-z" title="Link to this heading">¶</a></h1>
+<section id="id2">
+<h2>Explanation<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h2>
+<p>The encoder is a simple fully connected neural network.</p>
+<hr class="docutils" />
+<section id="input">
+<h3>Input<a class="headerlink" href="#input" title="Link to this heading">¶</a></h3>
+<p>Images have shape <strong>[B, 1, 28, 28]</strong>, where <strong>B</strong> is the batch size.</p>
+<p>We flatten each image into <strong>[B, 784]</strong> so it can pass through linear layers.</p>
+</section>
+<hr class="docutils" />
+<section id="network-structure">
+<h3>Network structure<a class="headerlink" href="#network-structure" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Linear(784 → 256) + ReLU</p></li>
+<li><p>Linear(256 → latent_dim)</p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="latent-representation">
+<h3>Latent representation<a class="headerlink" href="#latent-representation" title="Link to this heading">¶</a></h3>
+<p>The output z lives in a low-dimensional latent space.</p>
+<p>We choose <strong>latent_dim = 2</strong> to keep the normalizing flow simple and (optionally) easy to visualize.</p>
+</section>
+<hr class="docutils" />
+<section id="purpose">
+<h3>Purpose<a class="headerlink" href="#purpose" title="Link to this heading">¶</a></h3>
+<p>The encoder learns a mapping from images into a latent space where the normalizing flow can model a meaningful density.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">Encoder2</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Simple encoder mapping MNIST images to a low-dimensional latent vector z.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">latent_dim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># noqa: D107</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">net</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">Flatten</span><span class="p">(),</span>  <span class="c1"># [B, 1, 28, 28] -&gt; [B, 784]</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">28</span> <span class="o">*</span> <span class="mi">28</span><span class="p">,</span> <span class="mi">256</span><span class="p">),</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">(),</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">256</span><span class="p">,</span> <span class="n">latent_dim</span><span class="p">),</span>  <span class="c1"># [B, latent_dim]</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Encode a batch of images into latent vectors z.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x: Tensor of shape [B, 1, 28, 28].</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            z: Tensor of shape [B, latent_dim].</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">net</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+</section>
+</section>
+<section id="radial-flow-layer">
+<h1>3.2 Radial Flow Layer<a class="headerlink" href="#radial-flow-layer" title="Link to this heading">¶</a></h1>
+<section id="id3">
+<h2>Explanation<a class="headerlink" href="#id3" title="Link to this heading">¶</a></h2>
+<p>A normalizing flow is a sequence of invertible transformations that map a simple base distribution (such as a standard normal) into a more complex one.</p>
+<p>A <strong>radial flow</strong> is one such transformation, defined as:</p>
+<p>f(z) = z + β · h(r) · (z − z₀)</p>
+<p>where:</p>
+<ul class="simple">
+<li><p>z₀ is a learnable center</p></li>
+<li><p>r = ‖z − z₀‖ is the Euclidean distance from the center</p></li>
+<li><p>h(r) = 1 / (α + r)</p></li>
+<li><p>α &gt; 0 and β &gt; −α are learnable scalars whose constraints ensure invertibility</p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="key-properties">
+<h2>Key properties<a class="headerlink" href="#key-properties" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>The transformation warps space <strong>radially</strong> around the center z₀.</p></li>
+<li><p>The <strong>log-determinant of the Jacobian</strong> can be computed analytically, which is essential for density estimation in normalizing flows.</p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="radialflowlayer-behavior">
+<h2>RadialFlowLayer behavior<a class="headerlink" href="#radialflowlayer-behavior" title="Link to this heading">¶</a></h2>
+<p>Input:</p>
+<ul class="simple">
+<li><p>z of shape <strong>[B, D]</strong></p></li>
+</ul>
+<p>Outputs:</p>
+<ul class="simple">
+<li><p><strong>z_new</strong>: the transformed latent vectors</p></li>
+<li><p><strong>log_abs_det</strong>: the log-determinant of the Jacobian for each sample</p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="parameter-constraints-using-softplus">
+<h2>Parameter constraints using softplus<a class="headerlink" href="#parameter-constraints-using-softplus" title="Link to this heading">¶</a></h2>
+<p>To ensure the flow remains invertible:</p>
+<ul class="simple">
+<li><p>α = softplus(α′)  → ensures α &gt; 0</p></li>
+<li><p>β = −α + softplus(β′) → ensures β &gt; −α</p></li>
+</ul>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">RadialFlowLayer</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Single radial flow layer for a latent vector z ∈ R^D.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># noqa: D107</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">=</span> <span class="n">dim</span>
+
+        <span class="c1"># Learnable parameters:</span>
+        <span class="c1"># - x0: center of the radial transformation (vector in R^D)</span>
+        <span class="c1"># - alpha_prime, beta_prime: unconstrained scalars that we transform to valid alpha, beta</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x0</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">dim</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">alpha_prime</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">beta_prime</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Apply the radial flow to latent inputs z.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            z: Tensor of shape [B, D].</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            z_new: Transformed latent tensor, shape [B, D].</span>
+<span class="sd">            log_abs_det: Log-absolute determinant of the Jacobian, shape [B].</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Ensure alpha &gt; 0 and beta &gt; -alpha for invertibility</span>
+        <span class="n">alpha</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">functional</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alpha_prime</span><span class="p">)</span>  <span class="c1"># scalar &gt; 0</span>
+        <span class="n">beta</span> <span class="o">=</span> <span class="o">-</span><span class="n">alpha</span> <span class="o">+</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">functional</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">beta_prime</span><span class="p">)</span>  <span class="c1"># scalar &gt; -alpha</span>
+
+        <span class="c1"># z0 is the learnable center (broadcast to [B, D])</span>
+        <span class="n">x0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">x0</span>  <span class="c1"># [D]</span>
+
+        <span class="c1"># Difference from the center</span>
+        <span class="n">diff</span> <span class="o">=</span> <span class="n">z</span> <span class="o">-</span> <span class="n">x0</span>  <span class="c1"># [B, D]</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="n">diff</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># Distance to center, shape [B]</span>
+
+        <span class="c1"># Radial flow scalar functions h(r) and h&#39;(r)</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="n">alpha</span> <span class="o">+</span> <span class="n">r</span><span class="p">)</span>  <span class="c1"># [B]</span>
+        <span class="n">h_prime</span> <span class="o">=</span> <span class="o">-</span><span class="n">h</span> <span class="o">*</span> <span class="n">h</span>  <span class="c1"># [B]</span>
+        <span class="n">beta_h</span> <span class="o">=</span> <span class="n">beta</span> <span class="o">*</span> <span class="n">h</span>  <span class="c1"># [B]</span>
+
+        <span class="c1"># Apply the radial flow transformation:</span>
+        <span class="n">z_new</span> <span class="o">=</span> <span class="n">z</span> <span class="o">+</span> <span class="n">beta_h</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">diff</span>  <span class="c1"># [B, D]</span>
+
+        <span class="c1"># Log determinant of the Jacobian:</span>
+        <span class="c1"># formula derived in Rezende &amp; Mohamed (2015)</span>
+        <span class="n">term1</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">log1p</span><span class="p">(</span><span class="n">beta_h</span><span class="p">)</span>  <span class="c1"># [B]</span>
+        <span class="n">term2</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">log1p</span><span class="p">(</span><span class="n">beta_h</span> <span class="o">+</span> <span class="n">beta</span> <span class="o">*</span> <span class="n">h_prime</span> <span class="o">*</span> <span class="n">r</span><span class="p">)</span>  <span class="c1"># [B]</span>
+        <span class="n">log_abs_det</span> <span class="o">=</span> <span class="n">term1</span> <span class="o">+</span> <span class="n">term2</span>  <span class="c1"># [B]</span>
+
+        <span class="k">return</span> <span class="n">z_new</span><span class="p">,</span> <span class="n">log_abs_det</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="radial-flow-density">
+<h1>3.3 Radial Flow Density<a class="headerlink" href="#radial-flow-density" title="Link to this heading">¶</a></h1>
+<section id="id4">
+<h2>Explanation<a class="headerlink" href="#id4" title="Link to this heading">¶</a></h2>
+<p>We now build the full flow-based density <strong>p(z)</strong> by stacking multiple radial flow layers.</p>
+</section>
+<hr class="docutils" />
+<section id="base-distribution">
+<h2>Base distribution<a class="headerlink" href="#base-distribution" title="Link to this heading">¶</a></h2>
+<p>We start from a simple base distribution:</p>
+<p>z₀ ∼ 𝒩(0, I)</p>
+<p>This is a standard multivariate normal with zero mean and identity covariance.</p>
+</section>
+<hr class="docutils" />
+<section id="applying-l-radial-flow-layers">
+<h2>Applying L radial flow layers<a class="headerlink" href="#applying-l-radial-flow-layers" title="Link to this heading">¶</a></h2>
+<p>Each flow layer transforms its input:</p>
+<p>zₖ₊₁ = fₖ(zₖ), k = 0, 1, …, L−1</p>
+<p>After applying all L layers, we obtain zᴸ — the final transformed latent vector.</p>
+</section>
+<hr class="docutils" />
+<section id="change-of-variables-formula">
+<h2>Change of variables formula<a class="headerlink" href="#change-of-variables-formula" title="Link to this heading">¶</a></h2>
+<p>The log-density of the final output zᴸ is computed using:</p>
+<p>log p(zᴸ) = log p₀(z₀) + Σₖ₌₀⁽ᴸ⁻¹⁾ log |det ∂fₖ/∂zₖ|</p>
+<p>This combines:</p>
+<ul class="simple">
+<li><p>The log-density of the base distribution p₀(z₀)</p></li>
+<li><p>The sum of log-determinants of each flow’s Jacobian</p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="behavior-in-code">
+<h2>Behavior in code<a class="headerlink" href="#behavior-in-code" title="Link to this heading">¶</a></h2>
+<section id="forward-x">
+<h3><strong>forward(x)</strong><a class="headerlink" href="#forward-x" title="Link to this heading">¶</a></h3>
+<p>Applies all radial flows sequentially and returns the transformed z.</p>
+</section>
+<section id="log-prob-x">
+<h3><strong>log_prob(x)</strong><a class="headerlink" href="#log-prob-x" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Computes the transformed z</p></li>
+<li><p>Sums all log-Jacobian determinants</p></li>
+<li><p>Computes the base log-probability under a standard Normal</p></li>
+<li><p>Returns the total:</p></li>
+</ul>
+<p>log p(x)</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">RadialFlowDensity</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Normalizing flow density p(z) using a stack of radial flows.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">flow_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># noqa: D107</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">=</span> <span class="n">dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layers</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">([</span><span class="n">RadialFlowLayer</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">flow_length</span><span class="p">)])</span>
+
+        <span class="c1"># Constant term for log N(z|0, I): -0.5 * D * log(2π)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log_base_const</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.5</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Apply all flow layers to x.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x: Tensor of shape [B, D].</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            z: Transformed latent tensor after all flows, shape [B, D].</span>
+<span class="sd">            sum_log_jac: Summed log-det Jacobian across flows, shape [B].</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="n">x</span>
+        <span class="n">sum_log_jac</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">z</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">device</span><span class="o">=</span><span class="n">z</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">layer</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="p">:</span>
+            <span class="n">z</span><span class="p">,</span> <span class="n">log_j</span> <span class="o">=</span> <span class="n">layer</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>
+            <span class="n">sum_log_jac</span> <span class="o">=</span> <span class="n">sum_log_jac</span> <span class="o">+</span> <span class="n">log_j</span>
+
+        <span class="k">return</span> <span class="n">z</span><span class="p">,</span> <span class="n">sum_log_jac</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">log_prob</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute log p(x) under the flow-based density.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x: Tensor of shape [B, D].</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            logp: Log-density log p(x), shape [B].</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Apply flow</span>
+        <span class="n">z</span><span class="p">,</span> <span class="n">sum_log_jac</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">forward</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="c1"># Base log-prob under N(0, I): -0.5 * (D * log(2π) + ||z||^2)</span>
+        <span class="n">base_logp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_base_const</span> <span class="o">-</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">z</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># [B]</span>
+
+        <span class="c1"># Add the log-determinant of the Jacobian</span>
+        <span class="n">logp</span> <span class="o">=</span> <span class="n">base_logp</span> <span class="o">+</span> <span class="n">sum_log_jac</span>  <span class="c1"># [B]</span>
+        <span class="k">return</span> <span class="n">logp</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+</section>
+</section>
+<section id="natpnclassifier-combining-everything">
+<h1>3.4 NatPNClassifier: Combining Everything<a class="headerlink" href="#natpnclassifier-combining-everything" title="Link to this heading">¶</a></h1>
+<section id="id5">
+<h2>Explanation<a class="headerlink" href="#id5" title="Link to this heading">¶</a></h2>
+<p>The <strong>NatPNClassifier</strong> combines all core components of NatPN into a single model.</p>
+</section>
+<hr class="docutils" />
+<section id="components">
+<h2>Components<a class="headerlink" href="#components" title="Link to this heading">¶</a></h2>
+<section id="encoder">
+<h3><strong>Encoder</strong><a class="headerlink" href="#encoder" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">self.encoder</span></code> maps input x to a latent vector z:</p></li>
+</ul>
+<p>z = f(x)</p>
+</section>
+<hr class="docutils" />
+<section id="decoder-classifier-head">
+<h3><strong>Decoder (classifier head)</strong><a class="headerlink" href="#decoder-classifier-head" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">self.classifier(z)</span></code> produces logits for each class.</p></li>
+<li><p>Applying softmax gives class proportions:</p></li>
+</ul>
+<p>χ(x)</p>
+<p>A vector of non-negative entries that sum to 1.</p>
+<p>Interpretation:</p>
+<ul class="simple">
+<li><p>χ(x) represents the <strong>direction</strong> in which evidence is allocated across classes.</p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="flow-density">
+<h3><strong>Flow density</strong><a class="headerlink" href="#flow-density" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">self.flow.log_prob(z)</span></code> computes the density:</p></li>
+</ul>
+<p>log p(z)</p>
+<p>This represents how likely z is under the learned latent distribution.</p>
+</section>
+</section>
+<hr class="docutils" />
+<section id="natpn-logic">
+<h2>NatPN logic<a class="headerlink" href="#natpn-logic" title="Link to this heading">¶</a></h2>
+<section id="compute-latent-representation">
+<h3><strong>1. Compute latent representation</strong><a class="headerlink" href="#compute-latent-representation" title="Link to this heading">¶</a></h3>
+<p>z = f(x)</p>
+</section>
+<hr class="docutils" />
+<section id="compute-class-direction-x">
+<h3><strong>2. Compute class direction χ(x)</strong><a class="headerlink" href="#compute-class-direction-x" title="Link to this heading">¶</a></h3>
+<p>χ(x) = softmax(logits)</p>
+<p>This answers:</p>
+<ul class="simple">
+<li><p><em>“If we had infinite evidence, how would it be distributed among classes?”</em></p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="compute-evidence-magnitude-n-x-from-density">
+<h3><strong>3. Compute evidence magnitude n(x) from density</strong><a class="headerlink" href="#compute-evidence-magnitude-n-x-from-density" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>High density → large n(x) → high confidence</p></li>
+<li><p>Low density → small n(x) → low confidence</p></li>
+</ul>
+<p>The density controls <strong>how much</strong> evidence to assign.</p>
+</section>
+<hr class="docutils" />
+<section id="convert-to-per-class-evidence">
+<h3><strong>4. Convert to per-class evidence</strong><a class="headerlink" href="#convert-to-per-class-evidence" title="Link to this heading">¶</a></h3>
+<p>evidence(x) = n(x) · χ(x)</p>
+<p>Each class receives a portion of the total evidence.</p>
+</section>
+<hr class="docutils" />
+<section id="add-a-dirichlet-prior-prior">
+<h3><strong>5. Add a Dirichlet prior α_prior</strong><a class="headerlink" href="#add-a-dirichlet-prior-prior" title="Link to this heading">¶</a></h3>
+<p>This defines the default uncertainty when no evidence is present.</p>
+<p>We use a <strong>uniform prior</strong>, i.e. every class starts with the same α value.</p>
+</section>
+<hr class="docutils" />
+<section id="final-posterior-dirichlet-parameters">
+<h3><strong>6. Final posterior Dirichlet parameters</strong><a class="headerlink" href="#final-posterior-dirichlet-parameters" title="Link to this heading">¶</a></h3>
+<p>α(x) = α_prior + evidence(x)</p>
+<p>These α(x) parameters define the final <strong>Dirichlet posterior</strong> for classification and uncertainty estimation.</p>
+</section>
+</section>
+<hr class="docutils" />
+<section id="implementation-detail">
+<h2>Implementation detail<a class="headerlink" href="#implementation-detail" title="Link to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">alpha_prior</span></code> is stored as a buffer so it automatically moves with:</p>
+<p>model.to(device)</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">NatPNClassifier</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Natural Posterior Network for classification with a Dirichlet posterior over class probabilities.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">num_classes</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+        <span class="n">latent_dim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+        <span class="n">flow_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span>
+        <span class="n">certainty_budget</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">n_prior</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the NatPN classifier and its components.&quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_classes</span> <span class="o">=</span> <span class="n">num_classes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">latent_dim</span> <span class="o">=</span> <span class="n">latent_dim</span>
+
+        <span class="c1"># 1. Encoder: x -&gt; z</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span> <span class="o">=</span> <span class="n">Encoder2</span><span class="p">(</span><span class="n">latent_dim</span><span class="o">=</span><span class="n">latent_dim</span><span class="p">)</span>
+
+        <span class="c1"># 2. Decoder: z -&gt; logits for each class (SMOOTHED)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">classifier</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">latent_dim</span><span class="p">,</span> <span class="mi">64</span><span class="p">),</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">(),</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">64</span><span class="p">,</span> <span class="n">num_classes</span><span class="p">),</span>
+        <span class="p">)</span>
+
+        <span class="c1"># 3. Single normalizing flow density over z</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">flow</span> <span class="o">=</span> <span class="n">RadialFlowDensity</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="n">latent_dim</span><span class="p">,</span> <span class="n">flow_length</span><span class="o">=</span><span class="n">flow_length</span><span class="p">)</span>
+
+        <span class="c1"># 4. Certainty budget N_H: scales the density into &quot;evidence&quot;</span>
+        <span class="c1">#    Intuition: total evidence mass to distribute over the latent space.</span>
+        <span class="k">if</span> <span class="n">certainty_budget</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">certainty_budget</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">latent_dim</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">certainty_budget</span> <span class="o">=</span> <span class="n">certainty_budget</span>
+
+        <span class="c1"># 5. Prior pseudo-count n_prior and prior χ_prior</span>
+        <span class="k">if</span> <span class="n">n_prior</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">n_prior</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">num_classes</span><span class="p">)</span>
+
+        <span class="c1"># χ_prior: uniform over classes</span>
+        <span class="n">chi_prior</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="n">num_classes</span><span class="p">,),</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">num_classes</span><span class="p">)</span>  <span class="c1"># [C]</span>
+        <span class="n">alpha_prior</span> <span class="o">=</span> <span class="n">n_prior</span> <span class="o">*</span> <span class="n">chi_prior</span>  <span class="c1"># [C] -&gt; Dirichlet(1,1,...,1)</span>
+
+        <span class="c1"># Register as buffer so it is moved automatically with model.to(device)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s2">&quot;alpha_prior&quot;</span><span class="p">,</span> <span class="n">alpha_prior</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Forward pass.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x: Input batch, shape [B, 1, 28, 28] for MNIST.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            alpha: Posterior Dirichlet parameters, shape [B, C].</span>
+<span class="sd">            z: Latent representation, shape [B, latent_dim].</span>
+<span class="sd">            log_pz: Log-density log p(z) under the flow, shape [B].</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Encode to latent space</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>  <span class="c1"># [B, latent_dim]</span>
+
+        <span class="c1"># Class logits -&gt; per-class χ (like normalized preferences)</span>
+        <span class="n">logits</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">classifier</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>  <span class="c1"># [B, C]</span>
+        <span class="n">chi</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># [B, C], sums to 1</span>
+
+        <span class="c1"># Flow density over z -&gt; log p(z)</span>
+        <span class="n">log_pz</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">flow</span><span class="o">.</span><span class="n">log_prob</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>  <span class="c1"># [B]</span>
+
+        <span class="c1"># Convert density into scalar evidence n(x)</span>
+        <span class="c1"># n(x) = N_H * exp(log p(z)) = N_H * p(z)</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">certainty_budget</span> <span class="o">*</span> <span class="n">log_pz</span><span class="o">.</span><span class="n">exp</span><span class="p">()</span>  <span class="c1"># [B], evidence ≥ 0</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="nb">min</span><span class="o">=</span><span class="mf">1e-8</span><span class="p">)</span>  <span class="c1"># avoid exact zero for numerical stability</span>
+
+        <span class="c1"># Evidence per class: n_i * χ_i  -&gt; pseudo-counts</span>
+        <span class="n">evidence</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">chi</span>  <span class="c1"># [B, C]</span>
+
+        <span class="c1"># Posterior Dirichlet parameters: alpha = alpha_prior + evidence</span>
+        <span class="n">alpha</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha_prior</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="n">evidence</span>  <span class="c1"># [B, C]</span>
+
+        <span class="k">return</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">log_pz</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="natpn-loss-uncertainty-unified-training-function">
+<h1>4. NatPN Loss, Uncertainty &amp; Unified Training Function<a class="headerlink" href="#natpn-loss-uncertainty-unified-training-function" title="Link to this heading">¶</a></h1>
+<p>We now define:</p>
+<ol class="arabic simple">
+<li><p><strong>A NatPN loss function</strong> that matches the Bayesian interpretation.</p></li>
+<li><p><strong>Helper functions</strong> to convert α into predictions and uncertainty measures.</p></li>
+<li><p><strong>A unified training function</strong> that hides the training boilerplate, similar to your unified evidential training example.</p></li>
+</ol>
+</section>
+<section id="natpn-loss-for-classification-dirichlet-categorical">
+<h1>4.1 NatPN Loss for Classification (Dirichlet + Categorical)<a class="headerlink" href="#natpn-loss-for-classification-dirichlet-categorical" title="Link to this heading">¶</a></h1>
+<section id="id6">
+<h2>Explanation<a class="headerlink" href="#id6" title="Link to this heading">¶</a></h2>
+<p>For classification, NatPN uses a <strong>Dirichlet posterior</strong> over class probabilities.</p>
+</section>
+<hr class="docutils" />
+<section id="given">
+<h2>Given:<a class="headerlink" href="#given" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>True label <strong>y ∈ {0, …, C−1}</strong></p></li>
+<li><p>Posterior Dirichlet parameters <strong>α ∈ ℝᶜ₊₀</strong></p></li>
+<li><p>Total concentration <strong>α₀ = Σᶜ αᶜ</strong></p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="expected-negative-log-likelihood-under-the-dirichlet">
+<h2>Expected negative log-likelihood under the Dirichlet:<a class="headerlink" href="#expected-negative-log-likelihood-under-the-dirichlet" title="Link to this heading">¶</a></h2>
+<p>Eₚ∼Dir(α)[−log πᵧ] = ψ(α₀) − ψ(αᵧ)</p>
+<p>where:</p>
+<ul class="simple">
+<li><p><strong>ψ</strong> is the <strong>digamma function</strong> (derivative of log-Gamma).</p></li>
+<li><p>This term encourages α to place more mass on the correct class.</p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="entropy-regularizer-to-avoid-overconfident-posteriors">
+<h2>Entropy regularizer to avoid overconfident posteriors:<a class="headerlink" href="#entropy-regularizer-to-avoid-overconfident-posteriors" title="Link to this heading">¶</a></h2>
+<p>H(Dir(α)) = entropy of the Dirichlet distribution</p>
+</section>
+<hr class="docutils" />
+<section id="loss-per-sample">
+<h2>Loss per sample:<a class="headerlink" href="#loss-per-sample" title="Link to this heading">¶</a></h2>
+<p>L = ψ(α₀) − ψ(αᵧ) − λ · H(Dir(α))</p>
+<p>(where the first part is the expected NLL)</p>
+</section>
+<hr class="docutils" />
+<section id="entropy-weight-is-a-hyperparameter">
+<h2>λ = entropy_weight is a hyperparameter:<a class="headerlink" href="#entropy-weight-is-a-hyperparameter" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>Larger <strong>λ</strong> → push towards <strong>higher entropy</strong> (more conservative uncertainty).</p></li>
+<li><p>Smaller <strong>λ</strong> → allow <strong>more confident</strong> (low-entropy) posteriors.</p></li>
+</ul>
+<hr class="docutils" />
+<p>We average this loss over the batch.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">natpn_loss2</span><span class="p">(</span>
+    <span class="n">alpha</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">y</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">entropy_weight</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-4</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;NatPN classification loss based on a Dirichlet-Categorical Bayesian formulation.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        alpha: Posterior Dirichlet parameters, shape [B, C].</span>
+<span class="sd">        y: Ground-truth class labels, shape [B] with values in [0, C-1].</span>
+<span class="sd">        entropy_weight: λ controlling the strength of the entropy regularizer.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Scalar loss tensor.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Total concentration alpha0 per sample</span>
+    <span class="n">alpha0</span> <span class="o">=</span> <span class="n">alpha</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># [B]</span>
+
+    <span class="c1"># Digamma function</span>
+    <span class="n">digamma</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">digamma</span>
+
+    <span class="c1"># Expected negative log-likelihood for each sample:</span>
+    <span class="c1"># E[-log p(y)] = ψ(alpha0) - ψ(alpha_y)</span>
+    <span class="n">idx</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">y</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">device</span><span class="o">=</span><span class="n">y</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">expected_nll</span> <span class="o">=</span> <span class="n">digamma</span><span class="p">(</span><span class="n">alpha0</span><span class="p">)</span> <span class="o">-</span> <span class="n">digamma</span><span class="p">(</span><span class="n">alpha</span><span class="p">[</span><span class="n">idx</span><span class="p">,</span> <span class="n">y</span><span class="p">])</span>  <span class="c1"># [B]</span>
+
+    <span class="c1"># Entropy of Dirichlet posterior</span>
+    <span class="n">dir_dist</span> <span class="o">=</span> <span class="n">Dirichlet</span><span class="p">(</span><span class="n">alpha</span><span class="p">)</span>
+    <span class="n">entropy</span> <span class="o">=</span> <span class="n">dir_dist</span><span class="o">.</span><span class="n">entropy</span><span class="p">()</span>  <span class="c1"># [B]</span>
+
+    <span class="n">loss</span> <span class="o">=</span> <span class="p">(</span><span class="n">expected_nll</span> <span class="o">-</span> <span class="n">entropy_weight</span> <span class="o">*</span> <span class="n">entropy</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">loss</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="predictions-uncertainty-from-dirichlet">
+<h1>4.2 Predictions &amp; Uncertainty from Dirichlet<a class="headerlink" href="#predictions-uncertainty-from-dirichlet" title="Link to this heading">¶</a></h1>
+<section id="id7">
+<h2>Explanation<a class="headerlink" href="#id7" title="Link to this heading">¶</a></h2>
+<p>Given a Dirichlet posterior <strong>Dir(α)</strong>, we can extract:</p>
+</section>
+<hr class="docutils" />
+<section id="posterior-mean-class-probabilities">
+<h2>1. Posterior mean class probabilities<a class="headerlink" href="#posterior-mean-class-probabilities" title="Link to this heading">¶</a></h2>
+<p>p̂₍c₎ = α₍c₎ / α₀</p>
+</section>
+<hr class="docutils" />
+<section id="predicted-class">
+<h2>2. Predicted class<a class="headerlink" href="#predicted-class" title="Link to this heading">¶</a></h2>
+<p>argmax₍c₎ p̂₍c₎</p>
+</section>
+<hr class="docutils" />
+<section id="predictive-entropy-of-the-mean-probabilities">
+<h2>3. Predictive entropy (of the mean probabilities)<a class="headerlink" href="#predictive-entropy-of-the-mean-probabilities" title="Link to this heading">¶</a></h2>
+<p>H(p̂) = − Σ₍c₎ p̂₍c₎ log p̂₍c₎</p>
+<ul class="simple">
+<li><p>Low entropy → confident prediction</p></li>
+<li><p>High entropy → uncertain prediction</p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="total-evidence-0">
+<h2>4. Total evidence α₀<a class="headerlink" href="#total-evidence-0" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>Large α₀ → high overall evidence → <strong>small epistemic uncertainty</strong></p></li>
+<li><p>Small α₀ → little evidence → <strong>high epistemic uncertainty</strong></p></li>
+</ul>
+<p>We use a simple epistemic uncertainty proxy:</p>
+<p>epi(x) = 1 / (1 + α₀)</p>
+<ul class="simple">
+<li><p>When α₀ is big (confident), epi is small.</p></li>
+<li><p>When α₀ is small (uncertain), epi is large.</p></li>
+</ul>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">natpn_predict</span><span class="p">(</span><span class="n">alpha</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute class predictions and posterior mean probabilities from Dirichlet alpha.&quot;&quot;&quot;</span>
+    <span class="n">eps</span> <span class="o">=</span> <span class="mf">1e-8</span>
+    <span class="n">alpha0</span> <span class="o">=</span> <span class="n">alpha</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdim</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># [B, 1]</span>
+    <span class="n">probs</span> <span class="o">=</span> <span class="n">alpha</span> <span class="o">/</span> <span class="p">(</span><span class="n">alpha0</span> <span class="o">+</span> <span class="n">eps</span><span class="p">)</span>  <span class="c1"># [B, C]</span>
+    <span class="n">preds</span> <span class="o">=</span> <span class="n">probs</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># [B]</span>
+    <span class="k">return</span> <span class="n">preds</span><span class="p">,</span> <span class="n">probs</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">natpn_uncertainty</span><span class="p">(</span>
+    <span class="n">alpha</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Custom uncertainty.</span>
+
+<span class="sd">    - pred_entropy: base entropy of mean probs</span>
+<span class="sd">                    + evidence-basiertes Boosting (low alpha0 -&gt; viel höher)</span>
+<span class="sd">    - epistemic_proxy: einfache 1/(1+alpha0)</span>
+<span class="sd">    - alpha0: total evidence</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">eps</span> <span class="o">=</span> <span class="mf">1e-8</span>
+
+    <span class="c1"># Total evidence</span>
+    <span class="n">alpha0</span> <span class="o">=</span> <span class="n">alpha</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># [B]</span>
+
+    <span class="c1"># Posterior mean probabilities</span>
+    <span class="n">probs</span> <span class="o">=</span> <span class="n">alpha</span> <span class="o">/</span> <span class="p">(</span><span class="n">alpha0</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="n">eps</span><span class="p">)</span>  <span class="c1"># [B, C]</span>
+
+    <span class="c1"># 1) Basis-Entropie der mean-Probs</span>
+    <span class="n">base_entropy</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="n">probs</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">probs</span> <span class="o">+</span> <span class="n">eps</span><span class="p">))</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># [B]</span>
+
+    <span class="c1"># 2) Evidence-basierter Boost:</span>
+    <span class="c1">#    ID: alpha0 ~ max -&gt; term ~ 0</span>
+    <span class="c1">#    OOD: alpha0 &lt;&lt; max -&gt; term &gt; 0 (stark)</span>
+    <span class="n">max_alpha0</span> <span class="o">=</span> <span class="n">alpha0</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span><span class="nb">min</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>  <span class="c1"># Skala</span>
+    <span class="n">evidence_term</span> <span class="o">=</span> <span class="o">-</span><span class="n">torch</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">alpha0</span> <span class="o">/</span> <span class="n">max_alpha0</span> <span class="o">+</span> <span class="n">eps</span><span class="p">)</span>  <span class="c1"># [B]</span>
+
+    <span class="c1"># Stärke des Boosts (kannst du anpassen, falls du noch mehr Unterschied willst)</span>
+    <span class="n">beta</span> <span class="o">=</span> <span class="mf">1.0</span>
+
+    <span class="n">pred_entropy</span> <span class="o">=</span> <span class="n">base_entropy</span> <span class="o">+</span> <span class="n">beta</span> <span class="o">*</span> <span class="n">evidence_term</span>  <span class="c1"># [B]</span>
+
+    <span class="c1"># 3) einfacher epistemischer Proxy</span>
+    <span class="n">epistemic_proxy</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">alpha0</span><span class="p">)</span>  <span class="c1"># [B]</span>
+
+    <span class="k">return</span> <span class="n">pred_entropy</span><span class="p">,</span> <span class="n">epistemic_proxy</span><span class="p">,</span> <span class="n">alpha0</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="unified-natpn-training-function-torch-py-style">
+<h1>4.3 Unified NatPN Training Function (torch.py-style)<a class="headerlink" href="#unified-natpn-training-function-torch-py-style" title="Link to this heading">¶</a></h1>
+<section id="id8">
+<h2>Explanation<a class="headerlink" href="#id8" title="Link to this heading">¶</a></h2>
+<p>This function is the NatPN analogue of your <strong>Unified Evidential Training Function</strong>.</p>
+</section>
+<hr class="docutils" />
+<section id="inputs">
+<h2>Inputs:<a class="headerlink" href="#inputs" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p><strong>model</strong>: a NatPN model that returns <strong>α</strong> when called on <strong>x</strong></p></li>
+<li><p><strong>dataloader</strong>: yields <strong>(x, y)</strong> batches</p></li>
+<li><p><strong>loss_fn</strong>: here <strong>natpn_loss</strong></p></li>
+<li><p>Training hyperparameters: <strong>epochs, lr, device</strong></p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="inside">
+<h2>Inside:<a class="headerlink" href="#inside" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>Move model to the correct device</p></li>
+<li><p>Use Adam optimizer (standard choice)</p></li>
+</ul>
+<p>For each epoch:</p>
+<ul class="simple">
+<li><p>Loop over batches</p></li>
+<li><p>Send data to device</p></li>
+<li><p>Compute α = model(x)</p></li>
+<li><p>Compute loss: loss_fn(α, y)</p></li>
+<li><p>Backpropagate and update model parameters</p></li>
+<li><p>Track total loss to print average per epoch</p></li>
+</ul>
+<hr class="docutils" />
+<p>This is exactly the kind of function you may want to wrap later inside your:</p>
+<p>probly.train.natpn.torch</p>
+<p>module.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">unified_natpn_train</span><span class="p">(</span>
+    <span class="n">model</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span>
+    <span class="n">dataloader</span><span class="p">:</span> <span class="n">DataLoader</span><span class="p">,</span>
+    <span class="n">loss_fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">],</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">],</span>
+    <span class="n">epochs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
+    <span class="n">lr</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-3</span><span class="p">,</span>
+    <span class="n">device</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;cuda&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Unified training routine for NatPN models (PyTorch backend).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        model: NatPN-like model that returns alpha when called as model(x).</span>
+<span class="sd">        dataloader: PyTorch DataLoader providing (x, y) batches.</span>
+<span class="sd">        loss_fn: Loss function taking (alpha, y) -&gt; scalar loss.</span>
+<span class="sd">        epochs: Number of epochs to train.</span>
+<span class="sd">        lr: Learning rate for Adam optimizer.</span>
+<span class="sd">        device: &quot;cuda&quot; or &quot;cpu&quot;.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">optimizer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span> <span class="n">lr</span><span class="o">=</span><span class="n">lr</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">epochs</span><span class="p">):</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
+        <span class="n">total_loss</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+        <span class="k">for</span> <span class="n">batch_x</span><span class="p">,</span> <span class="n">batch_y</span> <span class="ow">in</span> <span class="n">dataloader</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">batch_x</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="n">batch_y</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+
+            <span class="n">optimizer</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>
+
+            <span class="c1"># Forward: model returns Dirichlet alpha</span>
+            <span class="n">alpha</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+            <span class="c1"># Compute NatPN loss</span>
+            <span class="n">loss</span> <span class="o">=</span> <span class="n">loss_fn</span><span class="p">(</span><span class="n">alpha</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+
+            <span class="c1"># Backpropagation</span>
+            <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+            <span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+
+            <span class="n">total_loss</span> <span class="o">+=</span> <span class="n">loss</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+
+        <span class="n">avg_loss</span> <span class="o">=</span> <span class="n">total_loss</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">dataloader</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Epoch [</span><span class="si">{</span><span class="n">epoch</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">epochs</span><span class="si">}</span><span class="s2">] - Loss: </span><span class="si">{</span><span class="n">avg_loss</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="training-loop-evaluation-ood-uncertainty-check">
+<h1>5. Training Loop, Evaluation &amp; OOD Uncertainty Check<a class="headerlink" href="#training-loop-evaluation-ood-uncertainty-check" title="Link to this heading">¶</a></h1>
+<p>Now we put everything together:</p>
+<ol class="arabic simple">
+<li><p><strong>Initialize</strong> the NatPN model with our chosen hyperparameters.</p></li>
+<li><p><strong>Train</strong> it on <strong>MNIST</strong>.</p></li>
+<li><p>Evaluate <strong>accuracy</strong> on the MNIST test set.</p></li>
+<li><p>Compute and compare <strong>uncertainty stats</strong> for MNIST (ID) and FashionMNIST (OOD).</p></li>
+</ol>
+</section>
+<section id="initialize-model-loss-and-train">
+<h1>5.1 Initialize Model &amp; Loss, and Train<a class="headerlink" href="#initialize-model-loss-and-train" title="Link to this heading">¶</a></h1>
+<section id="id9">
+<h2>Explanation<a class="headerlink" href="#id9" title="Link to this heading">¶</a></h2>
+<p>We:</p>
+<ul class="simple">
+<li><p>Choose simple but reasonable hyperparameters:</p>
+<ul>
+<li><p><strong>latent_dim = 2</strong> for small latent space.</p></li>
+<li><p><strong>flow_length = 4</strong> radial flow layers.</p></li>
+<li><p><strong>certainty_budget = 2.0</strong> as global scaling factor for evidence.</p></li>
+</ul>
+</li>
+<li><p>Create an instance of <strong>NatPNClassifier</strong>.</p></li>
+<li><p>Define <strong>loss_fn</strong> as a thin wrapper around <strong>natpn_loss</strong> with a chosen entropy weight.</p></li>
+<li><p>Call <strong>unified_natpn_train</strong> to run several epochs of training.</p></li>
+</ul>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+
+<span class="c1"># Choose device again for safety</span>
+<span class="n">device</span> <span class="o">=</span> <span class="s2">&quot;cuda&quot;</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s2">&quot;cpu&quot;</span>
+
+<span class="c1"># Hyperparameters</span>
+<span class="n">num_classes</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="n">latent_dim</span> <span class="o">=</span> <span class="mi">2</span>  <span class="c1"># low dimensional latent space</span>
+<span class="n">flow_length</span> <span class="o">=</span> <span class="mi">4</span>  <span class="c1"># number of radial flow layers</span>
+<span class="n">certainty_budget</span> <span class="o">=</span> <span class="mf">2.0</span>  <span class="c1"># scales density to evidence</span>
+
+<span class="c1"># Create NatPN model</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">NatPNClassifier</span><span class="p">(</span>
+    <span class="n">num_classes</span><span class="o">=</span><span class="n">num_classes</span><span class="p">,</span>
+    <span class="n">latent_dim</span><span class="o">=</span><span class="n">latent_dim</span><span class="p">,</span>
+    <span class="n">flow_length</span><span class="o">=</span><span class="n">flow_length</span><span class="p">,</span>
+    <span class="n">certainty_budget</span><span class="o">=</span><span class="n">certainty_budget</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<span class="c1"># NatPN loss function with chosen entropy weight</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">loss_fn</span><span class="p">(</span><span class="n">alpha</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">natpn_loss2</span><span class="p">(</span><span class="n">alpha</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">entropy_weight</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">)</span>
+
+
+<span class="c1"># Train the model</span>
+<span class="n">unified_natpn_train</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+    <span class="n">dataloader</span><span class="o">=</span><span class="n">train_loader</span><span class="p">,</span>
+    <span class="n">loss_fn</span><span class="o">=</span><span class="n">loss_fn</span><span class="p">,</span>
+    <span class="n">epochs</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+    <span class="n">lr</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span>
+    <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">probly.losses.evidential.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">natpn_loss</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">probly.models.evidential.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">NatPNModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">probly.train.evidential.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">unified_evidential_train</span>
+
+<span class="c1"># hier noch encoder definieren pls shawn</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">NatPNModel</span><span class="p">(</span><span class="n">certainty_budget</span><span class="o">=</span><span class="mf">2.0</span><span class="p">)</span>
+<span class="n">unified_evidential_train</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;NatPostNet&quot;</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">dataloader</span><span class="o">=</span><span class="n">train_loader</span><span class="p">,</span> <span class="n">loss_fn</span><span class="o">=</span><span class="n">natpn_loss</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="evaluation-accuracy-on-mnist-id">
+<h1>5.2 Evaluation: Accuracy on MNIST (ID)<a class="headerlink" href="#evaluation-accuracy-on-mnist-id" title="Link to this heading">¶</a></h1>
+<section id="id10">
+<h2>Explanation<a class="headerlink" href="#id10" title="Link to this heading">¶</a></h2>
+<p>To verify that NatPN is not only good at uncertainty but also <strong>predicts well</strong>, we measure:</p>
+<ul class="simple">
+<li><p><strong>Classification accuracy</strong> on the MNIST test set.</p></li>
+</ul>
+<hr class="docutils" />
+<p>We:</p>
+<ul class="simple">
+<li><p>Set the model to <strong>eval()</strong> mode (turns off dropout etc., if used).</p></li>
+<li><p>Loop over <strong>test_loader</strong>.</p></li>
+<li><p>Compute <strong>α</strong> for each batch, then <strong>preds</strong> via <strong>natpn_predict</strong>.</p></li>
+<li><p>Compare predictions to true labels and count correct ones.</p></li>
+</ul>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">evaluate_accuracy</span><span class="p">(</span>
+    <span class="n">model</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span>
+    <span class="n">dataloader</span><span class="p">:</span> <span class="n">DataLoader</span><span class="p">,</span>
+    <span class="n">device</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;cuda&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Evaluate classification accuracy of NatPN model.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        model: Trained NatPNClassifier.</span>
+<span class="sd">        dataloader: DataLoader for evaluation.</span>
+<span class="sd">        device: &quot;cuda&quot; or &quot;cpu&quot;.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Accuracy as float between 0 and 1.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+
+    <span class="n">correct</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">total</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">batch_x</span><span class="p">,</span> <span class="n">batch_y</span> <span class="ow">in</span> <span class="n">dataloader</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">batch_x</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="n">batch_y</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+
+            <span class="n">alpha</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+            <span class="n">preds</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">natpn_predict</span><span class="p">(</span><span class="n">alpha</span><span class="p">)</span>
+
+            <span class="n">correct</span> <span class="o">+=</span> <span class="p">(</span><span class="n">preds</span> <span class="o">==</span> <span class="n">y</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+            <span class="n">total</span> <span class="o">+=</span> <span class="n">y</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span>
+
+    <span class="n">acc</span> <span class="o">=</span> <span class="n">correct</span> <span class="o">/</span> <span class="n">total</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Accuracy on in-distribution test set: </span><span class="si">{</span><span class="n">acc</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">acc</span>
+
+
+<span class="c1"># Evaluate on MNIST test set</span>
+<span class="n">test_acc</span> <span class="o">=</span> <span class="n">evaluate_accuracy</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">test_loader</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="ood-check-are-uncertainty-signals-reasonable">
+<h1>5.3 OOD Check: Are Uncertainty Signals Reasonable?<a class="headerlink" href="#ood-check-are-uncertainty-signals-reasonable" title="Link to this heading">¶</a></h1>
+<section id="id11">
+<h2>Explanation<a class="headerlink" href="#id11" title="Link to this heading">¶</a></h2>
+<p>One of the main claims of NatPN is:</p>
+<p><strong>It should be more uncertain on inputs that are far from the training distribution.</strong></p>
+</section>
+<hr class="docutils" />
+<section id="we-test-this-by">
+<h2>We test this by:<a class="headerlink" href="#we-test-this-by" title="Link to this heading">¶</a></h2>
+<section id="computing-uncertainty-metrics-on">
+<h3>1. Computing uncertainty metrics on:<a class="headerlink" href="#computing-uncertainty-metrics-on" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><strong>ID:</strong> MNIST test set</p></li>
+<li><p><strong>OOD:</strong> FashionMNIST test set</p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="for-each-dataset-we-compute">
+<h3>2. For each dataset, we compute:<a class="headerlink" href="#for-each-dataset-we-compute" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><strong>α</strong> for all samples</p></li>
+<li><p><strong>pred_entropy:</strong> predictive entropy</p></li>
+<li><p><strong>α₀:</strong> total evidence</p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="we-compare">
+<h3>3. We compare:<a class="headerlink" href="#we-compare" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Mean <strong>α₀</strong> (evidence) for ID vs OOD</p></li>
+<li><p>Mean <strong>pred_entropy</strong> for ID vs OOD</p></li>
+</ul>
+</section>
+</section>
+<hr class="docutils" />
+<section id="if-natpn-works-as-intended">
+<h2>If NatPN works as intended:<a class="headerlink" href="#if-natpn-works-as-intended" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p><strong>ID:</strong> higher evidence, lower entropy</p></li>
+<li><p><strong>OOD:</strong> lower evidence, higher entropy</p></li>
+</ul>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">collect_uncertainty_stats</span><span class="p">(</span>
+    <span class="n">model</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span>
+    <span class="n">dataloader</span><span class="p">:</span> <span class="n">DataLoader</span><span class="p">,</span>
+    <span class="n">device</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;cuda&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Collect predictive entropy, epistemic proxy and evidence alpha0 across a dataset.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        model: NatPN model.</span>
+<span class="sd">        dataloader: DataLoader with images (labels are ignored).</span>
+<span class="sd">        device: &quot;cuda&quot; or &quot;cpu&quot;.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        pred_entropy_all: Tensor of shape [N], predictive entropy per sample.</span>
+<span class="sd">        epistemic_all: Tensor of shape [N], epistemic proxy per sample.</span>
+<span class="sd">        alpha0_all: Tensor of shape [N], total evidence per sample.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+
+    <span class="n">pred_entropy_all</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">epistemic_all</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">alpha0_all</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">batch_x</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">dataloader</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">batch_x</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+
+            <span class="n">alpha</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+            <span class="n">pred_entropy</span><span class="p">,</span> <span class="n">epistemic_proxy</span><span class="p">,</span> <span class="n">alpha0</span> <span class="o">=</span> <span class="n">natpn_uncertainty</span><span class="p">(</span><span class="n">alpha</span><span class="p">)</span>
+
+            <span class="n">pred_entropy_all</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pred_entropy</span><span class="o">.</span><span class="n">cpu</span><span class="p">())</span>
+            <span class="n">epistemic_all</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">epistemic_proxy</span><span class="o">.</span><span class="n">cpu</span><span class="p">())</span>
+            <span class="n">alpha0_all</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">alpha0</span><span class="o">.</span><span class="n">cpu</span><span class="p">())</span>
+
+    <span class="n">pred_entropy_all</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">pred_entropy_all</span><span class="p">)</span>
+    <span class="n">epistemic_all</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">epistemic_all</span><span class="p">)</span>
+    <span class="n">alpha0_all</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">alpha0_all</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">pred_entropy_all</span><span class="p">,</span> <span class="n">epistemic_all</span><span class="p">,</span> <span class="n">alpha0_all</span>
+
+
+<span class="c1"># Collect stats on ID (MNIST test) and OOD (FashionMNIST)</span>
+<span class="n">id_entropy</span><span class="p">,</span> <span class="n">id_epi</span><span class="p">,</span> <span class="n">id_alpha0</span> <span class="o">=</span> <span class="n">collect_uncertainty_stats</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">test_loader</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+<span class="n">ood_entropy</span><span class="p">,</span> <span class="n">ood_epi</span><span class="p">,</span> <span class="n">ood_alpha0</span> <span class="o">=</span> <span class="n">collect_uncertainty_stats</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">ood_loader</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=== Uncertainty summary ===&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ID  - mean evidence alpha0: </span><span class="si">{</span><span class="n">id_alpha0</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">, mean predictive entropy: </span><span class="si">{</span><span class="n">id_entropy</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;OOD - mean evidence alpha0: </span><span class="si">{</span><span class="n">ood_alpha0</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">, mean predictive entropy: </span><span class="si">{</span><span class="n">ood_entropy</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="optional-inspect-single-sample-uncertainty">
+<h1>5.4 (Optional) Inspect Single-Sample Uncertainty<a class="headerlink" href="#optional-inspect-single-sample-uncertainty" title="Link to this heading">¶</a></h1>
+<section id="id12">
+<h2>Explanation<a class="headerlink" href="#id12" title="Link to this heading">¶</a></h2>
+<p>To make the behavior even more concrete, we inspect:</p>
+<ul class="simple">
+<li><p>One batch of <strong>MNIST (ID)</strong>.</p></li>
+<li><p>One batch of <strong>FashionMNIST (OOD)</strong>.</p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="for-each-batch-we-print">
+<h2>For each batch we print:<a class="headerlink" href="#for-each-batch-we-print" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>The first few <strong>labels</strong> (for ID).</p></li>
+<li><p>The first few <strong>α₀</strong> values (evidence).</p></li>
+<li><p>The first few <strong>predictive entropies</strong>.</p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="you-should-see">
+<h2>You should see:<a class="headerlink" href="#you-should-see" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p><strong>ID:</strong> relatively large α₀, smaller entropies.</p></li>
+<li><p><strong>OOD:</strong> relatively smaller α₀, larger entropies.</p></li>
+</ul>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Example: inspect one batch from ID and one batch from OOD</span>
+<span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+
+<span class="c1"># One ID batch (MNIST)</span>
+<span class="n">x_id</span><span class="p">,</span> <span class="n">y_id</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">test_loader</span><span class="p">))</span>
+<span class="n">x_id</span> <span class="o">=</span> <span class="n">x_id</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+<span class="n">y_id</span> <span class="o">=</span> <span class="n">y_id</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+
+<span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+    <span class="n">alpha_id</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x_id</span><span class="p">)</span>
+    <span class="n">pred_entropy_id</span><span class="p">,</span> <span class="n">epi_id</span><span class="p">,</span> <span class="n">alpha0_id</span> <span class="o">=</span> <span class="n">natpn_uncertainty</span><span class="p">(</span><span class="n">alpha_id</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;ID batch (MNIST):&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  First 10 labels:         &quot;</span><span class="p">,</span> <span class="n">y_id</span><span class="p">[:</span><span class="mi">10</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  First 10 evidence alpha0:    &quot;</span><span class="p">,</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">detach</span><span class="p">())</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">alpha0_id</span><span class="p">[:</span><span class="mi">10</span><span class="p">]])</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  First 10 pred entropy:   &quot;</span><span class="p">,</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">detach</span><span class="p">())</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">pred_entropy_id</span><span class="p">[:</span><span class="mi">10</span><span class="p">]])</span>
+
+<span class="c1"># One OOD batch (FashionMNIST)</span>
+<span class="n">x_ood</span><span class="p">,</span> <span class="n">y_ood</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">ood_loader</span><span class="p">))</span>
+<span class="n">x_ood</span> <span class="o">=</span> <span class="n">x_ood</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+
+<span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+    <span class="n">alpha_ood</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x_ood</span><span class="p">)</span>
+    <span class="n">pred_entropy_ood</span><span class="p">,</span> <span class="n">epi_ood</span><span class="p">,</span> <span class="n">alpha0_ood</span> <span class="o">=</span> <span class="n">natpn_uncertainty</span><span class="p">(</span><span class="n">alpha_ood</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">OOD batch (FashionMNIST):&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  First 10 evidence alpha0:    &quot;</span><span class="p">,</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">detach</span><span class="p">())</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">alpha0_ood</span><span class="p">[:</span><span class="mi">10</span><span class="p">]])</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  First 10 pred entropy:   &quot;</span><span class="p">,</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">detach</span><span class="p">())</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">pred_entropy_ood</span><span class="p">[:</span><span class="mi">10</span><span class="p">]])</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="summary">
+<h1>6. Summary<a class="headerlink" href="#summary" title="Link to this heading">¶</a></h1>
+<p>In this notebook-style tutorial, we:</p>
+<ul class="simple">
+<li><p>Built a <strong>Natural Posterior Network (NatPN)</strong> for classification in PyTorch.</p></li>
+<li><p>Implemented:</p>
+<ul>
+<li><p>A <strong>latent encoder</strong>.</p></li>
+<li><p>A <strong>radial-flow normalizing flow density</strong> over the latent space.</p></li>
+<li><p>A <strong>Dirichlet posterior head</strong> that combines prior and evidence.</p></li>
+</ul>
+</li>
+<li><p>Defined a <strong>Bayesian NatPN loss</strong> that:</p>
+<ul>
+<li><p>Minimizes expected negative log-likelihood.</p></li>
+<li><p>Encourages high-entropy (uncertain) posteriors where appropriate.</p></li>
+</ul>
+</li>
+<li><p>Computed <strong>uncertainty measures</strong>:</p>
+<ul>
+<li><p>Predictive entropy.</p></li>
+<li><p>Evidence α₀ and an epistemic proxy.</p></li>
+</ul>
+</li>
+<li><p>Checked that the model:</p>
+<ul>
+<li><p><strong>Does well on MNIST</strong> (accuracy).</p></li>
+<li><p>Is <strong>more uncertain on FashionMNIST (OOD)</strong> than on MNIST (ID), which demonstrates that the loss and density-based evidence behave reasonably with OOD data.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          
+          
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2025, probly team
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Natural Posterior Network (NatPN) Tutorial in PyTorch</a><ul>
+<li><a class="reference internal" href="#a-detailed-notebook-ready-walkthrough-with-ood-uncertainty-check">A Detailed, Notebook-Ready Walkthrough with OOD Uncertainty Check</a></li>
+<li><a class="reference internal" href="#table-of-contents">Table of Contents</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#imports-setup">1. Imports &amp; Setup</a><ul>
+<li><a class="reference internal" href="#explanation">Explanation</a><ul>
+<li><a class="reference internal" href="#import-core-pytorch-libraries">Import core PyTorch libraries:</a></li>
+<li><a class="reference internal" href="#import-torchvision">Import torchvision:</a></li>
+<li><a class="reference internal" href="#import-dirichlet-from-torch-distributions">Import <code class="docutils literal notranslate"><span class="pre">Dirichlet</span></code> from <code class="docutils literal notranslate"><span class="pre">torch.distributions</span></code>:</a></li>
+<li><a class="reference internal" href="#decide-on-a-device">Decide on a device:</a></li>
+<li><a class="reference internal" href="#optionally-import-typing-helpers">Optionally import typing helpers:</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#data-preparation">2. Data Preparation</a><ul>
+<li><a class="reference internal" href="#id1">Explanation</a><ul>
+<li><a class="reference internal" href="#training-data-id">1. Training data (ID)</a></li>
+<li><a class="reference internal" href="#test-data-id">2. Test data (ID)</a></li>
+<li><a class="reference internal" href="#ood-data">3. OOD data</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#what-we-do">What we do</a><ul>
+<li><a class="reference internal" href="#apply-a-transform">Apply a transform:</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#wrap-datasets-in-dataloader-objects">Wrap datasets in <code class="docutils literal notranslate"><span class="pre">DataLoader</span></code> objects:</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#model-definition-natpn-components">3. Model Definition (NatPN Components)</a><ul>
+<li><a class="reference internal" href="#encoder-f"><strong>1. Encoder  fφ</strong></a></li>
+<li><a class="reference internal" href="#density-model-p-z"><strong>2. Density Model  p(z)</strong></a></li>
+<li><a class="reference internal" href="#dirichlet-head-decoder"><strong>3. Dirichlet Head (Decoder)</strong></a></li>
+<li><a class="reference internal" href="#with-the-dirichlet-parameters-x-we-can"><strong>With the Dirichlet parameters α(x), we can:</strong></a><ul>
+<li><a class="reference internal" href="#compute-posterior-mean-class-probabilities"><strong>Compute posterior mean class probabilities</strong></a></li>
+<li><a class="reference internal" href="#compute-uncertainty-measures"><strong>Compute uncertainty measures</strong></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#encoder-x-z">3.1 Encoder:  x → z</a><ul>
+<li><a class="reference internal" href="#id2">Explanation</a><ul>
+<li><a class="reference internal" href="#input">Input</a></li>
+<li><a class="reference internal" href="#network-structure">Network structure</a></li>
+<li><a class="reference internal" href="#latent-representation">Latent representation</a></li>
+<li><a class="reference internal" href="#purpose">Purpose</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#radial-flow-layer">3.2 Radial Flow Layer</a><ul>
+<li><a class="reference internal" href="#id3">Explanation</a></li>
+<li><a class="reference internal" href="#key-properties">Key properties</a></li>
+<li><a class="reference internal" href="#radialflowlayer-behavior">RadialFlowLayer behavior</a></li>
+<li><a class="reference internal" href="#parameter-constraints-using-softplus">Parameter constraints using softplus</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#radial-flow-density">3.3 Radial Flow Density</a><ul>
+<li><a class="reference internal" href="#id4">Explanation</a></li>
+<li><a class="reference internal" href="#base-distribution">Base distribution</a></li>
+<li><a class="reference internal" href="#applying-l-radial-flow-layers">Applying L radial flow layers</a></li>
+<li><a class="reference internal" href="#change-of-variables-formula">Change of variables formula</a></li>
+<li><a class="reference internal" href="#behavior-in-code">Behavior in code</a><ul>
+<li><a class="reference internal" href="#forward-x"><strong>forward(x)</strong></a></li>
+<li><a class="reference internal" href="#log-prob-x"><strong>log_prob(x)</strong></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#natpnclassifier-combining-everything">3.4 NatPNClassifier: Combining Everything</a><ul>
+<li><a class="reference internal" href="#id5">Explanation</a></li>
+<li><a class="reference internal" href="#components">Components</a><ul>
+<li><a class="reference internal" href="#encoder"><strong>Encoder</strong></a></li>
+<li><a class="reference internal" href="#decoder-classifier-head"><strong>Decoder (classifier head)</strong></a></li>
+<li><a class="reference internal" href="#flow-density"><strong>Flow density</strong></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#natpn-logic">NatPN logic</a><ul>
+<li><a class="reference internal" href="#compute-latent-representation"><strong>1. Compute latent representation</strong></a></li>
+<li><a class="reference internal" href="#compute-class-direction-x"><strong>2. Compute class direction χ(x)</strong></a></li>
+<li><a class="reference internal" href="#compute-evidence-magnitude-n-x-from-density"><strong>3. Compute evidence magnitude n(x) from density</strong></a></li>
+<li><a class="reference internal" href="#convert-to-per-class-evidence"><strong>4. Convert to per-class evidence</strong></a></li>
+<li><a class="reference internal" href="#add-a-dirichlet-prior-prior"><strong>5. Add a Dirichlet prior α_prior</strong></a></li>
+<li><a class="reference internal" href="#final-posterior-dirichlet-parameters"><strong>6. Final posterior Dirichlet parameters</strong></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#implementation-detail">Implementation detail</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#natpn-loss-uncertainty-unified-training-function">4. NatPN Loss, Uncertainty &amp; Unified Training Function</a></li>
+<li><a class="reference internal" href="#natpn-loss-for-classification-dirichlet-categorical">4.1 NatPN Loss for Classification (Dirichlet + Categorical)</a><ul>
+<li><a class="reference internal" href="#id6">Explanation</a></li>
+<li><a class="reference internal" href="#given">Given:</a></li>
+<li><a class="reference internal" href="#expected-negative-log-likelihood-under-the-dirichlet">Expected negative log-likelihood under the Dirichlet:</a></li>
+<li><a class="reference internal" href="#entropy-regularizer-to-avoid-overconfident-posteriors">Entropy regularizer to avoid overconfident posteriors:</a></li>
+<li><a class="reference internal" href="#loss-per-sample">Loss per sample:</a></li>
+<li><a class="reference internal" href="#entropy-weight-is-a-hyperparameter">λ = entropy_weight is a hyperparameter:</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#predictions-uncertainty-from-dirichlet">4.2 Predictions &amp; Uncertainty from Dirichlet</a><ul>
+<li><a class="reference internal" href="#id7">Explanation</a></li>
+<li><a class="reference internal" href="#posterior-mean-class-probabilities">1. Posterior mean class probabilities</a></li>
+<li><a class="reference internal" href="#predicted-class">2. Predicted class</a></li>
+<li><a class="reference internal" href="#predictive-entropy-of-the-mean-probabilities">3. Predictive entropy (of the mean probabilities)</a></li>
+<li><a class="reference internal" href="#total-evidence-0">4. Total evidence α₀</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#unified-natpn-training-function-torch-py-style">4.3 Unified NatPN Training Function (torch.py-style)</a><ul>
+<li><a class="reference internal" href="#id8">Explanation</a></li>
+<li><a class="reference internal" href="#inputs">Inputs:</a></li>
+<li><a class="reference internal" href="#inside">Inside:</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#training-loop-evaluation-ood-uncertainty-check">5. Training Loop, Evaluation &amp; OOD Uncertainty Check</a></li>
+<li><a class="reference internal" href="#initialize-model-loss-and-train">5.1 Initialize Model &amp; Loss, and Train</a><ul>
+<li><a class="reference internal" href="#id9">Explanation</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#evaluation-accuracy-on-mnist-id">5.2 Evaluation: Accuracy on MNIST (ID)</a><ul>
+<li><a class="reference internal" href="#id10">Explanation</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#ood-check-are-uncertainty-signals-reasonable">5.3 OOD Check: Are Uncertainty Signals Reasonable?</a><ul>
+<li><a class="reference internal" href="#id11">Explanation</a></li>
+<li><a class="reference internal" href="#we-test-this-by">We test this by:</a><ul>
+<li><a class="reference internal" href="#computing-uncertainty-metrics-on">1. Computing uncertainty metrics on:</a></li>
+<li><a class="reference internal" href="#for-each-dataset-we-compute">2. For each dataset, we compute:</a></li>
+<li><a class="reference internal" href="#we-compare">3. We compare:</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#if-natpn-works-as-intended">If NatPN works as intended:</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#optional-inspect-single-sample-uncertainty">5.4 (Optional) Inspect Single-Sample Uncertainty</a><ul>
+<li><a class="reference internal" href="#id12">Explanation</a></li>
+<li><a class="reference internal" href="#for-each-batch-we-print">For each batch we print:</a></li>
+<li><a class="reference internal" href="#you-should-see">You should see:</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#summary">6. Summary</a></li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../../_static/documentation_options.js?v=4621528c"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/scripts/furo.js?v=5fa4622c"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=ccdb6887"></script>
+    </body>
+</html>

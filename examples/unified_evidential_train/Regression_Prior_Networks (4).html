@@ -1,0 +1,2207 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../../">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../../genindex.html" /><link rel="search" title="Search" href="../../search.html" />
+
+    <!-- Generated with Sphinx 8.2.3 and Furo 2024.08.06 -->
+        <title>Understanding Prior Networks and Regression Prior Networks - probly 0.3.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=354aac6f" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=d2d258e8" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?v=302659d7" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css?v=201d0c9a" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f8f8f8;
+  --color-code-foreground: black;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #272822;
+  --color-code-foreground: #f8f8f2;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #272822;
+  --color-code-foreground: #f8f8f2;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../../index.html"><div class="brand">probly 0.3.1 documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><div class="sidebar-scroll"><a class="sidebar-brand" href="../../index.html">
+  
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo only-light" src="../../_static/logo/logo_light.png" alt="Light Logo"/>
+    <img class="sidebar-logo only-dark" src="../../_static/logo/logo_dark.png" alt="Dark Logo"/>
+  </div>
+  
+  
+</a><form class="sidebar-search-container" method="get" action="../../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Content</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">The <code class="docutils literal notranslate"><span class="pre">probly</span></code> Python Package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core_concepts.html">Core Concepts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../main_components.html">Main Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../advanced_topics.html">Advanced Topics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples_and_tutorials.html">Examples and Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../methods.html">Implemented methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing to probly 🏔️</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../references.html">References and Further Reading</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../faq.html">FAQ and Troubleshooting</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Notebooks</span></p>
+<ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../notebooks/examples/index.html">Notebook Examples</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Notebook Examples</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../notebooks/examples/utilities_and_layers/index.html">Utilities and Layers</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Utilities and Layers</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../notebooks/examples/utilities_and_layers/custom_loss_functions.html">Custom Loss Functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../notebooks/examples/utilities_and_layers/metrics.html">Evaluation Metrics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../notebooks/examples/utilities_and_layers/probabilistic_layers.html">Key Probabilistic Layers in <code class="docutils literal notranslate"><span class="pre">probly</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../notebooks/examples/utilities_and_layers/utility_functions.html">Utility Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../notebooks/examples/evaluation_and_quantification/index.html">Evaluation and Quantification</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of Evaluation and Quantification</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../notebooks/examples/evaluation_and_quantification/calibration_metrics.html">Calibration Metrics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../notebooks/examples/evaluation_and_quantification/interpretation_techniques.html">Interpretation techniques</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../notebooks/examples/evaluation_and_quantification/visualization_tools.html">Visualisation Tools</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../notebooks/examples/bayesian_transformation.html">Bayesian Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../notebooks/examples/dropconnect_transformation.html">Dropconnect Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../notebooks/examples/dropout_transformation.html">Dropout Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../notebooks/examples/ensemble_transformation.html">Ensemble Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../notebooks/examples/evidential_classification_transformation.html">Evidential Classification Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../notebooks/examples/evidential_regression_transformation.html">Evidential Regression Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../notebooks/examples/fashionmnist_ood_ensemble.html">Out-of-Distribution Detection with an Ensemble</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../notebooks/examples/label_relaxation_calibration.html">Calibration with Label Relaxation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../notebooks/examples/lazy_dispatch_test.html">Lazy Dispatch Test</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../notebooks/examples/multilib_demo.html">Multilib Demo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../notebooks/examples/pytraverse_tutorial.html">A Brief Introduction to PyTraverse</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../notebooks/examples/sklearn_selective_prediction.html">Using probly with scikit-learn</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../notebooks/examples/temperature_scaling_calibration.html">Calibration using Temperature Scaling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../notebooks/examples/train_bnn_classification.html">Bayesian Neural Networks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../notebooks/examples/train_evidential_classification.html">Evidential Model for Classification</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../notebooks/examples/train_evidential_regression.html">Evidential Regression Model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../notebooks/examples/transformations_comparison.html">Transformation Comparison: Dropout vs DropConnect vs Ensemble vs Bayesian vs Evidential (PyTorch)</a></li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div><div style="text-align: center; margin-top: 1rem; margin-bottom: 1rem;">
+  <a href="https://github.com/pwhofman/probly" target="_blank" rel="noopener noreferrer" title="GitHub Repository">
+    <img src="../../_static/github-mark.svg" alt="GitHub Logo" width="28" height="28" style="display: inline-block;">
+  </a>
+</div>
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          
+
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="understanding-prior-networks-and-regression-prior-networks">
+<h1>Understanding Prior Networks and Regression Prior Networks<a class="headerlink" href="#understanding-prior-networks-and-regression-prior-networks" title="Link to this heading">¶</a></h1>
+<section id="a-practical-and-mathematical-guide-to-uncertainty-modeling-in-deep-learning">
+<h2>A Practical and Mathematical Guide to Uncertainty Modeling in Deep Learning<a class="headerlink" href="#a-practical-and-mathematical-guide-to-uncertainty-modeling-in-deep-learning" title="Link to this heading">¶</a></h2>
+</section>
+<section id="introduction">
+<h2>1. Introduction<a class="headerlink" href="#introduction" title="Link to this heading">¶</a></h2>
+<p>Deep learning models are powerful, but standard neural networks cannot express uncertainty about their predictions. In many applications—such as self-driving cars, medical diagnosis, or other safety-critical systems—it is important to know <em>how confident</em> a model is in its output.</p>
+<p>Traditionally, <strong>neural network ensembles</strong> are used to estimate uncertainty because they capture both:</p>
+<ul class="simple">
+<li><p><strong>Data uncertainty (aleatoric uncertainty)</strong> → noise inherent in the data</p></li>
+<li><p><strong>Knowledge uncertainty (epistemic uncertainty)</strong> → model ignorance, OOD inputs</p></li>
+</ul>
+<p>However, ensembles are <strong>computationally expensive</strong>, because they require running <strong>many neural networks</strong> at inference time. This makes them impractical for real-world systems that need fast predictions.</p>
+<p>To solve this, <strong>Prior Networks</strong> were introduced for <strong>classification tasks</strong>. Instead of predicting class probabilities directly (e.g., through a softmax layer), Prior Networks predict the parameters of a <strong>Dirichlet distribution</strong>, allowing a single model to mimic the uncertainty behavior of an entire ensemble.</p>
+<p>This idea was later extended to continuous outputs in <strong>Regression Prior Networks (Malinin et al., 2020)</strong>, which use a <strong>Normal–Wishart prior</strong> and produce <strong>Student-t predictive distributions</strong>. These models allow single-network uncertainty estimation for regression problems.</p>
+<p>In this notebook, we will:</p>
+<ul class="simple">
+<li><p>Understand why ensembles provide strong uncertainty</p></li>
+<li><p>Explain why ensembles are expensive at inference</p></li>
+<li><p>Show how Prior Networks solve the ensemble cost problem</p></li>
+<li><p>Explain how <strong>classification Prior Networks</strong> work (Dirichlet priors)</p></li>
+<li><p>Explain how <strong>Regression Prior Networks</strong> work (Normal–Wishart priors → Student-t output)</p></li>
+<li><p>Show how this relates to <strong>Evidential Deep Learning (Sensoy et al., 2018)</strong></p></li>
+</ul>
+</section>
+<section id="ensembles-and-why-they-matter">
+<h2>2. Ensembles and Why They Matter<a class="headerlink" href="#ensembles-and-why-they-matter" title="Link to this heading">¶</a></h2>
+<p>Deep learning ensembles combine several independently trained models:</p>
+<p>$ f^{(1)}, f^{(2)}, \dots, f^{(M)}$</p>
+<p>Ensembles capture two types of uncertainty:</p>
+<section id="data-uncertainty-aleatoric">
+<h3>🔹 Data Uncertainty (Aleatoric)<a class="headerlink" href="#data-uncertainty-aleatoric" title="Link to this heading">¶</a></h3>
+<p>Noise in the data.</p>
+</section>
+<section id="knowledge-uncertainty-epistemic">
+<h3>🔹 Knowledge Uncertainty (Epistemic)<a class="headerlink" href="#knowledge-uncertainty-epistemic" title="Link to this heading">¶</a></h3>
+<p>Model uncertainty due to lack of knowledge.</p>
+<p>Ensembles are powerful but computationally expensive:</p>
+<ul class="simple">
+<li><p>$M×$ compute</p></li>
+<li><p>$M×$ memory</p></li>
+<li><p>$M×$ inference time</p></li>
+</ul>
+<p>but we need something cheaper that still captures uncertainty.</p>
+<p>This leads to <strong>Prior Networks</strong>.</p>
+</section>
+</section>
+<section id="prior-networks-for-classification-dirichlet-prior-networks">
+<h2>3. Prior Networks for Classification (Dirichlet Prior Networks)<a class="headerlink" href="#prior-networks-for-classification-dirichlet-prior-networks" title="Link to this heading">¶</a></h2>
+<p>Prior Networks were first introduced for <strong>classification tasks</strong> (Malinin &amp; Gales, 2019).
+Instead of predicting class probabilities directly using softmax, a Prior Network predicts the
+parameters of a <strong>Dirichlet distribution</strong>:</p>
+<p>$
+p(\mathbf{p} \mid x) = \mathrm{Dirichlet}(\alpha_1(x), \dots , \alpha_K(x))
+$</p>
+<p>Where:</p>
+<ul class="simple">
+<li><p>Each $ \alpha_k\ $  represents <strong>evidence</strong> for class (k).</p></li>
+<li><p>High $ \alpha_k\ $  → strong belief → low epistemic uncertainty</p></li>
+<li><p>Low $ \alpha_k\ $  → weak belief → high epistemic uncertainty</p></li>
+</ul>
+</section>
+<section id="why-dirichlet">
+<h2>🔹 Why Dirichlet?<a class="headerlink" href="#why-dirichlet" title="Link to this heading">¶</a></h2>
+<p>The Dirichlet distribution is the <strong>conjugate prior</strong> of the categorical distribution.
+This makes it ideal for classification because it models <em>distributions over class probabilities</em>.</p>
+</section>
+<section id="predictive-distribution">
+<h2>🔹 Predictive Distribution<a class="headerlink" href="#predictive-distribution" title="Link to this heading">¶</a></h2>
+<p>Instead of directly predicting $p(y \mid x)$, a Prior Network computes:</p>
+<p>$ p(y \mid x) = \int p(y \mid \mathbf{p}) , p(\mathbf{p} \mid x) , d\mathbf{p}$</p>
+<p>This allows clean decomposition into:</p>
+<section id="total-uncertainty">
+<h3>✔ Total uncertainty<a class="headerlink" href="#total-uncertainty" title="Link to this heading">¶</a></h3>
+</section>
+<section id="data-aleatoric-uncertainty">
+<h3>✔ Data (aleatoric) uncertainty<a class="headerlink" href="#data-aleatoric-uncertainty" title="Link to this heading">¶</a></h3>
+</section>
+<section id="knowledge-epistemic-uncertainty">
+<h3>✔ Knowledge (epistemic) uncertainty<a class="headerlink" href="#knowledge-epistemic-uncertainty" title="Link to this heading">¶</a></h3>
+</section>
+</section>
+<section id="why-is-this-useful">
+<h2>🔹 Why is this useful?<a class="headerlink" href="#why-is-this-useful" title="Link to this heading">¶</a></h2>
+<p>➡ A single Prior Network can capture <strong>ensemble-like uncertainty</strong>
+➡ Without needing to run an ensemble at inference time
+➡ Saving compute, memory, and latency.</p>
+</section>
+<section id="transition-from-classification-to-regression-prior-networks">
+<h2>4. Transition From Classification to Regression Prior Networks<a class="headerlink" href="#transition-from-classification-to-regression-prior-networks" title="Link to this heading">¶</a></h2>
+<p>Dirichlet Prior Networks work extremely well for classification.</p>
+<p>BUT</p>
+<p>Regression tasks deal with <strong>continuous outputs</strong>, not discrete class probabilities.</p>
+<p>So we need:</p>
+<ul class="simple">
+<li><p>A predictive likelihood: <strong>Normal distribution</strong></p></li>
+<li><p>A prior over Normal parameters (mean + precision)</p></li>
+</ul>
+<p>The correct conjugate prior to a Normal distribution is:</p>
+<p>➡ <strong>Normal–Wishart distribution</strong></p>
+<p>This leads directly to:</p>
+<p>✔ Regression Prior Networks
+✔ Continuous uncertainty modeling
+✔ Student-t predictive distributions</p>
+</section>
+<section id="regression-prior-networks-rpns">
+<h2>5. Regression Prior Networks (RPNs)<a class="headerlink" href="#regression-prior-networks-rpns" title="Link to this heading">¶</a></h2>
+<p>Regression Prior Networks generalize Prior Networks to <strong>continuous-valued predictions</strong>.</p>
+<section id="step-1-use-a-normal-likelihood">
+<h3>Step 1 — Use a Normal likelihood<a class="headerlink" href="#step-1-use-a-normal-likelihood" title="Link to this heading">¶</a></h3>
+<p>A normal regression model predicts:</p>
+<p>$p(y \mid x, \mu, \Lambda) = \mathcal{N}(y \mid \mu, \Lambda^{-1})$</p>
+<p>Where:</p>
+<ul class="simple">
+<li><p>$ \mu\ $ = predicted mean</p></li>
+<li><p>$ \Lambda\ $ = precision (inverse covariance matrix)</p></li>
+</ul>
+</section>
+<section id="step-2-predict-a-distribution-over-mu-lambda">
+<h3>Step 2 — Predict a <em>distribution</em> over (\mu, \Lambda)<a class="headerlink" href="#step-2-predict-a-distribution-over-mu-lambda" title="Link to this heading">¶</a></h3>
+<p>RPNs do NOT predict a single Normal distribution.
+They predict a <strong>Normal–Wishart prior</strong> over the regression parameters:</p>
+<p>$(\mu, \Lambda) \sim \mathrm{NormalWishart}(m, L, \kappa, \nu)$</p>
+<p>Where:</p>
+<ul class="simple">
+<li><p>$ m $ = prior mean</p></li>
+<li><p>$ L $ = prior precision structure</p></li>
+<li><p>$ \kappa\ $ = belief strength in $ m $</p></li>
+<li><p>$ \nu\ $ = belief strength in $ L $</p></li>
+</ul>
+<p>These control epistemic uncertainty.</p>
+</section>
+<section id="step-3-predictive-distribution-is-a-student-t">
+<h3>Step 3 — Predictive distribution is a Student-t<a class="headerlink" href="#step-3-predictive-distribution-is-a-student-t" title="Link to this heading">¶</a></h3>
+<p>When integrating out the uncertainty in $ \mu\ $ and $ \Lambda\ $:</p>
+<p>$
+p(y \mid x) = \mathrm{Student\text{-}t}(y)
+$</p>
+<p>Why Student-t?</p>
+<ul class="simple">
+<li><p>Because <strong>Normal likelihood + Normal–Wishart prior = Student-t</strong>.</p></li>
+<li><p>Student-t has <strong>heavier tails</strong>, which naturally capture uncertainty.</p></li>
+</ul>
+</section>
+<section id="benefits-of-student-t">
+<h3>Benefits of Student-t<a class="headerlink" href="#benefits-of-student-t" title="Link to this heading">¶</a></h3>
+<p>✔ Detects OOD inputs
+✔ Captures both aleatoric + epistemic uncertainty
+✔ More robust than a Gaussian</p>
+</section>
+</section>
+<section id="the-student-t-distribution">
+<h2>5.1 The Student-t Distribution<a class="headerlink" href="#the-student-t-distribution" title="Link to this heading">¶</a></h2>
+<p>When a Regression Prior Network predicts uncertainty, it does not produce a simple Normal
+distribution. Instead, it produces a <strong>Student-t distribution</strong>, which is the result of:</p>
+<p>$
+\text{Normal likelihood} + \text{Normal–Wishart prior} ;\Rightarrow; \text{Student-t predictive distribution}
+$</p>
+<p>This is a fundamental Bayesian identity.</p>
+<hr class="docutils" />
+<section id="why-student-t-instead-of-normal">
+<h3>🔹 Why Student-t instead of Normal?<a class="headerlink" href="#why-student-t-instead-of-normal" title="Link to this heading">¶</a></h3>
+<p>A Normal distribution assumes:</p>
+<ul class="simple">
+<li><p>fixed variance</p></li>
+<li><p>no epistemic uncertainty</p></li>
+</ul>
+<p>But in real-world scenarios:</p>
+<ul class="simple">
+<li><p>the mean (μ) is uncertain</p></li>
+<li><p>the variance (σ²) is uncertain</p></li>
+<li><p>the model is uncertain about its parameters</p></li>
+</ul>
+<p>A Student-t distribution has <em>heavier tails</em>, meaning:</p>
+<ul class="simple">
+<li><p>more probability in extreme values</p></li>
+<li><p>it naturally expresses <strong>model uncertainty</strong></p></li>
+<li><p>it becomes wider when the model lacks knowledge</p></li>
+<li><p>it shrinks toward a Normal distribution when confident</p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="shape-of-a-student-t-distribution">
+<h3>🔹 Shape of a Student-t distribution<a class="headerlink" href="#shape-of-a-student-t-distribution" title="Link to this heading">¶</a></h3>
+<p>The parameter <strong>ν</strong> (nu, degrees of freedom) controls how heavy the tails are:</p>
+<ul class="simple">
+<li><p>Small ν → <em>very heavy tails</em> (uncertain)</p></li>
+<li><p>Medium ν → <em>moderately heavy</em> (some uncertainty)</p></li>
+<li><p>Large ν → approaches a Normal distribution (confident)</p></li>
+</ul>
+<p>Examples:</p>
+<ul class="simple">
+<li><p>ν = 1 → Cauchy distribution (extremely heavy-tailed)</p></li>
+<li><p>ν = 3 → high uncertainty</p></li>
+<li><p>ν = 30 → almost Normal</p></li>
+<li><p>ν → ∞ → Normal distribution</p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="why-is-this-important-for-rpns">
+<h3>🔹 Why is this important for RPNs?<a class="headerlink" href="#why-is-this-important-for-rpns" title="Link to this heading">¶</a></h3>
+<p>Because Student-t naturally captures the behavior of an ensemble:</p>
+<ul class="simple">
+<li><p>if models disagree → tail gets heavier → epistemic uncertainty rises</p></li>
+<li><p>if data is noisy → variance stays large → aleatoric uncertainty</p></li>
+<li><p>if model is confident → distribution becomes narrow &amp; Gaussian</p></li>
+</ul>
+<p>Thus, Student-t is the <em>perfect</em> predictive distribution for expressing uncertainty in regression tasks.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.stats</span><span class="w"> </span><span class="kn">import</span> <span class="n">norm</span><span class="p">,</span> <span class="n">t</span>
+
+<span class="c1"># Values to plot</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">8</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">400</span><span class="p">)</span>
+
+<span class="c1"># Different degrees of freedom</span>
+<span class="n">t1</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">pdf</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">df</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># very heavy-tailed</span>
+<span class="n">t3</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">pdf</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">df</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>  <span class="c1"># moderate uncertainty</span>
+<span class="n">t30</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">pdf</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">df</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>  <span class="c1"># almost normal</span>
+
+<span class="n">normal</span> <span class="o">=</span> <span class="n">norm</span><span class="o">.</span><span class="n">pdf</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">t1</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Student-t (v=1)&quot;</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;--&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">t3</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Student-t (v=3)&quot;</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;--&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">t30</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Student-t (v=30)&quot;</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;--&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">normal</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Normal (mu=0, sigma=1)&quot;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Student-t vs Normal Distribution&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;x&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;Density&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="ensemble-distribution-distillation-end2">
+<h2>6. Ensemble Distribution Distillation (EnD²)<a class="headerlink" href="#ensemble-distribution-distillation-end2" title="Link to this heading">¶</a></h2>
+<p>Neural network ensembles are great for uncertainty, but expensive.
+RPNs support <strong>Ensemble Distribution Distillation (EnD²)</strong> to learn ensemble behavior
+without needing to run an ensemble at inference.</p>
+<section id="how-end2-works">
+<h3>How EnD² works<a class="headerlink" href="#how-end2-works" title="Link to this heading">¶</a></h3>
+<ol class="arabic simple">
+<li><p>Train an ensemble of regression models</p></li>
+<li><p>Collect their predicted $ (\muᵐ, \Lambdaᵐ)$  values</p></li>
+<li><p>Treat these values as samples from an empirical distribution</p></li>
+<li><p>Train ONE Regression Prior Network to <em>match this distribution</em></p></li>
+<li><p>Use <strong>temperature annealing</strong>:</p>
+<ul class="simple">
+<li><p>High T → learn the ensemble mean</p></li>
+<li><p>Low T → learn full ensemble diversity (variance, disagreement)</p></li>
+</ul>
+</li>
+</ol>
+</section>
+<section id="why-this-is-important">
+<h3>Why this is important?<a class="headerlink" href="#why-this-is-important" title="Link to this heading">¶</a></h3>
+<p>✔ The RPN learns:</p>
+<ul class="simple">
+<li><p>Ensemble mean</p></li>
+<li><p>Ensemble variance</p></li>
+<li><p>Ensemble disagreement</p></li>
+</ul>
+<p>➤ But runs as <strong>one single model</strong> at inference time.</p>
+</section>
+</section>
+<section id="implementation-pipeline-for-regression-prior-networks-rpn-ensemble-based-distillation">
+<h2>7. Implementation pipeline for Regression Prior Networks (RPN) — Ensemble-Based Distillation<a class="headerlink" href="#implementation-pipeline-for-regression-prior-networks-rpn-ensemble-based-distillation" title="Link to this heading">¶</a></h2>
+<p>we will now implements a complete Regression Prior Network (RPN) using an
+<strong>ensemble of probabilistic regression models</strong> as the teacher.</p>
+<section id="pipeline-overview">
+<h3>Pipeline Overview<a class="headerlink" href="#pipeline-overview" title="Link to this heading">¶</a></h3>
+<ol class="arabic simple">
+<li><p><strong>Train an ensemble</strong>
+Each of the K models outputs a Normal distribution
+→ μₖ(x), σₖ²(x)</p></li>
+<li><p><strong>Collect ensemble distributions</strong>
+Aggregate {μₖ(x), σₖ²(x)} from all models</p></li>
+<li><p><strong>Regression Prior Network (RPN)</strong>
+RPN outputs the parameters of a Normal-Wishart distribution:</p>
+<ul class="simple">
+<li><p>m(x)</p></li>
+<li><p>L(x)</p></li>
+<li><p>κ(x)</p></li>
+<li><p>ν(x)</p></li>
+</ul>
+</li>
+<li><p><strong>Distillation Loss</strong>
+Match the RPN Normal-Wishart distribution to the ensemble’s empirical distribution</p></li>
+<li><p><strong>Predictive Student-t distribution</strong></p>
+<ul class="simple">
+<li><p>total uncertainty</p></li>
+<li><p>aleatoric uncertainty</p></li>
+<li><p>epistemic uncertainty</p></li>
+</ul>
+</li>
+</ol>
+<p>We will implement everything step by step, with visual tests at the end.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">nn</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn.functional</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">F</span>
+
+<span class="n">torch</span><span class="o">.</span><span class="n">manual_seed</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="ensemble-probabilistic-regression-models">
+<h3>1. Ensemble Probabilistic Regression Models<a class="headerlink" href="#ensemble-probabilistic-regression-models" title="Link to this heading">¶</a></h3>
+<p>Each ensemble model predicts a <strong>Normal distribution</strong>:</p>
+<p>$
+y | x \sim \mathcal{N}(\mu(x), \sigma^2(x))
+$</p>
+<p>For K ensemble members, we obtain:</p>
+<p>$
+{ (\mu_k(x), \sigma_k^2(x)) }_{k=1..K}
+$</p>
+<p>These Normal distributions will later be distilled into a Normal-Wishart distribution in the RPN.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">RegressionModel</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Probabilistic regression model used for building the ensemble.</span>
+
+<span class="sd">    This model outputs:</span>
+<span class="sd">        - mu(x): predicted mean</span>
+<span class="sd">        - log_var(x): predicted log-variance (to ensure positivity).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">64</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the regression model.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            input_dim (int): Number of input features.</span>
+<span class="sd">            hidden_dim (int): Size of the hidden layer.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">feature</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">input_dim</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="p">),</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">(),</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">hidden_dim</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="p">),</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">(),</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">mu_head</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">hidden_dim</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log_var_head</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">hidden_dim</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Forward pass of the model.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x (torch.Tensor): Input tensor of shape (batch_size, input_dim).</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            tuple[torch.Tensor, torch.Tensor]:</span>
+<span class="sd">                - mu: predicted mean</span>
+<span class="sd">                - log_var: predicted log-variance (var = exp(log_var))</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">feature</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">mu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mu_head</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
+        <span class="n">log_var</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_var_head</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">mu</span><span class="p">,</span> <span class="n">log_var</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="gaussian-negative-log-likelihood">
+<h3>2. Gaussian Negative Log Likelihood<a class="headerlink" href="#gaussian-negative-log-likelihood" title="Link to this heading">¶</a></h3>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">gaussian_nll</span><span class="p">(</span>
+    <span class="n">mu</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">log_var</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">y</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gaussian negative log-likelihood.</span>
+
+<span class="sd">    Computes the NLL for a Gaussian with predicted mean and log-variance:</span>
+<span class="sd">        0.5 * [ log(sigma^2) + (y - mu)^2 / sigma^2 ]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">var</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">log_var</span><span class="p">)</span>
+    <span class="k">return</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">log_var</span> <span class="o">+</span> <span class="p">(</span><span class="n">y</span> <span class="o">-</span> <span class="n">mu</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">/</span> <span class="n">var</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="train-a-single-ensemble-member">
+<h3>3. Train a Single Ensemble Member<a class="headerlink" href="#train-a-single-ensemble-member" title="Link to this heading">¶</a></h3>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">train_single_model</span><span class="p">(</span>
+    <span class="n">model</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span>
+    <span class="n">loader</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">DataLoader</span><span class="p">,</span>
+    <span class="n">epochs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span>
+    <span class="n">lr</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-3</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Train a single regression model using Gaussian NLL loss.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        model (nn.Module): The regression model to train.</span>
+<span class="sd">        loader (DataLoader): Training data loader.</span>
+<span class="sd">        epochs (int): Number of training epochs.</span>
+<span class="sd">        lr (float): Learning rate.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        nn.Module: The trained model.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
+    <span class="n">opt</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span> <span class="n">lr</span><span class="o">=</span><span class="n">lr</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">epochs</span><span class="p">):</span>
+        <span class="n">total_loss</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+        <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">loader</span><span class="p">:</span>
+            <span class="n">mu</span><span class="p">,</span> <span class="n">log_var</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+            <span class="n">loss</span> <span class="o">=</span> <span class="n">gaussian_nll</span><span class="p">(</span><span class="n">mu</span><span class="p">,</span> <span class="n">log_var</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+
+            <span class="n">opt</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>
+            <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+            <span class="n">opt</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+
+            <span class="n">total_loss</span> <span class="o">+=</span> <span class="n">loss</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Epoch </span><span class="si">{</span><span class="n">epoch</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">: Loss=</span><span class="si">{</span><span class="n">total_loss</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nb">len</span><span class="p">(</span><span class="n">loader</span><span class="p">)</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">model</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="build-train-the-ensemble">
+<h3>4. Build &amp; Train the Ensemble<a class="headerlink" href="#build-train-the-ensemble" title="Link to this heading">¶</a></h3>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">build_ensemble</span><span class="p">(</span><span class="n">k</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">input_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">RegressionModel</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build an ensemble of probabilistic regression models.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        k (int): Number of ensemble members.</span>
+<span class="sd">        input_dim (int): Number of input features.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        list[RegressionModel]: List of trained ensemble models.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">RegressionModel</span><span class="p">(</span><span class="n">input_dim</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">k</span><span class="p">)]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">train_ensemble</span><span class="p">(</span>
+    <span class="n">ensemble</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">RegressionModel</span><span class="p">],</span>
+    <span class="n">loader</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">DataLoader</span><span class="p">,</span>
+    <span class="n">epochs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">RegressionModel</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Train all models in the ensemble.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        ensemble (list[RegressionModel]): List of models to train.</span>
+<span class="sd">        loader (DataLoader): Training data loader.</span>
+<span class="sd">        epochs (int): Number of training epochs.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        list[RegressionModel]: List of trained ensemble models.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">trained</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">model</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ensemble</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Training Ensemble Model </span><span class="si">{</span><span class="n">i</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">ensemble</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">trained_model</span> <span class="o">=</span> <span class="n">train_single_model</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">loader</span><span class="p">,</span> <span class="n">epochs</span><span class="p">)</span>
+        <span class="n">trained</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">trained_model</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">trained</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="synthetic-dataset-for-training-the-ensemble">
+<h3>5. Synthetic Dataset for training the Ensemble<a class="headerlink" href="#synthetic-dataset-for-training-the-ensemble" title="Link to this heading">¶</a></h3>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.2</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn_like</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+<span class="n">dataset</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">TensorDataset</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+<span class="n">loader</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">DataLoader</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="train-the-ensemble">
+<h3>6. Train the Ensemble<a class="headerlink" href="#train-the-ensemble" title="Link to this heading">¶</a></h3>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">ensemble</span> <span class="o">=</span> <span class="n">build_ensemble</span><span class="p">(</span><span class="n">k</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">input_dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">ensemble</span> <span class="o">=</span> <span class="n">train_ensemble</span><span class="p">(</span><span class="n">ensemble</span><span class="p">,</span> <span class="n">loader</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="collect-k-and-k2-this-are-the-ensemble-distribution">
+<h3>7. Collect μₖ and σₖ², this are the Ensemble Distribution<a class="headerlink" href="#collect-k-and-k2-this-are-the-ensemble-distribution" title="Link to this heading">¶</a></h3>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">get_ensemble_distributions</span><span class="p">(</span>
+    <span class="n">ensemble</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">RegressionModel</span><span class="p">],</span>
+    <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">],</span> <span class="nb">list</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute ensemble predictive distributions.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        ensemble (list[RegressionModel]): List of trained ensemble models.</span>
+<span class="sd">        x (torch.Tensor): Input batch to evaluate.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        tuple[list[torch.Tensor], list[torch.Tensor]]:</span>
+<span class="sd">            - List of predicted means from each ensemble member.</span>
+<span class="sd">            - List of predicted variances from each ensemble member.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">mus</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">vars_</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="n">ensemble</span><span class="p">:</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+        <span class="n">mu</span><span class="p">,</span> <span class="n">log_var</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">mus</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mu</span><span class="o">.</span><span class="n">detach</span><span class="p">())</span>
+        <span class="n">vars_</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">log_var</span><span class="o">.</span><span class="n">detach</span><span class="p">()))</span>
+
+    <span class="k">return</span> <span class="n">mus</span><span class="p">,</span> <span class="n">vars_</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="regression-prior-network-rpn">
+<h3>8. Regression Prior Network (RPN)<a class="headerlink" href="#regression-prior-network-rpn" title="Link to this heading">¶</a></h3>
+<p>The RPN outputs parameters of a <strong>Normal-Wishart distribution</strong>, which is a
+distribution <em>over Normal distributions from the Ensemble</em>:</p>
+<ul class="simple">
+<li><p>m(x) : prior mean for μ</p></li>
+<li><p>L(x) : precision parameter</p></li>
+<li><p>κ(x) : evidence about μ</p></li>
+<li><p>ν(x) : evidence about Σ</p></li>
+</ul>
+<p>From the Normal-Wishart parameters, the predictive distribution becomes a
+Student-t distribution.</p>
+</section>
+<section id="rpn-implementation">
+<h3>9. RPN Implementation<a class="headerlink" href="#rpn-implementation" title="Link to this heading">¶</a></h3>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">RegressionPriorNetwork</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Regression Prior Network: outputs Normal-Wishart parameters.</span>
+
+<span class="sd">    This implementation uses a univariate Normal-Wishart distribution for</span>
+<span class="sd">    evidential regression. It predicts the four parameters:</span>
+<span class="sd">    - m(x): location parameter (prior mean)</span>
+<span class="sd">    - l_precision(x): precision (must be &gt; 0)</span>
+<span class="sd">    - kappa(x): strength of belief in m</span>
+<span class="sd">    - nu(x): degrees of freedom (&gt; 2, controls heaviness of Student-t tails).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">64</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the Regression Prior Network.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            input_dim (int): Number of input features.</span>
+<span class="sd">            hidden_dim (int): Hidden layer width.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">feature</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">input_dim</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="p">),</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">(),</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">hidden_dim</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="p">),</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">(),</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Heads for the four Normal-Wishart parameters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">m_head</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">hidden_dim</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">l_precision_head</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">hidden_dim</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kappa_head</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">hidden_dim</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nu_head</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">hidden_dim</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Forward pass for predicting Normal-Wishart parameters.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x (torch.Tensor): Input batch.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Tuple containing:</span>
+<span class="sd">                - m (torch.Tensor): Prior mean.</span>
+<span class="sd">                - l_precision (torch.Tensor): Precision (&gt; 0).</span>
+<span class="sd">                - kappa (torch.Tensor): Strength (&gt; 0).</span>
+<span class="sd">                - nu (torch.Tensor): Degrees of freedom (&gt; 2).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">feature</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="n">m</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">m_head</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
+
+        <span class="c1"># Rename L → l_precision to satisfy Ruff rule N806</span>
+        <span class="n">l_precision</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">l_precision_head</span><span class="p">(</span><span class="n">h</span><span class="p">))</span>  <span class="c1"># must be &gt; 0</span>
+
+        <span class="c1"># kappa must be strictly positive</span>
+        <span class="n">kappa</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kappa_head</span><span class="p">(</span><span class="n">h</span><span class="p">))</span> <span class="o">+</span> <span class="mf">1e-3</span>
+
+        <span class="c1"># nu must be &gt; 2 to define a valid Student-t distribution</span>
+        <span class="n">nu</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nu_head</span><span class="p">(</span><span class="n">h</span><span class="p">))</span> <span class="o">+</span> <span class="mf">3.0</span>
+
+        <span class="k">return</span> <span class="n">m</span><span class="p">,</span> <span class="n">l_precision</span><span class="p">,</span> <span class="n">kappa</span><span class="p">,</span> <span class="n">nu</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="distillation-loss">
+<h3>10. Distillation Loss<a class="headerlink" href="#distillation-loss" title="Link to this heading">¶</a></h3>
+<p>We distill the ensemble Normal distributions
+$
+(\mu_k, \sigma_k^2)
+$
+into a single Normal-Wishart distribution predicted by the RPN.</p>
+<p>Loss:
+$
+L = -\frac{1}{K}\sum_k \log p_{NW}(\mu_k, \sigma_k^2)
+$</p>
+</section>
+<section id="normal-wishart-log-likelihood">
+<h3>11. Normal-Wishart Log-Likelihood<a class="headerlink" href="#normal-wishart-log-likelihood" title="Link to this heading">¶</a></h3>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tensor</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">normal_wishart_log_prob</span><span class="p">(</span>
+    <span class="n">m</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">l_precision</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">kappa</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">nu</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">mu_k</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">sigma2_k</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tensor</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute simplified univariate Normal-Wishart log-likelihood.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        m (Tensor): Prior mean parameter.</span>
+<span class="sd">        l_precision (Tensor): Precision (&gt; 0), formerly `L`.</span>
+<span class="sd">        kappa (Tensor): Strength parameter (&gt; 0).</span>
+<span class="sd">        nu (Tensor): Degrees of freedom (&gt; 2).</span>
+<span class="sd">        mu_k (Tensor): Sample mean from ensemble.</span>
+<span class="sd">        sigma2_k (Tensor): Sample variance from ensemble.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Tensor: Log-likelihood under the Normal-Wishart model.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Likelihood of ensemble mean under Normal prior for mean</span>
+    <span class="n">log_p_mu</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.5</span> <span class="o">*</span> <span class="n">kappa</span> <span class="o">*</span> <span class="n">l_precision</span> <span class="o">*</span> <span class="p">(</span><span class="n">mu_k</span> <span class="o">-</span> <span class="n">m</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
+
+    <span class="c1"># Likelihood of variance under Wishart prior on precision</span>
+    <span class="n">log_p_sigma</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">nu</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">l_precision</span><span class="p">)</span> <span class="o">-</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">nu</span> <span class="o">*</span> <span class="p">(</span><span class="n">sigma2_k</span> <span class="o">*</span> <span class="n">l_precision</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">log_p_mu</span> <span class="o">+</span> <span class="n">log_p_sigma</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="distillation-loss-function">
+<h3>12. Distillation Loss Function<a class="headerlink" href="#distillation-loss-function" title="Link to this heading">¶</a></h3>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tensor</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">rpn_distillation_loss</span><span class="p">(</span>
+    <span class="n">rpn_params</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">Tensor</span><span class="p">],</span>
+    <span class="n">mus</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Tensor</span><span class="p">],</span>
+    <span class="n">variances</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Tensor</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tensor</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute the distillation loss for Regression Prior Networks (RPN).</span>
+
+<span class="sd">    This loss measures how well the RPN&#39;s Normal-Wishart distribution</span>
+<span class="sd">    matches the empirical ensemble distributions (mu_k, var_k).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        rpn_params (tuple[Tensor, Tensor, Tensor, Tensor]):</span>
+<span class="sd">            The RPN output parameters (m, l_precision, kappa, nu).</span>
+<span class="sd">        mus (list[Tensor]): Ensemble predicted means.</span>
+<span class="sd">        variances (list[Tensor]): Ensemble predicted variances.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Tensor: Scalar loss value.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">m</span><span class="p">,</span> <span class="n">l_precision</span><span class="p">,</span> <span class="n">kappa</span><span class="p">,</span> <span class="n">nu</span> <span class="o">=</span> <span class="n">rpn_params</span>  <span class="c1"># formerly &quot;L&quot;</span>
+
+    <span class="n">losses</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Tensor</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">mu_k</span><span class="p">,</span> <span class="n">var_k</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">mus</span><span class="p">,</span> <span class="n">variances</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="n">log_prob</span> <span class="o">=</span> <span class="n">normal_wishart_log_prob</span><span class="p">(</span>
+            <span class="n">m</span><span class="p">,</span>
+            <span class="n">l_precision</span><span class="p">,</span>
+            <span class="n">kappa</span><span class="p">,</span>
+            <span class="n">nu</span><span class="p">,</span>
+            <span class="n">mu_k</span><span class="p">,</span>
+            <span class="n">var_k</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">losses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="o">-</span><span class="n">log_prob</span><span class="o">.</span><span class="n">mean</span><span class="p">())</span>  <span class="c1"># negative log-likelihood</span>
+
+    <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">losses</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="rpn-training-loop">
+<h3>13. RPN Training Loop<a class="headerlink" href="#rpn-training-loop" title="Link to this heading">¶</a></h3>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tensor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torch.utils.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataLoader</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">train_rpn</span><span class="p">(</span>
+    <span class="n">rpn</span><span class="p">:</span> <span class="n">RegressionPriorNetwork</span><span class="p">,</span>
+    <span class="n">ensemble</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">RegressionModel</span><span class="p">],</span>
+    <span class="n">loader</span><span class="p">:</span> <span class="n">DataLoader</span><span class="p">,</span>
+    <span class="n">epochs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Train the Regression Prior Network (RPN) using ensemble distillation.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        rpn (RegressionPriorNetwork): The RPN model to train.</span>
+<span class="sd">        ensemble (list[RegressionModel]): Ensemble of trained regression models.</span>
+<span class="sd">        loader (DataLoader): Training data loader.</span>
+<span class="sd">        epochs (int): Number of training epochs.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">optimizer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">(</span><span class="n">rpn</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span> <span class="n">lr</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">epochs</span><span class="p">):</span>
+        <span class="n">total_loss</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+        <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">loader</span><span class="p">:</span>
+            <span class="n">mus</span><span class="p">,</span> <span class="n">vars_</span> <span class="o">=</span> <span class="n">get_ensemble_distributions</span><span class="p">(</span><span class="n">ensemble</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
+
+            <span class="n">rpn_params</span> <span class="o">=</span> <span class="n">rpn</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+            <span class="n">loss</span> <span class="o">=</span> <span class="n">rpn_distillation_loss</span><span class="p">(</span><span class="n">rpn_params</span><span class="p">,</span> <span class="n">mus</span><span class="p">,</span> <span class="n">vars_</span><span class="p">)</span>
+
+            <span class="n">optimizer</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>
+            <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+            <span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+
+            <span class="n">total_loss</span> <span class="o">+=</span> <span class="n">loss</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Epoch </span><span class="si">{</span><span class="n">epoch</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">: RPN Loss=</span><span class="si">{</span><span class="n">total_loss</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nb">len</span><span class="p">(</span><span class="n">loader</span><span class="p">)</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="train-the-rpn">
+<h3>14. Train the RPN<a class="headerlink" href="#train-the-rpn" title="Link to this heading">¶</a></h3>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">rpn</span> <span class="o">=</span> <span class="n">RegressionPriorNetwork</span><span class="p">(</span><span class="n">input_dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">train_rpn</span><span class="p">(</span><span class="n">rpn</span><span class="p">,</span> <span class="n">ensemble</span><span class="p">,</span> <span class="n">loader</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">15</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="student-t-predictive-distribution">
+<h3>15. Student-t Predictive Distribution<a class="headerlink" href="#student-t-predictive-distribution" title="Link to this heading">¶</a></h3>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tensor</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">student_t_prediction</span><span class="p">(</span>
+    <span class="n">m</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">l_precision</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">kappa</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">nu</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">Tensor</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute predictive Student-t distribution parameters from Normal-Wishart posterior.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        m (Tensor): Posterior mean parameter.</span>
+<span class="sd">        l_precision (Tensor): Posterior precision parameter (&gt; 0).</span>
+<span class="sd">        kappa (Tensor): Posterior scaling parameter (&gt; 0).</span>
+<span class="sd">        nu (Tensor): Posterior degrees of freedom (&gt; 2).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        tuple[Tensor, Tensor, Tensor]:</span>
+<span class="sd">            - mean of Student-t distribution</span>
+<span class="sd">            - variance of Student-t distribution</span>
+<span class="sd">            - degrees of freedom (df)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">nu</span> <span class="o">-</span> <span class="mi">1</span>
+    <span class="n">var</span> <span class="o">=</span> <span class="p">(</span><span class="n">kappa</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">kappa</span> <span class="o">*</span> <span class="n">l_precision</span> <span class="o">*</span> <span class="n">df</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">m</span><span class="p">,</span> <span class="n">var</span><span class="p">,</span> <span class="n">df</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="rpn-output-testen">
+<h3>16. RPN Output testen<a class="headerlink" href="#rpn-output-testen" title="Link to this heading">¶</a></h3>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">x_test</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">m</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">kappa</span><span class="p">,</span> <span class="n">nu</span> <span class="o">=</span> <span class="n">rpn</span><span class="p">(</span><span class="n">x_test</span><span class="p">)</span>
+
+<span class="n">m_pred</span><span class="p">,</span> <span class="n">var_pred</span><span class="p">,</span> <span class="n">df</span> <span class="o">=</span> <span class="n">student_t_prediction</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">kappa</span><span class="p">,</span> <span class="n">nu</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="plotten-von-mean-unsicherheit">
+<h3>17. Plotten von Mean &amp; Unsicherheit<a class="headerlink" href="#plotten-von-mean-unsicherheit" title="Link to this heading">¶</a></h3>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+
+<span class="c1"># Convert x and y to numpy for plotting</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+    <span class="n">x</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span>
+    <span class="n">y</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span>
+    <span class="s2">&quot;k.&quot;</span><span class="p">,</span>
+    <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span>
+    <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Data&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># RPN mean</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+    <span class="n">x_test</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span>
+    <span class="n">m_pred</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span>
+    <span class="s2">&quot;b-&quot;</span><span class="p">,</span>
+    <span class="n">label</span><span class="o">=</span><span class="s2">&quot;RPN mean&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Standard deviation</span>
+<span class="n">std</span> <span class="o">=</span> <span class="n">var_pred</span><span class="o">.</span><span class="n">sqrt</span><span class="p">()</span>
+
+<span class="c1"># Fill between (convert EVERYTHING to numpy)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">fill_between</span><span class="p">(</span>
+    <span class="n">x_test</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span>
+    <span class="p">(</span><span class="n">m_pred</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">std</span><span class="p">)</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span>
+    <span class="p">(</span><span class="n">m_pred</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">std</span><span class="p">)</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span>
+    <span class="n">color</span><span class="o">=</span><span class="s2">&quot;blue&quot;</span><span class="p">,</span>
+    <span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span>
+    <span class="n">label</span><span class="o">=</span><span class="s2">&quot;±2 std RPN&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;RPN Prediction + Uncertainty&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="implementation-of-a-unified-regression-model-inspired-by-the-papers-deep-evidential-regression-and-regression-prior-networks">
+<h2>8.Implementation of a unified Regression Model inspired by the papers(Deep evidential Regression and  Regression Prior Networks<a class="headerlink" href="#implementation-of-a-unified-regression-model-inspired-by-the-papers-deep-evidential-regression-and-regression-prior-networks" title="Link to this heading">¶</a></h2>
+<section id="unified-evidential-regression-short-explanation">
+<h3>Unified Evidential Regression (Short Explanation)<a class="headerlink" href="#unified-evidential-regression-short-explanation" title="Link to this heading">¶</a></h3>
+<p>The unified evidential regression model combines <strong>Deep Evidential Regression (DER)</strong> and<br />
+<strong>Regression Prior Networks (RPN)</strong> to handle both <em>in-distribution</em> and <em>out-of-distribution</em> uncertainty.</p>
+</section>
+<section id="der-amini-et-al-2020">
+<h3>DER (Amini et al., 2020)<a class="headerlink" href="#der-amini-et-al-2020" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Predicts Normal–Inverse-Gamma parameters: (μ, κ, α, β)</p></li>
+<li><p>Learns regression + uncertainty from data</p></li>
+<li><p>Works well <strong>inside</strong> the training distribution</p></li>
+<li><p>Limitation: becomes overconfident <strong>outside</strong> the training region</p></li>
+</ul>
+</section>
+<section id="rpn-malinin-gales-2021">
+<h3>RPN (Malinin &amp; Gales, 2021)<a class="headerlink" href="#rpn-malinin-gales-2021" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Defines a <strong>zero-evidence prior</strong> for OOD inputs</p></li>
+<li><p>Uses <strong>KL-divergence</strong> to force the model to output low evidence outside the data</p></li>
+<li><p>Produces high <strong>epistemic uncertainty</strong> in unseen regions</p></li>
+<li><p>Limitation: cannot learn regression by itself</p></li>
+</ul>
+</section>
+<section id="unified-model">
+<h3>Unified Model<a class="headerlink" href="#unified-model" title="Link to this heading">¶</a></h3>
+<p>We apply:
+$
+L = L_{\text{DER}}(\text{ID data}) + \lambda_{\text{RPN}} \cdot L_{\text{KL}}(\text{OOD data})
+$</p>
+<ul class="simple">
+<li><p><strong>DER loss</strong> trains regression + in-distribution uncertainty</p></li>
+<li><p><strong>RPN KL loss</strong> forces uncertainty to grow in OOD regions</p></li>
+</ul>
+</section>
+<section id="result">
+<h3>Result<a class="headerlink" href="#result" title="Link to this heading">¶</a></h3>
+<p>A single model that:</p>
+<ul class="simple">
+<li><p>fits the data well (DER),</p></li>
+<li><p>is confident where it has evidence,</p></li>
+<li><p>becomes highly uncertain where no data exists (RPN),</p></li>
+<li><p>works <strong>without ensembles</strong>.</p></li>
+</ul>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">nn</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torch.utils.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataLoader</span><span class="p">,</span> <span class="n">TensorDataset</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">EvidentialRegression</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the neural network layers.&quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layers</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">64</span><span class="p">),</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">(),</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">64</span><span class="p">,</span> <span class="mi">64</span><span class="p">),</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">(),</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">64</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">Tensor</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Forward pass through the network.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x: Input tensor of shape (N, 1).</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Tuple of four tensors:</span>
+<span class="sd">                mu: Mean parameter of Normal-Gamma</span>
+<span class="sd">                kappa: Strength of belief in mean (&gt;= 0)</span>
+<span class="sd">                alpha: Shape parameter (&gt; 1)</span>
+<span class="sd">                beta: Scale parameter (&gt; 0)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="n">mu</span> <span class="o">=</span> <span class="n">out</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">:</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">kappa</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">out</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">:</span><span class="mi">2</span><span class="p">])</span>
+        <span class="n">alpha</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">out</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">:</span><span class="mi">3</span><span class="p">])</span> <span class="o">+</span> <span class="mf">1.0</span>
+        <span class="n">beta</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">out</span><span class="p">[:,</span> <span class="mi">3</span><span class="p">:</span><span class="mi">4</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">mu</span><span class="p">,</span> <span class="n">kappa</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">der_loss</span><span class="p">(</span>
+    <span class="n">y</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">mu</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">kappa</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">alpha</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">beta</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">lam</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.01</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tensor</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Deep Evidential Regression loss (Student-t NLL + evidence regularizer).&quot;&quot;&quot;</span>
+    <span class="n">eps</span> <span class="o">=</span> <span class="mf">1e-8</span>
+    <span class="n">two_bv</span> <span class="o">=</span> <span class="mf">2.0</span> <span class="o">*</span> <span class="n">beta</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">kappa</span><span class="p">)</span> <span class="o">+</span> <span class="n">eps</span>
+
+    <span class="n">lnll</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="mf">0.5</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="p">(</span><span class="n">kappa</span> <span class="o">+</span> <span class="n">eps</span><span class="p">))</span>
+        <span class="o">-</span> <span class="n">alpha</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">two_bv</span><span class="p">)</span>
+        <span class="o">+</span> <span class="p">(</span><span class="n">alpha</span> <span class="o">+</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">kappa</span> <span class="o">*</span> <span class="p">(</span><span class="n">y</span> <span class="o">-</span> <span class="n">mu</span><span class="p">)</span><span class="o">.</span><span class="n">pow</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="n">two_bv</span><span class="p">)</span>
+        <span class="o">+</span> <span class="n">torch</span><span class="o">.</span><span class="n">lgamma</span><span class="p">(</span><span class="n">alpha</span><span class="p">)</span>
+        <span class="o">-</span> <span class="n">torch</span><span class="o">.</span><span class="n">lgamma</span><span class="p">(</span><span class="n">alpha</span> <span class="o">+</span> <span class="mf">0.5</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="n">evidence</span> <span class="o">=</span> <span class="mf">2.0</span> <span class="o">*</span> <span class="n">kappa</span> <span class="o">+</span> <span class="n">alpha</span>
+    <span class="n">reg</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">y</span> <span class="o">-</span> <span class="n">mu</span><span class="p">)</span> <span class="o">*</span> <span class="n">evidence</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="n">lnll</span> <span class="o">+</span> <span class="n">lam</span> <span class="o">*</span> <span class="n">reg</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">rpn_prior</span><span class="p">(</span>
+    <span class="n">shape</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span>
+    <span class="n">device</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">Tensor</span><span class="p">]:</span>
+    <span class="n">eps</span> <span class="o">=</span> <span class="mf">1e-6</span>
+    <span class="n">mu0</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">kappa0</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span> <span class="o">*</span> <span class="n">eps</span>
+    <span class="n">alpha0</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">eps</span><span class="p">)</span>
+    <span class="n">beta0</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span> <span class="o">*</span> <span class="n">eps</span>
+    <span class="k">return</span> <span class="n">mu0</span><span class="p">,</span> <span class="n">kappa0</span><span class="p">,</span> <span class="n">alpha0</span><span class="p">,</span> <span class="n">beta0</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">rpn_ng_kl</span><span class="p">(</span>
+    <span class="n">mu</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">kappa</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">alpha</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">beta</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">mu0</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">kappa0</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">alpha0</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">beta0</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tensor</span><span class="p">:</span>
+    <span class="n">eps</span> <span class="o">=</span> <span class="mf">1e-8</span>
+
+    <span class="n">kappa</span> <span class="o">=</span> <span class="n">kappa</span> <span class="o">+</span> <span class="n">eps</span>
+    <span class="n">kappa0</span> <span class="o">=</span> <span class="n">kappa0</span> <span class="o">+</span> <span class="n">eps</span>
+    <span class="n">beta</span> <span class="o">=</span> <span class="n">beta</span> <span class="o">+</span> <span class="n">eps</span>
+    <span class="n">beta0</span> <span class="o">=</span> <span class="n">beta0</span> <span class="o">+</span> <span class="n">eps</span>
+
+    <span class="n">ratio_kappa</span> <span class="o">=</span> <span class="n">kappa</span> <span class="o">/</span> <span class="n">kappa0</span>
+
+    <span class="n">term_mu</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">alpha</span> <span class="o">/</span> <span class="n">beta</span><span class="p">)</span> <span class="o">*</span> <span class="n">kappa0</span> <span class="o">*</span> <span class="p">(</span><span class="n">mu</span> <span class="o">-</span> <span class="n">mu0</span><span class="p">)</span><span class="o">.</span><span class="n">pow</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">term_kappa</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">ratio_kappa</span> <span class="o">-</span> <span class="n">torch</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">ratio_kappa</span><span class="p">)</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span>
+    <span class="n">term_gamma</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">alpha0</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">beta</span> <span class="o">/</span> <span class="n">beta0</span><span class="p">)</span>
+        <span class="o">-</span> <span class="n">torch</span><span class="o">.</span><span class="n">lgamma</span><span class="p">(</span><span class="n">alpha</span><span class="p">)</span>
+        <span class="o">+</span> <span class="n">torch</span><span class="o">.</span><span class="n">lgamma</span><span class="p">(</span><span class="n">alpha0</span><span class="p">)</span>
+        <span class="o">+</span> <span class="p">(</span><span class="n">alpha</span> <span class="o">-</span> <span class="n">alpha0</span><span class="p">)</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">digamma</span><span class="p">(</span><span class="n">alpha</span><span class="p">)</span>
+        <span class="o">-</span> <span class="p">(</span><span class="n">beta</span> <span class="o">-</span> <span class="n">beta0</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">alpha</span> <span class="o">/</span> <span class="n">beta</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="n">term_mu</span> <span class="o">+</span> <span class="n">term_kappa</span> <span class="o">+</span> <span class="n">term_gamma</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">unified_loss</span><span class="p">(</span>
+    <span class="n">y</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">mu</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">kappa</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">alpha</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">beta</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">is_ood</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">lam_der</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.01</span><span class="p">,</span>
+    <span class="n">lam_rpn</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">50.0</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tensor</span><span class="p">:</span>
+    <span class="n">is_ood</span> <span class="o">=</span> <span class="n">is_ood</span><span class="o">.</span><span class="n">bool</span><span class="p">()</span>
+    <span class="n">id_mask</span> <span class="o">=</span> <span class="o">~</span><span class="n">is_ood</span>
+    <span class="n">ood_mask</span> <span class="o">=</span> <span class="n">is_ood</span>
+
+    <span class="n">device</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">device</span>
+
+    <span class="n">loss_id</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">loss_ood</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+
+    <span class="c1"># --- DER loss for ID samples ---</span>
+    <span class="k">if</span> <span class="n">id_mask</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+        <span class="n">loss_id</span> <span class="o">=</span> <span class="n">der_loss</span><span class="p">(</span>
+            <span class="n">y</span><span class="p">[</span><span class="n">id_mask</span><span class="p">],</span>
+            <span class="n">mu</span><span class="p">[</span><span class="n">id_mask</span><span class="p">],</span>
+            <span class="n">kappa</span><span class="p">[</span><span class="n">id_mask</span><span class="p">],</span>
+            <span class="n">alpha</span><span class="p">[</span><span class="n">id_mask</span><span class="p">],</span>
+            <span class="n">beta</span><span class="p">[</span><span class="n">id_mask</span><span class="p">],</span>
+            <span class="n">lam</span><span class="o">=</span><span class="n">lam_der</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="c1"># --- KL loss for OOD samples ---</span>
+    <span class="k">if</span> <span class="n">ood_mask</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+        <span class="n">shape</span> <span class="o">=</span> <span class="n">mu</span><span class="p">[</span><span class="n">ood_mask</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">mu0</span><span class="p">,</span> <span class="n">kappa0</span><span class="p">,</span> <span class="n">alpha0</span><span class="p">,</span> <span class="n">beta0</span> <span class="o">=</span> <span class="n">rpn_prior</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">device</span><span class="p">)</span>
+
+        <span class="n">loss_ood</span> <span class="o">=</span> <span class="n">rpn_ng_kl</span><span class="p">(</span>
+            <span class="n">mu</span><span class="p">[</span><span class="n">ood_mask</span><span class="p">],</span>
+            <span class="n">kappa</span><span class="p">[</span><span class="n">ood_mask</span><span class="p">],</span>
+            <span class="n">alpha</span><span class="p">[</span><span class="n">ood_mask</span><span class="p">],</span>
+            <span class="n">beta</span><span class="p">[</span><span class="n">ood_mask</span><span class="p">],</span>
+            <span class="n">mu0</span><span class="p">,</span>
+            <span class="n">kappa0</span><span class="p">,</span>
+            <span class="n">alpha0</span><span class="p">,</span>
+            <span class="n">beta0</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">loss_id</span> <span class="o">+</span> <span class="n">lam_rpn</span> <span class="o">*</span> <span class="n">loss_ood</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="datasets">
+<h3>Datasets<a class="headerlink" href="#datasets" title="Link to this heading">¶</a></h3>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">make_datasets</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">Tensor</span><span class="p">]:</span>
+    <span class="c1"># In-domain samples</span>
+    <span class="n">x_id</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">300</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">y_id</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">x_id</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.1</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn_like</span><span class="p">(</span><span class="n">x_id</span><span class="p">)</span>
+
+    <span class="c1"># Out-of-domain samples far away from the sin input range</span>
+    <span class="n">x_ood</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">y_ood</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">x_ood</span><span class="p">)</span>
+
+    <span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">x_id</span><span class="p">,</span> <span class="n">x_ood</span><span class="p">],</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">y_id</span><span class="p">,</span> <span class="n">y_ood</span><span class="p">],</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="c1"># OOD mask</span>
+    <span class="n">is_ood</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span>
+        <span class="p">[</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x_id</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">bool</span><span class="p">),</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x_ood</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">bool</span><span class="p">),</span>
+        <span class="p">],</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">is_ood</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="training-loop">
+<h3>Training Loop<a class="headerlink" href="#training-loop" title="Link to this heading">¶</a></h3>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">train</span><span class="p">(</span>
+    <span class="n">model</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span>
+    <span class="n">loader</span><span class="p">:</span> <span class="n">DataLoader</span><span class="p">,</span>
+    <span class="n">epochs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2000</span><span class="p">,</span>
+    <span class="n">lr</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-3</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">:</span>
+    <span class="n">optimizer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span> <span class="n">lr</span><span class="o">=</span><span class="n">lr</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">epochs</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">x_batch</span><span class="p">,</span> <span class="n">y_batch</span><span class="p">,</span> <span class="n">is_ood</span> <span class="ow">in</span> <span class="n">loader</span><span class="p">:</span>
+            <span class="n">mu</span><span class="p">,</span> <span class="n">kappa</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x_batch</span><span class="p">)</span>
+
+            <span class="n">loss</span> <span class="o">=</span> <span class="n">unified_loss</span><span class="p">(</span>
+                <span class="n">y_batch</span><span class="p">,</span>
+                <span class="n">mu</span><span class="p">,</span>
+                <span class="n">kappa</span><span class="p">,</span>
+                <span class="n">alpha</span><span class="p">,</span>
+                <span class="n">beta</span><span class="p">,</span>
+                <span class="n">is_ood</span><span class="p">,</span>
+                <span class="n">lam_der</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>
+                <span class="n">lam_rpn</span><span class="o">=</span><span class="mf">50.0</span><span class="p">,</span>  <span class="c1"># Strong KL for OOD uncertainty reinforcement</span>
+            <span class="p">)</span>
+
+            <span class="n">optimizer</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>
+            <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+            <span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+
+        <span class="c1"># Optional: print training progress</span>
+        <span class="k">if</span> <span class="n">epoch</span> <span class="o">%</span> <span class="mi">200</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Epoch </span><span class="si">{</span><span class="n">epoch</span><span class="si">}</span><span class="s2">] Loss = </span><span class="si">{</span><span class="n">loss</span><span class="o">.</span><span class="n">item</span><span class="p">()</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">model</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="plot-der-unisicherheit">
+<h3>Plot der Unisicherheit<a class="headerlink" href="#plot-der-unisicherheit" title="Link to this heading">¶</a></h3>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">plot_uncertainty</span><span class="p">(</span>
+    <span class="n">model</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span>
+    <span class="n">x</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">y</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">is_ood</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Plot model predictions and predictive uncertainty for unified evidential regression.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        model: Trained evidential regression model.</span>
+<span class="sd">        x: Input tensor of shape (N, 1).</span>
+<span class="sd">        y: Target tensor of shape (N, 1).</span>
+<span class="sd">        is_ood: Boolean mask indicating which samples are out-of-distribution.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        None. Displays a matplotlib figure.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+        <span class="n">mu</span><span class="p">,</span> <span class="n">_kappa</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">std</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">beta</span> <span class="o">/</span> <span class="p">(</span><span class="n">alpha</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">))</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+
+    <span class="c1"># In-domain points</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="o">~</span><span class="n">is_ood</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="o">~</span><span class="n">is_ood</span><span class="p">],</span> <span class="n">s</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;ID Data&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Out-of-domain points</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">is_ood</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="n">is_ood</span><span class="p">],</span> <span class="n">s</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;red&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;OOD Data&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Mean prediction</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="s2">&quot;k&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Prediction&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Uncertainty band</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">fill_between</span><span class="p">(</span>
+        <span class="n">x</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(),</span>
+        <span class="p">(</span><span class="n">mu</span> <span class="o">-</span> <span class="mf">2.0</span> <span class="o">*</span> <span class="n">std</span><span class="p">)</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(),</span>
+        <span class="p">(</span><span class="n">mu</span> <span class="o">+</span> <span class="mf">2.0</span> <span class="o">*</span> <span class="n">std</span><span class="p">)</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(),</span>
+        <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span>
+        <span class="n">color</span><span class="o">=</span><span class="s2">&quot;orange&quot;</span><span class="p">,</span>
+        <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Uncertainty&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Unified Evidential Regression — Predictive Uncertainty&quot;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;x&quot;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;y&quot;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="execution-block">
+<h3>Execution Block<a class="headerlink" href="#execution-block" title="Link to this heading">¶</a></h3>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">is_ood</span> <span class="o">=</span> <span class="n">make_datasets</span><span class="p">()</span>
+
+    <span class="n">dataset</span> <span class="o">=</span> <span class="n">TensorDataset</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">is_ood</span><span class="p">)</span>
+    <span class="n">loader</span> <span class="o">=</span> <span class="n">DataLoader</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">model</span> <span class="o">=</span> <span class="n">EvidentialRegression</span><span class="p">()</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">train</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">loader</span><span class="p">)</span>
+
+    <span class="n">plot_uncertainty</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">is_ood</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="unified-evidential-regression-on-mnist-practical-demonstration">
+<h2>9. Unified Evidential Regression on MNIST — Practical Demonstration<a class="headerlink" href="#unified-evidential-regression-on-mnist-practical-demonstration" title="Link to this heading">¶</a></h2>
+<p>In this section, we test the unified evidential regression model on a real-world dataset.<br />
+We combine:</p>
+<ul class="simple">
+<li><p><strong>Deep Evidential Regression (DER)</strong> → learns uncertainty directly from in-distribution data</p></li>
+<li><p><strong>Regression Prior Networks (RPN)</strong> → enforces high epistemic uncertainty for out-of-distribution (OOD) inputs</p></li>
+<li><p><strong>FashionMNIST as OOD samples</strong> → simulates unfamiliar inputs</p></li>
+</ul>
+<p>The unified model uses the combined loss:</p>
+<p>$
+L = L_{\text{DER}}(\text{ID}) + \lambda_{\text{RPN}} \cdot KL(\text{OOD})
+$</p>
+<section id="what-does-this-achieve">
+<h3>What does this achieve?<a class="headerlink" href="#what-does-this-achieve" title="Link to this heading">¶</a></h3>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Component</p></th>
+<th class="head"><p>Purpose</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>DER loss</strong></p></td>
+<td><p>Learns regression + aleatoric uncertainty</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>RPN KL loss</strong></p></td>
+<td><p>Forces epistemic uncertainty to increase on OOD inputs</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>is_ood mask</strong></p></td>
+<td><p>Tells the model which batch elements are OOD</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Unified loss</strong></p></td>
+<td><p>Merges both mechanisms into a single coherent approach</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="experiment-overview">
+<h3>Experiment overview<a class="headerlink" href="#experiment-overview" title="Link to this heading">¶</a></h3>
+<ol class="arabic simple">
+<li><p>MNIST digits are turned into a <strong>regression problem</strong> (1D input → normalized digit label).</p></li>
+<li><p>FashionMNIST is used as <strong>OOD data</strong>.</p></li>
+<li><p>The unified evidential model is trained to be confident where it has evidence and uncertain where it lacks evidence.</p></li>
+<li><p>The predictive mean and uncertainty are visualized</p></li>
+</ol>
+<p><strong>A single model now behaves like an ensemble + prior-driven OOD regulator — without needing an actual ensemble.</strong></p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># test mit unified function</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torch.utils.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataLoader</span><span class="p">,</span> <span class="n">Dataset</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torchvision</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torchvision</span><span class="w"> </span><span class="kn">import</span> <span class="n">transforms</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">MNIST1DRegression</span><span class="p">(</span><span class="n">Dataset</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mnist_dataset</span><span class="p">:</span> <span class="n">Dataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># noqa: D107</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mnist</span> <span class="o">=</span> <span class="n">mnist_dataset</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>  <span class="c1"># noqa: D105</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mnist</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>  <span class="c1"># noqa: D105</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mnist</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+
+        <span class="c1"># 1D input</span>
+        <span class="n">x_1d</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># convert int -&gt; tensor</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+        <span class="c1"># regression target</span>
+        <span class="n">y_reg</span> <span class="o">=</span> <span class="n">y</span> <span class="o">/</span> <span class="mf">9.0</span>
+
+        <span class="k">return</span> <span class="n">x_1d</span><span class="p">,</span> <span class="n">y_reg</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+
+<span class="n">transform</span> <span class="o">=</span> <span class="n">transforms</span><span class="o">.</span><span class="n">Compose</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="n">transforms</span><span class="o">.</span><span class="n">ToTensor</span><span class="p">(),</span>
+        <span class="n">transforms</span><span class="o">.</span><span class="n">Normalize</span><span class="p">((</span><span class="mf">0.5</span><span class="p">,),</span> <span class="p">(</span><span class="mf">0.5</span><span class="p">,)),</span>
+    <span class="p">],</span>
+<span class="p">)</span>
+
+
+<span class="c1"># In-distribution data</span>
+<span class="n">train_data</span> <span class="o">=</span> <span class="n">torchvision</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">MNIST</span><span class="p">(</span>
+    <span class="n">root</span><span class="o">=</span><span class="s2">&quot;~/datasets&quot;</span><span class="p">,</span>
+    <span class="n">train</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">download</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">transform</span><span class="o">=</span><span class="n">transform</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">test_data</span> <span class="o">=</span> <span class="n">torchvision</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">MNIST</span><span class="p">(</span>
+    <span class="n">root</span><span class="o">=</span><span class="s2">&quot;~/datasets&quot;</span><span class="p">,</span>
+    <span class="n">train</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">download</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">transform</span><span class="o">=</span><span class="n">transform</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">train_data</span> <span class="o">=</span> <span class="n">MNIST1DRegression</span><span class="p">(</span><span class="n">train_data</span><span class="p">)</span>
+<span class="n">test_data</span> <span class="o">=</span> <span class="n">MNIST1DRegression</span><span class="p">(</span><span class="n">test_data</span><span class="p">)</span>
+
+<span class="n">train_loader</span> <span class="o">=</span> <span class="n">DataLoader</span><span class="p">(</span><span class="n">train_data</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">drop_last</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">test_loader</span> <span class="o">=</span> <span class="n">DataLoader</span><span class="p">(</span><span class="n">test_data</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;MNIST loaded (ID).&quot;</span><span class="p">)</span>
+
+<span class="c1"># Out-of-distribution data</span>
+<span class="n">ood_data</span> <span class="o">=</span> <span class="n">torchvision</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">FashionMNIST</span><span class="p">(</span>
+    <span class="n">root</span><span class="o">=</span><span class="s2">&quot;~/datasets&quot;</span><span class="p">,</span>
+    <span class="n">train</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">download</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">transform</span><span class="o">=</span><span class="n">transform</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">ood_data</span> <span class="o">=</span> <span class="n">MNIST1DRegression</span><span class="p">(</span><span class="n">ood_data</span><span class="p">)</span>
+
+<span class="n">ood_loader</span> <span class="o">=</span> <span class="n">DataLoader</span><span class="p">(</span><span class="n">ood_data</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">drop_last</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Loaded datasets with </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">train_data</span><span class="p">)</span><span class="si">}</span><span class="s2"> samples.&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>MNIST loaded (ID).
+Loaded datasets with 60000 samples.
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">nn</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">probly.losses.evidential.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">rpn_loss</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">probly.models.evidential.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">EvidentialRegressionModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">probly.train.evidential.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">unified_evidential_train</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">MLPEncoder</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Simple MLP encoder used to transform inputs into feature embeddings.</span>
+
+<span class="sd">    This module contains no evidential logic.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_dim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">64</span><span class="p">,</span> <span class="n">latent_dim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">64</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the encoder.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            input_dim: Size of input features.</span>
+<span class="sd">            hidden_dim: Number of neurons in hidden layers.</span>
+<span class="sd">            latent_dim: Dimension of the output feature representation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">latent_dim</span> <span class="o">=</span> <span class="n">latent_dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">net</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">input_dim</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="p">),</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">(),</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">hidden_dim</span><span class="p">,</span> <span class="n">latent_dim</span><span class="p">),</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">(),</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute feature embedding.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x: Input tensor of shape (N, input_dim).</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Feature tensor of shape (N, feature_dim).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">net</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+
+<span class="n">enc</span> <span class="o">=</span> <span class="n">MLPEncoder</span><span class="p">()</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">EvidentialRegressionModel</span><span class="p">(</span><span class="n">encoder</span><span class="o">=</span><span class="n">enc</span><span class="p">)</span>
+<span class="n">unified_evidential_train</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;RPN&quot;</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">dataloader</span><span class="o">=</span><span class="n">train_loader</span><span class="p">,</span> <span class="n">loss_fn</span><span class="o">=</span><span class="n">rpn_loss</span><span class="p">,</span> <span class="n">oodloader</span><span class="o">=</span><span class="n">ood_loader</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="encoder-evidential-head-for-evidential-regression">
+<h2>10. Encoder + Evidential Head for Evidential Regression<a class="headerlink" href="#encoder-evidential-head-for-evidential-regression" title="Link to this heading">¶</a></h2>
+<p>In our unified evidential framework, we separate the model into two logical components:</p>
+<section id="encoder">
+<h3><strong>1. Encoder</strong><a class="headerlink" href="#encoder" title="Link to this heading">¶</a></h3>
+<p>The encoder maps the raw input features into a learned representation (feature embedding).
+This module can be replaced by any architecture (MLP, CNN, Transformer), as long as it
+returns a feature vector of fixed size.<br />
+It contains <strong>no evidential logic</strong>, only feature extraction.</p>
+</section>
+<section id="evidential-head">
+<h3><strong>2. Evidential Head</strong><a class="headerlink" href="#evidential-head" title="Link to this heading">¶</a></h3>
+<p>The evidential head converts the feature vector into the four Normal–Gamma parameters:</p>
+<ul class="simple">
+<li><p><strong>μ (mu)</strong>: predicted mean</p></li>
+<li><p><strong>κ (kappa)</strong>: strength of belief in the mean</p></li>
+<li><p><strong>α (alpha)</strong>: shape parameter</p></li>
+<li><p><strong>β (beta)</strong>: scale parameter</p></li>
+</ul>
+<p>These form the Normal–Gamma distribution used by DER and RPN.</p>
+</section>
+<section id="full-model">
+<h3><strong>3. Full Model</strong><a class="headerlink" href="#full-model" title="Link to this heading">¶</a></h3>
+<p>The final model simply combines:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">nn</span>
+
+
+<span class="c1"># ------------------------------</span>
+<span class="c1"># 1. General MLP Encoder</span>
+<span class="c1"># ------------------------------</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MLPEncoder</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Simple MLP encoder used to transform inputs into feature embeddings.</span>
+
+<span class="sd">    This module contains no evidential logic.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_dim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">64</span><span class="p">,</span> <span class="n">latent_dim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">64</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the encoder.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            input_dim: Size of input features.</span>
+<span class="sd">            hidden_dim: Number of neurons in hidden layers.</span>
+<span class="sd">            latent_dim: Dimension of the output feature representation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">latent_dim</span> <span class="o">=</span> <span class="n">latent_dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">net</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">input_dim</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="p">),</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">(),</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">hidden_dim</span><span class="p">,</span> <span class="n">latent_dim</span><span class="p">),</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">(),</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tensor</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute feature embedding.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x: Input tensor of shape (N, input_dim).</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Feature tensor of shape (N, feature_dim).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">net</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+
+<span class="c1"># ------------------------------</span>
+<span class="c1"># 2. Evidential Head</span>
+<span class="c1"># ------------------------------</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">EvidentialHead</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Head that converts encoded features into evidential Normal-Gamma parameters.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">latent_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the head.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            latent_dim: Dimension of input features coming from the encoder.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">linear</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">latent_dim</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">features</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">Tensor</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert features into (mu, kappa, alpha, beta).</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            features: Feature tensor (N, feature_dim)</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Tuple of four tensors representing Normal-Gamma parameters.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">raw</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">linear</span><span class="p">(</span><span class="n">features</span><span class="p">)</span>
+
+        <span class="n">mu</span> <span class="o">=</span> <span class="n">raw</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">:</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">kappa</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">raw</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">:</span><span class="mi">2</span><span class="p">])</span>
+        <span class="n">alpha</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">raw</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">:</span><span class="mi">3</span><span class="p">])</span> <span class="o">+</span> <span class="mf">1.0</span>
+        <span class="n">beta</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">raw</span><span class="p">[:,</span> <span class="mi">3</span><span class="p">:</span><span class="mi">4</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">mu</span><span class="p">,</span> <span class="n">kappa</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span>
+
+
+<span class="c1"># -------------------------------------------------------------------------------</span>
+<span class="c1"># 3. Full adjusted Evidential Regression Model to fit with the Encoder andd Head</span>
+<span class="c1"># -------------------------------------------------------------------------------</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">EvidentialRegressionModel</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Full evidential regression model combining encoder and evidential head.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">encoder</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the full model.&quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span> <span class="o">=</span> <span class="n">encoder</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">head</span> <span class="o">=</span> <span class="n">EvidentialHead</span><span class="p">(</span><span class="n">latent_dim</span><span class="o">=</span><span class="n">encoder</span><span class="o">.</span><span class="n">latent_dim</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">Tensor</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Forward pass through encoder and head.&quot;&quot;&quot;</span>
+        <span class="n">features</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="n">features</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="comparison-ensemble-rpn-vs-true-rpn-vs-der-vs-unified-evidential-model">
+<h2>11. Comparison: Ensemble RPN vs. True RPN vs. DER vs. Unified Evidential Model<a class="headerlink" href="#comparison-ensemble-rpn-vs-true-rpn-vs-der-vs-unified-evidential-model" title="Link to this heading">¶</a></h2>
+<section id="ensemble-based-rpn">
+<h3>Ensemble-based RPN<a class="headerlink" href="#ensemble-based-rpn" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Excellent epistemic uncertainty</p></li>
+<li><p>Behaves very well under distributional shift</p></li>
+<li><p>But computationally expensive: K models at training AND inference</p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="regression-prior-networks-malinin-gales-2021">
+<h3>Regression Prior Networks (Malinin &amp; Gales, 2021)<a class="headerlink" href="#regression-prior-networks-malinin-gales-2021" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Predict a Normal–Wishart distribution</p></li>
+<li><p>Produce <strong>Student-t predictive distributions</strong></p></li>
+<li><p>Naturally detect OOD inputs</p></li>
+<li><p>Do <em>not</em> require ensembles</p></li>
+<li><p>But: epistemic uncertainty is structural, not data-driven</p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="deep-evidential-regression-amini-et-al-2020">
+<h3>Deep Evidential Regression (Amini et al., 2020)<a class="headerlink" href="#deep-evidential-regression-amini-et-al-2020" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Predict Normal–Inverse-Gamma parameters (μ, κ, α, β)</p></li>
+<li><p>Learns aleatoric + epistemic uncertainty from data</p></li>
+<li><p>Works extremely well for ID regions</p></li>
+<li><p>Can become overconfident for OOD regions</p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="unified-evidential-regression-uer">
+<h3>Unified Evidential Regression (UER)<a class="headerlink" href="#unified-evidential-regression-uer" title="Link to this heading">¶</a></h3>
+<p>This model combines the strengths of both papers:</p>
+<ul class="simple">
+<li><p>DER for in-distribution learning + aleatoric uncertainty</p></li>
+<li><p>RPN-KL for epistemic uncertainty growth on OOD samples</p></li>
+<li><p>Student-t predictive structure</p></li>
+<li><p>No ensemble needed</p></li>
+</ul>
+<section id="full-comparison">
+<h4>Full Comparison<a class="headerlink" href="#full-comparison" title="Link to this heading">¶</a></h4>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Aspect</p></th>
+<th class="head"><p>Ensemble RPN</p></th>
+<th class="head"><p>RPN</p></th>
+<th class="head"><p>DER</p></th>
+<th class="head"><p>Unified Model</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Requires ensemble</p></td>
+<td><p>✔️</p></td>
+<td><p>❌</p></td>
+<td><p>❌</p></td>
+<td><p>❌</p></td>
+</tr>
+<tr class="row-odd"><td><p>Aleatoric uncertainty</p></td>
+<td><p>medium</p></td>
+<td><p>moderate</p></td>
+<td><p><strong>excellent</strong></p></td>
+<td><p><strong>excellent</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>Epistemic uncertainty</p></td>
+<td><p><strong>excellent</strong></p></td>
+<td><p>high</p></td>
+<td><p>moderate</p></td>
+<td><p><strong>excellent</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>OOD behavior</p></td>
+<td><p>strong</p></td>
+<td><p><strong>very strong</strong></p></td>
+<td><p>weak</p></td>
+<td><p><strong>best</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>Predictive form</p></td>
+<td><p>Student-t</p></td>
+<td><p>Student-t</p></td>
+<td><p>Gaussian / NIG</p></td>
+<td><p>Student-t-like</p></td>
+</tr>
+<tr class="row-odd"><td><p>Computational cost</p></td>
+<td><p>very high</p></td>
+<td><p>low</p></td>
+<td><p>low</p></td>
+<td><p>low</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<hr class="docutils" />
+<section id="why-the-unified-model-is-better-than-ensemble-rpn">
+<h4>Why the Unified Model is Better Than Ensemble-RPN<a class="headerlink" href="#why-the-unified-model-is-better-than-ensemble-rpn" title="Link to this heading">¶</a></h4>
+<ul class="simple">
+<li><p>Matches ensemble epistemic behavior <strong>without K models</strong></p></li>
+<li><p>Provides better aleatoric modeling (from DER)</p></li>
+<li><p>Stronger and more controlled OOD uncertainty (from RPN-KL)</p></li>
+<li><p>Single-model deployment, faster inference</p></li>
+<li><p>More stable training</p></li>
+<li><p>Student-t predictive distribution emerges naturally</p></li>
+</ul>
+<p><strong>The unified model is essentially an ensemble-quality uncertainty estimator that is cheaper, simpler, and more robust.</strong>
+at inspired RPN.</p>
+</section>
+</section>
+</section>
+<section id="conclusion-a-unified-perspective-on-uncertainty">
+<h2>12. Conclusion — A Unified Perspective on Uncertainty<a class="headerlink" href="#conclusion-a-unified-perspective-on-uncertainty" title="Link to this heading">¶</a></h2>
+<p>In this notebook we explored three major approaches for uncertainty in deep regression, and finally merged them into a unified evidential framework.</p>
+<section id="ensembles">
+<h3>1. Ensembles<a class="headerlink" href="#ensembles" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Provide excellent epistemic uncertainty</p></li>
+<li><p>But expensive: multiple models, high compute + memory</p></li>
+</ul>
+</section>
+<section id="regression-prior-networks-rpn">
+<h3>2. Regression Prior Networks (RPN)<a class="headerlink" href="#regression-prior-networks-rpn" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Learn a <strong>Normal–Wishart prior</strong> instead of point estimates</p></li>
+<li><p>Produce <strong>Student-t predictive distributions</strong>, ideal for OOD</p></li>
+<li><p>Much cheaper than ensembles</p></li>
+</ul>
+</section>
+<section id="deep-evidential-regression-der">
+<h3>3. Deep Evidential Regression (DER)<a class="headerlink" href="#deep-evidential-regression-der" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Learns aleatoric + epistemic uncertainty from data</p></li>
+<li><p>Strong performance inside the training distribution</p></li>
+<li><p>Overconfident outside the training range</p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="id1">
+<h3>Unified Evidential Regression (UER)<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h3>
+<p>By combining DER and RPN, we obtain a model that:</p>
+<ul class="simple">
+<li><p>fits the data well (DER),</p></li>
+<li><p>expresses meaningful epistemic uncertainty (RPN),</p></li>
+<li><p>becomes highly uncertain on unfamiliar inputs,</p></li>
+<li><p>does <strong>not</strong> require ensembles,</p></li>
+<li><p>provides <strong>Student-t-like predictive behavior</strong>.</p></li>
+</ul>
+<p>$L = L_{\text{DER}} + \lambda_{\text{RPN}} \cdot KL_{\text{OOD}}
+$</p>
+<section id="id2">
+<h4>Result<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h4>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Capability</p></th>
+<th class="head"><p>Ensemble</p></th>
+<th class="head"><p>RPN</p></th>
+<th class="head"><p>DER</p></th>
+<th class="head"><p>Unified Model</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Aleatoric uncertainty</p></td>
+<td><p>medium</p></td>
+<td><p>good</p></td>
+<td><p><strong>excellent</strong></p></td>
+<td><p><strong>excellent</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>Epistemic uncertainty</p></td>
+<td><p>excellent</p></td>
+<td><p>excellent</p></td>
+<td><p>medium</p></td>
+<td><p><strong>excellent</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>OOD detection</p></td>
+<td><p>good</p></td>
+<td><p><strong>very strong</strong></p></td>
+<td><p>weak</p></td>
+<td><p><strong>excellent</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>Computational cost</p></td>
+<td><p>very high</p></td>
+<td><p>low</p></td>
+<td><p>low</p></td>
+<td><p>low</p></td>
+</tr>
+<tr class="row-even"><td><p>Requires multiple models</p></td>
+<td><p>✔️</p></td>
+<td><p>❌</p></td>
+<td><p>❌</p></td>
+<td><p>❌</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>Unified Evidential Regression provides ensemble-level uncertainty at a fraction of the cost.</strong></p>
+</section>
+</section>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          
+          
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2025, probly team
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Understanding Prior Networks and Regression Prior Networks</a><ul>
+<li><a class="reference internal" href="#a-practical-and-mathematical-guide-to-uncertainty-modeling-in-deep-learning">A Practical and Mathematical Guide to Uncertainty Modeling in Deep Learning</a></li>
+<li><a class="reference internal" href="#introduction">1. Introduction</a></li>
+<li><a class="reference internal" href="#ensembles-and-why-they-matter">2. Ensembles and Why They Matter</a><ul>
+<li><a class="reference internal" href="#data-uncertainty-aleatoric">🔹 Data Uncertainty (Aleatoric)</a></li>
+<li><a class="reference internal" href="#knowledge-uncertainty-epistemic">🔹 Knowledge Uncertainty (Epistemic)</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#prior-networks-for-classification-dirichlet-prior-networks">3. Prior Networks for Classification (Dirichlet Prior Networks)</a></li>
+<li><a class="reference internal" href="#why-dirichlet">🔹 Why Dirichlet?</a></li>
+<li><a class="reference internal" href="#predictive-distribution">🔹 Predictive Distribution</a><ul>
+<li><a class="reference internal" href="#total-uncertainty">✔ Total uncertainty</a></li>
+<li><a class="reference internal" href="#data-aleatoric-uncertainty">✔ Data (aleatoric) uncertainty</a></li>
+<li><a class="reference internal" href="#knowledge-epistemic-uncertainty">✔ Knowledge (epistemic) uncertainty</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#why-is-this-useful">🔹 Why is this useful?</a></li>
+<li><a class="reference internal" href="#transition-from-classification-to-regression-prior-networks">4. Transition From Classification to Regression Prior Networks</a></li>
+<li><a class="reference internal" href="#regression-prior-networks-rpns">5. Regression Prior Networks (RPNs)</a><ul>
+<li><a class="reference internal" href="#step-1-use-a-normal-likelihood">Step 1 — Use a Normal likelihood</a></li>
+<li><a class="reference internal" href="#step-2-predict-a-distribution-over-mu-lambda">Step 2 — Predict a <em>distribution</em> over (\mu, \Lambda)</a></li>
+<li><a class="reference internal" href="#step-3-predictive-distribution-is-a-student-t">Step 3 — Predictive distribution is a Student-t</a></li>
+<li><a class="reference internal" href="#benefits-of-student-t">Benefits of Student-t</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#the-student-t-distribution">5.1 The Student-t Distribution</a><ul>
+<li><a class="reference internal" href="#why-student-t-instead-of-normal">🔹 Why Student-t instead of Normal?</a></li>
+<li><a class="reference internal" href="#shape-of-a-student-t-distribution">🔹 Shape of a Student-t distribution</a></li>
+<li><a class="reference internal" href="#why-is-this-important-for-rpns">🔹 Why is this important for RPNs?</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#ensemble-distribution-distillation-end2">6. Ensemble Distribution Distillation (EnD²)</a><ul>
+<li><a class="reference internal" href="#how-end2-works">How EnD² works</a></li>
+<li><a class="reference internal" href="#why-this-is-important">Why this is important?</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#implementation-pipeline-for-regression-prior-networks-rpn-ensemble-based-distillation">7. Implementation pipeline for Regression Prior Networks (RPN) — Ensemble-Based Distillation</a><ul>
+<li><a class="reference internal" href="#pipeline-overview">Pipeline Overview</a></li>
+<li><a class="reference internal" href="#ensemble-probabilistic-regression-models">1. Ensemble Probabilistic Regression Models</a></li>
+<li><a class="reference internal" href="#gaussian-negative-log-likelihood">2. Gaussian Negative Log Likelihood</a></li>
+<li><a class="reference internal" href="#train-a-single-ensemble-member">3. Train a Single Ensemble Member</a></li>
+<li><a class="reference internal" href="#build-train-the-ensemble">4. Build &amp; Train the Ensemble</a></li>
+<li><a class="reference internal" href="#synthetic-dataset-for-training-the-ensemble">5. Synthetic Dataset for training the Ensemble</a></li>
+<li><a class="reference internal" href="#train-the-ensemble">6. Train the Ensemble</a></li>
+<li><a class="reference internal" href="#collect-k-and-k2-this-are-the-ensemble-distribution">7. Collect μₖ and σₖ², this are the Ensemble Distribution</a></li>
+<li><a class="reference internal" href="#regression-prior-network-rpn">8. Regression Prior Network (RPN)</a></li>
+<li><a class="reference internal" href="#rpn-implementation">9. RPN Implementation</a></li>
+<li><a class="reference internal" href="#distillation-loss">10. Distillation Loss</a></li>
+<li><a class="reference internal" href="#normal-wishart-log-likelihood">11. Normal-Wishart Log-Likelihood</a></li>
+<li><a class="reference internal" href="#distillation-loss-function">12. Distillation Loss Function</a></li>
+<li><a class="reference internal" href="#rpn-training-loop">13. RPN Training Loop</a></li>
+<li><a class="reference internal" href="#train-the-rpn">14. Train the RPN</a></li>
+<li><a class="reference internal" href="#student-t-predictive-distribution">15. Student-t Predictive Distribution</a></li>
+<li><a class="reference internal" href="#rpn-output-testen">16. RPN Output testen</a></li>
+<li><a class="reference internal" href="#plotten-von-mean-unsicherheit">17. Plotten von Mean &amp; Unsicherheit</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#implementation-of-a-unified-regression-model-inspired-by-the-papers-deep-evidential-regression-and-regression-prior-networks">8.Implementation of a unified Regression Model inspired by the papers(Deep evidential Regression and  Regression Prior Networks</a><ul>
+<li><a class="reference internal" href="#unified-evidential-regression-short-explanation">Unified Evidential Regression (Short Explanation)</a></li>
+<li><a class="reference internal" href="#der-amini-et-al-2020">DER (Amini et al., 2020)</a></li>
+<li><a class="reference internal" href="#rpn-malinin-gales-2021">RPN (Malinin &amp; Gales, 2021)</a></li>
+<li><a class="reference internal" href="#unified-model">Unified Model</a></li>
+<li><a class="reference internal" href="#result">Result</a></li>
+<li><a class="reference internal" href="#datasets">Datasets</a></li>
+<li><a class="reference internal" href="#training-loop">Training Loop</a></li>
+<li><a class="reference internal" href="#plot-der-unisicherheit">Plot der Unisicherheit</a></li>
+<li><a class="reference internal" href="#execution-block">Execution Block</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#unified-evidential-regression-on-mnist-practical-demonstration">9. Unified Evidential Regression on MNIST — Practical Demonstration</a><ul>
+<li><a class="reference internal" href="#what-does-this-achieve">What does this achieve?</a></li>
+<li><a class="reference internal" href="#experiment-overview">Experiment overview</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#encoder-evidential-head-for-evidential-regression">10. Encoder + Evidential Head for Evidential Regression</a><ul>
+<li><a class="reference internal" href="#encoder"><strong>1. Encoder</strong></a></li>
+<li><a class="reference internal" href="#evidential-head"><strong>2. Evidential Head</strong></a></li>
+<li><a class="reference internal" href="#full-model"><strong>3. Full Model</strong></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#comparison-ensemble-rpn-vs-true-rpn-vs-der-vs-unified-evidential-model">11. Comparison: Ensemble RPN vs. True RPN vs. DER vs. Unified Evidential Model</a><ul>
+<li><a class="reference internal" href="#ensemble-based-rpn">Ensemble-based RPN</a></li>
+<li><a class="reference internal" href="#regression-prior-networks-malinin-gales-2021">Regression Prior Networks (Malinin &amp; Gales, 2021)</a></li>
+<li><a class="reference internal" href="#deep-evidential-regression-amini-et-al-2020">Deep Evidential Regression (Amini et al., 2020)</a></li>
+<li><a class="reference internal" href="#unified-evidential-regression-uer">Unified Evidential Regression (UER)</a><ul>
+<li><a class="reference internal" href="#full-comparison">Full Comparison</a></li>
+<li><a class="reference internal" href="#why-the-unified-model-is-better-than-ensemble-rpn">Why the Unified Model is Better Than Ensemble-RPN</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#conclusion-a-unified-perspective-on-uncertainty">12. Conclusion — A Unified Perspective on Uncertainty</a><ul>
+<li><a class="reference internal" href="#ensembles">1. Ensembles</a></li>
+<li><a class="reference internal" href="#regression-prior-networks-rpn">2. Regression Prior Networks (RPN)</a></li>
+<li><a class="reference internal" href="#deep-evidential-regression-der">3. Deep Evidential Regression (DER)</a></li>
+<li><a class="reference internal" href="#id1">Unified Evidential Regression (UER)</a><ul>
+<li><a class="reference internal" href="#id2">Result</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../../_static/documentation_options.js?v=4621528c"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/scripts/furo.js?v=5fa4622c"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=ccdb6887"></script>
+    </body>
+</html>

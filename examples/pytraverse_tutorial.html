@@ -316,11 +316,6 @@
 </pre></div>
 </div>
 </div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>HELLO WORLD
-</pre></div>
-</div>
-</div>
 </div>
 <p>The core function offered by the <code class="docutils literal notranslate"><span class="pre">pytraverse</span></code> module is the <code class="docutils literal notranslate"><span class="pre">traverse</span></code> function. It takes an object to traverse and a traverser that should be applied to it.
 Here, the traverser just calls the <code class="docutils literal notranslate"><span class="pre">.upper()</span></code> method of the passed-in string.</p>
@@ -354,11 +349,6 @@ For now, just remember to annotate your traverser functions with this decorator.
 </pre></div>
 </div>
 </div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>45
-</pre></div>
-</div>
-</div>
 </div>
 <p>That was easy enough. Now, let’s rewrite this to use the pytraverse library:</p>
 <div class="cell docutils container">
@@ -375,11 +365,6 @@ For now, just remember to annotate your traverser functions with this decorator.
 
 
 <span class="nb">print</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">traverse</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sum_traverser</span><span class="p">))</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>45
 </pre></div>
 </div>
 </div>
@@ -425,14 +410,6 @@ Using naive recusive Python, this might look something like this:</p>
 </pre></div>
 </div>
 </div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Data: [[1, 2, [3, [4, 5], 6], 7, 8], 9]
-Mul: [[2, 4, [6, [8, 10], 12], 14, 16], 18]
-Add: [[2, 3, [4, [5, 6], 7], 8, 9], 10]
-Pow: [[2, 4, [8, [16, 32], 64], 128, 256], 512]
-</pre></div>
-</div>
-</div>
 </div>
 <p>Note the redundant code in <code class="docutils literal notranslate"><span class="pre">mashed_multiply</span></code>, <code class="docutils literal notranslate"><span class="pre">mashed_add</span></code> and <code class="docutils literal notranslate"><span class="pre">mashed_exp</span></code>.
 For complicated traversal logic, monolithic recursive processors leads to duplicated, non-extensible and brittle code.
@@ -463,14 +440,6 @@ Let’s fix this using traversers…</p>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Mul:&quot;</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">traverse</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">sequential</span><span class="p">(</span><span class="n">data_traverser</span><span class="p">,</span> <span class="n">mul_traverser</span><span class="p">)))</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Add:&quot;</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">traverse</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">sequential</span><span class="p">(</span><span class="n">data_traverser</span><span class="p">,</span> <span class="n">add_traverser</span><span class="p">)))</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Pow:&quot;</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">traverse</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">sequential</span><span class="p">(</span><span class="n">data_traverser</span><span class="p">,</span> <span class="n">pow_traverser</span><span class="p">)))</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Data: [[1, 2, [3, [4, 5], 6], 7, 8], 9]
-Mul: [[2, 4, [6, [8, 10], 12], 14, 16], 18]
-Add: [[2, 3, [4, [5, 6], 7], 8, 9], 10]
-Pow: [[2, 4, [8, [16, 32], 64], 128, 256], 512]
 </pre></div>
 </div>
 </div>
@@ -530,14 +499,6 @@ For example, assume we decide that our composed traversers should not only be ab
 </pre></div>
 </div>
 </div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Mixed Data: {&#39;a&#39;: 1, &#39;b&#39;: [2, 3], &#39;c&#39;: {&#39;d&#39;: 4, &#39;e&#39;: 5}}
-Mul: {&#39;a&#39;: 1, &#39;b&#39;: [2, 3], &#39;c&#39;: {&#39;d&#39;: 4, &#39;e&#39;: 5}}
-Add: {&#39;a&#39;: 1, &#39;b&#39;: [2, 3], &#39;c&#39;: {&#39;d&#39;: 4, &#39;e&#39;: 5}}
-Pow: {&#39;a&#39;: 1, &#39;b&#39;: [2, 3], &#39;c&#39;: {&#39;d&#39;: 4, &#39;e&#39;: 5}}
-</pre></div>
-</div>
-</div>
 </div>
 <p>Since <code class="docutils literal notranslate"><span class="pre">data_traverser</span></code> only knows how to deal with lists, we cannot process <code class="docutils literal notranslate"><span class="pre">mixed_data</span></code>.</p>
 <p>Naively, we could just rewrite the <code class="docutils literal notranslate"><span class="pre">data_traverser</span></code> to also deal with <code class="docutils literal notranslate"><span class="pre">dict</span></code> inputs.
@@ -563,14 +524,6 @@ This means that we can extend the behavior of our traverser like this:</p>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Mul:&quot;</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">traverse</span><span class="p">(</span><span class="n">mixed_data</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">sequential</span><span class="p">(</span><span class="n">data_traverser</span><span class="p">,</span> <span class="n">mul_traverser</span><span class="p">)))</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Add:&quot;</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">traverse</span><span class="p">(</span><span class="n">mixed_data</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">sequential</span><span class="p">(</span><span class="n">data_traverser</span><span class="p">,</span> <span class="n">add_traverser</span><span class="p">)))</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Pow:&quot;</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">traverse</span><span class="p">(</span><span class="n">mixed_data</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">sequential</span><span class="p">(</span><span class="n">data_traverser</span><span class="p">,</span> <span class="n">pow_traverser</span><span class="p">)))</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Mixed Data: {&#39;a&#39;: 1, &#39;b&#39;: [2, 3], &#39;c&#39;: {&#39;d&#39;: 4, &#39;e&#39;: 5}}
-Mul: {&#39;a&#39;: 2, &#39;b&#39;: [4, 6], &#39;c&#39;: {&#39;d&#39;: 8, &#39;e&#39;: 10}}
-Add: {&#39;a&#39;: 2, &#39;b&#39;: [3, 4], &#39;c&#39;: {&#39;d&#39;: 5, &#39;e&#39;: 6}}
-Pow: {&#39;a&#39;: 2, &#39;b&#39;: [4, 8], &#39;c&#39;: {&#39;d&#39;: 16, &#39;e&#39;: 32}}
 </pre></div>
 </div>
 </div>
@@ -618,13 +571,6 @@ Since showing is better than telling, let’s just see how this works:</p>
 </pre></div>
 </div>
 </div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Data: {&#39;a&#39;: 1, &#39;b&#39;: [2, 3], &#39;c&#39;: {&#39;d&#39;: 4, &#39;e&#39;: 5}}
-Traversed Data: {&#39;a&#39;: 2, &#39;b&#39;: [4, 6], &#39;c&#39;: {&#39;d&#39;: 8, &#39;e&#39;: 10}}
-Leaf Count: 5
-</pre></div>
-</div>
-</div>
 </div>
 <p>First, we define the gloabl <code class="docutils literal notranslate"><span class="pre">int</span></code> variable <code class="docutils literal notranslate"><span class="pre">LEAF_COUNT</span></code>.
 Second, we register a new default dispatcher with the <code class="docutils literal notranslate"><span class="pre">data_traverser</span></code>.
@@ -651,12 +597,6 @@ After traversing/processing all five leaf nodes of <code class="docutils literal
 
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Data:&quot;</span><span class="p">,</span> <span class="n">mixed_data</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Traversed Data:&quot;</span><span class="p">,</span> <span class="n">traversed_data</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Data: {&#39;a&#39;: 1, &#39;b&#39;: [2, 3], &#39;c&#39;: {&#39;d&#39;: 4, &#39;e&#39;: 5}}
-Traversed Data: {&#39;a&#39;: 1, &#39;b&#39;: [4, 3], &#39;c&#39;: {&#39;d&#39;: 8, &#39;e&#39;: 5}}
 </pre></div>
 </div>
 </div>
@@ -700,20 +640,6 @@ Let’s now only apply the multiply traverser to nodes that are not at the root 
 </pre></div>
 </div>
 </div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>DEPTH_COUNT = 0 at object {&#39;a&#39;: 1, &#39;b&#39;: [2, 3], &#39;c&#39;: {&#39;d&#39;: 4, &#39;e&#39;: 5}}
-DEPTH_COUNT = 1 at object 1
-DEPTH_COUNT = 1 at object [2, 3]
-DEPTH_COUNT = 2 at object 2
-DEPTH_COUNT = 2 at object 3
-DEPTH_COUNT = 1 at object {&#39;d&#39;: 4, &#39;e&#39;: 5}
-DEPTH_COUNT = 2 at object 4
-DEPTH_COUNT = 2 at object 5
-Data: {&#39;a&#39;: 1, &#39;b&#39;: [2, 3], &#39;c&#39;: {&#39;d&#39;: 4, &#39;e&#39;: 5}}
-Traversed Data: {&#39;a&#39;: 1, &#39;b&#39;: [4, 6], &#39;c&#39;: {&#39;d&#39;: 8, &#39;e&#39;: 10}}
-</pre></div>
-</div>
-</div>
 </div>
 <p>Overall, this is pretty similar to what we did before but now we used A <code class="docutils literal notranslate"><span class="pre">StackVariable</span></code> instead of a <code class="docutils literal notranslate"><span class="pre">GlobalVariable</span></code>.
 As the name suggests, updates to stack variables are only visible in downstream traverser calls, not upstream.</p>
@@ -734,20 +660,6 @@ Let’s try the following:</p>
 
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Data:&quot;</span><span class="p">,</span> <span class="n">mixed_data</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Traversed Data:&quot;</span><span class="p">,</span> <span class="n">traversed_data</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>DEPTH_COUNT = 0 at object 1
-DEPTH_COUNT = 0 at object 2
-DEPTH_COUNT = 0 at object 3
-DEPTH_COUNT = 0 at object [2, 3]
-DEPTH_COUNT = 0 at object 4
-DEPTH_COUNT = 0 at object 5
-DEPTH_COUNT = 0 at object {&#39;d&#39;: 4, &#39;e&#39;: 5}
-DEPTH_COUNT = 0 at object {&#39;a&#39;: 1, &#39;b&#39;: [2, 3], &#39;c&#39;: {&#39;d&#39;: 4, &#39;e&#39;: 5}}
-Data: {&#39;a&#39;: 1, &#39;b&#39;: [2, 3], &#39;c&#39;: {&#39;d&#39;: 4, &#39;e&#39;: 5}}
-Traversed Data: {&#39;a&#39;: 1, &#39;b&#39;: [2, 3], &#39;c&#39;: {&#39;d&#39;: 4, &#39;e&#39;: 5}}
 </pre></div>
 </div>
 </div>
