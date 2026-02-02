@@ -8,7 +8,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 import json
 import logging
-import math
 from pathlib import Path
 import random
 from typing import TYPE_CHECKING, Any, Protocol, cast
@@ -17,52 +16,11 @@ import warnings
 import numpy as np
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
+    from collections.abc import Callable, Iterable, Iterator, Mapping
 
     from numpy.typing import NDArray
 
 logger = logging.getLogger(__name__)
-
-
-def _is_prob_vector(v: Sequence[float], atol: float = 1e-4) -> bool:
-    if len(v) == 0:
-        return False
-    if not all((-atol) <= x <= (1 + atol) for x in v):
-        return False
-    s = sum(v)
-    return abs(s - 1.0) <= atol
-
-
-def _is_probabilities(outputs: Sequence[Sequence[float]], atol: float = 1e-4) -> bool:
-    if not outputs:
-        return False
-    return all(_is_prob_vector(row, atol=atol) for row in outputs)
-
-
-def _softmax_row(row: Sequence[float]) -> list[float]:
-    if not row:
-        return []
-    m = max(row)
-    exps = [math.exp(x - m) for x in row]
-    s = sum(exps)
-    return [e / s for e in exps] if s > 0 else [0.0 for _ in row]
-
-
-def _to_batch_outputs(outputs: object) -> list[list[float]]:
-    # Normalize various output shapes into list[list[float]]
-    if outputs is None:
-        return []
-    if isinstance(outputs, (list, tuple)):
-        if len(outputs) == 0:
-            return []
-        # If first element is a number treat as single sample vector
-        first = outputs[0]
-        if isinstance(first, (int, float)):
-            return [list(outputs)]
-        # Else assume batch of vectors
-        return [list(row) for row in outputs]
-    # Fallback: treat scalar or unknown as singlesample oneelement vector
-    return [[float(cast("Any", outputs))]]
 
 
 def _to_batch_array(outputs: object) -> np.ndarray:
@@ -231,20 +189,32 @@ class FirstOrderDataGenerator:
                 "model_name": self.model_name,
                 **(meta or {}),
             },
-            "distributions": {str(k): list(v) for k, v in distributions.items()},
+            "distributions": {
+                str(k): np.asarray(list(v) if not isinstance(v, np.ndarray) else v, dtype=float).tolist()
+                for k, v in distributions.items()
+            },
         }
         path.parent.mkdir(parents=True, exist_ok=True)
         with path.open("w", encoding="utf-8") as f:
             json.dump(serializable, f, ensure_ascii=False)
 
-    def load_distributions(self, path: str | Path) -> tuple[dict[int, list[float]], dict[str, Any]]:
-        """Load distributions and metadata from JSON."""
+    def load_distributions(
+        self, path: str | Path, *, return_numpy: bool = True
+    ) -> tuple[dict[int, Any], dict[str, Any]]:
+        """Load distributions and metadata from JSON.
+
+        When return_numpy is True (default), returns numpy arrays for each
+        distribution row. If False, returns plain Python lists of floats.
+        """
         path = Path(path)
         with path.open("r", encoding="utf-8") as f:
             obj = json.load(f)
         meta = obj.get("meta", {}) or {}
         dists_raw = obj.get("distributions", {}) or {}
-        distributions: dict[int, list[float]] = {int(k): list(v) for k, v in dists_raw.items()}
+        if return_numpy:
+            distributions: dict[int, Any] = {int(k): np.asarray(v, dtype=float) for k, v in dists_raw.items()}
+        else:
+            distributions = {int(k): [float(x) for x in v] for k, v in dists_raw.items()}
         return distributions, meta
 
 

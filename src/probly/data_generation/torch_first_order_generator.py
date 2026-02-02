@@ -206,20 +206,6 @@ class FirstOrderDataGenerator(PyFirstOrderDataGenerator):
 
         return distributions
 
-    # Explicit pass-through to base JSON save/load for discoverability & unified interface
-    def save_distributions(
-        self,
-        path: str | Path,
-        distributions: Mapping[int, Iterable[float]],
-        *,
-        meta: dict[str, Any] | None = None,
-    ) -> None:
-        """Pass-through to base JSON save_distributions implementation.
-
-        Kept here for users to know you can use this.
-        """
-        return super().save_distributions(path, distributions, meta=meta)
-
     def load_distributions(self, path: str | Path) -> tuple[dict[int, torch.Tensor], dict[str, Any]]:
         """Load distributions from JSON and return Torch tensors.
 

@@ -206,20 +206,6 @@ class FirstOrderDataGenerator(PyFirstOrderDataGenerator):
             )
         return distributions
 
-    # Explicitly expose JSON save/load via pass-through methods for discoverability
-    def save_distributions(
-        self,
-        path: str | Path,
-        distributions: Mapping[int, Iterable[float]],
-        *,
-        meta: dict[str, Any] | None = None,
-    ) -> None:
-        """Pass-through to base JSON save_distributions implementation.
-
-        Kept here for users to know you can use this.
-        """
-        return super().save_distributions(path, distributions, meta=meta)
-
     def load_distributions(self, path: str | Path) -> tuple[dict[int, jnp.ndarray], dict[str, Any]]:
         """Load distributions and convert to JAX arrays.
 
@@ -250,9 +236,6 @@ class FirstOrderDataset(PyFirstOrderDataset):
             return inp, lbl, jnp.array(dist, dtype=jnp.float32)
         inp, dist = item
         return inp, jnp.array(dist, dtype=jnp.float32)
-
-
-# Reuse SimpleDataLoader from the Python-first module
 
 
 class JAXOutputDataLoader:
