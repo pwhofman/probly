@@ -94,6 +94,7 @@ docs = [
     "sphinx-autodoc-typehints", # Optional: Show type hints in your API docs
     "sphinxcontrib-bibtex",     # Optional: For bibliography support
     "ipython<8.38.0",           # for code execution in notebooks
+    "pandas>=2.3.3",            # for code execution in some examples
 ]
 dev = [
     "ipykernel>=6.29.5",
