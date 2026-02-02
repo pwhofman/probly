@@ -223,7 +223,7 @@ exclude_lines = [
 
 [tool.ty.src]
 exclude = [
-    "notebooks", "docs", "tests", "src/pytraverse", "src/probly/representation", "src/probly/visualization",
+    "notebooks", "docs", "tests", "src/pytraverse", "src/probly/representation",
     "src/probly/transformation/subensemble",
 ]
 #[tool.mypy]
