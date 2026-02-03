@@ -229,4 +229,5 @@ exclude = [
     "tests",
     "src/pytraverse",
     "src/probly/representation",
+    "src/probly/layers/flax.py",
 ]
