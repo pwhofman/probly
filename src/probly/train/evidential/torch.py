@@ -1,169 +1,218 @@
-"""Collection of torch evidential training functions."""
+"""Unified Evidential Train Function."""
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Any, Literal
+
 import torch
 from torch import nn
-import torch.nn.functional as F
+
+from probly.utils.switchdispatch import switchdispatch
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from torch.utils.data import DataLoader
 
 
-class EvidentialLogLoss(nn.Module):
-    """Evidential Log Loss based on :cite:`sensoyEvidentialDeep2018`."""
+def unified_evidential_train(
+    mode: Literal["PostNet", "NatPostNet", "EDL", "PrNet", "IRD", "DER", "RPN"],
+    model: nn.Module,
+    dataloader: DataLoader,
+    loss_fn: Callable[..., torch.Tensor] | None = None,
+    oodloader: DataLoader | None = None,
+    class_count: torch.Tensor | None = None,
+    epochs: int = 5,
+    lr: float = 1e-3,
+    device: str = "cpu",
+) -> None:
+    """Trains a given Neural Network using different learning approaches, depending on the approach of a selected paper.
 
-    def __init__(self) -> None:
-        """Intialize an instance of the EvidentialLogLoss class."""
-        super().__init__()
+    Args:
+        mode:
+            Identifier of the paper-based training approach to be used.
+            Must be one of:
+            "PostNet", "NatPostNet", "EDL", "PrNet", "IRD", "DER" or "RPN".
 
-    def forward(self, inputs: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
-        """Forward pass of the evidential log loss.
+        model:
+            The neural network to be trained.
 
-        Args:
-            inputs: torch.Tensor of size (n_instances, n_classes)
-            targets: torch.Tensor of size (n_instances,)
+        dataloader:
+            Pytorch.Dataloader providing the In-Distributtion training samples and corresponding labels.
 
-        Returns:
-            loss: torch.Tensor, mean loss value
+        loss_fn:
+            Loss functions used for training. The inputs of each loss-functions depends on the selected mode
 
-        """
-        alphas = inputs + 1.0
-        strengths = torch.sum(alphas, dim=1)
-        loss = torch.mean(torch.log(strengths) - torch.log(alphas[torch.arange(targets.shape[0]), targets]))
-        return loss
+        oodloader:
+            Pytorch.Dataloader providing the Out-Of-Distributtion training samples and corresponding labels.
+            This is only required for certain modes such as "PrNet"
 
+        class_count:
+            Tensor containing the number of samples per class.
 
-class EvidentialCELoss(nn.Module):
-    """Evidential Cross Entropy Loss based on :cite:`sensoyEvidentialDeep2018`."""
+        epochs:
+            Number of training epochs.
 
-    def __init__(self) -> None:
-        """Intialize an instance of the EvidentialCELoss class."""
-        super().__init__()
+        lr:
+            Learning rate used by the optimizer.
 
-    def forward(self, inputs: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
-        """Forward pass of the evidential cross entropy loss.
+        device:
+            Device on which the model is trained
+            (e.g. "cpu" or "cuda")
 
-        Args:
-            inputs: torch.Tensor of size (n_instances, n_classes)
-            targets: torch.Tensor of size (n_instances,)
-
-        Returns:
-            loss: torch.Tensor, mean loss value
-
-        """
-        alphas = inputs + 1.0
-        strengths = torch.sum(alphas, dim=1)
-        loss = torch.mean(torch.digamma(strengths) - torch.digamma(alphas[torch.arange(targets.shape[0]), targets]))
-        return loss
-
-
-class EvidentialMSELoss(nn.Module):
-    """Evidential Mean Square Error Loss based on :cite:`sensoyEvidentialDeep2018`."""
-
-    def __init__(self) -> None:
-        """Intialize an instance of the EvidentialMSELoss class."""
-        super().__init__()
-
-    def forward(self, inputs: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
-        """Forward pass of the evidential mean squared error loss.
-
-        Args:
-            inputs: torch.Tensor of size (n_instances, n_classes)
-            targets: torch.Tensor of size (n_instances,)
-
-        Returns:
-            loss: torch.Tensor, mean loss value
-
-        """
-        alphas = inputs + 1.0
-        strengths = torch.sum(alphas, dim=1)
-        y = F.one_hot(targets, inputs.shape[1])
-        p = alphas / strengths[:, None]
-        err = (y - p) ** 2
-        var = p * (1 - p) / (strengths[:, None] + 1)
-        loss = torch.mean(torch.sum(err + var, dim=1))
-        return loss
-
-
-class EvidentialKLDivergence(nn.Module):
-    """Evidential KL Divergence Loss based on :cite:`sensoyEvidentialDeep2018`."""
-
-    def __init__(self) -> None:
-        """Initialize an instance of the EvidentialKLDivergence class."""
-        super().__init__()
-
-    def forward(self, inputs: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
-        """Forward pass of the evidential KL divergence loss.
-
-        Args:
-            inputs: torch.Tensor of size (n_instances, n_classes)
-            targets: torch.Tensor of size (n_instances,)
-
-        Returns:
-            loss: torch.Tensor, mean loss value
-
-        """
-        alphas = inputs + 1.0
-        y = F.one_hot(targets, inputs.shape[1])
-        alphas_tilde = y + (1 - y) * alphas
-        strengths_tilde = torch.sum(alphas_tilde, dim=1)
-        k = torch.full((inputs.shape[0],), inputs.shape[1], device=inputs.device)
-        first = torch.lgamma(strengths_tilde) - torch.lgamma(k) - torch.sum(torch.lgamma(alphas_tilde), dim=1)
-        second = torch.sum(
-            (alphas_tilde - 1) * (torch.digamma(alphas_tilde) - torch.digamma(strengths_tilde)[:, None]),
-            dim=1,
-        )
-        loss = torch.mean(first + second)
-        return loss
-
-
-class EvidentialNIGNLLLoss(nn.Module):
-    """Evidential normal inverse gamma negative log likelihood loss.
-
-    Implementation is based on :cite:`aminiDeepEvidential2020`.
+    Returns:
+        None.
+        The function performs training of the provided model and does not return a value.
+        But prints the total-losses per Epoch.
     """
+    model = model.to(device)  # moves the model to the correct device (GPU or CPU)
 
-    def __init__(self) -> None:
-        """Intializes an instance of the EvidentialNIGNLLLoss class."""
-        super().__init__()
+    if mode == "PostNet" and not hasattr(model, "flow"):
+        msg = "PostNet mode requires a flow module."
+        raise ValueError(msg)
 
-    def forward(self, inputs: dict[str, torch.Tensor], targets: torch.Tensor) -> torch.Tensor:
-        """Forward pass of the evidential normal inverse gamma negative log likelihood loss.
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
-        Args:
-            inputs: dict[str, torch.Tensor] with keys 'gamma', 'nu', 'alpha', 'beta'
-            targets: torch.Tensor of size (n_instances,)
+    # repeats the training function for a defined number of epochs
+    for epoch in range(epochs):
+        model.train()  # call of train important for models like dropout
+        total_loss = 0.0  # track total_loss to calculate average loss per epoch
 
-        Returns:
-            loss: torch.Tensor, mean loss value
+        for x_raw, y_raw in dataloader:
+            x = x_raw.to(device)
+            y = y_raw.to(device)
 
-        """
-        omega = 2 * inputs["beta"] * (1 + inputs["nu"])
-        loss = (
-            0.5 * torch.log(torch.pi / inputs["nu"])
-            - inputs["alpha"] * torch.log(omega)
-            + (inputs["alpha"] + 0.5) * torch.log((targets - inputs["gamma"]) ** 2 * inputs["nu"] + omega)
-            + torch.lgamma(inputs["alpha"])
-            - torch.lgamma(inputs["alpha"] + 0.5)
-        ).mean()
-        return loss
+            optimizer.zero_grad()  # clears old gradients
+            outputs = model(x)  # computes model-outputs
+
+            loss = compute_loss(
+                mode,
+                outputs=outputs,
+                loss_fn=loss_fn,
+                model=model,
+                x=x,
+                y=y,
+                device=torch.device(device),
+                oodloader=oodloader,
+                class_count=class_count,
+            )  # computes the loss based on the selected mode
+
+            loss.backward()  # backpropagation
+            optimizer.step()  # updates model-parameters
+
+            total_loss += loss.item()  # add-up the loss of this epoch ontop of our total loss
+
+        avg_loss = total_loss / len(dataloader)  # calculate average loss per epoch across all batches
+        print(f"Epoch [{epoch + 1}/{epochs}] - Loss: {avg_loss:.4f}")  # noqa: T201
 
 
-class EvidentialRegressionRegularization(nn.Module):
-    """Implementation of the evidential regression regularization :cite:`aminiDeepEvidential2020`."""
+@switchdispatch
+def compute_loss(
+    _mode: str,
+    *,
+    _outputs: torch.Tensor,
+    _loss_fn: Callable[..., torch.Tensor],
+    _model: nn.Module,
+    _x: torch.Tensor,
+    _y: torch.Tensor,
+    _device: torch.device,
+    _oodloader: DataLoader | None = None,
+    _class_count: torch.Tensor | None = None,
+) -> torch.Tensor:
+    """Dispatch function for computing the loss based on the selected mode via switchdispatch."""
+    msg = 'Enter a valid mode ["PostNet", "NatPostNet", "EDL", "PrNet", "IRD", "DER", "RPN"]'
+    raise ValueError(msg)
 
-    def __init__(self) -> None:
-        """Initialize an instance of the evidential regression regularization class."""
-        super().__init__()
 
-    def forward(self, inputs: dict[str, torch.Tensor], targets: torch.Tensor) -> torch.Tensor:
-        """Forward pass of the evidential regression regularization.
+@compute_loss.register("PostNet")
+def _postnet_loss(
+    _mode: str,
+    *,
+    y: torch.Tensor,
+    outputs: tuple[torch.Tensor, torch.Tensor, torch.Tensor],
+    loss_fn: Callable[..., torch.Tensor],
+    **_: dict[str, Any],
+) -> torch.Tensor:
+    alpha, _, _ = outputs
+    return loss_fn(alpha, y)
 
-        Args:
-            inputs: dict[str, torch.Tensor] with keys 'gamma', 'nu', 'alpha', 'beta'
-            targets: torch.Tensor of size (n_instances,)
 
-        Returns:
-            loss: torch.Tensor, mean loss value
+@compute_loss.register("NatPostNet")
+def _natpostnet_loss(
+    _mode: str,
+    *,
+    y: torch.Tensor,
+    outputs: torch.Tensor,
+    loss_fn: Callable[..., torch.Tensor],
+    **_: dict[str, Any],
+) -> torch.Tensor:
+    alpha, _, _ = outputs
+    return loss_fn(alpha, y)
 
-        """
-        loss = (torch.abs(targets - inputs["gamma"]) * (2 * inputs["nu"] + inputs["alpha"])).mean()
-        return loss
+
+@compute_loss.register("EDL")
+def _edl_loss(
+    _mode: str,
+    *,
+    y: torch.Tensor,
+    outputs: torch.Tensor,
+    loss_fn: Callable[..., torch.Tensor],
+    **_: dict[str, Any],
+) -> torch.Tensor:
+    return loss_fn(outputs, y)
+
+
+@compute_loss.multi_register({"PrNet", "RPN"})
+def _prnet_rpn_loss(
+    _mode: str,
+    *,
+    model: nn.Module,
+    x: torch.Tensor,
+    y: torch.Tensor,
+    loss_fn: Callable[..., torch.Tensor],
+    oodloader: DataLoader,
+    **_: dict[str, Any],
+) -> torch.Tensor:
+    ood_iter = iter(oodloader)
+    try:
+        x_ood_raw, _ = next(ood_iter)
+    except StopIteration:
+        ood_iter = iter(oodloader)
+        x_ood_raw, _ = next(ood_iter)
+
+    x_ood = x_ood_raw.to(x.device)
+    return loss_fn(model, x, y, x_ood)
+
+
+@compute_loss.register("IRD")
+def _ird_loss(
+    _mode: str,
+    *,
+    y: torch.Tensor,
+    outputs: torch.Tensor,
+    loss_fn: Callable[..., torch.Tensor],
+    model: nn.Module,
+    x: torch.Tensor,
+    **_: dict[str, Any],
+) -> torch.Tensor:
+    x_adv = x + 0.01 * torch.randn_like(x)
+    alpha = outputs
+    alpha_adv = model(x_adv)
+    y_oh = nn.functional.one_hot(
+        y,
+        num_classes=outputs.shape[1],
+    ).float()
+    return loss_fn(alpha, y_oh, adversarial_alpha=alpha_adv)
+
+
+@compute_loss.register("DER")
+def _der_loss(
+    _mode: str,
+    *,
+    y: torch.Tensor,
+    outputs: torch.Tensor,
+    loss_fn: Callable[..., torch.Tensor],
+    **_: dict[str, Any],
+) -> torch.Tensor:
+    mu, kappa, alpha, beta = outputs
+    return loss_fn(y, mu, kappa, alpha, beta)
