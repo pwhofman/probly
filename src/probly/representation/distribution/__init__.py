@@ -1,1 +1,1 @@
-"""Second-order distribution representations."""
+"""Distribution subpackage."""
