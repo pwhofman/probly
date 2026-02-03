@@ -146,6 +146,17 @@ class TestBatchEnsembleLayerAttributes:
             r_mean + r_std * jax.random.normal(r_key, (num_members, batchensemble_conv.in_features)),
         ).all()
 
+    def test_batchensemble_bias_none(self) -> None:
+        rngs = nnx.Rngs(0, params=1)
+        linear = nnx.Linear(1, 2, rngs=rngs, use_bias=False)
+        conv = nnx.Conv(1, 2, (1), rngs=rngs, use_bias=False)
+
+        batchensemble_linear = batchensemble(linear)
+        batchensemble_conv = batchensemble(conv)
+
+        assert batchensemble_linear.bias is None
+        assert batchensemble_conv.bias is None
+
 
 class TestBatchEnsembleTransformation:
     """Test class for BatchEnsemble transformation."""
@@ -278,3 +289,23 @@ class TestBatchEnsembleCalls:
 
         assert out is not None
         assert out.shape == (num_members, 1, 4)  # num_members, batch_size , out_dim
+
+    def test_batchensemble_call_errors(self) -> None:
+        rngs = nnx.Rngs(0, params=1)
+        linear = nnx.Linear(1, 2, rngs=rngs)
+        conv = nnx.Conv(1, 2, 1, rngs=rngs)
+
+        num_members = 1
+        batchensemble_linear = batchensemble(linear, num_members=num_members)
+        batchensemble_conv = batchensemble(conv, num_members=num_members)
+
+        x_linear = jnp.ones((2, 1, 1))
+        x_conv = jnp.ones((2, 1, 1, 1))
+
+        msg_linear = f"Expected first dim={num_members}, got {x_linear.shape[0]}"
+        with pytest.raises(ValueError, match=msg_linear):
+            batchensemble_linear(x_linear)
+
+        msg_conv = f"Expected first dim={num_members}, got {x_conv.shape[0]}"
+        with pytest.raises(ValueError, match=msg_conv):
+            batchensemble_conv(x_conv)
