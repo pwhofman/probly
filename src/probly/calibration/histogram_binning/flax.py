@@ -8,14 +8,13 @@ from flax import nnx
 import jax.numpy as jnp
 
 from probly.calibration.histogram_binning.common import register_histogram_factory
-from probly.calibration.template import CalibratorBaseFlax
 
 if TYPE_CHECKING:
     from jax import Array
 
 
 @register_histogram_factory(nnx.Module)
-class HistogramBinningFlax(CalibratorBaseFlax):
+class HistogramBinningFlax:
     """Calibrator that uses histogram binning."""
 
     def __init__(self, n_bins: int = 10) -> None:

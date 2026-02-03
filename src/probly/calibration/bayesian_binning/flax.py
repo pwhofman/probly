@@ -9,13 +9,12 @@ import jax.numpy as jnp
 from jax.scipy.special import betaln
 
 from probly.calibration.bayesian_binning.common import register_bayesian_binning_factory
-from probly.calibration.template import CalibratorBaseFlax
 
 if TYPE_CHECKING:
     from jax import Array
 
 
-class BayesianBinningQuantiles(CalibratorBaseFlax):
+class BayesianBinningQuantiles:
     """Calibrator using Bayesian Binning into Quantiles (BBQ)."""
 
     def __init__(self, max_bins: int = 10) -> None:

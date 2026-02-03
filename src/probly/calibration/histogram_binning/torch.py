@@ -6,11 +6,10 @@ import torch
 from torch import Tensor, nn
 
 from probly.calibration.histogram_binning.common import register_histogram_factory
-from probly.calibration.template import CalibratorBaseTorch
 
 
 @register_histogram_factory(nn.Module)
-class HistogramBinning(CalibratorBaseTorch):
+class HistogramBinning:
     """Calibrator that uses histogram binning."""
 
     def __init__(self, n_bins: int = 10) -> None:
