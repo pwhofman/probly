@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import pytest
 
-from probly.calibration.bayesian_binning.flax import BayesianBinningQuantiles
+pytest.importorskip("jax")
+import jax.numpy as jnp
 
-jax = pytest.importorskip("jax")
-import jax.numpy as jnp  # noqa: E402
+from probly.calibration.bayesian_binning.flax import BayesianBinningQuantiles
 
 
 class TestBayesianBinningQuantiles:
