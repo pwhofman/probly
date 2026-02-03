@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import pytest
 
-from probly.layers.torch import BatchEnsembleConv2d, BatchEnsembleLinear
-from probly.transformation.batchensemble import batchensemble
-from tests.probly.torch_utils import count_layers
-
 torch = pytest.importorskip("torch")
 
 from torch import nn  # noqa: E402
+
+from probly.layers.torch import BatchEnsembleConv2d, BatchEnsembleLinear  # noqa: E402
+from probly.transformation.batchensemble import batchensemble  # noqa: E402
+from tests.probly.torch_utils import count_layers  # noqa: E402
 
 
 class TestBatchEnsembleLayers:

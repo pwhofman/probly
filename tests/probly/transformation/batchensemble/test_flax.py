@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import pytest
 
-from probly.layers.flax import BatchEnsembleConv, BatchEnsembleLinear
-from probly.transformation.batchensemble import batchensemble
-from tests.probly.flax_utils import count_layers
-
 flax = pytest.importorskip("flax")
 from flax import nnx  # noqa: E402
 import jax  # noqa: E402
 import jax.numpy as jnp  # noqa: E402
+
+from probly.layers.flax import BatchEnsembleConv, BatchEnsembleLinear  # noqa: E402
+from probly.transformation.batchensemble import batchensemble  # noqa: E402
+from tests.probly.flax_utils import count_layers  # noqa: E402
 
 
 class TestBatchEnsembleLayerAttributes:
