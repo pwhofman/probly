@@ -6,6 +6,7 @@ import pytest
 
 flax = pytest.importorskip("flax")
 from flax import nnx  # noqa: E402
+import jax  # noqa: E402
 import jax.numpy as jnp  # noqa: E402
 
 from probly.layers.flax import DropConnectLinear  # noqa: E402
@@ -51,6 +52,21 @@ class TestDropConnectAttributes:
         new_rngs = nnx.Rngs(0, params=1)
         dropconnect_rngs = new_rngs["dropconnect"].fork()
         assert dropconnect_layer.rngs.key.value == dropconnect_rngs.key.value
+
+    def test_dropconnect_rngs(self) -> None:
+        rngs = nnx.Rngs(0, params=1)
+        linear_layer = nnx.Linear(1, 2, rngs=rngs)
+        rng_stream = nnx.RngStream(key=1, tag="dropconnect")
+        p = 0.2
+        dropconnect_layer_rng_stream = DropConnectLinear(linear_layer, rate=p, rngs=rng_stream)
+
+        new_rng_stream = nnx.RngStream(key=1, tag="dropconnect")
+        used_rngs = new_rng_stream.fork()
+        assert dropconnect_layer_rng_stream.rngs.key.value == used_rngs.key.value
+
+        msg = f"rngs must be a RNGS, RngStream or None, but got {str}"
+        with pytest.raises(TypeError, match=msg):
+            DropConnectLinear(linear_layer, rate=p, rngs="test")
 
     def test_dropconnect_rng_stream(self) -> None:
         """Tests the DropConnectLinear rngs rng stream.
@@ -184,6 +200,14 @@ class TestCall:
         assert y1.shape == y2.shape
         assert not jnp.equal(y1, y2).all()
 
+        y_rngs_jax_array = dropconnect_layer(x, rngs=jax.random.key(1))
+        assert y_rngs_jax_array is not None
+        assert y_rngs_jax_array.shape == (4,)
+
+        msg = f"rngs must be Rngs, RngStream or jax.Array, but got {str}"
+        with pytest.raises(TypeError, match=msg):
+            dropconnect_layer(x, rngs="test")
+
     def test_call_without_rngs(self) -> None:
         """Tests calls without call and init rngs."""
         dropconnect_layer = DropConnectLinear(nnx.Linear(1, 4, rngs=nnx.Rngs(0)), rate=0.25)
@@ -193,3 +217,13 @@ class TestCall:
                 as either a __call__ argument or class attribute."""
         with pytest.raises(ValueError, match=msg):
             dropconnect_layer(x)
+
+    def test_determinstic_call(self) -> None:
+        rngs = nnx.Rngs(0, params=1)
+        dropconnect_layer = DropConnectLinear(nnx.Linear(1, 2, rngs=rngs), rate=0.25, rngs=rngs)
+        dropconnect_layer.set_mode(deterministic=True)
+        assert dropconnect_layer.deterministic is True
+        x = jnp.ones(1)
+        y = dropconnect_layer(x)
+        assert y is not None
+        assert y.shape == (2,)
