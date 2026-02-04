@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from torch import nn
 
 from probly.traverse_nn import nn_compose, nn_traverser
@@ -31,6 +33,7 @@ def generate_torch_ensemble(
     obj: nn.Module,
     num_members: int,
     reset_params: bool = True,
+    key: Any = None,  # noqa: ANN401, ARG001
 ) -> nn.ModuleList:
     """Build a torch ensemble based on :cite:`lakshminarayananSimpleScalable2017`."""
     if reset_params:
