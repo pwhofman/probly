@@ -380,7 +380,7 @@ class ComputedVariable[T, V](Variable[V]):
             doc: Optional documentation string. If None, uses the compute_func's __doc__.
         """
         self.compute_func = compute_func
-        self.__name__ = name if name is not None else compute_func.__name__
+        self.__name__ = name if name is not None else getattr(compute_func, "__name__", "ComputedVariable")
         self.doc = doc if doc is not None else compute_func.__doc__
 
     def __repr__(self) -> str:
@@ -563,7 +563,7 @@ class State[T]:
         Returns:
             The new child state containing the pushed object.
         """
-        return State(obj=obj, meta=meta, traverser=traverser, parent=self)
+        return State[T](obj=obj, meta=meta, traverser=traverser, parent=self)
 
     def pop(self) -> State[T]:
         """Pop the current state and return its parent.
