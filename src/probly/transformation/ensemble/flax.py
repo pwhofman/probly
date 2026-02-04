@@ -37,9 +37,9 @@ class FlaxEnsemble(nn.Module):
 
         stacked = jax.tree_util.tree_map(lambda *leaves: jnp.stack(leaves, axis=1), *outputs)
         if return_all:
-            return stacked
+            return stacked  # type: ignore[return-value]
         averaged = jax.tree_util.tree_map(lambda arr: jnp.mean(arr, axis=1), stacked)
-        return averaged
+        return averaged  # type: ignore[return-value]
 
 
 def generate_flax_ensemble(
@@ -52,7 +52,7 @@ def generate_flax_ensemble(
     if not isinstance(model, type) and is_dataclass(model):
         try:
             # mypy: after is_dataclass check, model is a dataclass instance
-            all_fields = asdict(model)
+            all_fields = asdict(model)  # type: ignore[arg-type]
             filtered = {k: v for k, v in all_fields.items() if not k.startswith("_") and k not in ("name", "parent")}
             if filtered:
                 base_kwargs = filtered
