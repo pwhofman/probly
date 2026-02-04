@@ -62,6 +62,8 @@ estimates that often perform well in practice.
 
 :doc:`Ensemble Transformation <notebooks/examples/ensemble_transformation>`
 
+:doc:`Ensemble Transformation Comparison <notebooks/examples/transformations_comparison>`
+
 :doc:`Ensemble SciKitLearn Transformation <notebooks/examples/sklearn_ensemble_tutorial>`
 
 :doc:`Ensemble SciKitLearn Random Forests <notebooks/examples/Ensembling_RandomForests>`
