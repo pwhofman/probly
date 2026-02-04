@@ -27,10 +27,34 @@ def flax_model_small_2d_2d(flax_rngs: nnx.Rngs) -> nnx.Module:
 
 
 @pytest.fixture
+def flax_conv1d_linear_model(flax_rngs: nnx.Rngs) -> nnx.Module:
+    """Return a small 1-dimensional convolutional model with 3 input channels and 2 output neurons."""
+    model = nnx.Sequential(
+        nnx.Conv(3, 5, 5, rngs=flax_rngs),
+        nnx.relu,
+        nnx.flatten,
+        nnx.Linear(5, 2, rngs=flax_rngs),
+    )
+    return model
+
+
+@pytest.fixture
 def flax_conv_linear_model(flax_rngs: nnx.Rngs) -> nnx.Module:
-    """Return a small convolutional model with 3 input channels and 2 output neurons."""
+    """Return a small 2-dimensional convolutional model with 3 input channels and 2 output neurons."""
     model = nnx.Sequential(
         nnx.Conv(3, 5, (5, 5), rngs=flax_rngs),
+        nnx.relu,
+        nnx.flatten,
+        nnx.Linear(5, 2, rngs=flax_rngs),
+    )
+    return model
+
+
+@pytest.fixture
+def flax_conv3d_linear_model(flax_rngs: nnx.Rngs) -> nnx.Module:
+    """Return a small 3-dimensional convolutional model with 3 input channels and 2 output neurons."""
+    model = nnx.Sequential(
+        nnx.Conv(3, 5, (5, 5, 5), rngs=flax_rngs),
         nnx.relu,
         nnx.flatten,
         nnx.Linear(5, 2, rngs=flax_rngs),

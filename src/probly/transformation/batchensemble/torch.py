@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from torch import nn
 
 from probly.layers.torch import BatchEnsembleConv2d, BatchEnsembleLinear
@@ -17,6 +19,7 @@ def replace_torch_batchensemble_linear(
     s_std: float,
     r_mean: float,
     r_std: float,
+    rngs: Any = None,  # noqa: ARG001, ANN401
 ) -> BatchEnsembleLinear:
     """Replace a given layer by a BatchEnsembleLinear layer."""
     return BatchEnsembleLinear(
@@ -38,6 +41,7 @@ def replace_torch_batchensemble_conv2d(
     s_std: float,
     r_mean: float,
     r_std: float,
+    rngs: Any = None,  # noqa: ARG001, ANN401
 ) -> BatchEnsembleConv2d:
     """Replace a given layer by a BatchEnsembleConv2d layer."""
     return BatchEnsembleConv2d(
