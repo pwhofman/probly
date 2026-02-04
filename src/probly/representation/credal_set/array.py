@@ -285,10 +285,8 @@ class ArraySingletonCredalSet(ArrayCategoricalCredalSet, SingletonCredalSet[np.n
         This method calculates the mean of the samples to produce a single
         precise distribution (singleton).
         """
-        # Average over the sample dimension (axis 0)
         averaged_array = np.mean(sample.samples, axis=0)
 
-        # Ensure the distribution axis is at the end (-1)
         if distribution_axis < 0:
             distribution_axis += averaged_array.ndim
 
@@ -313,7 +311,6 @@ class ArraySingletonCredalSet(ArrayCategoricalCredalSet, SingletonCredalSet[np.n
     @property
     def ndim(self) -> int:
         """Return the number of dimensions of the credal set array."""
-        # Subtract 1 for the class dimension. No member dimension exists here.
         return self.array.ndim - 1
 
     @property
