@@ -21,7 +21,11 @@ def _clone_reset(obj: nnx.Module, rng: jax.random.PRNGKey) -> nnx.Module:
     return cloned_model
 
 
-def generate_flax_ensemble(obj: nnx.Module, num_members: int, reset_params: bool) -> list[nnx.Module]:
+def generate_flax_ensemble(
+    obj: nnx.Module,
+    num_members: int,
+    reset_params: bool,
+) -> list[nnx.Module]:
     """Build a flax ensemble by initializing n_members times."""
     if reset_params:
         return [_clone_reset(obj, jax.random.PRNGKey(i)) for i in range(num_members)]
