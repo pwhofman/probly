@@ -86,7 +86,7 @@ class ArrayGaussianMixture:
             weights=self.weights,
         )
 
-    def sample(self, num_samples: int) -> ArraySample:
+    def num_sample(self, num_samples: int) -> ArraySample:
         """Draw samples from the Gaussian mixture. Returns an ArraySample."""
         k = len(self.components)
         weights = self.weights

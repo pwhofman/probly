@@ -67,7 +67,7 @@ class ArrayGaussian(GaussianDistribution):
         return float(0.5 * np.log(2 * np.e * np.pi * var).sum())
 
     @override
-    def sample(
+    def num_sample(
         self,
         num_samples: int = 1,
         rng: np.random.Generator | None = None,
@@ -120,7 +120,7 @@ class ArrayGaussian(GaussianDistribution):
         unpacked: list[np.ndarray | float | int] = []
         gaussians: list[ArrayGaussian] = []
 
-        for x in inputs:  # array with just means
+        for x in inputs:
             if isinstance(x, type(self)):
                 gaussians.append(x)
                 unpacked.append(x.mean)
@@ -132,8 +132,9 @@ class ArrayGaussian(GaussianDistribution):
 
         new_mean = ufunc(*unpacked, **{k: v for k, v in kwargs.items() if k != "out"})
 
-        base = gaussians[0]
-        new_var = base.var
+        new_var = np.zeros_like(gaussians[0].var, dtype=float)
+        for g in gaussians:
+            new_var = new_var + g.var
 
         result = type(self)(mean=np.asarray(new_mean), var=np.asarray(new_var))
 
@@ -194,8 +195,7 @@ class ArrayGaussian(GaussianDistribution):
     def to_device(self, device: Literal["cpu"]) -> Self:
         """Move the underlying arrays to the specified device."""
         if device == self.device:
-            return self
-        # NumPy backend supports only CPU.
+            return self  # since NumPy is only supporting CPU.
         return self
 
     def __eq__(self, other: object) -> bool:
