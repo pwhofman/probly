@@ -90,8 +90,8 @@ class TernaryVisualizer:
 
         edges = [(v1, v2, "axis A"), (v2, v3, "axis B"), (v3, v1, "axis C")]
 
-        triangle_x = [v1[0], v2[0], v3[0], v1[0]]  # type: ignore[index]
-        triangle_y = [v1[1], v2[1], v3[1], v1[1]]  # type: ignore[index]
+        triangle_x = [v1[0], v2[0], v3[0], v1[0]]
+        triangle_y = [v1[1], v2[1], v3[1], v1[1]]
 
         ax.plot(triangle_x, triangle_y, color=cfg.BLACK)
         ax.axis("off")
