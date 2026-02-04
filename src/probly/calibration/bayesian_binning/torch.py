@@ -105,7 +105,3 @@ class BayesianBinningQuantiles:
 
         return calibrated
 
-
-@register_bayesian_binning_factory(nn.Module)
-def _(_base: nn.Module, _device: object) -> type[BayesianBinningQuantiles]:
-    return BayesianBinningQuantiles

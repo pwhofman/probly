@@ -8,7 +8,6 @@ from torch import Tensor, nn
 from probly.calibration.histogram_binning.common import register_histogram_factory
 
 
-@register_histogram_factory(nn.Module)
 class HistogramBinning:
     """Calibrator that uses histogram binning."""
 
