@@ -6,9 +6,7 @@ provides helpers to persist results.
 
 from __future__ import annotations
 
-import json
 import logging
-from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
 import torch
@@ -105,37 +103,6 @@ class PyTorchDataGenerator(BaseDataGenerator[torch.nn.Module, Dataset, str | Non
         return self.results
 
     def _count(self, tensor: torch.Tensor) -> dict[int, int]:
-        counts: dict[int, int] = {}
-        for val in tensor.tolist():
-            key = int(val)
-            counts[key] = counts.get(key, 0) + 1
-        return counts
-
-    def save(self, path: str) -> None:
-        """Persist generated results to a JSON file at path."""
-        if not self.results:
-            logger.info("No results to save.")
-            return
-
-        try:
-            with Path(path).open("w", encoding="utf-8") as f:
-                json.dump(self.results, f, indent=2)
-            logger.info("Results saved to %s", path)
-        except OSError:
-            logger.exception("Saving failed")
-
-    def load(self, path: str) -> dict[str, Any]:
-        """Load results from a JSON file at path."""
-        try:
-            with Path(path).open(encoding="utf-8") as f:
-                self.results = json.load(f)
-        except (OSError, json.JSONDecodeError):
-            logger.exception("Loading failed")
-            self.results = {}
-        else:
-            logger.info("Results loaded from %s", path)
-        return self.results
-
-
-if TYPE_CHECKING:  # avoid ruff checking issue
-    from collections.abc import Sized
+        values = tensor.to(dtype=torch.int64)
+        bc = torch.bincount(values).tolist()
+        return {i: int(c) for i, c in enumerate(bc) if c != 0}

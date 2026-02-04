@@ -18,9 +18,7 @@ from .base_generator import BaseDataGenerator
 logger = logging.getLogger(__name__)
 
 
-class JAXDataGenerator(
-    BaseDataGenerator[Callable[[jnp.ndarray], jnp.ndarray], tuple[object, object], str | None]
-):
+class JAXDataGenerator(BaseDataGenerator[Callable[[jnp.ndarray], jnp.ndarray], tuple[object, object], str | None]):
     """Data generator for JAX models."""
 
     def __init__(
