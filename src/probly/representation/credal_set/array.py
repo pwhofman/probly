@@ -163,11 +163,11 @@ class ArrayProbabilityIntervals(ArrayCategoricalCredalSet, ProbabilityIntervals[
     """A credal set defined by probability intervals over outcomes.
 
     This represents uncertainty through lower and upper probability bounds for each class.
-    The intervals are stored as a numpy array of shape (..., 2, num_classes) where
-    the second-to-last axis holds [lower_bounds, upper_bounds].
+    Each bound is stored as a seperate numpy array of shape (..., num_classes).
     """
 
-    intervals: np.ndarray
+    lower_bounds: np.ndarray
+    upper_bounds: np.ndarray
 
     @override
     @classmethod
@@ -195,39 +195,36 @@ class ArrayProbabilityIntervals(ArrayCategoricalCredalSet, ProbabilityIntervals[
         lower_bounds = np.min(samples_array, axis=-2)
         upper_bounds = np.max(samples_array, axis=-2)
 
-        # Stack to create (..., 2, num_classes) shape
-        intervals = np.stack([lower_bounds, upper_bounds], axis=-2)
-
-        return cls(intervals=intervals)
+        return cls(lower_bounds=lower_bounds, upper_bounds=upper_bounds)
 
     def __array_namespace__(self) -> Any:  # noqa: ANN401
-        """Get the array namespace of the underlying intervals."""
-        return self.intervals.__array_namespace__()
+        """Get the array namespace of the lower bounds."""
+        return self.lower_bounds.__array_namespace__()
 
     @property
     def device(self) -> str:
-        """Return the device where the intervals are stored."""
-        return self.intervals.device
+        """Return the device where the bounds are stored."""
+        return self.lower_bounds.device
 
     @property
     def dtype(self) -> np.dtype:
-        """Return the data type of the intervals."""
-        return self.intervals.dtype  # type: ignore[no-any-return]
+        """Return the data type of the bounds."""
+        return self.lower_bounds.dtype  # type: ignore[no-any-return]
 
     @property
     def ndim(self) -> int:
-        """Return the number of dimensions (excluding the interval and class dimensions)."""
-        return self.intervals.ndim - 2
+        """Return the number of dimensions (excluding the class dimensions)."""
+        return self.lower_bounds.ndim - 1
 
     @property
     def shape(self) -> tuple[int, ...]:
-        """Return the shape (excluding the interval and class dimensions)."""
-        return self.intervals.shape[:-2]  # type: ignore[no-any-return]
+        """Return the shape (excluding the class dimensions)."""
+        return self.lower_bounds.shape[:-1]  # type: ignore[no-any-return]
 
     @property
     def num_classes(self) -> int:
         """Return the number of classes."""
-        return self.intervals.shape[-1]  # type: ignore[no-any-return]
+        return self.lower_bounds.shape[-1]  # type: ignore[no-any-return]
 
     def __len__(self) -> int:
         """Return the length of the first dimension."""
@@ -240,29 +237,31 @@ class ArrayProbabilityIntervals(ArrayCategoricalCredalSet, ProbabilityIntervals[
         return shape[0]
 
     def __array__(self, dtype: DTypeLike = None, copy: bool | None = None) -> np.ndarray:
-        """Get the underlying intervals as a numpy array.
+        """Get the intervals as a stacked array with shape (..., 2, num_classes).
 
         Args:
             dtype: Desired data type.
             copy: Whether to return a copy.
 
         Returns:
-            The underlying intervals array.
+            Stacked array of [lower_bounds, upper_bounds].
         """
-        if dtype is None and not copy:
-            return self.intervals
+        stacked = np.stack([self.lower_bounds, self.upper_bounds], axis=-2)
 
-        return np.asarray(self.intervals, dtype=dtype, copy=copy)
+        if dtype is None and not copy:
+            return stacked
+
+        return np.asarray(stacked, dtype=dtype, copy=copy)
 
     @override
     def lower(self) -> np.ndarray:
         """Get the lower probability bounds for each class."""
-        return self.intervals[..., 0, :]  # type: ignore[no-any-return]
+        return self.lower_bounds
 
     @override
     def upper(self) -> np.ndarray:
         """Get the upper probability bounds for each class."""
-        return self.intervals[..., 1, :]  # type: ignore[no-any-return]
+        return self.upper_bounds
 
     def width(self) -> np.ndarray:
         """Compute the width of each probability interval.
@@ -270,7 +269,7 @@ class ArrayProbabilityIntervals(ArrayCategoricalCredalSet, ProbabilityIntervals[
         Returns:
             Array of interval widths for each class.
         """
-        return self.upper() - self.lower()
+        return self.upper_bounds - self.lower_bounds
 
     def contains(self, probabilities: np.ndarray) -> np.ndarray:
         """Check if given probabilities fall within the intervals.
@@ -281,9 +280,8 @@ class ArrayProbabilityIntervals(ArrayCategoricalCredalSet, ProbabilityIntervals[
         Returns:
             Boolean array indicating whether each probability is contained.
         """
-        lower = self.lower()
-        upper = self.upper()
-        return np.all((probabilities >= lower) & (probabilities <= upper), axis=-1)  # type: ignore[no-any-return]
+        within_bounds = (probabilities >= self.lower_bounds) & (probabilities <= self.upper_bounds)
+        return np.all(within_bounds, axis=-1)
 
     def copy(self) -> Self:
         """Create a copy of the intervals.
@@ -291,7 +289,10 @@ class ArrayProbabilityIntervals(ArrayCategoricalCredalSet, ProbabilityIntervals[
         Returns:
             A new ArrayProbabilityIntervals with copied data.
         """
-        return type(self)(intervals=self.intervals.copy())
+        return type(self)(
+            lower_bounds=self.lower_bounds.copy(),
+            upper_bounds=self.upper_bounds.copy(),
+        )
 
     def to_device(self, device: Literal["cpu"]) -> Self:
         """Move the intervals to a specified device.
@@ -305,7 +306,10 @@ class ArrayProbabilityIntervals(ArrayCategoricalCredalSet, ProbabilityIntervals[
         if device == self.device:
             return self
 
-        return type(self)(intervals=self.intervals.to_device(device))
+        return type(self)(
+            lower_bounds=self.lower_bounds.to_device(device),
+            upper_bounds=self.upper_bounds.to_device(device),
+        )
 
     def __eq__(self, value: Any) -> Self:  # type: ignore[override]  # noqa: ANN401, PYI032
         """Vectorized equality comparison."""
