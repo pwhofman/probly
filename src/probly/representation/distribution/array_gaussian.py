@@ -61,10 +61,10 @@ class ArrayGaussian(GaussianDistribution):
 
     @property
     @override
-    def entropy(self) -> float:
+    def entropy(self) -> np.ndarray:
         """Return the total differential entropy of the Gaussian distribution."""
         var = self.var
-        return float(0.5 * np.log(2 * np.e * np.pi * var).sum())
+        return 0.5 * np.log(2 * np.e * np.pi * var)
 
     @override
     def num_sample(
