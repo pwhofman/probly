@@ -2,16 +2,10 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
-from matplotlib.axes import Axes
 import matplotlib.pyplot as plt
 import numpy as np  # noqa: TC002
 
 from probly.visualization.input_handling import dispatch_plot
-
-if TYPE_CHECKING:
-    from matplotlib.axes import Axes
 
 
 def create_credal_plot(
@@ -19,7 +13,7 @@ def create_credal_plot(
     labels: list[str] | None = None,
     *,
     show: bool = True,
-) -> Axes | None:
+) -> plt.Axes | None:
     """One method for the user to call; Refers to correct plotting method via input_handling.
 
     Args:

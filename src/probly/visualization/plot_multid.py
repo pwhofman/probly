@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from matplotlib.patches import Circle, RegularPolygon
 from matplotlib.path import Path
@@ -15,9 +15,6 @@ import numpy as np
 
 import probly.visualization.config as cfg
 
-if TYPE_CHECKING:
-    from matplotlib.axes import Axes
-
 
 def radar_factory(num_vars: int, frame: str = "circle") -> np.ndarray:  # noqa: C901
     """Create a radar chart with `num_vars` axes."""
@@ -26,7 +23,7 @@ def radar_factory(num_vars: int, frame: str = "circle") -> np.ndarray:  # noqa: 
     class RadarTransform(PolarAxes.PolarTransform):
         def transform_path_non_affine(self, path: Path) -> Path:
             # Note: _interpolation_steps is internal logic needed for this projection hack
-            if path._interpolation_steps > 1:  # noqa: SLF001  # type: ignore[attr-defined]
+            if path._interpolation_steps > 1:  # noqa: SLF001
                 path = path.interpolated(num_vars)
             return Path(self.transform(path.vertices), path.codes)
 
@@ -88,8 +85,8 @@ class MultiVisualizer:
         self,
         probs: np.ndarray,
         labels: list[str],
-        ax: Axes | None = None,
-    ) -> Axes:
+        ax: plt.Axes | None = None,
+    ) -> plt.Axes:
         """General radar (spider) plot for credal predictions.
 
         Args:
@@ -105,11 +102,10 @@ class MultiVisualizer:
         if ax is None:
             _, ax = plt.subplots(figsize=(6, 6), subplot_kw={"projection": "radar"})
 
-        # Setup Axis - cast to PolarAxes for the radar-specific methods
-        ax_polar: PolarAxes = ax  # type: ignore[assignment]
-        ax_polar.set_rgrids([0.2, 0.4, 0.6, 0.8, 1.0])
+        # Setup Axis
+        ax.set_rgrids([0.2, 0.4, 0.6, 0.8, 1.0])
         ax.set_ylim(0.0, 1.0)
-        ax_polar.set_varlabels(labels)
+        ax.set_varlabels(labels)
 
         mean_probs = probs.mean(axis=0)
         max_class = np.argmax(mean_probs)
