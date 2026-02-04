@@ -16,7 +16,8 @@ def mock_dataset():
     dataset = MagicMock()
     dataset.__len__.return_value = 4
     # Mocking the dataloader behavior: returns (batch_x, batch_y)
-    dataset.__getitem__ = MagicMock(side_effect=[(x[i], y[i]) for i in range(4)])
+    dataset.__getitem__ = MagicMock()
+    dataset.__getitem__.side_effect = lambda i: (x[i], y[i])
     return dataset, x, y
 
 
