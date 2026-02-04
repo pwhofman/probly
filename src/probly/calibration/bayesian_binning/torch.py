@@ -37,7 +37,6 @@ class BayesianBinningQuantilesTorch:
         self.bin_edges = []
 
         for num_bins in range(2, self.max_bins + 1):
-
             edges = torch.quantile(calibration_set, torch.linspace(0.0, 1.0, num_bins + 1))
             edges[0] = 0.0
             edges[-1] = 1.0
@@ -56,8 +55,11 @@ class BayesianBinningQuantilesTorch:
             )
             self.system_bin_probs.append(bin_probs)
 
-            log_bin_scores = torch.lgamma(bin_positives + 1.0) + torch.lgamma(bin_counts - bin_positives + 1.0) \
-                             - torch.lgamma(bin_counts + 2.0)
+            log_bin_scores = (
+                torch.lgamma(bin_positives + 1.0)
+                + torch.lgamma(bin_counts - bin_positives + 1.0)
+                - torch.lgamma(bin_counts + 2.0)
+            )
             system_score = torch.exp(torch.sum(log_bin_scores))
             self.system_scores.append(system_score)
 
@@ -76,7 +78,6 @@ class BayesianBinningQuantilesTorch:
         calibrated = torch.zeros_like(predictions, dtype=torch.float32)
 
         for edges, bin_probs, weight in zip(self.bin_edges, self.system_bin_probs, self.system_weights, strict=False):
-
             bin_indices = torch.bucketize(predictions, edges, right=False) - 1
             bin_indices = torch.clamp(bin_indices, 0, bin_probs.shape[0] - 1)
 
