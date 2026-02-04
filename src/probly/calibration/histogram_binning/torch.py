@@ -23,58 +23,51 @@ class HistogramBinning:
             msg = "calibration_set and truth_labels must have the same length"
             raise ValueError(msg)
 
-        if calibration_set.shape[0] == 0:
+        if calibration_set.numel() == 0:
             msg = "calibration_set must not be empty"
             raise ValueError(msg)
 
-        min_pre = calibration_set.min().item()
-        max_pre = calibration_set.max().item()
+        min_pre = calibration_set.min()
+        max_pre = calibration_set.max()
+
         bin_width = (max_pre - min_pre) / self.n_bins
+        if bin_width == 0:
+            bin_width = torch.tensor(1.0, device=calibration_set.device)
 
-        if max_pre == min_pre:
-            bin_width = 1.0
+        bin_edges = min_pre + bin_width * torch.arange(
+            1,
+            self.n_bins,
+            device=calibration_set.device,
+        )
 
-        bin_counts = torch.zeros(self.n_bins, dtype=torch.int64)
-        bin_positives = torch.zeros(self.n_bins, dtype=torch.int64)
+        bin_ids = torch.bucketize(calibration_set, bin_edges)
 
-        for pred, label in zip(calibration_set, truth_labels, strict=False):
-            bin_id = int((pred.item() - min_pre) / bin_width)
+        bin_ids = torch.clamp(bin_ids, 0, self.n_bins - 1)
 
-            bin_id = max(0, min(bin_id, self.n_bins - 1))
-            if bin_id == self.n_bins:
-                bin_id = self.n_bins - 1
-            bin_counts[bin_id] += 1
-            bin_positives[bin_id] += int(label.item())
+        bin_counts = torch.bincount(bin_ids, minlength=self.n_bins)
 
-        self.bin_probs = torch.zeros(self.n_bins)
-        for i in range(self.n_bins):
-            if bin_counts[i] > 0:
-                self.bin_probs[i] = bin_positives[i].float() / bin_counts[i].float()
-            else:
-                self.bin_probs[i] = 0.0
+        bin_positives = torch.bincount(
+            bin_ids,
+            weights=truth_labels.to(dtype=torch.float),
+            minlength=self.n_bins,
+        )
 
-        self.bin_start = min_pre
-        self.bin_width = bin_width
+        self.bin_probs = torch.zeros(self.n_bins, device=calibration_set.device)
+        nonzero = bin_counts > 0
+        self.bin_probs[nonzero] = bin_positives[nonzero] / bin_counts[nonzero]
+
+        self.bin_start = float(min_pre)
+        self.bin_width = float(bin_width)
         self.is_fitted = True
         return self
 
     def predict(self, predictions: Tensor) -> Tensor:
         """Return calibrated probabilities for input predictions."""
-        if not self.is_fitted:
+        if not self.is_fitted or self.bin_probs is None:
             msg = "Calibrator must be fitted before Calibration"
             raise ValueError(msg)
 
-        calibrated = []
+        bin_ids = ((predictions - self.bin_start) / self.bin_width).long()
+        bin_ids = torch.clamp(bin_ids, 0, self.n_bins - 1)
 
-        for pred in predictions:
-            bin_id = int((pred.item() - self.bin_start) / self.bin_width)
-            if bin_id == self.n_bins:
-                bin_id -= 1
-
-            # Temporary fix for mypy issue: self.bin_probs could theoretically be None
-            if self.bin_probs is None:
-                msg = "HistogramBinning is not fitted"
-                raise RuntimeError(msg)
-            calibrated.append(self.bin_probs[bin_id])
-
-        return Tensor(calibrated)
+        return self.bin_probs[bin_ids]

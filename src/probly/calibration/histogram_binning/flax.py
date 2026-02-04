@@ -47,22 +47,17 @@ class HistogramBinningFlax:
         bin_counts = jnp.zeros(self.n_bins, dtype=jnp.int32)
         bin_positives = jnp.zeros(self.n_bins, dtype=jnp.int32)
 
-        # Vectorized binning (more efficient than loop in JAX)
         bin_indices = jnp.floor((calibration_set - min_pre) / bin_width).astype(jnp.int32)
         bin_indices = jnp.clip(bin_indices, 0, self.n_bins - 1)
 
-        # Count samples per bin
         bin_counts = jnp.bincount(bin_indices, length=self.n_bins)
 
-        # Count positive samples per bin
         bin_positives = jnp.bincount(
             bin_indices,
             weights=truth_labels.astype(jnp.float32),
             length=self.n_bins,
         ).astype(jnp.int32)
 
-        # Calculate bin probabilities
-        # Use where to avoid division by zero
         self.bin_probs = jnp.where(
             bin_counts > 0,
             bin_positives.astype(jnp.float32) / bin_counts.astype(jnp.float32),
@@ -83,11 +78,9 @@ class HistogramBinningFlax:
             msg = "HistogramBinning is not fitted"
             raise RuntimeError(msg)
 
-        # Vectorized prediction (more efficient than loop)
         bin_indices = jnp.floor((predictions - self.bin_start) / self.bin_width).astype(jnp.int32)
         bin_indices = jnp.clip(bin_indices, 0, self.n_bins - 1)
 
-        # Look up calibrated probabilities
         calibrated = self.bin_probs[bin_indices]
 
         return calibrated
