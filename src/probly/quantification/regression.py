@@ -10,7 +10,6 @@ from probly.utils import differential_entropy_gaussian, kl_divergence_gaussian
 
 if TYPE_CHECKING:
     import numpy.typing as npt
-    from numpy.typing import NDArray
 
 
 def total_variance(probs: npt.NDArray[np.floating]) -> npt.NDArray[np.floating]:
@@ -28,7 +27,7 @@ def total_variance(probs: npt.NDArray[np.floating]) -> npt.NDArray[np.floating]:
         tv: numpy.ndarray, shape (n_instances,)
 
     """
-    tv: NDArray[np.floating] = np.mean(probs[:, :, 1], axis=1) + np.var(probs[:, :, 0], axis=1)
+    tv = np.mean(probs[:, :, 1], axis=1) + np.var(probs[:, :, 0], axis=1)
     return tv
 
 
@@ -47,7 +46,7 @@ def expected_conditional_variance(probs: np.ndarray) -> np.ndarray:
         ecv: numpy.ndarray, shape (n_instances,)
 
     """
-    ecv: NDArray = np.mean(probs[:, :, 1], axis=1)
+    ecv = np.mean(probs[:, :, 1], axis=1)
     return ecv
 
 
@@ -66,7 +65,7 @@ def variance_conditional_expectation(probs: np.ndarray) -> np.ndarray:
         vce: numpy.ndarray, shape (n_instances,)
 
     """
-    vce: NDArray = np.var(probs[:, :, 0], axis=1)
+    vce = np.var(probs[:, :, 0], axis=1)
     return vce
 
 
@@ -85,8 +84,8 @@ def total_differential_entropy(probs: np.ndarray) -> np.ndarray:
         tde: numpy.ndarray, shape (n_instances,)
 
     """
-    sigma2_mean: NDArray = np.mean(probs[:, :, 1], axis=1) + np.var(probs[:, :, 0], axis=1)
-    tde: NDArray = np.atleast_1d(differential_entropy_gaussian(sigma2_mean))
+    sigma2_mean = np.mean(probs[:, :, 1], axis=1) + np.var(probs[:, :, 0], axis=1)
+    tde = differential_entropy_gaussian(sigma2_mean)
     return tde
 
 
@@ -105,7 +104,7 @@ def conditional_differential_entropy(probs: np.ndarray) -> np.ndarray:
         cde: numpy.ndarray, shape (n_instances,)
 
     """
-    cde: NDArray = np.mean(differential_entropy_gaussian(probs[:, :, 1]), axis=1)
+    cde = np.mean(differential_entropy_gaussian(probs[:, :, 1]), axis=1)
     return cde
 
 
@@ -125,9 +124,9 @@ def mutual_information(probs: np.ndarray) -> np.ndarray:
         mi: numpy.ndarray, shape (n_instances,)
 
     """
-    mu_mean: NDArray = np.mean(probs[:, :, 0], axis=1)
-    sigma2_mean: NDArray = np.mean(probs[:, :, 1], axis=1) + np.var(probs[:, :, 0], axis=1)
+    mu_mean = np.mean(probs[:, :, 0], axis=1)
+    sigma2_mean = np.mean(probs[:, :, 1], axis=1) + np.var(probs[:, :, 0], axis=1)
     mu_mean = np.repeat(np.expand_dims(mu_mean, 1), repeats=probs.shape[1], axis=1)
     sigma2_mean = np.repeat(np.expand_dims(sigma2_mean, 1), repeats=probs.shape[1], axis=1)
-    mi: NDArray = np.mean(kl_divergence_gaussian(probs[:, :, 0], probs[:, :, 1], mu_mean, sigma2_mean), axis=1)
+    mi = np.mean(kl_divergence_gaussian(probs[:, :, 0], probs[:, :, 1], mu_mean, sigma2_mean), axis=1)
     return mi
