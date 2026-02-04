@@ -13,7 +13,7 @@ from probly.representation.sampling.array_sample import ArraySample
 if TYPE_CHECKING:
     from numpy.typing import ArrayLike, DTypeLike
 
-_rng = np.random.default_rng()
+rng = np.random.default_rng()
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
@@ -77,7 +77,7 @@ class ArrayGaussian(GaussianDistribution):
             rng = np.random.default_rng()
 
         std = np.sqrt(self.var)
-        samples = _rng.normal(
+        samples = rng.normal(
             loc=self.mean,
             scale=std,
             size=(num_samples, *self.mean.shape),
