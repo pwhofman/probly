@@ -20,7 +20,7 @@ def create_simple_dataset():
     return tf.data.Dataset.from_tensor_slices((x, y))
 
 
-def test_generate_basic():
+def test_generate_logic():
     model = create_simple_model()
     dataset = create_simple_dataset()
 
@@ -37,7 +37,34 @@ def test_generate_basic():
     assert "accuracy" in results["metrics"]
 
 
-def test_save_and_load(tmp_path):
+def test_initialization():
+    model = create_simple_model()
+    dataset = create_simple_dataset()
+
+    generator = TensorFlowDataGenerator(
+        model=model,
+        dataset=dataset,
+        batch_size=4,
+    )
+
+    assert generator.batch_size == 4
+    assert generator.device in ["cpu", "GPU", None]
+
+
+def test_count_method():
+    model = create_simple_model()
+    dataset = create_simple_dataset()
+
+    generator = TensorFlowDataGenerator(model=model, dataset=dataset, batch_size=2)
+
+    test_tensor = tf.constant([0, 1, 1, 2, 2, 2], dtype=tf.int32)
+    counts = generator._count(test_tensor)  # noqa: SLF001
+
+    assert counts == {0: 1, 1: 2, 2: 3}
+    assert isinstance(counts[0], int)
+
+
+def test_save_load_cycle(tmp_path):
     model = create_simple_model()
     dataset = create_simple_dataset()
 
@@ -54,3 +81,4 @@ def test_save_and_load(tmp_path):
 
     assert loaded_results is not None
     assert "metrics" in loaded_results
+    assert loaded_results["info"]["framework"] == "tensorflow"
