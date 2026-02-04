@@ -4,16 +4,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from flax import nnx
 import jax.numpy as jnp
-
-from probly.calibration.histogram_binning.common import register_histogram_factory
 
 if TYPE_CHECKING:
     from jax import Array
 
 
-@register_histogram_factory(nnx.Module)
 class HistogramBinningFlax:
     """Calibrator that uses histogram binning."""
 

@@ -4,11 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from flax import nnx
 import jax.numpy as jnp
 from jax.scipy.special import betaln
-
-from probly.calibration.bayesian_binning.common import register_bayesian_binning_factory
 
 if TYPE_CHECKING:
     from jax import Array
@@ -114,8 +111,3 @@ class BayesianBinningQuantiles:
             calibrated = calibrated.at[i].set(calibrated_prob)
 
         return calibrated
-
-
-@register_bayesian_binning_factory(nnx.Module)
-def _(_base: nnx.Module, _device: object) -> type[BayesianBinningQuantiles]:
-    return BayesianBinningQuantiles

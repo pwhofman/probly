@@ -5,8 +5,6 @@ from __future__ import annotations
 import torch
 from torch import Tensor
 
-from .utils import betaln
-
 
 class BayesianBinningQuantiles:
     """Calibrator using Bayesian Binning into Quantiles (BBQ)."""
@@ -70,7 +68,7 @@ class BayesianBinningQuantiles:
                 a = torch.tensor(k + 1, dtype=torch.float32)
                 b = torch.tensor(n - k + 1, dtype=torch.float32)
 
-                log_bin_scores[i] = betaln(a, b) - betaln(torch.tensor(1.0), torch.tensor(1.0))
+                log_bin_scores[i] = self._betaln(a, b) - self._betaln(torch.tensor(1.0), torch.tensor(1.0))
 
             # System score = product of bin scores (in log-space)
             system_log_score = log_bin_scores.sum()
@@ -102,3 +100,7 @@ class BayesianBinningQuantiles:
             calibrated[i] = calibrated_prob
 
         return calibrated
+
+    def _betaln(self, a: Tensor, b: Tensor) -> Tensor:
+        """Natural log of the Beta Function."""
+        return torch.lgamma(a) + torch.lgamma(b) - torch.lgamma(a + b)
