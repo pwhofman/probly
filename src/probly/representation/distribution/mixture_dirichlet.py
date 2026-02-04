@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Self
 
 import numpy as np
 
@@ -11,6 +11,8 @@ from probly.representation.sampling.sample import ArraySample
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
+
+    from numpy.typing import DTypeLike
 
     from probly.representation.distribution.array_dirichlet import ArrayDirichlet
 
@@ -60,6 +62,45 @@ class ArrayDirichletMixture:
 
         object.__setattr__(self, "weights", w)
 
+    def __array_namespace__(self) -> Any:  # noqa: ANN401
+        """Get the array namespace of the underlying array."""
+        # Keep consistent with ArrayDirichlet style.
+        # If ArrayDirichlet returns self.alphas.__array_namespace__(), you may do the same.
+        return self.components[0].__array_namespace__()
+
+    @property
+    def dtype(self) -> DTypeLike:
+        """The data type of the underlying array."""
+        return self.components[0].dtype  # type: ignore[no-any-return]
+
+    @property
+    def device(self) -> str:
+        """The device of the underlying array."""
+        return self.components[0].device  # type: ignore[no-any-return]
+
+    @property
+    def ndim(self) -> int:
+        """Number of batch dimensions (excluding category axis)."""
+        return self.components[0].ndim  # type: ignore[no-any-return]
+
+    @property
+    def shape(self) -> tuple[int, ...]:
+        """Batch shape (excluding category axis)."""
+        return self.components[0].shape  # type: ignore[no-any-return]
+
+    @property
+    def size(self) -> int:
+        """The total number of distributions."""
+        return self.components[0].size
+
+    @property
+    def T(self) -> Self:  # noqa: N802
+        """The transposed version of the distribution."""
+        return type(self)(
+            components=[c.T for c in self.components],
+            weights=self.weights,
+        )
+
     def sample(
         self,
         num_samples: int = 1,
@@ -94,4 +135,4 @@ class ArrayDirichletMixture:
             s_j = comp.sample(n_j, rng=rng).samples
             out[mask] = s_j
 
-        return ArraySample(samples=out)
+        return ArraySample(array=out, sample_axis=0)

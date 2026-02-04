@@ -122,7 +122,7 @@ class ArrayDirichlet(
 
         samples = gammas / np.sum(gammas, axis=-1, keepdims=True)
 
-        return ArraySample(samples=samples)
+        return ArraySample(array=samples, sample_axis=0)
 
     def __setitem__(
         self,
@@ -194,7 +194,3 @@ class ArrayDirichlet(
     def __hash__(self) -> int:
         """Compute the hash of the distribution."""
         return super().__hash__()  # type: ignore[no-any-return]
-
-    def __repr__(self) -> str:
-        """Return a string representation of the distribution."""
-        return f"ArrayDirichletDistribution(alphas={self.alphas})"

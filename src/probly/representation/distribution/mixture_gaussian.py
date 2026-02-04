@@ -48,16 +48,16 @@ class ArrayGaussianMixture:
 
         object.__setattr__(self, "weights", w)
 
-    def sample(self, size: int) -> ArraySample:
+    def sample(self, num_samples: int) -> ArraySample:
         """Draw samples from the Gaussian mixture. Returns an ArraySample."""
         k = len(self.components)
         weights = self.weights
 
-        comp_idx = _RNG.choice(k, size=size, p=weights)
+        comp_idx = _RNG.choice(k, size=num_samples, p=weights)
 
         reference_comp = self.components[0]
         reference_array = reference_comp.sample(1).array
-        out_shape = (size, *reference_array.shape[1:])
+        out_shape = (num_samples, *reference_array.shape[1:])
         result = np.empty(out_shape, dtype=reference_array.dtype)
 
         for k, component in enumerate(self.components):

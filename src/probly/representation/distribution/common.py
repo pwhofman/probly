@@ -24,7 +24,7 @@ class Distribution(ABC):
         """Compute entropy."""
 
     @abstractmethod
-    def sample(self, size: int) -> Sample[Any]:
+    def sample(self, num_samples: int) -> Sample[Any]:
         """Draw samples from Distribution."""
 
 
