@@ -5,12 +5,12 @@ from __future__ import annotations
 from flax import nnx
 import jax.numpy as jnp
 
-from probly.calibration.plattvectortemperature.flax_affine import AffineScalingFlax
+from probly.calibration.scaling.flax_platt import FlaxPlatt
 
 
 def test_forward(flax_setup_binary: nnx.Module) -> None:
     base, inputs, _ = flax_setup_binary
-    platt_model = AffineScalingFlax(base, num_classes=1)
+    platt_model = FlaxPlatt(base)
 
     platt_model.w = nnx.Param(jnp.array([0.5], dtype=jnp.float32))
     platt_model.b = nnx.Param(jnp.array([1.0], dtype=jnp.float32))
@@ -26,7 +26,7 @@ def test_forward(flax_setup_binary: nnx.Module) -> None:
 
 def test_fit(flax_setup_binary: nnx.Module) -> None:
     base, inputs, labels = flax_setup_binary
-    platt_model = AffineScalingFlax(base, num_classes=1)
+    platt_model = FlaxPlatt(base)
 
     dataloader = [(inputs, labels)]
     w_unoptimized = platt_model.w.clone()
@@ -40,7 +40,7 @@ def test_fit(flax_setup_binary: nnx.Module) -> None:
 
 def test_predict(flax_setup_binary: nnx.Module) -> None:
     base, inputs, _ = flax_setup_binary
-    platt_model = AffineScalingFlax(base, num_classes=1)
+    platt_model = FlaxPlatt(base)
 
     predictions = platt_model.predict(inputs)
 

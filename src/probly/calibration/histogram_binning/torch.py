@@ -3,9 +3,7 @@
 from __future__ import annotations
 
 import torch
-from torch import Tensor, nn
-
-from probly.calibration.histogram_binning.common import register_histogram_factory
+from torch import Tensor
 
 
 class HistogramBinning:

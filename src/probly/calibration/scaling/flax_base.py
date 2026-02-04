@@ -12,13 +12,29 @@ import jax.numpy as jnp
 JaxDataLoader = Iterable[tuple[jax.Array, jax.Array]]
 
 
-class _ScalerFlax(nnx.Module, ABC):
+class ScalerFlax(nnx.Module, ABC):
+    """Base class for Flax Scaling Implementations."""
+
     def __init__(self, base: nnx.Module, num_classes: int) -> None:
+        """Initialize the scaler with a base module and number of classes.
+
+        Args:
+            base: The base model which outputs get calibrated.
+            num_classes: The number of classes the model uses.
+        """
         super().__init__()
         self.base = base
         self.num_classes = num_classes
 
     def __call__(self, x: jax.Array) -> jax.Array:
+        """Call the scaler and returne scaled logits.
+
+        Args:
+            x: The input the scaled logits are produced from
+
+        Returns:
+            scaled_logits: The scaled logits based on the input.
+        """
         logits = self.base(x)
         return self._scale_logits(logits)
 
@@ -43,6 +59,7 @@ class _ScalerFlax(nnx.Module, ABC):
         raise NotImplementedError
 
     def _collect_logits_and_labels(self, model: nnx.Module, dataset: JaxDataLoader) -> tuple[jax.Array, jax.Array]:
+        """Get all the models output for a given dataset and collect corresponding labels."""
         logits_list = []
         labels_list = []
 

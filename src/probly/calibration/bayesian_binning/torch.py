@@ -3,9 +3,7 @@
 from __future__ import annotations
 
 import torch
-from torch import Tensor, nn
-
-from probly.calibration.bayesian_binning.common import register_bayesian_binning_factory
+from torch import Tensor
 
 from .utils import betaln
 
@@ -104,4 +102,3 @@ class BayesianBinningQuantiles:
             calibrated[i] = calibrated_prob
 
         return calibrated
-
