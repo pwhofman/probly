@@ -25,4 +25,5 @@ def register_isotonic_factory(key: LazyType) -> Callable:
 
 def isotonic_regression(base: object, use_logits: bool) -> object:
     """Dispatches different implementations for isotonic regression."""
-    return _isotonic_factory(base, use_logits)
+    implementation: type[Any] = _isotonic_factory(base, use_logits)
+    return implementation(base, use_logits)

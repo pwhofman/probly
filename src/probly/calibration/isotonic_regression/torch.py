@@ -152,5 +152,5 @@ class IsotonicRegressionCalibrator:
 
 
 @common.register_isotonic_factory(nn.Module)
-def _(_base_model: nn.Module, _use_logits: bool) -> IsotonicRegressionCalibrator:
-    return IsotonicRegressionCalibrator(base_model=_base_model, use_logits=_use_logits)
+def _(_base_model: nn.Module, _use_logits: bool) -> type[IsotonicRegressionCalibrator]:
+    return IsotonicRegressionCalibrator
