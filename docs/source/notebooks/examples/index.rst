@@ -10,6 +10,7 @@ Notebook Examples
    bayesian_transformation
    dropconnect_transformation
    dropout_transformation
+   ensemble_subensemble_comparison
    ensemble_transformation
    Ensembling_RandomForests
    evidential_classification_transformation

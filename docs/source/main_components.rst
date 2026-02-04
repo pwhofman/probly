@@ -90,6 +90,8 @@ and only varying a small subset (e.g., the final layer), SubEnsembles achieve di
 
 :doc:`SubEnsemble Transformation <notebooks/examples/subensembles_fast_uncertainty>`
 
+:doc:`Ensemble Subensemble Comparison <notebooks/examples/ensemble_subensemble_comparison>`
+
 1.5 Evidential
 ~~~~~~~~~~~~~~~~~~~~~~~
 
