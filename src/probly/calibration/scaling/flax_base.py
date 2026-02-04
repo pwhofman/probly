@@ -14,6 +14,7 @@ JaxDataLoader = Iterable[tuple[jax.Array, jax.Array]]
 
 class ScalerFlax(nnx.Module, ABC):
     """Base class for Flax Scaling Implementations."""
+
     def __init__(self, base: nnx.Module, num_classes: int) -> None:
         """Initialize the scaler with a base module and number of classes.
 

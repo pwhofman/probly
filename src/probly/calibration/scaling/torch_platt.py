@@ -1,4 +1,5 @@
 """Implementation for Platt Scaling with Torch."""
+
 from __future__ import annotations
 
 import torch
