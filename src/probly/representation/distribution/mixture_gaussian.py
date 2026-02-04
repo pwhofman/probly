@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Self
 
 import numpy as np
 
@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from numpy.typing import DTypeLike
 
     from probly.representation.distribution.array_gaussian import ArrayGaussian
+
 
 _RNG = np.random.default_rng()
 
@@ -48,6 +49,43 @@ class ArrayGaussianMixture:
 
         object.__setattr__(self, "weights", w)
 
+    def __array_namespace__(self) -> Any:  # noqa: ANN401
+        """Get the array namespace of the underlying array."""
+        return self.components[0].__array_namespace__()
+
+    @property
+    def dtype(self) -> DTypeLike:
+        """The data type of the underlying array."""
+        return self.components[0].dtype  # type: ignore[no-any-return]
+
+    @property
+    def device(self) -> str:
+        """The device of the underlying array."""
+        return self.components[0].device
+
+    @property
+    def ndim(self) -> int:
+        """The number of dimensions of the underlying array."""
+        return self.components[0].ndim
+
+    @property
+    def shape(self) -> tuple[int, ...]:
+        """The shape of the underlying array."""
+        return self.components[0].shape
+
+    @property
+    def size(self) -> int:
+        """The total number of elements in the underlying array."""
+        return self.components[0].size
+
+    @property
+    def T(self) -> Self:  # noqa: N802
+        """The transposed version of the mixture components."""
+        return type(self)(
+            components=[c.T for c in self.components],
+            weights=self.weights,
+        )
+
     def sample(self, num_samples: int) -> ArraySample:
         """Draw samples from the Gaussian mixture. Returns an ArraySample."""
         k = len(self.components)
@@ -70,23 +108,3 @@ class ArrayGaussianMixture:
             result[indices_for_component] = samples_for_component
 
         return ArraySample(array=result, sample_axis=0)
-
-    @property
-    def shape(self) -> tuple[int, ...]:
-        """Return the shape of the underlying component array."""
-        return self.components.shape
-
-    @property
-    def ndim(self) -> int:
-        """Return the number of dimensions of the component array."""
-        return self.components.ndim
-
-    @property
-    def size(self) -> int:
-        """Return the total number of elements in the component array."""
-        return self.components.size
-
-    @property
-    def dtype(self) -> DTypeLike:
-        """Return the data type of the underlying component array."""
-        return self.components.dtype

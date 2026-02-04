@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Literal, Self, cast, override
+from typing import TYPE_CHECKING, Literal, Self, override
 
 import numpy as np
 
@@ -24,6 +24,13 @@ class ArrayGaussian(GaussianDistribution):
     var: np.ndarray
 
     type: Literal["gaussian"] = "gaussian"
+
+    allowed_types: tuple[type[np.ndarray] | type[np.generic] | type[float] | type[int], ...] = (
+        np.ndarray,
+        np.generic,
+        float,
+        int,
+    )
 
     def __post_init__(self) -> None:
         """Validate shapes and variances."""
@@ -60,13 +67,20 @@ class ArrayGaussian(GaussianDistribution):
         return float(0.5 * np.log(2 * np.e * np.pi * var).sum())
 
     @override
-    def sample(self, size: int) -> ArraySample[np.ndarray]:
+    def sample(
+        self,
+        num_samples: int = 1,
+        rng: np.random.Generator | None = None,
+    ) -> ArraySample[np.ndarray]:
         """Draw samples and wrap them in an ArraySample (sample_axis=0)."""
+        if rng is None:
+            rng = np.random.default_rng()
+
         std = np.sqrt(self.var)
         samples = _rng.normal(
             loc=self.mean,
             scale=std,
-            size=(size, *self.mean.shape),
+            size=(num_samples, *self.mean.shape),
         )
         return ArraySample(array=samples, sample_axis=0)
 
@@ -92,20 +106,61 @@ class ArrayGaussian(GaussianDistribution):
             return stacked
         return np.asarray(stacked, dtype=dtype, copy=copy)
 
+    def __array_ufunc__(self, ufunc: np.ufunc, method: str, *inputs: object, **kwargs: object) -> Self:
+        """Arithmetical operations for Gaussian."""
+        if ufunc is not np.add or method != "__call__":  # just + for now
+            return NotImplemented
+
+        out = kwargs.get("out", ())
+
+        for x in (*inputs, *out):
+            if not isinstance(x, (*self.allowed_types, type(self))):
+                return NotImplemented
+
+        unpacked: list[np.ndarray | float | int] = []
+        gaussians: list[ArrayGaussian] = []
+
+        for x in inputs:  # array with just means
+            if isinstance(x, type(self)):
+                gaussians.append(x)
+                unpacked.append(x.mean)
+            else:
+                unpacked.append(x)  # type: ignore[arg-type]
+
+        if not gaussians:
+            return NotImplemented
+
+        new_mean = ufunc(*unpacked, **{k: v for k, v in kwargs.items() if k != "out"})
+
+        base = gaussians[0]
+        new_var = base.var
+
+        result = type(self)(mean=np.asarray(new_mean), var=np.asarray(new_var))
+
+        if kwargs.get("out"):
+            out_gaussian = kwargs["out"][0]
+            if isinstance(out_gaussian, type(self)):
+                object.__setattr__(out_gaussian, "mean", result.mean)
+                object.__setattr__(out_gaussian, "var", result.var)
+                return out_gaussian
+            return NotImplemented
+
+        return result
+
     @property
     def ndim(self) -> int:
         """The number of dimensions of the underlying array."""
-        return int(self.mean.ndim)
+        return self.mean.ndim
 
     @property
     def shape(self) -> tuple[int, ...]:
         """The shape of the underlying array."""
-        return tuple(self.mean.shape)
+        return self.mean.shape
 
     @property
     def size(self) -> int:
         """The total number of elements in the underlying array."""
-        return int(self.mean.size)
+        return self.mean.size
 
     @property
     def T(self) -> Self:  # noqa: N802
@@ -123,7 +178,7 @@ class ArrayGaussian(GaussianDistribution):
     @property
     def device(self) -> str:
         """Return the hardware device on which the arrays reside (CPU for NumPy)."""
-        return cast("str", self.mean.device)
+        return self.mean.device  # type: ignore[no-any-return]
 
     def __getitem__(self, index: int | slice | tuple | np.ndarray) -> Self:
         """Return a sliced view of this Gaussian."""
@@ -136,10 +191,12 @@ class ArrayGaussian(GaussianDistribution):
         """Return the length of the underlying mean array."""
         return len(self.mean)
 
-    def __repr__(self) -> str:
-        """Return a debug representation of the Gaussian."""
-        cls_name = type(self).__name__
-        return f"{cls_name}(mean={self.mean!r}, var={self.var!r}, type={self.type!r})"
+    def to_device(self, device: Literal["cpu"]) -> Self:
+        """Move the underlying arrays to the specified device."""
+        if device == self.device:
+            return self
+        # NumPy backend supports only CPU.
+        return self
 
     def __eq__(self, other: object) -> bool:
         """Compare two Gaussians by their parameters."""
