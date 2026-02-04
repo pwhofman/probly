@@ -191,20 +191,3 @@ def plot_uncertainty(
     if show:
         plt.show()
     return ax
-
-
-value = 42
-rng = np.random.default_rng(value)
-n1, n2 = 120, 120
-cluster1 = rng.normal(loc=(0.0, 0.0), scale=0.7, size=(n1, 2))
-cluster2 = rng.normal(loc=(2.0, 1.5), scale=0.7, size=(n2, 2))
-
-plot_uncertainty(
-    cluster1,
-    cluster2,
-    title="Quick demo",
-    kernel="rbf",
-    C=0.5,
-    gamma="scale",
-    show=True,
-)
