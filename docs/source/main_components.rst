@@ -67,7 +67,7 @@ estimates that often perform well in practice.
 :doc:`Ensemble SciKitLearn Random Forests <notebooks/examples/Ensembling_RandomForests>`
 
 1.4.1 BatchEnsemble
-~~~~~~~~~~~~~~~~~~~~~~~
+----------------------------
 
 BatchEnsembles utilize the same key idea of Ensembles, training multiple networks to estimate uncertainty, but
 with a different approach. While Ensembles in a classical sense are trained sequentially, BatchEnsembles are all trained
@@ -82,7 +82,7 @@ BatchEnsebmle counterparts. A Flax support is also available.
 :doc:`BatchEnsemble Transformation <notebooks/examples/batch_ensemble_notebook>`
 
 1.4.2 SubEnsemble
-~~~~~~~~~~~~~~~~~~~~~~~
+----------------------------
 
 SubEnsemble are a computationally efficient alternative to standard ensembles. By sharing most of the model parameters across ensemble members
 and only varying a small subset (e.g., the final layer), SubEnsembles achieve diverse predictions with significantly reduced memory and compute overhead.
