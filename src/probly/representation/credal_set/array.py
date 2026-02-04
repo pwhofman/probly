@@ -13,8 +13,8 @@ from probly.representation.credal_set.common import (
     ConvexCredalSet,
     DiscreteCredalSet,
     DistanceBasedCredalSet,
-    SingletonCredalSet,
     ProbabilityIntervalsCredalSet,
+    SingletonCredalSet,
 )
 from probly.representation.sampling.sample import ArraySample
 
@@ -264,6 +264,7 @@ class ArrayConvexCredalSet(ArrayCategoricalCredalSet, ConvexCredalSet[np.ndarray
         """Compute the hash of the credal set."""
         return super().__hash__()
 
+
 class ArrayDistanceBasedCredalSet(
     ArrayCategoricalCredalSet,
     DistanceBasedCredalSet[np.ndarray],
@@ -291,16 +292,10 @@ class ArrayDistanceBasedCredalSet(
         The radius is set to the maximum Total Variation distance between any sample
         and the mean, ensuring the credal set covers all observed samples.
         """
-    
         averaged_array = np.mean(sample.samples, axis=0)
 
-        
-        if distribution_axis < 0:
-            calc_dist_axis = distribution_axis + averaged_array.ndim
-        else:
-            calc_dist_axis = distribution_axis
+        calc_dist_axis = distribution_axis + averaged_array.ndim if distribution_axis < 0 else distribution_axis
 
-     
         diff = np.abs(sample.samples - averaged_array)
         tv_dists = 0.5 * np.sum(diff, axis=calc_dist_axis + 1)
         radius = np.max(tv_dists, axis=0)
@@ -403,7 +398,7 @@ class ArrayDistanceBasedCredalSet(
     def __hash__(self) -> int:
         """Compute the hash of the credal set."""
         return super().__hash__()
-    
+
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
 class ArrayProbabilityIntervals(ArrayCategoricalCredalSet, ProbabilityIntervalsCredalSet[np.ndarray]):
@@ -565,6 +560,7 @@ class ArrayProbabilityIntervals(ArrayCategoricalCredalSet, ProbabilityIntervalsC
     def __hash__(self) -> int:
         """Compute the hash of the intervals."""
         return super().__hash__()
+
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
 class ArraySingletonCredalSet(ArrayCategoricalCredalSet, SingletonCredalSet[np.ndarray]):
