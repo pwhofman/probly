@@ -6,7 +6,7 @@ from typing import cast
 
 import pytest
 
-from probly.calibration.plattvectortemperature import common
+from probly.calibration.scaling import common
 
 
 class DummyTensor:

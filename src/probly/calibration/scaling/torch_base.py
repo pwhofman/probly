@@ -16,10 +16,16 @@ if TYPE_CHECKING:
     from torch.utils.data import DataLoader
 
 
-class _LogitScaler(nn.Module, ABC):
-    """Base class for logit calibration methods."""
+class ScalerTorch(nn.Module, ABC):
+    """Base class for Torch Scaling Implementations."""
 
     def __init__(self, base: nn.Module, num_classes: int) -> None:
+        """Initialize the scaling class with base model and number of classes.
+
+        Args:
+            base: The base model that should be calibrated.
+            num_classes: The number of classes the base model was trained on.
+        """
         super().__init__()
         self.base = base
         self.num_classes = num_classes
@@ -32,26 +38,41 @@ class _LogitScaler(nn.Module, ABC):
         self.base.eval()
 
     def forward(self, x: Tensor) -> Tensor:
+        """Produce scaled logits based on the input.
+
+        Args:
+            x: The input used to generate logits.
+
+        Returns:
+            scaled_logits: The scaled logits based on the input.
+        """
         x = x.to(self.device)
         logits = cast("Tensor", self.base(x))
         return self._scale_logits(logits)
 
     @abstractmethod
     def _scale_logits(self, logits: Tensor) -> Tensor:
-        """Apply calibration transform."""
+        """Scale logits base on learned parameters."""
         raise NotImplementedError
 
     @abstractmethod
     def _parameters_to_optimize(self) -> Iterable[nn.Parameter]:
-        """Return trainable parameters."""
+        """Create an iterable of all parameters to be optimized."""
         raise NotImplementedError
 
     @abstractmethod
     def _loss_fn(self, logits: Tensor, labels: Tensor) -> Tensor:
-        """Calibration loss."""
+        """Calibration loss function."""
         raise NotImplementedError
 
     def fit(self, calibration_set: DataLoader, learning_rate: float = 0.01, max_iter: int = 50) -> None:
+        """Optimize the parameters on a calibration set.
+
+        Args:
+            calibration_set: The dataset used for the optimization of the parameters.
+            learning_rate: The learning rate the optimizer uses.
+            max_iter: The maximum ammount of iterations / steps the optimizer can take.
+        """
         logits, labels = torch_collect_outputs(self.base, calibration_set, self.device)
 
         optimizer = torch.optim.LBFGS(
@@ -69,6 +90,14 @@ class _LogitScaler(nn.Module, ABC):
         optimizer.step(closure)
 
     def predict(self, x: Tensor) -> Tensor:
+        """Make calibrated predictions based on the input.
+
+        Args:
+            x: The input on which to make predictions on.
+
+        Returns:
+            probs: The calibrated prediction of the model.
+        """
         self.eval()
         with torch.no_grad():
             scaled_logits = self.forward(x)

@@ -5,12 +5,12 @@ from __future__ import annotations
 from flax import nnx
 import jax.numpy as jnp
 
-from probly.calibration.plattvectortemperature.flax_affine import AffineScalingFlax
+from probly.calibration.scaling.flax_vector import FlaxVector
 
 
 def test_forward(flax_setup_multiclass: nnx.Module) -> None:
     base, inputs, _ = flax_setup_multiclass
-    vector_model = AffineScalingFlax(base, num_classes=3)
+    vector_model = FlaxVector(base, num_classes=3)
 
     vector_model.w = nnx.Param(jnp.array([0.5, 0.25, 0.1], dtype=jnp.float32))
     vector_model.b = nnx.Param(jnp.array([1.0, 2.0, 3.0], dtype=jnp.float32))
@@ -26,7 +26,7 @@ def test_forward(flax_setup_multiclass: nnx.Module) -> None:
 
 def test_fit(flax_setup_multiclass: nnx.Module) -> None:
     base, inputs, labels = flax_setup_multiclass
-    vector_model = AffineScalingFlax(base, num_classes=3)
+    vector_model = FlaxVector(base, num_classes=3)
 
     dataloader = [(inputs, labels)]
     w_unoptimized = vector_model.w.clone()
@@ -40,7 +40,7 @@ def test_fit(flax_setup_multiclass: nnx.Module) -> None:
 
 def test_predict(flax_setup_multiclass: nnx.Module) -> None:
     base, inputs, _ = flax_setup_multiclass
-    vector_model = AffineScalingFlax(base, num_classes=3)
+    vector_model = FlaxVector(base, num_classes=3)
 
     predictions = vector_model.predict(inputs)
 

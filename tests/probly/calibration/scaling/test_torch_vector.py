@@ -6,13 +6,13 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
 
-from probly.calibration.plattvectortemperature.torch_affine import TorchAffine
+from probly.calibration.scaling.torch_vector import TorchVector
 
 
 def test_forward(torch_setup_multiclass: nn.Module) -> None:
     base, inputs, _ = torch_setup_multiclass
 
-    vector_model = TorchAffine(base, num_classes=3)
+    vector_model = TorchVector(base, num_classes=3)
 
     vector_model.w.values = [0.5, 0.25, 0.1]
     vector_model.b.values = [1, 2, 3]
@@ -29,7 +29,7 @@ def test_forward(torch_setup_multiclass: nn.Module) -> None:
 def test_fit(torch_setup_multiclass: nn.Module) -> None:
     base, inputs, labels = torch_setup_multiclass
 
-    vector_model = TorchAffine(base, num_classes=3)
+    vector_model = TorchVector(base, num_classes=3)
 
     dataloader = DataLoader(TensorDataset(inputs, labels), batch_size=10)
     w_unoptimized = vector_model.w.detach().clone()
@@ -43,7 +43,7 @@ def test_fit(torch_setup_multiclass: nn.Module) -> None:
 
 def test_predict(torch_setup_multiclass: nn.Module) -> None:
     base, inputs, _ = torch_setup_multiclass
-    vector_model = TorchAffine(base, num_classes=3)
+    vector_model = TorchVector(base, num_classes=3)
 
     predictions = vector_model.predict(inputs)
 

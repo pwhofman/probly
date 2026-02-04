@@ -5,7 +5,7 @@ import torch
 from torch import Tensor, nn
 from torch.utils.data import DataLoader, TensorDataset
 
-from probly.calibration.plattvectortemperature.torch_temperature import TorchTemperature
+from probly.calibration.scaling.torch_temperature import TorchTemperature
 
 ReturnTypeModelFixture = tuple[TorchTemperature, nn.Module]
 ReturnTypeLoaderFixture = tuple[DataLoader, Tensor]

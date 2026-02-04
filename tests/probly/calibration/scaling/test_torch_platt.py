@@ -5,9 +5,9 @@ import torch
 from torch import Tensor, nn
 from torch.utils.data import DataLoader, TensorDataset
 
-from probly.calibration.plattvectortemperature.torch_affine import TorchAffine
+from probly.calibration.scaling.torch_platt import TorchPlatt
 
-ReturnTypeModelFixture = tuple[TorchAffine, nn.Module]
+ReturnTypeModelFixture = tuple[TorchPlatt, nn.Module]
 ReturnTypeLoaderFixture = tuple[DataLoader, Tensor]
 
 
@@ -15,7 +15,7 @@ ReturnTypeLoaderFixture = tuple[DataLoader, Tensor]
 def setup_model(torch_binary_model: nn.Sequential) -> ReturnTypeModelFixture:
     """Set up a TorchAffine (Platt scaling) model."""
     base = torch_binary_model
-    affine_model = TorchAffine(base, num_classes=1)
+    affine_model = TorchPlatt(base)
     return affine_model, base
 
 
