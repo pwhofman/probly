@@ -237,10 +237,19 @@
 <li class="toctree-l3"><a class="reference internal" href="notebooks/examples/evaluation_and_quantification/visualization_tools.html">Visualisation Tools</a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/batch_ensemble_notebook.html"><strong>Batch Ensemble Networks</strong></a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/bayesian_transformation.html">Bayesian Transformation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/dropconnect_transformation.html">Dropconnect Transformation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/dropout_transformation.html">Dropout Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/ensemble_subensemble_comparison.html"><strong>Ensemble vs SubEnsemble Notebook</strong></a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/ensemble_transformation.html">Ensemble Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/Ensembling_RandomForests.html">Potential Advantages of Ensembling Random Forests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/Ensembling_RandomForests.html#theoretical-background">2. Theoretical Background</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/Ensembling_RandomForests.html#data-generation">3. Data Generation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/Ensembling_RandomForests.html#random-forest-ensemble-prototype">4. Random Forest Ensemble Prototype</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/Ensembling_RandomForests.html#uncertainty-analysis">5. Uncertainty Analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/Ensembling_RandomForests.html#performance-metrics">6. Performance Metrics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/Ensembling_RandomForests.html#conclusion">7. Conclusion</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/evidential_classification_transformation.html">Evidential Classification Transformation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/evidential_regression_transformation.html">Evidential Regression Transformation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/fashionmnist_ood_ensemble.html">Out-of-Distribution Detection with an Ensemble</a></li>
@@ -248,7 +257,9 @@
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/lazy_dispatch_test.html">Lazy Dispatch Test</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/multilib_demo.html">Multilib Demo</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/pytraverse_tutorial.html">A Brief Introduction to PyTraverse</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/sklearn_ensemble_tutorial.html">Uncertainty Quantification using scikit-learn-Ensembles</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/sklearn_selective_prediction.html">Using probly with scikit-learn</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/subensembles_fast_uncertainty.html">Sub-Ensembles for Fast Uncertainty Estimation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/temperature_scaling_calibration.html">Calibration using Temperature Scaling</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/train_bnn_classification.html">Bayesian Neural Networks</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/train_evidential_classification.html">Evidential Model for Classification</a></li>
@@ -340,6 +351,28 @@ at increased computational cost.</p>
 different initializations. By aggregating predictions across ensemble members, you obtain diverse uncertainty
 estimates that often perform well in practice.</p>
 <p><a class="reference internal" href="notebooks/examples/ensemble_transformation.html"><span class="doc">Ensemble Transformation</span></a></p>
+<p><a class="reference internal" href="notebooks/examples/transformations_comparison.html"><span class="doc">Ensemble Transformation Comparison</span></a></p>
+<p><a class="reference internal" href="notebooks/examples/sklearn_ensemble_tutorial.html"><span class="doc">Ensemble SciKitLearn Transformation</span></a></p>
+<p><a class="reference internal" href="notebooks/examples/Ensembling_RandomForests.html"><span class="doc">Ensemble SciKitLearn Random Forests</span></a></p>
+<section id="batchensemble">
+<h4>1.4.1 BatchEnsemble<a class="headerlink" href="#batchensemble" title="Link to this heading">¶</a></h4>
+<p>BatchEnsembles utilize the same key idea of Ensembles, training multiple networks to estimate uncertainty, but
+with a different approach. While Ensembles in a classical sense are trained sequentially, BatchEnsembles are all trained
+within a device at the same time. This is a achieved by modifying the input and output tensors by rank-one-vectors in each foward.
+One can understand this as adding noise. Further and more detailed information can be either found in the paper
+by <span id="id2">[<a class="reference internal" href="references.html#id43" title="Jimmy Ba Yeming Wen, Dustin Tran. Batchensemble: an alternative approach to efficient ensemble and lifelong learning. Machine Learning, 2020. arXiv:2002.06715.">YW20</a>]</span>, from which this transformation is inspired, or by working through the provided Jupyter notebook.</p>
+<p>Probly provides the user with a torch implementation to transfrom architectures with Linear and Conv2D layers in their
+BatchEnsebmle counterparts. A Flax support is also available.</p>
+<p><a class="reference internal" href="notebooks/examples/batch_ensemble_notebook.html"><span class="doc">BatchEnsemble Transformation</span></a></p>
+</section>
+<section id="subensemble">
+<h4>1.4.2 SubEnsemble<a class="headerlink" href="#subensemble" title="Link to this heading">¶</a></h4>
+<p>SubEnsemble are a computationally efficient alternative to standard ensembles. By sharing most of the model parameters across ensemble members
+and only varying a small subset (e.g., the final layer), SubEnsembles achieve diverse predictions with significantly reduced memory and compute overhead.
+<span id="id3">[<a class="reference internal" href="references.html#id42" title="Matías Valdenegro-Toro. Deep sub-ensembles for fast uncertainty estimation in image classification. Machine Learning, 2019. arXiv:1910.08168.">VT19</a>]</span></p>
+<p><a class="reference internal" href="notebooks/examples/subensembles_fast_uncertainty.html"><span class="doc">SubEnsemble Transformation</span></a></p>
+<p><a class="reference internal" href="notebooks/examples/ensemble_subensemble_comparison.html"><span class="doc">Ensemble Subensemble Comparison</span></a></p>
+</section>
 </section>
 <section id="evidential">
 <h3>1.5 Evidential<a class="headerlink" href="#evidential" title="Link to this heading">¶</a></h3>
@@ -350,29 +383,29 @@ the parameters of a Dirichlet distribution (classification) or Normal-Inverse-Ga
 (regression).</p>
 <p>This approach provides a principled framework for capturing both <strong>aleatoric uncertainty</strong>
 (inherent data noise) and <strong>epistemic uncertainty</strong> (model uncertainty due to limited data)
-simultaneously <span id="id2">[<a class="reference internal" href="references.html#id5" title="Murat Sensoy, Lance M. Kaplan, and Melih Kandemir. Evidential deep learning to quantify classification uncertainty. In Samy Bengio, Hanna M. Wallach, Hugo Larochelle, Kristen Grauman, Nicolò Cesa-Bianchi, and Roman Garnett, editors, Advances in Neural Information Processing Systems 31: Annual Conference on Neural Information Processing Systems 2018, NeurIPS 2018, December 3-8, 2018, Montréal, Canada, 3183–3193. 2018. URL: https://proceedings.neurips.cc/paper/2018/hash/a981f2b708044d6fb4a71a1463242520-Abstract.html.">SKK18</a>]</span>.</p>
+simultaneously <span id="id4">[<a class="reference internal" href="references.html#id5" title="Murat Sensoy, Lance M. Kaplan, and Melih Kandemir. Evidential deep learning to quantify classification uncertainty. In Samy Bengio, Hanna M. Wallach, Hugo Larochelle, Kristen Grauman, Nicolò Cesa-Bianchi, and Roman Garnett, editors, Advances in Neural Information Processing Systems 31: Annual Conference on Neural Information Processing Systems 2018, NeurIPS 2018, December 3-8, 2018, Montréal, Canada, 3183–3193. 2018. URL: https://proceedings.neurips.cc/paper/2018/hash/a981f2b708044d6fb4a71a1463242520-Abstract.html.">SKK18</a>]</span>.</p>
 <section id="implemented-methods">
 <h4>1.5.1 Implemented Methods<a class="headerlink" href="#implemented-methods" title="Link to this heading">¶</a></h4>
 <p><code class="docutils literal notranslate"><span class="pre">probly</span></code> supports seven evidential deep learning methods through a unified interface:</p>
 <p><strong>Classification Methods</strong></p>
 <ul class="simple">
-<li><p><strong>Evidential Deep Learning (EDL)</strong> <span id="id3">[<a class="reference internal" href="references.html#id5" title="Murat Sensoy, Lance M. Kaplan, and Melih Kandemir. Evidential deep learning to quantify classification uncertainty. In Samy Bengio, Hanna M. Wallach, Hugo Larochelle, Kristen Grauman, Nicolò Cesa-Bianchi, and Roman Garnett, editors, Advances in Neural Information Processing Systems 31: Annual Conference on Neural Information Processing Systems 2018, NeurIPS 2018, December 3-8, 2018, Montréal, Canada, 3183–3193. 2018. URL: https://proceedings.neurips.cc/paper/2018/hash/a981f2b708044d6fb4a71a1463242520-Abstract.html.">SKK18</a>]</span> — The foundational
+<li><p><strong>Evidential Deep Learning (EDL)</strong> <span id="id5">[<a class="reference internal" href="references.html#id5" title="Murat Sensoy, Lance M. Kaplan, and Melih Kandemir. Evidential deep learning to quantify classification uncertainty. In Samy Bengio, Hanna M. Wallach, Hugo Larochelle, Kristen Grauman, Nicolò Cesa-Bianchi, and Roman Garnett, editors, Advances in Neural Information Processing Systems 31: Annual Conference on Neural Information Processing Systems 2018, NeurIPS 2018, December 3-8, 2018, Montréal, Canada, 3183–3193. 2018. URL: https://proceedings.neurips.cc/paper/2018/hash/a981f2b708044d6fb4a71a1463242520-Abstract.html.">SKK18</a>]</span> — The foundational
 method that trains networks to output Dirichlet concentration parameters directly.</p></li>
-<li><p><strong>Prior Networks (PrNet)</strong> <span id="id4">[<a class="reference internal" href="references.html#id73" title="Andrey Malinin and Mark Gales. Predictive uncertainty estimation via prior networks. In Advances in Neural Information Processing Systems, volume 31. Curran Associates, Inc., 2018.">MG18</a>]</span> — Uses both
+<li><p><strong>Prior Networks (PrNet)</strong> <span id="id6">[<a class="reference internal" href="references.html#id75" title="Andrey Malinin and Mark Gales. Predictive uncertainty estimation via prior networks. In Advances in Neural Information Processing Systems, volume 31. Curran Associates, Inc., 2018.">MG18</a>]</span> — Uses both
 in-distribution and out-of-distribution data during training to learn sharper
 uncertainty estimates.</p></li>
-<li><p><strong>Information Robust Dirichlet Networks (IRD)</strong> <span id="id5">[<a class="reference internal" href="references.html#id74" title="Theodoros Tsiligkaridis. Information robust dirichlet networks for predictive uncertainty estimation. arXiv preprint arXiv:1910.04819, 2019.">Tsi19</a>]</span> —
+<li><p><strong>Information Robust Dirichlet Networks (IRD)</strong> <span id="id7">[<a class="reference internal" href="references.html#id76" title="Theodoros Tsiligkaridis. Information robust dirichlet networks for predictive uncertainty estimation. arXiv preprint arXiv:1910.04819, 2019.">Tsi19</a>]</span> —
 Adds adversarial robustness through entropy maximisation on perturbed inputs.</p></li>
-<li><p><strong>Posterior Networks (PostNet)</strong> <span id="id6">[<a class="reference internal" href="references.html#id75" title="Bertrand Charpentier, Daniel Zügner, and Stephan Günnemann. Posterior network: uncertainty estimation without ood samples via density-based pseudo-counts. In Advances in Neural Information Processing Systems, volume 33, 1356–1367. Curran Associates, Inc., 2020.">CZugnerGunnemann20</a>]</span> — Uses normalizing flows
+<li><p><strong>Posterior Networks (PostNet)</strong> <span id="id8">[<a class="reference internal" href="references.html#id77" title="Bertrand Charpentier, Daniel Zügner, and Stephan Günnemann. Posterior network: uncertainty estimation without ood samples via density-based pseudo-counts. In Advances in Neural Information Processing Systems, volume 33, 1356–1367. Curran Associates, Inc., 2020.">CZugnerGunnemann20</a>]</span> — Uses normalizing flows
 to estimate density in latent space, converting density to pseudo-counts.</p></li>
-<li><p><strong>Natural Posterior Networks (NatPostNet)</strong> <span id="id7">[<a class="reference internal" href="references.html#id77" title="Bertrand Charpentier, Oliver Borchert, Daniel Zügner, Simon Geisler, and Stephan Günnemann. Natural posterior network: deep bayesian predictive uncertainty for exponential family distributions. In International Conference on Learning Representations. 2022.">CBZugner+22</a>]</span> — Extends
+<li><p><strong>Natural Posterior Networks (NatPostNet)</strong> <span id="id9">[<a class="reference internal" href="references.html#id79" title="Bertrand Charpentier, Oliver Borchert, Daniel Zügner, Simon Geisler, and Stephan Günnemann. Natural posterior network: deep bayesian predictive uncertainty for exponential family distributions. In International Conference on Learning Representations. 2022.">CBZugner+22</a>]</span> — Extends
 Posterior Networks to exponential family distributions with a certainty budget.</p></li>
 </ul>
 <p><strong>Regression Methods</strong></p>
 <ul class="simple">
-<li><p><strong>Deep Evidential Regression (DER)</strong> <span id="id8">[<a class="reference internal" href="references.html#id6" title="Alexander Amini, Wilko Schwarting, Ava Soleimany, and Daniela Rus. Deep evidential regression. In Hugo Larochelle, Marc'Aurelio Ranzato, Raia Hadsell, Maria-Florina Balcan, and Hsuan-Tien Lin, editors, Advances in Neural Information Processing Systems 33: Annual Conference on Neural Information Processing Systems 2020, NeurIPS 2020, December 6-12, 2020, virtual. 2020. URL: https://proceedings.neurips.cc/paper/2020/hash/aab085461de182608ee9f607f3f7d18f-Abstract.html.">ASSR20</a>]</span> — Outputs parameters
+<li><p><strong>Deep Evidential Regression (DER)</strong> <span id="id10">[<a class="reference internal" href="references.html#id6" title="Alexander Amini, Wilko Schwarting, Ava Soleimany, and Daniela Rus. Deep evidential regression. In Hugo Larochelle, Marc'Aurelio Ranzato, Raia Hadsell, Maria-Florina Balcan, and Hsuan-Tien Lin, editors, Advances in Neural Information Processing Systems 33: Annual Conference on Neural Information Processing Systems 2020, NeurIPS 2020, December 6-12, 2020, virtual. 2020. URL: https://proceedings.neurips.cc/paper/2020/hash/aab085461de182608ee9f607f3f7d18f-Abstract.html.">ASSR20</a>]</span> — Outputs parameters
 of a Normal-Inverse-Gamma distribution for regression with uncertainty.</p></li>
-<li><p><strong>Regression Prior Networks (RPN)</strong> <span id="id9">[<a class="reference internal" href="references.html#id76" title="Andrey Malinin, Sergey Chervontsev, Ivan Provilkov, and Mark Gales. Regression prior networks. arXiv preprint arXiv:2006.11590, 2020.">MCPG20</a>]</span> — Combines
+<li><p><strong>Regression Prior Networks (RPN)</strong> <span id="id11">[<a class="reference internal" href="references.html#id78" title="Andrey Malinin, Sergey Chervontsev, Ivan Provilkov, and Mark Gales. Regression prior networks. arXiv preprint arXiv:2006.11590, 2020.">MCPG20</a>]</span> — Combines
 evidential regression with OOD-aware training using KL divergence to a prior.</p></li>
 </ul>
 </section>
@@ -504,7 +537,7 @@ and normalizing flow for density-based uncertainty:</p>
 <span class="n">loss</span> <span class="o">=</span> <span class="n">evidential_log_loss</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">targets</span><span class="p">)</span>
 </pre></div>
 </div>
-<p><strong>ird_loss</strong> <span id="id10">[<a class="reference internal" href="references.html#id74" title="Theodoros Tsiligkaridis. Information robust dirichlet networks for predictive uncertainty estimation. arXiv preprint arXiv:1910.04819, 2019.">Tsi19</a>]</span></p>
+<p><strong>ird_loss</strong> <span id="id12">[<a class="reference internal" href="references.html#id76" title="Theodoros Tsiligkaridis. Information robust dirichlet networks for predictive uncertainty estimation. arXiv preprint arXiv:1910.04819, 2019.">Tsi19</a>]</span></p>
 <p>Information Robust Dirichlet loss combining Lp calibration, regularization
 on incorrect classes, and entropy maximization for adversarial robustness:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">probly.train.evidential.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">ird_loss</span>
@@ -522,7 +555,7 @@ on incorrect classes, and entropy maximization for adversarial robustness:</p>
 <span class="p">)</span>
 </pre></div>
 </div>
-<p><strong>pn_loss</strong> <span id="id11">[<a class="reference internal" href="references.html#id73" title="Andrey Malinin and Mark Gales. Predictive uncertainty estimation via prior networks. In Advances in Neural Information Processing Systems, volume 31. Curran Associates, Inc., 2018.">MG18</a>]</span></p>
+<p><strong>pn_loss</strong> <span id="id13">[<a class="reference internal" href="references.html#id75" title="Andrey Malinin and Mark Gales. Predictive uncertainty estimation via prior networks. In Advances in Neural Information Processing Systems, volume 31. Curran Associates, Inc., 2018.">MG18</a>]</span></p>
 <p>Prior Networks loss for paired ID and OOD training:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">probly.train.evidential.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">pn_loss</span>
 
@@ -530,14 +563,14 @@ on incorrect classes, and entropy maximization for adversarial robustness:</p>
 <span class="n">loss</span> <span class="o">=</span> <span class="n">pn_loss</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">x_in</span><span class="p">,</span> <span class="n">y_in</span><span class="p">,</span> <span class="n">x_ood</span><span class="p">)</span>
 </pre></div>
 </div>
-<p><strong>natpn_loss</strong> <span id="id12">[<a class="reference internal" href="references.html#id77" title="Bertrand Charpentier, Oliver Borchert, Daniel Zügner, Simon Geisler, and Stephan Günnemann. Natural posterior network: deep bayesian predictive uncertainty for exponential family distributions. In International Conference on Learning Representations. 2022.">CBZugner+22</a>]</span></p>
+<p><strong>natpn_loss</strong> <span id="id14">[<a class="reference internal" href="references.html#id79" title="Bertrand Charpentier, Oliver Borchert, Daniel Zügner, Simon Geisler, and Stephan Günnemann. Natural posterior network: deep bayesian predictive uncertainty for exponential family distributions. In International Conference on Learning Representations. 2022.">CBZugner+22</a>]</span></p>
 <p>Natural Posterior Network loss (expected NLL minus entropy regularization):</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">probly.train.evidential.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">natpn_loss</span>
 
 <span class="n">loss</span> <span class="o">=</span> <span class="n">natpn_loss</span><span class="p">(</span><span class="n">alpha</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">entropy_weight</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">)</span>
 </pre></div>
 </div>
-<p><strong>postnet_loss</strong> <span id="id13">[<a class="reference internal" href="references.html#id75" title="Bertrand Charpentier, Daniel Zügner, and Stephan Günnemann. Posterior network: uncertainty estimation without ood samples via density-based pseudo-counts. In Advances in Neural Information Processing Systems, volume 33, 1356–1367. Curran Associates, Inc., 2020.">CZugnerGunnemann20</a>]</span></p>
+<p><strong>postnet_loss</strong> <span id="id15">[<a class="reference internal" href="references.html#id77" title="Bertrand Charpentier, Daniel Zügner, and Stephan Günnemann. Posterior network: uncertainty estimation without ood samples via density-based pseudo-counts. In Advances in Neural Information Processing Systems, volume 33, 1356–1367. Curran Associates, Inc., 2020.">CZugnerGunnemann20</a>]</span></p>
 <p>Posterior Networks loss using flow-based density estimation:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">probly.train.evidential.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">postnet_loss</span>
 
@@ -545,14 +578,14 @@ on incorrect classes, and entropy maximization for adversarial robustness:</p>
 </pre></div>
 </div>
 <p><strong>Regression Losses</strong></p>
-<p><strong>der_loss</strong> <span id="id14">[<a class="reference internal" href="references.html#id6" title="Alexander Amini, Wilko Schwarting, Ava Soleimany, and Daniela Rus. Deep evidential regression. In Hugo Larochelle, Marc'Aurelio Ranzato, Raia Hadsell, Maria-Florina Balcan, and Hsuan-Tien Lin, editors, Advances in Neural Information Processing Systems 33: Annual Conference on Neural Information Processing Systems 2020, NeurIPS 2020, December 6-12, 2020, virtual. 2020. URL: https://proceedings.neurips.cc/paper/2020/hash/aab085461de182608ee9f607f3f7d18f-Abstract.html.">ASSR20</a>]</span></p>
+<p><strong>der_loss</strong> <span id="id16">[<a class="reference internal" href="references.html#id6" title="Alexander Amini, Wilko Schwarting, Ava Soleimany, and Daniela Rus. Deep evidential regression. In Hugo Larochelle, Marc'Aurelio Ranzato, Raia Hadsell, Maria-Florina Balcan, and Hsuan-Tien Lin, editors, Advances in Neural Information Processing Systems 33: Annual Conference on Neural Information Processing Systems 2020, NeurIPS 2020, December 6-12, 2020, virtual. 2020. URL: https://proceedings.neurips.cc/paper/2020/hash/aab085461de182608ee9f607f3f7d18f-Abstract.html.">ASSR20</a>]</span></p>
 <p>Deep Evidential Regression loss (Student-t NLL + evidence regularization):</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">probly.train.evidential.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">der_loss</span>
 
 <span class="n">loss</span> <span class="o">=</span> <span class="n">der_loss</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">kappa</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">lam</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
 </pre></div>
 </div>
-<p><strong>rpn_loss</strong> <span id="id15">[<a class="reference internal" href="references.html#id76" title="Andrey Malinin, Sergey Chervontsev, Ivan Provilkov, and Mark Gales. Regression prior networks. arXiv preprint arXiv:2006.11590, 2020.">MCPG20</a>]</span></p>
+<p><strong>rpn_loss</strong> <span id="id17">[<a class="reference internal" href="references.html#id78" title="Andrey Malinin, Sergey Chervontsev, Ivan Provilkov, and Mark Gales. Regression prior networks. arXiv preprint arXiv:2006.11590, 2020.">MCPG20</a>]</span></p>
 <p>Regression Prior Networks loss combining DER on ID data with KL to prior on OOD:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">probly.train.evidential.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">rpn_loss</span>
 
@@ -749,7 +782,11 @@ for a wide range of machine learning applications, from research prototyping to 
 <li><a class="reference internal" href="#dropout">1.1 Dropout</a></li>
 <li><a class="reference internal" href="#dropconnect">1.2 DropConnect</a></li>
 <li><a class="reference internal" href="#bayesian">1.3 Bayesian</a></li>
-<li><a class="reference internal" href="#ensemble">1.4 Ensemble</a></li>
+<li><a class="reference internal" href="#ensemble">1.4 Ensemble</a><ul>
+<li><a class="reference internal" href="#batchensemble">1.4.1 BatchEnsemble</a></li>
+<li><a class="reference internal" href="#subensemble">1.4.2 SubEnsemble</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#evidential">1.5 Evidential</a><ul>
 <li><a class="reference internal" href="#implemented-methods">1.5.1 Implemented Methods</a></li>
 <li><a class="reference internal" href="#unified-evidential-training">1.5.2 Unified Evidential Training</a></li>

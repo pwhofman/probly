@@ -237,10 +237,19 @@
 <li class="toctree-l3"><a class="reference internal" href="notebooks/examples/evaluation_and_quantification/visualization_tools.html">Visualisation Tools</a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/batch_ensemble_notebook.html"><strong>Batch Ensemble Networks</strong></a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/bayesian_transformation.html">Bayesian Transformation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/dropconnect_transformation.html">Dropconnect Transformation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/dropout_transformation.html">Dropout Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/ensemble_subensemble_comparison.html"><strong>Ensemble vs SubEnsemble Notebook</strong></a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/ensemble_transformation.html">Ensemble Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/Ensembling_RandomForests.html">Potential Advantages of Ensembling Random Forests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/Ensembling_RandomForests.html#theoretical-background">2. Theoretical Background</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/Ensembling_RandomForests.html#data-generation">3. Data Generation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/Ensembling_RandomForests.html#random-forest-ensemble-prototype">4. Random Forest Ensemble Prototype</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/Ensembling_RandomForests.html#uncertainty-analysis">5. Uncertainty Analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/Ensembling_RandomForests.html#performance-metrics">6. Performance Metrics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/Ensembling_RandomForests.html#conclusion">7. Conclusion</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/evidential_classification_transformation.html">Evidential Classification Transformation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/evidential_regression_transformation.html">Evidential Regression Transformation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/fashionmnist_ood_ensemble.html">Out-of-Distribution Detection with an Ensemble</a></li>
@@ -248,7 +257,9 @@
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/lazy_dispatch_test.html">Lazy Dispatch Test</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/multilib_demo.html">Multilib Demo</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/pytraverse_tutorial.html">A Brief Introduction to PyTraverse</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/sklearn_ensemble_tutorial.html">Uncertainty Quantification using scikit-learn-Ensembles</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/sklearn_selective_prediction.html">Using probly with scikit-learn</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/subensembles_fast_uncertainty.html">Sub-Ensembles for Fast Uncertainty Estimation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/temperature_scaling_calibration.html">Calibration using Temperature Scaling</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/train_bnn_classification.html">Bayesian Neural Networks</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/train_evidential_classification.html">Evidential Model for Classification</a></li>
@@ -396,7 +407,7 @@ overconfidence.</p>
 <section id="what-is-an-uncertainty-representation">
 <h3>2.1 What Is an Uncertainty Representation?<a class="headerlink" href="#what-is-an-uncertainty-representation" title="Link to this heading">¶</a></h3>
 <p>An uncertainty representation describes the form in which a machine-learning model expresses not only its prediction but also its confidence in that prediction. Instead of returning a single label such as “cat,” an uncertainty-aware model produces additional information that reflects how sure or unsure it is about its output.</p>
-<p>Such representations can take many forms, including probability distributions, repeated stochastic samples, raw logits, or evidence values for higher-level distributions. In practice, they may appear as sets of sampled outputs, vectors of class probabilities, parameters of a distribution, or structured intervals. All of these formats serve the same purpose: they quantify how uncertain the model is about its own prediction. <span id="id5">[<a class="reference internal" href="references.html#id72" title="Murat Sensoy, Lance Kaplan, and Melih Kandemir. Evidential deep learning to quantify classification uncertainty. arXiv preprint arXiv:1910.09457, 2019.">SKK19</a>]</span></p>
+<p>Such representations can take many forms, including probability distributions, repeated stochastic samples, raw logits, or evidence values for higher-level distributions. In practice, they may appear as sets of sampled outputs, vectors of class probabilities, parameters of a distribution, or structured intervals. All of these formats serve the same purpose: they quantify how uncertain the model is about its own prediction. <span id="id5">[<a class="reference internal" href="references.html#id74" title="Murat Sensoy, Lance Kaplan, and Melih Kandemir. Evidential deep learning to quantify classification uncertainty. arXiv preprint arXiv:1910.09457, 2019.">SKK19</a>]</span></p>
 </section>
 <section id="common-representation-types">
 <h3>2.2 Common Representation Types<a class="headerlink" href="#common-representation-types" title="Link to this heading">¶</a></h3>
@@ -406,7 +417,7 @@ overconfidence.</p>
 <p>Ensemble-based representations rely on several independently trained models whose predictions are combined; the variability across models expresses the epistemic uncertainty.</p>
 <p><strong>Evidential representations</strong></p>
 <p>Evidential representations work by predicting the parameters of a higher-order distribution rather than explicit samples. This allows the model to express both a belief and uncertainty about that belief through a single forward pass.
-This family of methods is closely related to evidential deep learning as introduced by Sensoy et al. <span id="id6">[<a class="reference internal" href="references.html#id72" title="Murat Sensoy, Lance Kaplan, and Melih Kandemir. Evidential deep learning to quantify classification uncertainty. arXiv preprint arXiv:1910.09457, 2019.">SKK19</a>]</span>.</p>
+This family of methods is closely related to evidential deep learning as introduced by Sensoy et al. <span id="id6">[<a class="reference internal" href="references.html#id74" title="Murat Sensoy, Lance Kaplan, and Melih Kandemir. Evidential deep learning to quantify classification uncertainty. arXiv preprint arXiv:1910.09457, 2019.">SKK19</a>]</span>.</p>
 <p><strong>Bayesian sampling representations</strong></p>
 <p>Bayesian sampling representations describe uncertainty by drawing samples from distributions placed over the model’s weights, leading to sampled predictions that approximate the full predictive distribution.</p>
 <p><strong>Predictive distribution representations</strong></p>
@@ -434,15 +445,15 @@ Uncertainty quantification means converting these representations into numerical
 measures of uncertainty.</p>
 <p>Typical measures:</p>
 <p><strong>Entropy-based measures</strong>
-– Total entropy <span id="id7">[<a class="reference internal" href="references.html#id59" title="Claude Shannon. A mathematical theory of communication. Bell System Technical Journal, 1948.">Sha48</a>]</span>
+– Total entropy <span id="id7">[<a class="reference internal" href="references.html#id61" title="Claude Shannon. A mathematical theory of communication. Bell System Technical Journal, 1948.">Sha48</a>]</span>
 – Decompositions (e.g., upper/lower entropy) <span id="id8">[<a class="reference internal" href="references.html#id41" title="Eyke Hüllermeier and Willem Waegeman. Aleatoric and epistemic uncertainty in machine learning: an introduction to concepts and methods. Machine Learning, 2021. arXiv:1910.09457.">HW21</a>]</span></p>
 <p><strong>Variance-based measures</strong>
-– Variance of model predictions, e.g., in ensembles <span id="id9">[<a class="reference internal" href="references.html#id61" title="Balaji Lakshminarayanan, Alexander Pritzel, and Charles Blundell. Simple and scalable predictive uncertainty estimation using deep ensembles. NeurIPS, 2017.">LPB17a</a>]</span>
-– Variance under MC dropout <span id="id10">[<a class="reference internal" href="references.html#id60" title="Yarin Gal and Zoubin Ghahramani. Dropout as a bayesian approximation: representing model uncertainty in deep learning. ICML, 2016.">GG16a</a>]</span></p>
+– Variance of model predictions, e.g., in ensembles <span id="id9">[<a class="reference internal" href="references.html#id63" title="Balaji Lakshminarayanan, Alexander Pritzel, and Charles Blundell. Simple and scalable predictive uncertainty estimation using deep ensembles. NeurIPS, 2017.">LPB17a</a>]</span>
+– Variance under MC dropout <span id="id10">[<a class="reference internal" href="references.html#id62" title="Yarin Gal and Zoubin Ghahramani. Dropout as a bayesian approximation: representing model uncertainty in deep learning. ICML, 2016.">GG16a</a>]</span></p>
 <p><strong>Scoring-Rule-Based Quantification</strong>
-– Proper scoring rules as uncertainty measures <span id="id11">[<a class="reference internal" href="references.html#id62" title="Tilmann Gneiting and Adrian E. Raftery. Strictly proper scoring rules, prediction, and estimation. JASA, 2007.">GR07</a>]</span></p>
+– Proper scoring rules as uncertainty measures <span id="id11">[<a class="reference internal" href="references.html#id64" title="Tilmann Gneiting and Adrian E. Raftery. Strictly proper scoring rules, prediction, and estimation. JASA, 2007.">GR07</a>]</span></p>
 <p><strong>Wasserstein-Based Quantification</strong>
-– Distributional distances as uncertainty indicators <span id="id12">[<a class="reference internal" href="references.html#id63" title="Martin Arjovsky, Soumith Chintala, and Léon Bottou. Wasserstein generative adversarial networks. ICML, 2017.">ACB17</a>]</span></p>
+– Distributional distances as uncertainty indicators <span id="id12">[<a class="reference internal" href="references.html#id65" title="Martin Arjovsky, Soumith Chintala, and Léon Bottou. Wasserstein generative adversarial networks. ICML, 2017.">ACB17</a>]</span></p>
 <p>The distinction between the two main types of uncertainty follows the widely cited
 taxonomy introduced in <span id="id13">[<a class="reference internal" href="references.html#id41" title="Eyke Hüllermeier and Willem Waegeman. Aleatoric and epistemic uncertainty in machine learning: an introduction to concepts and methods. Machine Learning, 2021. arXiv:1910.09457.">HW21</a>]</span>:</p>
 <ul class="simple">
@@ -463,13 +474,13 @@ comparable, testable, and operable.</p>
 <p><strong>Comparing model behavior</strong>
 Different uncertainty-aware model families (Bayesian NNs, MC Dropout, Ensembles,
 Evidential Models, Conformal Prediction) can only be systematically compared when
-their uncertainty is expressed as measurable quantities <span id="id14">[<a class="reference internal" href="references.html#id69" title="Moloud et al. Abdar. A review of uncertainty quantification in deep learning. Information Fusion, 2021.">Abd21</a>]</span>.</p>
+their uncertainty is expressed as measurable quantities <span id="id14">[<a class="reference internal" href="references.html#id71" title="Moloud et al. Abdar. A review of uncertainty quantification in deep learning. Information Fusion, 2021.">Abd21</a>]</span>.</p>
 <p><strong>Detecting invalid predictions</strong>
 Quantified uncertainty enables detecting model failures and OOD data, a key idea in
-uncertainty-aware ML <span id="id15">[<a class="reference internal" href="references.html#id41" title="Eyke Hüllermeier and Willem Waegeman. Aleatoric and epistemic uncertainty in machine learning: an introduction to concepts and methods. Machine Learning, 2021. arXiv:1910.09457.">HW21</a>]</span>, <span id="id16">[<a class="reference internal" href="references.html#id66" title="Dan Hendrycks and Kevin Gimpel. A baseline for detecting misclassified and out-of-distribution examples in neural networks. ICLR, 2017.">HG17</a>]</span>.</p>
+uncertainty-aware ML <span id="id15">[<a class="reference internal" href="references.html#id41" title="Eyke Hüllermeier and Willem Waegeman. Aleatoric and epistemic uncertainty in machine learning: an introduction to concepts and methods. Machine Learning, 2021. arXiv:1910.09457.">HW21</a>]</span>, <span id="id16">[<a class="reference internal" href="references.html#id68" title="Dan Hendrycks and Kevin Gimpel. A baseline for detecting misclassified and out-of-distribution examples in neural networks. ICLR, 2017.">HG17</a>]</span>.</p>
 <p><strong>Better decisions</strong>
 Selective prediction and selective rejection rely directly on uncertainty
-quantification <span id="id17">[<a class="reference internal" href="references.html#id67" title="Yotam Geifman and Ran El-Yaniv. Selective classification for deep neural networks. In NeurIPS. 2017.">GEY17</a>]</span>.</p>
+quantification <span id="id17">[<a class="reference internal" href="references.html#id69" title="Yotam Geifman and Ran El-Yaniv. Selective classification for deep neural networks. In NeurIPS. 2017.">GEY17</a>]</span>.</p>
 <p>Without quantification, none of these downstream tasks would be feasible.</p>
 </section>
 <section id="downstream-tasks">
@@ -477,10 +488,10 @@ quantification <span id="id17">[<a class="reference internal" href="references.h
 <p>The presentation introduces several practical applications of quantified uncertainty.</p>
 <p><strong>Out-of-Distribution (OOD) Detection</strong>
 Models should detect when an input is outside the training distribution.
-OOD detection is a core task in uncertainty research <span id="id18">[<a class="reference internal" href="references.html#id71" title="Yiyou et al. Yang. Generalized ood detection via bayesian uncertainty estimation. CVPR, 2021.">Yan21</a>]</span>, <span id="id19">[<a class="reference internal" href="references.html#id66" title="Dan Hendrycks and Kevin Gimpel. A baseline for detecting misclassified and out-of-distribution examples in neural networks. ICLR, 2017.">HG17</a>]</span>.</p>
+OOD detection is a core task in uncertainty research <span id="id18">[<a class="reference internal" href="references.html#id73" title="Yiyou et al. Yang. Generalized ood detection via bayesian uncertainty estimation. CVPR, 2021.">Yan21</a>]</span>, <span id="id19">[<a class="reference internal" href="references.html#id68" title="Dan Hendrycks and Kevin Gimpel. A baseline for detecting misclassified and out-of-distribution examples in neural networks. ICLR, 2017.">HG17</a>]</span>.</p>
 <p><strong>Selective Prediction / Confidence-Based Rejection</strong>
 The model may output <em>“I don’t know.”</em>
-This behavior is evaluated with accuracy–rejection curves <span id="id20">[<a class="reference internal" href="references.html#id67" title="Yotam Geifman and Ran El-Yaniv. Selective classification for deep neural networks. In NeurIPS. 2017.">GEY17</a>]</span>.</p>
+This behavior is evaluated with accuracy–rejection curves <span id="id20">[<a class="reference internal" href="references.html#id69" title="Yotam Geifman and Ran El-Yaniv. Selective classification for deep neural networks. In NeurIPS. 2017.">GEY17</a>]</span>.</p>
 <figure class="align-center" id="id30">
 <a class="reference internal image-reference" href="_images/Accuracy-Rejection-Curve.png"><img alt="Accuracy-Rejection Curve" src="_images/Accuracy-Rejection-Curve.png" style="width: 50%;" />
 </a>
@@ -490,10 +501,10 @@ This behavior is evaluated with accuracy–rejection curves <span id="id20">[<a 
 </figure>
 <p><strong>Calibration</strong>
 Calibration ensures that predicted probabilities match empirical frequencies, an issue
-highlighted in modern deep learning models <span id="id21">[<a class="reference internal" href="references.html#id68" title="Chuan Guo, Geoff Pleiss, Yu Sun, and Kilian Weinberger. On calibration of modern neural networks. ICML, 2017.">GPSW17a</a>]</span>.</p>
+highlighted in modern deep learning models <span id="id21">[<a class="reference internal" href="references.html#id70" title="Chuan Guo, Geoff Pleiss, Yu Sun, and Kilian Weinberger. On calibration of modern neural networks. ICML, 2017.">GPSW17a</a>]</span>.</p>
 <p><strong>Risk-Aware Decision Making</strong>
 Credal sets, distributional ambiguity, and pessimistic/robust reasoning are tools for
-risk-sensitive decisions <span id="id22">[<a class="reference internal" href="references.html#id65" title="Thomas Augustin, Frank Coolen, Gert de Cooman, and Matthias Troffaes. Introduction to Imprecise Probabilities. Wiley, 2014.">ACdCT14</a>]</span>, <span id="id23">[<a class="reference internal" href="references.html#id41" title="Eyke Hüllermeier and Willem Waegeman. Aleatoric and epistemic uncertainty in machine learning: an introduction to concepts and methods. Machine Learning, 2021. arXiv:1910.09457.">HW21</a>]</span>.</p>
+risk-sensitive decisions <span id="id22">[<a class="reference internal" href="references.html#id67" title="Thomas Augustin, Frank Coolen, Gert de Cooman, and Matthias Troffaes. Introduction to Imprecise Probabilities. Wiley, 2014.">ACdCT14</a>]</span>, <span id="id23">[<a class="reference internal" href="references.html#id41" title="Eyke Hüllermeier and Willem Waegeman. Aleatoric and epistemic uncertainty in machine learning: an introduction to concepts and methods. Machine Learning, 2021. arXiv:1910.09457.">HW21</a>]</span>.</p>
 <div class="table-wrapper colwidths-given docutils container">
 <table class="docutils align-default">
 <colgroup>
@@ -518,14 +529,14 @@ risk-sensitive decisions <span id="id22">[<a class="reference internal" href="re
 <h3>3.4 How everything is connected<a class="headerlink" href="#how-everything-is-connected" title="Link to this heading">¶</a></h3>
 <p><strong>1. Model Transformation</strong>
 A standard ML model is transformed into an uncertainty-aware version using techniques
-such as MC Dropout <span id="id24">[<a class="reference internal" href="references.html#id60" title="Yarin Gal and Zoubin Ghahramani. Dropout as a bayesian approximation: representing model uncertainty in deep learning. ICML, 2016.">GG16a</a>]</span>, Bayesian Layers <span id="id25">[<a class="reference internal" href="references.html#id70" title="Dustin et al. Tran. Bayesian layers: a module for neural network uncertainty. In NeurIPS. 2019.">Tra19</a>]</span>, or Ensembles
-<span id="id26">[<a class="reference internal" href="references.html#id61" title="Balaji Lakshminarayanan, Alexander Pritzel, and Charles Blundell. Simple and scalable predictive uncertainty estimation using deep ensembles. NeurIPS, 2017.">LPB17a</a>]</span>.</p>
+such as MC Dropout <span id="id24">[<a class="reference internal" href="references.html#id62" title="Yarin Gal and Zoubin Ghahramani. Dropout as a bayesian approximation: representing model uncertainty in deep learning. ICML, 2016.">GG16a</a>]</span>, Bayesian Layers <span id="id25">[<a class="reference internal" href="references.html#id72" title="Dustin et al. Tran. Bayesian layers: a module for neural network uncertainty. In NeurIPS. 2019.">Tra19</a>]</span>, or Ensembles
+<span id="id26">[<a class="reference internal" href="references.html#id63" title="Balaji Lakshminarayanan, Alexander Pritzel, and Charles Blundell. Simple and scalable predictive uncertainty estimation using deep ensembles. NeurIPS, 2017.">LPB17a</a>]</span>.</p>
 <p><strong>2. Uncertainty Representation</strong>
 The resulting model produces samples, credal sets, interval predictions, or
 distributions over distributions <span id="id27">[<a class="reference internal" href="references.html#id41" title="Eyke Hüllermeier and Willem Waegeman. Aleatoric and epistemic uncertainty in machine learning: an introduction to concepts and methods. Machine Learning, 2021. arXiv:1910.09457.">HW21</a>]</span>.</p>
 <p><strong>3. Uncertainty Quantification</strong>
 From these structures, entropy, variance, or scoring-rule-based measures are computed
-<span id="id28">[<a class="reference internal" href="references.html#id62" title="Tilmann Gneiting and Adrian E. Raftery. Strictly proper scoring rules, prediction, and estimation. JASA, 2007.">GR07</a>]</span>, <span id="id29">[<a class="reference internal" href="references.html#id69" title="Moloud et al. Abdar. A review of uncertainty quantification in deep learning. Information Fusion, 2021.">Abd21</a>]</span>.</p>
+<span id="id28">[<a class="reference internal" href="references.html#id64" title="Tilmann Gneiting and Adrian E. Raftery. Strictly proper scoring rules, prediction, and estimation. JASA, 2007.">GR07</a>]</span>, <span id="id29">[<a class="reference internal" href="references.html#id71" title="Moloud et al. Abdar. A review of uncertainty quantification in deep learning. Information Fusion, 2021.">Abd21</a>]</span>.</p>
 <p><strong>4. Downstream Tasks &amp; Visualization</strong>
 OOD detection, selective prediction, calibration, and risk-aware decisions depend
 directly on quantified uncertainty.</p>

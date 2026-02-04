@@ -237,10 +237,19 @@
 <li class="toctree-l3"><a class="reference internal" href="notebooks/examples/evaluation_and_quantification/visualization_tools.html">Visualisation Tools</a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/batch_ensemble_notebook.html"><strong>Batch Ensemble Networks</strong></a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/bayesian_transformation.html">Bayesian Transformation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/dropconnect_transformation.html">Dropconnect Transformation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/dropout_transformation.html">Dropout Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/ensemble_subensemble_comparison.html"><strong>Ensemble vs SubEnsemble Notebook</strong></a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/ensemble_transformation.html">Ensemble Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/Ensembling_RandomForests.html">Potential Advantages of Ensembling Random Forests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/Ensembling_RandomForests.html#theoretical-background">2. Theoretical Background</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/Ensembling_RandomForests.html#data-generation">3. Data Generation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/Ensembling_RandomForests.html#random-forest-ensemble-prototype">4. Random Forest Ensemble Prototype</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/Ensembling_RandomForests.html#uncertainty-analysis">5. Uncertainty Analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/Ensembling_RandomForests.html#performance-metrics">6. Performance Metrics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/Ensembling_RandomForests.html#conclusion">7. Conclusion</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/evidential_classification_transformation.html">Evidential Classification Transformation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/evidential_regression_transformation.html">Evidential Regression Transformation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/fashionmnist_ood_ensemble.html">Out-of-Distribution Detection with an Ensemble</a></li>
@@ -248,7 +257,9 @@
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/lazy_dispatch_test.html">Lazy Dispatch Test</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/multilib_demo.html">Multilib Demo</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/pytraverse_tutorial.html">A Brief Introduction to PyTraverse</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/sklearn_ensemble_tutorial.html">Uncertainty Quantification using scikit-learn-Ensembles</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/sklearn_selective_prediction.html">Using probly with scikit-learn</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/subensembles_fast_uncertainty.html">Sub-Ensembles for Fast Uncertainty Estimation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/temperature_scaling_calibration.html">Calibration using Temperature Scaling</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/train_bnn_classification.html">Bayesian Neural Networks</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/train_evidential_classification.html">Evidential Model for Classification</a></li>
@@ -345,14 +356,14 @@ of it with a thin <code class="docutils literal notranslate"><span class="pre">p
 <p>Most machine learning models today are overconfident.
 They output a single prediction such as a class label, a score, or a regression value,
 but they do not tell us how uncertain they are about that prediction.</p>
-<p>This becomes a problem in practical applications <span id="id4">[<a class="reference internal" href="references.html#id66" title="Dan Hendrycks and Kevin Gimpel. A baseline for detecting misclassified and out-of-distribution examples in neural networks. ICLR, 2017.">HG17</a>]</span>:</p>
+<p>This becomes a problem in practical applications <span id="id4">[<a class="reference internal" href="references.html#id68" title="Dan Hendrycks and Kevin Gimpel. A baseline for detecting misclassified and out-of-distribution examples in neural networks. ICLR, 2017.">HG17</a>]</span>:</p>
 <ul class="simple">
 <li><p>A medical classifier might give the wrong diagnosis but still report a confident 0.98 probability.</p></li>
 <li><p>An autonomous vehicle might misinterpret a rare object because it has never seen anything similar before.</p></li>
 <li><p>A financial model may make predictions far outside the training distribution without realizing it.</p></li>
 </ul>
 <p>Standard ML tools such as PyTorch, TensorFlow, and scikit learn do not provide a unified way
-to represent uncertainty. Each uncertainty method such as dropout <span id="id5">[<a class="reference internal" href="references.html#id60" title="Yarin Gal and Zoubin Ghahramani. Dropout as a bayesian approximation: representing model uncertainty in deep learning. ICML, 2016.">GG16a</a>]</span>, ensembles <span id="id6">[<a class="reference internal" href="references.html#id61" title="Balaji Lakshminarayanan, Alexander Pritzel, and Charles Blundell. Simple and scalable predictive uncertainty estimation using deep ensembles. NeurIPS, 2017.">LPB17a</a>]</span>, Bayesian networks,
+to represent uncertainty. Each uncertainty method such as dropout <span id="id5">[<a class="reference internal" href="references.html#id62" title="Yarin Gal and Zoubin Ghahramani. Dropout as a bayesian approximation: representing model uncertainty in deep learning. ICML, 2016.">GG16a</a>]</span>, ensembles <span id="id6">[<a class="reference internal" href="references.html#id63" title="Balaji Lakshminarayanan, Alexander Pritzel, and Charles Blundell. Simple and scalable predictive uncertainty estimation using deep ensembles. NeurIPS, 2017.">LPB17a</a>]</span>, Bayesian networks,
 and evidential models uses different outputs, shapes, and conventions.
 This makes it difficult to compare or combine uncertainty methods.</p>
 <p>This is exactly the gap that <code class="docutils literal notranslate"><span class="pre">probly</span></code> fills.</p>
@@ -386,7 +397,7 @@ A prediction with low confidence should be treated very differently from the sam
 A low confidence prediction might trigger a safety mechanism, a manual review, or a fallback strategy.
 A high confidence prediction might allow the system to act automatically.</p>
 <p>Without uncertainty information, a model can appear confident even when it is wrong.
-With uncertainty awareness, the model becomes more reliable, more transparent, and more useful in real world applications <span id="id7">[<a class="reference internal" href="references.html#id68" title="Chuan Guo, Geoff Pleiss, Yu Sun, and Kilian Weinberger. On calibration of modern neural networks. ICML, 2017.">GPSW17a</a>]</span>.</p>
+With uncertainty awareness, the model becomes more reliable, more transparent, and more useful in real world applications <span id="id7">[<a class="reference internal" href="references.html#id70" title="Chuan Guo, Geoff Pleiss, Yu Sun, and Kilian Weinberger. On calibration of modern neural networks. ICML, 2017.">GPSW17a</a>]</span>.</p>
 </section>
 <section id="what-does-probly-provide">
 <h3>1.3 What Does <code class="docutils literal notranslate"><span class="pre">probly</span></code> Provide?<a class="headerlink" href="#what-does-probly-provide" title="Link to this heading">¶</a></h3>

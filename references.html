@@ -237,10 +237,19 @@
 <li class="toctree-l3"><a class="reference internal" href="notebooks/examples/evaluation_and_quantification/visualization_tools.html">Visualisation Tools</a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/batch_ensemble_notebook.html"><strong>Batch Ensemble Networks</strong></a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/bayesian_transformation.html">Bayesian Transformation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/dropconnect_transformation.html">Dropconnect Transformation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/dropout_transformation.html">Dropout Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/ensemble_subensemble_comparison.html"><strong>Ensemble vs SubEnsemble Notebook</strong></a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/ensemble_transformation.html">Ensemble Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/Ensembling_RandomForests.html">Potential Advantages of Ensembling Random Forests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/Ensembling_RandomForests.html#theoretical-background">2. Theoretical Background</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/Ensembling_RandomForests.html#data-generation">3. Data Generation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/Ensembling_RandomForests.html#random-forest-ensemble-prototype">4. Random Forest Ensemble Prototype</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/Ensembling_RandomForests.html#uncertainty-analysis">5. Uncertainty Analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/Ensembling_RandomForests.html#performance-metrics">6. Performance Metrics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/Ensembling_RandomForests.html#conclusion">7. Conclusion</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/evidential_classification_transformation.html">Evidential Classification Transformation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/evidential_regression_transformation.html">Evidential Regression Transformation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/fashionmnist_ood_ensemble.html">Out-of-Distribution Detection with an Ensemble</a></li>
@@ -248,7 +257,9 @@
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/lazy_dispatch_test.html">Lazy Dispatch Test</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/multilib_demo.html">Multilib Demo</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/pytraverse_tutorial.html">A Brief Introduction to PyTraverse</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/sklearn_ensemble_tutorial.html">Uncertainty Quantification using scikit-learn-Ensembles</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/sklearn_selective_prediction.html">Using probly with scikit-learn</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/subensembles_fast_uncertainty.html">Sub-Ensembles for Fast Uncertainty Estimation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/temperature_scaling_calibration.html">Calibration using Temperature Scaling</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/train_bnn_classification.html">Bayesian Neural Networks</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/train_evidential_classification.html">Evidential Model for Classification</a></li>
@@ -303,7 +314,7 @@
 <p>The core functionality of this package is built upon the following foundational research papers. We recommend reading the papers to gain a deeper understanding of the algorithms and methodologies used:</p>
 <div class="docutils container" id="id1">
 <div role="list" class="citation-list">
-<div class="citation" id="id69" role="doc-biblioentry">
+<div class="citation" id="id71" role="doc-biblioentry">
 <span class="label"><span class="fn-bracket">[</span>Abd21<span class="fn-bracket">]</span></span>
 <p>Moloud et al. Abdar. A review of uncertainty quantification in deep learning. <em>Information Fusion</em>, 2021.</p>
 </div>
@@ -323,11 +334,11 @@
 <span class="label"><span class="fn-bracket">[</span>AB21<span class="fn-bracket">]</span></span>
 <p>Anastasios N. Angelopoulos and Stephen Bates. A gentle introduction to conformal prediction and distribution-free uncertainty quantification. <em>CoRR</em>, 2021. URL: <a class="reference external" href="https://arxiv.org/abs/2107.07511">https://arxiv.org/abs/2107.07511</a>, <a class="reference external" href="https://arxiv.org/abs/2107.07511">arXiv:2107.07511</a>.</p>
 </div>
-<div class="citation" id="id63" role="doc-biblioentry">
+<div class="citation" id="id65" role="doc-biblioentry">
 <span class="label"><span class="fn-bracket">[</span>ACB17<span class="fn-bracket">]</span></span>
 <p>Martin Arjovsky, Soumith Chintala, and Léon Bottou. Wasserstein generative adversarial networks. <em>ICML</em>, 2017.</p>
 </div>
-<div class="citation" id="id65" role="doc-biblioentry">
+<div class="citation" id="id67" role="doc-biblioentry">
 <span class="label"><span class="fn-bracket">[</span>ACdCT14<span class="fn-bracket">]</span></span>
 <p>Thomas Augustin, Frank Coolen, Gert de Cooman, and Matthias Troffaes. <em>Introduction to Imprecise Probabilities</em>. Wiley, 2014.</p>
 </div>
@@ -339,7 +350,7 @@
 <span class="label"><span class="fn-bracket">[</span>Bis06a<span class="fn-bracket">]</span></span>
 <p>Christopher M. Bishop. <em>Pattern Recognition and Machine Learning</em>. Information Science and Statistics. Springer, New York, NY, USA, 2006. ISBN 978-0-387-31073-2. URL: <a class="reference external" href="https://link.springer.com/book/10.1007/978-0-387-45528-0">https://link.springer.com/book/10.1007/978-0-387-45528-0</a>, <a class="reference external" href="https://doi.org/10.1007/978-0-387-45528-0">doi:10.1007/978-0-387-45528-0</a>.</p>
 </div>
-<div class="citation" id="id47" role="doc-biblioentry">
+<div class="citation" id="id49" role="doc-biblioentry">
 <span class="label"><span class="fn-bracket">[</span>Bis06b<span class="fn-bracket">]</span></span>
 <p>Christopher M. Bishop. <em>Pattern Recognition and Machine Learning</em>. Springer, 2006.</p>
 </div>
@@ -351,15 +362,15 @@
 <span class="label"><span class="fn-bracket">[</span>CGH+17<span class="fn-bracket">]</span></span>
 <p>Bob Carpenter, Andrew Gelman, Matthew D. Hoffman, Daniel Lee, Ben Goodrich, Michael Betancourt, Marcus Brubaker, Jiqiang Guo, Peter Li, and Allen Riddell. Stan: A probabilistic programming language. <em>Journal of Statistical Software</em>, 76(1):1–32, 2017. URL: <a class="reference external" href="https://www.jstatsoft.org/article/view/v076i01">https://www.jstatsoft.org/article/view/v076i01</a>, <a class="reference external" href="https://doi.org/10.18637/jss.v076.i01">doi:10.18637/jss.v076.i01</a>.</p>
 </div>
-<div class="citation" id="id77" role="doc-biblioentry">
+<div class="citation" id="id79" role="doc-biblioentry">
 <span class="label"><span class="fn-bracket">[</span>CBZugner+22<span class="fn-bracket">]</span></span>
 <p>Bertrand Charpentier, Oliver Borchert, Daniel Zügner, Simon Geisler, and Stephan Günnemann. Natural posterior network: deep bayesian predictive uncertainty for exponential family distributions. In <em>International Conference on Learning Representations</em>. 2022.</p>
 </div>
-<div class="citation" id="id75" role="doc-biblioentry">
+<div class="citation" id="id77" role="doc-biblioentry">
 <span class="label"><span class="fn-bracket">[</span>CZugnerGunnemann20<span class="fn-bracket">]</span></span>
 <p>Bertrand Charpentier, Daniel Zügner, and Stephan Günnemann. Posterior network: uncertainty estimation without ood samples via density-based pseudo-counts. In <em>Advances in Neural Information Processing Systems</em>, volume 33, 1356–1367. Curran Associates, Inc., 2020.</p>
 </div>
-<div class="citation" id="id55" role="doc-biblioentry">
+<div class="citation" id="id57" role="doc-biblioentry">
 <span class="label"><span class="fn-bracket">[</span>C+20<span class="fn-bracket">]</span></span>
 <p>John P. Cunningham and others. Ensemble subsampling for efficient uncertainty estimation. In <em>ICLR Workshop on Uncertainty and Robustness in Deep Learning</em>. 2020.</p>
 </div>
@@ -371,19 +382,19 @@
 <span class="label"><span class="fn-bracket">[</span>DHernandezLobatoDoshiVelezU18<span class="fn-bracket">]</span></span>
 <p>Stefan Depeweg, José Miguel Hernández-Lobato, Finale Doshi-Velez, and Steffen Udluft. Decomposition of uncertainty in bayesian deep learning for efficient and risk-sensitive learning. In Jennifer G. Dy and Andreas Krause, editors, <em>Proceedings of the 35th International Conference on Machine Learning, ICML 2018, Stockholmsmässan, Stockholm, Sweden, July 10-15, 2018</em>, volume 80 of Proceedings of Machine Learning Research, 1192–1201. PMLR, 2018. URL: <a class="reference external" href="http://proceedings.mlr.press/v80/depeweg18a.html">http://proceedings.mlr.press/v80/depeweg18a.html</a>.</p>
 </div>
-<div class="citation" id="id64" role="doc-biblioentry">
+<div class="citation" id="id66" role="doc-biblioentry">
 <span class="label"><span class="fn-bracket">[</span>DKD09<span class="fn-bracket">]</span></span>
 <p>Armen Der Kiureghian and Ove Ditlevsen. Aleatory or epistemic? does it matter? <em>Structural Safety</em>, 2009.</p>
 </div>
-<div class="citation" id="id52" role="doc-biblioentry">
+<div class="citation" id="id54" role="doc-biblioentry">
 <span class="label"><span class="fn-bracket">[</span>Die00<span class="fn-bracket">]</span></span>
 <p>Thomas G. Dietterich. Ensemble methods in machine learning. In <em>International Workshop on Multiple Classifier Systems</em>, 1–15. Springer, 2000.</p>
 </div>
-<div class="citation" id="id53" role="doc-biblioentry">
+<div class="citation" id="id55" role="doc-biblioentry">
 <span class="label"><span class="fn-bracket">[</span>FHL19<span class="fn-bracket">]</span></span>
 <p>Stanislav Fort, Huiyi Hu, and Balaji Lakshminarayanan. Deep ensembles: a loss landscape perspective. <em>arXiv preprint arXiv:1912.02757</em>, 2019.</p>
 </div>
-<div class="citation" id="id60" role="doc-biblioentry">
+<div class="citation" id="id62" role="doc-biblioentry">
 <span class="label"><span class="fn-bracket">[</span>GG16a<span class="fn-bracket">]</span></span>
 <p>Yarin Gal and Zoubin Ghahramani. Dropout as a bayesian approximation: representing model uncertainty in deep learning. <em>ICML</em>, 2016.</p>
 </div>
@@ -391,11 +402,11 @@
 <span class="label"><span class="fn-bracket">[</span>GG16b<span class="fn-bracket">]</span></span>
 <p>Yarin Gal and Zoubin Ghahramani. Dropout as a bayesian approximation: representing model uncertainty in deep learning. In Maria-Florina Balcan and Kilian Q. Weinberger, editors, <em>Proceedings of the 33nd International Conference on Machine Learning, ICML 2016, New York City, NY, USA, June 19-24, 2016</em>, volume 48 of JMLR Workshop and Conference Proceedings, 1050–1059. JMLR.org, 2016. URL: <a class="reference external" href="http://proceedings.mlr.press/v48/gal16.html">http://proceedings.mlr.press/v48/gal16.html</a>.</p>
 </div>
-<div class="citation" id="id48" role="doc-biblioentry">
+<div class="citation" id="id50" role="doc-biblioentry">
 <span class="label"><span class="fn-bracket">[</span>GG16c<span class="fn-bracket">]</span></span>
 <p>Yarin Gal and Zoubin Ghahramani. Dropout as a bayesian approximation: representing model uncertainty in deep learning. In <em>Proceedings of the 33rd International Conference on Machine Learning (ICML)</em>, 1050–1059. 2016.</p>
 </div>
-<div class="citation" id="id67" role="doc-biblioentry">
+<div class="citation" id="id69" role="doc-biblioentry">
 <span class="label"><span class="fn-bracket">[</span>GEY17<span class="fn-bracket">]</span></span>
 <p>Yotam Geifman and Ran El-Yaniv. Selective classification for deep neural networks. In <em>NeurIPS</em>. 2017.</p>
 </div>
@@ -403,11 +414,11 @@
 <span class="label"><span class="fn-bracket">[</span>GH07<span class="fn-bracket">]</span></span>
 <p>Andrew Gelman and Jennifer Hill. <em>Data Analysis Using Regression and Multilevel/Hierarchical Models</em>. Analytical Methods for Social Research. Cambridge University Press, New York, NY, 2007. ISBN 978-0-521-86706-1. URL: <a class="reference external" href="https://doi.org/10.1017/CBO9780511790942">https://doi.org/10.1017/CBO9780511790942</a>, <a class="reference external" href="https://doi.org/10.1017/CBO9780511790942">doi:10.1017/CBO9780511790942</a>.</p>
 </div>
-<div class="citation" id="id62" role="doc-biblioentry">
+<div class="citation" id="id64" role="doc-biblioentry">
 <span class="label"><span class="fn-bracket">[</span>GR07<span class="fn-bracket">]</span></span>
 <p>Tilmann Gneiting and Adrian E. Raftery. Strictly proper scoring rules, prediction, and estimation. <em>JASA</em>, 2007.</p>
 </div>
-<div class="citation" id="id46" role="doc-biblioentry">
+<div class="citation" id="id48" role="doc-biblioentry">
 <span class="label"><span class="fn-bracket">[</span>GBC16<span class="fn-bracket">]</span></span>
 <p>Ian Goodfellow, Yoshua Bengio, and Aaron Courville. <em>Deep Learning</em>. MIT Press, 2016.</p>
 </div>
@@ -415,7 +426,7 @@
 <span class="label"><span class="fn-bracket">[</span>GW08<span class="fn-bracket">]</span></span>
 <p>Andreas Griewank and Andrea Walther. <em>Evaluating Derivatives: Principles and Techniques of Algorithmic Differentiation</em>. Volume 105 of Other Titles in Applied Mathematics. Society for Industrial and Applied Mathematics, Philadelphia, PA, 2 edition, 2008. ISBN 978-0-89871-659-7. URL: <a class="reference external" href="https://doi.org/10.1137/1.9780898717761">https://doi.org/10.1137/1.9780898717761</a>, <a class="reference external" href="https://doi.org/10.1137/1.9780898717761">doi:10.1137/1.9780898717761</a>.</p>
 </div>
-<div class="citation" id="id68" role="doc-biblioentry">
+<div class="citation" id="id70" role="doc-biblioentry">
 <span class="label"><span class="fn-bracket">[</span>GPSW17a<span class="fn-bracket">]</span></span>
 <p>Chuan Guo, Geoff Pleiss, Yu Sun, and Kilian Weinberger. On calibration of modern neural networks. <em>ICML</em>, 2017.</p>
 </div>
@@ -423,11 +434,11 @@
 <span class="label"><span class="fn-bracket">[</span>GPSW17b<span class="fn-bracket">]</span></span>
 <p>Chuan Guo, Geoff Pleiss, Yu Sun, and Kilian Q. Weinberger. On calibration of modern neural networks. In Doina Precup and Yee Whye Teh, editors, <em>Proceedings of the 34th International Conference on Machine Learning, ICML 2017, Sydney, NSW, Australia, 6-11 August 2017</em>, volume 70 of Proceedings of Machine Learning Research, 1321–1330. PMLR, 2017. URL: <a class="reference external" href="http://proceedings.mlr.press/v70/guo17a.html">http://proceedings.mlr.press/v70/guo17a.html</a>.</p>
 </div>
-<div class="citation" id="id54" role="doc-biblioentry">
+<div class="citation" id="id56" role="doc-biblioentry">
 <span class="label"><span class="fn-bracket">[</span>H+21<span class="fn-bracket">]</span></span>
 <p>Marton Havasi and others. Training independent subnetworks for robust prediction. <em>Proceedings of the National Academy of Sciences</em>, 2021.</p>
 </div>
-<div class="citation" id="id66" role="doc-biblioentry">
+<div class="citation" id="id68" role="doc-biblioentry">
 <span class="label"><span class="fn-bracket">[</span>HG17<span class="fn-bracket">]</span></span>
 <p>Dan Hendrycks and Kevin Gimpel. A baseline for detecting misclassified and out-of-distribution examples in neural networks. <em>ICLR</em>, 2017.</p>
 </div>
@@ -439,11 +450,11 @@
 <span class="label"><span class="fn-bracket">[</span>HW21<span class="fn-bracket">]</span></span>
 <p>Eyke Hüllermeier and Willem Waegeman. Aleatoric and epistemic uncertainty in machine learning: an introduction to concepts and methods. <em>Machine Learning</em>, 2021. arXiv:1910.09457.</p>
 </div>
-<div class="citation" id="id57" role="doc-biblioentry">
+<div class="citation" id="id59" role="doc-biblioentry">
 <span class="label"><span class="fn-bracket">[</span>JJNH91<span class="fn-bracket">]</span></span>
 <p>Robert A. Jacobs, Michael I. Jordan, Steven J. Nowlan, and Geoffrey E. Hinton. Adaptive mixtures of local experts. <em>Neural Computation</em>, 3(1):79–87, 1991.</p>
 </div>
-<div class="citation" id="id49" role="doc-biblioentry">
+<div class="citation" id="id51" role="doc-biblioentry">
 <span class="label"><span class="fn-bracket">[</span>KG17<span class="fn-bracket">]</span></span>
 <p>Alex Kendall and Yarin Gal. What uncertainties do we need in bayesian deep learning for computer vision? <em>Advances in Neural Information Processing Systems</em>, 2017.</p>
 </div>
@@ -451,7 +462,7 @@
 <span class="label"><span class="fn-bracket">[</span>KW14<span class="fn-bracket">]</span></span>
 <p>Diederik P. Kingma and Max Welling. Auto-encoding variational bayes. In <em>Proceedings of the 2nd International Conference on Learning Representations (ICLR 2014)</em>. 2014. arXiv:1312.6114. URL: <a class="reference external" href="https://arxiv.org/abs/1312.6114">https://arxiv.org/abs/1312.6114</a>.</p>
 </div>
-<div class="citation" id="id61" role="doc-biblioentry">
+<div class="citation" id="id63" role="doc-biblioentry">
 <span class="label"><span class="fn-bracket">[</span>LPB17a<span class="fn-bracket">]</span></span>
 <p>Balaji Lakshminarayanan, Alexander Pritzel, and Charles Blundell. Simple and scalable predictive uncertainty estimation using deep ensembles. <em>NeurIPS</em>, 2017.</p>
 </div>
@@ -459,11 +470,11 @@
 <span class="label"><span class="fn-bracket">[</span>LPB17b<span class="fn-bracket">]</span></span>
 <p>Balaji Lakshminarayanan, Alexander Pritzel, and Charles Blundell. Simple and scalable predictive uncertainty estimation using deep ensembles. In Isabelle Guyon, Ulrike von Luxburg, Samy Bengio, Hanna M. Wallach, Rob Fergus, S. V. N. Vishwanathan, and Roman Garnett, editors, <em>Advances in Neural Information Processing Systems 30: Annual Conference on Neural Information Processing Systems 2017, December 4-9, 2017, Long Beach, CA, USA</em>, 6402–6413. 2017. URL: <a class="reference external" href="https://proceedings.neurips.cc/paper/2017/hash/9ef2ed4b7fd2c810847ffa5fa85bce38-Abstract.html">https://proceedings.neurips.cc/paper/2017/hash/9ef2ed4b7fd2c810847ffa5fa85bce38-Abstract.html</a>.</p>
 </div>
-<div class="citation" id="id51" role="doc-biblioentry">
+<div class="citation" id="id53" role="doc-biblioentry">
 <span class="label"><span class="fn-bracket">[</span>LPB17c<span class="fn-bracket">]</span></span>
 <p>Balaji Lakshminarayanan, Alexander Pritzel, and Charles Blundell. Simple and scalable predictive uncertainty estimation using deep ensembles. In <em>Advances in Neural Information Processing Systems</em>, 6402–6413. 2017.</p>
 </div>
-<div class="citation" id="id45" role="doc-biblioentry">
+<div class="citation" id="id47" role="doc-biblioentry">
 <span class="label"><span class="fn-bracket">[</span>LBBH98<span class="fn-bracket">]</span></span>
 <p>Yann LeCun, Léon Bottou, Yoshua Bengio, and Patrick Haffner. Gradient-based learning applied to document recognition. <em>Proceedings of the IEEE</em>, 86(11):2278–2324, 1998.</p>
 </div>
@@ -475,15 +486,15 @@
 <span class="label"><span class="fn-bracket">[</span>LGG+17<span class="fn-bracket">]</span></span>
 <p>Tsung-Yi Lin, Priya Goyal, Ross B. Girshick, Kaiming He, and Piotr Dollár. Focal loss for dense object detection. In <em>IEEE International Conference on Computer Vision, ICCV 2017, Venice, Italy, October 22-29, 2017</em>, 2999–3007. IEEE Computer Society, 2017. URL: <a class="reference external" href="https://doi.org/10.1109/ICCV.2017.324">https://doi.org/10.1109/ICCV.2017.324</a>, <a class="reference external" href="https://doi.org/10.1109/ICCV.2017.324">doi:10.1109/ICCV.2017.324</a>.</p>
 </div>
-<div class="citation" id="id76" role="doc-biblioentry">
+<div class="citation" id="id78" role="doc-biblioentry">
 <span class="label"><span class="fn-bracket">[</span>MCPG20<span class="fn-bracket">]</span></span>
 <p>Andrey Malinin, Sergey Chervontsev, Ivan Provilkov, and Mark Gales. Regression prior networks. <em>arXiv preprint arXiv:2006.11590</em>, 2020.</p>
 </div>
-<div class="citation" id="id73" role="doc-biblioentry">
+<div class="citation" id="id75" role="doc-biblioentry">
 <span class="label"><span class="fn-bracket">[</span>MG18<span class="fn-bracket">]</span></span>
 <p>Andrey Malinin and Mark Gales. Predictive uncertainty estimation via prior networks. In <em>Advances in Neural Information Processing Systems</em>, volume 31. Curran Associates, Inc., 2018.</p>
 </div>
-<div class="citation" id="id42" role="doc-biblioentry">
+<div class="citation" id="id44" role="doc-biblioentry">
 <span class="label"><span class="fn-bracket">[</span>Mar24<span class="fn-bracket">]</span></span>
 <p>Charlie Marsh. Astral docs. <a class="reference external" href="https://docs.astral.sh/uv/">https://docs.astral.sh/uv/</a>, 2024. Accessed: 2024-01-15.</p>
 </div>
@@ -491,7 +502,7 @@
 <span class="label"><span class="fn-bracket">[</span>MNM+19<span class="fn-bracket">]</span></span>
 <p>Aryan Mobiny, Hien Van Nguyen, Supratik Moulik, Naveen Garg, and Carol C. Wu. Dropconnect is effective in modeling uncertainty of bayesian deep networks. <em>CoRR</em>, 2019. URL: <a class="reference external" href="http://arxiv.org/abs/1906.04569">http://arxiv.org/abs/1906.04569</a>, <a class="reference external" href="https://arxiv.org/abs/1906.04569">arXiv:1906.04569</a>.</p>
 </div>
-<div class="citation" id="id43" role="doc-biblioentry">
+<div class="citation" id="id45" role="doc-biblioentry">
 <span class="label"><span class="fn-bracket">[</span>na26<span class="fn-bracket">]</span></span>
 <p>n/a. Google python style guide. <a class="reference external" href="https://google.github.io/styleguide/pyguide.html#docstrings">https://google.github.io/styleguide/pyguide.html#docstrings</a>, 2026. Accessed: 2025-01-15.</p>
 </div>
@@ -499,11 +510,11 @@
 <span class="label"><span class="fn-bracket">[</span>NZD25<span class="fn-bracket">]</span></span>
 <p>Vu-Linh Nguyen, Haifei Zhang, and Sébastien Destercke. Credal ensembling in multi-class classification. <em>Mach. Learn.</em>, 114(1):19, 2025. URL: <a class="reference external" href="https://doi.org/10.1007/s10994-024-06703-y">https://doi.org/10.1007/s10994-024-06703-y</a>, <a class="reference external" href="https://doi.org/10.1007/S10994-024-06703-Y">doi:10.1007/S10994-024-06703-Y</a>.</p>
 </div>
-<div class="citation" id="id56" role="doc-biblioentry">
+<div class="citation" id="id58" role="doc-biblioentry">
 <span class="label"><span class="fn-bracket">[</span>OM99<span class="fn-bracket">]</span></span>
 <p>David Opitz and Richard Maclin. Popular ensemble methods: an empirical study. <em>Journal of Artificial Intelligence Research</em>, 11:169–198, 1999.</p>
 </div>
-<div class="citation" id="id50" role="doc-biblioentry">
+<div class="citation" id="id52" role="doc-biblioentry">
 <span class="label"><span class="fn-bracket">[</span>O+19<span class="fn-bracket">]</span></span>
 <p>Yaniv Ovadia and others. Can you trust your model's uncertainty? evaluating predictive uncertainty under dataset shift. <em>Advances in Neural Information Processing Systems</em>, 2019.</p>
 </div>
@@ -531,7 +542,7 @@
 <span class="label"><span class="fn-bracket">[</span>SGZ+22<span class="fn-bracket">]</span></span>
 <p>Lars Schmarje, Vasco Grossmann, Claudius Zelenka, Sabine Dippel, Rainer Kiko, Mariusz Oszust, Matti Pastell, Jenny Stracke, Anna Valros, Nina Volkmann, and Reinhard Koch. Is one annotation enough? - A data-centric image classification benchmark for noisy and ambiguous label estimation. In Sanmi Koyejo, S. Mohamed, A. Agarwal, Danielle Belgrave, K. Cho, and A. Oh, editors, <em>Advances in Neural Information Processing Systems 35: Annual Conference on Neural Information Processing Systems 2022, NeurIPS 2022, New Orleans, LA, USA, November 28 - December 9, 2022</em>. 2022. URL: <a class="reference external" href="http://papers.nips.cc/paper_files/paper/2022/hash/d6c03035b8bc551f474f040fe8607cab-Abstract-Datasets_and_Benchmarks.html">http://papers.nips.cc/paper_files/paper/2022/hash/d6c03035b8bc551f474f040fe8607cab-Abstract-Datasets_and_Benchmarks.html</a>.</p>
 </div>
-<div class="citation" id="id72" role="doc-biblioentry">
+<div class="citation" id="id74" role="doc-biblioentry">
 <span class="label"><span class="fn-bracket">[</span>SKK19<span class="fn-bracket">]</span></span>
 <p>Murat Sensoy, Lance Kaplan, and Melih Kandemir. Evidential deep learning to quantify classification uncertainty. <em>arXiv preprint arXiv:1910.09457</em>, 2019.</p>
 </div>
@@ -539,19 +550,19 @@
 <span class="label"><span class="fn-bracket">[</span>SKK18<span class="fn-bracket">]</span></span>
 <p>Murat Sensoy, Lance M. Kaplan, and Melih Kandemir. Evidential deep learning to quantify classification uncertainty. In Samy Bengio, Hanna M. Wallach, Hugo Larochelle, Kristen Grauman, Nicolò Cesa-Bianchi, and Roman Garnett, editors, <em>Advances in Neural Information Processing Systems 31: Annual Conference on Neural Information Processing Systems 2018, NeurIPS 2018, December 3-8, 2018, Montréal, Canada</em>, 3183–3193. 2018. URL: <a class="reference external" href="https://proceedings.neurips.cc/paper/2018/hash/a981f2b708044d6fb4a71a1463242520-Abstract.html">https://proceedings.neurips.cc/paper/2018/hash/a981f2b708044d6fb4a71a1463242520-Abstract.html</a>.</p>
 </div>
-<div class="citation" id="id59" role="doc-biblioentry">
+<div class="citation" id="id61" role="doc-biblioentry">
 <span class="label"><span class="fn-bracket">[</span>Sha48<span class="fn-bracket">]</span></span>
 <p>Claude Shannon. A mathematical theory of communication. <em>Bell System Technical Journal</em>, 1948.</p>
 </div>
-<div class="citation" id="id58" role="doc-biblioentry">
+<div class="citation" id="id60" role="doc-biblioentry">
 <span class="label"><span class="fn-bracket">[</span>SMM+17<span class="fn-bracket">]</span></span>
 <p>Noam Shazeer, Azalia Mirhoseini, Krzysztof Maziarz, and others. Outrageously large neural networks: the sparsely-gated mixture-of-experts layer. In <em>International Conference on Learning Representations</em>. 2017.</p>
 </div>
-<div class="citation" id="id70" role="doc-biblioentry">
+<div class="citation" id="id72" role="doc-biblioentry">
 <span class="label"><span class="fn-bracket">[</span>Tra19<span class="fn-bracket">]</span></span>
 <p>Dustin et al. Tran. Bayesian layers: a module for neural network uncertainty. In <em>NeurIPS</em>. 2019.</p>
 </div>
-<div class="citation" id="id74" role="doc-biblioentry">
+<div class="citation" id="id76" role="doc-biblioentry">
 <span class="label"><span class="fn-bracket">[</span>Tsi19<span class="fn-bracket">]</span></span>
 <p>Theodoros Tsiligkaridis. Information robust dirichlet networks for predictive uncertainty estimation. <em>arXiv preprint arXiv:1910.04819</em>, 2019.</p>
 </div>
@@ -563,13 +574,21 @@
 <span class="label"><span class="fn-bracket">[</span>Tya25<span class="fn-bracket">]</span></span>
 <p>Ankush Jitendrakumar Tyagi. Scaling deep learning models: challenges and solutions for large-scale deployments. <em>World Journal of Advanced Engineering Technology and Sciences</em>, 16(2):10–20, 2025. URL: <a class="reference external" href="https://doi.org/10.30574/wjaets.2025.16.2.1252">https://doi.org/10.30574/wjaets.2025.16.2.1252</a>, <a class="reference external" href="https://doi.org/10.30574/wjaets.2025.16.2.1252">doi:10.30574/wjaets.2025.16.2.1252</a>.</p>
 </div>
+<div class="citation" id="id42" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>VT19<span class="fn-bracket">]</span></span>
+<p>Matías Valdenegro-Toro. Deep sub-ensembles for fast uncertainty estimation in image classification. <em>Machine Learning</em>, 2019. arXiv:1910.08168.</p>
+</div>
 <div class="citation" id="id39" role="doc-biblioentry">
 <span class="label"><span class="fn-bracket">[</span>vit20<span class="fn-bracket">]</span></span>
 <p>vitkl. Softplus transform as a more numerically stable way to enforce positive constraint. GitHub issue #855 on the \emph NumPyro repository, December 2020. Issue opened December 31, 2020. URL: <a class="reference external" href="https://github.com/pyro-ppl/numpyro/issues/855">https://github.com/pyro-ppl/numpyro/issues/855</a>.</p>
 </div>
-<div class="citation" id="id71" role="doc-biblioentry">
+<div class="citation" id="id73" role="doc-biblioentry">
 <span class="label"><span class="fn-bracket">[</span>Yan21<span class="fn-bracket">]</span></span>
 <p>Yiyou et al. Yang. Generalized ood detection via bayesian uncertainty estimation. <em>CVPR</em>, 2021.</p>
+</div>
+<div class="citation" id="id43" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>YW20<span class="fn-bracket">]</span></span>
+<p>Jimmy Ba Yeming Wen, Dustin Tran. Batchensemble: an alternative approach to efficient ensemble and lifelong learning. <em>Machine Learning</em>, 2020. arXiv:2002.06715.</p>
 </div>
 <div class="citation" id="id40" role="doc-biblioentry">
 <span class="label"><span class="fn-bracket">[</span>Zind.<span class="fn-bracket">]</span></span>
@@ -579,7 +598,7 @@
 <span class="label"><span class="fn-bracket">[</span>ContributorsttPProject19<span class="fn-bracket">]</span></span>
 <p>Contributors to the Pyro Project. NumPyro transforms module. Documentation, 2019. NumPyro documentation, transforms module, version 0.4.1. URL: <a class="reference external" href="https://num.pyro.ai/en/0.4.1/_modules/numpyro/distributions/transforms.html">https://num.pyro.ai/en/0.4.1/_modules/numpyro/distributions/transforms.html</a>.</p>
 </div>
-<div class="citation" id="id44" role="doc-biblioentry">
+<div class="citation" id="id46" role="doc-biblioentry">
 <span class="label"><span class="fn-bracket">[</span>PythonSFoundation18<span class="fn-bracket">]</span></span>
 <p>Python Software Foundation. Python Software Foundation Code of Conduct – Python Software Foundation Policies. <a class="reference external" href="https://policies.python.org/python.org/code-of-conduct/">https://policies.python.org/python.org/code-of-conduct/</a>, 2018. Accessed: 2025-12-07.</p>
 </div>
