@@ -1,1 +1,1 @@
-"""Implementation of bayesian binning for calibration."""
+"""Implementation of Bayesian Binning for Calibration."""

@@ -1,1 +1,1 @@
-"""Implementation of histogram binning for calibration."""
+"""Implementation of Histogram Binning for Calibration."""

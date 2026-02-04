@@ -63,6 +63,7 @@ class FlaxPlatt(ScalerFlax):
 
         return loss
 
+
 @common.register_platt_factory(nnx.Module)
 def _(_base: nnx.Module) -> type[FlaxPlatt]:
     return FlaxPlatt

@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from jax import Array
 
 
-class BayesianBinningQuantiles:
+class BayesianBinningQuantilesFlax:
     """Calibrator using Bayesian Binning into Quantiles (BBQ)."""
 
     def __init__(self, max_bins: int = 10) -> None:
@@ -23,7 +23,7 @@ class BayesianBinningQuantiles:
         self.system_weights: list[float] = []
         self.is_fitted = False
 
-    def fit(self, calibration_set: Array, truth_labels: Array) -> BayesianBinningQuantiles:
+    def fit(self, calibration_set: Array, truth_labels: Array) -> BayesianBinningQuantilesFlax:
         """Fit the BBQ calibrator."""
         if calibration_set.shape[0] != truth_labels.shape[0]:
             msg = "Calibration_set and truth_labels must have same length"
@@ -73,16 +73,13 @@ class BayesianBinningQuantiles:
             msg = "Calibrator must be fitted before prediction"
             raise RuntimeError(msg)
 
-        predictions = predictions[:, None]  # shape (n_samples, 1)
+        predictions = predictions[:, None]
         calibrated_probs = jnp.zeros_like(predictions, dtype=jnp.float32)
 
-        # Vectorized over systems
         for edges, bin_probs, weight in zip(self.bin_edges, self.system_bin_probs, self.system_weights, strict=False):
-            # Vectorized bin assignment
             bin_indices = jnp.digitize(predictions, edges) - 1
             bin_indices = jnp.clip(bin_indices, 0, bin_probs.shape[0] - 1)
 
-            # Gather probabilities
             probs = bin_probs[bin_indices]
             calibrated_probs += weight * probs
 

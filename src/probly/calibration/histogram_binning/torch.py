@@ -6,7 +6,7 @@ import torch
 from torch import Tensor
 
 
-class HistogramBinning:
+class HistogramBinningTorch:
     """Calibrator that uses histogram binning."""
 
     def __init__(self, n_bins: int = 10) -> None:
@@ -17,7 +17,7 @@ class HistogramBinning:
         self.is_fitted = False
         self.bin_probs: Tensor | None = None
 
-    def fit(self, calibration_set: Tensor, truth_labels: Tensor) -> HistogramBinning:
+    def fit(self, calibration_set: Tensor, truth_labels: Tensor) -> HistogramBinningTorch:
         """Fit the histogram binning calibrator."""
         if calibration_set.shape[0] != truth_labels.shape[0]:
             msg = "calibration_set and truth_labels must have the same length"

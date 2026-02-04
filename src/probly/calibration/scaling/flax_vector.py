@@ -64,6 +64,7 @@ class FlaxVector(ScalerFlax):
 
         return jnp.mean(nll)
 
+
 @common.register_vector_factory(nnx.Module)
 def _(_base: nnx.Module, _num_classes: int) -> type[FlaxVector]:
     return FlaxVector

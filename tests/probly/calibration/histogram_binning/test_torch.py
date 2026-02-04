@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from probly.calibration.histogram_binning.torch import HistogramBinning
+from probly.calibration.histogram_binning.torch import HistogramBinningTorch
 
 torch = pytest.importorskip("torch")
 
@@ -25,7 +25,7 @@ class TestNetworkArchitectures:
             AssertionError: If the structure of the model differs in an unexpected manner or if the dropout layer is not
             inserted correctly after linear layers.
         """
-        calibrator = HistogramBinning(n_bins=5)
+        calibrator = HistogramBinningTorch(n_bins=5)
 
         test_predictions = torch.tensor([0.1, 0.4, 0.6, 0.8])
 
@@ -42,7 +42,7 @@ class TestNetworkArchitectures:
             AssertionError: If the structure of the model differs in an unexpected manner or if the dropout layer is not
             inserted correctly after linear layers.
         """
-        calibrator = HistogramBinning(n_bins=5)
+        calibrator = HistogramBinningTorch(n_bins=5)
 
         calibration_set = torch.tensor([0.1, 0.4, 0.6, 0.8])
         truth_labels = torch.tensor([0, 1, 1])
@@ -60,7 +60,7 @@ class TestNetworkArchitectures:
             AssertionError: If the structure of the model differs in an unexpected manner or if the dropout layer is not
             inserted correctly after linear layers.
         """
-        calibrator = HistogramBinning(n_bins=5)
+        calibrator = HistogramBinningTorch(n_bins=5)
 
         calibration_set = torch.tensor([])
         truth_labels = torch.tensor([])
@@ -77,7 +77,7 @@ class TestNetworkArchitectures:
         Raises:
             AssertionError: If any of the calibrated probabilities are outside the range [0, 1].
         """
-        calibrator = HistogramBinning(n_bins=5)
+        calibrator = HistogramBinningTorch(n_bins=5)
 
         calibration_set = torch.tensor([0.1, 0.4, 0.6, 0.8, 0.2, 0.9, 0.3, 0.5])
         truth_labels = torch.tensor([0, 0, 1, 1, 0, 1, 0, 1])
@@ -99,7 +99,7 @@ class TestNetworkArchitectures:
         Raises:
             AssertionError: If the calibrated probabilities do not match the expected values.
         """
-        calibrator = HistogramBinning(n_bins=4)
+        calibrator = HistogramBinningTorch(n_bins=4)
 
         calibration_set = torch.tensor([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8])
         truth_labels = torch.tensor([0, 0, 1, 1, 0, 1, 1, 1])

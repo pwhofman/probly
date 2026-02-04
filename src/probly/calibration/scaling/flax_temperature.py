@@ -46,6 +46,7 @@ class FlaxTemperature(ScalerFlax):
 
         return jnp.mean(nll)
 
+
 @common.register_temperature_factory(nnx.Module)
 def _(_base: nnx.Module) -> type[FlaxTemperature]:
     return FlaxTemperature

@@ -44,6 +44,7 @@ class TorchPlatt(ScalerTorch):
 
         return nn.functional.binary_cross_entropy_with_logits(logits, labels)
 
+
 @common.register_platt_factory(nn.Module)
 def _(_base: nn.Module) -> type[TorchPlatt]:
     return TorchPlatt
