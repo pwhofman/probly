@@ -62,6 +62,34 @@ estimates that often perform well in practice.
 
 :doc:`Ensemble Transformation <notebooks/examples/ensemble_transformation>`
 
+:doc:`Ensemble SciKitLearn Transformation <notebooks/examples/sklearn_ensemble_tutorial>`
+
+:doc:`Ensemble SciKitLearn Random Forests <notebooks/examples/Ensembling_RandomForests>`
+
+1.4.1 BatchEnsemble
+~~~~~~~~~~~~~~~~~~~~~~~
+
+BatchEnsembles utilize the same key idea of Ensembles, training multiple networks to estimate uncertainty, but
+with a different approach. While Ensembles in a classical sense are trained sequentially, BatchEnsembles are all trained
+within a device at the same time. This is a achieved by modifying the input and output tensors by rank-one-vectors in each foward.
+One can understand this as adding noise. Further and more detailed information can be either found in the paper
+by :cite:`YemingWen2020`, from which this transformation is inspired, or by working through the provided Jupyter notebook.
+
+Probly provides the user with a torch implementation to transfrom architectures with Linear and Conv2D layers in their
+BatchEnsebmle counterparts. A Flax support is also available.
+
+
+:doc:`BatchEnsemble Transformation <notebooks/examples/batch_ensemble_notebook>`
+
+1.4.2 SubEnsemble
+~~~~~~~~~~~~~~~~~~~~~~~
+
+SubEnsemble are a computationally efficient alternative to standard ensembles. By sharing most of the model parameters across ensemble members
+and only varying a small subset (e.g., the final layer), SubEnsembles achieve diverse predictions with significantly reduced memory and compute overhead.
+:cite:`MatiasValdenegro-Toro2019`
+
+:doc:`SubEnsemble Transformation <notebooks/examples/subensembles_fast_uncertainty>`
+
 1.5 Evidential
 ~~~~~~~~~~~~~~~~~~~~~~~
 
