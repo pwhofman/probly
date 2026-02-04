@@ -2,13 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 import numpy as np
-from numpy.typing import NDArray
-
-if TYPE_CHECKING:
-    from numpy.typing import NDArray
 
 
 def differential_entropy_gaussian(sigma2: float | np.ndarray, base: float = 2) -> float | np.ndarray:
@@ -22,8 +16,7 @@ def differential_entropy_gaussian(sigma2: float | np.ndarray, base: float = 2) -
         diff_ent: float or numpy.ndarray shape (n_instances,), differential entropy of the Gaussian distribution
 
     """
-    result: float | NDArray = 0.5 * np.log(2 * np.pi * np.e * sigma2) / np.log(base)
-    return result
+    return 0.5 * np.log(2 * np.pi * np.e * sigma2) / np.log(base)
 
 
 def kl_divergence_gaussian(
@@ -46,9 +39,7 @@ def kl_divergence_gaussian(
         kl_div: float or numpy.ndarray shape (n_instances,), KL-divergence between the two Gaussian distributions
 
     """
-    kl_div: float | NDArray = (
-        0.5 * np.log(sigma22 / sigma21) / np.log(base) + (sigma21 + (mu1 - mu2) ** 2) / (2 * sigma22) - 0.5
-    )
+    kl_div = 0.5 * np.log(sigma22 / sigma21) / np.log(base) + (sigma21 + (mu1 - mu2) ** 2) / (2 * sigma22) - 0.5
     return kl_div
 
 
@@ -64,14 +55,14 @@ def intersection_probability(probs: np.ndarray) -> np.ndarray:
         int_probs: numpy.ndarray, shape (n_instances, n_classes), intersection probability of the credal sets
 
     """
-    lower: NDArray = np.min(probs, axis=1)
-    upper: NDArray = np.max(probs, axis=1)
-    diff: NDArray = upper - lower
-    diff_sum: NDArray = np.sum(diff, axis=1)
-    lower_sum: NDArray = np.sum(lower, axis=1)
+    lower = np.min(probs, axis=1)
+    upper = np.max(probs, axis=1)
+    diff = upper - lower
+    diff_sum = np.sum(diff, axis=1)
+    lower_sum = np.sum(lower, axis=1)
     # Compute alpha for instances for which probability intervals are not empty, otherwise set alpha to 0.
-    alpha: NDArray = np.zeros(probs.shape[0])
+    alpha = np.zeros(probs.shape[0])
     nonzero_idxs = diff_sum != 0
     alpha[nonzero_idxs] = (1 - lower_sum[nonzero_idxs]) / diff_sum[nonzero_idxs]
-    int_probs: NDArray = lower + alpha[:, None] * diff
+    int_probs = lower + alpha[:, None] * diff
     return int_probs
