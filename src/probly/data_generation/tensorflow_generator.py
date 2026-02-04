@@ -6,15 +6,9 @@ provides helpers to persist results.
 
 from __future__ import annotations
 
-import json
 import logging
-from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
-if TYPE_CHECKING:  # import for type checking only
-    import numpy as np
-
-    from .base_generator import BaseDataGenerator
 import tensorflow as tf
 
 from .base_generator import BaseDataGenerator
@@ -77,8 +71,8 @@ class TensorFlowDataGenerator(BaseDataGenerator[tf.keras.Model, tf.data.Dataset,
                 "accuracy": float(accuracy),
             },
             "class_distribution": {
-                "predicted": self._count(pred_classes.numpy()),
-                "ground_truth": self._count(labels_all.numpy()),
+                "predicted": self._count(pred_classes),
+                "ground_truth": self._count(labels_all),
             },
             "confidence": {
                 "mean": float(tf.reduce_mean(confidences).numpy()),
@@ -88,34 +82,7 @@ class TensorFlowDataGenerator(BaseDataGenerator[tf.keras.Model, tf.data.Dataset,
 
         return self.results
 
-    def _count(self, values: np.ndarray) -> dict[int, int]:
-        counts: dict[int, int] = {}
-        for val in values.tolist():
-            key = int(val)
-            counts[key] = counts.get(key, 0) + 1
-        return counts
-
-    def save(self, path: str) -> None:
-        """Persist generated results to a JSON file at path."""
-        if not self.results:
-            logger.info("No results to save.")
-            return
-
-        try:
-            with Path(path).open("w", encoding="utf-8") as f:
-                json.dump(self.results, f, indent=2)
-            logger.info("Results saved to %s", path)
-        except OSError:
-            logger.exception("Saving failed")
-
-    def load(self, path: str) -> dict[str, Any]:
-        """Load results from a JSON file at path."""
-        try:
-            with Path(path).open(encoding="utf-8") as f:
-                self.results = json.load(f)
-        except (OSError, json.JSONDecodeError):
-            logger.exception("Loading failed")
-            self.results = {}
-        else:
-            logger.info("Results loaded from %s", path)
-        return self.results
+    def _count(self, values: tf.Tensor) -> dict[int, int]:
+        values = tf.cast(values, tf.int32)
+        bc = tf.math.bincount(values).numpy().tolist()
+        return {i: int(c) for i, c in enumerate(bc) if c != 0}
