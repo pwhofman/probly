@@ -19,8 +19,8 @@ class switchdispatch[C: Callable]:  # noqa: N801
     Similar to functools.singledispatch, but dispatches based on equality
     rather than type.
 
-    .. code-block:: python
-
+    Example:
+    ```python
         @switchdispatch
         def func(x):
             return "default"
@@ -36,6 +36,7 @@ class switchdispatch[C: Callable]:  # noqa: N801
         print(func(1))  # Output: "one"
         print(func(2))  # Output: "two"
         print(func(3))  # Output: "default"
+    ```
     """
 
     def __init__(self, func: C) -> None:
@@ -56,9 +57,7 @@ class switchdispatch[C: Callable]:  # noqa: N801
         f: C | None = None,
     ) -> C | Callable[[C], C]:
         """Register a new function for the given key."""
-        if f is None:
-            return self.multi_register([key])
-        return self.multi_register([key], f)
+        return self.multi_register([key], f)  # type: ignore[arg-type]
 
     @overload
     def multi_register(self, keys: Iterable[object]) -> Callable[[C], C]: ...
