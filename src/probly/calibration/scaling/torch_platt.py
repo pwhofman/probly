@@ -5,6 +5,7 @@ from __future__ import annotations
 import torch
 from torch import Tensor, nn
 
+from probly.calibration.scaling import common
 from probly.calibration.scaling.torch_base import ScalerTorch
 
 
@@ -42,3 +43,7 @@ class TorchPlatt(ScalerTorch):
         labels = labels.float().unsqueeze(1)
 
         return nn.functional.binary_cross_entropy_with_logits(logits, labels)
+
+@common.register_platt_factory(nn.Module)
+def _(_base: nn.Module) -> type[TorchPlatt]:
+    return TorchPlatt

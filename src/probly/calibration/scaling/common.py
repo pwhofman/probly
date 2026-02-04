@@ -30,17 +30,34 @@ def temperature(base: object) -> object:
 
 
 @lazydispatch
-def _affine_factory(base: object, num_classes: int) -> type[Any]:
-    message = f"No platt/vector scaling implementation for base={type(base)}"
+def _platt_factory(base: object) -> type[Any]:
+    message = f"No platt scaling implementation for base={type(base)}"
     raise NotImplementedError(message)
 
 
-def register_affine_factory(key: LazyType) -> Callable:
-    """Returns a decorator to register a class in the affine factory."""
-    return _affine_factory.register(key)
+def register_platt_factory(key: LazyType) -> Callable:
+    """Returns a decorator to register a class in the platt factory."""
+    return _platt_factory.register(key)
 
 
-def affine(base: object, num_classes: int) -> object:
-    """Dispatches to the correct affine scaling implementation (Platt for binary, Vector for multi-class)."""
-    implementation: type[Any] = _affine_factory(base, num_classes)
+def platt(base: object) -> object:
+    """Dispatches to the correct platt scaling implementation."""
+    implementation: type[Any] = _platt_factory(base)
+    return implementation(base)
+
+
+@lazydispatch
+def _vector_factory(base: object, num_classes: int) -> type[Any]:
+    message = f"No vector scaling implementation for base={type(base)}"
+    raise NotImplementedError(message)
+
+
+def register_vector_factory(key: LazyType) -> Callable:
+    """Returns a decorator to register a class in the vector factory."""
+    return _vector_factory.register(key)
+
+
+def vector(base: object, num_classes: int) -> object:
+    """Dispatches to the correct vector scaling implementation."""
+    implementation: type[Any] = _vector_factory(base, num_classes)
     return implementation(base, num_classes)

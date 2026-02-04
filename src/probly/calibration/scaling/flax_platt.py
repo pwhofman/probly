@@ -6,6 +6,8 @@ from flax import nnx
 import jax
 import jax.numpy as jnp
 
+from probly.calibration.scaling import common
+
 from .flax_base import ScalerFlax
 
 
@@ -60,3 +62,7 @@ class FlaxPlatt(ScalerFlax):
         loss = jnp.mean(jax.nn.softplus(z) - z * labels)
 
         return loss
+
+@common.register_platt_factory(nnx.Module)
+def _(_base: nnx.Module) -> type[FlaxPlatt]:
+    return FlaxPlatt

@@ -6,6 +6,8 @@ from flax import nnx
 import jax
 import jax.numpy as jnp
 
+from probly.calibration.scaling import common
+
 from .flax_base import ScalerFlax
 
 
@@ -61,3 +63,7 @@ class FlaxVector(ScalerFlax):
         nll = -log_probs[jnp.arange(labels.shape[0]), labels]
 
         return jnp.mean(nll)
+
+@common.register_vector_factory(nnx.Module)
+def _(_base: nnx.Module, _num_classes: int) -> type[FlaxVector]:
+    return FlaxVector

@@ -46,6 +46,6 @@ class TorchVector(ScalerTorch):
         return nn.functional.cross_entropy(logits, labels.long())
 
 
-@common.register_affine_factory(nn.Module)
+@common.register_vector_factory(nn.Module)
 def _(_base: nn.Module, _num_classes: int) -> type[TorchVector]:
     return TorchVector

@@ -6,6 +6,8 @@ from flax import nnx
 import jax
 from jax import numpy as jnp
 
+from probly.calibration.scaling import common
+
 from .flax_base import ScalerFlax
 
 
@@ -43,3 +45,7 @@ class FlaxTemperature(ScalerFlax):
         nll = -log_probs[jnp.arange(labels.shape[0]), labels]
 
         return jnp.mean(nll)
+
+@common.register_temperature_factory(nnx.Module)
+def _(_base: nnx.Module) -> type[FlaxTemperature]:
+    return FlaxTemperature
