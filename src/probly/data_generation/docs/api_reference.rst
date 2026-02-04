@@ -1,19 +1,19 @@
-First-Order Data Generator - API Referenz
+First-Order Data Generator - API Reference
 =========================================
 
 
 
-Inhaltsverzeichnis
+Table of Contents
 ------------------
 
 - `Factory Pattern <#factory-pattern>`_
-- `Framework-Spezifische Implementierungen <#framework-spezifische-implementierungen>`_
+- `Framework-Specific Implementations <#framework-specific-implementations>`_
  - `PyTorch <#pytorch-firstorderdatagenerator>`_
  - `JAX <#jax-firstorderdatagenerator>`_
  - `Framework-Agnostic <#framework-agnostic-firstorderdatagenerator>`_
 - `Base Generator <#base-generator>`_
-- `Hilfsfunktionen <#hilfsfunktionen>`_
-- `Datentypen & Workflows <#datentypen--workflows>`_
+- `Utility Functions <#utility-functions>`_
+- `Data Types & Workflows <#data-types--workflows>`_
 
 ---
 
@@ -37,26 +37,26 @@ def create_data_generator(
 ) -> BaseDataGenerator
 `````
 
-Erstellt einen framework-spezifischen Data Generator.
+Creates a framework-specific Data Generator.
 
-**Parameter:**
-- ``framework``: String - ``"pytorch"``, ``"tensorflow"`` oder ``"jax"``
-- ``model``: Modell-Objekt (framework-spezifisch)
-- ``dataset``: Dataset-Objekt (framework-spezifisch)
-- ``batch_size``: Batch-Größe für Verarbeitung
-- ``device``: Optional - Device-String für Inferenz
+**Parameters:**
+- ``framework``: String - ``"pytorch"``, ``"tensorflow"`` or ``"jax"``
+- ``model``: Model object (framework-specific)
+- ``dataset``: Dataset object (framework-specific)
+- ``batch_size``: Batch size for processing
+- ``device``: Optional - Device string for inference
 
-**Rückgabe:**
-- ``BaseDataGenerator``: Framework-spezifische Generator-Instanz
+**Returns:**
+- ``BaseDataGenerator``: Framework-specific generator instance
 
 **Raises:**
-- ``ValueError``: Falls framework unbekannt ist
+- ``ValueError``: If framework is unknown
 
-**Beispiel:**
+**Example:**
 `````python
 from probly.data_generator.factory import create_data_generator
 
-Automatische Framework-Selektion
+Automatic Framework Selection
 ================================
 
 generator = create_data_generator(
@@ -71,7 +71,7 @@ generator = create_data_generator(
 ---
 
 
-Framework-Spezifische Implementierungen
+Framework-Specific Implementations
 ---------------------------------------
 
 
@@ -81,35 +81,35 @@ PyTorch FirstOrderDataGenerator
 
 
 
-Klassenbeschreibung
+Class Description
 ~~~~~~~~~~~~~~~~~~~
 
 
 `````python
 @dataclass
 class FirstOrderDataGenerator:
- """PyTorch-spezifischer First-Order Data Generator."""
+ """PyTorch-specific First-Order Data Generator."""
 `````
 
-Hauptklasse für PyTorch-basierte Generierung von First-Order Verteilungen.
+Main class for PyTorch-based generation of First-Order distributions.
 
 
-Konstruktor-Parameter
+Constructor Parameters
 ~~~~~~~~~~~~~~~~~~~~~
 
 
-| Parameter | Typ | Standard | Beschreibung |
+| Parameter | Type | Default | Description |
 |-----------|-----|----------|--------------|
-| ``model`` | ``torch.nn.Module \| Callable`` | **Erforderlich** | PyTorch Modell oder Callable |
-| ``device`` | ``str`` | ``"cpu"`` | Device: ``"cpu"`` oder ``"cuda"`` |
-| ``batch_size`` | ``int`` | ``64`` | Batch-Größe für Inferenz |
-| ``output_mode`` | ``str`` | ``"auto"`` | ``"auto"``, ``"logits"`` oder ``"probs"`` |
+| ``model`` | ``torch.nn.Module \| Callable`` | **Required** | PyTorch Model or Callable |
+| ``device`` | ``str`` | ``"cpu"`` | Device: ``"cpu"`` or ``"cuda"`` |
+| ``batch_size`` | ``int`` | ``64`` | Batch size for inference |
+| ``output_mode`` | ``str`` | ``"auto"`` | ``"auto"``, ``"logits"`` or ``"probs"`` |
 | ``output_transform`` | ``Callable[[torch.Tensor], torch.Tensor] \| None`` | ``None`` | Custom Transform |
-| ``input_getter`` | ``Callable[[Any], Any] \| None`` | ``None`` | Custom Input-Extraktion |
-| ``model_name`` | ``str \| None`` | ``None`` | Identifier für Metadaten |
+| ``input_getter`` | ``Callable[[Any], Any] \| None`` | ``None`` | Custom Input extraction |
+| ``model_name`` | ``str \| None`` | ``None`` | Identifier for metadata |
 
 
-Methoden
+Methods
 ~~~~~~~~
 
 
@@ -128,20 +128,20 @@ def generate_distributions(
 ) -> dict[int, list[float]]
 `````
 
-Generiert Wahrscheinlichkeitsverteilungen für alle Samples.
+Generates probability distributions for all samples.
 
-**Parameter:**
-- ``dataset_or_loader``: PyTorch ``Dataset`` oder ``DataLoader``
-- ``progress``: Bool - Fortschrittsanzeige aktivieren
+**Parameters:**
+- ``dataset_or_loader``: PyTorch ``Dataset`` or ``DataLoader``
+- ``progress``: Bool - Enable progress bar
 
-**Rückgabe:**
-- ``dict[int, list[float]]``: Index → Wahrscheinlichkeitsliste
+**Returns:**
+- ``dict[int, list[float]]``: Index → Probability list
 
 **Raises:**
-- ``TypeError``: Falls Modell keinen ``torch.Tensor`` zurückgibt
-- ``warnings.warn``: Falls Anzahl Verteilungen ≠ Dataset-Länge
+- ``TypeError``: If model doesn't return a ``torch.Tensor``
+- ``warnings.warn``: If number of distributions ≠ dataset length
 
-**Beispiel:**
+**Example:**
 `````python
 generator = FirstOrderDataGenerator(model=model, device='cuda')
 distributions = generator.generate_distributions(dataset, progress=True)
@@ -162,14 +162,14 @@ def save_distributions(
 ) -> None
 `````
 
-Speichert Verteilungen als JSON.
+Saves distributions as JSON.
 
-**Parameter:**
-- ``path``: Zielpfad für JSON-Datei
-- ``distributions``: Zu speichernde Verteilungen
-- ``meta``: Optionale Metadaten
+**Parameters:**
+- ``path``: Target path for JSON file
+- ``distributions``: Distributions to save
+- ``meta``: Optional metadata
 
-**Beispiel:**
+**Example:**
 `````python
 generator.save_distributions(
  'output/dists.json',
@@ -190,12 +190,12 @@ def load_distributions(
 ) -> tuple[dict[int, list[float]], dict[str, Any]]
 `````
 
-Lädt Verteilungen aus JSON.
+Loads distributions from JSON.
 
-**Rückgabe:**
+**Returns:**
 - ``tuple``: ``(distributions, metadata)``
 
-**Beispiel:**
+**Example:**
 `````python
 dists, meta = generator.load_distributions('output/dists.json')
 print(f"Model: {meta['model_name']}, Samples: {len(dists)}")
@@ -210,7 +210,7 @@ print(f"Model: {meta['model_name']}, Samples: {len(dists)}")
 def to_device(self, x: object) -> object
 `````
 
-Verschiebt Tensor(en) auf konfiguriertes Device. Unterstützt verschachtelte Strukturen (lists, tuples, dicts).
+Moves tensor(s) to configured device. Supports nested structures (lists, tuples, dicts).
 
 
 ``to_probs()``
@@ -221,12 +221,12 @@ Verschiebt Tensor(en) auf konfiguriertes Device. Unterstützt verschachtelte Str
 def to_probs(self, outputs: torch.Tensor) -> torch.Tensor
 `````
 
-Konvertiert Modellausgaben zu Wahrscheinlichkeiten.
-- Wendet ``output_transform`` an falls vorhanden
-- Sonst: basierend auf ``output_mode``
- - ``"auto"``: Detektiert automatisch
- - ``"logits"``: Wendet Softmax an
- - ``"probs"``: Direkt verwenden
+Converts model outputs to probabilities.
+- Applies ``output_transform`` if present
+- Otherwise: based on ``output_mode``
+ - ``"auto"``: Detects automatically
+ - ``"logits"``: Applies Softmax
+ - ``"probs"``: Use directly
 
 
 ``prepares_batch_inp()`` / ``extract_input()``
@@ -237,11 +237,11 @@ Konvertiert Modellausgaben zu Wahrscheinlichkeiten.
 def prepares_batch_inp(self, sample: object) -> object
 `````
 
-Extrahiert Modell-Input aus Dataset-Sample.
-- Verwendet ``input_getter`` falls vorhanden
-- Sonst: Entpackt Tuple/List ``(input, label, ...)``
+Extracts model input from dataset sample.
+- Uses ``input_getter`` if present
+- Otherwise: Unpacks Tuple/List ``(input, label, ...)``
 
-**Note:** ``extract_input()`` ist deprecated, verwenden Sie ``prepares_batch_inp()``
+**Note:** ``extract_input()`` is deprecated, use ``prepares_batch_inp()``
 
 
 ``get_posterior_distributions()``
@@ -252,10 +252,10 @@ Extrahiert Modell-Input aus Dataset-Sample.
 def get_posterior_distributions(self) -> dict[str, dict[str, torch.Tensor]]
 `````
 
-Extrahiert μ und ρ von BayesLinear Layern (für Bayesian Neural Networks).
+Extracts μ and ρ from BayesLinear layers (for Bayesian Neural Networks).
 
-**Rückgabe:**
-- ``dict``: Parameter mit ``"mu"`` und ``"rho"`` Tensoren
+**Returns:**
+- ``dict``: Parameters with ``"mu"`` and ``"rho"`` tensors
 
 ---
 
@@ -266,26 +266,26 @@ FirstOrderDataset (PyTorch)
 
 `````python
 class FirstOrderDataset(Dataset):
- """PyTorch Dataset-Wrapper für First-Order Verteilungen."""
+ """PyTorch Dataset wrapper for First-Order distributions."""
 `````
 
-**Parameter:**
+**Parameters:**
 - ``base_dataset``: Original PyTorch Dataset
-- ``distributions``: Index-aligned Verteilungen
-- ``input_getter``: Optional - Custom Input-Extraktion
+- ``distributions``: Index-aligned distributions
+- ``input_getter``: Optional - Custom input extraction
 
-**Methoden:**
-- ``__len__()``: Gibt Anzahl Samples zurück
-- ``__getitem__(idx)``: Gibt ``(input, label, distribution)`` oder ``(input, distribution)`` zurück
+**Methods:**
+- ``__len__()``: Returns number of samples
+- ``__getitem__(idx)``: Returns ``(input, label, distribution)`` or ``(input, distribution)``
 
-**Beispiel:**
+**Example:**
 `````python
 fo_dataset = FirstOrderDataset(base_dataset, distributions)
-input, label, dist = fo_dataset[0] # Mit Labels
-oder
+input, label, dist = fo_dataset[0] # With labels
+or
 ====
 
-input, dist = fo_dataset[0] # Ohne Labels
+input, dist = fo_dataset[0] # Without labels
 `````
 
 
@@ -306,9 +306,9 @@ def output_dataloader(
 ) -> DataLoader
 `````
 
-Erstellt PyTorch DataLoader mit First-Order Verteilungen.
+Creates PyTorch DataLoader with First-Order distributions.
 
-**Beispiel:**
+**Example:**
 `````python
 fo_loader = output_dataloader(
  base_dataset=dataset,
@@ -332,7 +332,7 @@ JAX FirstOrderDataGenerator
 
 
 
-Klassenbeschreibung
+Class Description
 ~~~~~~~~~~~~~~~~~~~
 
 
@@ -342,25 +342,25 @@ class FirstOrderDataGenerator:
  """JAX-native First-Order Data Generator."""
 `````
 
-JAX-spezifische Implementierung mit jnp.ndarray Support.
+JAX-specific implementation with jnp.ndarray support.
 
 
-Konstruktor-Parameter
+Constructor Parameters
 ~~~~~~~~~~~~~~~~~~~~~
 
 
-| Parameter | Typ | Standard | Beschreibung |
+| Parameter | Type | Default | Description |
 |-----------|-----|----------|--------------|
-| ``model`` | ``Callable[..., Any]`` | **Erforderlich** | JAX-transformierte Funktion |
+| ``model`` | ``Callable[..., Any]`` | **Required** | JAX-transformed function |
 | ``device`` | ``str`` | ``"cpu"`` | Device: ``"cpu"``, ``"gpu"``, ``"tpu"`` |
-| ``batch_size`` | ``int`` | ``64`` | Batch-Größe |
-| ``output_mode`` | ``str`` | ``"auto"`` | Output-Modus |
-| ``output_transform`` | ``Callable[[jnp.ndarray], jnp.ndarray] \| None`` | ``None`` | Custom Transform |
-| ``input_getter`` | ``Callable \| None`` | ``None`` | Input-Extraktion |
+| ``batch_size`` | ``int`` | ``64`` | Batch size |
+| ``output_mode`` | ``str`` | ``"auto"`` | Output mode |
+| ``output_transform`` | ``Callable[[jnp.ndarray], jnp.ndarray] \| None`` | ``None`` | Custom transform |
+| ``input_getter`` | ``Callable \| None`` | ``None`` | Input extraction |
 | ``model_name`` | ``str \| None`` | ``None`` | Identifier |
 
 
-JAX-spezifische Methoden
+JAX-Specific Methods
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -373,11 +373,11 @@ JAX-spezifische Methoden
 def to_device(self, x: object) -> object
 `````
 
-Verschiebt Arrays auf JAX Device mittels ``jax.device_put()``.
+Moves arrays to JAX Device using ``jax.device_put()``.
 
-**Unterstützte Devices:**
-- Plattform-Namen: ``"cpu"``, ``"gpu"``, ``"tpu"``
-- Spezifische IDs: ``"gpu:0"``, ``"tpu:1"``
+**Supported Devices:**
+- Platform names: ``"cpu"``, ``"gpu"``, ``"tpu"``
+- Specific IDs: ``"gpu:0"``, ``"tpu:1"``
 
 
 ``to_probs()``
@@ -388,12 +388,12 @@ Verschiebt Arrays auf JAX Device mittels ``jax.device_put()``.
 def to_probs(self, outputs: jnp.ndarray) -> jnp.ndarray
 `````
 
-Konvertiert zu Wahrscheinlichkeiten mittels ``jax.nn.softmax()``.
+Converts to probabilities using ``jax.nn.softmax()``.
 
-**JAX-spezifische Features:**
-- Verwendet ``jnp.ndarray`` statt ``torch.Tensor``
-- Automatische Device-Platzierung
-- Kompatibel mit jax.jit und jax.vmap
+**JAX-specific Features:**
+- Uses ``jnp.ndarray`` instead of ``torch.Tensor``
+- Automatic device placement
+- Compatible with jax.jit and jax.vmap
 
 
 ``_batchify_inputs()``
@@ -404,7 +404,7 @@ Konvertiert zu Wahrscheinlichkeiten mittels ``jax.nn.softmax()``.
 def _batchify_inputs(self, batch: Sequence[object]) -> jnp.ndarray
 `````
 
-Konvertiert Python-Liste zu jnp.ndarray für Batch-Verarbeitung.
+Converts Python list to jnp.ndarray for batch processing.
 
 
 JaxDataLoader
@@ -413,25 +413,25 @@ JaxDataLoader
 
 `````python
 class JaxDataLoader:
- """Minimaler JAX-freundlicher DataLoader."""
+ """Minimal JAX-friendly DataLoader."""
 `````
 
-**Parameter:**
-- ``dataset``: DatasetLike mit ``__len__`` und ``__getitem__``
-- ``batch_size``: Batch-Größe
-- ``shuffle``: Bool - Zufällige Reihenfolge
+**Parameters:**
+- ``dataset``: DatasetLike with ``__len__`` and ``__getitem__``
+- ``batch_size``: Batch size
+- ``shuffle``: Bool - Random order
 
-**Methoden:**
-- ``__len__()``: Anzahl Batches
-- ``__iter__()``: Iterator über Batches (als Listen)
+**Methods:**
+- ``__len__()``: Number of batches
+- ``__iter__()``: Iterator over batches (as lists)
 
-**Beispiel:**
+**Example:**
 `````python
 from probly.data_generator.jax_first_order_generator import JaxDataLoader
 
 loader = JaxDataLoader(dataset, batch_size=32, shuffle=True)
 for batch in loader:
- # batch ist Liste von Samples
+ # batch is list of samples
  pass
 `````
 
@@ -447,13 +447,13 @@ def output_dataloader(
  *,
  batch_size: int = 64,
  shuffle: bool = False,
- num_workers: int = 0, # Ignored - nur für API-Kompatibilität
+ num_workers: int = 0, # Ignored - only for API compatibility
  pin_memory: bool = False, # Ignored
  input_getter: Callable[[Any], Any] | None = None,
 ) -> JaxDataLoader
 `````
 
-**Note:** ``num_workers`` und ``pin_memory`` werden ignoriert (warnt bei non-default Werten).
+**Note:** ``num_workers`` and ``pin_memory`` are ignored (warns on non-default values).
 
 ---
 
@@ -463,31 +463,31 @@ Framework-Agnostic FirstOrderDataGenerator
 
 
 
-Klassenbeschreibung
+Class Description
 ~~~~~~~~~~~~~~~~~~~
 
 
 `````python
 @dataclass
 class FirstOrderDataGenerator:
- """Pure Python First-Order Generator (kein Framework nötig)."""
+ """Pure Python First-Order Generator (no framework required)."""
 `````
 
-Framework-unabhängige Implementierung für maximale Kompatibilität.
+Framework-independent implementation for maximum compatibility.
 
 
-Konstruktor-Parameter
+Constructor Parameters
 ~~~~~~~~~~~~~~~~~~~~~
 
 
-| Parameter | Typ | Standard | Beschreibung |
+| Parameter | Type | Default | Description |
 |-----------|-----|----------|--------------|
-| ``model`` | ``Callable[..., Any]`` | **Erforderlich** | Callable Modell |
-| ``device`` | ``str`` | ``"cpu"`` | Nur für API-Symmetrie (unused) |
-| ``batch_size`` | ``int`` | ``64`` | Batch-Größe |
-| ``output_mode`` | ``str`` | ``"auto"`` | Output-Modus |
-| ``output_transform`` | ``Callable \| None`` | ``None`` | Custom Transform |
-| ``input_getter`` | ``Callable \| None`` | ``None`` | Input-Extraktion |
+| ``model`` | ``Callable[..., Any]`` | **Required** | Callable model |
+| ``device`` | ``str`` | ``"cpu"`` | Only for API symmetry (unused) |
+| ``batch_size`` | ``int`` | ``64`` | Batch size |
+| ``output_mode`` | ``str`` | ``"auto"`` | Output mode |
+| ``output_transform`` | ``Callable \| None`` | ``None`` | Custom transform |
+| ``input_getter`` | ``Callable \| None`` | ``None`` | Input extraction |
 | ``model_name`` | ``str \| None`` | ``None`` | Identifier |
 
 
@@ -504,15 +504,15 @@ Pure Python Features
 def to_probs(self, outputs: object) -> list[list[float]]
 `````
 
-Konvertiert beliebige Ausgaben zu Python Listen von Wahrscheinlichkeiten.
+Converts arbitrary outputs to Python lists of probabilities.
 
-**Unterstützt:**
+**Supports:**
 - Numpy arrays
-- Python Listen/Tuples
-- Skalare Werte
-- Framework-spezifische Arrays (via Konvertierung)
+- Python Lists/Tuples
+- Scalar values
+- Framework-specific arrays (via conversion)
 
-**Output:** ``list[list[float]]`` - 2D Liste von Wahrscheinlichkeiten
+**Output:** ``list[list[float]]`` - 2D list of probabilities
 
 
 ``_to_batch_outputs()``
@@ -523,7 +523,7 @@ Konvertiert beliebige Ausgaben zu Python Listen von Wahrscheinlichkeiten.
 def _to_batch_outputs(outputs: object) -> list[list[float]]
 `````
 
-Normalisiert verschiedene Output-Shapes zu ``list[list[float]]``.
+Normalizes various output shapes to ``list[list[float]]``.
 
 
 ``_softmax_row()``
@@ -534,7 +534,7 @@ Normalisiert verschiedene Output-Shapes zu ``list[list[float]]``.
 def _softmax_row(row: Sequence[float]) -> list[float]
 `````
 
-Pure Python Softmax-Implementierung (keine Dependencies).
+Pure Python Softmax implementation (no dependencies).
 
 
 SimpleDataLoader
@@ -543,21 +543,21 @@ SimpleDataLoader
 
 `````python
 class SimpleDataLoader:
- """Minimaler Python DataLoader (keine Framework-Dependencies)."""
+ """Minimal Python DataLoader (no framework dependencies)."""
 `````
 
-**Parameter:**
-- ``dataset``: DatasetLike mit ``__len__`` und ``__getitem__``
-- ``batch_size``: Batch-Größe
-- ``shuffle``: Bool - Zufällige Reihenfolge
+**Parameters:**
+- ``dataset``: DatasetLike with ``__len__`` and ``__getitem__``
+- ``batch_size``: Batch size
+- ``shuffle``: Bool - Random order
 
-**Beispiel:**
+**Example:**
 `````python
 from probly.data_generator.first_order_datagenerator import SimpleDataLoader
 
 loader = SimpleDataLoader(dataset, batch_size=32, shuffle=False)
 for batch in loader:
- # batch ist Liste von Samples
+ # batch is list of samples
  pass
 `````
 
@@ -575,19 +575,19 @@ BaseDataGenerator
 
 `````python
 class BaseDataGenerator`M, D, Dev <ABC>`_:
- """Abstract base class für alle Data Generators."""
+ """Abstract base class for all Data Generators."""
 `````
 
 **Generics:**
-- ``M``: Model-Typ
-- ``D``: Dataset-Typ
-- ``Dev``: Device-Typ
+- ``M``: Model type
+- ``D``: Dataset type
+- ``Dev``: Device type
 
 **Abstract Methods:**
 `````python
 @abstractmethod
 def generate(self) -> dict[str, Any]:
- """Run model und collect stats."""
+ """Run model and collect stats."""
 
 @abstractmethod
 def save(self, path: str) -> None:
@@ -598,15 +598,15 @@ def load(self, path: str) -> dict[str, Any]:
  """Load results from file."""
 `````
 
-**Implementiert in:**
-- ``PyTorchDataGenerator``: Für PyTorch metrics
-- ``TensorFlowDataGenerator``: Für TensorFlow metrics
-- ``JAXDataGenerator``: Für JAX metrics
+**Implemented in:**
+- ``PyTorchDataGenerator``: For PyTorch metrics
+- ``TensorFlowDataGenerator``: For TensorFlow metrics
+- ``JAXDataGenerator``: For JAX metrics
 
 ---
 
 
-Hilfsfunktionen
+Utility Functions
 ---------------
 
 
@@ -619,9 +619,9 @@ _is_probabilities() (PyTorch)
 def _is_probabilities(x: torch.Tensor, atol: float = 1e-4) -> bool
 `````
 
-Prüft ob Tensor Wahrscheinlichkeiten darstellt:
-- Alle Werte in [0, 1]
-- Zeilen summieren zu ~1.0 (mit Toleranz)
+Checks if tensor represents probabilities:
+- All values in [0, 1]
+- Rows sum to ~1.0 (within tolerance)
 
 
 _is_probabilities() (JAX)
@@ -632,7 +632,7 @@ _is_probabilities() (JAX)
 def _is_probabilities(x: jnp.ndarray, atol: float = 1e-4) -> bool
 `````
 
-JAX-Version mit gleicher Logik.
+JAX version with same logic.
 
 
 _is_prob_vector() (Framework-Agnostic)
@@ -643,7 +643,7 @@ _is_prob_vector() (Framework-Agnostic)
 def _is_prob_vector(v: Sequence[float], atol: float = 1e-4) -> bool
 `````
 
-Pure Python Version für einzelne Vektoren.
+Pure Python version for individual vectors.
 
 
 _ensure_2d() (JAX)
@@ -654,7 +654,7 @@ _ensure_2d() (JAX)
 def _ensure_2d(x: jnp.ndarray) -> jnp.ndarray
 `````
 
-Stellt sicher dass Array 2D ist (fügt Batch-Dimension hinzu falls nötig).
+Ensures array is 2D (adds batch dimension if needed).
 
 
 _get_device() (JAX)
@@ -665,12 +665,12 @@ _get_device() (JAX)
 def _get_device(device: str | None) -> jax.Device | None
 `````
 
-Konvertiert Device-String zu JAX Device-Objekt.
+Converts device string to JAX Device object.
 
 ---
 
 
-Datentypen
+Data Types
 ----------
 
 
@@ -683,9 +683,9 @@ Distribution Dict
 dict[int, list[float]]
 `````
 
-Mapping von Dataset-Index zu Wahrscheinlichkeitsliste.
+Mapping from dataset index to probability list.
 
-**Beispiel:**
+**Example:**
 `````python
 {
  0: [0.1, 0.3, 0.6], # Sample 0
@@ -694,10 +694,10 @@ Mapping von Dataset-Index zu Wahrscheinlichkeitsliste.
 }
 `````
 
-**Invarianten:**
+**Invariants:**
 - Keys: Non-negative Integers
-- Values: Listen von Floats in [0, 1]
-- Sum(values) ≈ 1.0 (innerhalb Toleranz)
+- Values: Lists of Floats in [0, 1]
+- Sum(values) ≈ 1.0 (within tolerance)
 
 
 Metadata Dict
@@ -708,17 +708,17 @@ Metadata Dict
 dict[str, Any]
 `````
 
-Beliebige Metadaten für gespeicherte Verteilungen.
+Arbitrary metadata for saved distributions.
 
-**Standard-Felder:**
+**Standard Fields:**
 `````python
 {
- 'model_name': str, # Name des Modells
- 'dataset': str, # Name des Datensatzes
- 'num_classes': int, # Anzahl Klassen
+ 'model_name': str, # Model name
+ 'dataset': str, # Dataset name
+ 'num_classes': int, # Number of classes
  'framework': str, # 'pytorch', 'jax', 'tensorflow'
- 'accuracy': float, # Modell-Genauigkeit
- 'timestamp': str, # ISO-Format Zeitstempel
+ 'accuracy': float, # Model accuracy
+ 'timestamp': str, # ISO format timestamp
 }
 `````
 
@@ -733,17 +733,17 @@ class DatasetLike(Protocol):
  def __getitem__(self, idx: int) -> object: ...
 `````
 
-Minimales Dataset-Interface für Framework-Kompatibilität.
+Minimal dataset interface for framework compatibility.
 
 ---
 
 
-JSON-Dateiformat
+JSON File Format
 ----------------
 
 
 
-Struktur
+Structure
 ~~~~~~~~
 
 
@@ -766,25 +766,25 @@ Struktur
 `````
 
 
-Eigenschaften
+Properties
 ~~~~~~~~~~~~~
 
 
 - **Encoding**: UTF-8
-- **Format**: JSON mit ``ensure_ascii=False``
-- **Keys in distributions**: Strings (von int konvertiert)
-- **Values**: Listen von Floats
-- **Cross-Framework**: Alle Frameworks können gleiche JSON-Dateien lesen
+- **Format**: JSON with ``ensure_ascii=False``
+- **Keys in distributions**: Strings (converted from int)
+- **Values**: Lists of Floats
+- **Cross-Framework**: All frameworks can read same JSON files
 
 ---
 
 
-Typische Workflows
+Typical Workflows
 ------------------
 
 
 
-Workflow 1: PyTorch mit GPU
+Workflow 1: PyTorch with GPU
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -794,7 +794,7 @@ from probly.data_generator.torch_first_order_generator import (
  output_dataloader
 )
 
-1. Generator erstellen
+1. Create generator
 ======================
 
 generator = FirstOrderDataGenerator(
@@ -804,12 +804,12 @@ generator = FirstOrderDataGenerator(
  batch_size=128
 )
 
-2. Verteilungen generieren
+2. Generate distributions
 ==========================
 
 distributions = generator.generate_distributions(dataset, progress=True)
 
-3. Speichern
+3. Save
 ============
 
 generator.save_distributions(
@@ -818,7 +818,7 @@ generator.save_distributions(
  meta={'dataset': 'CIFAR-10', 'accuracy': 0.92}
 )
 
-4. Laden und Training
+4. Load and Training
 =====================
 
 dists, meta = generator.load_distributions('output/dists.json')
@@ -830,7 +830,7 @@ for inputs, labels, target_dists in fo_loader:
 `````
 
 
-Workflow 2: JAX auf TPU
+Workflow 2: JAX on TPU
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -838,7 +838,7 @@ Workflow 2: JAX auf TPU
 from probly.data_generator.jax_first_order_generator import FirstOrderDataGenerator
 import jax
 
-1. Generator mit TPU
+1. Generator with TPU
 ====================
 
 generator = FirstOrderDataGenerator(
@@ -848,37 +848,37 @@ generator = FirstOrderDataGenerator(
  batch_size=256
 )
 
-2. Generieren
+2. Generate
 =============
 
 distributions = generator.generate_distributions(jax_dataset)
 
-3. Speichern (kompatibel mit anderen Frameworks)
+3. Save (compatible with other frameworks)
 ================================================
 
 generator.save_distributions('output/jax_dists.json', distributions)
 `````
 
 
-Workflow 3: Framework-Wechsel
+Workflow 3: Framework Switching
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 `````python
-Generieren mit PyTorch
+Generate with PyTorch
 ======================
 
 torch_gen = FirstOrderDataGenerator(model=torch_model, device='cuda')
 dists = torch_gen.generate_distributions(torch_dataset)
 torch_gen.save_distributions('dists.json', dists)
 
-Laden mit JAX
+Load with JAX
 =============
 
 from probly.data_generator.jax_first_order_generator import FirstOrderDataGenerator
 jax_gen = FirstOrderDataGenerator(model=jax_model)
 loaded_dists, meta = jax_gen.load_distributions('dists.json')
-Verteilungen sind Framework-unabhängig!
+Distributions are framework-independent!
 =======================================
 
 `````
@@ -914,23 +914,23 @@ generator = FirstOrderDataGenerator(
 ---
 
 
-Fehlerbehandlung
+Error Handling
 ----------------
 
 
 
-Typische Exceptions
+Typical Exceptions
 ~~~~~~~~~~~~~~~~~~~
 
 
-| Exception | Framework | Grund | Lösung |
+| Exception | Framework | Reason | Solution |
 |-----------|-----------|-------|--------|
-| ``TypeError: Model must return a torch.Tensor`` | PyTorch | Falscher Return-Typ | Verwenden Sie ``output_transform`` |
-| ``TypeError: Model must return a jnp.ndarray`` | JAX | Falscher Return-Typ | Stellen Sie sicher Modell gibt jnp.ndarray zurück |
-| ``KeyError: No distribution for index X`` | Alle | Fehlende Distribution | Prüfen Sie Index-Alignment |
-| ``ValueError: Invalid output_mode '...'`` | Alle | Ungültiger Mode | Verwenden Sie 'auto', 'logits' oder 'probs' |
-| ``FileNotFoundError`` | Alle | JSON nicht gefunden | Prüfen Sie Pfad |
-| ``json.JSONDecodeError`` | Alle | Ungültiges JSON | Prüfen Sie Dateiformat |
+| ``TypeError: Model must return a torch.Tensor`` | PyTorch | Wrong return type | Use ``output_transform`` |
+| ``TypeError: Model must return a jnp.ndarray`` | JAX | Wrong return type | Ensure model returns jnp.ndarray |
+| ``KeyError: No distribution for index X`` | All | Missing distribution | Check index alignment |
+| ``ValueError: Invalid output_mode '...'`` | All | Invalid mode | Use 'auto', 'logits' or 'probs' |
+| ``FileNotFoundError`` | All | JSON not found | Check path |
+| ``json.JSONDecodeError`` | All | Invalid JSON | Check file format |
 
 
 Warnings
@@ -943,7 +943,7 @@ warnings.warn(
 )
 `````
 
-Tritt auf wenn Anzahl Verteilungen ≠ Dataset-Länge. Meist harmlos (z.B. bei ``drop_last=True``), aber prüfen Sie Index-Alignment.
+Occurs when number of distributions ≠ dataset length. Usually harmless (e.g. with ``drop_last=True``), but check index alignment.
 
 `````python
 warnings.warn(
@@ -951,12 +951,12 @@ warnings.warn(
 )
 `````
 
-JAX-spezifisch: ``num_workers`` und ``pin_memory`` haben keine Wirkung.
+JAX-specific: ``num_workers`` and ``pin_memory`` have no effect.
 
 ---
 
 
-Kompatibilität
+Compatibility
 --------------
 
 
@@ -980,43 +980,43 @@ Python & Dependencies
 ~~~~~~~~~~~~~~~~~~~~~
 
 
-- **Python**: >= 3.8 (Type hints erforderlich)
-- **PyTorch**: >= 1.8.0 (für torch module)
-- **TensorFlow**: >= 2.4.0 (für tensorflow module)
-- **JAX**: >= 0.3.0 (für jax module)
-- **Optional**: numpy (für agnostic module)
+- **Python**: >= 3.8 (Type hints required)
+- **PyTorch**: >= 1.8.0 (for torch module)
+- **TensorFlow**: >= 2.4.0 (for tensorflow module)
+- **JAX**: >= 0.3.0 (for jax module)
+- **Optional**: numpy (for agnostic module)
 
 ---
 
 
-Performance-Hinweise
+Performance Notes
 --------------------
 
 
 
-Batch-Größe
+Batch Size
 ~~~~~~~~~~~
 
 
 `````python
-Klein (32-64): Weniger GPU-Speicher, langsamer
+Small (32-64): Less GPU memory, slower
 ==============================================
 
 generator = FirstOrderDataGenerator(model=model, batch_size=32)
 
-Mittel (64-128): Gute Balance
+Medium (64-128): Good balance
 =============================
 
 generator = FirstOrderDataGenerator(model=model, batch_size=128)
 
-Groß (256+): Schneller, braucht viel GPU-Speicher
+Large (256+): Faster, requires lots of GPU memory
 =================================================
 
 generator = FirstOrderDataGenerator(model=model, batch_size=256)
 `````
 
 
-DataLoader Optimierung
+DataLoader Optimization
 ~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -1027,12 +1027,12 @@ PyTorch
 fo_loader = output_dataloader(
  dataset, distributions,
  batch_size=64,
- num_workers=4, # CPU-Parallelisierung (nicht auf Windows)
- pin_memory=True, # Schnellerer GPU-Transfer
+ num_workers=4, # CPU parallelization (not on Windows)
+ pin_memory=True, # Faster GPU transfer
  shuffle=True
 )
 
-JAX (num_workers ignoriert)
+JAX (num_workers ignored)
 ===========================
 
 fo_loader = output_dataloader(
@@ -1048,7 +1048,7 @@ Memory Management
 
 
 `````python
-Bei großen Datasets: Batch-weise Generierung
+For large datasets: Batch-wise generation
 ============================================
 
 distributions = {}
@@ -1057,19 +1057,19 @@ for batch_idx, batch in enumerate(dataloader):
  distributions.update(batch_dists)
 
  if batch_idx % 10 == 0:
- # Periodisches Speichern
+ # Periodic saving
  generator.save_distributions(f'checkpoint_{batch_idx}.json', distributions)
 `````
 
 ---
 
 
-Weitere Ressourcen
+Further Resources
 ------------------
 
 
-- **Hauptdokumentation**: ``docs/data_generation_guide.md``
+- **Main Documentation**: ``docs/data_generation_guide.md``
 - **Multi-Framework Guide**: ``docs/multi_framework_guide.md``
-- **Beispiele**: ``examples/simple_usage.py``
+- **Examples**: ``examples/simple_usage.py``
 - **Tests**: ``tests/test_*_first_order.py``
-- **Quellcode**: ``probly/data_generator/`
+- **Source Code**: ``probly/data_generator/`

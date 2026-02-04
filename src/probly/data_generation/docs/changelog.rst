@@ -2,53 +2,53 @@
 Changelog
 =========
 
-[2026-01-20] - Dokumentationsformat
+[2026-01-20] - Documentation Format
 ==============================================
 
-Dokumentation von Markdown zu reStructuredText
+Documentation Converted from Markdown to reStructuredText
 --------------------------------------------------------
 
-**Hauptänderungen:**
+**Main Changes:**
 
-- Alle Dokumentationsdateien von Markdown (.md) zu reStructuredText (.rst) konvertiert
-- Code-Blöcke mit ``.. code-block::`` Direktive aktualisiert
-- Tabellen zu ``list-table`` Format konvertiert
-- Inline-Code zu doppelten Backticks (````code````) geändert
-- Überschriften-Hierarchie an RST-Standard angepasst
-- Datei-Referenzen von .md zu .rst aktualisiert
+- All documentation files converted from Markdown (.md) to reStructuredText (.rst)
+- Code blocks updated with ``.. code-block::`` directive
+- Tables converted to ``list-table`` format
+- Inline code changed to double backticks (````code````)
+- Heading hierarchy adjusted to RST standard
+- File references updated from .md to .rst
 
-**Konvertierte Dateien:**
+**Converted Files:**
 
 - ``README.md`` → ``README.rst``
 - ``docs/data_generation_guide.md`` → ``docs/data_generation_guide.rst``
 - ``docs/api_reference.md`` → ``docs/api_reference.rst``
 - ``docs/multi_framework_guide.md`` → ``docs/multi_framework_guide.rst``
 
-**Beibehaltene Dateien:**
+**Preserved Files:**
 
-- ``examples/first_order_tutorial.ipynb`` - Jupyter Notebook (keine Änderung)
-- ``examples/simple_usage.py`` - Python Beispielskript (keine Änderung)
+- ``examples/first_order_tutorial.ipynb`` - Jupyter Notebook (no changes)
+- ``examples/simple_usage.py`` - Python example script (no changes)
 
 
-[2026-01-11] - Ursprüngliche Dokumentation
+[2026-01-11] - Original Documentation
 ===========================================
 
-Dokumentation erstellt und aktualisiert
+Documentation Created and Updated
 ----------------------------------------
 
-**Hauptänderungen:**
+**Main Changes:**
 
-- README konsolidiert (2 Dateien zusammengeführt)
-- Multi-Framework Support dokumentiert (PyTorch, JAX, TensorFlow)
-- API Referenz erweitert
-- Benutzerhandbuch mit erweiterten Beispielen aktualisiert
-- Tutorial Notebook Imports aktualisiert
+- README consolidated (2 files merged)
+- Multi-framework support documented (PyTorch, JAX, TensorFlow)
+- API reference expanded
+- User guide updated with extended examples
+- Tutorial notebook imports updated
 
-**Neue Dateien:**
+**New Files:**
 
 - README.md
-- api_reference.md - Vollständige API Referenz für alle Frameworks
-- multi_framework_guide.md - Framework-spezifische Implementierungsdetails
-- data_generation_guide.md - Aktualisiertes Benutzerhandbuch mit Beispielen
-- first_order_tutorial.ipynb - Aktualisiertes interaktives Tutorial
-- simple_usage.py - Aktualisiertes Beispielskript
+- api_reference.md - Complete API reference for all frameworks
+- multi_framework_guide.md - Framework-specific implementation details
+- data_generation_guide.md - Updated user guide with examples
+- first_order_tutorial.ipynb - Updated interactive tutorial
+- simple_usage.py - Updated example script

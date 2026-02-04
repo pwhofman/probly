@@ -3,29 +3,29 @@ Multi-Framework Guide - First-Order Data Generator
 
 
 
-Überblick
+Overview
 ---------
 
 
-Der First-Order Data Generator unterstützt drei Haupt-Frameworks: **PyTorch**, **TensorFlow/Keras** und **JAX**, plus eine framework-agnostische Pure Python Implementation. Dieser Guide erklärt die Unterschiede, Best Practices und Migrations-Strategien.
+The First-Order Data Generator supports three main frameworks: **PyTorch**, **TensorFlow/Keras** and **JAX**, plus a framework-agnostic Pure Python implementation. This guide explains the differences, best practices and migration strategies.
 
 
-Inhaltsverzeil chnis
+Table of Contents
 --------------------
 
 
-- `Framework-Selektion <#framework-selektion>`_
+- `Framework Selection <#framework-selection>`_
 - `PyTorch Implementation <#pytorch-implementation>`_
 - `JAX Implementation <#jax-implementation>`_
 - `TensorFlow Implementation <#tensorflow-implementation>`_
 - `Framework-Agnostic Implementation <#framework-agnostic-implementation>`_
 - `Cross-Framework Compatibility <#cross-framework-compatibility>`_
-- `Migration zwischen Frameworks <#migration-zwischen-frameworks>`_
+- `Migration between Frameworks <#migration-between-frameworks>`_
 
 ---
 
 
-Framework-Selektion
+Framework Selection
 -------------------
 
 
@@ -34,16 +34,16 @@ Factory Pattern
 ~~~~~~~~~~~~~~~
 
 
-Die einfachste Methode ist die Verwendung des Factory Patterns:
+The simplest method is using the Factory Pattern:
 
 ````python
 from probly.data_generator.factory import create_data_generator
 
-Automatische Framework-Auswahl
+Automatic framework selection
 ==============================
 
 generator = create_data_generator(
- framework='pytorch', # oder 'tensorflow', 'jax'
+ framework='pytorch', # or 'tensorflow', 'jax'
  model=model,
  dataset=dataset,
  batch_size=32,
@@ -52,11 +52,11 @@ generator = create_data_generator(
 `````
 
 
-Direkte Imports
+Direct Imports
 ~~~~~~~~~~~~~~~
 
 
-Alternativ können Sie framework-spezifische Module direkt importieren:
+Alternatively, you can import framework-specific modules directly:
 
 `````python
 PyTorch
@@ -88,17 +88,17 @@ PyTorch Implementation
 
 
 
-Überblick
+Overview
 ~~~~~~~~~
 
 
 **Module**: ``torch_first_order_generator.py``
 
 **Features:**
-- Vollständige ``torch.nn.Module`` Integration
-- Native ``torch.utils.data.DataLoader`` Support
-- GPU/CUDA Support
-- Automatic Mixed Precision kompatibel
+- Full ``torch.nn.Module`` integration
+- Native ``torch.utils.data.DataLoader`` support
+- GPU/CUDA support
+- Automatic Mixed Precision compatible
 
 
 Quick Start
@@ -114,13 +114,13 @@ from probly.data_generator.torch_first_order_generator import (
  output_dataloader
 )
 
-1. Model Setup
+1. Model setup
 ==============
 
 model = torch.load('pretrained_model.pt')
 model.eval()
 
-2. Generator erstellen
+2. Create generator
 ======================
 
 generator = FirstOrderDataGenerator(
@@ -131,12 +131,12 @@ generator = FirstOrderDataGenerator(
  model_name='resnet50'
 )
 
-3. Verteilungen generieren
+3. Generate distributions
 ==========================
 
 distributions = generator.generate_distributions(dataset, progress=True)
 
-4. Speichern
+4. Save
 ============
 
 generator.save_distributions(
@@ -147,7 +147,7 @@ generator.save_distributions(
 `````
 
 
-PyTorch-Spezifische Features
+PyTorch-Specific Features
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -157,15 +157,15 @@ PyTorch-Spezifische Features
 
 
 `````python
-Automatische Device-Erkennung
+Automatic device detection
 =============================
 
 generator = FirstOrderDataGenerator(
  model=model,
- device='cuda' # Automatisch cuda:0
+ device='cuda' # Automatically cuda:0
 )
 
-Spezifisches GPU Device
+Specific GPU device
 =======================
 
 generator = FirstOrderDataGenerator(
@@ -188,7 +188,7 @@ generator = FirstOrderDataGenerator(
 
 
 `````python
-Erstelle DataLoader mit Verteilungen
+Create DataLoader with distributions
 ====================================
 
 fo_loader = output_dataloader(
@@ -200,7 +200,7 @@ fo_loader = output_dataloader(
  pin_memory=True, # Faster GPU transfer
 )
 
-Training Loop
+Training loop
 =============
 
 for inputs, labels, target_dists in fo_loader:
@@ -223,12 +223,12 @@ for inputs, labels, target_dists in fo_loader:
 
 
 `````python
-Für BayesLinear Layers
+For BayesLinear layers
 ======================
 
 posterior_dists = generator.get_posterior_distributions()
 
-posterior_dists enthält:
+posterior_dists contains:
 ========================
 
 {
@@ -253,7 +253,7 @@ posterior_dists enthält:
 =
 
 
-Speichern für spätere Verwendung
+Save for later use
 ================================
 
 torch.save(posterior_dists, 'posterior_params.pt')
@@ -265,7 +265,7 @@ torch.save(posterior_dists, 'posterior_params.pt')
 
 
 `````python
-Automatisches Device-Handling für verschachtelte Strukturen
+Automatic device handling for nested structures
 ===========================================================
 
 data = {
@@ -275,7 +275,7 @@ data = {
  }
 }
 
-Alle Tensors werden automatisch zum richtigen Device verschoben
+All tensors are automatically moved to the correct device
 ===============================================================
 
 data_on_device = generator.to_device(data)
@@ -287,18 +287,18 @@ PyTorch Best Practices
 
 
 `````python
-1. Model in eval() Modus
+1. Model in eval() mode
 ========================
 
 model.eval()
 
-2. Keine Gradienten berechnen
+2. Don't compute gradients
 =============================
 
 with torch.no_grad():
  distributions = generator.generate_distributions(dataset)
 
-3. Batch-Größe an GPU-Speicher anpassen
+3. Adapt batch size to GPU memory
 =======================================
 
 generator = FirstOrderDataGenerator(
@@ -307,7 +307,7 @@ generator = FirstOrderDataGenerator(
  batch_size=256 if torch.cuda.get_device_properties(0).total_memory > 16e9 else 64
 )
 
-4. Memory-efficient für große Datasets
+4. Memory-efficient for large datasets
 ======================================
 
 torch.cuda.empty_cache()
@@ -323,16 +323,16 @@ JAX Implementation
 
 
 
-Überblick
+Overview
 ~~~~~~~~~
 
 
 **Module**: ``jax_first_order_generator.py``
 
 **Features:**
-- Native ``jnp.ndarray`` Support
-- TPU Support
-- JIT-compilation kompatibel
+- Native ``jnp.ndarray`` support
+- TPU support
+- JIT-compilation compatible
 - Functional programming paradigm
 
 
@@ -353,32 +353,32 @@ from probly.data_generator.jax_first_order_generator import (
 =====================
 
 def model_fn(x):
- # Ihr JAX-Modell
+ # Your JAX model
  return jnp.dot(x, params['W']) + params['b']
 
-2. Generator erstellen
+2. Create generator
 ======================
 
 generator = FirstOrderDataGenerator(
  model=model_fn,
- device='gpu', # oder 'cpu', 'tpu'
+ device='gpu', # or 'cpu', 'tpu'
  batch_size=64,
  output_mode='logits'
 )
 
-3. Generieren
+3. Generate
 =============
 
 distributions = generator.generate_distributions(jax_dataset, progress=True)
 
-4. Speichern
+4. Save
 ============
 
 generator.save_distributions('jax_dists.json', distributions)
 `````
 
 
-JAX-Spezifische Features
+JAX-Specific Features
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -393,7 +393,7 @@ Platform-based
 
 generator = FirstOrderDataGenerator(
  model=model_fn,
- device='gpu' # Findet erste GPU
+ device='gpu' # Finds first GPU
 )
 
 Specific device ID
@@ -409,10 +409,10 @@ TPU
 
 generator = FirstOrderDataGenerator(
  model=model_fn,
- device='tpu' # Findet erste TPU
+ device='tpu' # Finds first TPU
 )
 
-Liste verfügbare Devices
+List available devices
 ========================
 
 devices = jax.devices()
@@ -427,14 +427,14 @@ print(f"Available: {[str(d) for d in devices]}")
 `````python
 import jax
 
-JIT-compiled Model
+JIT-compiled model
 ==================
 
 @jax.jit
 def model_fn(x):
  return forward_pass(x, params)
 
-Funktioniert direkt mit Generator
+Works directly with generator
 =================================
 
 generator = FirstOrderDataGenerator(model=model_fn, device='gpu')
@@ -442,18 +442,18 @@ distributions = generator.generate_distributions(dataset)
 `````
 
 
-3. Vmap für Batch Processing
+3. Vmap for Batch Processing
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 `````python
-Vmap-basiertes Model
+Vmap-based model
 ====================
 
 def single_prediction(x):
  return model_fn(x)
 
-Automatisches Batching mit vmap
+Automatic batching with vmap
 ===============================
 
 batched_model = jax.vmap(single_prediction)
@@ -467,7 +467,7 @@ generator = FirstOrderDataGenerator(model=batched_model, device='gpu')
 
 
 `````python
-Automatisches Device Placement
+Automatic device placement
 ==============================
 
 data = {
@@ -475,12 +475,12 @@ data = {
  'labels': jnp.array(labels)
 }
 
-Verschiebt alle Arrays zum konfigurierten Device
+Moves all arrays to configured device
 ================================================
 
 data_on_device = generator.to_device(data)
 
-Funktioniert mit verschachtelten Strukturen
+Works with nested structures
 ===========================================
 
 nested_data = {
@@ -499,7 +499,7 @@ JAX Best Practices
 
 
 `````python
-1. Pre-allocate Arrays
+1. Pre-allocate arrays
 ======================
 
 images = jnp.zeros((batch_size, 224, 224, 3), dtype=jnp.float32)
@@ -528,7 +528,7 @@ generator = FirstOrderDataGenerator(
 `````
 
 
-JAX vs PyTorch Unterschiede
+JAX vs PyTorch Differences
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -549,16 +549,16 @@ TensorFlow Implementation
 
 
 
-Überblick
+Overview
 ~~~~~~~~~
 
 
 **Module**: ``tensorflow_generator.py``
 
 **Features:**
-- ``tf.keras.Model`` Integration
-- ``tf.data.Dataset`` Support
-- TPU/GPU Support
+- ``tf.keras.Model`` integration
+- ``tf.data.Dataset`` support
+- TPU/GPU support
 - Eager execution & Graph mode
 
 
@@ -588,7 +588,7 @@ generator = TensorFlowDataGenerator(
  model=model,
  dataset=dataset,
  batch_size=32,
- device='GPU:0' # oder 'CPU:0'
+ device='GPU:0' # or 'CPU:0'
 )
 
 4. Generate (metrics-based)
@@ -603,7 +603,7 @@ generator.save('tf_results.json')
 `````
 
 
-TensorFlow-Spezifische Features
+TensorFlow-Specific Features
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -637,7 +637,7 @@ generator = TensorFlowDataGenerator(
 
 
 `````python
-Multi-GPU mit MirroredStrategy
+Multi-GPU with MirroredStrategy
 ==============================
 
 strategy = tf.distribute.MirroredStrategy()
@@ -657,7 +657,7 @@ with strategy.scope():
 
 
 `````python
-TPU Configuration
+TPU configuration
 =================
 
 resolver = tf.distribute.cluster_resolver.TPUClusterResolver()
@@ -677,19 +677,19 @@ TensorFlow Best Practices
 
 
 `````python
-1. Use tf.function für Performance
+1. Use tf.function for performance
 ==================================
 
 @tf.function
 def model_predict(model, x):
  return model(x, training=False)
 
-2. Prefetch Data
+2. Prefetch data
 ================
 
 dataset = dataset.prefetch(tf.data.AUTOTUNE)
 
-3. Mixed Precision
+3. Mixed precision
 ==================
 
 tf.keras.mixed_precision.set_global_policy('mixed_float16')
@@ -708,17 +708,17 @@ Framework-Agnostic Implementation
 
 
 
-Überblick
+Overview
 ~~~~~~~~~
 
 
 **Module**: ``first_order_datagenerator.py``
 
 **Features:**
-- Keine Framework-Dependencies
-- Pure Python Implementation
-- Maximale Kompatibilität
-- Fallback für unbekannte Frameworks
+- No framework dependencies
+- Pure Python implementation
+- Maximum compatibility
+- Fallback for unknown frameworks
 
 
 Quick Start
@@ -731,11 +731,11 @@ from probly.data_generator.first_order_datagenerator import (
  SimpleDataLoader
 )
 
-1. Beliebiges Callable Model
+1. Any callable model
 ============================
 
 def my_model(inputs):
- # Ihre Implementierung (numpy, custom, etc.)
+ # Your implementation (numpy, custom, etc.)
  return predictions
 
 2. Generator
@@ -747,7 +747,7 @@ generator = FirstOrderDataGenerator(
  output_mode='logits'
 )
 
-3. Simple Dataset
+3. Simple dataset
 =================
 
 class MyDataset:
@@ -757,7 +757,7 @@ class MyDataset:
  def __getitem__(self, idx):
  return self.data[idx], self.labels[idx]
 
-4. Generieren
+4. Generate
 =============
 
 distributions = generator.generate_distributions(MyDataset())
@@ -772,21 +772,21 @@ for batch in loader:
 `````
 
 
-Wann Framework-Agnostic verwenden?
+When to use Framework-Agnostic?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-**Geeignet für:**
+**Suitable for:**
 - Custom ML Frameworks
 - Scikit-learn Models
-- NumPy-basierte Models
+- NumPy-based Models
 - Legacy Code
 - Prototyping
 
-**Nicht geeignet für:**
+**Not suitable for:**
 - Production PyTorch/TensorFlow/JAX Code
-- Performance-kritische Anwendungen
-- GPU-beschleunigtes Training
+- Performance-critical applications
+- GPU-accelerated training
 
 ---
 
@@ -796,25 +796,25 @@ Cross-Framework Compatibility
 
 
 
-JSON-Format ist Framework-unabhängig
+JSON format is framework-independent
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 `````python
-Generieren mit PyTorch
+Generate with PyTorch
 ======================
 
 from probly.data_generator.torch_first_order_generator import FirstOrderDataGenerator
 torch_gen = FirstOrderDataGenerator(model=torch_model)
 torch_gen.save_distributions('dists.json', distributions)
 
-Laden mit JAX
+Load with JAX
 =============
 
 from probly.data_generator.jax_first_order_generator import FirstOrderDataGenerator
 jax_gen = FirstOrderDataGenerator(model=jax_model)
 dists, meta = jax_gen.load_distributions('dists.json')
-Funktioniert! Verteilungen sind Framework-unabhängig
+Works! Distributions are framework-independent
 ====================================================
 
 `````
@@ -824,17 +824,17 @@ Metadata Convention
 ~~~~~~~~~~~~~~~~~~~
 
 
-Fügen Sie Framework-Info in Metadaten hinzu:
+Add framework info to metadata:
 
 `````python
 generator.save_distributions(
  'dists.json',
  distributions,
  meta={
- 'framework': 'pytorch', # oder 'jax', 'tensorflow'
+ 'framework': 'pytorch', # or 'jax', 'tensorflow'
  'device': 'cuda',
  'model_name': 'resnet50',
- # ... weitere Metadaten
+ # ... additional metadata
  }
 )
 `````
@@ -863,7 +863,7 @@ torch_tensor = torch.from_numpy(numpy_array)
 ---
 
 
-Migration zwischen Frameworks
+Migration between Frameworks
 -----------------------------
 
 
@@ -873,7 +873,7 @@ PyTorch → JAX
 
 
 `````python
-Vorher (PyTorch)
+Before (PyTorch)
 ================
 
 import torch
@@ -883,14 +883,14 @@ torch_model = torch.load('model.pt')
 torch_gen = FirstOrderDataGenerator(model=torch_model, device='cuda')
 dists = torch_gen.generate_distributions(torch_dataset)
 
-Nachher (JAX)
+After (JAX)
 =============
 
 import jax
 from probly.data_generator.jax_first_order_generator import FirstOrderDataGenerator
 
 def jax_model_fn(x):
- # Port PyTorch model zu JAX
+ # Port PyTorch model to JAX
  return jax_forward_pass(x, converted_params)
 
 jax_gen = FirstOrderDataGenerator(model=jax_model_fn, device='gpu')
@@ -898,11 +898,11 @@ dists = jax_gen.generate_distributions(jax_dataset)
 `````
 
 
-Wichtige Unterschiede beachten:
+Important differences to note:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-| Aspekt | PyTorch | JAX |
+| Aspect | PyTorch | JAX |
 |--------|---------|-----|
 | Model Type | ``nn.Module`` | Function |
 | Arrays | ``torch.Tensor`` | ``jnp.ndarray`` |
@@ -923,7 +923,7 @@ class PyTorchDataset(torch.utils.data.Dataset):
  def __getitem__(self, idx):
  return self.data[idx], self.labels[idx]
 
-JAX-kompatible Version
+JAX-compatible version
 ======================
 
 class JAXDataset:
@@ -1005,40 +1005,40 @@ Framework Selection Guide
 
 
 
-Wählen Sie PyTorch wenn:
+Choose PyTorch when:
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
- Sie bereits PyTorch verwenden
- Große Community & Ressourcen wichtig sind
- Flexibilität bei Model-Definition wichtig ist
- Debugging-Freundlichkeit Priorität hat
+✓ You already use PyTorch
+✓ Large community & resources are important
+✓ Flexibility in model definition is important
+✓ Debugging-friendliness is a priority
 
 
-Wählen Sie JAX wenn:
+Choose JAX when:
 ~~~~~~~~~~~~~~~~~~~~
 
- Performance kritisch ist
- Sie funktionale Programmierung bevorzugen
- TPU-Support benötigt wird
- Automatische Differentiation zentral ist
+✓ Performance is critical
+✓ You prefer functional programming
+✓ TPU support is needed
+✓ Automatic differentiation is central
 
 
-Wählen Sie TensorFlow wenn:
+Choose TensorFlow when:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
- Production Deployment wichtig ist
- TensorFlow Serving verwendet wird
- TPU-Training benötigt wird
- Mobile Deployment (TFLite) geplant ist
+✓ Production deployment is important
+✓ TensorFlow Serving is used
+✓ TPU training is needed
+✓ Mobile deployment (TFLite) is planned
 
 
-Wählen Sie Framework-Agnostic wenn:
+Choose Framework-Agnostic when:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
- Keine Dependencies erlaubt sind
- Custom Framework verwendet wird
- Maximale Portabilität benötigt wird
- Nur CPU-Inferenz benötigt wird
+✓ No dependencies are allowed
+✓ Custom framework is used
+✓ Maximum portability is needed
+✓ Only CPU inference is needed
 
 ---
 
@@ -1054,12 +1054,12 @@ PyTorch Issues
 
 **Problem**: CUDA out of memory
 `````python
-Lösung: Reduzieren Sie batch_size
+Solution: Reduce batch_size
 =================================
 
-generator = FirstOrderDataGenerator(model=model, batch_size=32) # statt 128
+generator = FirstOrderDataGenerator(model=model, batch_size=32) # instead of 128
 
-Oder: Clear cache periodisch
+Or: Clear cache periodically
 ============================
 
 torch.cuda.empty_cache()
@@ -1067,7 +1067,7 @@ torch.cuda.empty_cache()
 
 **Problem**: Model not on same device as input
 `````python
-Lösung: Explizites Device-Management
+Solution: Explicit device management
 ====================================
 
 model = model.to(device)
@@ -1081,15 +1081,15 @@ JAX Issues
 
 **Problem**: "Array has been deleted"
 `````python
-Lösung: Kopieren Sie Arrays
+Solution: Copy arrays
 ===========================
 
-x_copy = jnp.array(x) # Erstellt Kopie
+x_copy = jnp.array(x) # Creates copy
 `````
 
-**Problem**: JIT compilation Fehler
+**Problem**: JIT compilation error
 `````python
-Lösung: Deaktivieren Sie JIT temporär
+Solution: Disable JIT temporarily
 =====================================
 
 with jax.disable_jit():
@@ -1101,7 +1101,7 @@ Cross-Framework Issues
 ~~~~~~~~~~~~~~~~~~~~~~
 
 
-**Problem**: Unterschiedliche Precision
+**Problem**: Different precision
 `````python
 PyTorch: float32 (default)
 ==========================
@@ -1109,7 +1109,7 @@ PyTorch: float32 (default)
 JAX: float32 (default)
 ======================
 
-Lösung: Explizit casten
+Solution: Explicitly cast
 =======================
 
 jax_array = jnp.array(torch_tensor.numpy(), dtype=jnp.float32)
@@ -1123,12 +1123,12 @@ Best Practices Summary
 
 
 
-Allgemein (alle Frameworks)
+General (all frameworks)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 `````python
-1. Model in Eval-Modus
+1. Model in eval mode
 ======================
 
 model.eval() # PyTorch
@@ -1136,17 +1136,17 @@ model.trainable = False # TensorFlow
 ====================================
 
 
-2. Konsistente Batch-Größe
+2. Consistent batch size
 ==========================
 
-batch_size = 64 # Standard, gut für die meisten GPUs
+batch_size = 64 # Standard, good for most GPUs
 
-3. Progress Tracking
+3. Progress tracking
 ====================
 
 distributions = generator.generate_distributions(dataset, progress=True)
 
-4. Metadaten dokumentieren
+4. Document metadata
 ==========================
 
 meta = {
@@ -1159,7 +1159,7 @@ meta = {
 `````
 
 
-Framework-Spezifisch
+Framework-Specific
 ~~~~~~~~~~~~~~~~~~~~
 
 

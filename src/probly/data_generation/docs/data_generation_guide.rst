@@ -1,16 +1,16 @@
-First-Order Data Generator - Benutzerhandbuch
+First-Order Data Generator - User Guide
 =============================================
 
 
 
-Überblick
+Overview
 ---------
 
 
-Der **First-Order Data Generator** ist ein framework-agnostisches Werkzeug zur Generierung approximativer Wahrscheinlichkeitsverteilungen (First-Order Data) aus vortrainierten Modellen. Diese Verteilungen sind essentiell für Unsicherheitsquantifizierung und Coverage-Evaluierung von Credal Sets.
+The **First-Order Data Generator** is a framework-agnostic tool for generating approximate probability distributions (First-Order Data) from pre-trained models. These distributions are essential for uncertainty quantification and coverage evaluation of Credal Sets.
 
 
-Grundkonzept
+Basic Concept
 ------------
 
 
@@ -19,28 +19,28 @@ Problem
 ~~~~~~~
 
 
-In Machine Learning arbeiten wir normalerweise mit der gemeinsamen Verteilung p(X,Y), wobei X die Eingabefeatures und Y die Zielvariablen darstellen. Die bedingte Verteilung **p(Y|X)** - die Wahrscheinlichkeit von Y gegeben X - ist oft nicht direkt zugänglich.
+In Machine Learning we normally work with the joint distribution p(X,Y), where X represents input features and Y represents target variables. The conditional distribution **p(Y|X)** - the probability of Y given X - is often not directly accessible.
 
 
-Lösung
+Solution
 ~~~~~~
 
 
-Der First-Order Data Generator approximiert diese Verteilung durch:
+The First-Order Data Generator approximates this distribution through:
 
 ````
 ĥ(x) ≈ p(·|x)
 `````
 
-wobei ĥ ein vortrainiertes Modell ist (z.B. von Huggingface, ein ResNet, oder ein anderes trainiertes Netz).
+where ĥ is a pre-trained model (e.g. from Huggingface, a ResNet, or another trained network).
 
 **Workflow:**
-1. **Input**: Vortrainiertes Modell + Dataset
-2. **Prozess**: Für jedes Sample x → generiere ĥ(x)
-3. **Output**: Approximierte bedingte Verteilungen p(Y|X)
-4. **Verwendung**: Coverage-Evaluation, Knowledge Distillation, Uncertainty Quantification
+1. **Input**: Pre-trained model + dataset
+2. **Process**: For each sample x → generate ĥ(x)
+3. **Output**: Approximated conditional distributions p(Y|X)
+4. **Use**: Coverage evaluation, Knowledge Distillation, Uncertainty Quantification
 
-Hauptkomponenten
+Main Components
 ----------------
 
 
@@ -49,55 +49,55 @@ Hauptkomponenten
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-Die Hauptklasse zur Generierung von First-Order Verteilungen. Verfügbar für:
+The main class for generating First-Order distributions. Available for:
 - **PyTorch**: ``torch_first_order_generator.py``
 - **JAX**: ``jax_first_order_generator.py``
 - **Framework-Agnostic**: ``first_order_datagenerator.py``
 
-**Konstruktor-Parameter:**
+**Constructor Parameters:**
 
-| Parameter | Typ | Standard | Beschreibung |
+| Parameter | Type | Default | Description |
 |-----------|-----|----------|--------------|
-| ``model`` | Callable | **Erforderlich** | Modell-Funktion oder nn.Module |
+| ``model`` | Callable | **Required** | Model function or nn.Module |
 | ``device`` | str | ``"cpu"`` | ``"cpu"``, ``"cuda"``, ``"gpu"``, ``"tpu"`` |
-| ``batch_size`` | int | ``64`` | Batch-Größe für Inferenz |
+| ``batch_size`` | int | ``64`` | Batch size for inference |
 | ``output_mode`` | str | ``"auto"`` | ``"auto"``, ``"logits"``, ``"probs"`` |
-| ``output_transform`` | Callable | None | Custom Transform-Funktion |
-| ``input_getter`` | Callable | None | Custom Input-Extraktion |
-| ``model_name`` | str | None | Identifier für Metadaten |
+| ``output_transform`` | Callable | None | Custom transform function |
+| ``input_getter`` | Callable | None | Custom input extraction |
+| ``model_name`` | str | None | Identifier for metadata |
 
-**output_mode Erklärung:**
-- **``"auto"``** (Empfohlen): Erkennt automatisch ob Ausgaben Logits oder Probabilitäten sind
- - Prüft: Werte in [0,1] und Summe ≈ 1.0
- - Wendet Softmax an falls nötig
-- **``"logits"``**: Wendet immer Softmax an (für rohe Logits)
-- **``"probs"``**: Verwendet Ausgaben direkt (für bereits normalisierte Probabilitäten)
+**output_mode Explanation:**
+- **``"auto"``** (Recommended): Automatically detects if outputs are logits or probabilities
+ - Checks: Values in [0,1] and sum ≈ 1.0
+ - Applies Softmax if needed
+- **``"logits"``**: Always applies Softmax (for raw logits)
+- **``"probs"``**: Uses outputs directly (for already normalized probabilities)
 
 
 2. FirstOrderDataset
 ~~~~~~~~~~~~~~~~~~~~
 
 
-PyTorch Dataset-Wrapper der einen bestehenden Dataset mit First-Order Verteilungen kombiniert.
+PyTorch Dataset wrapper that combines an existing dataset with First-Order distributions.
 
 `````python
 FirstOrderDataset(
  base_dataset: Dataset, # Original Dataset
- distributions: dict[int, list], # Index-aligned Verteilungen
- input_getter: Callable = None # Optional: Custom Input-Extraktion
+ distributions: dict[int, list], # Index-aligned distributions
+ input_getter: Callable = None # Optional: Custom input extraction
 )
 `````
 
-**Rückgabe:**
-- Mit Labels: ``(input, label, distribution)``
-- Ohne Labels: ``(input, distribution)``
+**Returns:**
+- With labels: ``(input, label, distribution)``
+- Without labels: ``(input, distribution)``
 
 
 3. output_dataloader / output_fo_dataloader
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-Hilfsfunktion zum Erstellen eines DataLoaders mit First-Order Verteilungen.
+Helper function to create a DataLoader with First-Order distributions.
 
 `````python
 output_dataloader(
@@ -114,12 +114,12 @@ output_dataloader(
 ---
 
 
-Grundlegende Verwendung
+Basic Usage
 -----------------------
 
 
 
-Schritt 1: Verteilungen generieren (PyTorch)
+Step 1: Generate distributions (PyTorch)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -128,51 +128,51 @@ import torch
 from torch.utils.data import Dataset
 from probly.data_generator.torch_first_order_generator import FirstOrderDataGenerator
 
-1. Vortrainiertes Modell laden
+1. Load pre-trained model
 ==============================
 
 model = torch.load('my_pretrained_model.pt')
-model.eval() # WICHTIG: Evaluationsmodus aktivieren!
+model.eval() # IMPORTANT: Activate evaluation mode!
 
-2. Ihr Dataset
+2. Your dataset
 ==============
 
-dataset = MyDataset() # Ihre PyTorch Dataset-Implementierung
+dataset = MyDataset() # Your PyTorch Dataset implementation
 
-3. Generator initialisieren
+3. Initialize generator
 ===========================
 
 generator = FirstOrderDataGenerator(
  model=model,
  device='cuda' if torch.cuda.is_available() else 'cpu',
  batch_size=64,
- output_mode='logits', # Falls Ihr Modell Logits ausgibt
+ output_mode='logits', # If your model outputs logits
  model_name='my_model_v1'
 )
 
-4. Verteilungen generieren
+4. Generate distributions
 ==========================
 
 distributions = generator.generate_distributions(
  dataset,
- progress=True # Zeigt Fortschritt in Console
+ progress=True # Shows progress in console
 )
 
-distributions ist ein dict: {index: [prob_class_0, prob_class_1, ...]}
+distributions is a dict: {index: [prob_class_0, prob_class_1, ...]}
 ======================================================================
 
-Beispiel: {0: [0.1, 0.3, 0.6], 1: [0.2, 0.5, 0.3], ...}
+Example: {0: [0.1, 0.3, 0.6], 1: [0.2, 0.5, 0.3], ...}
 =======================================================
 
 `````
 
 
-Schritt 2: Verteilungen speichern
+Step 2: Save distributions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 `````python
-Speichern mit Metadaten
+Save with metadata
 =======================
 
 generator.save_distributions(
@@ -188,7 +188,7 @@ generator.save_distributions(
 )
 `````
 
-**JSON-Format:**
+**JSON Format:**
 `````json
 {
  "meta": {
@@ -207,12 +207,12 @@ generator.save_distributions(
 `````
 
 
-Schritt 3: Verteilungen laden und verwenden
+Step 3: Load and use distributions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 `````python
-Verteilungen laden
+Load distributions
 ==================
 
 loaded_dists, metadata = generator.load_distributions('output/first_order_dists.json')
@@ -221,7 +221,7 @@ print(f"Model: {metadata['model_name']}")
 print(f"Dataset: {metadata['dataset']}")
 print(f"Number of samples: {len(loaded_dists)}")
 
-Mit FirstOrderDataset verwenden
+Use with FirstOrderDataset
 ===============================
 
 from probly.data_generator.torch_first_order_generator import FirstOrderDataset
@@ -231,32 +231,32 @@ fo_dataset = FirstOrderDataset(
  distributions=loaded_dists
 )
 
-Element abrufen
+Retrieve element
 ===============
 
-Falls base_dataset (input, label) zurückgibt:
+If base_dataset returns (input, label):
 =============================================
 
 input_tensor, label, distribution = fo_dataset[0]
 
-Falls base_dataset nur input zurückgibt:
+If base_dataset only returns input:
 ========================================
 
 input_tensor, distribution = fo_dataset[0]
 
-print(f"Distribution: {distribution}") # torch.Tensor mit Probabilitäten
-print(f"Sum: {distribution.sum()}") # Sollte ≈ 1.0 sein
+print(f"Distribution: {distribution}") # torch.Tensor with probabilities
+print(f"Sum: {distribution.sum()}") # Should be ≈ 1.0
 `````
 
 
-Schritt 4: DataLoader mit First-Order Verteilungen erstellen
+Step 4: Create DataLoader with First-Order distributions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 `````python
 from probly.data_generator.torch_first_order_generator import output_dataloader
 
-DataLoader erstellen
+Create DataLoader
 ====================
 
 fo_loader = output_dataloader(
@@ -264,22 +264,22 @@ fo_loader = output_dataloader(
  distributions=loaded_dists,
  batch_size=32,
  shuffle=True,
- num_workers=4, # Paralleles Laden (nicht auf Windows)
- pin_memory=True # Schnellerer GPU-Transfer
+ num_workers=4, # Parallel loading (not on Windows)
+ pin_memory=True # Faster GPU transfer
 )
 
-Training mit Soft Targets (Knowledge Distillation)
+Training with Soft Targets (Knowledge Distillation)
 ==================================================
 
 import torch.nn.functional as F
 
 for batch in fo_loader:
- if len(batch) == 3: # Mit Labels
+ if len(batch) == 3: # With labels
  inputs, labels, target_distributions = batch
- else: # Ohne Labels
+ else: # Without labels
  inputs, target_distributions = batch
 
- # Zu GPU verschieben
+ # Move to GPU
  inputs = inputs.to(device)
  target_distributions = target_distributions.to(device)
 
@@ -301,23 +301,23 @@ for batch in fo_loader:
 ---
 
 
-Erweiterte Verwendung
+Advanced Usage
 ---------------------
 
 
 
-1. Benutzerdefinierte Input-Extraktion
+1. Custom Input Extraction
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-Falls Ihr Dataset eine komplexere Struktur hat:
+If your dataset has a more complex structure:
 
 `````python
 def custom_input_getter(sample):
  """
- Extrahiert nur das Image aus einem komplexen Sample.
+ Extracts only the image from a complex sample.
 
- Sample könnte sein:
+ Sample could be:
  {
  'image': torch.Tensor,
  'metadata': dict,
@@ -336,10 +336,10 @@ generator = FirstOrderDataGenerator(
 distributions = generator.generate_distributions(complex_dataset)
 `````
 
-**Weitere Beispiele:**
+**Further Examples:**
 
 `````python
-Beispiel 1: Mehrere Inputs konkatenieren
+Example 1: Concatenate multiple inputs
 ========================================
 
 def multi_input_getter(sample):
@@ -347,37 +347,37 @@ def multi_input_getter(sample):
  features = sample['features']
  return torch.cat([image.flatten(), features], dim=0)
 
-Beispiel 2: Preprocessing anwenden
+Example 2: Apply preprocessing
 ==================================
 
 def preprocess_getter(sample):
  image = sample['image']
- # Normalisierung
+ # Normalization
  mean = torch.tensor([0.485, 0.456, 0.406])
  std = torch.tensor([0.229, 0.224, 0.225])
  return (image - mean[:, None, None]) / std[:, None, None]
 
-Beispiel 3: Tuple unpacking
+Example 3: Tuple unpacking
 ===========================
 
 def tuple_getter(sample):
- # Sample ist (image, label, metadata)
- return sample[0] # Nur Image
+ # Sample is (image, label, metadata)
+ return sample[0] # Only image
 `````
 
 
-2. Benutzerdefinierte Output-Transformation
+2. Custom Output Transformation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 `````python
 def custom_transform(outputs):
  """
- Benutzerdefinierte Transformation von Modellausgaben.
+ Custom transformation of model outputs.
 
- Beispiel: Label Smoothing
+ Example: Label Smoothing
  """
- # Softmax anwenden
+ # Apply Softmax
  probs = torch.softmax(outputs, dim=-1)
 
  # Label Smoothing: (1-α) * probs + α * uniform
@@ -394,16 +394,16 @@ generator = FirstOrderDataGenerator(
 )
 `````
 
-**Weitere Beispiele:**
+**Further Examples:**
 
 `````python
-Beispiel 1: Temperature Scaling
+Example 1: Temperature Scaling
 ===============================
 
 def temperature_scaling(outputs, temperature=2.0):
  return torch.softmax(outputs / temperature, dim=-1)
 
-Beispiel 2: Top-K Truncation
+Example 2: Top-K Truncation
 ============================
 
 def topk_transform(outputs, k=5):
@@ -416,30 +416,30 @@ def topk_transform(outputs, k=5):
  result.scatter_(1, topk_indices, topk_probs)
  return result
 
-Beispiel 3: Ensemble Averaging
+Example 3: Ensemble Averaging
 ==============================
 
 def ensemble_transform(outputs_list):
- # outputs_list ist Liste von Modell-Ausgaben
+ # outputs_list is list of model outputs
  probs_list = [torch.softmax(out, dim=-1) for out in outputs_list]
  return torch.stack(probs_list).mean(dim=0)
 `````
 
 
-3. Verwendung mit DataLoader statt Dataset
+3. Using DataLoader instead of Dataset
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 `````python
 from torch.utils.data import DataLoader
 
-Sie können auch direkt einen DataLoader übergeben
+You can also pass a DataLoader directly
 =================================================
 
 custom_loader = DataLoader(
  dataset,
  batch_size=16,
- shuffle=False, # WICHTIG: shuffle=False für korrekte Indizierung!
+ shuffle=False, # IMPORTANT: shuffle=False for correct indexing!
  num_workers=4
 )
 
@@ -454,12 +454,12 @@ distributions = generator.generate_distributions(custom_loader, progress=True)
 `````python
 from probly.data_generator.first_order_datagenerator import FirstOrderDataGenerator
 
-Funktioniert mit beliebigen Callable Models (keine PyTorch-Dependency)
+Works with any Callable models (no PyTorch dependency)
 ======================================================================
 
 def my_model(inputs):
- # Ihre Modell-Implementierung
- # Kann NumPy, custom Framework, etc. verwenden
+ # Your model implementation
+ # Can use NumPy, custom framework, etc.
  predictions = model_forward(inputs)
  return predictions
 
@@ -469,7 +469,7 @@ generator = FirstOrderDataGenerator(
  output_mode='logits'
 )
 
-SimpleDataLoader (keine PyTorch-Dependency)
+SimpleDataLoader (no PyTorch dependency)
 ===========================================
 
 from probly.data_generator.first_order_datagenerator import SimpleDataLoader
@@ -492,7 +492,7 @@ JAX Model Function
 ==================
 
 def jax_model_fn(x):
- # Ihr JAX-Modell
+ # Your JAX model
  return jnp.dot(x, params['W']) + params['b']
 
 JAX Generator
@@ -500,23 +500,23 @@ JAX Generator
 
 generator = FirstOrderDataGenerator(
  model=jax_model_fn,
- device='gpu', # oder 'cpu', 'tpu'
+ device='gpu', # or 'cpu', 'tpu'
  batch_size=64,
  output_mode='logits'
 )
 
-Generieren mit JAX
+Generate with JAX
 ==================
 
 distributions = generator.generate_distributions(jax_dataset, progress=True)
 
-Speichern (kompatibel mit PyTorch!)
+Save (compatible with PyTorch!)
 ===================================
 
 generator.save_distributions('jax_dists.json', distributions)
 `````
 
-**JAX-spezifische Features:**
+**JAX-specific Features:**
 
 `````python
 JIT-compiled Model
@@ -533,7 +533,7 @@ Device Placement
 
 data_on_gpu = generator.to_device(data)
 
-Unterstützt verschachtelte Strukturen
+Supports nested structures
 =====================================
 
 nested_data = {
@@ -549,7 +549,7 @@ nested_on_gpu = generator.to_device(nested_data)
 ---
 
 
-Anwendungsfälle
+Use Cases
 ---------------
 
 
@@ -559,30 +559,30 @@ Anwendungsfälle
 
 
 `````python
-Schritt 1: Generiere Teacher-Verteilungen (Ground Truth)
+Step 1: Generate teacher distributions (Ground Truth)
 ========================================================
 
 teacher_gen = FirstOrderDataGenerator(model=pretrained_teacher_model, device='cuda')
 ground_truth_dists = teacher_gen.generate_distributions(test_set)
 
-Schritt 2: Trainiere Student-Modell mit Credal Sets
+Step 2: Train student model with Credal Sets
 ===================================================
 
 student_model = train_credal_model(train_set)
 
-Schritt 3: Evaluiere Coverage
+Step 3: Evaluate coverage
 =============================
 
 student_credal_sets = student_model.predict_credal_sets(test_set)
 
 def compute_coverage(credal_sets, ground_truth_dists):
  """
- Prüft ob Ground-Truth in Credal Set enthalten ist.
+ Checks if ground truth is contained in credal set.
 
- Credal Set: Menge von Wahrscheinlichkeitsverteilungen
- Ground Truth: Einzelne Wahrscheinlichkeitsverteilung
+ Credal Set: Set of probability distributions
+ Ground Truth: Single probability distribution
 
- Returns: Coverage rate (Anteil der Samples wo GT im Credal Set liegt)
+ Returns: Coverage rate (fraction of samples where GT is in credal set)
  """
  covered = 0
  total = len(ground_truth_dists)
@@ -590,8 +590,8 @@ def compute_coverage(credal_sets, ground_truth_dists):
  for idx, gt_dist in ground_truth_dists.items():
  credal_set = credal_sets[idx]
 
- # Prüfe ob GT in Credal Set liegt
- # (Implementation abhängig von Credal Set Repräsentation)
+ # Check if GT is in credal set
+ # (Implementation depends on credal set representation)
  if is_in_credal_set(gt_dist, credal_set):
  covered += 1
 
@@ -607,7 +607,7 @@ print(f"Coverage: {coverage:.2%}")
 
 
 `````python
-Schritt 1: Lehrer-Verteilungen generieren
+Step 1: Generate teacher distributions
 =========================================
 
 teacher_gen = FirstOrderDataGenerator(
@@ -617,7 +617,7 @@ teacher_gen = FirstOrderDataGenerator(
 )
 teacher_dists = teacher_gen.generate_distributions(train_set)
 
-Schritt 2: Schüler mit Soft Targets trainieren
+Step 2: Train student with soft targets
 ==============================================
 
 student_loader = output_dataloader(
@@ -629,7 +629,7 @@ student_loader = output_dataloader(
  pin_memory=True
 )
 
-Schritt 3: Training Loop
+Step 3: Training loop
 ========================
 
 student_model = SmallStudentModel()
@@ -661,7 +661,7 @@ for epoch in range(num_epochs):
 
 
 `````python
-Schritt 1: Verteilungen von mehreren Modellen sammeln
+Step 1: Collect distributions from multiple models
 =====================================================
 
 ensemble_models = [model1, model2, model3, model4, model5]
@@ -672,15 +672,15 @@ for model in ensemble_models:
  dists = gen.generate_distributions(dataset)
  ensemble_dists.append(dists)
 
-Schritt 2: Uncertainty Metriken berechnen
+Step 2: Calculate uncertainty metrics
 =========================================
 
 def compute_prediction_entropy(ensemble_dists):
  """
- Berechnet Entropy der gemittelten Vorhersage (Epistemic Uncertainty).
+ Calculates entropy of averaged prediction (Epistemic Uncertainty).
 
- Hohe Entropy = Modell ist unsicher
- Niedrige Entropy = Modell ist sicher
+ High entropy = Model is uncertain
+ Low entropy = Model is certain
  """
  n_models = len(ensemble_dists)
  n_samples = len(ensemble_dists[0])
@@ -688,13 +688,13 @@ def compute_prediction_entropy(ensemble_dists):
  uncertainties = {}
 
  for idx in range(n_samples):
- # Sammle alle Verteilungen für dieses Sample
+ # Collect all distributions for this sample
  sample_dists = [dists[idx] for dists in ensemble_dists]
 
- # Durchschnittliche Verteilung
+ # Average distribution
  avg_dist = torch.stack([torch.tensor(d) for d in sample_dists]).mean(dim=0)
 
- # Entropy berechnen
+ # Calculate entropy
  entropy = -(avg_dist * torch.log(avg_dist + 1e-10)).sum()
  uncertainties[idx] = entropy.item()
 
@@ -702,7 +702,7 @@ def compute_prediction_entropy(ensemble_dists):
 
 uncertainties = compute_prediction_entropy(ensemble_dists)
 
-Schritt 3: Samples mit höchster Uncertainty finden
+Step 3: Find samples with highest uncertainty
 ==================================================
 
 sorted_samples = sorted(uncertainties.items(), key=lambda x: x[1], reverse=True)
@@ -719,40 +719,40 @@ for idx, uncertainty in most_uncertain:
 
 
 `````python
-Schritt 1: Initial Training
+Step 1: Initial training
 ===========================
 
 model = train_initial_model(labeled_pool)
 
-Schritt 2: Generiere Verteilungen für unlabeled pool
+Step 2: Generate distributions for unlabeled pool
 ====================================================
 
 generator = FirstOrderDataGenerator(model=model, device='cuda')
 unlabeled_dists = generator.generate_distributions(unlabeled_pool)
 
-Schritt 3: Wähle Samples mit höchster Uncertainty
+Step 3: Select samples with highest uncertainty
 =================================================
 
 def select_uncertain_samples(distributions, n=100):
- """Wählt n Samples mit höchster Entropy."""
+ """Selects n samples with highest entropy."""
  entropies = {}
  for idx, dist in distributions.items():
  dist_tensor = torch.tensor(dist)
  entropy = -(dist_tensor * torch.log(dist_tensor + 1e-10)).sum()
  entropies[idx] = entropy.item()
 
- # Sortiere nach Entropy (höchste zuerst)
+ # Sort by entropy (highest first)
  sorted_indices = sorted(entropies.items(), key=lambda x: x[1], reverse=True)
  return [idx for idx, _ in sorted_indices[:n]]
 
 uncertain_indices = select_uncertain_samples(unlabeled_dists, n=100)
 
-Schritt 4: Labele die ausgewählten Samples
+Step 4: Label selected samples
 ==========================================
 
 newly_labeled = label_samples(unlabeled_pool, uncertain_indices)
 
-Schritt 5: Retrain mit erweiterten Daten
+Step 5: Retrain with extended data
 ========================================
 
 labeled_pool.extend(newly_labeled)
@@ -767,12 +767,12 @@ Best Practices
 
 
 
-Empfohlene Praktiken
+Recommended Practices
 ~~~~~~~~~~~~~~~~~~~~
 
 
 
-1. Modell im Evaluationsmodus
+1. Model in evaluation mode
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -787,7 +787,7 @@ TensorFlow
 
 model.trainable = False
 
-Oder explizit:
+Or explicitly:
 ==============
 
 generator = FirstOrderDataGenerator(model=model, device='cuda')
@@ -795,35 +795,35 @@ with torch.no_grad():
  distributions = generator.generate_distributions(dataset)
 `````
 
-**Warum?** Deaktiviert Dropout, Batch Normalization wird nicht aktualisiert, keine Gradienten werden berechnet.
+**Why?** Deactivates Dropout, Batch Normalization is not updated, no gradients are calculated.
 
 
-2. Konsistente Indizierung
+2. Consistent indexing
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 `````python
-WICHTIG: shuffle=False beim Generieren!
+IMPORTANT: shuffle=False when generating!
 =======================================
 
 loader = DataLoader(dataset, batch_size=32, shuffle=False)
 distributions = generator.generate_distributions(loader)
 
-Dann kann shuffle=True beim Training
+Then shuffle=True during training is OK
 ====================================
 
 training_loader = output_dataloader(
  dataset,
  distributions,
  batch_size=32,
- shuffle=True # Jetzt OK!
+ shuffle=True # Now OK!
 )
 `````
 
-**Warum?** Distributions werden mit Dataset-Indices gespeichert. Bei shuffle=True würden die Indices nicht mehr matchen!
+**Why?** Distributions are saved with dataset indices. With shuffle=True the indices wouldn't match anymore!
 
 
-3. Metadaten dokumentieren
+3. Document metadata
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -851,29 +851,29 @@ meta = {
 generator.save_distributions('output/dists.json', distributions, meta=meta)
 `````
 
-**Warum?** Reproduzierbarkeit! Sie können später nachvollziehen wie die Verteilungen generiert wurden.
+**Why?** Reproducibility! You can later trace how the distributions were generated.
 
 
-4. Speicherplatz planen
+4. Plan storage space
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 
 `````python
-Abschätzung:
+Estimation:
 ============
 
-Größe ≈ num_samples * num_classes * 8 bytes (float) + Overhead
+Size ≈ num_samples * num_classes * 8 bytes (float) + Overhead
 ==============================================================
 
 #
-Beispiel: 50,000 samples, 10 classes
+Example: 50,000 samples, 10 classes
 ====================================
 
 → ~50,000 * 10 * 8 = 4 MB (+ JSON Overhead ≈ 5-6 MB)
 ====================================================
 
 #
-Beispiel: 50,000 samples, 1000 classes
+Example: 50,000 samples, 1000 classes
 ======================================
 
 → ~50,000 * 1000 * 8 = 400 MB (+ JSON Overhead ≈ 500 MB)
@@ -883,38 +883,38 @@ Beispiel: 50,000 samples, 1000 classes
 import os
 
 def estimate_json_size(num_samples, num_classes):
- # Konservative Schätzung
+ # Conservative estimate
  bytes_per_value = 10 # JSON Float encoding + overhead
  return num_samples * num_classes * bytes_per_value
 
 estimated_size = estimate_json_size(len(dataset), num_classes)
-print(f"Geschätzte Dateigröße: {estimated_size / 1e6:.1f} MB")
+print(f"Estimated file size: {estimated_size / 1e6:.1f} MB")
 
-Prüfe verfügbaren Speicher
+Check available storage
 ==========================
 
 import shutil
 free_space = shutil.disk_usage('.').free
-print(f"Verfügbarer Speicher: {free_space / 1e9:.1f} GB")
+print(f"Available space: {free_space / 1e9:.1f} GB")
 `````
 
 
-5. Batch-Größe optimieren
+5. Optimize batch size
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 `````python
-Zu klein: Langsam
+Too small: Slow
 =================
 
 generator = FirstOrderDataGenerator(model=model, batch_size=8)
 
-Optimal: Balance zwischen Speed und Memory
+Optimal: Balance between speed and memory
 ==========================================
 
 generator = FirstOrderDataGenerator(model=model, batch_size=64)
 
-Zu groß: CUDA out of memory
+Too large: CUDA out of memory
 ===========================
 
 try:
@@ -922,8 +922,8 @@ try:
  distributions = generator.generate_distributions(dataset)
 except RuntimeError as e:
  if "out of memory" in str(e):
- print("CUDA OOM! Reduziere batch_size")
- # Fallback auf kleinere batch_size
+ print("CUDA OOM! Reduce batch_size")
+ # Fallback to smaller batch_size
  generator = FirstOrderDataGenerator(model=model, batch_size=64)
  distributions = generator.generate_distributions(dataset)
 `````
@@ -932,7 +932,7 @@ except RuntimeError as e:
 
 `````python
 def find_optimal_batch_size(model, dataset, device):
- """Findet optimale batch_size durch binäre Suche."""
+ """Finds optimal batch_size through binary search."""
  min_batch = 1
  max_batch = 512
  optimal = min_batch
@@ -941,17 +941,17 @@ def find_optimal_batch_size(model, dataset, device):
  mid_batch = (min_batch + max_batch) // 2
 
  try:
- # Test mit mid_batch
+ # Test with mid_batch
  generator = FirstOrderDataGenerator(
  model=model,
  device=device,
  batch_size=mid_batch
  )
- # Test auf kleinem Subset
+ # Test on small subset
  test_subset = torch.utils.data.Subset(dataset, range(mid_batch * 2))
  _ = generator.generate_distributions(test_subset, progress=False)
 
- # Erfolgreich → Versuche größere batch_size
+ # Success → Try larger batch_size
  optimal = mid_batch
  min_batch = mid_batch + 1
 
@@ -960,7 +960,7 @@ def find_optimal_batch_size(model, dataset, device):
 
  except RuntimeError as e:
  if "out of memory" in str(e):
- # OOM → Versuche kleinere batch_size
+ # OOM → Try smaller batch_size
  max_batch = mid_batch - 1
  torch.cuda.empty_cache()
  else:
@@ -969,13 +969,13 @@ def find_optimal_batch_size(model, dataset, device):
  return optimal
 
 optimal_batch_size = find_optimal_batch_size(model, dataset, 'cuda')
-print(f"Optimale batch_size: {optimal_batch_size}")
+print(f"Optimal batch_size: {optimal_batch_size}")
 `````
 
 ---
 
 
-Fehlerbehebung
+Troubleshooting
 --------------
 
 
@@ -984,12 +984,12 @@ Problem 1: "Model must return a torch.Tensor"
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-**Ursache:** Ihr Modell gibt etwas anderes als ``torch.Tensor`` zurück (z.B. Dictionary, Tuple, Liste).
+**Cause:** Your model returns something other than ``torch.Tensor`` (e.g. Dictionary, Tuple, List).
 
-**Lösung:**
+**Solution:**
 
 `````python
-Vorher: Model gibt Dictionary zurück
+Before: Model returns dictionary
 ====================================
 
 class MyModel(nn.Module):
@@ -997,7 +997,7 @@ class MyModel(nn.Module):
  logits = self.network(x)
  return {'logits': logits, 'features': features}
 
-Lösung 1: output_transform verwenden
+Solution 1: Use output_transform
 ====================================
 
 def extract_logits(output):
@@ -1009,7 +1009,7 @@ generator = FirstOrderDataGenerator(
  device='cuda'
 )
 
-Lösung 2: Model-Wrapper
+Solution 2: Model wrapper
 =======================
 
 class ModelWrapper(nn.Module):
@@ -1026,52 +1026,52 @@ generator = FirstOrderDataGenerator(model=wrapped_model, device='cuda')
 `````
 
 
-Problem 2: Warnung über unterschiedliche Längen
+Problem 2: Warning about different lengths
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-**Warnung:**
+**Warning:**
 `````
 [FirstOrderDataGenerator] generated 960 distributions, but dataset length is 1000.
 `````
 
-**Ursache:** DataLoader mit ``drop_last=True`` oder ungleichmäßige Batch-Größe.
+**Cause:** DataLoader with ``drop_last=True`` or uneven batch size.
 
-**Lösung:**
+**Solution:**
 
 `````python
-Option 1: drop_last=False (empfohlen)
+Option 1: drop_last=False (recommended)
 =====================================
 
 loader = DataLoader(dataset, batch_size=64, drop_last=False)
 
-Option 2: Ignorieren (meist harmlos)
+Option 2: Ignore (usually harmless)
 ====================================
 
-Die ersten 960 Samples haben Verteilungen, die letzten 40 nicht
+The first 960 samples have distributions, the last 40 don't
 ===============================================================
 
 `````
 
 
-Problem 3: Speicher-Fehler bei großen Datasets
+Problem 3: Memory error with large datasets
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-**Fehler:**
+**Error:**
 `````
 RuntimeError: CUDA out of memory
 `````
 
-**Lösungen:**
+**Solutions:**
 
 `````python
-Lösung 1: Reduziere batch_size
+Solution 1: Reduce batch_size
 ==============================
 
 generator = FirstOrderDataGenerator(model=model, batch_size=16)
 
-Lösung 2: Batch-weise Generierung
+Solution 2: Batch-wise generation
 =================================
 
 distributions = {}
@@ -1079,7 +1079,7 @@ for batch_idx, batch in enumerate(dataloader):
  batch_dists = generator.generate_distributions(batch, progress=False)
  distributions.update(batch_dists)
 
- # Periodisch speichern
+ # Periodic saving
  if (batch_idx + 1) % 100 == 0:
  generator.save_distributions(
  f'checkpoint_{batch_idx}.json',
@@ -1089,7 +1089,7 @@ for batch_idx, batch in enumerate(dataloader):
  # Clear cache
  torch.cuda.empty_cache()
 
-Lösung 3: CPU Fallback
+Solution 3: CPU fallback
 ======================
 
 try:
@@ -1104,70 +1104,70 @@ except RuntimeError as e:
 `````
 
 
-Problem 4: Verteilungen summieren sich nicht zu 1
+Problem 4: Distributions don't sum to 1
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 **Symptom:**
 `````python
 dist = distributions[0]
-print(sum(dist)) # 0.23 oder 145.67 statt ~1.0
+print(sum(dist)) # 0.23 or 145.67 instead of ~1.0
 `````
 
-**Ursache:** Falscher ``output_mode``.
+**Cause:** Wrong ``output_mode``.
 
-**Lösung:**
+**Solution:**
 
 `````python
-Falls Ihr Modell Logits ausgibt:
+If your model outputs logits:
 ================================
 
 generator = FirstOrderDataGenerator(
  model=model,
- output_mode='logits' # Wendet Softmax an
+ output_mode='logits' # Applies Softmax
 )
 
-Falls Ihr Modell bereits normalisierte Probs ausgibt:
+If your model already outputs normalized probs:
 =====================================================
 
 generator = FirstOrderDataGenerator(
  model=model,
- output_mode='probs' # Keine Transformation
+ output_mode='probs' # No transformation
 )
 
-Unsicher? Verwenden Sie 'auto' (empfohlen)
+Unsure? Use 'auto' (recommended)
 ==========================================
 
 generator = FirstOrderDataGenerator(
  model=model,
- output_mode='auto' # Erkennt automatisch
+ output_mode='auto' # Detects automatically
 )
 
-Verifizieren
+Verify
 ============
 
 distributions = generator.generate_distributions(dataset)
 first_dist = distributions[0]
-print(f"Sum: {sum(first_dist):.6f}") # Sollte ≈ 1.0 sein
+print(f"Sum: {sum(first_dist):.6f}") # Should be ≈ 1.0
 `````
 
 
-Problem 5: Index-Mismatch
+Problem 5: Index mismatch
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-**Symptom:** Labels und Distributions matchen nicht.
+**Symptom:** Labels and distributions don't match.
 
-**Ursache:** Dataset wurde zwischen Generierung und Verwendung verändert.
+**Cause:** Dataset was changed between generation and usage.
 
-**Lösung:**
+**Solution:**
 
 `````python
-WICHTIG: Gleicher Dataset-Zustand!
+IMPORTANT: Same dataset state!
 ==================================
 
 
-Schritt 1: Generierung
+Step 1: Generation
 ======================
 
 dataset = MyDataset(split='train', shuffle=False) # shuffle=False!
@@ -1175,21 +1175,21 @@ generator = FirstOrderDataGenerator(model=model)
 distributions = generator.generate_distributions(dataset)
 generator.save_distributions('dists.json', distributions)
 
-Schritt 2: Verwendung (später)
+Step 2: Usage (later)
 ==============================
 
-dataset = MyDataset(split='train', shuffle=False) # Exakt gleich!
+dataset = MyDataset(split='train', shuffle=False) # Exactly the same!
 dists, _ = generator.load_distributions('dists.json')
 fo_dataset = FirstOrderDataset(dataset, dists)
 
-Verifizierung
+Verification
 =============
 
 for i in range(min(5, len(fo_dataset))):
  original_input, original_label = dataset[i]
  fo_input, fo_label, fo_dist = fo_dataset[i]
 
- # Sollten identisch sein!
+ # Should be identical!
  assert torch.equal(original_input, fo_input)
  assert original_label == fo_label
 `````
@@ -1197,7 +1197,7 @@ for i in range(min(5, len(fo_dataset))):
 ---
 
 
-API-Kurzreferenz
+API Quick Reference
 ----------------
 
 
@@ -1208,16 +1208,16 @@ FirstOrderDataGenerator
 
 `````python
 generator = FirstOrderDataGenerator(
- model: Callable, # Modell
+ model: Callable, # Model
  device: str = 'cpu', # Device
- batch_size: int = 64, # Batch-Größe
+ batch_size: int = 64, # Batch size
  output_mode: str = 'auto', # 'auto', 'logits', 'probs'
  output_transform: Callable = None,
  input_getter: Callable = None,
  model_name: str = None
 )
 
-Methoden
+Methods
 ========
 
 distributions = generator.generate_distributions(
@@ -1246,8 +1246,8 @@ fo_dataset = FirstOrderDataset(
  input_getter: Callable = None
 )
 
-input, label, dist = fo_dataset[idx] # Mit Labels
-input, dist = fo_dataset[idx] # Ohne Labels
+input, label, dist = fo_dataset[idx] # With labels
+input, dist = fo_dataset[idx] # Without labels
 `````
 
 
@@ -1270,32 +1270,32 @@ fo_loader = output_dataloader(
 ---
 
 
-Weitere Ressourcen
+Further Resources
 ------------------
 
 
-- **API Reference**: ``api_reference.md`` - Vollständige API-Dokumentation
-- **Multi-Framework Guide**: ``multi_framework_guide.md`` - JAX, TensorFlow Support
-- **Examples**: ``simple_usage.py`` - Ausführbares Beispiel
-- **Tutorial Notebook**: ``first_order_tutorial.ipynb`` - Interaktives Tutorial
-- **Tests**: ``test_first_order_generator.py`` - Test-Beispiele
+- **API Reference**: ``api_reference.md`` - Complete API documentation
+- **Multi-Framework Guide**: ``multi_framework_guide.md`` - JAX, TensorFlow support
+- **Examples**: ``simple_usage.py`` - Executable example
+- **Tutorial Notebook**: ``first_order_tutorial.ipynb`` - Interactive tutorial
+- **Tests**: ``test_first_order_generator.py`` - Test examples
 
 ---
 
 
-Support & Kontakt
+Support & Contact
 -----------------
 
 
-- **Issues**: Erstellen Sie ein Issue im Repository
-- **Dokumentation**: Konsultieren Sie die detaillierte Dokumentation
-- **Tests**: Schauen Sie sich die Tests für weitere Beispiele an
+- **Issues**: Create an issue in the repository
+- **Documentation**: Consult the detailed documentation
+- **Tests**: Look at the tests for more examples
 
 ---
 
 
-Lizenz
+License
 ------
 
 
-Teil des ``probly` Projekts. Weitere Informationen in der Haupt-README.
+Part of the ``probly`` project. More information in the main README.

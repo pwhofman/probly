@@ -2,35 +2,35 @@
 First-Order Data Generator
 =====================
 
-Ein framework-agnostisches Python-Tool zur Generierung von First-Order Data für die Evaluation von Credal Sets und Unsicherheitsquantifizierung in Machine Learning.
+A framework-agnostic Python tool for generating first-order data for evaluating credal sets and uncertainty quantification in machine learning.
 
-Überblick
+Overview
 =========
 
-Was ist First-Order Data?
+What is First-Order Data?
 --------------------------
 
-In der Unsicherheitsquantifizierung mit Credal Sets benötigen wir Ground-Truth Conditional Distributions ``p(Y|X)``, um Coverage-Metriken zu berechnen. Diese Ground-Truth Distributions, auch First-Order Data genannt, sind normalerweise nicht direkt verfügbar.
+In uncertainty quantification with credal sets, we need ground-truth conditional distributions ``p(Y|X)`` to compute coverage metrics. These ground-truth distributions, also called first-order data, are typically not directly available.
 
-Dieser Generator approximiert ``p(Y|X)`` durch:
+This generator approximates ``p(Y|X)`` by:
 
-1. Verwendung eines gut vortrainierten Modells (z.B. von Huggingface)
-2. Transformation von Samples ``x`` zu Verteilungen ``ĥ(x) ≈ p(·|x)``
-3. Speicherung und Verwaltung dieser Verteilungen für Training und Evaluation
+1. Using a well pre-trained model (e.g., from Huggingface)
+2. Transforming samples ``x`` to distributions ``ĥ(x) ≈ p(·|x)``
+3. Storing and managing these distributions for training and evaluation
 
-Problem und Lösung
+Problem and Solution
 -------------------
 
-**Problem:** Coverage von Credal Sets messen
+**Problem:** Measuring coverage of credal sets
 
-- Benötigt: Ground-truth ``p(Y|X)``
-- Verfügbar: Nur Datenpunkte ``(x, y)``
+- Required: Ground-truth ``p(Y|X)``
+- Available: Only data points ``(x, y)``
 
-**Lösung:** First-Order Data Generator
+**Solution:** First-Order Data Generator
 
 - Input: Pretrained Model + Dataset
-- Output: Approximierte Conditional Distributions
-- Verwendung: Coverage Evaluation, Model Training
+- Output: Approximated conditional distributions
+- Usage: Coverage evaluation, model training
 
 Features
 ========
@@ -38,41 +38,41 @@ Features
 Multi-Framework Support
 -----------------------
 
-- **PyTorch**: Vollständige Integration mit torch.nn.Module und DataLoader
-- **TensorFlow/Keras**: Native tf.data.Dataset und tf.keras.Model Support
-- **JAX**: JAX-native Implementierung mit jnp.ndarray
-- **Framework-Agnostic**: Pure Python Fallback für andere Frameworks
+- **PyTorch**: Full integration with torch.nn.Module and DataLoader
+- **TensorFlow/Keras**: Native tf.data.Dataset and tf.keras.Model support
+- **JAX**: JAX-native implementation with jnp.ndarray
+- **Framework-Agnostic**: Pure Python fallback for other frameworks
 
-Kernfunktionen
+Core Features
 --------------
 
-- **Distribution Generation**: Erstellt ``ĥ(x) ≈ p(Y|x)`` für alle Samples
-- **Flexible Output Handling**: Auto-detection von Logits vs. Probabilities
-- **Efficient Storage**: JSON-basierte Persistierung mit Metadaten
-- **DataLoader Integration**: Nahtlose Integration in Training Workflows
-- **Customizable Processing**: Benutzerdefinierte Input-Getter und Output-Transforms
+- **Distribution Generation**: Creates ``ĥ(x) ≈ p(Y|x)`` for all samples
+- **Flexible Output Handling**: Auto-detection of logits vs. probabilities
+- **Efficient Storage**: JSON-based persistence with metadata
+- **DataLoader Integration**: Seamless integration into training workflows
+- **Customizable Processing**: User-defined input getters and output transforms
 
 Installation
 ============
 
 .. code-block:: bash
 
-   # Basis-Installation (framework-agnostic)
+   # Base installation (framework-agnostic)
    pip install probly
 
-   # Mit PyTorch Support
+   # With PyTorch support
    pip install probly[torch]
 
-   # Mit TensorFlow Support
+   # With TensorFlow support
    pip install probly[tensorflow]
 
-   # Mit JAX Support
+   # With JAX support
    pip install probly[jax]
 
 Quick Start
 ===========
 
-Einfachstes Beispiel (PyTorch)
+Simplest Example (PyTorch)
 -------------------------------
 
 .. code-block:: python
@@ -80,14 +80,14 @@ Einfachstes Beispiel (PyTorch)
    from probly.data_generator.torch_first_order_generator import FirstOrderDataGenerator
    import torch
 
-   # Vortrainiertes Modell
+   # Pretrained model
    model = torch.load('my_pretrained_model.pt')
    model.eval()
 
    # Dataset
    dataset = MyDataset()
 
-   # Generator erstellen und Verteilungen generieren
+   # Create generator and generate distributions
    generator = FirstOrderDataGenerator(
        model=model,
        device='cuda',
@@ -96,23 +96,23 @@ Einfachstes Beispiel (PyTorch)
 
    distributions = generator.generate_distributions(dataset, progress=True)
 
-   # Speichern
+   # Save
    generator.save_distributions(
        'output/distributions.json',
        distributions,
        meta={'dataset': 'MNIST', 'accuracy': 0.95}
    )
 
-Multi-Framework Beispiel
+Multi-Framework Example
 -------------------------
 
 .. code-block:: python
 
    from probly.data_generator.factory import create_data_generator
 
-   # Automatische Framework-Erkennung
+   # Automatic framework detection
    generator = create_data_generator(
-       framework='pytorch',  # oder 'tensorflow', 'jax'
+       framework='pytorch',  # or 'tensorflow', 'jax'
        model=model,
        dataset=dataset,
        batch_size=32,
@@ -121,27 +121,27 @@ Multi-Framework Beispiel
 
    distributions = generator.generate_distributions(dataset)
 
-Dokumentation
+Documentation
 =============
 
-Hauptdokumentation
+Main Documentation
 ------------------
 
-- **Benutzerhandbuch** - ``docs/data_generation_guide.rst`` - Ausführliche Anleitung mit Beispielen
-- **API Referenz** - ``docs/api_reference.rst`` - Vollständige API-Dokumentation
-- **Multi-Framework Guide** - ``docs/multi_framework_guide.rst`` - Framework-spezifische Details
+- **User Guide** - ``docs/data_generation_guide.rst`` - Comprehensive guide with examples
+- **API Reference** - ``docs/api_reference.rst`` - Complete API documentation
+- **Multi-Framework Guide** - ``docs/multi_framework_guide.rst`` - Framework-specific details
 
-Beispiele
+Examples
 ---------
 
-- **Simple Usage** - ``examples/simple_usage.py`` - Grundlegendes PyTorch Beispiel
-- **Tutorial Notebook** - ``examples/first_order_tutorial.ipynb`` - Interaktives Tutorial
-- **Advanced Examples** - ``examples/`` - Weitere Anwendungsfälle
+- **Simple Usage** - ``examples/simple_usage.py`` - Basic PyTorch example
+- **Tutorial Notebook** - ``examples/first_order_tutorial.ipynb`` - Interactive tutorial
+- **Advanced Examples** - ``examples/`` - Additional use cases
 
-Architektur
+Architecture
 ===========
 
-Projektstruktur
+Project Structure
 ---------------
 
 .. code-block:: text
@@ -181,7 +181,7 @@ Design Patterns
    class JAXDataGenerator(BaseDataGenerator[object, tuple, str]):
        """JAX-specific implementation"""
 
-Verwendungsbeispiele
+Usage Examples
 ====================
 
 1. PyTorch Classification
@@ -192,7 +192,7 @@ Verwendungsbeispiele
    from probly.data_generator.torch_first_order_generator import FirstOrderDataGenerator
    from torch.utils.data import DataLoader
 
-   # Generator initialisieren
+   # Initialize generator
    generator = FirstOrderDataGenerator(
        model=pretrained_model,
        device='cuda',
@@ -201,10 +201,10 @@ Verwendungsbeispiele
        model_name='resnet50'
    )
 
-   # Verteilungen generieren
+   # Generate distributions
    distributions = generator.generate_distributions(dataset, progress=True)
 
-   # Speichern mit Metadaten
+   # Save with metadata
    generator.save_distributions(
        'output/dists.json',
        distributions,
@@ -215,7 +215,7 @@ Verwendungsbeispiele
        }
    )
 
-2. DataLoader und Training
+2. DataLoader and Training
 ---------------------------
 
 .. code-block:: python
@@ -225,10 +225,10 @@ Verwendungsbeispiele
        output_dataloader
    )
 
-   # Laden
+   # Load
    dists, meta = generator.load_distributions('output/dists.json')
 
-   # DataLoader mit First-Order Verteilungen erstellen
+   # Create DataLoader with first-order distributions
    fo_loader = output_dataloader(
        base_dataset=dataset,
        distributions=dists,
@@ -238,7 +238,7 @@ Verwendungsbeispiele
        pin_memory=True
    )
 
-   # Training mit Soft Targets (Knowledge Distillation)
+   # Training with soft targets (Knowledge Distillation)
    for inputs, labels, target_dists in fo_loader:
        logits = student_model(inputs)
        loss = F.kl_div(
@@ -257,7 +257,7 @@ Verwendungsbeispiele
    from probly.data_generator.jax_first_order_generator import FirstOrderDataGenerator
    import jax.numpy as jnp
 
-   # JAX-native Generator
+   # JAX-native generator
    generator = FirstOrderDataGenerator(
        model=jax_model_fn,
        device='gpu',
@@ -265,10 +265,10 @@ Verwendungsbeispiele
        output_mode='logits'
    )
 
-   # Generiere Verteilungen
+   # Generate distributions
    distributions = generator.generate_distributions(jax_dataset, progress=True)
 
-   # Speichern (kompatibel mit anderen Frameworks)
+   # Save (compatible with other frameworks)
    generator.save_distributions('output/jax_dists.json', distributions)
 
 4. Framework-Agnostic (Pure Python)
@@ -278,9 +278,9 @@ Verwendungsbeispiele
 
    from probly.data_generator.first_order_datagenerator import FirstOrderDataGenerator
 
-   # Funktioniert mit beliebigen Callable Models
+   # Works with any callable models
    def my_model(inputs):
-       # Ihre Modell-Implementierung
+       # Your model implementation
        return predictions
 
    generator = FirstOrderDataGenerator(
@@ -291,16 +291,16 @@ Verwendungsbeispiele
 
    distributions = generator.generate_distributions(dataset)
 
-5. Benutzerdefinierte Verarbeitung
+5. Custom Processing
 -----------------------------------
 
 .. code-block:: python
 
-   # Custom Input Getter für komplexe Datenstrukturen
+   # Custom input getter for complex data structures
    def custom_input_getter(sample):
        return sample['image']
 
-   # Custom Output Transform (z.B. Label Smoothing)
+   # Custom output transform (e.g., label smoothing)
    def custom_transform(logits):
        probs = torch.softmax(logits, dim=-1)
        alpha = 0.1
@@ -314,10 +314,10 @@ Verwendungsbeispiele
        device='cuda'
    )
 
-JSON Dateiformat
+JSON File Format
 ================
 
-Struktur
+Structure
 --------
 
 .. code-block:: json
@@ -338,19 +338,19 @@ Struktur
        }
    }
 
-Eigenschaften
+Properties
 -------------
 
 - **Encoding**: UTF-8
-- **Format**: JSON mit ``ensure_ascii=False``
-- **Keys in distributions**: Strings (von int konvertiert)
-- **Values**: Listen von Floats
-- **Cross-Framework**: Alle Frameworks können gleiche JSON-Dateien lesen
+- **Format**: JSON with ``ensure_ascii=False``
+- **Keys in distributions**: Strings (converted from int)
+- **Values**: Lists of floats
+- **Cross-Framework**: All frameworks can read the same JSON files
 
-Konfigurationsoptionen
+Configuration Options
 ======================
 
-FirstOrderDataGenerator Parameter
+FirstOrderDataGenerator Parameters
 ----------------------------------
 
 .. list-table::
@@ -358,13 +358,13 @@ FirstOrderDataGenerator Parameter
    :widths: 20 15 15 50
 
    * - Parameter
-     - Typ
-     - Standard
-     - Beschreibung
+     - Type
+     - Default
+     - Description
    * - ``model``
      - Callable
-     - **Erforderlich**
-     - Modell-Funktion oder nn.Module
+     - **Required**
+     - Model function or nn.Module
    * - ``device``
      - str
      - ``"cpu"``
@@ -372,36 +372,36 @@ FirstOrderDataGenerator Parameter
    * - ``batch_size``
      - int
      - ``64``
-     - Batch-Größe für Inferenz
+     - Batch size for inference
    * - ``output_mode``
      - str
      - ``"auto"``
-     - ``"auto"``, ``"logits"`` oder ``"probs"``
+     - ``"auto"``, ``"logits"`` or ``"probs"``
    * - ``output_transform``
      - Callable|None
      - ``None``
-     - Custom Transform-Funktion
+     - Custom transform function
    * - ``input_getter``
      - Callable|None
      - ``None``
-     - Custom Input-Extraktion
+     - Custom input extraction
    * - ``model_name``
      - str|None
      - ``None``
-     - Identifier für Metadaten
+     - Identifier for metadata
 
-output_mode Erklärung
+output_mode Explanation
 ---------------------
 
-- **auto**: Erkennt automatisch Logits vs. Probabilities
+- **auto**: Automatically detects logits vs. probabilities
 
-  - Prüft ob Werte in [0,1] und summieren zu 1
-  - Wendet Softmax an falls nötig
+  - Checks if values are in [0,1] and sum to 1
+  - Applies softmax if necessary
 
-- **logits**: Wendet immer Softmax an
-- **probs**: Verwendet Ausgaben direkt ohne Transformation
+- **logits**: Always applies softmax
+- **probs**: Uses outputs directly without transformation
 
-Anwendungsfälle
+Use Cases
 ===============
 
 1. Credal Set Evaluation
@@ -409,11 +409,11 @@ Anwendungsfälle
 
 .. code-block:: python
 
-   # Generiere Teacher-Verteilungen
+   # Generate teacher distributions
    teacher_gen = FirstOrderDataGenerator(model=teacher_model)
    teacher_dists = teacher_gen.generate_distributions(test_set)
 
-   # Evaluiere Student Credal Sets
+   # Evaluate student credal sets
    coverage = evaluate_credal_coverage(
        student_credal_sets=student_model.predict(test_set),
        ground_truth_dists=teacher_dists
@@ -425,10 +425,10 @@ Anwendungsfälle
 
 .. code-block:: python
 
-   # Teacher-Verteilungen generieren
+   # Generate teacher distributions
    teacher_dists = teacher_gen.generate_distributions(train_set)
 
-   # Student mit Soft Targets trainieren
+   # Train student with soft targets
    student_loader = output_dataloader(train_set, teacher_dists, batch_size=64)
    train_with_soft_targets(student_model, student_loader, epochs=10)
 
@@ -437,37 +437,37 @@ Anwendungsfälle
 
 .. code-block:: python
 
-   # Ensemble von Modellen
+   # Ensemble of models
    ensemble_dists = []
    for model in ensemble_models:
        gen = FirstOrderDataGenerator(model=model)
        dists = gen.generate_distributions(dataset)
        ensemble_dists.append(dists)
 
-   # Analysiere Vorhersage-Varianz
+   # Analyze prediction variance
    uncertainty_scores = compute_prediction_entropy(ensemble_dists)
 
 Best Practices
 ==============
 
-Empfohlene Praktiken
+Recommended Practices
 --------------------
 
-1. **Evaluationsmodus aktivieren**
+1. **Enable evaluation mode**
 
    .. code-block:: python
 
       model.eval()  # PyTorch
-      # oder model.trainable = False  # TensorFlow
+      # or model.trainable = False  # TensorFlow
 
-2. **Konsistente Indizierung**
+2. **Consistent indexing**
 
    .. code-block:: python
 
       loader = DataLoader(dataset, batch_size=32, shuffle=False)
-      # shuffle=False wichtig für korrekte Index-Zuordnung
+      # shuffle=False important for correct index alignment
 
-3. **Metadaten dokumentieren**
+3. **Document metadata**
 
    .. code-block:: python
 
@@ -479,40 +479,40 @@ Empfohlene Praktiken
           'notes': 'Pre-trained on ImageNet'
       }
 
-4. **Speicherplatz planen**
+4. **Plan storage space**
 
-   - Ca. 1 MB pro 10,000 Samples mit 10 Klassen
-   - Ca. 10 MB pro 10,000 Samples mit 100 Klassen
+   - Approx. 1 MB per 10,000 samples with 10 classes
+   - Approx. 10 MB per 10,000 samples with 100 classes
 
-Performance-Optimierung
+Performance Optimization
 -----------------------
 
 .. code-block:: python
 
-   # Für maximale Performance
+   # For maximum performance
    generator = FirstOrderDataGenerator(
        model=model,
        device='cuda',
-       batch_size=128  # Größer = schneller (wenn GPU-Speicher ausreicht)
+       batch_size=128  # Larger = faster (if GPU memory allows)
    )
 
    fo_loader = output_dataloader(
        dataset,
        distributions,
        batch_size=64,
-       num_workers=4,  # Paralleles Laden (nicht auf Windows)
-       pin_memory=True,  # Schnellerer GPU-Transfer
+       num_workers=4,  # Parallel loading (not on Windows)
+       pin_memory=True,  # Faster GPU transfer
        shuffle=True
    )
 
-Häufige Probleme und Lösungen
+Common Issues and Solutions
 ------------------------------
 
-**Problem**: ``"Model must return a torch.Tensor"``
+**Issue**: ``"Model must return a torch.Tensor"``
 
 .. code-block:: python
 
-   # Lösung: Verwenden Sie output_transform
+   # Solution: Use output_transform
    def extract_logits(output):
        return output['logits'] if isinstance(output, dict) else output
 
@@ -521,22 +521,22 @@ Häufige Probleme und Lösungen
        output_transform=extract_logits
    )
 
-**Problem**: Verteilungen summieren nicht zu 1.0
+**Issue**: Distributions don't sum to 1.0
 
 .. code-block:: python
 
-   # Lösung: Stellen Sie output_mode korrekt ein
+   # Solution: Set output_mode correctly
    generator = FirstOrderDataGenerator(
        model=model,
-       output_mode='logits'  # Falls Ihr Modell Logits ausgibt
+       output_mode='logits'  # If your model outputs logits
    )
 
-**Problem**: Warnung über unterschiedliche Längen
+**Issue**: Warning about different lengths
 
 .. code-block:: python
 
-   # Meist harmlos - passiert bei drop_last=True
-   # Falls problematisch: Prüfen Sie DataLoader-Konfiguration
+   # Usually harmless - happens with drop_last=True
+   # If problematic: Check DataLoader configuration
    loader = DataLoader(dataset, batch_size=32, drop_last=False)
 
 Tests
@@ -544,46 +544,46 @@ Tests
 
 .. code-block:: bash
 
-   # Alle Tests ausführen
+   # Run all tests
    pytest tests/test_first_order_generator.py -v
 
-   # PyTorch Tests
+   # PyTorch tests
    pytest tests/test_torch_first_order.py -v
 
-   # JAX Tests
+   # JAX tests
    pytest tests/test_jax_first_order.py -v
 
-   # TensorFlow Tests
+   # TensorFlow tests
    pytest tests/test_tf_first_order.py -v
 
-   # Mit Coverage
+   # With coverage
    pytest tests/ --cov=probly.data_generator --cov-report=html
 
-Weitere Ressourcen
+Additional Resources
 ==================
 
-Dokumentation
+Documentation
 -------------
 
-- **Data Generation Guide** - ``docs/data_generation_guide.rst`` - Ausführliches Tutorial
-- **API Reference** - ``docs/api_reference.rst`` - Vollständige API-Dokumentation
-- **Multi-Framework Guide** - ``docs/multi_framework_guide.rst`` - Framework-spezifische Details
-- **Architecture Overview** - ``docs/architecture.rst`` - System-Design
+- **Data Generation Guide** - ``docs/data_generation_guide.rst`` - Comprehensive tutorial
+- **API Reference** - ``docs/api_reference.rst`` - Complete API documentation
+- **Multi-Framework Guide** - ``docs/multi_framework_guide.rst`` - Framework-specific details
+- **Architecture Overview** - ``docs/architecture.rst`` - System design
 
-Beispiele und Tutorials
+Examples and Tutorials
 ------------------------
 
-- **Simple Usage** - ``examples/simple_usage.py`` - Grundlegendes Beispiel
-- **Advanced Tutorial** - ``examples/advanced_usage.py`` - Erweiterte Funktionen
-- **Jupyter Notebook** - ``examples/first_order_tutorial.ipynb`` - Interaktives Tutorial
+- **Simple Usage** - ``examples/simple_usage.py`` - Basic example
+- **Advanced Tutorial** - ``examples/advanced_usage.py`` - Advanced features
+- **Jupyter Notebook** - ``examples/first_order_tutorial.ipynb`` - Interactive tutorial
 
 Code
 ----
 
-- **GitHub Repository** - https://github.com/your-org/probly - Quellcode
-- **Issue Tracker** - https://github.com/your-org/probly/issues - Bugs und Features
+- **GitHub Repository** - https://github.com/your-org/probly - Source code
+- **Issue Tracker** - https://github.com/your-org/probly/issues - Bugs and features
 
-Kompatibilität
+Compatibility
 ==============
 
 .. list-table::
@@ -597,7 +597,7 @@ Kompatibilität
    * - PyTorch
      - >= 1.8.0
      - Full Support
-     - Empfohlen
+     - Recommended
    * - TensorFlow
      - >= 2.4.0
      - Full Support
@@ -613,11 +613,11 @@ Kompatibilität
 
 **Devices:**
 
-- CPU (alle Frameworks)
+- CPU (all frameworks)
 - CUDA/GPU (PyTorch, JAX, TensorFlow)
 - TPU (JAX, TensorFlow)
 
-Lizenz
+License
 ======
 
-Teil des ``probly`` Projekts - siehe Haupt-Repository für Lizenzinformationen.
+Part of the ``probly`` project - see main repository for license information.
