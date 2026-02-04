@@ -7,9 +7,7 @@ provides helpers to persist results.
 from __future__ import annotations
 
 from collections.abc import Callable
-import json
 import logging
-from pathlib import Path
 from typing import Any
 
 import jax
@@ -20,7 +18,9 @@ from .base_generator import BaseDataGenerator
 logger = logging.getLogger(__name__)
 
 
-class JAXDataGenerator(BaseDataGenerator[Callable[[jnp.ndarray], jnp.ndarray], tuple[object, object], str | None]):
+class JAXDataGenerator(
+    BaseDataGenerator[Callable[[jnp.ndarray], jnp.ndarray], tuple[object, object], str | None]
+):
     """Data generator for JAX models."""
 
     def __init__(
@@ -77,33 +77,6 @@ class JAXDataGenerator(BaseDataGenerator[Callable[[jnp.ndarray], jnp.ndarray], t
         return self.results
 
     def _count(self, values: jnp.ndarray) -> dict[int, int]:
-        counts: dict[int, int] = {}
-        for val in values.tolist():
-            key = int(val)
-            counts[key] = counts.get(key, 0) + 1
-        return counts
-
-    def save(self, path: str) -> None:
-        """Persist generated results to a JSON file at path."""
-        if not self.results:
-            logger.info("No results to save.")
-            return
-
-        try:
-            with Path(path).open("w", encoding="utf-8") as f:
-                json.dump(self.results, f, indent=2)
-            logger.info("Results saved to %s", path)
-        except OSError:
-            logger.exception("Saving failed")
-
-    def load(self, path: str) -> dict[str, Any]:
-        """Load results from a JSON file at path."""
-        try:
-            with Path(path).open(encoding="utf-8") as f:
-                self.results = json.load(f)
-        except (OSError, json.JSONDecodeError):
-            logger.exception("Loading failed")
-            self.results = {}
-        else:
-            logger.info("Results loaded from %s", path)
-        return self.results
+        values = jnp.asarray(values).astype(jnp.int32)
+        bc = jnp.bincount(values).tolist()
+        return {i: int(c) for i, c in enumerate(bc) if c != 0}

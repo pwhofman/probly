@@ -22,13 +22,7 @@ class BaseDataGenerator[M, D, Dev](ABC):
         batch_size: int = 32,
         device: Dev | None = None,
     ) -> None:
-        """Initialize the data generator.
-
-        - model: The predictive model to evaluate.
-        - dataset: The dataset or dataloader to iterate over.
-        - batch_size: Number of samples processed per batch.
-        - device: Optional execution device information.
-        """
+        """Initialize the data generator."""
         self.model = model
         self.dataset = dataset
         self.batch_size = batch_size
@@ -41,13 +35,16 @@ class BaseDataGenerator[M, D, Dev](ABC):
     def save(self, path: str) -> None:
         """Save generated results to a file."""
         results = self.generate()
+        p = Path(path)
 
-        with Path.open(path, "w", encoding="utf-8") as f:
+        with p.open("w", encoding="utf-8") as f:
             json.dump(results, f, ensure_ascii=False, indent=2, default=str)
 
     def load(self, path: str) -> dict[str, Any]:
         """Load results from a file."""
-        with Path.open(path, encoding="utf-8") as f:
+        p = Path(path)
+
+        with p.open(encoding="utf-8") as f:
             return json.load(f)
 
     def get_info(self) -> dict[str, Any]:
