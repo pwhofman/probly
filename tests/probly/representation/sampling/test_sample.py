@@ -12,7 +12,6 @@ import torch
 
 from probly.representation.sampling.jax_sample import JaxArraySample
 from probly.representation.sampling.sample import ArraySample, create_sample
-from probly.representation.sampling.sklearn_sample import SklearnSample
 from probly.representation.sampling.torch_sample import TorchTensorSample
 
 
@@ -20,8 +19,8 @@ class TestSampleDispatching:
     def test_create_array_sample_numpy(self) -> None:
         x = np.arange(12).reshape((3, 4))
         sample = create_sample(x)
-        # After sklearn_sample registration, numpy arrays dispatch to SklearnSample
-        assert isinstance(sample, (ArraySample, SklearnSample))
+        assert isinstance(sample, ArraySample)
+        assert sample.shape == (4, 3)
         assert sample.sample_axis == 1
 
     def test_create_array_sample_jax(self) -> None:
