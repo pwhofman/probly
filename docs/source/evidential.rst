@@ -555,7 +555,7 @@ Comprehensive tutorials are available in ``notebooks/examples/unified_evidential
 
 - `Unified_Evidential_Function.ipynb <_static\notebooks\examples\unified_evidential_train\Unified_Evidential_Function.ipynb>`_ — Unified training function demo with EDL on MNIST, including OOD detection using FashionMNIST
 - `Prior_Networks.ipynb <_static/notebooks/examples/unified_evidential_train/Prior_Networks.ipynb>`_ — Dirichlet Prior Networks (Malinin & Gales, 2018) with KL-based training, entropy analysis, and OOD detection AUC
-- `posterior_network.ipynb <_static/notebooks/examples/unified_evidential_train/posterior_network.ipynb>`_ — Posterior Networks (Charpentier et al., 2020) using normalizing flows for density-based pseudo-counts without OOD training data
+- `Posterior_Network.ipynb <_static/notebooks/examples/unified_evidential_train/Posterior_Network.ipynb>`_ — Posterior Networks (Charpentier et al., 2020) using normalizing flows for density-based pseudo-counts without OOD training data
 - `Natural_Posterior_Network.ipynb <_static/notebooks/examples/unified_evidential_train/Natural_Posterior_Network.ipynb>`_ — Natural Posterior Networks (Charpentier et al., 2022) with radial flows, Dirichlet posteriors, and certainty budget
 - `Information_Robust_Dirichlet_Networks.ipynb <_static/notebooks/examples/unified_evidential_train/Information_Robust_Dirichlet_Networks.ipynb>`_ — IRD Networks (Tsiligkaridis, 2019) with Lp calibration, regularization, and adversarial entropy
 - `Deep_Evidential_Regression.ipynb <_static/notebooks/examples/unified_evidential_train/Deep_Evidential_Regression.ipynb>`_ — Deep Evidential Regression (Amini et al., 2020) with Normal-Inverse-Gamma distributions and aleatoric/epistemic uncertainty
