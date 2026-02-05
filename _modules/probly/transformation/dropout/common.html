@@ -315,28 +315,44 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">pytraverse</span><span class="w"> </span><span class="kn">import</span> <span class="n">CLONE</span><span class="p">,</span> <span class="n">GlobalVariable</span><span class="p">,</span> <span class="n">lazydispatch_traverser</span><span class="p">,</span> <span class="n">traverse</span>
 
 <span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">flax.nnx.rnglib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Rngs</span><span class="p">,</span> <span class="n">RngStream</span>
+
     <span class="kn">from</span><span class="w"> </span><span class="nn">lazy_dispatch.isinstance</span><span class="w"> </span><span class="kn">import</span> <span class="n">LazyType</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">probly.predictor</span><span class="w"> </span><span class="kn">import</span> <span class="n">Predictor</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">pytraverse.composition</span><span class="w"> </span><span class="kn">import</span> <span class="n">RegisteredLooseTraverser</span>
 
 <span class="n">P</span> <span class="o">=</span> <span class="n">GlobalVariable</span><span class="p">[</span><span class="nb">float</span><span class="p">](</span><span class="s2">&quot;P&quot;</span><span class="p">,</span> <span class="s2">&quot;The probability of dropout.&quot;</span><span class="p">)</span>
 
+<span class="nb">type</span> <span class="n">RNG</span> <span class="o">=</span> <span class="nb">int</span> <span class="o">|</span> <span class="n">Rngs</span> <span class="o">|</span> <span class="n">RngStream</span>
+
+<span class="n">RNGS</span> <span class="o">=</span> <span class="n">GlobalVariable</span><span class="p">[</span><span class="n">RNG</span><span class="p">](</span><span class="s2">&quot;RNGS&quot;</span><span class="p">,</span> <span class="s2">&quot;rngs for flax layer initialization.&quot;</span><span class="p">)</span>
+<span class="n">RNG_COLLECTION</span> <span class="o">=</span> <span class="n">GlobalVariable</span><span class="p">[</span><span class="nb">str</span><span class="p">](</span><span class="s2">&quot;RNG_COLLECTION&quot;</span><span class="p">,</span> <span class="s2">&quot;rng_collection for flax layer initialization&quot;</span><span class="p">)</span>
+
 <span class="n">dropout_traverser</span> <span class="o">=</span> <span class="n">lazydispatch_traverser</span><span class="p">[</span><span class="nb">object</span><span class="p">](</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;dropout_traverser&quot;</span><span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">register</span><span class="p">(</span><span class="bp">cls</span><span class="p">:</span> <span class="n">LazyType</span><span class="p">,</span> <span class="n">traverser</span><span class="p">:</span> <span class="n">RegisteredLooseTraverser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Register a class to be prepended by Dropout layers.&quot;&quot;&quot;</span>
-    <span class="n">dropout_traverser</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="bp">cls</span><span class="o">=</span><span class="bp">cls</span><span class="p">,</span> <span class="n">traverser</span><span class="o">=</span><span class="n">traverser</span><span class="p">,</span> <span class="n">skip_if</span><span class="o">=</span><span class="n">is_first_layer</span><span class="p">,</span> <span class="nb">vars</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;p&quot;</span><span class="p">:</span> <span class="n">P</span><span class="p">})</span>
+    <span class="n">dropout_traverser</span><span class="o">.</span><span class="n">register</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="o">=</span><span class="bp">cls</span><span class="p">,</span>
+        <span class="n">traverser</span><span class="o">=</span><span class="n">traverser</span><span class="p">,</span>
+        <span class="n">skip_if</span><span class="o">=</span><span class="n">is_first_layer</span><span class="p">,</span>
+        <span class="nb">vars</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;p&quot;</span><span class="p">:</span> <span class="n">P</span><span class="p">,</span> <span class="s2">&quot;rng_collection&quot;</span><span class="p">:</span> <span class="n">RNG_COLLECTION</span><span class="p">,</span> <span class="s2">&quot;rngs&quot;</span><span class="p">:</span> <span class="n">RNGS</span><span class="p">},</span>
+    <span class="p">)</span>
 
 
 <div class="viewcode-block" id="dropout">
 <a class="viewcode-back" href="../../../../api/probly.transformation.dropout.html#probly.transformation.dropout">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">dropout</span><span class="p">[</span><span class="n">T</span><span class="p">:</span> <span class="n">Predictor</span><span class="p">](</span><span class="n">base</span><span class="p">:</span> <span class="n">T</span><span class="p">,</span> <span class="n">p</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.25</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">dropout</span><span class="p">[</span><span class="n">T</span><span class="p">:</span> <span class="n">Predictor</span><span class="p">](</span>
+    <span class="n">base</span><span class="p">:</span> <span class="n">T</span><span class="p">,</span> <span class="n">p</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.25</span><span class="p">,</span> <span class="n">rng_collection</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;dropout&quot;</span><span class="p">,</span> <span class="n">rngs</span><span class="p">:</span> <span class="n">Rngs</span> <span class="o">|</span> <span class="n">RngStream</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a Dropout predictor from a base predictor based on :cite:`galDropoutBayesian2016`.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        base: Predictor, The base model to be used for dropout.</span>
 <span class="sd">        p: float, The probability of dropping out a neuron.  Default is 0.25.</span>
+<span class="sd">        rng_collection: Optional str for flax layer initialization. Default is &quot;dropout&quot;.</span>
+<span class="sd">        rngs: Optional rngs for flax layer initialization (types: rnglib.Rngs | rnglib.RngStream | int), default: 1.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Predictor, The DropOut predictor.</span>
@@ -344,7 +360,9 @@
     <span class="k">if</span> <span class="n">p</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">p</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
         <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;The probability p must be between 0 and 1, but got </span><span class="si">{</span><span class="n">p</span><span class="si">}</span><span class="s2"> instead.&quot;</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">traverse</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="n">nn_compose</span><span class="p">(</span><span class="n">dropout_traverser</span><span class="p">),</span> <span class="n">init</span><span class="o">=</span><span class="p">{</span><span class="n">P</span><span class="p">:</span> <span class="n">p</span><span class="p">,</span> <span class="n">CLONE</span><span class="p">:</span> <span class="kc">True</span><span class="p">})</span></div>
+    <span class="k">return</span> <span class="n">traverse</span><span class="p">(</span>
+        <span class="n">base</span><span class="p">,</span> <span class="n">nn_compose</span><span class="p">(</span><span class="n">dropout_traverser</span><span class="p">),</span> <span class="n">init</span><span class="o">=</span><span class="p">{</span><span class="n">P</span><span class="p">:</span> <span class="n">p</span><span class="p">,</span> <span class="n">CLONE</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="n">RNG_COLLECTION</span><span class="p">:</span> <span class="n">rng_collection</span><span class="p">,</span> <span class="n">RNGS</span><span class="p">:</span> <span class="n">rngs</span><span class="p">}</span>
+    <span class="p">)</span></div>
 
 </pre></div>
         </article>

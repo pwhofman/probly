@@ -313,24 +313,40 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">flax.nnx</span><span class="w"> </span><span class="kn">import</span> <span class="n">rnglib</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">flax.nnx.module</span><span class="w"> </span><span class="kn">import</span> <span class="n">first_from</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">jax</span><span class="w"> </span><span class="kn">import</span> <span class="n">lax</span><span class="p">,</span> <span class="n">random</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
 
 
 <div class="viewcode-block" id="DropConnectLinear">
 <a class="viewcode-back" href="../../../api/probly.layers.flax.html#probly.layers.flax.DropConnectLinear">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">DropConnectLinear</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Custom Linear layer with DropConnect applied to weights during training.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Custom Linear layer with DropConnect applied to weights during training based on :cite:`aminiDeepEvidential2020`.</span>
 
 <span class="sd">    Attributes:</span>
-<span class="sd">        weight: nnx.Param, weight matrix of shape.</span>
-<span class="sd">        bias: nnx.Param, bias vector of shape.</span>
-<span class="sd">        rate: float, the dropconnect probability.</span>
-<span class="sd">        deterministic: bool, if false the inputs are masked, whereas if true, no mask</span>
-<span class="sd">            is applied and the inputs are returned as is.</span>
+<span class="sd">        kernel: nnx.Param, weight matrix of the layer.</span>
+<span class="sd">        bias: nnx.Param, bias of the layer.</span>
+<span class="sd">        in_features: int, number of input features.</span>
+<span class="sd">        out_features: int, number of output features.</span>
+<span class="sd">        use_bias: bool, whether to add bias to the output.</span>
+<span class="sd">        dtype: typing.Optional[flax.typing.Dtype], the dtype of the computation (default: infer from input and params).</span>
+<span class="sd">        param_dtype: flax.typing.Dtype, the dtype passed to parameter initializers.</span>
+<span class="sd">        precision: flax.typing.PrecisionLike, numerical precision of the computation see ``jax.lax.Precision``</span>
+<span class="sd">            for details.</span>
+<span class="sd">        kernel_init: flax.typing.Initializer, initializer function for the weight matrix.</span>
+<span class="sd">        bias_init: flax.typing.Initializer, initializer function for the bias.</span>
+<span class="sd">        dot_general: flax.typing.DotGeneralT, dot product function.</span>
+<span class="sd">        promote_dtype: flax.typing.PromoteDtypeFn, function to promote the dtype of the arrays to the desired</span>
+<span class="sd">            dtype. The function should accept a tuple of ``(inputs, kernel, bias)``</span>
+<span class="sd">            and a ``dtype`` keyword argument, and return a tuple of arrays with the</span>
+<span class="sd">            promoted dtype.</span>
+<span class="sd">        preferred_element_type: flax.typing.Dtype, Optional parameter controls the data type output by</span>
+<span class="sd">            the dot product. This argument is passed to ``dot_general`` function.</span>
+<span class="sd">            See ``jax.lax.dot`` for details.</span>
+<span class="sd">        rate: float, probability of dropping individual weights.</span>
+<span class="sd">        deterministic: bool, if false the inputs are scaled by ``1/(1-rate)`` and</span>
+<span class="sd">            masked, whereas if true, no mask is applied and the inputs are returned</span>
+<span class="sd">            as is.</span>
 <span class="sd">        rng_collection: str, the rng collection name to use when requesting a rng key.</span>
-<span class="sd">        rngs: nnx.Rngs or nnx.RngStream or None, rng key.</span>
-
+<span class="sd">        rngs: rnglib.Rngs or rnglib.RngStream or None, rng key.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
@@ -349,9 +365,21 @@
 <span class="sd">            rng_collection: str, rng collection name to use when requesting a rng key.</span>
 <span class="sd">            rngs: nnx.Rngs or nn.RngStream or None, rng key.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">weight</span> <span class="o">=</span> <span class="n">base_layer</span><span class="o">.</span><span class="n">kernel</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kernel</span> <span class="o">=</span> <span class="n">base_layer</span><span class="o">.</span><span class="n">kernel</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">bias</span> <span class="o">=</span> <span class="n">base_layer</span><span class="o">.</span><span class="n">bias</span> <span class="k">if</span> <span class="n">base_layer</span><span class="o">.</span><span class="n">bias</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">in_features</span> <span class="o">=</span> <span class="n">base_layer</span><span class="o">.</span><span class="n">in_features</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">out_features</span> <span class="o">=</span> <span class="n">base_layer</span><span class="o">.</span><span class="n">out_features</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_bias</span> <span class="o">=</span> <span class="n">base_layer</span><span class="o">.</span><span class="n">use_bias</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dtype</span> <span class="o">=</span> <span class="n">base_layer</span><span class="o">.</span><span class="n">dtype</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">param_dtype</span> <span class="o">=</span> <span class="n">base_layer</span><span class="o">.</span><span class="n">param_dtype</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">precision</span> <span class="o">=</span> <span class="n">base_layer</span><span class="o">.</span><span class="n">precision</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kernel_init</span> <span class="o">=</span> <span class="n">base_layer</span><span class="o">.</span><span class="n">kernel_init</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bias_init</span> <span class="o">=</span> <span class="n">base_layer</span><span class="o">.</span><span class="n">bias_init</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dot_general</span> <span class="o">=</span> <span class="n">base_layer</span><span class="o">.</span><span class="n">dot_general</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">promote_dtype</span> <span class="o">=</span> <span class="n">base_layer</span><span class="o">.</span><span class="n">promote_dtype</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">preferred_element_type</span> <span class="o">=</span> <span class="n">base_layer</span><span class="o">.</span><span class="n">preferred_element_type</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">rate</span> <span class="o">=</span> <span class="n">rate</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">deterministic</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">rng_collection</span> <span class="o">=</span> <span class="n">rng_collection</span>
 
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rngs</span><span class="p">,</span> <span class="n">rnglib</span><span class="o">.</span><span class="n">Rngs</span><span class="p">):</span>
@@ -376,7 +404,7 @@
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Forward pass of the DropConnectLinear layer.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">           inputs: jax.Array, input data that should be randomly masked.</span>
+<span class="sd">           inputs: jax.Array, input data.</span>
 <span class="sd">           deterministic: bool, if false the inputs are masked, whereas if true, no mask</span>
 <span class="sd">            is applied and the inputs are returned as is.</span>
 <span class="sd">           rngs: nnx.Rngs, nnx.RngStream or jax.Array, optional key used to generate the dropconnect mask.</span>
@@ -384,7 +412,14 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            jax.Array, layer output.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">deterministic</span> <span class="o">=</span> <span class="n">deterministic</span>
+        <span class="n">kernel</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">kernel</span><span class="p">[</span><span class="o">...</span><span class="p">]</span>
+        <span class="n">bias</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bias</span><span class="p">[</span><span class="o">...</span><span class="p">]</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bias</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+
+        <span class="n">inputs</span><span class="p">,</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">bias</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">promote_dtype</span><span class="p">((</span><span class="n">inputs</span><span class="p">,</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">bias</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+
+        <span class="n">dot_general_kwargs</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">preferred_element_type</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">dot_general_kwargs</span><span class="p">[</span><span class="s2">&quot;preferred_element_type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">preferred_element_type</span>
 
         <span class="n">deterministic</span> <span class="o">=</span> <span class="n">first_from</span><span class="p">(</span>
             <span class="n">deterministic</span><span class="p">,</span>
@@ -393,19 +428,11 @@
 <span class="s2">                as either a __call__ argument or class attribute.&quot;&quot;&quot;</span><span class="p">,</span>
         <span class="p">)</span>
 
-        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rate</span> <span class="o">==</span> <span class="mf">0.0</span><span class="p">)</span> <span class="ow">or</span> <span class="n">deterministic</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">inputs</span>
-
-        <span class="c1"># Prevent gradient NaNs in 1.0 edge-case.</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">rate</span> <span class="o">==</span> <span class="mf">1.0</span><span class="p">:</span>
-            <span class="n">out</span> <span class="o">=</span> <span class="n">inputs</span> <span class="o">@</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
-            <span class="k">return</span> <span class="n">out</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bias</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">out</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">bias</span>
-
         <span class="n">rngs</span> <span class="o">=</span> <span class="n">first_from</span><span class="p">(</span>
             <span class="n">rngs</span><span class="p">,</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span>
-            <span class="n">error_msg</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;`deterministic` is False, but no `rngs` argument was provided</span>
-<span class="s2">                to DropConnect as either a __call__ argument or class atribute.&quot;&quot;&quot;</span><span class="p">,</span>
+            <span class="n">error_msg</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;No `rngs` argument was provided to DropConnect</span>
+<span class="s2">                as either a __call__ argument or class attribute.&quot;&quot;&quot;</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rngs</span><span class="p">,</span> <span class="n">rnglib</span><span class="o">.</span><span class="n">Rngs</span><span class="p">):</span>
@@ -418,27 +445,39 @@
             <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;rngs must be Rngs, RngStream or jax.Array, but got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">rngs</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
 
-        <span class="n">keep_prob</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">rate</span>
-        <span class="n">mask</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">bernoulli</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="n">keep_prob</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
-        <span class="n">masked_weight</span> <span class="o">=</span> <span class="n">lax</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">value</span> <span class="o">/</span> <span class="n">keep_prob</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">value</span><span class="p">))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">deterministic</span><span class="p">:</span>
+            <span class="n">mask</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">bernoulli</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="n">key</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">rate</span><span class="p">),</span> <span class="n">shape</span><span class="o">=</span><span class="n">kernel</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+            <span class="n">masked_kernel</span> <span class="o">=</span> <span class="n">kernel</span> <span class="o">*</span> <span class="n">mask</span>  <span class="c1"># Apply DropConnect</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">masked_kernel</span> <span class="o">=</span> <span class="n">kernel</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">rate</span><span class="p">)</span>  <span class="c1"># Scale weights at interference time</span>
 
-        <span class="n">out</span> <span class="o">=</span> <span class="n">inputs</span> <span class="o">@</span> <span class="n">masked_weight</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dot_general</span><span class="p">(</span>
+            <span class="n">inputs</span><span class="p">,</span>
+            <span class="n">masked_kernel</span><span class="p">,</span>
+            <span class="p">(((</span><span class="n">inputs</span><span class="o">.</span><span class="n">ndim</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,)),</span> <span class="p">((),</span> <span class="p">())),</span>
+            <span class="n">precision</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">precision</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">dot_general_kwargs</span><span class="p">,</span>
+        <span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bias</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">out</span> <span class="o">=</span> <span class="n">out</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">bias</span><span class="o">.</span><span class="n">value</span>
+            <span class="n">out</span> <span class="o">+=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">bias</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,)</span> <span class="o">*</span> <span class="p">(</span><span class="n">out</span><span class="o">.</span><span class="n">ndim</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,))</span>
         <span class="k">return</span> <span class="n">out</span></div>
 
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a string representation of the layer including its class name and key attributes.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">(</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">extra_repr</span><span class="p">()</span><span class="si">}</span><span class="s2">)&quot;</span>
+<div class="viewcode-block" id="DropConnectLinear.set_mode">
+<a class="viewcode-back" href="../../../api/probly.layers.flax.html#probly.layers.flax.DropConnectLinear.set_mode">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_mode</span><span class="p">(</span>  <span class="c1"># noqa: D417</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">deterministic</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>  <span class="c1"># noqa: ANN003</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Class method used by ``nnx.set_mode``.</span>
 
-<div class="viewcode-block" id="DropConnectLinear.extra_repr">
-<a class="viewcode-back" href="../../../api/probly.layers.flax.html#probly.layers.flax.DropConnectLinear.extra_repr">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">extra_repr</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Expose description of in- and out-features of this layer.&quot;&quot;&quot;</span>
-        <span class="n">in_features</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">out_features</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;in_features=</span><span class="si">{</span><span class="n">in_features</span><span class="si">}</span><span class="s2">, out_features=</span><span class="si">{</span><span class="n">out_features</span><span class="si">}</span><span class="s2">, bias=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">bias</span><span class="w"> </span><span class="ow">is</span><span class="w"> </span><span class="ow">not</span><span class="w"> </span><span class="kc">None</span><span class="si">}</span><span class="s2">&quot;</span></div>
+<span class="sd">        Args:</span>
+<span class="sd">            deterministic: if True, disables dropconnect masking.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">deterministic</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">deterministic</span> <span class="o">=</span> <span class="n">deterministic</span>
+        <span class="k">return</span> <span class="n">kwargs</span></div>
 </div>
 
 

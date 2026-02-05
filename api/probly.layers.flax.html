@@ -321,7 +321,7 @@
 <td><p>Implements a BatchEnsemble Linear layer.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#probly.layers.flax.DropConnectLinear" title="probly.layers.flax.DropConnectLinear"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DropConnectLinear</span></code></a>(*args, **kwargs)</p></td>
-<td><p>Custom Linear layer with DropConnect applied to weights during training.</p></td>
+<td><p>Custom Linear layer with DropConnect applied to weights during training based on <span id="id1">[<a class="reference internal" href="../references.html#id6" title="Alexander Amini, Wilko Schwarting, Ava Soleimany, and Daniela Rus. Deep evidential regression. In Hugo Larochelle, Marc'Aurelio Ranzato, Raia Hadsell, Maria-Florina Balcan, and Hsuan-Tien Lin, editors, Advances in Neural Information Processing Systems 33: Annual Conference on Neural Information Processing Systems 2020, NeurIPS 2020, December 6-12, 2020, virtual. 2020. URL: https://proceedings.neurips.cc/paper/2020/hash/aab085461de182608ee9f607f3f7d18f-Abstract.html.">ASSR20</a>]</span>.</p></td>
 </tr>
 </tbody>
 </table>
@@ -1338,7 +1338,7 @@ Modules.</p>
 <dt class="sig sig-object py" id="probly.layers.flax.DropConnectLinear">
 <em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.layers.flax.</span></span><span class="sig-name descname"><span class="pre">DropConnectLinear</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/layers/flax.html#DropConnectLinear"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.layers.flax.DropConnectLinear" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></p>
-<p>Custom Linear layer with DropConnect applied to weights during training.</p>
+<p>Custom Linear layer with DropConnect applied to weights during training based on <span id="id2">[<a class="reference internal" href="../references.html#id6" title="Alexander Amini, Wilko Schwarting, Ava Soleimany, and Daniela Rus. Deep evidential regression. In Hugo Larochelle, Marc'Aurelio Ranzato, Raia Hadsell, Maria-Florina Balcan, and Hsuan-Tien Lin, editors, Advances in Neural Information Processing Systems 33: Annual Conference on Neural Information Processing Systems 2020, NeurIPS 2020, December 6-12, 2020, virtual. 2020. URL: https://proceedings.neurips.cc/paper/2020/hash/aab085461de182608ee9f607f3f7d18f-Abstract.html.">ASSR20</a>]</span>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -1351,28 +1351,101 @@ Modules.</p>
 </dd>
 </dl>
 <dl class="py attribute">
-<dt class="sig sig-object py" id="probly.layers.flax.DropConnectLinear.weight">
-<span class="sig-name descname"><span class="pre">weight</span></span><a class="headerlink" href="#probly.layers.flax.DropConnectLinear.weight" title="Link to this definition">¶</a></dt>
-<dd><p>nnx.Param, weight matrix of shape.</p>
+<dt class="sig sig-object py" id="probly.layers.flax.DropConnectLinear.kernel">
+<span class="sig-name descname"><span class="pre">kernel</span></span><a class="headerlink" href="#probly.layers.flax.DropConnectLinear.kernel" title="Link to this definition">¶</a></dt>
+<dd><p>nnx.Param, weight matrix of the layer.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="probly.layers.flax.DropConnectLinear.bias">
 <span class="sig-name descname"><span class="pre">bias</span></span><a class="headerlink" href="#probly.layers.flax.DropConnectLinear.bias" title="Link to this definition">¶</a></dt>
-<dd><p>nnx.Param, bias vector of shape.</p>
+<dd><p>nnx.Param, bias of the layer.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="probly.layers.flax.DropConnectLinear.in_features">
+<span class="sig-name descname"><span class="pre">in_features</span></span><a class="headerlink" href="#probly.layers.flax.DropConnectLinear.in_features" title="Link to this definition">¶</a></dt>
+<dd><p>int, number of input features.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="probly.layers.flax.DropConnectLinear.out_features">
+<span class="sig-name descname"><span class="pre">out_features</span></span><a class="headerlink" href="#probly.layers.flax.DropConnectLinear.out_features" title="Link to this definition">¶</a></dt>
+<dd><p>int, number of output features.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="probly.layers.flax.DropConnectLinear.use_bias">
+<span class="sig-name descname"><span class="pre">use_bias</span></span><a class="headerlink" href="#probly.layers.flax.DropConnectLinear.use_bias" title="Link to this definition">¶</a></dt>
+<dd><p>bool, whether to add bias to the output.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="probly.layers.flax.DropConnectLinear.dtype">
+<span class="sig-name descname"><span class="pre">dtype</span></span><a class="headerlink" href="#probly.layers.flax.DropConnectLinear.dtype" title="Link to this definition">¶</a></dt>
+<dd><p>typing.Optional[flax.typing.Dtype], the dtype of the computation (default: infer from input and params).</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="probly.layers.flax.DropConnectLinear.param_dtype">
+<span class="sig-name descname"><span class="pre">param_dtype</span></span><a class="headerlink" href="#probly.layers.flax.DropConnectLinear.param_dtype" title="Link to this definition">¶</a></dt>
+<dd><p>flax.typing.Dtype, the dtype passed to parameter initializers.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="probly.layers.flax.DropConnectLinear.precision">
+<span class="sig-name descname"><span class="pre">precision</span></span><a class="headerlink" href="#probly.layers.flax.DropConnectLinear.precision" title="Link to this definition">¶</a></dt>
+<dd><p>flax.typing.PrecisionLike, numerical precision of the computation see <code class="docutils literal notranslate"><span class="pre">jax.lax.Precision</span></code>
+for details.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="probly.layers.flax.DropConnectLinear.kernel_init">
+<span class="sig-name descname"><span class="pre">kernel_init</span></span><a class="headerlink" href="#probly.layers.flax.DropConnectLinear.kernel_init" title="Link to this definition">¶</a></dt>
+<dd><p>flax.typing.Initializer, initializer function for the weight matrix.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="probly.layers.flax.DropConnectLinear.bias_init">
+<span class="sig-name descname"><span class="pre">bias_init</span></span><a class="headerlink" href="#probly.layers.flax.DropConnectLinear.bias_init" title="Link to this definition">¶</a></dt>
+<dd><p>flax.typing.Initializer, initializer function for the bias.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="probly.layers.flax.DropConnectLinear.dot_general">
+<span class="sig-name descname"><span class="pre">dot_general</span></span><a class="headerlink" href="#probly.layers.flax.DropConnectLinear.dot_general" title="Link to this definition">¶</a></dt>
+<dd><p>flax.typing.DotGeneralT, dot product function.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="probly.layers.flax.DropConnectLinear.promote_dtype">
+<span class="sig-name descname"><span class="pre">promote_dtype</span></span><a class="headerlink" href="#probly.layers.flax.DropConnectLinear.promote_dtype" title="Link to this definition">¶</a></dt>
+<dd><p>flax.typing.PromoteDtypeFn, function to promote the dtype of the arrays to the desired
+dtype. The function should accept a tuple of <code class="docutils literal notranslate"><span class="pre">(inputs,</span> <span class="pre">kernel,</span> <span class="pre">bias)</span></code>
+and a <code class="docutils literal notranslate"><span class="pre">dtype</span></code> keyword argument, and return a tuple of arrays with the
+promoted dtype.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="probly.layers.flax.DropConnectLinear.preferred_element_type">
+<span class="sig-name descname"><span class="pre">preferred_element_type</span></span><a class="headerlink" href="#probly.layers.flax.DropConnectLinear.preferred_element_type" title="Link to this definition">¶</a></dt>
+<dd><p>flax.typing.Dtype, Optional parameter controls the data type output by
+the dot product. This argument is passed to <code class="docutils literal notranslate"><span class="pre">dot_general</span></code> function.
+See <code class="docutils literal notranslate"><span class="pre">jax.lax.dot</span></code> for details.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="probly.layers.flax.DropConnectLinear.rate">
 <span class="sig-name descname"><span class="pre">rate</span></span><a class="headerlink" href="#probly.layers.flax.DropConnectLinear.rate" title="Link to this definition">¶</a></dt>
-<dd><p>float, the dropconnect probability.</p>
+<dd><p>float, probability of dropping individual weights.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="probly.layers.flax.DropConnectLinear.deterministic">
 <span class="sig-name descname"><span class="pre">deterministic</span></span><a class="headerlink" href="#probly.layers.flax.DropConnectLinear.deterministic" title="Link to this definition">¶</a></dt>
-<dd><p>bool, if false the inputs are masked, whereas if true, no mask
-is applied and the inputs are returned as is.</p>
+<dd><p>bool, if false the inputs are scaled by <code class="docutils literal notranslate"><span class="pre">1/(1-rate)</span></code> and
+masked, whereas if true, no mask is applied and the inputs are returned
+as is.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -1384,7 +1457,7 @@ is applied and the inputs are returned as is.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="probly.layers.flax.DropConnectLinear.rngs">
 <span class="sig-name descname"><span class="pre">rngs</span></span><a class="headerlink" href="#probly.layers.flax.DropConnectLinear.rngs" title="Link to this definition">¶</a></dt>
-<dd><p>nnx.Rngs or nnx.RngStream or None, rng key.</p>
+<dd><p>rnglib.Rngs or rnglib.RngStream or None, rng key.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -1394,7 +1467,7 @@ is applied and the inputs are returned as is.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>inputs</strong> (<em>Array</em>) – jax.Array, input data that should be randomly masked.</p></li>
+<li><p><strong>inputs</strong> (<em>Array</em>) – jax.Array, input data.</p></li>
 <li><p><strong>deterministic</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>) – bool, if false the inputs are masked, whereas if true, no mask
 is applied and the inputs are returned as is.</p></li>
 <li><p><strong>rngs</strong> (<em>Rngs</em><em> | </em><em>RngStream</em><em> | </em><em>Array</em><em> | </em><em>None</em>) – nnx.Rngs, nnx.RngStream or jax.Array, optional key used to generate the dropconnect mask.</p></li>
@@ -1437,17 +1510,6 @@ Modules.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>**attributes</strong> – additional attributes passed to <code class="docutils literal notranslate"><span class="pre">set_attributes</span></code>.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="probly.layers.flax.DropConnectLinear.extra_repr">
-<span class="sig-name descname"><span class="pre">extra_repr</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/layers/flax.html#DropConnectLinear.extra_repr"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.layers.flax.DropConnectLinear.extra_repr" title="Link to this definition">¶</a></dt>
-<dd><p>Expose description of in- and out-features of this layer.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1640,6 +1702,20 @@ instance is not found in one of the selected Modules.</p></li>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="probly.layers.flax.DropConnectLinear.set_mode">
+<span class="sig-name descname"><span class="pre">set_mode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">deterministic</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/layers/flax.html#DropConnectLinear.set_mode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.layers.flax.DropConnectLinear.set_mode" title="Link to this definition">¶</a></dt>
+<dd><p>Class method used by <code class="docutils literal notranslate"><span class="pre">nnx.set_mode</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>deterministic</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em> | </em><em>None</em>) – if True, disables dropconnect masking.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1868,19 +1944,30 @@ Modules.</p>
 </ul>
 </li>
 <li><a class="reference internal" href="#probly.layers.flax.DropConnectLinear"><code class="docutils literal notranslate"><span class="pre">DropConnectLinear</span></code></a><ul>
-<li><a class="reference internal" href="#probly.layers.flax.DropConnectLinear.weight"><code class="docutils literal notranslate"><span class="pre">DropConnectLinear.weight</span></code></a></li>
+<li><a class="reference internal" href="#probly.layers.flax.DropConnectLinear.kernel"><code class="docutils literal notranslate"><span class="pre">DropConnectLinear.kernel</span></code></a></li>
 <li><a class="reference internal" href="#probly.layers.flax.DropConnectLinear.bias"><code class="docutils literal notranslate"><span class="pre">DropConnectLinear.bias</span></code></a></li>
+<li><a class="reference internal" href="#probly.layers.flax.DropConnectLinear.in_features"><code class="docutils literal notranslate"><span class="pre">DropConnectLinear.in_features</span></code></a></li>
+<li><a class="reference internal" href="#probly.layers.flax.DropConnectLinear.out_features"><code class="docutils literal notranslate"><span class="pre">DropConnectLinear.out_features</span></code></a></li>
+<li><a class="reference internal" href="#probly.layers.flax.DropConnectLinear.use_bias"><code class="docutils literal notranslate"><span class="pre">DropConnectLinear.use_bias</span></code></a></li>
+<li><a class="reference internal" href="#probly.layers.flax.DropConnectLinear.dtype"><code class="docutils literal notranslate"><span class="pre">DropConnectLinear.dtype</span></code></a></li>
+<li><a class="reference internal" href="#probly.layers.flax.DropConnectLinear.param_dtype"><code class="docutils literal notranslate"><span class="pre">DropConnectLinear.param_dtype</span></code></a></li>
+<li><a class="reference internal" href="#probly.layers.flax.DropConnectLinear.precision"><code class="docutils literal notranslate"><span class="pre">DropConnectLinear.precision</span></code></a></li>
+<li><a class="reference internal" href="#probly.layers.flax.DropConnectLinear.kernel_init"><code class="docutils literal notranslate"><span class="pre">DropConnectLinear.kernel_init</span></code></a></li>
+<li><a class="reference internal" href="#probly.layers.flax.DropConnectLinear.bias_init"><code class="docutils literal notranslate"><span class="pre">DropConnectLinear.bias_init</span></code></a></li>
+<li><a class="reference internal" href="#probly.layers.flax.DropConnectLinear.dot_general"><code class="docutils literal notranslate"><span class="pre">DropConnectLinear.dot_general</span></code></a></li>
+<li><a class="reference internal" href="#probly.layers.flax.DropConnectLinear.promote_dtype"><code class="docutils literal notranslate"><span class="pre">DropConnectLinear.promote_dtype</span></code></a></li>
+<li><a class="reference internal" href="#probly.layers.flax.DropConnectLinear.preferred_element_type"><code class="docutils literal notranslate"><span class="pre">DropConnectLinear.preferred_element_type</span></code></a></li>
 <li><a class="reference internal" href="#probly.layers.flax.DropConnectLinear.rate"><code class="docutils literal notranslate"><span class="pre">DropConnectLinear.rate</span></code></a></li>
 <li><a class="reference internal" href="#probly.layers.flax.DropConnectLinear.deterministic"><code class="docutils literal notranslate"><span class="pre">DropConnectLinear.deterministic</span></code></a></li>
 <li><a class="reference internal" href="#probly.layers.flax.DropConnectLinear.rng_collection"><code class="docutils literal notranslate"><span class="pre">DropConnectLinear.rng_collection</span></code></a></li>
 <li><a class="reference internal" href="#probly.layers.flax.DropConnectLinear.rngs"><code class="docutils literal notranslate"><span class="pre">DropConnectLinear.rngs</span></code></a></li>
 <li><a class="reference internal" href="#probly.layers.flax.DropConnectLinear.__call__"><code class="docutils literal notranslate"><span class="pre">DropConnectLinear.__call__()</span></code></a></li>
 <li><a class="reference internal" href="#probly.layers.flax.DropConnectLinear.eval"><code class="docutils literal notranslate"><span class="pre">DropConnectLinear.eval()</span></code></a></li>
-<li><a class="reference internal" href="#probly.layers.flax.DropConnectLinear.extra_repr"><code class="docutils literal notranslate"><span class="pre">DropConnectLinear.extra_repr()</span></code></a></li>
 <li><a class="reference internal" href="#probly.layers.flax.DropConnectLinear.iter_children"><code class="docutils literal notranslate"><span class="pre">DropConnectLinear.iter_children()</span></code></a></li>
 <li><a class="reference internal" href="#probly.layers.flax.DropConnectLinear.iter_modules"><code class="docutils literal notranslate"><span class="pre">DropConnectLinear.iter_modules()</span></code></a></li>
 <li><a class="reference internal" href="#probly.layers.flax.DropConnectLinear.perturb"><code class="docutils literal notranslate"><span class="pre">DropConnectLinear.perturb()</span></code></a></li>
 <li><a class="reference internal" href="#probly.layers.flax.DropConnectLinear.set_attributes"><code class="docutils literal notranslate"><span class="pre">DropConnectLinear.set_attributes()</span></code></a></li>
+<li><a class="reference internal" href="#probly.layers.flax.DropConnectLinear.set_mode"><code class="docutils literal notranslate"><span class="pre">DropConnectLinear.set_mode()</span></code></a></li>
 <li><a class="reference internal" href="#probly.layers.flax.DropConnectLinear.sow"><code class="docutils literal notranslate"><span class="pre">DropConnectLinear.sow()</span></code></a></li>
 <li><a class="reference internal" href="#probly.layers.flax.DropConnectLinear.train"><code class="docutils literal notranslate"><span class="pre">DropConnectLinear.train()</span></code></a></li>
 </ul>
