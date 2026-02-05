@@ -317,8 +317,20 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#probly.representation.credal_set.array.ArrayCategoricalCredalSet" title="probly.representation.credal_set.array.ArrayCategoricalCredalSet"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ArrayCategoricalCredalSet</span></code></a>()</p></td>
 <td><p>A credal set of predictions stored in a numpy array.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#probly.representation.credal_set.array.ArrayDiscreteCredalSet" title="probly.representation.credal_set.array.ArrayDiscreteCredalSet"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ArrayDiscreteCredalSet</span></code></a>(array)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#probly.representation.credal_set.array.ArrayConvexCredalSet" title="probly.representation.credal_set.array.ArrayConvexCredalSet"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ArrayConvexCredalSet</span></code></a>(array)</p></td>
+<td><p>A convex credal set defined by the convex hull of distributions stored in a numpy array.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#probly.representation.credal_set.array.ArrayDiscreteCredalSet" title="probly.representation.credal_set.array.ArrayDiscreteCredalSet"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ArrayDiscreteCredalSet</span></code></a>(array)</p></td>
 <td><p>A discrete credal set over a finite set of distributions stored in a numpy array.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#probly.representation.credal_set.array.ArrayDistanceBasedCredalSet" title="probly.representation.credal_set.array.ArrayDistanceBasedCredalSet"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ArrayDistanceBasedCredalSet</span></code></a>()</p></td>
+<td><p>A credal set defined by a nominal distribution and a distance radius (L1/Total Variation).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#probly.representation.credal_set.array.ArrayProbabilityIntervals" title="probly.representation.credal_set.array.ArrayProbabilityIntervals"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ArrayProbabilityIntervals</span></code></a>(lower_bounds, ...)</p></td>
+<td><p>A credal set defined by probability intervals over outcomes.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#probly.representation.credal_set.array.ArraySingletonCredalSet" title="probly.representation.credal_set.array.ArraySingletonCredalSet"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ArraySingletonCredalSet</span></code></a>(array)</p></td>
+<td><p>A singleton credal set containing exactly one distribution stored in a numpy array.</p></td>
 </tr>
 </tbody>
 </table>
@@ -389,6 +401,136 @@
 <dl class="py attribute">
 <dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayCategoricalCredalSet.type">
 <span class="sig-name descname"><span class="pre">type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">CredalSetType</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'categorical'</span></em><a class="headerlink" href="#probly.representation.credal_set.array.ArrayCategoricalCredalSet.type" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayConvexCredalSet">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.credal_set.array.</span></span><span class="sig-name descname"><span class="pre">ArrayConvexCredalSet</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">array</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/credal_set/array.html#ArrayConvexCredalSet"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.credal_set.array.ArrayConvexCredalSet" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#probly.representation.credal_set.array.ArrayCategoricalCredalSet" title="probly.representation.credal_set.array.ArrayCategoricalCredalSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">ArrayCategoricalCredalSet</span></code></a>, <a class="reference internal" href="probly.representation.credal_set.common.html#probly.representation.credal_set.common.ConvexCredalSet" title="probly.representation.credal_set.common.ConvexCredalSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">ConvexCredalSet</span></code></a>[<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a>]</p>
+<p>A convex credal set defined by the convex hull of distributions stored in a numpy array.</p>
+<p>Internally, this is represented exactly like a discrete credal set:
+an array of shape (…, num_vertices, num_classes), where the distributions
+are the extreme points (vertices) of the polytope.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>array</strong> (<em>np.ndarray</em>)</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayConvexCredalSet.from_array_sample">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_array_sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sample</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distribution_axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/credal_set/array.html#ArrayConvexCredalSet.from_array_sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.credal_set.array.ArrayConvexCredalSet.from_array_sample" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sample</strong> (<a class="reference internal" href="probly.representation.sampling.array_sample.html#probly.representation.sampling.array_sample.ArraySample" title="probly.representation.sampling.array_sample.ArraySample"><em>ArraySample</em></a><em>[</em><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><em>ndarray</em></a><em>]</em>)</p></li>
+<li><p><strong>distribution_axis</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Self" title="(in Python v3.14)"><em>Self</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayConvexCredalSet.from_sample">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sample</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distribution_axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#probly.representation.credal_set.array.ArrayConvexCredalSet.from_sample" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sample</strong> (<a class="reference internal" href="probly.representation.sampling.common_sample.html#probly.representation.sampling.common_sample.Sample" title="probly.representation.sampling.common_sample.Sample"><em>Sample</em></a><em>[</em><em>np.ndarray</em><em>]</em>)</p></li>
+<li><p><strong>distribution_axis</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Self</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayConvexCredalSet.copy">
+<span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/credal_set/array.html#ArrayConvexCredalSet.copy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.credal_set.array.ArrayConvexCredalSet.copy" title="Link to this definition">¶</a></dt>
+<dd><p>Create a copy of the credal set.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Self" title="(in Python v3.14)"><em>Self</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayConvexCredalSet.lower">
+<span class="sig-name descname"><span class="pre">lower</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/credal_set/array.html#ArrayConvexCredalSet.lower"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.credal_set.array.ArrayConvexCredalSet.lower" title="Link to this definition">¶</a></dt>
+<dd><p>Compute the lower envelope of the convex credal set.</p>
+<p>For a convex hull, the lower envelope is the element-wise minimum of its vertices.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><em>ndarray</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayConvexCredalSet.to_device">
+<span class="sig-name descname"><span class="pre">to_device</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/credal_set/array.html#ArrayConvexCredalSet.to_device"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.credal_set.array.ArrayConvexCredalSet.to_device" title="Link to this definition">¶</a></dt>
+<dd><p>Move the underlying array to the specified device.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>device</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.14)"><em>Literal</em></a><em>[</em><em>'cpu'</em><em>]</em>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Self" title="(in Python v3.14)"><em>Self</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayConvexCredalSet.upper">
+<span class="sig-name descname"><span class="pre">upper</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/credal_set/array.html#ArrayConvexCredalSet.upper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.credal_set.array.ArrayConvexCredalSet.upper" title="Link to this definition">¶</a></dt>
+<dd><p>Compute the upper envelope of the convex credal set.</p>
+<p>For a convex hull, the upper envelope is the element-wise maximum of its vertices.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><em>ndarray</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayConvexCredalSet.array">
+<span class="sig-name descname"><span class="pre">array</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">np.ndarray</span></em><a class="headerlink" href="#probly.representation.credal_set.array.ArrayConvexCredalSet.array" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayConvexCredalSet.device">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">device</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><a class="headerlink" href="#probly.representation.credal_set.array.ArrayConvexCredalSet.device" title="Link to this definition">¶</a></dt>
+<dd><p>Return the device of the credal set array.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayConvexCredalSet.dtype">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">dtype</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.dtype.html#numpy.dtype" title="(in NumPy v2.4)"><span class="pre">dtype</span></a></em><a class="headerlink" href="#probly.representation.credal_set.array.ArrayConvexCredalSet.dtype" title="Link to this definition">¶</a></dt>
+<dd><p>Return the data type of the credal set array.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayConvexCredalSet.ndim">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ndim</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></em><a class="headerlink" href="#probly.representation.credal_set.array.ArrayConvexCredalSet.ndim" title="Link to this definition">¶</a></dt>
+<dd><p>Return the number of dimensions of the credal set array.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayConvexCredalSet.shape">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">shape</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#probly.representation.credal_set.array.ArrayConvexCredalSet.shape" title="Link to this definition">¶</a></dt>
+<dd><p>Return the shape of the credal set array.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayConvexCredalSet.type">
+<span class="sig-name descname"><span class="pre">type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">CredalSetType</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'categorical'</span></em><a class="headerlink" href="#probly.representation.credal_set.array.ArrayConvexCredalSet.type" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -526,6 +668,454 @@
 
 </dd></dl>
 
+<dl class="py class">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayDistanceBasedCredalSet">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.credal_set.array.</span></span><span class="sig-name descname"><span class="pre">ArrayDistanceBasedCredalSet</span></span><a class="reference internal" href="../_modules/probly/representation/credal_set/array.html#ArrayDistanceBasedCredalSet"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.credal_set.array.ArrayDistanceBasedCredalSet" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#probly.representation.credal_set.array.ArrayCategoricalCredalSet" title="probly.representation.credal_set.array.ArrayCategoricalCredalSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">ArrayCategoricalCredalSet</span></code></a>, <a class="reference internal" href="probly.representation.credal_set.common.html#probly.representation.credal_set.common.DistanceBasedCredalSet" title="probly.representation.credal_set.common.DistanceBasedCredalSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">DistanceBasedCredalSet</span></code></a>[<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a>]</p>
+<p>A credal set defined by a nominal distribution and a distance radius (L1/Total Variation).</p>
+<p>The set contains all distributions P such that distance(P, nominal) &lt;= radius.
+Internally, the nominal distribution is stored as a numpy array of shape (…, num_classes).
+The radius is stored as a float or numpy array.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayDistanceBasedCredalSet.from_array_sample">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_array_sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sample</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distribution_axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/credal_set/array.html#ArrayDistanceBasedCredalSet.from_array_sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.credal_set.array.ArrayDistanceBasedCredalSet.from_array_sample" title="Link to this definition">¶</a></dt>
+<dd><p>Create a DistanceBasedCredalSet from an ArraySample.</p>
+<p>This calculates the mean of the samples as the nominal distribution.
+The radius is set to the maximum Total Variation distance between any sample
+and the mean, ensuring the credal set covers all observed samples.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sample</strong> (<a class="reference internal" href="probly.representation.sampling.array_sample.html#probly.representation.sampling.array_sample.ArraySample" title="probly.representation.sampling.array_sample.ArraySample"><em>ArraySample</em></a><em>[</em><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><em>ndarray</em></a><em>]</em>)</p></li>
+<li><p><strong>distribution_axis</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Self" title="(in Python v3.14)"><em>Self</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayDistanceBasedCredalSet.from_sample">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sample</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distribution_axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#probly.representation.credal_set.array.ArrayDistanceBasedCredalSet.from_sample" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sample</strong> (<a class="reference internal" href="probly.representation.sampling.common_sample.html#probly.representation.sampling.common_sample.Sample" title="probly.representation.sampling.common_sample.Sample"><em>Sample</em></a><em>[</em><em>np.ndarray</em><em>]</em>)</p></li>
+<li><p><strong>distribution_axis</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Self</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayDistanceBasedCredalSet.copy">
+<span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/credal_set/array.html#ArrayDistanceBasedCredalSet.copy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.credal_set.array.ArrayDistanceBasedCredalSet.copy" title="Link to this definition">¶</a></dt>
+<dd><p>Create a copy of the ArrayDistanceBasedCredalSet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Self" title="(in Python v3.14)"><em>Self</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayDistanceBasedCredalSet.lower">
+<span class="sig-name descname"><span class="pre">lower</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/credal_set/array.html#ArrayDistanceBasedCredalSet.lower"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.credal_set.array.ArrayDistanceBasedCredalSet.lower" title="Link to this definition">¶</a></dt>
+<dd><p>Compute the lower envelope of the credal set.</p>
+<p>For L1/TV distance, the tightest element-wise lower bound is max(0, nominal - radius).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><em>ndarray</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayDistanceBasedCredalSet.to_device">
+<span class="sig-name descname"><span class="pre">to_device</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/credal_set/array.html#ArrayDistanceBasedCredalSet.to_device"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.credal_set.array.ArrayDistanceBasedCredalSet.to_device" title="Link to this definition">¶</a></dt>
+<dd><p>Move the underlying array to the specified device.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>device</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.14)"><em>Literal</em></a><em>[</em><em>'cpu'</em><em>]</em>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Self" title="(in Python v3.14)"><em>Self</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayDistanceBasedCredalSet.upper">
+<span class="sig-name descname"><span class="pre">upper</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/credal_set/array.html#ArrayDistanceBasedCredalSet.upper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.credal_set.array.ArrayDistanceBasedCredalSet.upper" title="Link to this definition">¶</a></dt>
+<dd><p>Compute the upper envelope of the credal set.</p>
+<p>For L1/TV distance, the tightest element-wise upper bound is min(1, nominal + radius).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><em>ndarray</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayDistanceBasedCredalSet.device">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">device</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><a class="headerlink" href="#probly.representation.credal_set.array.ArrayDistanceBasedCredalSet.device" title="Link to this definition">¶</a></dt>
+<dd><p>Return the device of the nominal array.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayDistanceBasedCredalSet.dtype">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">dtype</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.dtype.html#numpy.dtype" title="(in NumPy v2.4)"><span class="pre">dtype</span></a></em><a class="headerlink" href="#probly.representation.credal_set.array.ArrayDistanceBasedCredalSet.dtype" title="Link to this definition">¶</a></dt>
+<dd><p>Return the data type of the nominal array.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayDistanceBasedCredalSet.ndim">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ndim</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></em><a class="headerlink" href="#probly.representation.credal_set.array.ArrayDistanceBasedCredalSet.ndim" title="Link to this definition">¶</a></dt>
+<dd><p>Return the number of dimensions of the credal set array.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayDistanceBasedCredalSet.nominal">
+<span class="sig-name descname"><span class="pre">nominal</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">np.ndarray</span></em><a class="headerlink" href="#probly.representation.credal_set.array.ArrayDistanceBasedCredalSet.nominal" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayDistanceBasedCredalSet.radius">
+<span class="sig-name descname"><span class="pre">radius</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">np.ndarray</span></em><a class="headerlink" href="#probly.representation.credal_set.array.ArrayDistanceBasedCredalSet.radius" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayDistanceBasedCredalSet.shape">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">shape</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#probly.representation.credal_set.array.ArrayDistanceBasedCredalSet.shape" title="Link to this definition">¶</a></dt>
+<dd><p>Return the shape of the credal set array (batch dimensions).</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayDistanceBasedCredalSet.type">
+<span class="sig-name descname"><span class="pre">type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">CredalSetType</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'categorical'</span></em><a class="headerlink" href="#probly.representation.credal_set.array.ArrayDistanceBasedCredalSet.type" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayProbabilityIntervals">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.credal_set.array.</span></span><span class="sig-name descname"><span class="pre">ArrayProbabilityIntervals</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lower_bounds</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">upper_bounds</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/credal_set/array.html#ArrayProbabilityIntervals"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.credal_set.array.ArrayProbabilityIntervals" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#probly.representation.credal_set.array.ArrayCategoricalCredalSet" title="probly.representation.credal_set.array.ArrayCategoricalCredalSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">ArrayCategoricalCredalSet</span></code></a>, <a class="reference internal" href="probly.representation.credal_set.common.html#probly.representation.credal_set.common.ProbabilityIntervalsCredalSet" title="probly.representation.credal_set.common.ProbabilityIntervalsCredalSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">ProbabilityIntervalsCredalSet</span></code></a>[<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a>]</p>
+<p>A credal set defined by probability intervals over outcomes.</p>
+<p>This represents uncertainty through lower and upper probability bounds for each class.
+Each bound is stored as a seperate numpy array of shape (…, num_classes).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>lower_bounds</strong> (<em>np.ndarray</em>)</p></li>
+<li><p><strong>upper_bounds</strong> (<em>np.ndarray</em>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayProbabilityIntervals.from_array_sample">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_array_sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sample</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distribution_axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/credal_set/array.html#ArrayProbabilityIntervals.from_array_sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.credal_set.array.ArrayProbabilityIntervals.from_array_sample" title="Link to this definition">¶</a></dt>
+<dd><p>Create probability intervals from a sample by computing min/max bounds.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sample</strong> (<a class="reference internal" href="probly.representation.sampling.array_sample.html#probly.representation.sampling.array_sample.ArraySample" title="probly.representation.sampling.array_sample.ArraySample"><em>ArraySample</em></a><em>[</em><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><em>ndarray</em></a><em>]</em>) – The sample to extract intervals from.</p></li>
+<li><p><strong>distribution_axis</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – Which axis contains the categorical probabilities.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A new ArrayProbabilityIntervals instance.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Self" title="(in Python v3.14)"><em>Self</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayProbabilityIntervals.from_sample">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sample</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distribution_axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#probly.representation.credal_set.array.ArrayProbabilityIntervals.from_sample" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sample</strong> (<a class="reference internal" href="probly.representation.sampling.common_sample.html#probly.representation.sampling.common_sample.Sample" title="probly.representation.sampling.common_sample.Sample"><em>Sample</em></a><em>[</em><em>np.ndarray</em><em>]</em>)</p></li>
+<li><p><strong>distribution_axis</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Self</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayProbabilityIntervals.contains">
+<span class="sig-name descname"><span class="pre">contains</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probabilities</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/credal_set/array.html#ArrayProbabilityIntervals.contains"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.credal_set.array.ArrayProbabilityIntervals.contains" title="Link to this definition">¶</a></dt>
+<dd><p>Check if given probabilities fall within the intervals.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>probabilities</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><em>ndarray</em></a>) – Probability distributions to check, shape (…, num_classes).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Boolean array indicating whether each probability is contained.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><em>ndarray</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayProbabilityIntervals.copy">
+<span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/credal_set/array.html#ArrayProbabilityIntervals.copy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.credal_set.array.ArrayProbabilityIntervals.copy" title="Link to this definition">¶</a></dt>
+<dd><p>Create a copy of the intervals.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A new ArrayProbabilityIntervals with copied data.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Self" title="(in Python v3.14)"><em>Self</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayProbabilityIntervals.lower">
+<span class="sig-name descname"><span class="pre">lower</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/credal_set/array.html#ArrayProbabilityIntervals.lower"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.credal_set.array.ArrayProbabilityIntervals.lower" title="Link to this definition">¶</a></dt>
+<dd><p>Get the lower probability bounds for each class.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><em>ndarray</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayProbabilityIntervals.to_device">
+<span class="sig-name descname"><span class="pre">to_device</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/credal_set/array.html#ArrayProbabilityIntervals.to_device"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.credal_set.array.ArrayProbabilityIntervals.to_device" title="Link to this definition">¶</a></dt>
+<dd><p>Move the intervals to a specified device.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>device</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.14)"><em>Literal</em></a><em>[</em><em>'cpu'</em><em>]</em>) – Target device.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A new ArrayProbabilityIntervals on the specified device.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Self" title="(in Python v3.14)"><em>Self</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayProbabilityIntervals.upper">
+<span class="sig-name descname"><span class="pre">upper</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/credal_set/array.html#ArrayProbabilityIntervals.upper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.credal_set.array.ArrayProbabilityIntervals.upper" title="Link to this definition">¶</a></dt>
+<dd><p>Get the upper probability bounds for each class.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><em>ndarray</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayProbabilityIntervals.width">
+<span class="sig-name descname"><span class="pre">width</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/credal_set/array.html#ArrayProbabilityIntervals.width"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.credal_set.array.ArrayProbabilityIntervals.width" title="Link to this definition">¶</a></dt>
+<dd><p>Compute the width of each probability interval.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array of interval widths for each class.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><em>ndarray</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayProbabilityIntervals.device">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">device</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><a class="headerlink" href="#probly.representation.credal_set.array.ArrayProbabilityIntervals.device" title="Link to this definition">¶</a></dt>
+<dd><p>Return the device where the bounds are stored.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayProbabilityIntervals.dtype">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">dtype</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.dtype.html#numpy.dtype" title="(in NumPy v2.4)"><span class="pre">dtype</span></a></em><a class="headerlink" href="#probly.representation.credal_set.array.ArrayProbabilityIntervals.dtype" title="Link to this definition">¶</a></dt>
+<dd><p>Return the data type of the bounds.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayProbabilityIntervals.lower_bounds">
+<span class="sig-name descname"><span class="pre">lower_bounds</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">np.ndarray</span></em><a class="headerlink" href="#probly.representation.credal_set.array.ArrayProbabilityIntervals.lower_bounds" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayProbabilityIntervals.ndim">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ndim</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></em><a class="headerlink" href="#probly.representation.credal_set.array.ArrayProbabilityIntervals.ndim" title="Link to this definition">¶</a></dt>
+<dd><p>Return the number of dimensions (excluding the class dimensions).</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayProbabilityIntervals.num_classes">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">num_classes</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></em><a class="headerlink" href="#probly.representation.credal_set.array.ArrayProbabilityIntervals.num_classes" title="Link to this definition">¶</a></dt>
+<dd><p>Return the number of classes.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayProbabilityIntervals.shape">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">shape</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#probly.representation.credal_set.array.ArrayProbabilityIntervals.shape" title="Link to this definition">¶</a></dt>
+<dd><p>Return the shape (excluding the class dimensions).</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayProbabilityIntervals.type">
+<span class="sig-name descname"><span class="pre">type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">CredalSetType</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'categorical'</span></em><a class="headerlink" href="#probly.representation.credal_set.array.ArrayProbabilityIntervals.type" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayProbabilityIntervals.upper_bounds">
+<span class="sig-name descname"><span class="pre">upper_bounds</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">np.ndarray</span></em><a class="headerlink" href="#probly.representation.credal_set.array.ArrayProbabilityIntervals.upper_bounds" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArraySingletonCredalSet">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.credal_set.array.</span></span><span class="sig-name descname"><span class="pre">ArraySingletonCredalSet</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">array</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/credal_set/array.html#ArraySingletonCredalSet"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.credal_set.array.ArraySingletonCredalSet" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#probly.representation.credal_set.array.ArrayCategoricalCredalSet" title="probly.representation.credal_set.array.ArrayCategoricalCredalSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">ArrayCategoricalCredalSet</span></code></a>, <a class="reference internal" href="probly.representation.credal_set.common.html#probly.representation.credal_set.common.SingletonCredalSet" title="probly.representation.credal_set.common.SingletonCredalSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">SingletonCredalSet</span></code></a>[<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a>]</p>
+<p>A singleton credal set containing exactly one distribution stored in a numpy array.</p>
+<p>Internally, this is represented as a numpy array of shape (…, num_classes).
+Unlike DiscreteCredalSet, it does not have a ‘members’ dimension.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>array</strong> (<em>np.ndarray</em>)</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArraySingletonCredalSet.from_array_sample">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_array_sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sample</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distribution_axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/credal_set/array.html#ArraySingletonCredalSet.from_array_sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.credal_set.array.ArraySingletonCredalSet.from_array_sample" title="Link to this definition">¶</a></dt>
+<dd><p>Create a SingletonCredalSet from an ArraySample by averaging the samples.</p>
+<p>This method calculates the mean of the samples to produce a single
+precise distribution (singleton).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sample</strong> (<a class="reference internal" href="probly.representation.sampling.array_sample.html#probly.representation.sampling.array_sample.ArraySample" title="probly.representation.sampling.array_sample.ArraySample"><em>ArraySample</em></a><em>[</em><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><em>ndarray</em></a><em>]</em>)</p></li>
+<li><p><strong>distribution_axis</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Self" title="(in Python v3.14)"><em>Self</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArraySingletonCredalSet.from_sample">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sample</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distribution_axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#probly.representation.credal_set.array.ArraySingletonCredalSet.from_sample" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sample</strong> (<a class="reference internal" href="probly.representation.sampling.common_sample.html#probly.representation.sampling.common_sample.Sample" title="probly.representation.sampling.common_sample.Sample"><em>Sample</em></a><em>[</em><em>np.ndarray</em><em>]</em>)</p></li>
+<li><p><strong>distribution_axis</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Self</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArraySingletonCredalSet.copy">
+<span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/credal_set/array.html#ArraySingletonCredalSet.copy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.credal_set.array.ArraySingletonCredalSet.copy" title="Link to this definition">¶</a></dt>
+<dd><p>Create a copy of the ArraySingletonCredalSet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Self" title="(in Python v3.14)"><em>Self</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArraySingletonCredalSet.lower">
+<span class="sig-name descname"><span class="pre">lower</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/credal_set/array.html#ArraySingletonCredalSet.lower"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.credal_set.array.ArraySingletonCredalSet.lower" title="Link to this definition">¶</a></dt>
+<dd><p>Compute the lower envelope of the credal set.</p>
+<p>For a singleton set {P}, lower(P) = P.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><em>ndarray</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArraySingletonCredalSet.to_device">
+<span class="sig-name descname"><span class="pre">to_device</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/credal_set/array.html#ArraySingletonCredalSet.to_device"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.credal_set.array.ArraySingletonCredalSet.to_device" title="Link to this definition">¶</a></dt>
+<dd><p>Move the underlying array to the specified device.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>device</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.14)"><em>Literal</em></a><em>[</em><em>'cpu'</em><em>]</em>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Self" title="(in Python v3.14)"><em>Self</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArraySingletonCredalSet.upper">
+<span class="sig-name descname"><span class="pre">upper</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/credal_set/array.html#ArraySingletonCredalSet.upper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.credal_set.array.ArraySingletonCredalSet.upper" title="Link to this definition">¶</a></dt>
+<dd><p>Compute the upper envelope of the credal set.</p>
+<p>For a singleton set {P}, upper(P) = P.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><em>ndarray</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArraySingletonCredalSet.array">
+<span class="sig-name descname"><span class="pre">array</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">np.ndarray</span></em><a class="headerlink" href="#probly.representation.credal_set.array.ArraySingletonCredalSet.array" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArraySingletonCredalSet.device">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">device</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><a class="headerlink" href="#probly.representation.credal_set.array.ArraySingletonCredalSet.device" title="Link to this definition">¶</a></dt>
+<dd><p>Return the device of the credal set array.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArraySingletonCredalSet.dtype">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">dtype</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.dtype.html#numpy.dtype" title="(in NumPy v2.4)"><span class="pre">dtype</span></a></em><a class="headerlink" href="#probly.representation.credal_set.array.ArraySingletonCredalSet.dtype" title="Link to this definition">¶</a></dt>
+<dd><p>Return the data type of the credal set array.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArraySingletonCredalSet.ndim">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ndim</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></em><a class="headerlink" href="#probly.representation.credal_set.array.ArraySingletonCredalSet.ndim" title="Link to this definition">¶</a></dt>
+<dd><p>Return the number of dimensions of the credal set array.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArraySingletonCredalSet.shape">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">shape</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#probly.representation.credal_set.array.ArraySingletonCredalSet.shape" title="Link to this definition">¶</a></dt>
+<dd><p>Return the shape of the credal set array (batch dimensions).</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="probly.representation.credal_set.array.ArraySingletonCredalSet.type">
+<span class="sig-name descname"><span class="pre">type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">CredalSetType</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'categorical'</span></em><a class="headerlink" href="#probly.representation.credal_set.array.ArraySingletonCredalSet.type" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
 </section>
 
         </article>
@@ -574,6 +1164,21 @@
 <li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayCategoricalCredalSet.type"><code class="docutils literal notranslate"><span class="pre">ArrayCategoricalCredalSet.type</span></code></a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayConvexCredalSet"><code class="docutils literal notranslate"><span class="pre">ArrayConvexCredalSet</span></code></a><ul>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayConvexCredalSet.from_array_sample"><code class="docutils literal notranslate"><span class="pre">ArrayConvexCredalSet.from_array_sample()</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayConvexCredalSet.from_sample"><code class="docutils literal notranslate"><span class="pre">ArrayConvexCredalSet.from_sample()</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayConvexCredalSet.copy"><code class="docutils literal notranslate"><span class="pre">ArrayConvexCredalSet.copy()</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayConvexCredalSet.lower"><code class="docutils literal notranslate"><span class="pre">ArrayConvexCredalSet.lower()</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayConvexCredalSet.to_device"><code class="docutils literal notranslate"><span class="pre">ArrayConvexCredalSet.to_device()</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayConvexCredalSet.upper"><code class="docutils literal notranslate"><span class="pre">ArrayConvexCredalSet.upper()</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayConvexCredalSet.array"><code class="docutils literal notranslate"><span class="pre">ArrayConvexCredalSet.array</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayConvexCredalSet.device"><code class="docutils literal notranslate"><span class="pre">ArrayConvexCredalSet.device</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayConvexCredalSet.dtype"><code class="docutils literal notranslate"><span class="pre">ArrayConvexCredalSet.dtype</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayConvexCredalSet.ndim"><code class="docutils literal notranslate"><span class="pre">ArrayConvexCredalSet.ndim</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayConvexCredalSet.shape"><code class="docutils literal notranslate"><span class="pre">ArrayConvexCredalSet.shape</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayConvexCredalSet.type"><code class="docutils literal notranslate"><span class="pre">ArrayConvexCredalSet.type</span></code></a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayDiscreteCredalSet"><code class="docutils literal notranslate"><span class="pre">ArrayDiscreteCredalSet</span></code></a><ul>
 <li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayDiscreteCredalSet.from_array_sample"><code class="docutils literal notranslate"><span class="pre">ArrayDiscreteCredalSet.from_array_sample()</span></code></a></li>
 <li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayDiscreteCredalSet.from_sample"><code class="docutils literal notranslate"><span class="pre">ArrayDiscreteCredalSet.from_sample()</span></code></a></li>
@@ -587,6 +1192,56 @@
 <li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayDiscreteCredalSet.ndim"><code class="docutils literal notranslate"><span class="pre">ArrayDiscreteCredalSet.ndim</span></code></a></li>
 <li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayDiscreteCredalSet.shape"><code class="docutils literal notranslate"><span class="pre">ArrayDiscreteCredalSet.shape</span></code></a></li>
 <li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayDiscreteCredalSet.type"><code class="docutils literal notranslate"><span class="pre">ArrayDiscreteCredalSet.type</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayDistanceBasedCredalSet"><code class="docutils literal notranslate"><span class="pre">ArrayDistanceBasedCredalSet</span></code></a><ul>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayDistanceBasedCredalSet.from_array_sample"><code class="docutils literal notranslate"><span class="pre">ArrayDistanceBasedCredalSet.from_array_sample()</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayDistanceBasedCredalSet.from_sample"><code class="docutils literal notranslate"><span class="pre">ArrayDistanceBasedCredalSet.from_sample()</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayDistanceBasedCredalSet.copy"><code class="docutils literal notranslate"><span class="pre">ArrayDistanceBasedCredalSet.copy()</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayDistanceBasedCredalSet.lower"><code class="docutils literal notranslate"><span class="pre">ArrayDistanceBasedCredalSet.lower()</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayDistanceBasedCredalSet.to_device"><code class="docutils literal notranslate"><span class="pre">ArrayDistanceBasedCredalSet.to_device()</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayDistanceBasedCredalSet.upper"><code class="docutils literal notranslate"><span class="pre">ArrayDistanceBasedCredalSet.upper()</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayDistanceBasedCredalSet.device"><code class="docutils literal notranslate"><span class="pre">ArrayDistanceBasedCredalSet.device</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayDistanceBasedCredalSet.dtype"><code class="docutils literal notranslate"><span class="pre">ArrayDistanceBasedCredalSet.dtype</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayDistanceBasedCredalSet.ndim"><code class="docutils literal notranslate"><span class="pre">ArrayDistanceBasedCredalSet.ndim</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayDistanceBasedCredalSet.nominal"><code class="docutils literal notranslate"><span class="pre">ArrayDistanceBasedCredalSet.nominal</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayDistanceBasedCredalSet.radius"><code class="docutils literal notranslate"><span class="pre">ArrayDistanceBasedCredalSet.radius</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayDistanceBasedCredalSet.shape"><code class="docutils literal notranslate"><span class="pre">ArrayDistanceBasedCredalSet.shape</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayDistanceBasedCredalSet.type"><code class="docutils literal notranslate"><span class="pre">ArrayDistanceBasedCredalSet.type</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayProbabilityIntervals"><code class="docutils literal notranslate"><span class="pre">ArrayProbabilityIntervals</span></code></a><ul>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayProbabilityIntervals.from_array_sample"><code class="docutils literal notranslate"><span class="pre">ArrayProbabilityIntervals.from_array_sample()</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayProbabilityIntervals.from_sample"><code class="docutils literal notranslate"><span class="pre">ArrayProbabilityIntervals.from_sample()</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayProbabilityIntervals.contains"><code class="docutils literal notranslate"><span class="pre">ArrayProbabilityIntervals.contains()</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayProbabilityIntervals.copy"><code class="docutils literal notranslate"><span class="pre">ArrayProbabilityIntervals.copy()</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayProbabilityIntervals.lower"><code class="docutils literal notranslate"><span class="pre">ArrayProbabilityIntervals.lower()</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayProbabilityIntervals.to_device"><code class="docutils literal notranslate"><span class="pre">ArrayProbabilityIntervals.to_device()</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayProbabilityIntervals.upper"><code class="docutils literal notranslate"><span class="pre">ArrayProbabilityIntervals.upper()</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayProbabilityIntervals.width"><code class="docutils literal notranslate"><span class="pre">ArrayProbabilityIntervals.width()</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayProbabilityIntervals.device"><code class="docutils literal notranslate"><span class="pre">ArrayProbabilityIntervals.device</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayProbabilityIntervals.dtype"><code class="docutils literal notranslate"><span class="pre">ArrayProbabilityIntervals.dtype</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayProbabilityIntervals.lower_bounds"><code class="docutils literal notranslate"><span class="pre">ArrayProbabilityIntervals.lower_bounds</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayProbabilityIntervals.ndim"><code class="docutils literal notranslate"><span class="pre">ArrayProbabilityIntervals.ndim</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayProbabilityIntervals.num_classes"><code class="docutils literal notranslate"><span class="pre">ArrayProbabilityIntervals.num_classes</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayProbabilityIntervals.shape"><code class="docutils literal notranslate"><span class="pre">ArrayProbabilityIntervals.shape</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayProbabilityIntervals.type"><code class="docutils literal notranslate"><span class="pre">ArrayProbabilityIntervals.type</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArrayProbabilityIntervals.upper_bounds"><code class="docutils literal notranslate"><span class="pre">ArrayProbabilityIntervals.upper_bounds</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArraySingletonCredalSet"><code class="docutils literal notranslate"><span class="pre">ArraySingletonCredalSet</span></code></a><ul>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArraySingletonCredalSet.from_array_sample"><code class="docutils literal notranslate"><span class="pre">ArraySingletonCredalSet.from_array_sample()</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArraySingletonCredalSet.from_sample"><code class="docutils literal notranslate"><span class="pre">ArraySingletonCredalSet.from_sample()</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArraySingletonCredalSet.copy"><code class="docutils literal notranslate"><span class="pre">ArraySingletonCredalSet.copy()</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArraySingletonCredalSet.lower"><code class="docutils literal notranslate"><span class="pre">ArraySingletonCredalSet.lower()</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArraySingletonCredalSet.to_device"><code class="docutils literal notranslate"><span class="pre">ArraySingletonCredalSet.to_device()</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArraySingletonCredalSet.upper"><code class="docutils literal notranslate"><span class="pre">ArraySingletonCredalSet.upper()</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArraySingletonCredalSet.array"><code class="docutils literal notranslate"><span class="pre">ArraySingletonCredalSet.array</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArraySingletonCredalSet.device"><code class="docutils literal notranslate"><span class="pre">ArraySingletonCredalSet.device</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArraySingletonCredalSet.dtype"><code class="docutils literal notranslate"><span class="pre">ArraySingletonCredalSet.dtype</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArraySingletonCredalSet.ndim"><code class="docutils literal notranslate"><span class="pre">ArraySingletonCredalSet.ndim</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArraySingletonCredalSet.shape"><code class="docutils literal notranslate"><span class="pre">ArraySingletonCredalSet.shape</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.array.ArraySingletonCredalSet.type"><code class="docutils literal notranslate"><span class="pre">ArraySingletonCredalSet.type</span></code></a></li>
 </ul>
 </li>
 </ul>

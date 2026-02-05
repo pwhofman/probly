@@ -329,7 +329,7 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#probly.representation.credal_set.common.DistanceBasedCredalSet" title="probly.representation.credal_set.common.DistanceBasedCredalSet"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DistanceBasedCredalSet</span></code></a>()</p></td>
 <td><p>A credal set defined by a distance metric around a central distribution.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#probly.representation.credal_set.common.ProbabilityIntervals" title="probly.representation.credal_set.common.ProbabilityIntervals"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ProbabilityIntervals</span></code></a>()</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#probly.representation.credal_set.common.ProbabilityIntervalsCredalSet" title="probly.representation.credal_set.common.ProbabilityIntervalsCredalSet"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ProbabilityIntervalsCredalSet</span></code></a>()</p></td>
 <td><p>A credal set defined by probability intervals over outcomes.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#probly.representation.credal_set.common.SingletonCredalSet" title="probly.representation.credal_set.common.SingletonCredalSet"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SingletonCredalSet</span></code></a>()</p></td>
@@ -567,13 +567,13 @@
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py" id="probly.representation.credal_set.common.ProbabilityIntervals">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.credal_set.common.</span></span><span class="sig-name descname"><span class="pre">ProbabilityIntervals</span></span><a class="reference internal" href="../_modules/probly/representation/credal_set/common.html#ProbabilityIntervals"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.credal_set.common.ProbabilityIntervals" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="probly.representation.credal_set.common.ProbabilityIntervalsCredalSet">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.credal_set.common.</span></span><span class="sig-name descname"><span class="pre">ProbabilityIntervalsCredalSet</span></span><a class="reference internal" href="../_modules/probly/representation/credal_set/common.html#ProbabilityIntervalsCredalSet"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.credal_set.common.ProbabilityIntervalsCredalSet" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#probly.representation.credal_set.common.CategoricalCredalSet" title="probly.representation.credal_set.common.CategoricalCredalSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">CategoricalCredalSet</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Generic" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Generic</span></code></a></p>
 <p>A credal set defined by probability intervals over outcomes.</p>
 <dl class="py method">
-<dt class="sig sig-object py" id="probly.representation.credal_set.common.ProbabilityIntervals.from_sample">
-<em class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sample</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distribution_axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#probly.representation.credal_set.common.ProbabilityIntervals.from_sample" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="probly.representation.credal_set.common.ProbabilityIntervalsCredalSet.from_sample">
+<em class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sample</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distribution_axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#probly.representation.credal_set.common.ProbabilityIntervalsCredalSet.from_sample" title="Link to this definition">¶</a></dt>
 <dd><p>Create a credal set from a finite sample.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -592,8 +592,8 @@
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="probly.representation.credal_set.common.ProbabilityIntervals.lower">
-<span class="sig-name descname"><span class="pre">lower</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#probly.representation.credal_set.common.ProbabilityIntervals.lower" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="probly.representation.credal_set.common.ProbabilityIntervalsCredalSet.lower">
+<span class="sig-name descname"><span class="pre">lower</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#probly.representation.credal_set.common.ProbabilityIntervalsCredalSet.lower" title="Link to this definition">¶</a></dt>
 <dd><p>Compute the lower envelope of the credal set.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -603,8 +603,8 @@
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="probly.representation.credal_set.common.ProbabilityIntervals.upper">
-<span class="sig-name descname"><span class="pre">upper</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#probly.representation.credal_set.common.ProbabilityIntervals.upper" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="probly.representation.credal_set.common.ProbabilityIntervalsCredalSet.upper">
+<span class="sig-name descname"><span class="pre">upper</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#probly.representation.credal_set.common.ProbabilityIntervalsCredalSet.upper" title="Link to this definition">¶</a></dt>
 <dd><p>Compute the upper envelope of the credal set.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -614,8 +614,8 @@
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="probly.representation.credal_set.common.ProbabilityIntervals.type">
-<span class="sig-name descname"><span class="pre">type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">CredalSetType</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'categorical'</span></em><a class="headerlink" href="#probly.representation.credal_set.common.ProbabilityIntervals.type" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="probly.representation.credal_set.common.ProbabilityIntervalsCredalSet.type">
+<span class="sig-name descname"><span class="pre">type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">CredalSetType</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'categorical'</span></em><a class="headerlink" href="#probly.representation.credal_set.common.ProbabilityIntervalsCredalSet.type" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -746,11 +746,11 @@
 <li><a class="reference internal" href="#probly.representation.credal_set.common.DistanceBasedCredalSet.type"><code class="docutils literal notranslate"><span class="pre">DistanceBasedCredalSet.type</span></code></a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#probly.representation.credal_set.common.ProbabilityIntervals"><code class="docutils literal notranslate"><span class="pre">ProbabilityIntervals</span></code></a><ul>
-<li><a class="reference internal" href="#probly.representation.credal_set.common.ProbabilityIntervals.from_sample"><code class="docutils literal notranslate"><span class="pre">ProbabilityIntervals.from_sample()</span></code></a></li>
-<li><a class="reference internal" href="#probly.representation.credal_set.common.ProbabilityIntervals.lower"><code class="docutils literal notranslate"><span class="pre">ProbabilityIntervals.lower()</span></code></a></li>
-<li><a class="reference internal" href="#probly.representation.credal_set.common.ProbabilityIntervals.upper"><code class="docutils literal notranslate"><span class="pre">ProbabilityIntervals.upper()</span></code></a></li>
-<li><a class="reference internal" href="#probly.representation.credal_set.common.ProbabilityIntervals.type"><code class="docutils literal notranslate"><span class="pre">ProbabilityIntervals.type</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.common.ProbabilityIntervalsCredalSet"><code class="docutils literal notranslate"><span class="pre">ProbabilityIntervalsCredalSet</span></code></a><ul>
+<li><a class="reference internal" href="#probly.representation.credal_set.common.ProbabilityIntervalsCredalSet.from_sample"><code class="docutils literal notranslate"><span class="pre">ProbabilityIntervalsCredalSet.from_sample()</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.common.ProbabilityIntervalsCredalSet.lower"><code class="docutils literal notranslate"><span class="pre">ProbabilityIntervalsCredalSet.lower()</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.common.ProbabilityIntervalsCredalSet.upper"><code class="docutils literal notranslate"><span class="pre">ProbabilityIntervalsCredalSet.upper()</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.credal_set.common.ProbabilityIntervalsCredalSet.type"><code class="docutils literal notranslate"><span class="pre">ProbabilityIntervalsCredalSet.type</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#probly.representation.credal_set.common.SingletonCredalSet"><code class="docutils literal notranslate"><span class="pre">SingletonCredalSet</span></code></a><ul>

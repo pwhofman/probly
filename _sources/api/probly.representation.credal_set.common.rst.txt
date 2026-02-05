@@ -13,6 +13,6 @@ probly.representation.credal\_set.common
       CredalSet
       DiscreteCredalSet
       DistanceBasedCredalSet
-      ProbabilityIntervals
+      ProbabilityIntervalsCredalSet
       SingletonCredalSet
    

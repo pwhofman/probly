@@ -9,5 +9,9 @@ probly.representation.credal\_set.array
    .. autosummary::
    
       ArrayCategoricalCredalSet
+      ArrayConvexCredalSet
       ArrayDiscreteCredalSet
+      ArrayDistanceBasedCredalSet
+      ArrayProbabilityIntervals
+      ArraySingletonCredalSet
    
