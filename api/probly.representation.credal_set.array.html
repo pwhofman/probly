@@ -323,7 +323,7 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#probly.representation.credal_set.array.ArrayDiscreteCredalSet" title="probly.representation.credal_set.array.ArrayDiscreteCredalSet"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ArrayDiscreteCredalSet</span></code></a>(array)</p></td>
 <td><p>A discrete credal set over a finite set of distributions stored in a numpy array.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#probly.representation.credal_set.array.ArrayDistanceBasedCredalSet" title="probly.representation.credal_set.array.ArrayDistanceBasedCredalSet"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ArrayDistanceBasedCredalSet</span></code></a>()</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#probly.representation.credal_set.array.ArrayDistanceBasedCredalSet" title="probly.representation.credal_set.array.ArrayDistanceBasedCredalSet"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ArrayDistanceBasedCredalSet</span></code></a>(nominal, radius)</p></td>
 <td><p>A credal set defined by a nominal distribution and a distance radius (L1/Total Variation).</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#probly.representation.credal_set.array.ArrayProbabilityIntervals" title="probly.representation.credal_set.array.ArrayProbabilityIntervals"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ArrayProbabilityIntervals</span></code></a>(lower_bounds, ...)</p></td>
@@ -670,12 +670,20 @@ are the extreme points (vertices) of the polytope.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayDistanceBasedCredalSet">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.credal_set.array.</span></span><span class="sig-name descname"><span class="pre">ArrayDistanceBasedCredalSet</span></span><a class="reference internal" href="../_modules/probly/representation/credal_set/array.html#ArrayDistanceBasedCredalSet"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.credal_set.array.ArrayDistanceBasedCredalSet" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.credal_set.array.</span></span><span class="sig-name descname"><span class="pre">ArrayDistanceBasedCredalSet</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nominal</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">radius</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/credal_set/array.html#ArrayDistanceBasedCredalSet"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.credal_set.array.ArrayDistanceBasedCredalSet" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#probly.representation.credal_set.array.ArrayCategoricalCredalSet" title="probly.representation.credal_set.array.ArrayCategoricalCredalSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">ArrayCategoricalCredalSet</span></code></a>, <a class="reference internal" href="probly.representation.credal_set.common.html#probly.representation.credal_set.common.DistanceBasedCredalSet" title="probly.representation.credal_set.common.DistanceBasedCredalSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">DistanceBasedCredalSet</span></code></a>[<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a>]</p>
 <p>A credal set defined by a nominal distribution and a distance radius (L1/Total Variation).</p>
 <p>The set contains all distributions P such that distance(P, nominal) &lt;= radius.
 Internally, the nominal distribution is stored as a numpy array of shape (…, num_classes).
 The radius is stored as a float or numpy array.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>nominal</strong> (<em>np.ndarray</em>)</p></li>
+<li><p><strong>radius</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em> | </em><em>np.ndarray</em>)</p></li>
+</ul>
+</dd>
+</dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="probly.representation.credal_set.array.ArrayDistanceBasedCredalSet.from_array_sample">
 <em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_array_sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sample</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distribution_axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/credal_set/array.html#ArrayDistanceBasedCredalSet.from_array_sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.credal_set.array.ArrayDistanceBasedCredalSet.from_array_sample" title="Link to this definition">¶</a></dt>

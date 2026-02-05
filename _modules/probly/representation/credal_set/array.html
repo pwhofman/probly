@@ -619,6 +619,7 @@
 
 <div class="viewcode-block" id="ArrayDistanceBasedCredalSet">
 <a class="viewcode-back" href="../../../../api/probly.representation.credal_set.array.html#probly.representation.credal_set.array.ArrayDistanceBasedCredalSet">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">slots</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">weakref_slot</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">ArrayDistanceBasedCredalSet</span><span class="p">(</span>
     <span class="n">ArrayCategoricalCredalSet</span><span class="p">,</span>
     <span class="n">DistanceBasedCredalSet</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
@@ -982,14 +983,10 @@
 <span class="sd">        This method calculates the mean of the samples to produce a single</span>
 <span class="sd">        precise distribution (singleton).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">averaged_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">sample</span><span class="o">.</span><span class="n">samples</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">sample</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">moveaxis</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span> <span class="n">distribution_axis</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># ty:ignore[invalid-assignment, invalid-argument-type]</span>
+        <span class="n">averaged_array</span> <span class="o">=</span> <span class="n">sample</span><span class="o">.</span><span class="n">sample_mean</span><span class="p">()</span>
 
-        <span class="k">if</span> <span class="n">distribution_axis</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">distribution_axis</span> <span class="o">+=</span> <span class="n">averaged_array</span><span class="o">.</span><span class="n">ndim</span>
-
-        <span class="n">array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">moveaxis</span><span class="p">(</span><span class="n">averaged_array</span><span class="p">,</span> <span class="n">distribution_axis</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">array</span><span class="o">=</span><span class="n">array</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">array</span><span class="o">=</span><span class="n">averaged_array</span><span class="p">)</span></div>
 
 
     <span class="k">def</span><span class="w"> </span><span class="nf">__array_namespace__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>  <span class="c1"># noqa: ANN401</span>
