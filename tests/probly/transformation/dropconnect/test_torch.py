@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import pytest
 
-from probly.layers.torch import DropConnectLinear
-from probly.transformation import dropconnect
-from tests.probly.torch_utils import count_layers
-
 torch = pytest.importorskip("torch")
 
 from torch import nn  # noqa: E402
+
+from probly.layers.torch import DropConnectLinear  # noqa: E402
+from probly.transformation import dropconnect  # noqa: E402
+from tests.probly.torch_utils import count_layers  # noqa: E402
 
 
 class TestNetworkArchitectures:

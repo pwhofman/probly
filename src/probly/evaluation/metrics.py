@@ -224,3 +224,41 @@ def spherical_score(probs: np.ndarray, targets: np.ndarray) -> float | np.ndarra
         loss = 1 - probs[np.arange(probs.shape[0]), targets] / np.sqrt(np.sum(probs**2, axis=1))
         loss = np.mean(loss)
     return loss
+
+
+def expected_calibration_error_binary(
+    probs: np.ndarray,
+    labels: np.ndarray,
+    num_bins: int = 10,
+) -> float:
+    """Expected Calibration Error (ECE) for binary classifiers.
+
+    This function works with sigmoid outputs.
+
+    probs: shape (N,) or (N, 1) — sigmoid probabilities
+    labels: shape (N,) — binary labels {0,1}
+    """
+    probs = probs.reshape(-1)
+    labels = labels.reshape(-1)
+
+    preds = (probs >= 0.5).astype(int)
+    confs = np.maximum(probs, 1.0 - probs)
+
+    bins = np.linspace(0.0, 1.0, num_bins + 1)
+    bin_ids = np.digitize(confs, bins, right=True) - 1
+
+    ece = 0.0
+    n = len(probs)
+
+    for i in range(num_bins):
+        idx = bin_ids == i
+        if not np.any(idx):
+            continue
+
+        acc_bin = np.mean(preds[idx] == labels[idx])
+        conf_bin = np.mean(confs[idx])
+        weight = np.sum(idx) / n
+
+        ece += weight * abs(acc_bin - conf_bin)
+
+    return float(ece)
