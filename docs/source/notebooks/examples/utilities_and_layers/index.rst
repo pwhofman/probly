@@ -1,5 +1,5 @@
 Utilities and Layers
-===================
+======================
 
 .. toctree::
    :maxdepth: 1
@@ -8,3 +8,5 @@ Utilities and Layers
    metrics
    probabilistic_layers
    utility_functions
+
+.. Build updated: 2026-01-21

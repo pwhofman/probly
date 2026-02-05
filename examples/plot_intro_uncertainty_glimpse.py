@@ -1,4 +1,5 @@
 """Hello, uncertainty (glimpse).
+=============================
 
 This tiny example shows how repeated stochastic predictions can be summarized into
 mean probabilities and visualized as error bars.

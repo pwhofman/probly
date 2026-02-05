@@ -11,7 +11,10 @@ advanced topics, and hands-on tutorials. The aim is to equip readers with the co
 to understand and apply the more detailed material presented in later sections.
 
 Mini gallery (quick links)
--------------------------
+---------------------------
+
+Before you dive deeper, here are two ultra-light examples (executed via Sphinx-Gallery) that
+show uncertainty and a simple decision rule at a glance.
 
 Threshold-based decision sketch:
 This mini gallery contains a short, runnable example that demonstrates a simple threshold-based decision rule.
@@ -52,7 +55,7 @@ scikit-learn. You can keep your usual training code and add uncertainty on top
 of it with a thin ``probly`` wrapper.
 
 1.1 The Problem: Overconfident Machine Learning Models
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Most machine learning models today are overconfident.
 They output a single prediction such as a class label, a score, or a regression value,
@@ -87,7 +90,7 @@ In short, machine learning models are often overconfident and ``probly`` is desi
 their uncertainty explicit, comparable, and usable.
 
 1.2 Why does Uncertainty Matter?
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In many real world situations, the correctness of a prediction is not the only thing that matters.
 We also want to understand how confident the model is in its output.
@@ -108,7 +111,7 @@ Without uncertainty information, a model can appear confident even when it is wr
 With uncertainty awareness, the model becomes more reliable, more transparent, and more useful in real world applications :cite:`Guo2017`.
 
 1.3 What Does ``probly`` Provide?
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 ``probly`` is designed to make uncertainty aware machine learning simple, practical, and consistent.
 It provides a unified way to work with uncertainty so that users do not need to implement
@@ -134,25 +137,9 @@ Overall, ``probly`` gives users the building blocks needed to make machine learn
 transparent, reliable, and informative by exposing how confident the model is in its predictions.
 
 2. Key Ideas Behind ``probly``
-------------------------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 ``probly`` is built around a few central ideas that make uncertainty aware machine learning easier to use.
-
-Quick visual demos
-------------------
-
-Before you dive deeper, here are two ultra-light examples (executed via Sphinx-Gallery) that
-show uncertainty and a simple decision rule at a glance.
-
-Tiny starter examples
-~~~~~~~~~~~~~~~~~~~~~
-
-.. raw:: html
-
-    <ul class="simple">
-      <li><a class="reference internal" href="auto_examples/plot_intro_uncertainty_glimpse.html">Hello, uncertainty (glimpse)</a></li>
-      <li><a class="reference internal" href="auto_examples/plot_intro_threshold_decision.html">Threshold-based decision sketch</a></li>
-    </ul>
 
 Instead of treating uncertainty as something separate or difficult, ``probly`` organizes the process into
 clear steps that work together and build on one another.
@@ -171,7 +158,7 @@ The main ideas are:
 The following sections explain each of these ideas in more detail.
 
 2.1 Uncertainty Representations
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 An uncertainty representation describes the information a model returns when it predicts with uncertainty.
 Instead of giving a single output, the model provides additional information that shows how unsure it is.
@@ -200,7 +187,7 @@ They capture how the model behaves when it is unsure,
 and ``probly`` uses this representation as the base for all later steps.
 
 2.2 Uncertainty Transformations
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 An uncertainty transformation changes how a model makes predictions so that it can express uncertainty.
 Instead of building a new model from the beginning, the transformation wraps the existing model
@@ -227,7 +214,7 @@ They modify the prediction behavior of a model so that uncertainty becomes visib
 ``probly`` then provides all tools needed to work with this uncertainty in a reliable and practical way.
 
 2.3 Uncertainty Quantification
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Once a model has an uncertainty representation, the next step is to measure
 how uncertain the model actually is.
@@ -279,7 +266,7 @@ The key idea is that quantification turns uncertainty into meaningful numbers
 that can be used in evaluation, decision making, or downstream tasks.
 
 2.4 Downstream Tasks
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^
 
 Once a model has an uncertainty representation and the uncertainty has been quantified, this information can
 be used to perform important downstream tasks. These tasks help make machine learning systems safer, more
@@ -305,6 +292,7 @@ model reliability without rewriting their training or inference pipelines.
 
 3. How ``probly`` fits into your ML Workflow
 ------------------------------------------------------
+
 One of the most important design principles of ``probly`` is its non-invasive nature.
 It is built to augment your existing machine learning workflow, not replace it.
 You can think of it as a diagnostic layer that you add after the core modeling work is done,
@@ -313,12 +301,14 @@ allowing you to extract valuable uncertainty information without disrupting your
 This process provides a practical "mental map" and can be broken down into these straightforward steps:
 
 3.1 Train Your Model (No Changes Needed)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 First, train your model exactly as you normally would using your preferred framework, such as PyTorch or Flax/JAX.
 This part of your workflow remains completely unchanged.
 
 3.2 Apply an Uncertainty Transformation
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 Once your model is trained, you can apply any desired transformation from the ``probly.tansformation`` folder.
 You apply a transformation by passing your trained model to a high-level function.
 For example, to use Monte Carlo Dropout, you would call:
@@ -339,7 +329,8 @@ The result is a new model object, ready to produce uncertainty-aware predictions
 
 
 3.3 Generate an Uncertainty Representation
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 You now call this new, transformed model.
 ``probly`` runs inference multiple times behind the scenes (stochastic forward passes) and returns a
 Representation object. This object acts as a container for the raw results. The most important data it
@@ -358,7 +349,8 @@ This array has shape (num_samples, batch_size, num_classes) and contains all the
 
 
 3.4 Quantify the Uncertainty
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 Finally, you pass the raw probability array from the representation object to one of ``probly`` 's
 many Quantification functions. This distills the complex set of samples into a single, meaningful score.
 ``probly`` provides functions to measure different types of uncertainty:
@@ -374,7 +366,8 @@ many Quantification functions. This distills the complex set of samples into a s
 These functions return concrete numerical scores that summarize the model's uncertainty for each input.
 
 3.5 Use It for Downstream Tasks
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 With these concrete uncertainty scores, you can now perform valuable Downstream Tasks,
 such as flagging out-of-distribution inputs or allowing the model to abstain when its
 model_uncertainty score is too high.
@@ -384,7 +377,8 @@ model_uncertainty score is too high.
 To understand the practical impact of ``probly``, let's contrast a standard model with one enhanced by the library.
 
 4.1 Before ``probly``: The Overconfident Prediction
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 A standard, trained classifier produces a single, deterministic output. It has no way to communicate how confident it is.
 
 .. code-block:: python
@@ -402,7 +396,8 @@ However, it provides no information about its uncertainty.
 Even when the model is wrong, it may still output high confidence scores, leading to overconfident and potentially dangerous predictions.
 
 4.2 After ``probly``: Uncertainty-Aware Prediction
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 By applying probly, we transform the model to produce uncertainty-aware predictions.
 
 .. code-block:: python
@@ -429,6 +424,7 @@ This additional information allows us to identify inputs where the model is unsu
 
 5. Supported Frameworks and Integrations
 ------------------------------------------------------
+
 ``probly`` is designed to work seamlessly with popular machine learning frameworks, allowing you to integrate uncertainty awareness
 into your existing workflows without significant changes. The library currently supports the following frameworks:
 
