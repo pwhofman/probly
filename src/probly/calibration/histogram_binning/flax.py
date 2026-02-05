@@ -71,12 +71,9 @@ class HistogramBinningFlax:
 
     def predict(self, predictions: Array) -> Array:
         """Return calibrated probabilities for input predictions."""
-        if not self.is_fitted:
+        if not self.is_fitted or self.bin_probs is None:
             msg = "Calibrator must be fitted before Calibration"
             raise ValueError(msg)
-        if self.bin_probs is None:
-            msg = "HistogramBinning is not fitted"
-            raise RuntimeError(msg)
 
         bin_indices = jnp.floor((predictions - self.bin_start) / self.bin_width).astype(jnp.int32)
         bin_indices = jnp.clip(bin_indices, 0, self.n_bins - 1)
