@@ -265,6 +265,7 @@ class ArrayConvexCredalSet(ArrayCategoricalCredalSet, ConvexCredalSet[np.ndarray
         return super().__hash__()
 
 
+@dataclass(frozen=True, slots=True, weakref_slot=True)
 class ArrayDistanceBasedCredalSet(
     ArrayCategoricalCredalSet,
     DistanceBasedCredalSet[np.ndarray],
@@ -584,14 +585,10 @@ class ArraySingletonCredalSet(ArrayCategoricalCredalSet, SingletonCredalSet[np.n
         This method calculates the mean of the samples to produce a single
         precise distribution (singleton).
         """
-        averaged_array = np.mean(sample.samples, axis=0)
+        sample = np.moveaxis(sample, distribution_axis, -1)  # ty:ignore[invalid-assignment, invalid-argument-type]
+        averaged_array = sample.sample_mean()
 
-        if distribution_axis < 0:
-            distribution_axis += averaged_array.ndim
-
-        array = np.moveaxis(averaged_array, distribution_axis, -1)
-
-        return cls(array=array)
+        return cls(array=averaged_array)
 
     def __array_namespace__(self) -> Any:  # noqa: ANN401
         """Get the array namespace of the underlying array."""
