@@ -1,4 +1,5 @@
 """Sphinx-Gallery smoke test.
+==========================
 
 This page exists mainly to verify that Sphinx-Gallery is correctly configured for
 the project.

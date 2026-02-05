@@ -61,7 +61,7 @@ class DistanceBasedCredalSet[T](CategoricalCredalSet[T]):
     """A credal set defined by a distance metric around a central distribution."""
 
 
-class ProbabilityIntervals[T](CategoricalCredalSet[T]):
+class ProbabilityIntervalsCredalSet[T](CategoricalCredalSet[T]):
     """A credal set defined by probability intervals over outcomes."""
 
 

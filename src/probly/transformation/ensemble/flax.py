@@ -1,64 +1,40 @@
-"""Ensemble Flax implementation."""
+"""Flax nnx ensemble implementation."""
 
 from __future__ import annotations
 
-from dataclasses import asdict, is_dataclass
-from typing import Any
+from flax import nnx
 
-from flax import linen as nn
-import jax
-import jax.numpy as jnp
+from probly.traverse_nn import nn_compose, nn_traverser
+from pytraverse import CLONE, singledispatch_traverser, traverse
 
 from .common import register
 
+reset_traverser = singledispatch_traverser[nnx.Module](name="reset_traverser")
 
-class FlaxEnsemble(nn.Module):
-    """FlaxEnsemble class."""
 
-    base_module: type
-    base_kwargs: dict[str, Any] | None = None
-    n_members: int = 10
+@reset_traverser.register
+def _(obj: nnx.Module) -> nnx.Module:
+    msg = "resetting parameters of flax models is not supported yet."
+    raise NotImplementedError(msg)
 
-    @nn.compact
-    def __call__(
-        self,
-        x: jnp.ndarray,
-        *,
-        return_all: bool = False,
-        **call_kwargs: object,
-    ) -> jnp.ndarray | dict[str, jnp.ndarray]:
-        """Apply each ensemble member and aggregate."""
-        outputs: list[object] = []
-        for i in range(self.n_members):
-            ctor_kwargs = self.base_kwargs or {}
-            member = self.base_module(**ctor_kwargs, name=f"member_{i}")
-            y = member(x, **call_kwargs)
-            outputs.append(y)
 
-        stacked = jax.tree_util.tree_map(lambda *leaves: jnp.stack(leaves, axis=1), *outputs)
-        if return_all:
-            return stacked  # type: ignore[return-value]
-        averaged = jax.tree_util.tree_map(lambda arr: jnp.mean(arr, axis=1), stacked)
-        return averaged  # type: ignore[return-value]
+def _clone(obj: nnx.Module) -> nnx.Module:
+    return traverse(obj, nn_traverser, init={CLONE: True})
+
+
+def _clone_reset(obj: nnx.Module) -> nnx.Module:
+    return traverse(obj, nn_compose(reset_traverser), init={CLONE: True})
 
 
 def generate_flax_ensemble(
-    model: nn.Module | type[nn.Module] | str,
-    n_members: int,
-) -> FlaxEnsemble:
-    """Create a class:FlaxEnsemble from a module instance or class."""
-    base_module = model.__class__ if not isinstance(model, type) else model
-    base_kwargs: dict[str, Any] | None = None
-    if not isinstance(model, type) and is_dataclass(model):
-        try:
-            # mypy: after is_dataclass check, model is a dataclass instance
-            all_fields = asdict(model)  # type: ignore[arg-type]
-            filtered = {k: v for k, v in all_fields.items() if not k.startswith("_") and k not in ("name", "parent")}
-            if filtered:
-                base_kwargs = filtered
-        except (TypeError, ValueError):
-            base_kwargs = None
-    return FlaxEnsemble(base_module=base_module, base_kwargs=base_kwargs, n_members=n_members)
+    obj: nnx.Module,
+    num_members: int,
+    reset_params: bool,
+) -> nnx.List:
+    """Build a flax ensemble based on :cite:`lakshminarayananSimpleScalable2017`."""
+    if reset_params:
+        return nnx.List([_clone_reset(obj) for _ in range(num_members)])
+    return nnx.List([_clone(obj) for _ in range(num_members)])
 
 
-register(nn.Module, generate_flax_ensemble)
+register(nnx.Module, generate_flax_ensemble)

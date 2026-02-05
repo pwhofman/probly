@@ -90,6 +90,13 @@ class BatchEnsembleLinear(nn.Module):
         y = y + self.bias
         return y
 
+    def extra_repr(self) -> str:
+        """Expose description of in- and out-features, num_members and bias of this layer."""
+        return (
+            f"in_features={self.in_features}, out_features={self.out_features},"
+            f" num_members={self.num_members}, bias={self.bias is not None}"
+        )
+
 
 class BatchEnsembleConv2d(nn.Module):
     """Implements a BatchEnsemble convolutional layer.
@@ -177,6 +184,7 @@ class BatchEnsembleConv2d(nn.Module):
             msg = f"Expected ensemble dim {self.num_members}, got {x.size(0)}"
             raise ValueError(msg)
 
+        x = x.clone()
         x *= self.s[:, None, :, None, None]
         e, b, c, h, w = x.shape
         x = x.reshape(e * b, c, h, w)
@@ -196,6 +204,13 @@ class BatchEnsembleConv2d(nn.Module):
         y += self.bias[None, None, :, None, None]
 
         return y
+
+    def extra_repr(self) -> str:
+        """Expose description of in- and out-features, kernel size, stride and num_members of this layer."""
+        return (
+            f"in_channels={self.in_channels}, out_channels={self.out_channels}, kernel_size={self.kernel_size},"
+            f" stride={self.stride}, num_members={self.num_members}"
+        )
 
 
 # ======================================================================================================================

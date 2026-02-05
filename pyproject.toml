@@ -193,6 +193,7 @@ convention = "google"
 ]
 "examples/*.py" = [
     "T201",
+    "D205",
 ]
 
 # Use isort-compatible settings
