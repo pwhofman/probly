@@ -9,7 +9,7 @@ from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
-from probly.conformal_prediction.methods.split import SplitConformalPredictor
+from probly.conformal_prediction.methods.split import SplitConformalClassifier
 from probly.conformal_prediction.scores.lac.common import LACScore
 
 pytest.importorskip("flax")
@@ -55,9 +55,9 @@ class FlaxPredictor:
         else:
             x_array = jnp.array(np.asarray(x), dtype=jnp.float32)
 
-        output = self.model(x_array)  # type: ignore[operator]
+        output = self.model(x_array)
         logits = output[0] if isinstance(output, tuple) else output
-        return cast(Array, logits)
+        return logits
 
     def predict(self, x: Any) -> Array:  # noqa: ANN401
         """Alias for __call__."""
@@ -181,7 +181,7 @@ def test_lacscore_with_trained_flax_model() -> None:
     )
 
     # further split temp into calib/test
-    x_calib, x_test, y_calib, y_test = train_test_split(
+    x_calib, x_test, y_calib, _y_test = train_test_split(
         x_temp,
         y_temp,
         test_size=0.5,
@@ -234,7 +234,7 @@ def test_lacscore_with_trained_flax_model() -> None:
 
     # simple training loop
     for _ in range(50):
-        params, opt_state, loss = train_step(params, state, opt_state, x_train_jax, y_train_jax)
+        params, opt_state, _loss = train_step(params, state, opt_state, x_train_jax, y_train_jax)
 
     # merge back into model
     model = nnx.merge(params, state)
@@ -256,7 +256,7 @@ def test_lacscore_with_trained_flax_model() -> None:
     assert pred_scores.shape == (len(x_test), 3)
 
     # create conformal predictor
-    cp_predictor = SplitConformalPredictor(
+    cp_predictor = SplitConformalClassifier(
         model=predictor,
         score=score,
         use_accretive=True,
@@ -354,7 +354,7 @@ def test_lacscore_iris_coverage_guarantee() -> None:
 
     # simple training loop
     for _ in range(50):
-        params, opt_state, loss = train_step(params, state, opt_state, x_train_jax, y_train_jax)
+        params, opt_state, _loss = train_step(params, state, opt_state, x_train_jax, y_train_jax)
 
     # merge back into model
     model = nnx.merge(params, state)
@@ -364,7 +364,7 @@ def test_lacscore_iris_coverage_guarantee() -> None:
     score = LACScore(model=predictor)
 
     # create conformal predictor
-    cp_predictor = SplitConformalPredictor(
+    cp_predictor = SplitConformalClassifier(
         model=predictor,
         score=score,
         use_accretive=True,
@@ -468,7 +468,7 @@ def test_lacscore_iris_multiple_seeds() -> None:
 
         # simple training loop
         for _ in range(50):
-            params, opt_state, loss = train_step(tx, params, state, opt_state, x_train_jax, y_train_jax)  # type: ignore[assignment, arg-type]
+            params, opt_state, _loss = train_step(tx, params, state, opt_state, x_train_jax, y_train_jax)  # type: ignore[assignment, arg-type]
 
         # merge back into model
         model = nnx.merge(params, state)
@@ -478,7 +478,7 @@ def test_lacscore_iris_multiple_seeds() -> None:
         score = LACScore(model=predictor)
 
         # create conformal predictor
-        cp_predictor = SplitConformalPredictor(
+        cp_predictor = SplitConformalClassifier(
             model=predictor,
             score=score,
             use_accretive=True,

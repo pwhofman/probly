@@ -26,7 +26,7 @@ def predict_probs[T](model: Predictor, x: T) -> T:
         x: Input data for which to predict probabilities.
 
     Returns:
-        ArrayLike: Predicted probabilities.
+        T: Predicted probabilities with same type as input.
     """
     # fallback for scikit-learn-like models
     if hasattr(model, "predict_probs"):
@@ -131,16 +131,6 @@ class ConformalPredictor(ABC):
         self.is_calibrated: bool = False
 
     @abstractmethod
-    def predict(self, x_test: Sequence[Any], alpha: float) -> npt.NDArray[np.bool_]:
-        """Generate prediction sets as boolean matrix (n_samples, n_classes) at given significance level.
-
-        Args:
-            x_test (Sequence[Any]): Test input data.
-            alpha (float): Significance level for prediction sets.
-        """
-        raise NotImplementedError
-
-    @abstractmethod
     def calibrate(self, x_cal: Sequence[Any], y_cal: Sequence[Any], alpha: float) -> float:
         """Virtual method to calibrate the calibration set.
 
@@ -156,3 +146,32 @@ class ConformalPredictor(ABC):
         model_name = self.model.__class__.__name__
         status = "calibrated" if self.is_calibrated else "not calibrated"
         return f"{self.__class__.__name__}(model={model_name}, status={status})"
+
+
+class ConformalClassifier(ConformalPredictor, ABC):
+    """Base class for Classification Conformal Prediction."""
+
+    @abstractmethod
+    def predict(self, x_test: Sequence[Any], alpha: float, probs: Any | None = None) -> npt.NDArray[np.bool_]:  # noqa: ANN401
+        """Generate prediction sets as boolean matrix (n_samples, n_classes) at given significance level.
+
+        Args:
+            x_test (Sequence[Any]): Test input data.
+            alpha (float): Significance level for prediction sets.
+            probs (Any | None): Optional precomputed probabilities from the model.
+        """
+        raise NotImplementedError
+
+
+class ConformalRegressor(ConformalPredictor, ABC):
+    """Base class for Regression Conformal Prediction."""
+
+    @abstractmethod
+    def predict(self, x_test: Sequence[Any], alpha: float) -> npt.NDArray[np.floating]:
+        """Generate prediction intervals, e.g. shape (n_samples, 2) for [lower, upper] at given significance level.
+
+        Args:
+            x_test (Sequence[Any]): Test input data.
+            alpha (float): Significance level for prediction intervals.
+        """
+        raise NotImplementedError

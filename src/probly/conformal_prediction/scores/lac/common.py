@@ -2,18 +2,19 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Sequence
+    from collections.abc import Callable
 
     from lazy_dispatch.isinstance import LazyType
+    from probly.conformal_prediction.methods.common import Predictor
 
 import numpy as np
 import numpy.typing as npt
 
 from lazy_dispatch import lazydispatch
-from probly.conformal_prediction.methods.common import Predictor, predict_probs
+from probly.conformal_prediction.scores.common import ClassificationScore
 
 
 @lazydispatch
@@ -65,48 +66,14 @@ def accretive_completion(
     return completed_sets
 
 
-class LACScore:
+class LACScore(ClassificationScore):
     """LAC Nonconformity-Score."""
 
     def __init__(self, model: Predictor) -> None:
         """Initialize LAC score with model."""
-        self.model = model
+        super().__init__(model=model, score_func=self.compute_score)
 
-    def calibration_nonconformity(
-        self,
-        x_cal: Sequence[Any],
-        y_cal: Sequence[Any],
-        probs: npt.NDArray[np.floating] | None = None,
-    ) -> npt.NDArray[np.floating]:
-        """Compute true-label calibration scores."""
-        # get probabilities from model
-        if probs is None:
-            probs = predict_probs(self.model, x_cal)
-        # get lac scores for all labels
-        all_scores: npt.NDArray[np.floating] = lac_score_func(probs)
-
-        # convert to numpy arrays
-        scores_np = np.asarray(all_scores, dtype=float)
-        labels_np = np.asarray(y_cal, dtype=int)
-
-        # extract scores for true labels
-        idx = np.arange(len(labels_np))
-        nonconformity: npt.NDArray[np.floating] = scores_np[idx, labels_np]
-
-        return nonconformity
-
-    def predict_nonconformity(
-        self,
-        x_test: Sequence[Any],
-        probs: npt.NDArray[np.floating] | None = None,
-    ) -> npt.NDArray[np.floating]:
-        """Compute LAC scores for all labels on test data."""
-        # predict
-        if probs is None:
-            probs = predict_probs(self.model, x_test)
-
-        # compute all scores (1 - p)
-        all_scores: npt.NDArray[np.floating] = lac_score_func(probs)  # shape: (n_samples, n_classes)
-        scores_np = np.asarray(all_scores, dtype=float)
-
-        return scores_np
+    def compute_score(self, probs: npt.NDArray[np.floating]) -> npt.NDArray[np.floating]:
+        """Compute LAC scores."""
+        probs = np.asarray(probs, dtype=float)
+        return 1.0 - probs
