@@ -179,7 +179,7 @@ convention = "google"
     "PERF401", # it's fine to have non-optimized code in notebooks
 ]
 "docs/**/*.py" = ["INP001", "PTH", "I002"]
-"examples/*.py" = ["T201"]
+"examples/*.py" = ["T201", "D205"]
 
 # Use isort-compatible settings
 [tool.ruff.lint.isort]
