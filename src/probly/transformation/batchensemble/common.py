@@ -8,6 +8,8 @@ from probly.traverse_nn import nn_compose
 from pytraverse import CLONE, GlobalVariable, lazydispatch_traverser, traverse
 
 if TYPE_CHECKING:
+    from flax.nnx.rnglib import Rngs
+
     from lazy_dispatch.isinstance import LazyType
     from probly.predictor import Predictor
     from pytraverse.composition import RegisteredLooseTraverser
@@ -19,6 +21,8 @@ S_MEAN = GlobalVariable[float]("S_MEAN", default=1.0)
 S_STD = GlobalVariable[float]("S_STD", default=0.01)
 R_MEAN = GlobalVariable[float]("R_MEAN", default=1.0)
 R_STD = GlobalVariable[float]("R_STD", default=0.01)
+type RNG = Rngs | int
+RNGS = GlobalVariable[RNG]("RNGS", "rngs for flax layer initialization.", default=1)
 
 batchensemble_traverser = lazydispatch_traverser[object](name="batchensemble_traverser")
 
@@ -35,6 +39,7 @@ def register(cls: LazyType, traverser: RegisteredLooseTraverser) -> None:
             "s_std": S_STD,
             "r_mean": R_MEAN,
             "r_std": R_STD,
+            "rngs": RNGS,
         },
     )
 
@@ -47,6 +52,7 @@ def batchensemble[T: Predictor](
     s_std: float = S_STD.default,
     r_mean: float = R_MEAN.default,
     r_std: float = R_STD.default,
+    rngs: Rngs | int = RNGS.default,
 ) -> T:
     """Create a Batchensemble predictor from a base predictor.
 
@@ -61,6 +67,7 @@ def batchensemble[T: Predictor](
         s_std: float, The standard deviation of the input modulation s, drawn from `nn.init._normal(s_mean, s_std)`.
         r_mean: float, The mean of the output modulation r, drawn from `nn.init._normal(r_mean, r_std)`.
         r_std: float, The standard deviation of the output modulation r, drawn from `nn.init._normal(r_mean, r_std)`.
+        rngs: nnx.Rngs | int, The rngs used for flax layer initialization.
 
     Returns:
         Predictor, The BatchEnsemble predictor.
@@ -103,6 +110,7 @@ def batchensemble[T: Predictor](
             S_STD: s_std,
             R_MEAN: r_mean,
             R_STD: r_std,
+            RNGS: rngs,
             CLONE: True,
         },
     )

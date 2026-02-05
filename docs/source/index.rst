@@ -9,7 +9,7 @@
    advanced_topics
    examples_and_tutorials
    methods
-   contributing
+   contributing_to_probly
    references
    faq
 

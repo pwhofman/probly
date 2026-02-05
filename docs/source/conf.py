@@ -53,14 +53,7 @@ suppress_warnings = [
     "toc.not_included",
     "autodoc.import_object",
     "autodoc",
-    "ref.ref",
-    "ref.doc",
-    "ref.python",
-    "misc.highlighting_failure",
-    "myst.header",
     "autosummary",
-    "toc.not_readable",
-    "docutils",
 ]
 
 templates_path = ["_templates"]
@@ -69,7 +62,24 @@ templates_path = ["_templates"]
 nb_execution_mode = "off"
 
 # Bibliography
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "**/*.py", "**/*.json", "**/*.zip", "**/*.md5"]
+exclude_patterns = [
+    "_build",
+    "Thumbs.db",
+    ".DS_Store",
+    "**/*.py",
+    "**/*.json",
+    "**/*.zip",
+    "**/*.md5",
+    # Prefer Sphinx-Gallery .rst over generated notebooks/markdown in auto_examples.
+    "auto_examples/*.ipynb",
+    "auto_examples/**/*.ipynb",
+    "auto_examples/*.md",
+    "auto_examples/**/*.md",
+    # Exclude top-level notebooks directory
+    "../../notebooks",
+    "../../notebooks/**",
+]
+
 bibtex_bibfiles = ["references.bib"]
 bibtex_default_style = "alpha"
 
@@ -90,6 +100,9 @@ sphinx_gallery_conf = {
     "filename_pattern": r"plot_.*\.py",
     "plot_gallery": True,
     "download_all_examples": False,
+    # Avoid generating .ipynb alongside .rst to prevent duplicate-doc warnings.
+    "notebook_extensions": set(),
+    "run_stale_examples": True,
     # Don't kill the whole build if one example errors
     "abort_on_example_error": False,
     "default_thumb_file": str(DOCS_DIR / "_static" / "logo" / "logo_light.png"),
@@ -170,10 +183,11 @@ html_sidebars = {
 html_show_sourcelink = False
 
 # -- Autodoc -----------------------------------------------------------------
-autosummary_generate = False
+autosummary_generate = True
 autodoc_default_options = {
     "show-inheritance": True,
     "members": True,
+    "ignore-module-all": True,
     "inherited-members": True,
     "member-order": "groupwise",
     "special-members": "__call__",
