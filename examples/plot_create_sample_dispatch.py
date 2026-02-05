@@ -1,4 +1,5 @@
 """Automatic sample construction (dispatcher).
+============================================
 
 You typically don't want to care about the concrete sample type. ``probly`` provides
 ``create_sample`` which selects the best representation based on the sample element type.

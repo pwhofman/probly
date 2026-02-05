@@ -115,7 +115,7 @@ You then can run the examples locally by following these steps:
 
    .. code-block:: sh
 
-      pip install -r examples/requirements.txt
+      uv sync --dev
 
 2. Navigate to the `examples/` directory:
 
@@ -194,7 +194,7 @@ The following CI checks are performed during a pull request:
 
 - Code quality checks
       `pre-commit` is used to run various code quality checks on the codebase.
-      This ist run throuch `uv`.
+      This is run through `uv`.
 
 - Install and import check
    see the :ref:`installation` section for more details.
