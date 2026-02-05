@@ -1,0 +1,15 @@
+probly.visualization.credal.input\_handling
+===========================================
+
+.. automodule:: probly.visualization.credal.input_handling
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      check_num_classes
+      check_shape
+      dispatch_plot
+      normalize_input
+   

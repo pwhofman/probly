@@ -1,0 +1,24 @@
+probly.utils.switchdispatch
+===========================
+
+.. currentmodule:: probly.utils
+
+.. autoclass:: switchdispatch
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~switchdispatch.__init__
+      ~switchdispatch.multi_register
+      ~switchdispatch.register
+   
+   
+
+   
+   
+   

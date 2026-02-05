@@ -1,0 +1,12 @@
+probly.evaluation.tasks
+=======================
+
+.. automodule:: probly.evaluation.tasks
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      selective_prediction
+   

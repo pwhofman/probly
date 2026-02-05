@@ -1,0 +1,13 @@
+probly.transformation.evidential.classification.common
+======================================================
+
+.. automodule:: probly.transformation.evidential.classification.common
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      evidential_classification
+      register
+   

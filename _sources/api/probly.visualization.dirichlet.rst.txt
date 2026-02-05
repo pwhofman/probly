@@ -1,0 +1,14 @@
+probly.visualization.dirichlet
+==============================
+
+.. automodule:: probly.visualization.dirichlet
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   dirichlet_visualization
+   plot_dirichlet

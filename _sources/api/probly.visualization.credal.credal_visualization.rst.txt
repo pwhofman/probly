@@ -1,0 +1,12 @@
+probly.visualization.credal.credal\_visualization
+=================================================
+
+.. automodule:: probly.visualization.credal.credal_visualization
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      create_credal_plot
+   

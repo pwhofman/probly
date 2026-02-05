@@ -217,7 +217,7 @@
 <li class="toctree-l1"><a class="reference internal" href="advanced_topics.html">Advanced Topics</a></li>
 <li class="toctree-l1"><a class="reference internal" href="examples_and_tutorials.html">Examples and Tutorials</a></li>
 <li class="toctree-l1"><a class="reference internal" href="methods.html">Implemented methods</a></li>
-<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing to probly 🏔️</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing_to_probly.html">Contributing Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="references.html">References and Further Reading</a></li>
 <li class="toctree-l1"><a class="reference internal" href="faq.html">FAQ and Troubleshooting</a></li>
 </ul>
@@ -260,6 +260,7 @@
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/sklearn_ensemble_tutorial.html">Uncertainty Quantification using scikit-learn-Ensembles</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/sklearn_selective_prediction.html">Using probly with scikit-learn</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/subensembles_fast_uncertainty.html">Sub-Ensembles for Fast Uncertainty Estimation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/synthetic_regression_dropout.html">Uncertainty for a Synthetic Regression Task using probly</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/temperature_scaling_calibration.html">Calibration using Temperature Scaling</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/train_bnn_classification.html">Bayesian Neural Networks</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/train_evidential_classification.html">Evidential Model for Classification</a></li>
@@ -319,16 +320,16 @@ structured and unified way.</p>
 <h2>Mini gallery (quick links)<a class="headerlink" href="#mini-gallery-quick-links" title="Link to this heading">¶</a></h2>
 <p>Short, focused examples for the concepts in this section:</p>
 <div class="sphx-glr-thumbnails"><div class="sphx-glr-thumbcontainer" tooltip="This example illustrates the difference between epistemic and aleatoric uncertainty in probabilistic models."><img alt="" src="_images/sphx_glr_plot_epistemic_vs_aleatoric_thumb.png" />
-<p><a class="reference internal" href="auto_examples/plot_epistemic_vs_aleatoric.html"><span class="doc">&lt;no title&gt;</span></a></p>
+<p><a class="reference internal" href="auto_examples/plot_epistemic_vs_aleatoric.html"><span class="doc">Epistemic vs Aleatoric Uncertainty.</span></a></p>
   <div class="sphx-glr-thumbnail-title">Epistemic vs Aleatoric Uncertainty.</div>
 </div><div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates selective prediction (abstention)."><img alt="" src="_images/sphx_glr_plot_selective_prediction_thumb.png" />
-<p><a class="reference internal" href="auto_examples/plot_selective_prediction.html"><span class="doc">&lt;no title&gt;</span></a></p>
+<p><a class="reference internal" href="auto_examples/plot_selective_prediction.html"><span class="doc">Selective Prediction.</span></a></p>
   <div class="sphx-glr-thumbnail-title">Selective Prediction.</div>
 </div><div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates a simple form of uncertainty quantification (UQ) for a regression-like setting."><img alt="" src="_images/sphx_glr_plot_uncertainty_quantification_thumb.png" />
-<p><a class="reference internal" href="auto_examples/plot_uncertainty_quantification.html"><span class="doc">&lt;no title&gt;</span></a></p>
+<p><a class="reference internal" href="auto_examples/plot_uncertainty_quantification.html"><span class="doc">Uncertainty Quantification.</span></a></p>
   <div class="sphx-glr-thumbnail-title">Uncertainty Quantification.</div>
-</div></div><p>1.1 What Is Uncertainty?</p>
-<hr class="docutils" />
+</div></div><section id="what-is-uncertainty">
+<h3>1.1 What Is Uncertainty?<a class="headerlink" href="#what-is-uncertainty" title="Link to this heading">¶</a></h3>
 <p>In standard machine learning pipelines a model outputs a <strong>single prediction</strong>
 a class label, a probability, or a regression value. However this number does
 not tell us <strong>how confident</strong> the model actually is.</p>
@@ -356,6 +357,7 @@ leading to overconfident predictions.</p>
 </figure>
 <p>probly addresses this by offering unified tools to represent and quantify both
 epistemic and aleatoric uncertainty across different methods.</p>
+</section>
 <section id="sources-of-uncertainty">
 <h3>1.2 Sources of Uncertainty<a class="headerlink" href="#sources-of-uncertainty" title="Link to this heading">¶</a></h3>
 <p>Uncertainty appears naturally throughout the ML pipeline. Common sources include:</p>
@@ -602,6 +604,7 @@ directly on quantified uncertainty.</p>
 <li><a class="reference internal" href="#">Core Concepts</a><ul>
 <li><a class="reference internal" href="#understanding-uncertainty-in-machine-learning">1. Understanding Uncertainty in Machine Learning</a></li>
 <li><a class="reference internal" href="#mini-gallery-quick-links">Mini gallery (quick links)</a><ul>
+<li><a class="reference internal" href="#what-is-uncertainty">1.1 What Is Uncertainty?</a></li>
 <li><a class="reference internal" href="#sources-of-uncertainty">1.2 Sources of Uncertainty</a></li>
 <li><a class="reference internal" href="#why-overconfidence-is-a-problem">1.3 Why Overconfidence Is a Problem?</a></li>
 </ul>

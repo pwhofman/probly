@@ -1,0 +1,12 @@
+probly.train.evidential.torch
+=============================
+
+.. automodule:: probly.train.evidential.torch
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      unified_evidential_train
+   

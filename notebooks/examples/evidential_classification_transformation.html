@@ -217,7 +217,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../advanced_topics.html">Advanced Topics</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../examples_and_tutorials.html">Examples and Tutorials</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../methods.html">Implemented methods</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing to probly 🏔️</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing_to_probly.html">Contributing Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../references.html">References and Further Reading</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../faq.html">FAQ and Troubleshooting</a></li>
 </ul>
@@ -260,6 +260,7 @@
 <li class="toctree-l2"><a class="reference internal" href="sklearn_ensemble_tutorial.html">Uncertainty Quantification using scikit-learn-Ensembles</a></li>
 <li class="toctree-l2"><a class="reference internal" href="sklearn_selective_prediction.html">Using probly with scikit-learn</a></li>
 <li class="toctree-l2"><a class="reference internal" href="subensembles_fast_uncertainty.html">Sub-Ensembles for Fast Uncertainty Estimation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="synthetic_regression_dropout.html">Uncertainty for a Synthetic Regression Task using probly</a></li>
 <li class="toctree-l2"><a class="reference internal" href="temperature_scaling_calibration.html">Calibration using Temperature Scaling</a></li>
 <li class="toctree-l2"><a class="reference internal" href="train_bnn_classification.html">Bayesian Neural Networks</a></li>
 <li class="toctree-l2"><a class="reference internal" href="train_evidential_classification.html">Evidential Model for Classification</a></li>
@@ -308,28 +309,27 @@
         <article role="main" id="furo-main-content">
           <section id="evidential-classification-transformation">
 <h1>Evidential Classification Transformation<a class="headerlink" href="#evidential-classification-transformation" title="Link to this heading">¶</a></h1>
-<p>This notebook is a practical introduction to the <strong>Evidential Classification transformation</strong> in <code class="docutils literal notranslate"><span class="pre">probly</span></code>. Evidential Deep Learning is a powerful and computationally efficient method for uncertainty quantification that differs significantly from sampling-based approaches like MC-Dropout.</p>
-<p>We will start by explaining the core idea behind evidential learning and see how <code class="docutils literal notranslate"><span class="pre">probly</span></code>’s transformation helps you build such models. We will then walk through a PyTorch example to see how to get an uncertainty estimate from a <strong>single forward pass</strong>.</p>
-<hr class="docutils" />
+<p>This notebook is a practical introduction to the <strong>Evidential Classification transformation</strong> in <code class="docutils literal notranslate"><span class="pre">probly</span></code>. Evidential Deep Learning is a powerful and computationally efficient method for uncertainty quantification that differs significantly from sampling-based approaches like MC-Dropout <span id="id1">[<a class="reference internal" href="../../references.html#id5" title="Murat Sensoy, Lance M. Kaplan, and Melih Kandemir. Evidential deep learning to quantify classification uncertainty. In Samy Bengio, Hanna M. Wallach, Hugo Larochelle, Kristen Grauman, Nicolò Cesa-Bianchi, and Roman Garnett, editors, Advances in Neural Information Processing Systems 31: Annual Conference on Neural Information Processing Systems 2018, NeurIPS 2018, December 3-8, 2018, Montréal, Canada, 3183–3193. 2018. URL: https://proceedings.neurips.cc/paper/2018/hash/a981f2b708044d6fb4a71a1463242520-Abstract.html.">SKK18</a>]</span></p>
+<p>We will start by explaining the core idea behind evidential learning and see how <code class="docutils literal notranslate"><span class="pre">probly</span></code>’s transformation helps you build such models. We will then walk through a PyTorch example to see how to get an uncertainty estimate from a <strong>single forward pass</strong> <span id="id2">[<a class="reference internal" href="../../references.html#id5" title="Murat Sensoy, Lance M. Kaplan, and Melih Kandemir. Evidential deep learning to quantify classification uncertainty. In Samy Bengio, Hanna M. Wallach, Hugo Larochelle, Kristen Grauman, Nicolò Cesa-Bianchi, and Roman Garnett, editors, Advances in Neural Information Processing Systems 31: Annual Conference on Neural Information Processing Systems 2018, NeurIPS 2018, December 3-8, 2018, Montréal, Canada, 3183–3193. 2018. URL: https://proceedings.neurips.cc/paper/2018/hash/a981f2b708044d6fb4a71a1463242520-Abstract.html.">SKK18</a>]</span>.</p>
 <section id="part-a-introduction-to-evidential-learning">
 <h2>Part A — Introduction to Evidential Learning<a class="headerlink" href="#part-a-introduction-to-evidential-learning" title="Link to this heading">¶</a></h2>
 </section>
-<hr class="docutils" />
 <section id="concept-what-is-evidential-classification">
 <h2>1. Concept: What is Evidential Classification?<a class="headerlink" href="#concept-what-is-evidential-classification" title="Link to this heading">¶</a></h2>
 <section id="the-problem-overconfident-softmax">
 <h3>1.1 The Problem: Overconfident Softmax<a class="headerlink" href="#the-problem-overconfident-softmax" title="Link to this heading">¶</a></h3>
 <p>A standard classification network outputs logits, which are converted to probabilities using a <code class="docutils literal notranslate"><span class="pre">softmax</span></code> function.
-While useful, a high softmax probability (e.g., 0.99) is often misinterpreted as high model confidence. A model can be “confidently wrong,” especially on out-of-distribution data.</p>
+While useful, a high softmax probability (e.g., 0.99) is often misinterpreted as high model confidence.
+A model can be “confidently wrong,” especially on out-of-distribution data <span id="id3">[<a class="reference internal" href="../../references.html#id14" title="Chuan Guo, Geoff Pleiss, Yu Sun, and Kilian Q. Weinberger. On calibration of modern neural networks. In Doina Precup and Yee Whye Teh, editors, Proceedings of the 34th International Conference on Machine Learning, ICML 2017, Sydney, NSW, Australia, 6-11 August 2017, volume 70 of Proceedings of Machine Learning Research, 1321–1330. PMLR, 2017. URL: http://proceedings.mlr.press/v70/guo17a.html.">GPSW17b</a>, <a class="reference internal" href="../../references.html#id52" title="Yaniv Ovadia and others. Can you trust your model's uncertainty? evaluating predictive uncertainty under dataset shift. Advances in Neural Information Processing Systems, 2019.">O+19</a>]</span>.</p>
 </section>
 <section id="the-evidential-approach-learning-evidence">
 <h3>1.2 The Evidential Approach: Learning “Evidence”<a class="headerlink" href="#the-evidential-approach-learning-evidence" title="Link to this heading">¶</a></h3>
-<p>Evidential Deep Learning reframes the problem. Instead of learning a direct mapping from input to class probabilities, the model learns to collect <strong>evidence</strong> for each class.
+<p>Evidential Deep Learning reframes the problem. Instead of learning a direct mapping from input to class probabilities, the model learns to collect <strong>evidence</strong> for each class <span id="id4">[<a class="reference internal" href="../../references.html#id5" title="Murat Sensoy, Lance M. Kaplan, and Melih Kandemir. Evidential deep learning to quantify classification uncertainty. In Samy Bengio, Hanna M. Wallach, Hugo Larochelle, Kristen Grauman, Nicolò Cesa-Bianchi, and Roman Garnett, editors, Advances in Neural Information Processing Systems 31: Annual Conference on Neural Information Processing Systems 2018, NeurIPS 2018, December 3-8, 2018, Montréal, Canada, 3183–3193. 2018. URL: https://proceedings.neurips.cc/paper/2018/hash/a981f2b708044d6fb4a71a1463242520-Abstract.html.">SKK18</a>]</span>.
 Think of the model as a detective gathering clues for different suspects (the classes):</p>
 <ul class="simple">
 <li><p>If the model finds <strong>many clues</strong> pointing to one suspect and very few for others (e.g., evidence of <code class="docutils literal notranslate"><span class="pre">[100,</span> <span class="pre">2,</span> <span class="pre">5]</span></code>), it is very <strong>confident</strong>.</p></li>
 <li><p>If the model finds <strong>very few clues for any suspect</strong> (e.g., evidence of <code class="docutils literal notranslate"><span class="pre">[0.1,</span> <span class="pre">0.2,</span> <span class="pre">0.15]</span></code>), it is very <strong>uncertain</strong>. This might happen if the input is ambiguous or something the model has never seen before.
-The model’s final output is a vector of these evidence scores. The total amount of evidence collected is a direct measure of confidence.</p></li>
+The model’s final output is a vector of these evidence scores. The total amount of evidence collected is a direct measure of confidence <span id="id5">[<a class="reference internal" href="../../references.html#id41" title="Eyke Hüllermeier and Willem Waegeman. Aleatoric and epistemic uncertainty in machine learning: an introduction to concepts and methods. Machine Learning, 2021. arXiv:1910.09457.">HW21</a>]</span>.</p></li>
 </ul>
 </section>
 <section id="the-evidential-transformation-probly">
@@ -338,9 +338,9 @@ The model’s final output is a vector of these evidence scores. The total amoun
 <ul class="simple">
 <li><p>You design your network as usual, but your final layer should output raw logits that represent the “evidence.”</p></li>
 <li><p>The <code class="docutils literal notranslate"><span class="pre">evidential_classification</span></code> transformation simply <strong>appends a <code class="docutils literal notranslate"><span class="pre">torch.nn.Softplus()</span></code> activation function.</strong></p></li>
-<li><p>This ensures the evidence scores are always positive, a requirement for the underlying mathematical theory (the Dirichlet distribution).</p></li>
+<li><p>This ensures the evidence scores are always positive, a requirement for the underlying mathematical theory (the Dirichlet distribution) <span id="id6">[<a class="reference internal" href="../../references.html#id6" title="Alexander Amini, Wilko Schwarting, Ava Soleimany, and Daniela Rus. Deep evidential regression. In Hugo Larochelle, Marc'Aurelio Ranzato, Raia Hadsell, Maria-Florina Balcan, and Hsuan-Tien Lin, editors, Advances in Neural Information Processing Systems 33: Annual Conference on Neural Information Processing Systems 2020, NeurIPS 2020, December 6-12, 2020, virtual. 2020. URL: https://proceedings.neurips.cc/paper/2020/hash/aab085461de182608ee9f607f3f7d18f-Abstract.html.">ASSR20</a>, <a class="reference internal" href="../../references.html#id5" title="Murat Sensoy, Lance M. Kaplan, and Melih Kandemir. Evidential deep learning to quantify classification uncertainty. In Samy Bengio, Hanna M. Wallach, Hugo Larochelle, Kristen Grauman, Nicolò Cesa-Bianchi, and Roman Garnett, editors, Advances in Neural Information Processing Systems 31: Annual Conference on Neural Information Processing Systems 2018, NeurIPS 2018, December 3-8, 2018, Montréal, Canada, 3183–3193. 2018. URL: https://proceedings.neurips.cc/paper/2018/hash/a981f2b708044d6fb4a71a1463242520-Abstract.html.">SKK18</a>]</span>.</p></li>
 </ul>
-<p>The uncertainty can then be calculated directly from these evidence scores in a <strong>single forward pass</strong>.</p>
+<p>The uncertainty can then be calculated directly from these evidence scores in a <strong>single forward pass</strong> <span id="id7">[<a class="reference internal" href="../../references.html#id41" title="Eyke Hüllermeier and Willem Waegeman. Aleatoric and epistemic uncertainty in machine learning: an introduction to concepts and methods. Machine Learning, 2021. arXiv:1910.09457.">HW21</a>, <a class="reference internal" href="../../references.html#id5" title="Murat Sensoy, Lance M. Kaplan, and Melih Kandemir. Evidential deep learning to quantify classification uncertainty. In Samy Bengio, Hanna M. Wallach, Hugo Larochelle, Kristen Grauman, Nicolò Cesa-Bianchi, and Roman Garnett, editors, Advances in Neural Information Processing Systems 31: Annual Conference on Neural Information Processing Systems 2018, NeurIPS 2018, December 3-8, 2018, Montréal, Canada, 3183–3193. 2018. URL: https://proceedings.neurips.cc/paper/2018/hash/a981f2b708044d6fb4a71a1463242520-Abstract.html.">SKK18</a>]</span>.</p>
 </section>
 <section id="short-sidebyside-comparison">
 <h3>1.4 Short side‑by‑side comparison<a class="headerlink" href="#short-sidebyside-comparison" title="Link to this heading">¶</a></h3>
@@ -489,10 +489,8 @@ Uncertainty for high evidence: 0.0273
 <h2>4. Part A Summary<a class="headerlink" href="#part-a-summary" title="Link to this heading">¶</a></h2>
 <p>In Part A, we introduced Evidential Deep Learning as a powerful alternative to standard softmax classification. Instead of outputting probabilities, an evidential model outputs “evidence” for each class. We learned that the <code class="docutils literal notranslate"><span class="pre">probly</span></code> transformation makes this easy by appending a <code class="docutils literal notranslate"><span class="pre">Softplus</span></code> activation to a standard network. The key advantage is that model uncertainty can be directly calculated from the magnitude of this evidence in a <strong>single, deterministic forward pass</strong>, making it much faster than sampling-based methods.</p>
 </section>
-<hr class="docutils" />
 <section id="part-b-applied-evidential-classification">
 <h2>Part B — Applied Evidential Classification<a class="headerlink" href="#part-b-applied-evidential-classification" title="Link to this heading">¶</a></h2>
-<hr class="docutils" />
 <p>In <strong>Part A</strong>, we learned the concept of the <strong>Evidential Classification transformation</strong>.
 In this <strong>Part B</strong>, we will apply it to a classification model, get a prediction, and calculate the uncertainty from a single forward pass.</p>
 <p>An indepth tutorial showing:</p>
@@ -505,10 +503,8 @@ In this <strong>Part B</strong>, we will apply it to a classification model, get
 </ul>
 <p>can be found here <a class="reference internal" href="train_evidential_classification.html"><span class="std std-doc">Training an Evidential Model for Classification</span></a></p>
 </section>
-<hr class="docutils" />
 <section id="final-summary-evidential-transformation-tutorial">
 <h2>Final Summary — Evidential Transformation Tutorial<a class="headerlink" href="#final-summary-evidential-transformation-tutorial" title="Link to this heading">¶</a></h2>
-<hr class="docutils" />
 <p>This tutorial introduced the core concepts of <strong>Evidential Deep Learning</strong>, a powerful and efficient method for uncertainty quantification. We learned that instead of outputting probabilities like a standard classifier, an evidential model outputs <strong>“evidence”</strong> for each class.</p>
 <p>We saw that <code class="docutils literal notranslate"><span class="pre">probly</span></code>’s <code class="docutils literal notranslate"><span class="pre">evidential_classification</span></code> transformation automates this by simply appending a <code class="docutils literal notranslate"><span class="pre">Softplus</span></code> layer to a standard network, ensuring the evidence is always positive. The key advantage of this approach is its speed: a meaningful uncertainty score can be calculated directly from the magnitude of the evidence in a <strong>single forward pass</strong>.</p>
 <p>For a complete, end-to-end example that shows how to train an evidential model on the <strong>FashionMNIST</strong> dataset using the specialized evidential loss functions, please see the next tutorial: <strong><a class="reference internal" href="train_evidential_classification.html"><span class="std std-doc">Training an Evidential Model for Classification</span></a></strong>.</p>

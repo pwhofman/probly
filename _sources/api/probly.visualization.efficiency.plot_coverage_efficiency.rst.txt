@@ -1,0 +1,12 @@
+probly.visualization.efficiency.plot\_coverage\_efficiency
+==========================================================
+
+.. automodule:: probly.visualization.efficiency.plot_coverage_efficiency
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      CoverageEfficiencyVisualizer
+   

@@ -217,7 +217,7 @@
 <li class="toctree-l1"><a class="reference internal" href="advanced_topics.html">Advanced Topics</a></li>
 <li class="toctree-l1"><a class="reference internal" href="examples_and_tutorials.html">Examples and Tutorials</a></li>
 <li class="toctree-l1"><a class="reference internal" href="methods.html">Implemented methods</a></li>
-<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing to probly 🏔️</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing_to_probly.html">Contributing Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="references.html">References and Further Reading</a></li>
 <li class="toctree-l1"><a class="reference internal" href="faq.html">FAQ and Troubleshooting</a></li>
 </ul>
@@ -260,6 +260,7 @@
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/sklearn_ensemble_tutorial.html">Uncertainty Quantification using scikit-learn-Ensembles</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/sklearn_selective_prediction.html">Using probly with scikit-learn</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/subensembles_fast_uncertainty.html">Sub-Ensembles for Fast Uncertainty Estimation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/synthetic_regression_dropout.html">Uncertainty for a Synthetic Regression Task using probly</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/temperature_scaling_calibration.html">Calibration using Temperature Scaling</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/train_bnn_classification.html">Bayesian Neural Networks</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/train_evidential_classification.html">Evidential Model for Classification</a></li>
@@ -329,33 +330,35 @@ implementation complexity. Whether you need fast approximate uncertainty or more
 <h3>1.1 Dropout<a class="headerlink" href="#dropout" title="Link to this heading">¶</a></h3>
 <p>Dropout-based uncertainty leverages the interpretation of dropout as approximate Bayesian inference.
 By enabling dropout at test time (Monte Carlo Dropout), you can generate multiple stochastic forward passes
-to estimate model uncertainty.</p>
-<p><a class="reference internal" href="notebooks/examples/dropout_transformation.html"><span class="doc">Dropout Transformation</span></a></p>
+to estimate model uncertainty. For further information and a detailed explanation, refer to the notebook:
+<a class="reference internal" href="notebooks/examples/dropout_transformation.html"><span class="doc">Dropout Transformation</span></a></p>
 </section>
 <section id="dropconnect">
 <h3>1.2 DropConnect<a class="headerlink" href="#dropconnect" title="Link to this heading">¶</a></h3>
 <p>DropConnect extends dropout by randomly dropping weights instead of activations, often providing improved
-uncertainty estimates while maintaining computational efficiency.</p>
+uncertainty estimates while maintaining computational efficiency. For further information and a detailed explanation, refer to the notebook:</p>
 <p><a class="reference internal" href="notebooks/examples/dropconnect_transformation.html"><span class="doc">DropConnect Transformation</span></a></p>
 </section>
 <section id="bayesian">
 <h3>1.3 Bayesian<a class="headerlink" href="#bayesian" title="Link to this heading">¶</a></h3>
 <p>The Bayesian transformation converts deterministic weights to probabilistic distributions, enabling fully
 principled Bayesian neural networks. This approach provides theoretically grounded uncertainty estimates but
-at increased computational cost.</p>
+at increased computational cost. For further information and a detailed explanation, refer to the notebook:</p>
 <p><a class="reference internal" href="notebooks/examples/bayesian_transformation.html"><span class="doc">Bayesian Transformation</span></a></p>
 </section>
 <section id="ensemble">
 <h3>1.4 Ensemble<a class="headerlink" href="#ensemble" title="Link to this heading">¶</a></h3>
 <p>Ensemble transformations create multiple independent models trained on different data subsets or with
 different initializations. By aggregating predictions across ensemble members, you obtain diverse uncertainty
-estimates that often perform well in practice.</p>
+estimates that often perform well in practice. For further information and a detailed explanation, refer to the notebook:</p>
 <p><a class="reference internal" href="notebooks/examples/ensemble_transformation.html"><span class="doc">Ensemble Transformation</span></a></p>
 <p><a class="reference internal" href="notebooks/examples/transformations_comparison.html"><span class="doc">Ensemble Transformation Comparison</span></a></p>
 <p><a class="reference internal" href="notebooks/examples/sklearn_ensemble_tutorial.html"><span class="doc">Ensemble SciKitLearn Transformation</span></a></p>
 <p><a class="reference internal" href="notebooks/examples/Ensembling_RandomForests.html"><span class="doc">Ensemble SciKitLearn Random Forests</span></a></p>
+</section>
+</section>
 <section id="batchensemble">
-<h4>1.4.1 BatchEnsemble<a class="headerlink" href="#batchensemble" title="Link to this heading">¶</a></h4>
+<h2>1.4.1 BatchEnsemble<a class="headerlink" href="#batchensemble" title="Link to this heading">¶</a></h2>
 <p>BatchEnsembles utilize the same key idea of Ensembles, training multiple networks to estimate uncertainty, but
 with a different approach. While Ensembles in a classical sense are trained sequentially, BatchEnsembles are all trained
 within a device at the same time. This is a achieved by modifying the input and output tensors by rank-one-vectors in each foward.
@@ -366,14 +369,12 @@ BatchEnsebmle counterparts. A Flax support is also available.</p>
 <p><a class="reference internal" href="notebooks/examples/batch_ensemble_notebook.html"><span class="doc">BatchEnsemble Transformation</span></a></p>
 </section>
 <section id="subensemble">
-<h4>1.4.2 SubEnsemble<a class="headerlink" href="#subensemble" title="Link to this heading">¶</a></h4>
+<h2>1.4.2 SubEnsemble<a class="headerlink" href="#subensemble" title="Link to this heading">¶</a></h2>
 <p>SubEnsemble are a computationally efficient alternative to standard ensembles. By sharing most of the model parameters across ensemble members
 and only varying a small subset (e.g., the final layer), SubEnsembles achieve diverse predictions with significantly reduced memory and compute overhead.
 <span id="id3">[<a class="reference internal" href="references.html#id42" title="Matías Valdenegro-Toro. Deep sub-ensembles for fast uncertainty estimation in image classification. Machine Learning, 2019. arXiv:1910.08168.">VT19</a>]</span></p>
 <p><a class="reference internal" href="notebooks/examples/subensembles_fast_uncertainty.html"><span class="doc">SubEnsemble Transformation</span></a></p>
 <p><a class="reference internal" href="notebooks/examples/ensemble_subensemble_comparison.html"><span class="doc">Ensemble Subensemble Comparison</span></a></p>
-</section>
-</section>
 <section id="evidential">
 <h3>1.5 Evidential<a class="headerlink" href="#evidential" title="Link to this heading">¶</a></h3>
 <p>Evidential methods model uncertainty by learning the parameters of a higher-order distribution
@@ -384,280 +385,11 @@ the parameters of a Dirichlet distribution (classification) or Normal-Inverse-Ga
 <p>This approach provides a principled framework for capturing both <strong>aleatoric uncertainty</strong>
 (inherent data noise) and <strong>epistemic uncertainty</strong> (model uncertainty due to limited data)
 simultaneously <span id="id4">[<a class="reference internal" href="references.html#id5" title="Murat Sensoy, Lance M. Kaplan, and Melih Kandemir. Evidential deep learning to quantify classification uncertainty. In Samy Bengio, Hanna M. Wallach, Hugo Larochelle, Kristen Grauman, Nicolò Cesa-Bianchi, and Roman Garnett, editors, Advances in Neural Information Processing Systems 31: Annual Conference on Neural Information Processing Systems 2018, NeurIPS 2018, December 3-8, 2018, Montréal, Canada, 3183–3193. 2018. URL: https://proceedings.neurips.cc/paper/2018/hash/a981f2b708044d6fb4a71a1463242520-Abstract.html.">SKK18</a>]</span>.</p>
-<section id="implemented-methods">
-<h4>1.5.1 Implemented Methods<a class="headerlink" href="#implemented-methods" title="Link to this heading">¶</a></h4>
-<p><code class="docutils literal notranslate"><span class="pre">probly</span></code> supports seven evidential deep learning methods through a unified interface:</p>
-<p><strong>Classification Methods</strong></p>
-<ul class="simple">
-<li><p><strong>Evidential Deep Learning (EDL)</strong> <span id="id5">[<a class="reference internal" href="references.html#id5" title="Murat Sensoy, Lance M. Kaplan, and Melih Kandemir. Evidential deep learning to quantify classification uncertainty. In Samy Bengio, Hanna M. Wallach, Hugo Larochelle, Kristen Grauman, Nicolò Cesa-Bianchi, and Roman Garnett, editors, Advances in Neural Information Processing Systems 31: Annual Conference on Neural Information Processing Systems 2018, NeurIPS 2018, December 3-8, 2018, Montréal, Canada, 3183–3193. 2018. URL: https://proceedings.neurips.cc/paper/2018/hash/a981f2b708044d6fb4a71a1463242520-Abstract.html.">SKK18</a>]</span> — The foundational
-method that trains networks to output Dirichlet concentration parameters directly.</p></li>
-<li><p><strong>Prior Networks (PrNet)</strong> <span id="id6">[<a class="reference internal" href="references.html#id75" title="Andrey Malinin and Mark Gales. Predictive uncertainty estimation via prior networks. In Advances in Neural Information Processing Systems, volume 31. Curran Associates, Inc., 2018.">MG18</a>]</span> — Uses both
-in-distribution and out-of-distribution data during training to learn sharper
-uncertainty estimates.</p></li>
-<li><p><strong>Information Robust Dirichlet Networks (IRD)</strong> <span id="id7">[<a class="reference internal" href="references.html#id76" title="Theodoros Tsiligkaridis. Information robust dirichlet networks for predictive uncertainty estimation. arXiv preprint arXiv:1910.04819, 2019.">Tsi19</a>]</span> —
-Adds adversarial robustness through entropy maximisation on perturbed inputs.</p></li>
-<li><p><strong>Posterior Networks (PostNet)</strong> <span id="id8">[<a class="reference internal" href="references.html#id77" title="Bertrand Charpentier, Daniel Zügner, and Stephan Günnemann. Posterior network: uncertainty estimation without ood samples via density-based pseudo-counts. In Advances in Neural Information Processing Systems, volume 33, 1356–1367. Curran Associates, Inc., 2020.">CZugnerGunnemann20</a>]</span> — Uses normalizing flows
-to estimate density in latent space, converting density to pseudo-counts.</p></li>
-<li><p><strong>Natural Posterior Networks (NatPostNet)</strong> <span id="id9">[<a class="reference internal" href="references.html#id79" title="Bertrand Charpentier, Oliver Borchert, Daniel Zügner, Simon Geisler, and Stephan Günnemann. Natural posterior network: deep bayesian predictive uncertainty for exponential family distributions. In International Conference on Learning Representations. 2022.">CBZugner+22</a>]</span> — Extends
-Posterior Networks to exponential family distributions with a certainty budget.</p></li>
-</ul>
-<p><strong>Regression Methods</strong></p>
-<ul class="simple">
-<li><p><strong>Deep Evidential Regression (DER)</strong> <span id="id10">[<a class="reference internal" href="references.html#id6" title="Alexander Amini, Wilko Schwarting, Ava Soleimany, and Daniela Rus. Deep evidential regression. In Hugo Larochelle, Marc'Aurelio Ranzato, Raia Hadsell, Maria-Florina Balcan, and Hsuan-Tien Lin, editors, Advances in Neural Information Processing Systems 33: Annual Conference on Neural Information Processing Systems 2020, NeurIPS 2020, December 6-12, 2020, virtual. 2020. URL: https://proceedings.neurips.cc/paper/2020/hash/aab085461de182608ee9f607f3f7d18f-Abstract.html.">ASSR20</a>]</span> — Outputs parameters
-of a Normal-Inverse-Gamma distribution for regression with uncertainty.</p></li>
-<li><p><strong>Regression Prior Networks (RPN)</strong> <span id="id11">[<a class="reference internal" href="references.html#id78" title="Andrey Malinin, Sergey Chervontsev, Ivan Provilkov, and Mark Gales. Regression prior networks. arXiv preprint arXiv:2006.11590, 2020.">MCPG20</a>]</span> — Combines
-evidential regression with OOD-aware training using KL divergence to a prior.</p></li>
-</ul>
-</section>
-<section id="unified-evidential-training">
-<h4>1.5.2 Unified Evidential Training<a class="headerlink" href="#unified-evidential-training" title="Link to this heading">¶</a></h4>
-<p>The <code class="docutils literal notranslate"><span class="pre">unified_evidential_train</span></code> function in <code class="docutils literal notranslate"><span class="pre">probly.train.evidential.common</span></code> provides
-a single interface for training all seven evidential methods:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">probly.train.evidential.common</span><span class="w"> </span><span class="kn">import</span> <span class="n">unified_evidential_train</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">probly.train.evidential.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">evidential_log_loss</span>
-
-<span class="n">unified_evidential_train</span><span class="p">(</span>
-    <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;EDL&quot;</span><span class="p">,</span>
-    <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
-    <span class="n">dataloader</span><span class="o">=</span><span class="n">train_loader</span><span class="p">,</span>
-    <span class="n">loss_fn</span><span class="o">=</span><span class="n">evidential_log_loss</span><span class="p">,</span>
-    <span class="n">epochs</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
-    <span class="n">lr</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span>
-    <span class="n">device</span><span class="o">=</span><span class="s2">&quot;cuda&quot;</span>
-<span class="p">)</span>
-</pre></div>
-</div>
-<p><strong>Function Signature</strong></p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">unified_evidential_train</span><span class="p">(</span>
-    <span class="n">mode</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;PostNet&quot;</span><span class="p">,</span> <span class="s2">&quot;NatPostNet&quot;</span><span class="p">,</span> <span class="s2">&quot;EDL&quot;</span><span class="p">,</span> <span class="s2">&quot;PrNet&quot;</span><span class="p">,</span> <span class="s2">&quot;IRD&quot;</span><span class="p">,</span> <span class="s2">&quot;DER&quot;</span><span class="p">,</span> <span class="s2">&quot;RPN&quot;</span><span class="p">],</span>
-    <span class="n">model</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span>
-    <span class="n">dataloader</span><span class="p">:</span> <span class="n">DataLoader</span><span class="p">,</span>
-    <span class="n">loss_fn</span><span class="p">:</span> <span class="n">Callable</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">oodloader</span><span class="p">:</span> <span class="n">DataLoader</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">flow</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">class_count</span><span class="p">:</span> <span class="n">Tensor</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">epochs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
-    <span class="n">lr</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-3</span><span class="p">,</span>
-    <span class="n">device</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;cpu&quot;</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</pre></div>
-</div>
-<p><strong>Parameters</strong></p>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">mode</span></code>: Training approach identifier. One of: <code class="docutils literal notranslate"><span class="pre">&quot;PostNet&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;NatPostNet&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;EDL&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;PrNet&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;IRD&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;DER&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;RPN&quot;</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">model</span></code>: The neural network to be trained (<code class="docutils literal notranslate"><span class="pre">nn.Module</span></code>)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">dataloader</span></code>: PyTorch DataLoader providing in-distribution training samples</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">loss_fn</span></code>: Loss function for training (mode-dependent)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">oodloader</span></code>: DataLoader for out-of-distribution samples (required for <code class="docutils literal notranslate"><span class="pre">&quot;PrNet&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;RPN&quot;</span></code>)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">flow</span></code>: Normalizing flow module (required for <code class="docutils literal notranslate"><span class="pre">&quot;PostNet&quot;</span></code>)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">class_count</span></code>: Tensor containing number of samples per class (used by <code class="docutils literal notranslate"><span class="pre">&quot;PostNet&quot;</span></code>)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">epochs</span></code>: Number of training epochs (default: 5)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">lr</span></code>: Learning rate (default: 1e-3)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">device</span></code>: Device for training, e.g. <code class="docutils literal notranslate"><span class="pre">&quot;cpu&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;cuda&quot;</span></code> (default: <code class="docutils literal notranslate"><span class="pre">&quot;cpu&quot;</span></code>)</p></li>
-</ul>
-<p><strong>Mode-Specific Requirements</strong></p>
-<p><strong>Example: Training with Prior Networks</strong></p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">probly.train.evidential.common</span><span class="w"> </span><span class="kn">import</span> <span class="n">unified_evidential_train</span>
-
-<span class="c1"># PrNet requires both ID and OOD data</span>
-<span class="n">unified_evidential_train</span><span class="p">(</span>
-    <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;PrNet&quot;</span><span class="p">,</span>
-    <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
-    <span class="n">dataloader</span><span class="o">=</span><span class="n">id_train_loader</span><span class="p">,</span>
-    <span class="n">oodloader</span><span class="o">=</span><span class="n">ood_train_loader</span><span class="p">,</span>
-    <span class="n">epochs</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
-    <span class="n">lr</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span>
-    <span class="n">device</span><span class="o">=</span><span class="s2">&quot;cuda&quot;</span>
-<span class="p">)</span>
-</pre></div>
-</div>
-</section>
-<section id="evidential-layers">
-<h4>1.5.3 Evidential Layers<a class="headerlink" href="#evidential-layers" title="Link to this heading">¶</a></h4>
-<p>The <code class="docutils literal notranslate"><span class="pre">probly.layers.evidential.torch</span></code> module provides specialized layers for evidential models.</p>
-<p><strong>RadialFlowDensity</strong></p>
-<p>Normalizing flow for density estimation, used by Posterior Networks and Natural Posterior Networks.
-Uses a stack of radial flow layers to transform a base Gaussian distribution:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">probly.layers.evidential.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">RadialFlowDensity</span>
-
-<span class="c1"># Create flow with 4 radial layers over a 2D latent space</span>
-<span class="n">flow</span> <span class="o">=</span> <span class="n">RadialFlowDensity</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">flow_length</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
-
-<span class="c1"># Compute log probability of latent vectors</span>
-<span class="n">log_prob</span> <span class="o">=</span> <span class="n">flow</span><span class="o">.</span><span class="n">log_prob</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>  <span class="c1"># Shape: [B]</span>
-</pre></div>
-</div>
-<p><strong>NatPNClassifier</strong></p>
-<p>Complete Natural Posterior Network classifier that combines an encoder, classifier head,
-and normalizing flow for density-based uncertainty:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">probly.layers.evidential.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">NatPNClassifier</span>
-
-<span class="n">model</span> <span class="o">=</span> <span class="n">NatPNClassifier</span><span class="p">(</span>
-    <span class="n">num_classes</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
-    <span class="n">latent_dim</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
-    <span class="n">flow_length</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
-    <span class="n">certainty_budget</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span>  <span class="c1"># Scales density into evidence (default: latent_dim)</span>
-    <span class="n">n_prior</span><span class="o">=</span><span class="mf">10.0</span>           <span class="c1"># Prior pseudo-count (default: num_classes)</span>
-<span class="p">)</span>
-
-<span class="c1"># Forward pass returns three values</span>
-<span class="n">alpha</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">log_pz</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-<span class="c1"># alpha: Posterior Dirichlet parameters [B, num_classes]</span>
-<span class="c1"># z: Latent representation [B, latent_dim]</span>
-<span class="c1"># log_pz: Log density from flow [B]</span>
-</pre></div>
-</div>
-<p><strong>EvidentialRegression</strong></p>
-<p>MLP model for evidential regression that outputs Normal-Inverse-Gamma parameters:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">probly.layers.evidential.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">EvidentialRegression</span>
-
-<span class="n">model</span> <span class="o">=</span> <span class="n">EvidentialRegression</span><span class="p">()</span>
-
-<span class="c1"># Returns four parameters for 1D regression</span>
-<span class="n">mu</span><span class="p">,</span> <span class="n">kappa</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-<span class="c1"># mu: Predicted mean</span>
-<span class="c1"># kappa: Observation count (&gt;= 0, controls epistemic uncertainty)</span>
-<span class="c1"># alpha: Shape parameter (&gt; 1)</span>
-<span class="c1"># beta: Rate parameter (&gt; 0, controls aleatoric uncertainty)</span>
-</pre></div>
-</div>
-</section>
-<section id="loss-functions">
-<h4>1.5.4 Loss Functions<a class="headerlink" href="#loss-functions" title="Link to this heading">¶</a></h4>
-<p>Loss functions are available in <code class="docutils literal notranslate"><span class="pre">probly.train.evidential.torch</span></code>.</p>
-<p><strong>Classification Losses</strong></p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">probly.train.evidential.torch</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">evidential_log_loss</span><span class="p">,</span>      <span class="c1"># EDL log loss (Sensoy et al., 2018)</span>
-    <span class="n">evidential_ce_loss</span><span class="p">,</span>       <span class="c1"># Cross-entropy variant using digamma</span>
-    <span class="n">evidential_mse_loss</span><span class="p">,</span>      <span class="c1"># MSE variant with variance term</span>
-    <span class="n">evidential_kl_divergence</span><span class="p">,</span> <span class="c1"># KL divergence regularizer</span>
-<span class="p">)</span>
-
-<span class="c1"># Basic usage - inputs are raw model outputs, targets are class indices</span>
-<span class="n">loss</span> <span class="o">=</span> <span class="n">evidential_log_loss</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">targets</span><span class="p">)</span>
-</pre></div>
-</div>
-<p><strong>ird_loss</strong> <span id="id12">[<a class="reference internal" href="references.html#id76" title="Theodoros Tsiligkaridis. Information robust dirichlet networks for predictive uncertainty estimation. arXiv preprint arXiv:1910.04819, 2019.">Tsi19</a>]</span></p>
-<p>Information Robust Dirichlet loss combining Lp calibration, regularization
-on incorrect classes, and entropy maximization for adversarial robustness:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">probly.train.evidential.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">ird_loss</span>
-
-<span class="c1"># alpha: predictions on clean inputs [B, K]</span>
-<span class="c1"># y: one-hot encoded labels [B, K]</span>
-<span class="c1"># adversarial_alpha: predictions on perturbed inputs [B, K] (optional)</span>
-<span class="n">loss</span> <span class="o">=</span> <span class="n">ird_loss</span><span class="p">(</span>
-    <span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span><span class="p">,</span>
-    <span class="n">y</span><span class="o">=</span><span class="n">y_onehot</span><span class="p">,</span>
-    <span class="n">adversarial_alpha</span><span class="o">=</span><span class="n">adversarial_alpha</span><span class="p">,</span>
-    <span class="n">p</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span>      <span class="c1"># Lp norm exponent</span>
-    <span class="n">lam</span><span class="o">=</span><span class="mf">0.15</span><span class="p">,</span>   <span class="c1"># Regularization weight</span>
-    <span class="n">gamma</span><span class="o">=</span><span class="mf">1.0</span>   <span class="c1"># Entropy weight</span>
-<span class="p">)</span>
-</pre></div>
-</div>
-<p><strong>pn_loss</strong> <span id="id13">[<a class="reference internal" href="references.html#id75" title="Andrey Malinin and Mark Gales. Predictive uncertainty estimation via prior networks. In Advances in Neural Information Processing Systems, volume 31. Curran Associates, Inc., 2018.">MG18</a>]</span></p>
-<p>Prior Networks loss for paired ID and OOD training:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">probly.train.evidential.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">pn_loss</span>
-
-<span class="c1"># Computes ID KL + OOD KL + cross-entropy term</span>
-<span class="n">loss</span> <span class="o">=</span> <span class="n">pn_loss</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">x_in</span><span class="p">,</span> <span class="n">y_in</span><span class="p">,</span> <span class="n">x_ood</span><span class="p">)</span>
-</pre></div>
-</div>
-<p><strong>natpn_loss</strong> <span id="id14">[<a class="reference internal" href="references.html#id79" title="Bertrand Charpentier, Oliver Borchert, Daniel Zügner, Simon Geisler, and Stephan Günnemann. Natural posterior network: deep bayesian predictive uncertainty for exponential family distributions. In International Conference on Learning Representations. 2022.">CBZugner+22</a>]</span></p>
-<p>Natural Posterior Network loss (expected NLL minus entropy regularization):</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">probly.train.evidential.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">natpn_loss</span>
-
-<span class="n">loss</span> <span class="o">=</span> <span class="n">natpn_loss</span><span class="p">(</span><span class="n">alpha</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">entropy_weight</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">)</span>
-</pre></div>
-</div>
-<p><strong>postnet_loss</strong> <span id="id15">[<a class="reference internal" href="references.html#id77" title="Bertrand Charpentier, Daniel Zügner, and Stephan Günnemann. Posterior network: uncertainty estimation without ood samples via density-based pseudo-counts. In Advances in Neural Information Processing Systems, volume 33, 1356–1367. Curran Associates, Inc., 2020.">CZugnerGunnemann20</a>]</span></p>
-<p>Posterior Networks loss using flow-based density estimation:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">probly.train.evidential.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">postnet_loss</span>
-
-<span class="n">loss</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="n">postnet_loss</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">flow</span><span class="p">,</span> <span class="n">class_counts</span><span class="p">,</span> <span class="n">entropy_weight</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">)</span>
-</pre></div>
-</div>
-<p><strong>Regression Losses</strong></p>
-<p><strong>der_loss</strong> <span id="id16">[<a class="reference internal" href="references.html#id6" title="Alexander Amini, Wilko Schwarting, Ava Soleimany, and Daniela Rus. Deep evidential regression. In Hugo Larochelle, Marc'Aurelio Ranzato, Raia Hadsell, Maria-Florina Balcan, and Hsuan-Tien Lin, editors, Advances in Neural Information Processing Systems 33: Annual Conference on Neural Information Processing Systems 2020, NeurIPS 2020, December 6-12, 2020, virtual. 2020. URL: https://proceedings.neurips.cc/paper/2020/hash/aab085461de182608ee9f607f3f7d18f-Abstract.html.">ASSR20</a>]</span></p>
-<p>Deep Evidential Regression loss (Student-t NLL + evidence regularization):</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">probly.train.evidential.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">der_loss</span>
-
-<span class="n">loss</span> <span class="o">=</span> <span class="n">der_loss</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">kappa</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">lam</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
-</pre></div>
-</div>
-<p><strong>rpn_loss</strong> <span id="id17">[<a class="reference internal" href="references.html#id78" title="Andrey Malinin, Sergey Chervontsev, Ivan Provilkov, and Mark Gales. Regression prior networks. arXiv preprint arXiv:2006.11590, 2020.">MCPG20</a>]</span></p>
-<p>Regression Prior Networks loss combining DER on ID data with KL to prior on OOD:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">probly.train.evidential.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">rpn_loss</span>
-
-<span class="n">loss</span> <span class="o">=</span> <span class="n">rpn_loss</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">x_id</span><span class="p">,</span> <span class="n">y_id</span><span class="p">,</span> <span class="n">x_ood</span><span class="p">,</span> <span class="n">lam_der</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">lam_rpn</span><span class="o">=</span><span class="mf">50.0</span><span class="p">)</span>
-</pre></div>
-</div>
-<p><strong>Helper Functions</strong></p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">probly.train.evidential.torch</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">kl_dirichlet</span><span class="p">,</span>                <span class="c1"># KL(Dir(α_p) || Dir(α_q))</span>
-    <span class="n">make_in_domain_target_alpha</span><span class="p">,</span> <span class="c1"># Sharp Dirichlet target for ID (α=10 on correct class)</span>
-    <span class="n">make_ood_target_alpha</span><span class="p">,</span>       <span class="c1"># Flat Dirichlet target for OOD</span>
-    <span class="n">rpn_prior</span><span class="p">,</span>                   <span class="c1"># Zero-evidence Normal-Gamma prior</span>
-    <span class="n">rpn_ng_kl</span><span class="p">,</span>                   <span class="c1"># KL divergence for Normal-Gamma distributions</span>
-    <span class="n">predictive_probs</span><span class="p">,</span>            <span class="c1"># Expected probabilities: α / Σα</span>
-<span class="p">)</span>
-</pre></div>
-</div>
-</section>
-<section id="uncertainty-interpretation">
-<h4>1.5.5 Uncertainty Interpretation<a class="headerlink" href="#uncertainty-interpretation" title="Link to this heading">¶</a></h4>
-<p><strong>Classification (Dirichlet)</strong></p>
-<p>For evidential classification, the model outputs Dirichlet concentration parameters
-α = (α₁, …, αₖ) where K is the number of classes.</p>
-<p><strong>Key quantities:</strong></p>
-<ul class="simple">
-<li><p><strong>Dirichlet strength</strong> S = Σαᵢ — total evidence; higher means more confident</p></li>
-<li><p><strong>Expected probabilities</strong> p = α/S — the predicted class distribution</p></li>
-<li><p><strong>Epistemic uncertainty</strong> K/S — uncertainty due to lack of evidence</p></li>
-</ul>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">probly.train.evidential.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">predictive_probs</span>
-
-<span class="n">alpha</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-<span class="n">S</span> <span class="o">=</span> <span class="n">alpha</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>              <span class="c1"># Total evidence</span>
-<span class="n">probs</span> <span class="o">=</span> <span class="n">predictive_probs</span><span class="p">(</span><span class="n">alpha</span><span class="p">)</span>   <span class="c1"># Class probabilities</span>
-<span class="n">uncertainty</span> <span class="o">=</span> <span class="n">num_classes</span> <span class="o">/</span> <span class="n">S</span>     <span class="c1"># Epistemic uncertainty</span>
-</pre></div>
-</div>
-<p><strong>Regression (Normal-Inverse-Gamma)</strong></p>
-<p>For evidential regression, the model outputs (μ, κ, α, β):</p>
-<ul class="simple">
-<li><p><strong>Predicted mean</strong>: μ</p></li>
-<li><p><strong>Aleatoric uncertainty</strong> (data noise): β / (α - 1)</p></li>
-<li><p><strong>Epistemic uncertainty</strong> (model uncertainty): β / (κ(α - 1))</p></li>
-</ul>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">mu</span><span class="p">,</span> <span class="n">kappa</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-
-<span class="n">aleatoric</span> <span class="o">=</span> <span class="n">beta</span> <span class="o">/</span> <span class="p">(</span><span class="n">alpha</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
-<span class="n">epistemic</span> <span class="o">=</span> <span class="n">beta</span> <span class="o">/</span> <span class="p">(</span><span class="n">kappa</span> <span class="o">*</span> <span class="p">(</span><span class="n">alpha</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
-</pre></div>
-</div>
-</section>
-<section id="tutorial-notebooks">
-<h4>1.5.6 Tutorial Notebooks<a class="headerlink" href="#tutorial-notebooks" title="Link to this heading">¶</a></h4>
-<p>Comprehensive tutorials are available in <code class="docutils literal notranslate"><span class="pre">notebooks/examples/unified_evidential_train/</span></code>:</p>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">unified_evidential_function_notebook.ipynb</span></code> — Unified training function demo with EDL on MNIST, including OOD detection using FashionMNIST</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">Prior_Networks.ipynb</span></code> — Dirichlet Prior Networks (Malinin &amp; Gales, 2018) with KL-based training, entropy analysis, and OOD detection AUC</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">posterior_network.ipynb</span></code> — Posterior Networks (Charpentier et al., 2020) using normalizing flows for density-based pseudo-counts without OOD training data</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">Natural_Posterior_Network.ipynb</span></code> — Natural Posterior Networks (Charpentier et al., 2022) with radial flows, Dirichlet posteriors, and certainty budget</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">information_robust_dirichlet_networks_notebook.ipynb</span></code> — IRD Networks (Tsiligkaridis, 2019) with Lp calibration, regularization, and adversarial entropy</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">deep_evidential_regression_summary.ipynb</span></code> — Deep Evidential Regression (Amini et al., 2020) with Normal-Inverse-Gamma distributions and aleatoric/epistemic uncertainty</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">Regression_Prior_Networks</span> <span class="pre">(4).ipynb</span></code> — Regression Prior Networks (Malinin et al., 2020) with Normal-Wishart distributions and unified DER+RPN loss</p></li>
-</ul>
-<p>For the basic evidential transformation tutorials, see:</p>
-<p><a class="reference internal" href="notebooks/examples/evidential_regression_transformation.html"><span class="doc">Evidential Regression Transformation</span></a></p>
-</section>
-<section id="evidential-classification">
-<h4>1.5.2 Evidential Classification<a class="headerlink" href="#evidential-classification" title="Link to this heading">¶</a></h4>
-<p>For classification, evidential classification learns a Dirichlet distribution over class probabilities,
-enabling sophisticated uncertainty quantification for multi-class prediction tasks.</p>
+<p><code class="docutils literal notranslate"><span class="pre">probly</span></code> supports seven evidential deep learning methods through a unified training interface,
+covering both classification and regression tasks.</p>
+<p><a class="reference internal" href="evidential_methods.html"><span class="doc">Evidential Methods Documentation</span></a></p>
 <p><a class="reference internal" href="notebooks/examples/evidential_classification_transformation.html"><span class="doc">Evidential Classification Transformation</span></a></p>
-</section>
+<p><a class="reference internal" href="notebooks/examples/evidential_regression_transformation.html"><span class="doc">Evidential Regression Transformation</span></a></p>
 </section>
 </section>
 <section id="utilities-and-layers">
@@ -782,21 +514,12 @@ for a wide range of machine learning applications, from research prototyping to 
 <li><a class="reference internal" href="#dropout">1.1 Dropout</a></li>
 <li><a class="reference internal" href="#dropconnect">1.2 DropConnect</a></li>
 <li><a class="reference internal" href="#bayesian">1.3 Bayesian</a></li>
-<li><a class="reference internal" href="#ensemble">1.4 Ensemble</a><ul>
+<li><a class="reference internal" href="#ensemble">1.4 Ensemble</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#batchensemble">1.4.1 BatchEnsemble</a></li>
-<li><a class="reference internal" href="#subensemble">1.4.2 SubEnsemble</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#evidential">1.5 Evidential</a><ul>
-<li><a class="reference internal" href="#implemented-methods">1.5.1 Implemented Methods</a></li>
-<li><a class="reference internal" href="#unified-evidential-training">1.5.2 Unified Evidential Training</a></li>
-<li><a class="reference internal" href="#evidential-layers">1.5.3 Evidential Layers</a></li>
-<li><a class="reference internal" href="#loss-functions">1.5.4 Loss Functions</a></li>
-<li><a class="reference internal" href="#uncertainty-interpretation">1.5.5 Uncertainty Interpretation</a></li>
-<li><a class="reference internal" href="#tutorial-notebooks">1.5.6 Tutorial Notebooks</a></li>
-<li><a class="reference internal" href="#evidential-classification">1.5.2 Evidential Classification</a></li>
-</ul>
-</li>
+<li><a class="reference internal" href="#subensemble">1.4.2 SubEnsemble</a><ul>
+<li><a class="reference internal" href="#evidential">1.5 Evidential</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#utilities-and-layers">2. Utilities and Layers</a></li>

@@ -1,0 +1,29 @@
+probly.quantification.classification
+====================================
+
+.. automodule:: probly.quantification.classification
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      aleatoric_uncertainty_distance
+      conditional_entropy
+      epistemic_uncertainty_distance
+      evidential_uncertainty
+      expected_conditional_variance
+      expected_divergence
+      expected_entropy
+      expected_loss
+      generalized_hartley
+      lower_entropy
+      lower_entropy_convex_hull
+      mutual_information
+      total_entropy
+      total_uncertainty_distance
+      total_variance
+      upper_entropy
+      upper_entropy_convex_hull
+      variance_conditional_expectation
+   

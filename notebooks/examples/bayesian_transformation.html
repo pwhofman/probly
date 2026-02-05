@@ -217,7 +217,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../advanced_topics.html">Advanced Topics</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../examples_and_tutorials.html">Examples and Tutorials</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../methods.html">Implemented methods</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing to probly 🏔️</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing_to_probly.html">Contributing Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../references.html">References and Further Reading</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../faq.html">FAQ and Troubleshooting</a></li>
 </ul>
@@ -260,6 +260,7 @@
 <li class="toctree-l2"><a class="reference internal" href="sklearn_ensemble_tutorial.html">Uncertainty Quantification using scikit-learn-Ensembles</a></li>
 <li class="toctree-l2"><a class="reference internal" href="sklearn_selective_prediction.html">Using probly with scikit-learn</a></li>
 <li class="toctree-l2"><a class="reference internal" href="subensembles_fast_uncertainty.html">Sub-Ensembles for Fast Uncertainty Estimation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="synthetic_regression_dropout.html">Uncertainty for a Synthetic Regression Task using probly</a></li>
 <li class="toctree-l2"><a class="reference internal" href="temperature_scaling_calibration.html">Calibration using Temperature Scaling</a></li>
 <li class="toctree-l2"><a class="reference internal" href="train_bnn_classification.html">Bayesian Neural Networks</a></li>
 <li class="toctree-l2"><a class="reference internal" href="train_evidential_classification.html">Evidential Model for Classification</a></li>
@@ -310,12 +311,11 @@
 <h1>Bayesian Transformation<a class="headerlink" href="#bayesian-transformation" title="Link to this heading">¶</a></h1>
 <p>This notebook is a practical introduction to the Bayesian transformation in <code class="docutils literal notranslate"><span class="pre">probly</span></code>. Bayesian Neural Networks are a more advanced topic than Dropout or DropConnect,
 so this tutorial aims to provide an intuitive, hands-on understanding.</p>
-<p>We will start by explaining the core idea behind Bayesian Neural Networks (BNNs) and then see how the <code class="docutils literal notranslate"><span class="pre">probly</span></code> transformation enables you to create them. After that, we will look at a PyTorch example to inspect the transformed model and use it to estimate uncertainty.</p>
-<hr class="docutils" />
+<p>We will start by explaining the core idea behind Bayesian Neural Networks (BNNs) and then see how the <code class="docutils literal notranslate"><span class="pre">probly</span></code> transformation enables you to create them. After that, we will look at a PyTorch example to inspect the transformed model and use it to estimate uncertainty.
+Bayesian approaches to neural networks enable principled uncertainty estimation in deep learning <span id="id1">[<a class="reference internal" href="../../references.html#id2" title="Charles Blundell, Julien Cornebise, Koray Kavukcuoglu, and Daan Wierstra. Weight uncertainty in neural network. In Francis R. Bach and David M. Blei, editors, Proceedings of the 32nd International Conference on Machine Learning, ICML 2015, Lille, France, 6-11 July 2015, volume 37 of JMLR Workshop and Conference Proceedings, 1613–1622. JMLR.org, 2015. URL: http://proceedings.mlr.press/v37/blundell15.html.">BCKW15</a>, <a class="reference internal" href="../../references.html#id41" title="Eyke Hüllermeier and Willem Waegeman. Aleatoric and epistemic uncertainty in machine learning: an introduction to concepts and methods. Machine Learning, 2021. arXiv:1910.09457.">HW21</a>, <a class="reference internal" href="../../references.html#id51" title="Alex Kendall and Yarin Gal. What uncertainties do we need in bayesian deep learning for computer vision? Advances in Neural Information Processing Systems, 2017.">KG17</a>]</span>.</p>
 <section id="part-a-introduction-to-bnns-and-the-bayesian-transformation">
 <h2>Part A: Introduction to BNNs and the Bayesian Transformation<a class="headerlink" href="#part-a-introduction-to-bnns-and-the-bayesian-transformation" title="Link to this heading">¶</a></h2>
 </section>
-<hr class="docutils" />
 <section id="concept-what-is-a-bayesian-neural-network">
 <h2>1.Concept: What is a Bayesian Neural Network?<a class="headerlink" href="#concept-what-is-a-bayesian-neural-network" title="Link to this heading">¶</a></h2>
 <p>To understand the Bayesian transformation, we first need to understand the difference between a standard neural network and a Bayesian one.</p>
@@ -323,21 +323,24 @@ so this tutorial aims to provide an intuitive, hands-on understanding.</p>
 <h3>1.1 Standard Neural Networks<a class="headerlink" href="#standard-neural-networks" title="Link to this heading">¶</a></h3>
 <p>In a standard neural network, each weight is a single, deterministic number. After training, these weights are fixed.
 When you pass an input through the model, it follows one exact path, producing one exact output.
-The model has no inherent way to express how “sure” it is about the values of its weights.</p>
+The model has no inherent way to express how “sure” it is about the values of its weights.
+This corresponds to the classical deterministic formulation of neural networks <span id="id2">[<a class="reference internal" href="../../references.html#id21" title="Christopher M. Bishop. Pattern Recognition and Machine Learning. Information Science and Statistics. Springer, New York, NY, USA, 2006. ISBN 978-0-387-31073-2. URL: https://link.springer.com/book/10.1007/978-0-387-45528-0, doi:10.1007/978-0-387-45528-0.">Bis06a</a>, <a class="reference internal" href="../../references.html#id48" title="Ian Goodfellow, Yoshua Bengio, and Aaron Courville. Deep Learning. MIT Press, 2016.">GBC16</a>]</span>.</p>
 </section>
 <section id="bayesian-neural-networks-bnns">
 <h3>1.2 Bayesian Neural Networks (BNNs)<a class="headerlink" href="#bayesian-neural-networks-bnns" title="Link to this heading">¶</a></h3>
 <p>In a Bayesian Neural Network, we replace the deterministic weights with probability distributions.
 Instead of a weight being a single number, it might be represented by a Gaussian (normal) distribution
-with a mean and a standard deviation.</p>
+with a mean and a standard deviation.
+This probabilistic formulation of network weights is central to Bayesian neural networks <span id="id3">[<a class="reference internal" href="../../references.html#id2" title="Charles Blundell, Julien Cornebise, Koray Kavukcuoglu, and Daan Wierstra. Weight uncertainty in neural network. In Francis R. Bach and David M. Blei, editors, Proceedings of the 32nd International Conference on Machine Learning, ICML 2015, Lille, France, 6-11 July 2015, volume 37 of JMLR Workshop and Conference Proceedings, 1613–1622. JMLR.org, 2015. URL: http://proceedings.mlr.press/v37/blundell15.html.">BCKW15</a>, <a class="reference internal" href="../../references.html#id3" title="Yarin Gal and Zoubin Ghahramani. Dropout as a bayesian approximation: representing model uncertainty in deep learning. In Maria-Florina Balcan and Kilian Q. Weinberger, editors, Proceedings of the 33nd International Conference on Machine Learning, ICML 2016, New York City, NY, USA, June 19-24, 2016, volume 48 of JMLR Workshop and Conference Proceedings, 1050–1059. JMLR.org, 2016. URL: http://proceedings.mlr.press/v48/gal16.html.">GG16b</a>]</span>.</p>
 <ul class="simple">
 <li><p>The mean represents the most likely value for that weight.</p></li>
-<li><p>The standard deviation represents the model’s uncertainty about that weight. A small standard deviation means the model
+<li><p>The standard deviation represents the model’s uncertainty about that weight. <span id="id4">[<a class="reference internal" href="../../references.html#id66" title="Armen Der Kiureghian and Ove Ditlevsen. Aleatory or epistemic? does it matter? Structural Safety, 2009.">DKD09</a>, <a class="reference internal" href="../../references.html#id41" title="Eyke Hüllermeier and Willem Waegeman. Aleatoric and epistemic uncertainty in machine learning: an introduction to concepts and methods. Machine Learning, 2021. arXiv:1910.09457.">HW21</a>]</span>.
+A small standard deviation means the model
 is very confident in the weight’s value, while a large one means it is very unsure.</p></li>
 </ul>
 <p>During a forward pass, we don’t use the mean value directly. Instead, we sample a value for each weight from its distribution.
 Because we get a slightly different set of weights every time, each forward pass on the same input will produce a slightly different
-output. This natural variation is a direct reflection of the model’s parameter uncertainty.</p>
+output. This natural variation is a direct reflection of the model’s parameter uncertainty. <span id="id5">[<a class="reference internal" href="../../references.html#id16" title="Anastasios N. Angelopoulos and Stephen Bates. A gentle introduction to conformal prediction and distribution-free uncertainty quantification. CoRR, 2021. URL: https://arxiv.org/abs/2107.07511, arXiv:2107.07511.">AB21</a>, <a class="reference internal" href="../../references.html#id3" title="Yarin Gal and Zoubin Ghahramani. Dropout as a bayesian approximation: representing model uncertainty in deep learning. In Maria-Florina Balcan and Kilian Q. Weinberger, editors, Proceedings of the 33nd International Conference on Machine Learning, ICML 2016, New York City, NY, USA, June 19-24, 2016, volume 48 of JMLR Workshop and Conference Proceedings, 1050–1059. JMLR.org, 2016. URL: http://proceedings.mlr.press/v48/gal16.html.">GG16b</a>]</span></p>
 </section>
 <section id="the-bayesian-transformation-probly">
 <h3>1.3 The Bayesian Transformation <code class="docutils literal notranslate"><span class="pre">(probly)</span></code><a class="headerlink" href="#the-bayesian-transformation-probly" title="Link to this heading">¶</a></h3>
@@ -514,10 +517,8 @@ it traverses a standard PyTorch model and replaces nn.Linear and nn.Conv2d layer
 produces a distribution of outputs for any given input, allowing us to directly quantify predictive uncertainty. a distribution of outputs for any given input,
 allowing us to directly quantify predictive uncertainty.</p>
 </section>
-<hr class="docutils" />
 <section id="part-b-applied-bnn-transformation">
 <h2>Part B — Applied BNN Transformation<a class="headerlink" href="#part-b-applied-bnn-transformation" title="Link to this heading">¶</a></h2>
-<hr class="docutils" />
 <p>In Part A, we learned what the Bayesian transformation in <code class="docutils literal notranslate"><span class="pre">probly</span></code> does.
 In this Part B, we will apply it to a model containing both linear and convolutional layers, run several stochastic predictions, and visualize the resulting uncertainty.</p>
 <p>An indepth tutorial showing:</p>
@@ -529,10 +530,8 @@ In this Part B, we will apply it to a model containing both linear and convoluti
 </ul>
 <p>Can be found in the here:  <strong><a class="reference internal" href="train_bnn_classification.html"><span class="std std-doc">Training a BNN for Classification</span></a></strong>.</p>
 </section>
-<hr class="docutils" />
 <section id="final-summary-bayesian-transformation-tutorial">
 <h2>Final Summary — Bayesian Transformation Tutorial<a class="headerlink" href="#final-summary-bayesian-transformation-tutorial" title="Link to this heading">¶</a></h2>
-<hr class="docutils" />
 <p>This tutorial introduced the core concepts of Bayesian Neural Networks (BNNs), where weights are treated as probability distributions to capture model uncertainty. We demonstrated how <code class="docutils literal notranslate"><span class="pre">probly</span></code>’s <strong><code class="docutils literal notranslate"><span class="pre">bayesian</span></code> transformation</strong> automates this by replacing standard <code class="docutils literal notranslate"><span class="pre">nn.Linear</span></code> and <code class="docutils literal notranslate"><span class="pre">nn.Conv2d</span></code> layers with their stochastic Bayesian counterparts. We also walked through a simplified example of how to run multiple forward passes to get a predictive mean and variance.</p>
 <p>While this notebook covered the fundamentals, a proper BNN requires a specialized training procedure. For a complete, end-to-end guide that shows you how to train a Bayesian LeNet on the FashionMNIST dataset using the correct <strong>ELBO loss</strong>, please see the next tutorial: <strong><a class="reference internal" href="train_bnn_classification.html"><span class="std std-doc">Training a BNN for Classification</span></a></strong>.</p>
 </section>

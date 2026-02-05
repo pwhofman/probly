@@ -1,0 +1,13 @@
+probly.losses.evidential
+========================
+
+.. automodule:: probly.losses.evidential
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   torch

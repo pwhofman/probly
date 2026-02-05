@@ -1,0 +1,13 @@
+probly.models.evidential
+========================
+
+.. automodule:: probly.models.evidential
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   torch

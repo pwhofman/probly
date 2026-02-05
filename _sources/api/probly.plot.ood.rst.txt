@@ -1,0 +1,14 @@
+probly.plot.ood
+===============
+
+.. automodule:: probly.plot.ood
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      plot_histogram
+      plot_pr_curve
+      plot_roc_curve
+   

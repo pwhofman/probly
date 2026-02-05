@@ -1,0 +1,16 @@
+probly.representation
+=====================
+
+.. automodule:: probly.representation
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   credal_set
+   distribution
+   representer
+   sampling

@@ -1,0 +1,14 @@
+probly.utils.probabilities
+==========================
+
+.. automodule:: probly.utils.probabilities
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      differential_entropy_gaussian
+      intersection_probability
+      kl_divergence_gaussian
+   

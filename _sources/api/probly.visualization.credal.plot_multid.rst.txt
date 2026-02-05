@@ -1,0 +1,18 @@
+probly.visualization.credal.plot\_multid
+========================================
+
+.. automodule:: probly.visualization.credal.plot_multid
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      radar_factory
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      MultiVisualizer
+   

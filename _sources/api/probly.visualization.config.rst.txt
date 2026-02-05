@@ -1,0 +1,14 @@
+probly.visualization.config
+===========================
+
+.. automodule:: probly.visualization.config
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      choose_min_max_style
+      get_sign_color
+      style_colorbar
+   

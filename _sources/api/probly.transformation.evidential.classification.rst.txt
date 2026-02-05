@@ -1,0 +1,14 @@
+probly.transformation.evidential.classification
+===============================================
+
+.. automodule:: probly.transformation.evidential.classification
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   common
+   torch

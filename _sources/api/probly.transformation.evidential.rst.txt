@@ -1,0 +1,14 @@
+probly.transformation.evidential
+================================
+
+.. automodule:: probly.transformation.evidential
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   classification
+   regression

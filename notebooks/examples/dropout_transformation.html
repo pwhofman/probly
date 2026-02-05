@@ -217,7 +217,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../advanced_topics.html">Advanced Topics</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../examples_and_tutorials.html">Examples and Tutorials</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../methods.html">Implemented methods</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing to probly 🏔️</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing_to_probly.html">Contributing Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../references.html">References and Further Reading</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../faq.html">FAQ and Troubleshooting</a></li>
 </ul>
@@ -260,6 +260,7 @@
 <li class="toctree-l2"><a class="reference internal" href="sklearn_ensemble_tutorial.html">Uncertainty Quantification using scikit-learn-Ensembles</a></li>
 <li class="toctree-l2"><a class="reference internal" href="sklearn_selective_prediction.html">Using probly with scikit-learn</a></li>
 <li class="toctree-l2"><a class="reference internal" href="subensembles_fast_uncertainty.html">Sub-Ensembles for Fast Uncertainty Estimation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="synthetic_regression_dropout.html">Uncertainty for a Synthetic Regression Task using probly</a></li>
 <li class="toctree-l2"><a class="reference internal" href="temperature_scaling_calibration.html">Calibration using Temperature Scaling</a></li>
 <li class="toctree-l2"><a class="reference internal" href="train_bnn_classification.html">Bayesian Neural Networks</a></li>
 <li class="toctree-l2"><a class="reference internal" href="train_evidential_classification.html">Evidential Model for Classification</a></li>
@@ -314,28 +315,27 @@
 The goal is not to be mathematically perfect, but to give you an intuition you can actually use when you
 work on models in PyTorch.</p>
 <p>We will slowly build up from the very basic idea of <em>normal</em> Dropout to the slightly more advanced idea of
-a <strong>Dropout transformation that makes a model uncertainty‑aware</strong>. After that, we look at a tiny PyTorch
+a <strong>Dropout transformation that makes a model uncertainty‑aware</strong><span id="id1">[<a class="reference internal" href="../../references.html#id3" title="Yarin Gal and Zoubin Ghahramani. Dropout as a bayesian approximation: representing model uncertainty in deep learning. In Maria-Florina Balcan and Kilian Q. Weinberger, editors, Proceedings of the 33nd International Conference on Machine Learning, ICML 2016, New York City, NY, USA, June 19-24, 2016, volume 48 of JMLR Workshop and Conference Proceedings, 1050–1059. JMLR.org, 2016. URL: http://proceedings.mlr.press/v48/gal16.html.">GG16b</a>]</span>
+. After that, we look at a tiny PyTorch
 example and inspect how the transformation changes the model.</p>
-<hr class="docutils" />
 <section id="part-a-introduction-to-dropout-and-the-dropout-transformation">
 <h2>Part A — Introduction to Dropout and the Dropout Transformation<a class="headerlink" href="#part-a-introduction-to-dropout-and-the-dropout-transformation" title="Link to this heading">¶</a></h2>
 </section>
-<hr class="docutils" />
 <section id="concept-what-is-dropout-normal-vs-dropout-transformation">
 <h2>1. Concept: What is Dropout (normal) vs Dropout Transformation?<a class="headerlink" href="#concept-what-is-dropout-normal-vs-dropout-transformation" title="Link to this heading">¶</a></h2>
 <p>The original question for this part is:</p>
 <blockquote>
 <div><p><strong>“What is Dropout (normal) vs Dropout Transformation?”</strong>
-<strong>1.1 Normal Dropout (no probly, just PyTorch)</strong>
-In “normal” deep learning, Dropout is a layer used during training to reduce overfitting.
-Overfitting = model memorizes training data and sucks on new data.</p>
+<strong>1.1 Normal Dropout (PyTorch)</strong>
+In “normal” deep learning, Dropout is a layer used during training to reduce overfitting<span id="id2">[<a class="reference internal" href="../../references.html#id3" title="Yarin Gal and Zoubin Ghahramani. Dropout as a bayesian approximation: representing model uncertainty in deep learning. In Maria-Florina Balcan and Kilian Q. Weinberger, editors, Proceedings of the 33nd International Conference on Machine Learning, ICML 2016, New York City, NY, USA, June 19-24, 2016, volume 48 of JMLR Workshop and Conference Proceedings, 1050–1059. JMLR.org, 2016. URL: http://proceedings.mlr.press/v48/gal16.html.">GG16b</a>]</span>
+Overfitting = model memorizes training data and sucks on new data <span id="id3">[<a class="reference internal" href="../../references.html#id3" title="Yarin Gal and Zoubin Ghahramani. Dropout as a bayesian approximation: representing model uncertainty in deep learning. In Maria-Florina Balcan and Kilian Q. Weinberger, editors, Proceedings of the 33nd International Conference on Machine Learning, ICML 2016, New York City, NY, USA, June 19-24, 2016, volume 48 of JMLR Workshop and Conference Proceedings, 1050–1059. JMLR.org, 2016. URL: http://proceedings.mlr.press/v48/gal16.html.">GG16b</a>]</span>.</p>
 </div></blockquote>
-<p>Below is a more detailed version of that explanation, in my own words.</p>
+<p>Below is a more detailed version of that explanation.</p>
 <section id="normal-dropout-standard-pytorch-dropout-layer">
 <h3>1.1 Normal Dropout (standard PyTorch Dropout layer)<a class="headerlink" href="#normal-dropout-standard-pytorch-dropout-layer" title="Link to this heading">¶</a></h3>
 <p>When we train a neural network, there is always the risk of <strong>overfitting</strong>. That means the model becomes
 very good at the training set but fails on new data, because it has more or less <em>memorised</em> patterns that
-only appear in the training examples.</p>
+only appear in the training examples <span id="id4">[<a class="reference internal" href="../../references.html#id3" title="Yarin Gal and Zoubin Ghahramani. Dropout as a bayesian approximation: representing model uncertainty in deep learning. In Maria-Florina Balcan and Kilian Q. Weinberger, editors, Proceedings of the 33nd International Conference on Machine Learning, ICML 2016, New York City, NY, USA, June 19-24, 2016, volume 48 of JMLR Workshop and Conference Proceedings, 1050–1059. JMLR.org, 2016. URL: http://proceedings.mlr.press/v48/gal16.html.">GG16b</a>]</span>.</p>
 <p><strong>Normal Dropout</strong> is a simple trick to make overfitting less likely. During training, a <code class="docutils literal notranslate"><span class="pre">Dropout(p)</span></code> layer
 will, for every mini‑batch, randomly set a fraction <code class="docutils literal notranslate"><span class="pre">p</span></code> of its input activations to zero. You can imagine
 this as:</p>
@@ -359,7 +359,7 @@ the same output, and there is no randomness from Dropout anymore. The purpose of
 <h3>1.2 Dropout Transformation (probly)<a class="headerlink" href="#dropout-transformation-probly" title="Link to this heading">¶</a></h3>
 <p>The <strong>Dropout transformation</strong> in <code class="docutils literal notranslate"><span class="pre">probly</span></code> takes this Dropout idea and uses it in a slightly different role.
 Instead of treating Dropout purely as a regularisation trick during training, we use it to make the model
-<strong>uncertainty‑aware</strong> at prediction time.</p>
+<strong>uncertainty‑aware</strong> at prediction time <span id="id5">[<a class="reference internal" href="../../references.html#id3" title="Yarin Gal and Zoubin Ghahramani. Dropout as a bayesian approximation: representing model uncertainty in deep learning. In Maria-Florina Balcan and Kilian Q. Weinberger, editors, Proceedings of the 33nd International Conference on Machine Learning, ICML 2016, New York City, NY, USA, June 19-24, 2016, volume 48 of JMLR Workshop and Conference Proceedings, 1050–1059. JMLR.org, 2016. URL: http://proceedings.mlr.press/v48/gal16.html.">GG16b</a>, <a class="reference internal" href="../../references.html#id41" title="Eyke Hüllermeier and Willem Waegeman. Aleatoric and epistemic uncertainty in machine learning: an introduction to concepts and methods. Machine Learning, 2021. arXiv:1910.09457.">HW21</a>]</span>.</p>
 <p>Roughly speaking, the transformation does the following:</p>
 <ul class="simple">
 <li><p>It walks through your PyTorch model and finds the relevant linear layers.</p></li>
@@ -367,10 +367,11 @@ Instead of treating Dropout purely as a regularisation trick during training, we
 <li><p>Crucially, these Dropout layers stay <strong>active during inference</strong>, so each forward pass is a bit different.</p></li>
 </ul>
 <p>If we now feed the <strong>same input</strong> through the transformed model multiple times, we do <strong>not</strong> get exactly the
-same output each time. Instead we get a <em>cloud</em> of slightly different predictions. From this cloud we can:</p>
+same output each time. Instead we get a <em>cloud</em> of slightly different predictions <span id="id6">[<a class="reference internal" href="../../references.html#id64" title="Tilmann Gneiting and Adrian E. Raftery. Strictly proper scoring rules, prediction, and estimation. JASA, 2007.">GR07</a>]</span>
+. From this cloud we can:</p>
 <ul class="simple">
 <li><p>compute a mean prediction (what the model “on average” thinks), and</p></li>
-<li><p>look at how much the predictions vary (this variation is a proxy for <strong>uncertainty</strong>).</p></li>
+<li><p>look at how much the predictions vary (this variation is a proxy for <strong>uncertainty</strong>)<span id="id7">[<a class="reference internal" href="../../references.html#id66" title="Armen Der Kiureghian and Ove Ditlevsen. Aleatory or epistemic? does it matter? Structural Safety, 2009.">DKD09</a>, <a class="reference internal" href="../../references.html#id41" title="Eyke Hüllermeier and Willem Waegeman. Aleatoric and epistemic uncertainty in machine learning: an introduction to concepts and methods. Machine Learning, 2021. arXiv:1910.09457.">HW21</a>]</span>.</p></li>
 </ul>
 <p>So the Dropout transformation reuses the usual Dropout mechanism, but with a <strong>different goal</strong>:</p>
 <ul class="simple">
@@ -574,7 +575,6 @@ Predictive variance (first 5):
 <h2>7. Part A Summary<a class="headerlink" href="#part-a-summary" title="Link to this heading">¶</a></h2>
 <p>In Part A, we explored how Dropout works in deep learning and how the Dropout Transformation extends that idea in <code class="docutils literal notranslate"><span class="pre">probly</span></code>. Normal Dropout is a regularization technique used during training to reduce overfitting by randomly deactivating neurons, forcing the model to learn more general patterns. However, it is disabled during inference, making the model’s predictions deterministic. The Dropout Transformation, in contrast, keeps dropout active during inference, allowing the model to produce slightly different outputs for the same input. This variability reveals how confident or uncertain the model is about its predictions. In short, Part A explained the conceptual shift from using dropout purely for training robustness to using it as a tool for estimating predictive uncertainty.</p>
 </section>
-<hr class="docutils" />
 <section id="part-b-applied-mc-dropout">
 <h2>Part B — Applied MC-Dropout<a class="headerlink" href="#part-b-applied-mc-dropout" title="Link to this heading">¶</a></h2>
 </section>
@@ -585,7 +585,6 @@ Predictive variance (first 5):
 <p>In <strong>Part A</strong>, we learned what the <strong>Dropout transformation</strong> in <code class="docutils literal notranslate"><span class="pre">probly</span></code> does and how it modifies a model’s structure.
 In this <strong>Part B</strong>, we will <em>apply</em> that transformation to make a model uncertainty-aware, run several stochastic predictions, and visualize the variability in outputs.</p>
 </section>
-<hr class="docutils" />
 <section id="part-b">
 <h2>Part B<a class="headerlink" href="#part-b" title="Link to this heading">¶</a></h2>
 </section>
@@ -804,16 +803,13 @@ By running multiple stochastic forward passes on the same input, we observed sma
 This variability represents <strong>model uncertainty</strong>, because dropout remains active during inference.
 We then computed the <strong>mean</strong>, <strong>standard deviation</strong>, and <strong>predictive entropy</strong> of the outputs, and visualized them using histograms and error-bar plots to understand how confident the model was in its predictions.</p>
 </section>
-<hr class="docutils" />
 <section id="final-summary-dropout-transformation-tutorial">
 <h2>Final Summary — Dropout Transformation Tutorial<a class="headerlink" href="#final-summary-dropout-transformation-tutorial" title="Link to this heading">¶</a></h2>
-<hr class="docutils" />
 <p>This tutorial showed how the concept of <strong>Dropout</strong> can evolve from a simple regularization technique into a foundation for <strong>uncertainty-aware deep learning</strong>.
 We began by understanding how dropout reduces overfitting by randomly turning off neurons during training, helping models learn more general patterns.
 From there, we extended this idea to the <strong>Dropout Transformation</strong> in <code class="docutils literal notranslate"><span class="pre">probly</span></code>, where dropout remains active during inference.
 By running multiple stochastic forward passes, the model reveals not only its predictions but also how confident it is about them.
 Through this process, we transformed dropout from a tool that improves generalization into one that also provides valuable insight into a model’s <strong>confidence and reliability</strong>, bridging the gap between stable learning and interpretable uncertainty.</p>
-<hr class="docutils" />
 </section>
 </section>
 

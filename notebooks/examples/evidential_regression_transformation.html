@@ -217,7 +217,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../advanced_topics.html">Advanced Topics</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../examples_and_tutorials.html">Examples and Tutorials</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../methods.html">Implemented methods</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing to probly 🏔️</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing_to_probly.html">Contributing Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../references.html">References and Further Reading</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../faq.html">FAQ and Troubleshooting</a></li>
 </ul>
@@ -260,6 +260,7 @@
 <li class="toctree-l2"><a class="reference internal" href="sklearn_ensemble_tutorial.html">Uncertainty Quantification using scikit-learn-Ensembles</a></li>
 <li class="toctree-l2"><a class="reference internal" href="sklearn_selective_prediction.html">Using probly with scikit-learn</a></li>
 <li class="toctree-l2"><a class="reference internal" href="subensembles_fast_uncertainty.html">Sub-Ensembles for Fast Uncertainty Estimation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="synthetic_regression_dropout.html">Uncertainty for a Synthetic Regression Task using probly</a></li>
 <li class="toctree-l2"><a class="reference internal" href="temperature_scaling_calibration.html">Calibration using Temperature Scaling</a></li>
 <li class="toctree-l2"><a class="reference internal" href="train_bnn_classification.html">Bayesian Neural Networks</a></li>
 <li class="toctree-l2"><a class="reference internal" href="train_evidential_classification.html">Evidential Model for Classification</a></li>
@@ -308,27 +309,28 @@
         <article role="main" id="furo-main-content">
           <section id="evidential-regression-transformation">
 <h1>Evidential Regression Transformation<a class="headerlink" href="#evidential-regression-transformation" title="Link to this heading">¶</a></h1>
-<p>This notebook is a practical introduction to the <strong>Evidential Regression transformation</strong> in <code class="docutils literal notranslate"><span class="pre">probly</span></code>. This technique allows a model to predict not just a single value, but a full probability distribution, enabling it to quantify both its confidence in the data (<strong>aleatoric uncertainty</strong>) and its own knowledge (<strong>epistemic uncertainty</strong>).</p>
+<p>This notebook is a practical introduction to the <strong>Evidential Regression transformation</strong> in <code class="docutils literal notranslate"><span class="pre">probly</span></code>. This technique allows a model to predict not just a single value, but a full probability distribution, enabling it to quantify both its confidence in the data (<strong>aleatoric uncertainty</strong>) and its own knowledge (<strong>epistemic uncertainty</strong>) <span id="id1">[<a class="reference internal" href="../../references.html#id6" title="Alexander Amini, Wilko Schwarting, Ava Soleimany, and Daniela Rus. Deep evidential regression. In Hugo Larochelle, Marc'Aurelio Ranzato, Raia Hadsell, Maria-Florina Balcan, and Hsuan-Tien Lin, editors, Advances in Neural Information Processing Systems 33: Annual Conference on Neural Information Processing Systems 2020, NeurIPS 2020, December 6-12, 2020, virtual. 2020. URL: https://proceedings.neurips.cc/paper/2020/hash/aab085461de182608ee9f607f3f7d18f-Abstract.html.">ASSR20</a>, <a class="reference internal" href="../../references.html#id5" title="Murat Sensoy, Lance M. Kaplan, and Melih Kandemir. Evidential deep learning to quantify classification uncertainty. In Samy Bengio, Hanna M. Wallach, Hugo Larochelle, Kristen Grauman, Nicolò Cesa-Bianchi, and Roman Garnett, editors, Advances in Neural Information Processing Systems 31: Annual Conference on Neural Information Processing Systems 2018, NeurIPS 2018, December 3-8, 2018, Montréal, Canada, 3183–3193. 2018. URL: https://proceedings.neurips.cc/paper/2018/hash/a981f2b708044d6fb4a71a1463242520-Abstract.html.">SKK18</a>]</span>.</p>
 <p>We will start by explaining the core idea behind evidential regression and then see how <code class="docutils literal notranslate"><span class="pre">probly</span></code>’s transformation automates the process of building such a model by replacing the final layer. We will then train this model on a simple 1D dataset and visualize its predictive uncertainty.</p>
-<hr class="docutils" />
 <section id="part-a-introduction-to-evidential-regression">
 <h2>Part A — Introduction to Evidential Regression<a class="headerlink" href="#part-a-introduction-to-evidential-regression" title="Link to this heading">¶</a></h2>
 </section>
-<hr class="docutils" />
 <section id="concept-what-is-evidential-regression">
 <h2>1. Concept: What is Evidential Regression?<a class="headerlink" href="#concept-what-is-evidential-regression" title="Link to this heading">¶</a></h2>
 <section id="the-problem-standard-regression-predicts-a-point">
 <h3>1.1 The Problem: Standard Regression Predicts a Point<a class="headerlink" href="#the-problem-standard-regression-predicts-a-point" title="Link to this heading">¶</a></h3>
-<p>A standard regression network is trained to predict a single value. For a given input, it might predict <code class="docutils literal notranslate"><span class="pre">y</span> <span class="pre">=</span> <span class="pre">3.14</span></code>. This gives us no information about the model’s confidence. Is the prediction <code class="docutils literal notranslate"><span class="pre">3.14</span> <span class="pre">±</span> <span class="pre">0.01</span></code> or <code class="docutils literal notranslate"><span class="pre">3.14</span> <span class="pre">±</span> <span class="pre">10.0</span></code>? We have no way of knowing.</p>
+<p>A standard regression network is trained to predict a single value. For a given input, it might predict <code class="docutils literal notranslate"><span class="pre">y</span> <span class="pre">=</span> <span class="pre">3.14</span></code>. This gives us no information about the model’s confidence.
+Is the prediction <code class="docutils literal notranslate"><span class="pre">3.14</span> <span class="pre">±</span> <span class="pre">0.01</span></code> or <code class="docutils literal notranslate"><span class="pre">3.14</span> <span class="pre">±</span> <span class="pre">10.0</span></code>? We have no way of knowing {cite:p}.</p>
 </section>
 <section id="the-evidential-approach-predicting-a-distribution">
 <h3>1.2 The Evidential Approach: Predicting a Distribution<a class="headerlink" href="#the-evidential-approach-predicting-a-distribution" title="Link to this heading">¶</a></h3>
-<p>Evidential Regression reframes the problem. Instead of predicting a single point, the model predicts the four parameters of a <strong>Normal-Inverse-Gamma (NIG)</strong> distribution. These four parameters are: <code class="docutils literal notranslate"><span class="pre">gamma</span></code> (γ), <code class="docutils literal notranslate"><span class="pre">nu</span></code> (ν), <code class="docutils literal notranslate"><span class="pre">alpha</span></code> (α), and <code class="docutils literal notranslate"><span class="pre">beta</span></code> (β).</p>
+<p>Evidential Regression reframes the problem. Instead of predicting a single point, the model predicts the four parameters of a <strong>Normal-Inverse-Gamma (NIG)</strong> distribution.
+These four parameters are: <code class="docutils literal notranslate"><span class="pre">gamma</span></code> (γ), <code class="docutils literal notranslate"><span class="pre">nu</span></code> (ν), <code class="docutils literal notranslate"><span class="pre">alpha</span></code> (α), and <code class="docutils literal notranslate"><span class="pre">beta</span></code> (β) <span id="id2">[<a class="reference internal" href="../../references.html#id6" title="Alexander Amini, Wilko Schwarting, Ava Soleimany, and Daniela Rus. Deep evidential regression. In Hugo Larochelle, Marc'Aurelio Ranzato, Raia Hadsell, Maria-Florina Balcan, and Hsuan-Tien Lin, editors, Advances in Neural Information Processing Systems 33: Annual Conference on Neural Information Processing Systems 2020, NeurIPS 2020, December 6-12, 2020, virtual. 2020. URL: https://proceedings.neurips.cc/paper/2020/hash/aab085461de182608ee9f607f3f7d18f-Abstract.html.">ASSR20</a>]</span>.</p>
 <p>Together, these parameters define a distribution over our prediction. From them, we can directly calculate:</p>
 <ul class="simple">
 <li><p><strong>The Prediction:</strong> The mean of the distribution (given by <code class="docutils literal notranslate"><span class="pre">gamma</span></code>).</p></li>
-<li><p><strong>Aleatoric Uncertainty (Data Noise):</strong> The inherent noise or ambiguity in the data itself. A high value means the data points are widely scattered.</p></li>
-<li><p><strong>Epistemic Uncertainty (Model Ignorance):</strong> The model’s own uncertainty about its predictions. A high value means the model is “out of its depth,” perhaps because it’s seeing data far from what it was trained on.</p></li>
+<li><p><strong>Aleatoric Uncertainty (Data Noise):</strong> The inherent noise or ambiguity in the data itself. A high value means the data points are widely scattered {cite:p}.</p></li>
+<li><p><strong>Epistemic Uncertainty (Model Ignorance):</strong> The model’s own uncertainty about its predictions. A high value means the model is “out of its depth,” <span id="id3">[<a class="reference internal" href="../../references.html#id5" title="Murat Sensoy, Lance M. Kaplan, and Melih Kandemir. Evidential deep learning to quantify classification uncertainty. In Samy Bengio, Hanna M. Wallach, Hugo Larochelle, Kristen Grauman, Nicolò Cesa-Bianchi, and Roman Garnett, editors, Advances in Neural Information Processing Systems 31: Annual Conference on Neural Information Processing Systems 2018, NeurIPS 2018, December 3-8, 2018, Montréal, Canada, 3183–3193. 2018. URL: https://proceedings.neurips.cc/paper/2018/hash/a981f2b708044d6fb4a71a1463242520-Abstract.html.">SKK18</a>]</span>
+perhaps because it’s seeing data far from what it was trained on.</p></li>
 </ul>
 </section>
 <section id="the-evidential-regression-transformation-probly">
@@ -436,10 +438,8 @@ With Evidential transformation:
 <h2>3. Part A Summary<a class="headerlink" href="#part-a-summary" title="Link to this heading">¶</a></h2>
 <p>In Part A, we introduced Evidential Regression as a method for a model to predict its own uncertainty. Instead of a single point, the model learns to output the four parameters of a Normal-Inverse-Gamma distribution (<code class="docutils literal notranslate"><span class="pre">γ,</span> <span class="pre">ν,</span> <span class="pre">α,</span> <span class="pre">β</span></code>). We learned that the <code class="docutils literal notranslate"><span class="pre">probly</span></code> transformation automates this by replacing the final linear layer of a network. The key advantage is that both data uncertainty (aleatoric) and model uncertainty (epistemic) can be calculated from these parameters in a single, deterministic forward pass.</p>
 </section>
-<hr class="docutils" />
 <section id="part-b-applied-evidential-regression">
 <h2>Part B — Applied Evidential Regression<a class="headerlink" href="#part-b-applied-evidential-regression" title="Link to this heading">¶</a></h2>
-<hr class="docutils" />
 <p>An indepth walkthrough of:</p>
 <ul class="simple">
 <li><p>How to generate synthetic regression data using a cubic function.</p></li>
@@ -451,10 +451,8 @@ With Evidential transformation:
 <p>Can be found here:
 <a class="reference internal" href="train_evidential_regression.html"><span class="std std-doc">Training an Evidential Regression Model</span></a></p>
 </section>
-<hr class="docutils" />
 <section id="final-summary-evidential-regression-tutorial">
 <h2>Final Summary — Evidential Regression Tutorial<a class="headerlink" href="#final-summary-evidential-regression-tutorial" title="Link to this heading">¶</a></h2>
-<hr class="docutils" />
 <p>This tutorial demonstrated how to use the <strong>Evidential Regression Transformation</strong> in <code class="docutils literal notranslate"><span class="pre">probly</span></code> to create models that can predict their own uncertainty.
 We learned that instead of a single point, an evidential model outputs the four parameters of a distribution (<code class="docutils literal notranslate"><span class="pre">γ,</span> <span class="pre">ν,</span> <span class="pre">α,</span> <span class="pre">β</span></code>). The <code class="docutils literal notranslate"><span class="pre">probly</span></code> transformation automates this by replacing the final linear layer of a network. The key advantage is that both <strong>aleatoric (data) uncertainty</strong> and <strong>epistemic (model) uncertainty</strong> can be calculated from these parameters in a single forward pass.
 We saw this in practice by training a model on a dataset with a gap. The final visualization clearly showed the model’s uncertainty increasing in the regions where it had no training data, making it a powerful and interpretable tool for building more reliable regression models.</p>

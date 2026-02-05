@@ -217,7 +217,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../advanced_topics.html">Advanced Topics</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../examples_and_tutorials.html">Examples and Tutorials</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../methods.html">Implemented methods</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../contributing.html">Contributing to probly 🏔️</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing_to_probly.html">Contributing Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../references.html">References and Further Reading</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../faq.html">FAQ and Troubleshooting</a></li>
 </ul>
@@ -260,6 +260,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../sklearn_ensemble_tutorial.html">Uncertainty Quantification using scikit-learn-Ensembles</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../sklearn_selective_prediction.html">Using probly with scikit-learn</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../subensembles_fast_uncertainty.html">Sub-Ensembles for Fast Uncertainty Estimation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../synthetic_regression_dropout.html">Uncertainty for a Synthetic Regression Task using probly</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../temperature_scaling_calibration.html">Calibration using Temperature Scaling</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../train_bnn_classification.html">Bayesian Neural Networks</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../train_evidential_classification.html">Evidential Model for Classification</a></li>
@@ -347,10 +348,103 @@ They allow you to separately measure:</p>
 Computes an uncertainty score directly from the <strong>evidence vector</strong> produced by an evidential model.</p>
 <p><strong>Why it’s useful:</strong>
 It provides a fast, single-pass way to determine whether a model is uncertain about its prediction.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Example 1: collect_kl_divergence for Bayesian Neural Networks</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">probly.transformation</span><span class="w"> </span><span class="kn">import</span> <span class="n">bayesian</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">probly.train.bayesian.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">collect_kl_divergence</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">nn</span>
+
+<span class="c1"># Create and transform a model to Bayesian</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
+    <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">32</span><span class="p">),</span>
+    <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">(),</span>
+    <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">32</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<span class="p">)</span>
+<span class="n">bnn_model</span> <span class="o">=</span> <span class="n">bayesian</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+
+<span class="c1"># Create dummy input</span>
+<span class="n">inputs</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+
+<span class="c1"># Forward pass (this samples weights from distributions)</span>
+<span class="n">outputs</span> <span class="o">=</span> <span class="n">bnn_model</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span>
+
+<span class="c1"># Collect KL divergence from all Bayesian layers</span>
+<span class="n">kl</span> <span class="o">=</span> <span class="n">collect_kl_divergence</span><span class="p">(</span><span class="n">bnn_model</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Total KL Divergence: </span><span class="si">{</span><span class="n">kl</span><span class="o">.</span><span class="n">item</span><span class="p">()</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Example 2: Decomposing uncertainty with entropy functions</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">probly.quantification.classification</span><span class="w"> </span><span class="kn">import</span> <span class="n">total_entropy</span><span class="p">,</span> <span class="n">conditional_entropy</span><span class="p">,</span> <span class="n">mutual_information</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="c1"># Simulated predictions from a 3-member ensemble for 2 instances, 3 classes</span>
+<span class="c1"># Shape: (num_instances, num_samples, num_classes)</span>
+<span class="n">ensemble_predictions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span>
+    <span class="c1"># Instance 1: High agreement (low epistemic uncertainty)</span>
+    <span class="p">[[</span><span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">],</span>
+     <span class="p">[</span><span class="mf">0.75</span><span class="p">,</span> <span class="mf">0.15</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">],</span>
+     <span class="p">[</span><span class="mf">0.85</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">]],</span>
+    
+    <span class="c1"># Instance 2: High disagreement (high epistemic uncertainty)</span>
+    <span class="p">[[</span><span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">],</span>
+     <span class="p">[</span><span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">],</span>
+     <span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">]]</span>
+<span class="p">])</span>
+
+<span class="c1"># Compute uncertainty metrics</span>
+<span class="n">total_ent</span> <span class="o">=</span> <span class="n">total_entropy</span><span class="p">(</span><span class="n">ensemble_predictions</span><span class="p">)</span>
+<span class="n">cond_ent</span> <span class="o">=</span> <span class="n">conditional_entropy</span><span class="p">(</span><span class="n">ensemble_predictions</span><span class="p">)</span>  <span class="c1"># Aleatoric uncertainty</span>
+<span class="n">mutual_info</span> <span class="o">=</span> <span class="n">mutual_information</span><span class="p">(</span><span class="n">ensemble_predictions</span><span class="p">)</span>  <span class="c1"># Epistemic uncertainty</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Instance 1 (models agree):&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Total Entropy: </span><span class="si">{</span><span class="n">total_ent</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Aleatoric Uncertainty: </span><span class="si">{</span><span class="n">cond_ent</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Epistemic Uncertainty: </span><span class="si">{</span><span class="n">mutual_info</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Instance 2 (models disagree):&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Total Entropy: </span><span class="si">{</span><span class="n">total_ent</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Aleatoric Uncertainty: </span><span class="si">{</span><span class="n">cond_ent</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Epistemic Uncertainty: </span><span class="si">{</span><span class="n">mutual_info</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Example 3: evidential_uncertainty for Evidential Models</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">probly.quantification.classification</span><span class="w"> </span><span class="kn">import</span> <span class="n">evidential_uncertainty</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="c1"># Simulated evidence vectors (alpha values) from an evidential model</span>
+<span class="c1"># High evidence = confident, low evidence = uncertain</span>
+
+<span class="c1"># Confident prediction: lots of evidence for class 0</span>
+<span class="n">confident_evidence</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mf">100.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">]])</span>
+
+<span class="c1"># Uncertain prediction: little evidence for any class</span>
+<span class="n">uncertain_evidence</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">]])</span>
+
+<span class="c1"># Compute uncertainty scores</span>
+<span class="n">confident_uncertainty</span> <span class="o">=</span> <span class="n">evidential_uncertainty</span><span class="p">(</span><span class="n">confident_evidence</span><span class="p">)</span>
+<span class="n">uncertain_uncertainty</span> <span class="o">=</span> <span class="n">evidential_uncertainty</span><span class="p">(</span><span class="n">uncertain_evidence</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Confident prediction evidence: </span><span class="si">{</span><span class="n">confident_evidence</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Uncertainty score: </span><span class="si">{</span><span class="n">confident_uncertainty</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Uncertain prediction evidence: </span><span class="si">{</span><span class="n">uncertain_evidence</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Uncertainty score: </span><span class="si">{</span><span class="n">uncertain_uncertainty</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
 </section>
-</section>
-<section id="todo-user-work-on-formulations-and-add-code-examples-https-github-com-pwhofman-probly-issues-161">
-<h2>TODO(user): work on formulations and add code examples - https://github.com/pwhofman/probly/issues/161<a class="headerlink" href="#todo-user-work-on-formulations-and-add-code-examples-https-github-com-pwhofman-probly-issues-161" title="Link to this heading">¶</a></h2>
 </section>
 </section>
 
@@ -417,7 +511,6 @@ It provides a fast, single-pass way to determine whether a model is uncertain ab
 <li><a class="reference internal" href="#evidential-uncertainty-for-evidential-models">3. <code class="docutils literal notranslate"><span class="pre">evidential_uncertainty</span></code> (for Evidential Models)</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#todo-user-work-on-formulations-and-add-code-examples-https-github-com-pwhofman-probly-issues-161">TODO(user): work on formulations and add code examples - https://github.com/pwhofman/probly/issues/161</a></li>
 </ul>
 </li>
 </ul>

@@ -1,0 +1,12 @@
+probly.visualization.credal.plot\_3d
+====================================
+
+.. automodule:: probly.visualization.credal.plot_3d
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      TernaryVisualizer
+   

@@ -1,0 +1,12 @@
+probly.visualization.dirichlet.plot\_dirichlet
+==============================================
+
+.. automodule:: probly.visualization.dirichlet.plot_dirichlet
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      DirichletTernaryVisualizer
+   

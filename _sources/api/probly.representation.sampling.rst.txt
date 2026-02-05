@@ -1,0 +1,23 @@
+probly.representation.sampling
+==============================
+
+.. automodule:: probly.representation.sampling
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   array_sample
+   array_sample_axis_tracking
+   array_sample_functions
+   common_sample
+   flax_sampler
+   jax_sample
+   sample
+   sampler
+   sklearn_sampler
+   torch_sample
+   torch_sampler

@@ -1,0 +1,13 @@
+probly.transformation.evidential.regression.common
+==================================================
+
+.. automodule:: probly.transformation.evidential.regression.common
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      evidential_regression
+      register
+   

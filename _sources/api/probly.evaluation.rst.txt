@@ -1,0 +1,15 @@
+probly.evaluation
+=================
+
+.. automodule:: probly.evaluation
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   metrics
+   ood
+   tasks

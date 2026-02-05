@@ -1,0 +1,12 @@
+probly.visualization.dirichlet.dirichlet\_visualization
+=======================================================
+
+.. automodule:: probly.visualization.dirichlet.dirichlet_visualization
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      create_dirichlet_plot
+   

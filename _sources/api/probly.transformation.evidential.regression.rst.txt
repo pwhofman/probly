@@ -1,0 +1,14 @@
+probly.transformation.evidential.regression
+===========================================
+
+.. automodule:: probly.transformation.evidential.regression
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   common
+   torch

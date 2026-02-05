@@ -1,0 +1,13 @@
+probly.visualization.efficiency.coverage\_efficiency\_ood
+=========================================================
+
+.. automodule:: probly.visualization.efficiency.coverage_efficiency_ood
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      plot_coverage_efficiency_from_ood_labels
+      plot_coverage_efficiency_id_ood
+   

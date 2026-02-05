@@ -1,0 +1,17 @@
+probly.visualization
+====================
+
+.. automodule:: probly.visualization
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   clustermargin
+   config
+   credal
+   dirichlet
+   efficiency

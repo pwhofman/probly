@@ -4,7 +4,9 @@
    "cell_type": "markdown",
    "id": "12decec07298b653",
    "metadata": {},
-   "source": "# Using probly with scikit-learn"
+   "source": [
+    "# Using probly with scikit-learn"
+   ]
   },
   {
    "cell_type": "code",
@@ -33,7 +35,9 @@
    "cell_type": "markdown",
    "id": "820f1fc023d8a352",
    "metadata": {},
-   "source": "### Load the covertype dataset"
+   "source": [
+    "## Load the covertype dataset"
+   ]
   },
   {
    "cell_type": "code",
@@ -56,7 +60,9 @@
    "cell_type": "markdown",
    "id": "39238145f1f07ffb",
    "metadata": {},
-   "source": "### Fit a random forest"
+   "source": [
+    "## Fit a random forest"
+   ]
   },
   {
    "cell_type": "code",
@@ -83,7 +89,9 @@
    "cell_type": "markdown",
    "id": "efb2e588ef084171",
    "metadata": {},
-   "source": "### Make an accuracy-rejection curve using total uncertainty"
+   "source": [
+    "## Make an accuracy-rejection curve using total uncertainty"
+   ]
   },
   {
    "cell_type": "code",
@@ -148,7 +156,7 @@
    "mimetype": "text/x-python",
    "name": "python",
    "nbconvert_exporter": "python",
-   "pygments_lexer": "ipython2",
+   "pygments_lexer": "python",
    "version": "2.7.6"
   }
  },

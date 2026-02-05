@@ -1,0 +1,14 @@
+probly.plot
+===========
+
+.. automodule:: probly.plot
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   credal
+   ood

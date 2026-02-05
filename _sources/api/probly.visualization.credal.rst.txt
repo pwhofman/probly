@@ -1,0 +1,17 @@
+probly.visualization.credal
+===========================
+
+.. automodule:: probly.visualization.credal
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   credal_visualization
+   input_handling
+   plot_2d
+   plot_3d
+   plot_multid

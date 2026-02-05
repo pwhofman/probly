@@ -217,7 +217,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../advanced_topics.html">Advanced Topics</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../examples_and_tutorials.html">Examples and Tutorials</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../methods.html">Implemented methods</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../contributing.html">Contributing to probly 🏔️</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing_to_probly.html">Contributing Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../references.html">References and Further Reading</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../faq.html">FAQ and Troubleshooting</a></li>
 </ul>
@@ -260,6 +260,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../sklearn_ensemble_tutorial.html">Uncertainty Quantification using scikit-learn-Ensembles</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../sklearn_selective_prediction.html">Using probly with scikit-learn</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../subensembles_fast_uncertainty.html">Sub-Ensembles for Fast Uncertainty Estimation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../synthetic_regression_dropout.html">Uncertainty for a Synthetic Regression Task using probly</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../temperature_scaling_calibration.html">Calibration using Temperature Scaling</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../train_bnn_classification.html">Bayesian Neural Networks</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../train_evidential_classification.html">Evidential Model for Classification</a></li>
@@ -333,6 +334,9 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">nn</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn.functional</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">F</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">probly.train.bayesian.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">collect_kl_divergence</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">probly.transformation</span><span class="w"> </span><span class="kn">import</span> <span class="n">bayesian</span>
+
 
 <span class="k">class</span><span class="w"> </span><span class="nc">ELBOLoss</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Evidential Lower Bound Loss.&quot;&quot;&quot;</span>
@@ -397,26 +401,42 @@ A more complex negative log-likelihood (NLL) loss that handles the four paramete
 <li><p>A regularization term that encourages the model to remain uncertain on out-of-distribution data.
 The total loss is a weighted sum of these two components.</p></li>
 </ol>
-</section>
-</section>
-<section id="todo-user-add-code-examples">
-<h2>TODO(user): add code examples<a class="headerlink" href="#todo-user-add-code-examples" title="Link to this heading">¶</a></h2>
-</section>
-<section id="model-yourbayesianmodel">
-<h2>model = YourBayesianModel()<a class="headerlink" href="#model-yourbayesianmodel" title="Link to this heading">¶</a></h2>
-</section>
-<section id="criterion-elboloss-kl-penalty-1e-5">
-<h2>criterion = ELBOLoss(kl_penalty=1e-5)<a class="headerlink" href="#criterion-elboloss-kl-penalty-1e-5" title="Link to this heading">¶</a></h2>
-</section>
-<section id="outputs-kl-model-inputs">
-<h2>outputs, kl = model(inputs)<a class="headerlink" href="#outputs-kl-model-inputs" title="Link to this heading">¶</a></h2>
-</section>
-<section id="loss-criterion-outputs-targets-kl">
-<h2>loss = criterion(outputs, targets, kl)<a class="headerlink" href="#loss-criterion-outputs-targets-kl" title="Link to this heading">¶</a></h2>
-</section>
-<section id="optimizer-zero-grad">
-<h2>optimizer.zero_grad()<a class="headerlink" href="#optimizer-zero-grad" title="Link to this heading">¶</a></h2>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Example: Training with ELBO Loss</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">nn</span>
+
+<span class="c1"># Create a simple model and transform it to Bayesian</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">32</span><span class="p">),</span> <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">(),</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">32</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+<span class="n">bnn_model</span> <span class="o">=</span> <span class="n">bayesian</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+
+<span class="c1"># Create the ELBO loss</span>
+<span class="n">criterion</span> <span class="o">=</span> <span class="n">ELBOLoss</span><span class="p">(</span><span class="n">kl_penalty</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">)</span>
+
+<span class="c1"># Dummy data (8 samples, 10 features, 3 classes)</span>
+<span class="n">inputs</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="n">targets</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="p">(</span><span class="mi">8</span><span class="p">,))</span>
+
+<span class="c1"># Forward pass</span>
+<span class="n">outputs</span> <span class="o">=</span> <span class="n">bnn_model</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span>
+
+<span class="c1"># Collect KL divergence from all Bayesian layers</span>
+<span class="n">kl</span> <span class="o">=</span> <span class="n">collect_kl_divergence</span><span class="p">(</span><span class="n">bnn_model</span><span class="p">)</span>
+
+<span class="c1"># Compute loss</span>
+<span class="n">loss</span> <span class="o">=</span> <span class="n">criterion</span><span class="p">(</span><span class="n">outputs</span><span class="p">,</span> <span class="n">targets</span><span class="p">,</span> <span class="n">kl</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ELBO Loss: </span><span class="si">{</span><span class="n">loss</span><span class="o">.</span><span class="n">item</span><span class="p">()</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - Cross-Entropy component: </span><span class="si">{</span><span class="n">nn</span><span class="o">.</span><span class="n">functional</span><span class="o">.</span><span class="n">cross_entropy</span><span class="p">(</span><span class="n">outputs</span><span class="p">,</span><span class="w"> </span><span class="n">targets</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - KL Divergence component: </span><span class="si">{</span><span class="p">(</span><span class="n">criterion</span><span class="o">.</span><span class="n">kl_penalty</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">kl</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Total KL from all layers: </span><span class="si">{</span><span class="n">kl</span><span class="o">.</span><span class="n">item</span><span class="p">()</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
 <p>For full implementations, see the <a class="reference internal" href="../train_evidential_classification.html"><span class="std std-doc"><strong>Evidential Classification</strong></span></a> and <a class="reference internal" href="../train_evidential_regression.html"><span class="std std-doc"><strong>Evidential Regression</strong></span></a> tutorials.</p>
+</section>
 </section>
 <section id="calibration-aware-losses">
 <h2>3. Calibration-Aware Losses<a class="headerlink" href="#calibration-aware-losses" title="Link to this heading">¶</a></h2>
@@ -433,12 +453,44 @@ Instead of using hard one-hot encoded labels (e.g., <code class="docutils litera
 <p>This discourages the model from producing extreme, over-confident predictions.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">probly</span></code> library provides a direct implementation of this approach through the <strong><code class="docutils literal notranslate"><span class="pre">LabelRelaxationLoss</span></code></strong>.
 The <code class="docutils literal notranslate"><span class="pre">LabelRelaxationLoss</span></code> can be used as a drop-in replacement for standard losses like <code class="docutils literal notranslate"><span class="pre">nn.CrossEntropyLoss</span></code>, making it easy to integrate into existing training pipelines.</p>
-</section>
-</section>
-<section id="id1">
-<h2>TODO(user): add code examples<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h2>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Example: Training with Label Relaxation</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">nn</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">probly.train.calibration.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">LabelRelaxationLoss</span>
+
+<span class="c1"># Create a simple classifier</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">32</span><span class="p">),</span> <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">(),</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">32</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+
+<span class="c1"># Use Label Relaxation instead of CrossEntropyLoss</span>
+<span class="c1"># alpha=0.1 means: true class gets 0.9, other classes share 0.1</span>
+<span class="n">criterion</span> <span class="o">=</span> <span class="n">LabelRelaxationLoss</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+
+<span class="c1"># Standard CrossEntropyLoss for comparison</span>
+<span class="n">standard_criterion</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">CrossEntropyLoss</span><span class="p">()</span>
+
+<span class="c1"># Dummy data</span>
+<span class="n">inputs</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="n">targets</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="p">(</span><span class="mi">8</span><span class="p">,))</span>
+
+<span class="c1"># Forward pass</span>
+<span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span>
+
+<span class="c1"># Compare losses</span>
+<span class="n">relaxed_loss</span> <span class="o">=</span> <span class="n">criterion</span><span class="p">(</span><span class="n">outputs</span><span class="p">,</span> <span class="n">targets</span><span class="p">)</span>
+<span class="n">standard_loss</span> <span class="o">=</span> <span class="n">standard_criterion</span><span class="p">(</span><span class="n">outputs</span><span class="p">,</span> <span class="n">targets</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Standard CrossEntropy Loss: </span><span class="si">{</span><span class="n">standard_loss</span><span class="o">.</span><span class="n">item</span><span class="p">()</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Label Relaxation Loss:      </span><span class="si">{</span><span class="n">relaxed_loss</span><span class="o">.</span><span class="n">item</span><span class="p">()</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
 <p>By optimizing this “softer” objective, the model learns to produce better-calibrated probability estimates.</p>
 <p>For a full implementation, see the <a class="reference internal" href="../label_relaxation_calibration.html"><span class="std std-doc"><strong>Label Relaxation Calibration</strong></span></a> tutorial.</p>
+</section>
 </section>
 </section>
 
@@ -507,17 +559,10 @@ The <code class="docutils literal notranslate"><span class="pre">LabelRelaxation
 <li><a class="reference internal" href="#training-an-evidential-model">Training an Evidential Model</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#todo-user-add-code-examples">TODO(user): add code examples</a></li>
-<li><a class="reference internal" href="#model-yourbayesianmodel">model = YourBayesianModel()</a></li>
-<li><a class="reference internal" href="#criterion-elboloss-kl-penalty-1e-5">criterion = ELBOLoss(kl_penalty=1e-5)</a></li>
-<li><a class="reference internal" href="#outputs-kl-model-inputs">outputs, kl = model(inputs)</a></li>
-<li><a class="reference internal" href="#loss-criterion-outputs-targets-kl">loss = criterion(outputs, targets, kl)</a></li>
-<li><a class="reference internal" href="#optimizer-zero-grad">optimizer.zero_grad()</a></li>
 <li><a class="reference internal" href="#calibration-aware-losses">3. Calibration-Aware Losses</a><ul>
 <li><a class="reference internal" href="#example-label-relaxation">Example: Label Relaxation</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#id1">TODO(user): add code examples</a></li>
 </ul>
 </li>
 </ul>

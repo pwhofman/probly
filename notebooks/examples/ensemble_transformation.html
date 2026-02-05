@@ -217,7 +217,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../advanced_topics.html">Advanced Topics</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../examples_and_tutorials.html">Examples and Tutorials</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../methods.html">Implemented methods</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing to probly 🏔️</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing_to_probly.html">Contributing Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../references.html">References and Further Reading</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../faq.html">FAQ and Troubleshooting</a></li>
 </ul>
@@ -260,6 +260,7 @@
 <li class="toctree-l2"><a class="reference internal" href="sklearn_ensemble_tutorial.html">Uncertainty Quantification using scikit-learn-Ensembles</a></li>
 <li class="toctree-l2"><a class="reference internal" href="sklearn_selective_prediction.html">Using probly with scikit-learn</a></li>
 <li class="toctree-l2"><a class="reference internal" href="subensembles_fast_uncertainty.html">Sub-Ensembles for Fast Uncertainty Estimation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="synthetic_regression_dropout.html">Uncertainty for a Synthetic Regression Task using probly</a></li>
 <li class="toctree-l2"><a class="reference internal" href="temperature_scaling_calibration.html">Calibration using Temperature Scaling</a></li>
 <li class="toctree-l2"><a class="reference internal" href="train_bnn_classification.html">Bayesian Neural Networks</a></li>
 <li class="toctree-l2"><a class="reference internal" href="train_evidential_classification.html">Evidential Model for Classification</a></li>
@@ -308,36 +309,34 @@
         <article role="main" id="furo-main-content">
           <section id="ensemble-transformation">
 <h1>Ensemble Transformation<a class="headerlink" href="#ensemble-transformation" title="Link to this heading">¶</a></h1>
-<p>This notebook is a practical introduction to the Ensemble transformation in <code class="docutils literal notranslate"><span class="pre">probly</span></code>. Deep Ensembles are one of the most robust and high-performing methods for uncertainty quantification.</p>
+<p>This notebook is a practical introduction to the Ensemble transformation in <code class="docutils literal notranslate"><span class="pre">probly</span></code>. Deep Ensembles are one of the most robust and high-performing methods for uncertainty quantification <span id="id1">[<a class="reference internal" href="../../references.html#id4" title="Balaji Lakshminarayanan, Alexander Pritzel, and Charles Blundell. Simple and scalable predictive uncertainty estimation using deep ensembles. In Isabelle Guyon, Ulrike von Luxburg, Samy Bengio, Hanna M. Wallach, Rob Fergus, S. V. N. Vishwanathan, and Roman Garnett, editors, Advances in Neural Information Processing Systems 30: Annual Conference on Neural Information Processing Systems 2017, December 4-9, 2017, Long Beach, CA, USA, 6402–6413. 2017. URL: https://proceedings.neurips.cc/paper/2017/hash/9ef2ed4b7fd2c810847ffa5fa85bce38-Abstract.html.">LPB17b</a>]</span>.</p>
 <p>We will start by explaining the core idea behind Deep Ensembles and see how  <code class="docutils literal notranslate"><span class="pre">probly</span></code>’s transformation enables you to create them. We will then walk through a PyTorch example to see how to train the ensemble and use the disagreement between its members to estimate predictive uncertainty.</p>
-<hr class="docutils" />
 <section id="part-a-introduction-to-ensembles-and-the-ensemble-transformation">
 <h2>Part A: Introduction to Ensembles and the Ensemble Transformation<a class="headerlink" href="#part-a-introduction-to-ensembles-and-the-ensemble-transformation" title="Link to this heading">¶</a></h2>
 </section>
-<hr class="docutils" />
 <section id="concept-what-is-a-deep-ensemble">
 <h2>1. Concept: What is a Deep Ensemble?<a class="headerlink" href="#concept-what-is-a-deep-ensemble" title="Link to this heading">¶</a></h2>
 <section id="the-core-idea-wisdom-of-the-crowd">
 <h3>1.1 The Core Idea: Wisdom of the Crowd<a class="headerlink" href="#the-core-idea-wisdom-of-the-crowd" title="Link to this heading">¶</a></h3>
 <p>The idea behind an ensemble is simple and powerful: instead of relying on the prediction of a single model, we train multiple models independently
 and aggregate their predictions. The core principle is that if we have a diverse set of “experts” (the models), their collective judgment will be
-more robust and reliable than any single expert’s.</p>
+more robust and reliable than any single expert’s <span id="id2">[<a class="reference internal" href="../../references.html#id54" title="Thomas G. Dietterich. Ensemble methods in machine learning. In International Workshop on Multiple Classifier Systems, 1–15. Springer, 2000.">Die00</a>, <a class="reference internal" href="../../references.html#id58" title="David Opitz and Richard Maclin. Popular ensemble methods: an empirical study. Journal of Artificial Intelligence Research, 11:169–198, 1999.">OM99</a>]</span>.</p>
 </section>
 <section id="deep-ensembles-for-uncertainty">
 <h3>1.2 Deep Ensembles for Uncertainty<a class="headerlink" href="#deep-ensembles-for-uncertainty" title="Link to this heading">¶</a></h3>
 <p>In Deep Learning, a <strong>Deep Ensemble</strong> consists of multiple neural networks. To create a diverse ensemble, each network is
-trained from a different random initialization.</p>
-<p>When we give the same input to every model in the ensemble, we will get a set of different predictions.</p>
+trained from a different random initialization <span id="id3">[<a class="reference internal" href="../../references.html#id4" title="Balaji Lakshminarayanan, Alexander Pritzel, and Charles Blundell. Simple and scalable predictive uncertainty estimation using deep ensembles. In Isabelle Guyon, Ulrike von Luxburg, Samy Bengio, Hanna M. Wallach, Rob Fergus, S. V. N. Vishwanathan, and Roman Garnett, editors, Advances in Neural Information Processing Systems 30: Annual Conference on Neural Information Processing Systems 2017, December 4-9, 2017, Long Beach, CA, USA, 6402–6413. 2017. URL: https://proceedings.neurips.cc/paper/2017/hash/9ef2ed4b7fd2c810847ffa5fa85bce38-Abstract.html.">LPB17b</a>]</span>.</p>
+<p>When we give the same input to every model in the ensemble, we will get a set of different predictions <span id="id4">[<a class="reference internal" href="../../references.html#id55" title="Stanislav Fort, Huiyi Hu, and Balaji Lakshminarayanan. Deep ensembles: a loss landscape perspective. arXiv preprint arXiv:1912.02757, 2019.">FHL19</a>, <a class="reference internal" href="../../references.html#id4" title="Balaji Lakshminarayanan, Alexander Pritzel, and Charles Blundell. Simple and scalable predictive uncertainty estimation using deep ensembles. In Isabelle Guyon, Ulrike von Luxburg, Samy Bengio, Hanna M. Wallach, Rob Fergus, S. V. N. Vishwanathan, and Roman Garnett, editors, Advances in Neural Information Processing Systems 30: Annual Conference on Neural Information Processing Systems 2017, December 4-9, 2017, Long Beach, CA, USA, 6402–6413. 2017. URL: https://proceedings.neurips.cc/paper/2017/hash/9ef2ed4b7fd2c810847ffa5fa85bce38-Abstract.html.">LPB17b</a>]</span>.</p>
 <ul class="simple">
-<li><p>The mean of these predictions gives us a robust final prediction.</p></li>
-<li><p>The variance (or disagreement) among these predictions gives us a direct and high-quality measure of the model’s uncertainty.
+<li><p>The mean of these predictions gives us a robust final prediction <span id="id5">[<a class="reference internal" href="../../references.html#id54" title="Thomas G. Dietterich. Ensemble methods in machine learning. In International Workshop on Multiple Classifier Systems, 1–15. Springer, 2000.">Die00</a>]</span>.</p></li>
+<li><p>The variance (or disagreement) among these predictions gives us a direct and high-quality measure of the model’s uncertainty <span id="id6">[<a class="reference internal" href="../../references.html#id41" title="Eyke Hüllermeier and Willem Waegeman. Aleatoric and epistemic uncertainty in machine learning: an introduction to concepts and methods. Machine Learning, 2021. arXiv:1910.09457.">HW21</a>, <a class="reference internal" href="../../references.html#id4" title="Balaji Lakshminarayanan, Alexander Pritzel, and Charles Blundell. Simple and scalable predictive uncertainty estimation using deep ensembles. In Isabelle Guyon, Ulrike von Luxburg, Samy Bengio, Hanna M. Wallach, Rob Fergus, S. V. N. Vishwanathan, and Roman Garnett, editors, Advances in Neural Information Processing Systems 30: Annual Conference on Neural Information Processing Systems 2017, December 4-9, 2017, Long Beach, CA, USA, 6402–6413. 2017. URL: https://proceedings.neurips.cc/paper/2017/hash/9ef2ed4b7fd2c810847ffa5fa85bce38-Abstract.html.">LPB17b</a>]</span>.
 If all models agree, uncertainty is low. If they disagree significantly, uncertainty is high.</p></li>
 </ul>
-<p>While very effective, creating and managing deep ensembles manually can be cumbersome.</p>
+<p>While very effective, creating and managing deep ensembles manually can be cumbersome <span id="id7">[<a class="reference internal" href="../../references.html#id57" title="John P. Cunningham and others. Ensemble subsampling for efficient uncertainty estimation. In ICLR Workshop on Uncertainty and Robustness in Deep Learning. 2020.">C+20</a>, <a class="reference internal" href="../../references.html#id56" title="Marton Havasi and others. Training independent subnetworks for robust prediction. Proceedings of the National Academy of Sciences, 2021.">H+21</a>]</span>.</p>
 </section>
 <section id="the-ensemble-transformation">
 <h3>1.3 The Ensemble Transformation<a class="headerlink" href="#the-ensemble-transformation" title="Link to this heading">¶</a></h3>
-<p>The Ensemble transformation in <code class="docutils literal notranslate"><span class="pre">probly</span></code> automates the creation and management of a deep ensemble.</p>
+<p>The Ensemble transformation in <code class="docutils literal notranslate"><span class="pre">probly</span></code> automates the creation and management of a deep ensemble <span id="id8">[<a class="reference internal" href="../../references.html#id4" title="Balaji Lakshminarayanan, Alexander Pritzel, and Charles Blundell. Simple and scalable predictive uncertainty estimation using deep ensembles. In Isabelle Guyon, Ulrike von Luxburg, Samy Bengio, Hanna M. Wallach, Rob Fergus, S. V. N. Vishwanathan, and Roman Garnett, editors, Advances in Neural Information Processing Systems 30: Annual Conference on Neural Information Processing Systems 2017, December 4-9, 2017, Long Beach, CA, USA, 6402–6413. 2017. URL: https://proceedings.neurips.cc/paper/2017/hash/9ef2ed4b7fd2c810847ffa5fa85bce38-Abstract.html.">LPB17b</a>]</span>.</p>
 <p>The transformation does the following:</p>
 <ul class="simple">
 <li><p>It takes a single, user-defined base model as a template.</p></li>
@@ -503,10 +502,8 @@ We saw that probly’s ensemble transformation simplifies the creation of an ens
 packaging the members into a convenient nn.ModuleList. Unlike other transformations that modify a model’s internal layers, the ensemble method
 creates multiple, independent models. The disagreement in their predictions provides a powerful and high-quality estimate of model uncertainty.</p>
 </section>
-<hr class="docutils" />
 <section id="part-b-applied-ensemble-transformation">
 <h2>Part B — Applied Ensemble Transformation<a class="headerlink" href="#part-b-applied-ensemble-transformation" title="Link to this heading">¶</a></h2>
-<hr class="docutils" />
 <p>In <strong>Part A</strong>, we learned what the <strong>Ensemble transformation</strong> in <code class="docutils literal notranslate"><span class="pre">probly</span></code> does.
 In this <strong>Part B</strong> , we will apply it to a classification model, get predictions from each member, and visualize the resulting uncertainty.</p>
 <p>An in depth walkthrough of:</p>

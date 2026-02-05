@@ -1,0 +1,14 @@
+probly.visualization.efficiency
+===============================
+
+.. automodule:: probly.visualization.efficiency
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   coverage_efficiency_ood
+   plot_coverage_efficiency

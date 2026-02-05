@@ -4,18 +4,22 @@
    "cell_type": "markdown",
    "id": "ddb7e1d7e9cf41c7",
    "metadata": {},
-   "source": "# Bayesian Neural Networks"
+   "source": [
+    "# Bayesian Neural Networks"
+   ]
   },
   {
    "cell_type": "code",
+   "execution_count": 1,
    "id": "initial_id",
    "metadata": {
-    "collapsed": true,
     "ExecuteTime": {
      "end_time": "2025-11-02T18:55:05.026789Z",
      "start_time": "2025-11-02T18:55:03.840780Z"
-    }
+    },
+    "collapsed": true
    },
+   "outputs": [],
    "source": [
     "import torch\n",
     "from torch import nn, optim\n",
@@ -26,18 +30,19 @@
     "\n",
     "from probly.train.bayesian.torch import ELBOLoss, collect_kl_divergence\n",
     "from probly.transformation import bayesian"
-   ],
-   "outputs": [],
-   "execution_count": 1
+   ]
   },
   {
    "cell_type": "markdown",
    "id": "7ab7e12a8c0ec264",
    "metadata": {},
-   "source": "### Prepare the data"
+   "source": [
+    "## Prepare the data"
+   ]
   },
   {
    "cell_type": "code",
+   "execution_count": 2,
    "id": "d9b97c61949181bd",
    "metadata": {
     "ExecuteTime": {
@@ -45,24 +50,26 @@
      "start_time": "2025-11-02T18:55:05.029992Z"
     }
    },
+   "outputs": [],
    "source": [
     "transforms = T.Compose([T.ToTensor()])\n",
     "train = torchvision.datasets.FashionMNIST(root=\"~/datasets\", train=True, download=True, transform=transforms)\n",
     "test = torchvision.datasets.FashionMNIST(root=\"~/datasets\", train=False, download=True, transform=transforms)\n",
     "train_loader = DataLoader(train, batch_size=256, shuffle=True)\n",
     "test_loader = DataLoader(test, batch_size=256, shuffle=False)"
-   ],
-   "outputs": [],
-   "execution_count": 2
+   ]
   },
   {
    "cell_type": "markdown",
    "id": "5d35a2d1a1caabe6",
    "metadata": {},
-   "source": "### Define a simple neural network and make it Bayesian"
+   "source": [
+    "## Define a simple neural network and make it Bayesian"
+   ]
   },
   {
    "cell_type": "code",
+   "execution_count": 3,
    "id": "9a7d8ddf4df41011",
    "metadata": {
     "ExecuteTime": {
@@ -70,6 +77,7 @@
      "start_time": "2025-11-02T18:55:05.059099Z"
     }
    },
+   "outputs": [],
    "source": [
     "class LeNet(nn.Module):\n",
     "    \"\"\"Implementation of a model with LeNet architecture.\n",
@@ -111,18 +119,19 @@
     "\n",
     "net = LeNet()\n",
     "model = bayesian(net)"
-   ],
-   "outputs": [],
-   "execution_count": 3
+   ]
   },
   {
    "cell_type": "markdown",
    "id": "50f5d9b0076b146b",
    "metadata": {},
-   "source": "### Train the Bayesian neural network using the ELBO loss"
+   "source": [
+    "## Train the Bayesian neural network using the ELBO loss"
+   ]
   },
   {
    "cell_type": "code",
+   "execution_count": 4,
    "id": "c6767549162afd06",
    "metadata": {
     "ExecuteTime": {
@@ -130,33 +139,6 @@
      "start_time": "2025-11-02T18:55:05.070551Z"
     }
    },
-   "source": [
-    "epochs = 20\n",
-    "optimizer = optim.Adam(model.parameters())\n",
-    "criterion = ELBOLoss(1e-5)\n",
-    "for epoch in tqdm(range(epochs)):\n",
-    "    model.train()\n",
-    "    running_loss = 0.0\n",
-    "    for inputs, targets in train_loader:\n",
-    "        optimizer.zero_grad()\n",
-    "        outputs = model(inputs)\n",
-    "        kl = collect_kl_divergence(model)\n",
-    "        loss = criterion(outputs, targets, kl)\n",
-    "        loss.backward()\n",
-    "        optimizer.step()\n",
-    "        running_loss += loss.item()\n",
-    "    print(f\"Epoch {epoch + 1}, Running loss: {running_loss / len(train_loader)}, KL: {kl.item()}\")\n",
-    "\n",
-    "# compute accuracy on test set\n",
-    "correct = 0\n",
-    "total = 0\n",
-    "model.eval()\n",
-    "for inputs, targets in test_loader:\n",
-    "    outputs = model(inputs)\n",
-    "    correct += (outputs.argmax(1) == targets).sum()\n",
-    "    total += targets.size(0)\n",
-    "print(f\"Accuracy: {correct / total}\")"
-   ],
    "outputs": [
     {
      "name": "stderr",
@@ -453,7 +435,33 @@
      ]
     }
    ],
-   "execution_count": 4
+   "source": [
+    "epochs = 20\n",
+    "optimizer = optim.Adam(model.parameters())\n",
+    "criterion = ELBOLoss(1e-5)\n",
+    "for epoch in tqdm(range(epochs)):\n",
+    "    model.train()\n",
+    "    running_loss = 0.0\n",
+    "    for inputs, targets in train_loader:\n",
+    "        optimizer.zero_grad()\n",
+    "        outputs = model(inputs)\n",
+    "        kl = collect_kl_divergence(model)\n",
+    "        loss = criterion(outputs, targets, kl)\n",
+    "        loss.backward()\n",
+    "        optimizer.step()\n",
+    "        running_loss += loss.item()\n",
+    "    print(f\"Epoch {epoch + 1}, Running loss: {running_loss / len(train_loader)}, KL: {kl.item()}\")\n",
+    "\n",
+    "# compute accuracy on test set\n",
+    "correct = 0\n",
+    "total = 0\n",
+    "model.eval()\n",
+    "for inputs, targets in test_loader:\n",
+    "    outputs = model(inputs)\n",
+    "    correct += (outputs.argmax(1) == targets).sum()\n",
+    "    total += targets.size(0)\n",
+    "print(f\"Accuracy: {correct / total}\")"
+   ]
   }
  ],
  "metadata": {
@@ -471,7 +479,7 @@
    "mimetype": "text/x-python",
    "name": "python",
    "nbconvert_exporter": "python",
-   "pygments_lexer": "ipython2",
+   "pygments_lexer": "python",
    "version": "2.7.6"
   }
  },

@@ -1,0 +1,6 @@
+probly.transformation.subensemble
+=================================
+
+.. currentmodule:: probly.transformation
+
+.. autofunction:: subensemble

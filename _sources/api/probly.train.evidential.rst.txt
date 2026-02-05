@@ -1,0 +1,14 @@
+probly.train.evidential
+=======================
+
+.. automodule:: probly.train.evidential
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   common
+   torch

@@ -1,0 +1,12 @@
+probly.visualization.clustermargin.clustervisualizer
+====================================================
+
+.. automodule:: probly.visualization.clustermargin.clustervisualizer
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      plot_uncertainty
+   

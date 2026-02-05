@@ -1,0 +1,20 @@
+probly.representation.sampling.sampler
+======================================
+
+.. automodule:: probly.representation.sampling.sampler
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      get_sampling_predictor
+      sampler_factory
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      EnsembleSampler
+      Sampler
+   

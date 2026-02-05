@@ -1,0 +1,17 @@
+probly.models.evidential.torch
+==============================
+
+.. automodule:: probly.models.evidential.torch
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      EDLModel
+      EvidentialRegressionModel
+      IRDModel
+      NatPNModel
+      PostNetModel
+      PrNetModel
+   

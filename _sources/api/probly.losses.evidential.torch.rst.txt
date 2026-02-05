@@ -1,0 +1,32 @@
+probly.losses.evidential.torch
+==============================
+
+.. automodule:: probly.losses.evidential.torch
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      der_loss
+      dirichlet_entropy
+      evidential_ce_loss
+      evidential_kl_divergence
+      evidential_log_loss
+      evidential_mse_loss
+      evidential_nignll_loss
+      evidential_regression_regularization
+      ird_loss
+      kl_dirichlet
+      lp_fn
+      make_in_domain_target_alpha
+      make_ood_target_alpha
+      natpn_loss
+      pn_loss
+      postnet_loss
+      predictive_probs
+      regularization_fn
+      rpn_loss
+      rpn_ng_kl
+      rpn_prior
+   

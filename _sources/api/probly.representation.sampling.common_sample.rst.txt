@@ -1,0 +1,21 @@
+probly.representation.sampling.common\_sample
+=============================================
+
+.. automodule:: probly.representation.sampling.common_sample
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      first_dispatchable_sample
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      ListSample
+      Sample
+      SampleFactory
+      SampleParams
+   

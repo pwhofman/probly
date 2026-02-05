@@ -217,7 +217,7 @@
 <li class="toctree-l1"><a class="reference internal" href="advanced_topics.html">Advanced Topics</a></li>
 <li class="toctree-l1"><a class="reference internal" href="examples_and_tutorials.html">Examples and Tutorials</a></li>
 <li class="toctree-l1"><a class="reference internal" href="methods.html">Implemented methods</a></li>
-<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing to probly 🏔️</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing_to_probly.html">Contributing Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="references.html">References and Further Reading</a></li>
 <li class="toctree-l1"><a class="reference internal" href="faq.html">FAQ and Troubleshooting</a></li>
 </ul>
@@ -260,6 +260,7 @@
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/sklearn_ensemble_tutorial.html">Uncertainty Quantification using scikit-learn-Ensembles</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/sklearn_selective_prediction.html">Using probly with scikit-learn</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/subensembles_fast_uncertainty.html">Sub-Ensembles for Fast Uncertainty Estimation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/examples/synthetic_regression_dropout.html">Uncertainty for a Synthetic Regression Task using probly</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/temperature_scaling_calibration.html">Calibration using Temperature Scaling</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/train_bnn_classification.html">Bayesian Neural Networks</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/examples/train_evidential_classification.html">Evidential Model for Classification</a></li>
@@ -316,6 +317,8 @@ advanced topics, and hands-on tutorials. The aim is to equip readers with the co
 to understand and apply the more detailed material presented in later sections.</p>
 <section id="mini-gallery-quick-links">
 <h2>Mini gallery (quick links)<a class="headerlink" href="#mini-gallery-quick-links" title="Link to this heading">¶</a></h2>
+<p>Before you dive deeper, here are two ultra-light examples (executed via Sphinx-Gallery) that
+show uncertainty and a simple decision rule at a glance.</p>
 <p>Threshold-based decision sketch:
 This mini gallery contains a short, runnable example that demonstrates a simple threshold-based decision rule.
 It shows how a continuous input can be converted into discrete class labels by comparing it to a chosen threshold, and visualizes how the predicted class changes when the threshold moves.
@@ -325,10 +328,10 @@ This mini gallery contains a compact “hello world” style example for uncerta
 It simulates repeated stochastic predictions, summarizes them into a mean and standard deviation, and visualizes the result using an error-bar plot.
 Like all Sphinx-Gallery examples, the page is built from an executable script and therefore shows real output and figures produced during the docs build.</p>
 <div class="sphx-glr-thumbnails"><div class="sphx-glr-thumbcontainer" tooltip="A minimal thresholding “predictor” that turns continuous inputs into class labels, plus a plot showing how the decision changes with the threshold."><img alt="" src="_images/sphx_glr_plot_intro_threshold_decision_thumb.png" />
-<p><a class="reference internal" href="auto_examples/plot_intro_threshold_decision.html"><span class="doc">&lt;no title&gt;</span></a></p>
+<p><a class="reference internal" href="auto_examples/plot_intro_threshold_decision.html"><span class="doc">Threshold-based decision sketch.</span></a></p>
   <div class="sphx-glr-thumbnail-title">Threshold-based decision sketch.</div>
 </div><div class="sphx-glr-thumbcontainer" tooltip="This tiny example shows how repeated stochastic predictions can be summarized into mean probabilities and visualized as error bars."><img alt="" src="_images/sphx_glr_plot_intro_uncertainty_glimpse_thumb.png" />
-<p><a class="reference internal" href="auto_examples/plot_intro_uncertainty_glimpse.html"><span class="doc">&lt;no title&gt;</span></a></p>
+<p><a class="reference internal" href="auto_examples/plot_intro_uncertainty_glimpse.html"><span class="doc">Hello, uncertainty (glimpse).</span></a></p>
   <div class="sphx-glr-thumbnail-title">Hello, uncertainty (glimpse).</div>
 </div></div></section>
 <section id="what-is-probly">
@@ -421,21 +424,10 @@ without rewriting their entire code.</p>
 <p>Overall, <code class="docutils literal notranslate"><span class="pre">probly</span></code> gives users the building blocks needed to make machine learning models more
 transparent, reliable, and informative by exposing how confident the model is in its predictions.</p>
 </section>
-</section>
 <section id="key-ideas-behind-probly">
-<h2>2. Key Ideas Behind <code class="docutils literal notranslate"><span class="pre">probly</span></code><a class="headerlink" href="#key-ideas-behind-probly" title="Link to this heading">¶</a></h2>
+<h3>2. Key Ideas Behind <code class="docutils literal notranslate"><span class="pre">probly</span></code><a class="headerlink" href="#key-ideas-behind-probly" title="Link to this heading">¶</a></h3>
 <p><code class="docutils literal notranslate"><span class="pre">probly</span></code> is built around a few central ideas that make uncertainty aware machine learning easier to use.</p>
-</section>
-<section id="quick-visual-demos">
-<h2>Quick visual demos<a class="headerlink" href="#quick-visual-demos" title="Link to this heading">¶</a></h2>
-<p>Before you dive deeper, here are two ultra-light examples (executed via Sphinx-Gallery) that
-show uncertainty and a simple decision rule at a glance.</p>
-<section id="tiny-starter-examples">
-<h3>Tiny starter examples<a class="headerlink" href="#tiny-starter-examples" title="Link to this heading">¶</a></h3>
-<ul class="simple">
-  <li><a class="reference internal" href="auto_examples/plot_intro_uncertainty_glimpse.html">Hello, uncertainty (glimpse)</a></li>
-  <li><a class="reference internal" href="auto_examples/plot_intro_threshold_decision.html">Threshold-based decision sketch</a></li>
-</ul><p>Instead of treating uncertainty as something separate or difficult, <code class="docutils literal notranslate"><span class="pre">probly</span></code> organizes the process into
+<p>Instead of treating uncertainty as something separate or difficult, <code class="docutils literal notranslate"><span class="pre">probly</span></code> organizes the process into
 clear steps that work together and build on one another.</p>
 <p>These ideas form the foundation of the entire library.
 They help users understand how uncertainty is represented, how it is created,
@@ -759,11 +751,7 @@ settings.</p>
 <li><a class="reference internal" href="#the-problem-overconfident-machine-learning-models">1.1 The Problem: Overconfident Machine Learning Models</a></li>
 <li><a class="reference internal" href="#why-does-uncertainty-matter">1.2 Why does Uncertainty Matter?</a></li>
 <li><a class="reference internal" href="#what-does-probly-provide">1.3 What Does <code class="docutils literal notranslate"><span class="pre">probly</span></code> Provide?</a></li>
-</ul>
-</li>
 <li><a class="reference internal" href="#key-ideas-behind-probly">2. Key Ideas Behind <code class="docutils literal notranslate"><span class="pre">probly</span></code></a></li>
-<li><a class="reference internal" href="#quick-visual-demos">Quick visual demos</a><ul>
-<li><a class="reference internal" href="#tiny-starter-examples">Tiny starter examples</a></li>
 <li><a class="reference internal" href="#uncertainty-representations">2.1 Uncertainty Representations</a></li>
 <li><a class="reference internal" href="#uncertainty-transformations">2.2 Uncertainty Transformations</a></li>
 <li><a class="reference internal" href="#uncertainty-quantification">2.3 Uncertainty Quantification</a></li>

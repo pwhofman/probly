@@ -1,0 +1,12 @@
+probly.visualization.credal.plot\_2d
+====================================
+
+.. automodule:: probly.visualization.credal.plot_2d
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      IntervalVisualizer
+   

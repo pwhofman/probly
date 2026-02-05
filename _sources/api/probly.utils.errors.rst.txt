@@ -1,0 +1,12 @@
+probly.utils.errors
+===================
+
+.. automodule:: probly.utils.errors
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      raise_deprecation_warning
+   

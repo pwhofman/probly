@@ -1,0 +1,12 @@
+probly.transformation.evidential.classification.torch
+=====================================================
+
+.. automodule:: probly.transformation.evidential.classification.torch
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      append_activation_torch
+   

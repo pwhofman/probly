@@ -1,0 +1,22 @@
+probly.layers.evidential.torch
+==============================
+
+.. automodule:: probly.layers.evidential.torch
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      BatchedRadialFlowDensity
+      BatchedRadialFlowLayer
+      EDLHead
+      IRDHead
+      NatPNClassHead
+      NatPNRegHead
+      NormalInverseGammaLinear
+      PrNetHead
+      RadialFlowDensity
+      RadialFlowLayer
+      RegressionHead
+   

@@ -1,0 +1,12 @@
+probly.representation.sampling.array\_sample\_axis\_tracking
+============================================================
+
+.. automodule:: probly.representation.sampling.array_sample_axis_tracking
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      track_axis
+   
