@@ -1,0 +1,14 @@
+probly.calibration.histogram\_binning
+=====================================
+
+.. automodule:: probly.calibration.histogram_binning
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   flax
+   torch

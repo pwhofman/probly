@@ -1,0 +1,12 @@
+probly.calibration.scaling.torch\_platt
+=======================================
+
+.. automodule:: probly.calibration.scaling.torch_platt
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      TorchPlatt
+   

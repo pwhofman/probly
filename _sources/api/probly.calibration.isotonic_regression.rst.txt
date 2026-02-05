@@ -1,0 +1,14 @@
+probly.calibration.isotonic\_regression
+=======================================
+
+.. automodule:: probly.calibration.isotonic_regression
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   common
+   torch

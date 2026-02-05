@@ -1,0 +1,13 @@
+probly.calibration.isotonic\_regression.common
+==============================================
+
+.. automodule:: probly.calibration.isotonic_regression.common
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      isotonic_regression
+      register_isotonic_factory
+   

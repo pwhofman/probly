@@ -1,0 +1,17 @@
+probly.calibration
+==================
+
+.. automodule:: probly.calibration
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   bayesian_binning
+   histogram_binning
+   isotonic_regression
+   scaling
+   visualization

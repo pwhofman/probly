@@ -1,0 +1,14 @@
+probly.calibration.bayesian\_binning
+====================================
+
+.. automodule:: probly.calibration.bayesian_binning
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   flax
+   torch

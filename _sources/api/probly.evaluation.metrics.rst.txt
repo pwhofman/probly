@@ -14,6 +14,7 @@ probly.evaluation.metrics
       covered_efficiency
       efficiency
       expected_calibration_error
+      expected_calibration_error_binary
       log_loss
       spherical_score
       zero_one_loss

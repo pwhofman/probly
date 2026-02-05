@@ -1,0 +1,12 @@
+probly.calibration.scaling.flax\_vector
+=======================================
+
+.. automodule:: probly.calibration.scaling.flax_vector
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      FlaxVector
+   

@@ -1,0 +1,12 @@
+probly.calibration.scaling.torch\_temperature
+=============================================
+
+.. automodule:: probly.calibration.scaling.torch_temperature
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      TorchTemperature
+   

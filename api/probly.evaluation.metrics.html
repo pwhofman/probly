@@ -332,13 +332,16 @@
 <tr class="row-even"><td><p><a class="reference internal" href="#probly.evaluation.metrics.expected_calibration_error" title="probly.evaluation.metrics.expected_calibration_error"><code class="xref py py-obj docutils literal notranslate"><span class="pre">expected_calibration_error</span></code></a>(probs, labels[, ...])</p></td>
 <td><p>Compute the expected calibration error (ECE) of the predicted probabilities <span id="id4">[<a class="reference internal" href="../references.html#id14" title="Chuan Guo, Geoff Pleiss, Yu Sun, and Kilian Q. Weinberger. On calibration of modern neural networks. In Doina Precup and Yee Whye Teh, editors, Proceedings of the 34th International Conference on Machine Learning, ICML 2017, Sydney, NSW, Australia, 6-11 August 2017, volume 70 of Proceedings of Machine Learning Research, 1321–1330. PMLR, 2017. URL: http://proceedings.mlr.press/v70/guo17a.html.">GPSW17b</a>]</span>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#probly.evaluation.metrics.log_loss" title="probly.evaluation.metrics.log_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">log_loss</span></code></a>(probs, targets)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#probly.evaluation.metrics.expected_calibration_error_binary" title="probly.evaluation.metrics.expected_calibration_error_binary"><code class="xref py py-obj docutils literal notranslate"><span class="pre">expected_calibration_error_binary</span></code></a>(probs, labels)</p></td>
+<td><p>Expected Calibration Error (ECE) for binary classifiers.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#probly.evaluation.metrics.log_loss" title="probly.evaluation.metrics.log_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">log_loss</span></code></a>(probs, targets)</p></td>
 <td><p>Compute the log loss of the predicted probabilities.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#probly.evaluation.metrics.spherical_score" title="probly.evaluation.metrics.spherical_score"><code class="xref py py-obj docutils literal notranslate"><span class="pre">spherical_score</span></code></a>(probs, targets)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#probly.evaluation.metrics.spherical_score" title="probly.evaluation.metrics.spherical_score"><code class="xref py py-obj docutils literal notranslate"><span class="pre">spherical_score</span></code></a>(probs, targets)</p></td>
 <td><p>Compute the spherical score of the predicted probabilities.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#probly.evaluation.metrics.zero_one_loss" title="probly.evaluation.metrics.zero_one_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">zero_one_loss</span></code></a>(probs, targets)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#probly.evaluation.metrics.zero_one_loss" title="probly.evaluation.metrics.zero_one_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">zero_one_loss</span></code></a>(probs, targets)</p></td>
 <td><p>Compute the zero-one loss of the predicted probabilities.</p></td>
 </tr>
 </tbody>
@@ -473,6 +476,27 @@ probabilities.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="probly.evaluation.metrics.expected_calibration_error_binary">
+<span class="sig-prename descclassname"><span class="pre">probly.evaluation.metrics.</span></span><span class="sig-name descname"><span class="pre">expected_calibration_error_binary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_bins</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/evaluation/metrics.html#expected_calibration_error_binary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.evaluation.metrics.expected_calibration_error_binary" title="Link to this definition">¶</a></dt>
+<dd><p>Expected Calibration Error (ECE) for binary classifiers.</p>
+<p>This function works with sigmoid outputs.</p>
+<p>probs: shape (N,) or (N, 1) — sigmoid probabilities
+labels: shape (N,) — binary labels {0,1}</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>probs</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><em>ndarray</em></a>)</p></li>
+<li><p><strong>labels</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><em>ndarray</em></a>)</p></li>
+<li><p><strong>num_bins</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)">float</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="probly.evaluation.metrics.log_loss">
 <span class="sig-prename descclassname"><span class="pre">probly.evaluation.metrics.</span></span><span class="sig-name descname"><span class="pre">log_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">targets</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/evaluation/metrics.html#log_loss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.evaluation.metrics.log_loss" title="Link to this definition">¶</a></dt>
 <dd><p>Compute the log loss of the predicted probabilities.</p>
@@ -579,6 +603,7 @@ probabilities.</p>
 <li><a class="reference internal" href="#probly.evaluation.metrics.covered_efficiency"><code class="docutils literal notranslate"><span class="pre">covered_efficiency()</span></code></a></li>
 <li><a class="reference internal" href="#probly.evaluation.metrics.efficiency"><code class="docutils literal notranslate"><span class="pre">efficiency()</span></code></a></li>
 <li><a class="reference internal" href="#probly.evaluation.metrics.expected_calibration_error"><code class="docutils literal notranslate"><span class="pre">expected_calibration_error()</span></code></a></li>
+<li><a class="reference internal" href="#probly.evaluation.metrics.expected_calibration_error_binary"><code class="docutils literal notranslate"><span class="pre">expected_calibration_error_binary()</span></code></a></li>
 <li><a class="reference internal" href="#probly.evaluation.metrics.log_loss"><code class="docutils literal notranslate"><span class="pre">log_loss()</span></code></a></li>
 <li><a class="reference internal" href="#probly.evaluation.metrics.spherical_score"><code class="docutils literal notranslate"><span class="pre">spherical_score()</span></code></a></li>
 <li><a class="reference internal" href="#probly.evaluation.metrics.zero_one_loss"><code class="docutils literal notranslate"><span class="pre">zero_one_loss()</span></code></a></li>

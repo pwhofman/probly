@@ -1,0 +1,12 @@
+probly.calibration.histogram\_binning.flax
+==========================================
+
+.. automodule:: probly.calibration.histogram_binning.flax
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      HistogramBinningFlax
+   

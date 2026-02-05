@@ -10,6 +10,7 @@
    :toctree:
    :recursive:
 
+   calibration
    datasets
    evaluation
    layers

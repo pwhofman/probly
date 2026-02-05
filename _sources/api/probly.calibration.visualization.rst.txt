@@ -1,0 +1,13 @@
+probly.calibration.visualization
+================================
+
+.. automodule:: probly.calibration.visualization
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   reliability_diagram

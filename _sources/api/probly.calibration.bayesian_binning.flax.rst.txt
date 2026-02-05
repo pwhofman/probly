@@ -1,0 +1,12 @@
+probly.calibration.bayesian\_binning.flax
+=========================================
+
+.. automodule:: probly.calibration.bayesian_binning.flax
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      BayesianBinningQuantilesFlax
+   

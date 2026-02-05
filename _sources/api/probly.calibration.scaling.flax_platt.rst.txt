@@ -1,0 +1,12 @@
+probly.calibration.scaling.flax\_platt
+======================================
+
+.. automodule:: probly.calibration.scaling.flax_platt
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      FlaxPlatt
+   

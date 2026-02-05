@@ -1,0 +1,12 @@
+probly.calibration.isotonic\_regression.torch
+=============================================
+
+.. automodule:: probly.calibration.isotonic_regression.torch
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      IsotonicRegressionCalibrator
+   

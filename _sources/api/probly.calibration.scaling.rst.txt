@@ -1,0 +1,21 @@
+probly.calibration.scaling
+==========================
+
+.. automodule:: probly.calibration.scaling
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   common
+   flax_base
+   flax_platt
+   flax_temperature
+   flax_vector
+   torch_base
+   torch_platt
+   torch_temperature
+   torch_vector

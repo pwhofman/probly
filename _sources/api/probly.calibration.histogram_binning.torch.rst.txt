@@ -1,0 +1,12 @@
+probly.calibration.histogram\_binning.torch
+===========================================
+
+.. automodule:: probly.calibration.histogram_binning.torch
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      HistogramBinningTorch
+   

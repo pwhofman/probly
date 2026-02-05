@@ -1,0 +1,12 @@
+probly.calibration.bayesian\_binning.torch
+==========================================
+
+.. automodule:: probly.calibration.bayesian_binning.torch
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      BayesianBinningQuantilesTorch
+   

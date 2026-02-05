@@ -1,0 +1,17 @@
+probly.calibration.scaling.common
+=================================
+
+.. automodule:: probly.calibration.scaling.common
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      platt
+      register_platt_factory
+      register_temperature_factory
+      register_vector_factory
+      temperature
+      vector
+   

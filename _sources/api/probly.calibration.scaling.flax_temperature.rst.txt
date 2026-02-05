@@ -1,0 +1,12 @@
+probly.calibration.scaling.flax\_temperature
+============================================
+
+.. automodule:: probly.calibration.scaling.flax_temperature
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      FlaxTemperature
+   

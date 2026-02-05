@@ -1,0 +1,12 @@
+probly.calibration.scaling.torch\_base
+======================================
+
+.. automodule:: probly.calibration.scaling.torch_base
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      ScalerTorch
+   

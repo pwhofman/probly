@@ -1,0 +1,13 @@
+probly.calibration.visualization.reliability\_diagram
+=====================================================
+
+.. automodule:: probly.calibration.visualization.reliability_diagram
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      compute_reliability_diagram
+      plot_reliability_diagram
+   
