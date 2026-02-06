@@ -12,6 +12,7 @@ from functools import update_wrapper
 import inspect
 import logging
 from typing import (
+    TYPE_CHECKING,
     Any,
     Concatenate,
     Literal,
@@ -277,7 +278,7 @@ class TraverserDecoratorKwargs[T](TypedDict):
     traverse_if: NotRequired[StatePredicate[T] | None]
     skip_if: NotRequired[StatePredicate[T] | None]
     vars: NotRequired[dict[str, Variable] | None]
-    type: NotRequired[type[T]] = object
+    type: NotRequired[type[T]]
 
 
 @overload
@@ -583,12 +584,12 @@ def traverser[T](  # noqa: C901, PLR0912, PLR0915
         def _decorator(fn: LooseTraverser[T]) -> Traverser[T]:
             return traverser(
                 fn,
-                mode=mode,  # type: ignore[arg-type]
+                mode=mode,
                 traverse_if=traverse_if,
                 skip_if=skip_if,
                 vars=vars,
                 update_vars=update_vars,
-            )
+            )  # type:ignore[no-matching-overload]
 
         return _decorator
 
@@ -634,13 +635,12 @@ def traverser[T](  # noqa: C901, PLR0912, PLR0915
             )
             traverse_name = "traverse"
 
-    _traverser: Traverser[T]
-
     if mode == "full_positional":
-        _traverser = traverser_fn  # type: ignore[assignment]
+        _traverser: Traverser[T] = traverser_fn  # type: ignore[assignment]
 
     elif mode == "full":
-        traverser_fn = cast("Traverser[T]", traverser_fn)
+        if TYPE_CHECKING:
+            traverser_fn = cast("Traverser[T]", traverser_fn)
 
         if detected_mode == "full_positional":
             # If the function is already a full positional traverser, return it directly
@@ -656,10 +656,12 @@ def traverser[T](  # noqa: C901, PLR0912, PLR0915
                     obj_name: obj,
                     state_name: state,
                     traverse_name: traverse,
-                },
+                },  # type:ignore[invalid-argument-type]
             )
 
     elif mode == "obj":
+        if TYPE_CHECKING:
+            traverser_fn = cast("ObjTraverser[T] | ObjTraverserWithVarUpdates[T]", traverser_fn)
 
         def _traverser(
             obj: T,
@@ -672,8 +674,8 @@ def traverser[T](  # noqa: C901, PLR0912, PLR0915
                     kwargs[k] = v.get(state)
             res = traverser_fn(**kwargs)  # type: ignore[call-arg]
             if update_vars:
-                obj, updates = res
-                for k, v in updates.items():  # type: ignore[union-attr]
+                obj, updates = res  # type: ignore[assignment]
+                for k, v in updates.items():
                     if k not in vars:  # type: ignore[operator]
                         continue
                     state = vars[k].set(state, v)  # type: ignore[index]
@@ -720,7 +722,7 @@ def traverser[T](  # noqa: C901, PLR0912, PLR0915
                     kwargs[k] = v.get(state)
             res = traverser_fn(**kwargs)  # type: ignore[call-arg]
             if update_vars:
-                obj, updates = res
+                obj, updates = res  # type: ignore[assignment]
                 for k, v in updates.items():  # type: ignore[union-attr]
                     if k not in vars:  # type: ignore[operator]
                         continue
@@ -733,12 +735,14 @@ def traverser[T](  # noqa: C901, PLR0912, PLR0915
         msg = f"Mode '{mode}' could not be applied to given traverser."
         raise ValueError(msg)
 
+    _traverser: Traverser[T]
+
     if skip_if is not None:
         _traverser = _skip_if(_traverser, skip_if)
     if traverse_if is not None:
         _traverser = _skip_if(_traverser, lambda state: not traverse_if(state))
 
     if _traverser is not traverser_fn:
-        _traverser = update_wrapper(_traverser, traverser_fn)
+        _traverser = update_wrapper(_traverser, traverser_fn)  # type:ignore[invalid-argument-type]
 
     return _traverser

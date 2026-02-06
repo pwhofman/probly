@@ -20,23 +20,22 @@ type Index = IndexElement | tuple[IndexElement, ...]
 
 
 def _normalize_index(index: Index, ndim: int) -> tuple[IndexElement, ...]:
-    if not isinstance(index, tuple):
-        index = (index,)
+    normalized_index: tuple[IndexElement, ...] = (index,) if not isinstance(index, tuple) else index  # type: ignore[assignment]
 
     # Expand ellipsis
-    for i, idx in enumerate(index):
+    for i, idx in enumerate(normalized_index):
         if idx is Ellipsis:
-            before = index[:i]
-            after = index[i + 1 :]
+            before: tuple[IndexElement, ...] = normalized_index[:i]
+            after: tuple[IndexElement, ...] = normalized_index[i + 1 :]
             missing = ndim - (i + len(after))
-            index = before + (slice(None),) * missing + after
+            normalized_index = before + (slice(None),) * missing + after
             break
 
     # Pad with full slices if index is short
-    if len(index) < ndim:
-        index = index + (slice(None),) * (ndim - len(index))
+    if len(normalized_index) < ndim:
+        normalized_index = normalized_index + (slice(None),) * (ndim - len(normalized_index))
 
-    return index
+    return normalized_index
 
 
 def _convert_idx(idx: IndexElement) -> np.ndarray | int:
@@ -227,6 +226,6 @@ def track_axis(
             return None
 
     if len(advanced_index) > 0:
-        new_axis = _track_axis_advanced(advanced_index, new_axis)  # type: ignore[arg-type]
+        new_axis = _track_axis_advanced(advanced_index, new_axis)
 
     return new_axis

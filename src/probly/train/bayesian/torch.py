@@ -15,7 +15,7 @@ from probly.layers.torch import BayesConv2d, BayesLinear  # noqa: TC001, require
 from probly.traverse_nn import nn_compose
 from pytraverse import GlobalVariable, State, TraverserResult, singledispatch_traverser, traverse_with_state
 
-KL_DIVERGENCE = GlobalVariable[torch.Tensor]("KL_DIVERGENCE", default=0.0)
+KL_DIVERGENCE = GlobalVariable[torch.Tensor]("KL_DIVERGENCE", default=0.0)  # ty: ignore[invalid-argument-type]
 
 
 @singledispatch_traverser[object]
@@ -30,7 +30,11 @@ def kl_divergence_traverser(
 
 def collect_kl_divergence(model: Predictor) -> torch.Tensor:
     """Collect the KL divergence of the Bayesian model by summing the KL divergence of each Bayesian layer."""
-    _, state = traverse_with_state(model, nn_compose(kl_divergence_traverser))
+    _, state = traverse_with_state(
+        model,
+        nn_compose(kl_divergence_traverser),
+        init={KL_DIVERGENCE: 0.0},
+    )
     return state[KL_DIVERGENCE]
 
 

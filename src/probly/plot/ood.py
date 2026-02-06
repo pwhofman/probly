@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
-    from matplotlib.figure import Figure
+    from matplotlib.figure import Figure, SubFigure
     import numpy as np
 
 
@@ -18,12 +18,16 @@ def plot_histogram(
     ax: Axes | None = None,
     bins: int = 50,
     title: str = "Score Distribution",
-) -> Figure:
+) -> Figure | SubFigure:
     """Plot ID vs OOD score histogram."""
     if ax is None:
         fig, ax = plt.subplots(figsize=(6, 5))
     else:
         fig = ax.get_figure()
+
+    if fig is None:
+        msg = "Could not get figure from axes."
+        raise RuntimeError(msg)
 
     ax.hist(
         id_scores,
@@ -55,12 +59,16 @@ def plot_roc_curve(
     auroc: float,
     fpr95: float | None = None,
     ax: Axes | None = None,
-) -> Figure:
+) -> Figure | SubFigure:
     """Plot ROC curve."""
     if ax is None:
         fig, ax = plt.subplots(figsize=(6, 5))
     else:
         fig = ax.get_figure()
+
+    if fig is None:
+        msg = "Could not get figure from axes."
+        raise RuntimeError(msg)
 
     label = f"AUROC = {auroc:.3f}"
     if fpr95 is not None:
@@ -85,12 +93,16 @@ def plot_pr_curve(
     precision: np.ndarray,
     aupr: float,
     ax: Axes | None = None,
-) -> Figure:
+) -> Figure | SubFigure:
     """Plot Precision-Recall curve."""
     if ax is None:
         fig, ax = plt.subplots(figsize=(6, 5))
     else:
         fig = ax.get_figure()
+
+    if fig is None:
+        msg = "Could not get figure from axes."
+        raise RuntimeError(msg)
 
     ax.plot(
         recall,

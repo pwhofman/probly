@@ -35,7 +35,7 @@ def radar_factory(num_vars: int, frame: str = "circle") -> np.ndarray:  # noqa: 
     """
     theta = np.linspace(0, 2 * np.pi, num_vars, endpoint=False)
 
-    class RadarTransform(PolarAxes.PolarTransform):
+    class RadarTransform(PolarAxes.PolarTransform):  # ty: ignore[unsupported-base]
         def transform_path_non_affine(self, path: Path) -> Path:
             interpolation_steps = getattr(path, "_interpolation_steps", 1)
             if interpolation_steps > 1:
@@ -99,7 +99,7 @@ def radar_factory(num_vars: int, frame: str = "circle") -> np.ndarray:  # noqa: 
 
         def _gen_axes_spines(self) -> dict[str, Spine]:
             if frame == "circle":
-                return cast("dict[str, Spine]", super()._gen_axes_spines())
+                return cast("dict[str, Spine]", super()._gen_axes_spines())  # ty: ignore[unresolved-attribute]
             if frame == "polygon":
                 spine = Spine(axes=self, spine_type="circle", path=Path.unit_regular_polygon(num_vars))
                 spine.set_transform(Affine2D().scale(0.5).translate(0.5, 0.5) + self.transAxes)

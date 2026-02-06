@@ -398,8 +398,8 @@ def array_squeeze_function(
         if ax == new_sample_axis:
             new_sample_axis = None
             break
-        if ax < new_sample_axis:  # type: ignore[operator]
-            new_sample_axis -= 1  # type: ignore[operator]
+        if ax < new_sample_axis:
+            new_sample_axis -= 1
 
     res = func._implementation(a_array, axes)  # type: ignore[attr-defined]  # noqa: SLF001
 
