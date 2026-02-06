@@ -28,7 +28,11 @@ def predict_probs[T](model: Predictor, x: T) -> T:
     Returns:
         T: Predicted probabilities with same type as input.
     """
-    # fallback for scikit-learn-like models
+    # scikit-learn-style probabilities
+    if hasattr(model, "predict_proba"):
+        return model.predict_proba(x)  # type: ignore[no-any-return]
+
+    # fallback for scikit-learn-like models with custom naming
     if hasattr(model, "predict_probs"):
         return model.predict_probs(x)  # type: ignore[no-any-return]
 
