@@ -5,7 +5,8 @@ The ``probly`` Python Package
 probly is a Python package for **uncertainty representation** and **quantification** for machine learning.
 
 Installation
-~~~~~~~~~~~~
+--------------
+
 `probly` is intended to work with **Python 3.10 and above**. Installation can be done via `pip` and
 or `uv`:
 
@@ -20,7 +21,8 @@ or
    uv add probly
 
 Quickstart
-~~~~~~~~~~
+----------
+
 `probly` makes it simple to make neural network models uncertainty-aware.
 The library provides high-level wrappers for uncertainty representations
 (e.g., Dropout, Ensembles, Bayesian NNs) and utilities for quantifying and
