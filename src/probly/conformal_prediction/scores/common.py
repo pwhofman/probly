@@ -140,6 +140,9 @@ class ClassificationScore(ClassificationScoreProtocol):
         if probs is None:
             probs = predict_probs(self.model, x_cal)
 
+        # ensure probs is 2D (n_samples, n_classes) for consistent processing
+        probs = self._ensure_2d_shape(probs)
+
         # compute scores using the score function
         all_scores = self.score_func(probs)
 
@@ -184,8 +187,34 @@ class ClassificationScore(ClassificationScoreProtocol):
         if probs is None:
             probs = predict_probs(self.model, x_test)
 
+        # ensure probs is 2D (n_samples, n_classes) for consistent processing
+        probs = self._ensure_2d_shape(probs)
+
         # return the matrix of scores
         return self.score_func(probs)
+
+    def _ensure_2d_shape(self, probs: Any) -> Any:  # noqa: ANN401
+        """Ensure (N, C) shape to prevent single-image crashes."""
+        # PyTorch
+        if TORCH_AVAILABLE and isinstance(probs, torch.Tensor):
+            return probs.unsqueeze(0) if probs.ndim == 1 else probs
+
+        # JAX / Flax
+        if JAX_AVAILABLE and isinstance(probs, jax.Array):
+            return jnp.expand_dims(probs, axis=0) if probs.ndim == 1 else probs
+
+        # NumPy
+        if hasattr(probs, "ndim") and probs.ndim == 1:
+            return probs[None, :]  # NumPy Array
+
+        # fallback for other types (e.g. lists)
+        if isinstance(probs, list):
+            arr = np.asarray(probs)
+            if arr.ndim == 1:
+                return arr[None, :]
+            return arr
+
+        return probs
 
     def _extract_numpy_scores(self, scores: Any, y: Any) -> npt.NDArray[np.floating]:  # noqa: ANN401
         """Extract true label scores using NumPy (vectorized)."""
