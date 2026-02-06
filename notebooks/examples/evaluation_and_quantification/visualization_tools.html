@@ -232,6 +232,9 @@
 </ul>
 </li>
 <li class="toctree-l2 current has-children"><a class="reference internal" href="index.html">Evaluation and Quantification</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of Evaluation and Quantification</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="plotting_credal_tutorial.html">Credal Sets Visualization Plotting</a></li>
+<li class="toctree-l3"><a class="reference internal" href="clustermargin_tutorial.html">A tutorial for clustervisualiser.py</a></li>
+<li class="toctree-l3"><a class="reference internal" href="dirichlet_tutorial.html">Dirichlet distribution tutorial</a></li>
 <li class="toctree-l3"><a class="reference internal" href="calibration_metrics.html">Calibration Metrics</a></li>
 <li class="toctree-l3"><a class="reference internal" href="interpretation_techniques.html">Interpretation techniques</a></li>
 <li class="toctree-l3 current current-page"><a class="current reference internal" href="#">Visualisation Tools</a></li>
@@ -321,8 +324,506 @@ The Credal Set Plot is a more advanced tool for visualizing the uncertainty of a
 </div>
 <p>These tools are essential for the qualitative interpretation and debugging of classification uncertainty.</p>
 </section>
-<section id="todo-expand-notebook-content-based-on-the-work-of-group-2">
-<h2>todo: expand notebook content based on the work of group #2<a class="headerlink" href="#todo-expand-notebook-content-based-on-the-work-of-group-2" title="Link to this heading">¶</a></h2>
+<section id="first-things-first">
+<h2>0. First things first:<a class="headerlink" href="#first-things-first" title="Link to this heading">¶</a></h2>
+<p>All modules mentioned here have more in depth notebooks to explain more detailed, how they are working.
+You can find them under the section further reading.</p>
+</section>
+<section id="what-can-you-visualize-in-probly">
+<h2>1. What can you visualize in probly?<a class="headerlink" href="#what-can-you-visualize-in-probly" title="Link to this heading">¶</a></h2>
+<section id="credal-sets">
+<h3>Credal Sets: <br><a class="headerlink" href="#credal-sets" title="Link to this heading">¶</a></h3>
+<p>Based on the number of classes given in the visualizer, the <code class="docutils literal notranslate"><span class="pre">credal</span></code> package chooses between those three modules:</p>
+<ul class="simple">
+<li><p><strong>Intervall plot</strong> / <code class="docutils literal notranslate"><span class="pre">plot_2d</span></code>: Quick sanity checks for two-feature views (or 2D embeddings): cluster overlap, separation, and how uncertainty behaves in feature space.</p></li>
+<li><p><strong>Ternary plot</strong> / <code class="docutils literal notranslate"><span class="pre">plot_3d</span></code>: Visualization of <strong>3-class probability vectors</strong> on a simplex: highlights confident regions (near corners) vs. ambiguous regions (towards the center / edges).</p></li>
+<li><p><strong>Spider plot</strong> / <code class="docutils literal notranslate"><span class="pre">plot_multid</span></code>: Multi-class probability diagnostics when <code class="docutils literal notranslate"><span class="pre">n_classes</span> <span class="pre">&gt;</span> <span class="pre">3</span></code>: compact views to spot systematic uncertainty patterns across many classes.</p></li>
+</ul>
+</section>
+<section id="specialized-plots">
+<h3>Specialized plots:<br><a class="headerlink" href="#specialized-plots" title="Link to this heading">¶</a></h3>
+<p>Upon our credal package, you can also visualize special plots:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">plot_uncertainty</span></code>: Visualizes <strong>margin-based confidence</strong> between two 2D clusters by mapping the SVM decision margin into a smooth field.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">plot_dirichlet</span></code>: Plots <strong>Dirichlet density contours</strong> on the ternary simplex to illustrate “distributions over probabilities” (concentration, symmetry, and skew).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">plot_coverage_efficency</span></code>: Shows the <strong>trade-off between empirical coverage and prediction set size</strong> across confidence levels (coverage vs. efficiency on a dual-axis view)</p></li>
+</ul>
+</section>
+</section>
+<section id="imports">
+<h2>2. Imports<a class="headerlink" href="#imports" title="Link to this heading">¶</a></h2>
+<p>To demonstrate, first let’s import the following modules:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">probly.visualization.clustermargin.clustervisualizer</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_uncertainty</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">probly.visualization.dirichlet.dirichlet_visualization</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_dirichlet_plot</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">probly.visualization.credal.credal_visualization</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_credal_plot</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">credal_visualization</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_credal_plot</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">probly.visualization.efficiency.plot_coverage_efficiency</span><span class="w"> </span><span class="kn">import</span> <span class="n">CoverageEfficiencyVisualizer</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">plot_coverage_final</span><span class="w"> </span><span class="kn">import</span> <span class="n">CoverageEfficiencyVisualizer</span>
+
+<span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+<span class="n">visualizer</span> <span class="o">=</span> <span class="n">CoverageEfficiencyVisualizer</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Imports successfully loaded.&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<img alt="../../../_images/955f5dffb6d3bd0cfab6efdba95a60468283ceba6112274685b69c6bb81ecf6e.png" src="../../../_images/955f5dffb6d3bd0cfab6efdba95a60468283ceba6112274685b69c6bb81ecf6e.png" />
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Imports successfully loaded.
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="credal">
+<h2>3. Credal<a class="headerlink" href="#credal" title="Link to this heading">¶</a></h2>
+<p><strong>What the package does:</strong><br>
+It takes an array of probability vectors (each summing to 1) and visualizes them as a credal set:</p>
+<ul class="simple">
+<li><p><strong>2 classes:</strong> interval band on a line</p></li>
+<li><p><strong>3 classes:</strong> ternary plot with convex hull</p></li>
+<li><p><strong>more than 3 classes:</strong> radar/spider plot with min–max envelope <br>
+The public entry point is <code class="docutils literal notranslate"><span class="pre">create_credal_plot()</span></code>, which delegates to <code class="docutils literal notranslate"><span class="pre">dispatch_plot()</span></code> based on the number of classes.</p></li>
+</ul>
+<section id="public-api-credal-visualization-py">
+<h3>3.1 Public API <code class="docutils literal notranslate"><span class="pre">credal_visualization.py</span></code><a class="headerlink" href="#public-api-credal-visualization-py" title="Link to this heading">¶</a></h3>
+<p>This module provides the single public entry point for creating credal-set visualizations across different class counts (2D / 3D / multi-class).
+<code class="docutils literal notranslate"><span class="pre">create_credal_plot()</span></code> takes the <code class="docutils literal notranslate"><span class="pre">input_data</span></code> plus optional flags to customize your plot.</p>
+<p>It delegates all validation and plot selection to <code class="docutils literal notranslate"><span class="pre">dispatch_plot()</span></code> from <code class="docutils literal notranslate"><span class="pre">input_handling.py</span></code>, which decides which plot backend to use based on the number of classes.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">show=True</span></code>, it calls <code class="docutils literal notranslate"><span class="pre">plt.show()</span></code> so the figure is displayed immediately.</p>
+</section>
+<section id="input-handling-py">
+<h3>3.2 <code class="docutils literal notranslate"><span class="pre">input_handling.py</span></code><a class="headerlink" href="#input-handling-py" title="Link to this heading">¶</a></h3>
+<p>It selects and executes the correct plotting function based on class count.
+By calling <code class="docutils literal notranslate"><span class="pre">create_credal_plot()</span></code> from <code class="docutils literal notranslate"><span class="pre">credal_visualization.py</span></code> your</p>
+<p>Validates input_data is a non-empty NumPy array, at least 2D, with non-negative probabilities that sum to 1 per row, and ≥2 classes with <code class="docutils literal notranslate"><span class="pre">check_shape()</span></code>.
+It then normalizes shapes by flattening higher-dimensional input sso plotting always sees a 2D matrix of samples with <code class="docutils literal notranslate"><span class="pre">normalize_input()</span></code>.<br></p>
+<p><strong>Important to mention:</strong><br></p>
+<ul class="simple">
+<li><p>Your probabilities <strong>must sum to 1</strong>(otherwise you’ll get a clear error).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">choice=&quot;Probability&quot;</span></code> shows only raw points; <code class="docutils literal notranslate"><span class="pre">choice=&quot;MLE&quot;</span></code> shows only the mean; <code class="docutils literal notranslate"><span class="pre">choice=&quot;Credal&quot;</span></code> shows only the uncertainty region; <code class="docutils literal notranslate"><span class="pre">choice=None</span></code> shows both.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">minmax=True</span></code> only has an effect for <strong>3-class plots</strong>.</p></li>
+</ul>
+</section>
+<section id="plot-2d-py">
+<h3>3.3 <code class="docutils literal notranslate"><span class="pre">plot_2d.py</span></code><a class="headerlink" href="#plot-2d-py" title="Link to this heading">¶</a></h3>
+<p>This module implements the <strong>2-class credal visualization</strong>: an <em>interval plot</em> on a one dimentional probability axis.</p>
+<p><strong>Core idea:</strong> <br>
+If you have probabilities <code class="docutils literal notranslate"><span class="pre">[p1,</span> <span class="pre">p2]</span></code> with <code class="docutils literal notranslate"><span class="pre">p1</span> <span class="pre">+</span> <span class="pre">p2</span> <span class="pre">=</span> <span class="pre">1</span></code>, then the whole distribution is determined by <strong>one number</strong> (<code class="docutils literal notranslate"><span class="pre">p2</span></code>). So every prediction can be placed on a line from 0 to 1 (where <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">=</span> <span class="pre">p2</span></code>)</p>
+<p><strong>Use an interval plot when:</strong></p>
+<ul class="simple">
+<li><p>you have <strong>exactly 2 classes</strong> (binary classification)</p></li>
+<li><p>you want a <strong>simple uncertainty summary</strong> of predicted probabilities</p></li>
+</ul>
+<p><strong>It’s especially useful for:</strong></p>
+<ul class="simple">
+<li><p>comparing <strong>model uncertainty</strong> across different inputs (narrow band = confident, wide band = uncertain)</p></li>
+<li><p>showing uncertainty for a <strong>single data point</strong> (or a small set) in a compact way</p></li>
+</ul>
+<p><strong>Methods:</strong><br>
+<code class="docutils literal notranslate"><span class="pre">IntervalVisualizer.probs_to_coords_2d()</span></code>: Maps each probability vector <code class="docutils literal notranslate"><span class="pre">[p1,</span> <span class="pre">p2]</span></code> to a 2D coordinate <code class="docutils literal notranslate"><span class="pre">(x,</span> <span class="pre">y)</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">IntervalVisualizer.interval_plot()</span></code>: Draws baseline and maps probability samples as blue points.</p>
+<ul class="simple">
+<li><p>optional <strong>MLE summary</strong> (red dot): the mean of the sampled <code class="docutils literal notranslate"><span class="pre">p2</span></code> values when <code class="docutils literal notranslate"><span class="pre">mle_flag=True</span></code></p></li>
+<li><p>optional <strong>credal band</strong> (shaded region): the min–max interval of <code class="docutils literal notranslate"><span class="pre">p2</span></code> across samples <code class="docutils literal notranslate"><span class="pre">credal_flag=True</span></code></p></li>
+</ul>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">points_2d</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="p">[</span><span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">],</span>
+        <span class="p">[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">],</span>
+        <span class="p">[</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">],</span>
+    <span class="p">]</span>
+<span class="p">)</span>
+
+<span class="n">labels_2d</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Class A&quot;</span><span class="p">,</span> <span class="s2">&quot;Class B&quot;</span><span class="p">]</span>
+<span class="n">create_credal_plot</span><span class="p">(</span>
+    <span class="n">input_data</span><span class="o">=</span><span class="n">points_2d</span><span class="p">,</span>
+    <span class="n">labels</span><span class="o">=</span><span class="n">labels_2d</span><span class="p">,</span>
+    <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Binary Credal Set (Interval)&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<img alt="../../../_images/b10cec555ba91919560fafd1f5a35eae22d12019cf18145fd8ce04ca00240a47.png" src="../../../_images/b10cec555ba91919560fafd1f5a35eae22d12019cf18145fd8ce04ca00240a47.png" />
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;Axes: title={&#39;center&#39;: &#39;Binary Credal Set (Interval)&#39;}&gt;
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="plot-3d-py">
+<h3>3.4 <code class="docutils literal notranslate"><span class="pre">plot_3d.py</span></code><a class="headerlink" href="#plot-3d-py" title="Link to this heading">¶</a></h3>
+<p>This module implements the <strong>3-class credal visualization</strong>: a <em>ternary plot</em> on the 2D probability simplex.</p>
+<p><strong>Core idea:</strong> <br>
+If you have probabilities <code class="docutils literal notranslate"><span class="pre">[p1,</span> <span class="pre">p2,</span> <span class="pre">p3]</span></code> with <code class="docutils literal notranslate"><span class="pre">p1</span> <span class="pre">+</span> <span class="pre">p2</span> <span class="pre">+</span> <span class="pre">p3</span> <span class="pre">=</span> <span class="pre">1</span></code>, every prediction is a point inside the simplex. The closer a point is to a corner, the higher the probability of that class.</p>
+<p><strong>Use a ternary plot when:</strong></p>
+<ul class="simple">
+<li><p>you have <strong>exactly 3 classes</strong></p></li>
+<li><p>you want to visualize a <strong>credal set</strong> as a region (instead of just individual points)</p></li>
+</ul>
+<p><strong>It’s especially useful for:</strong></p>
+<ul class="simple">
+<li><p>comparing <strong>uncertainty structure</strong></p></li>
+<li><p>showing a <strong>credal set</strong> via the convex hull (and optionally min/max envelopes)</p></li>
+</ul>
+<p><strong>Methods:</strong><br>
+<code class="docutils literal notranslate"><span class="pre">TernaryVisualizer.probs_to_coords_3d()</span></code>: Converts each probability triple <code class="docutils literal notranslate"><span class="pre">[p1,</span> <span class="pre">p2,</span> <span class="pre">p3]</span></code> into 2D ternary coordinates <code class="docutils literal notranslate"><span class="pre">(x,</span> <span class="pre">y)</span></code> so it can be plotted in a triangle.</p>
+<p><code class="docutils literal notranslate"><span class="pre">TernaryVisualizer.ternary_plot()</span></code>: Draws the triangle simplex, axis ticks, and plots probability samples as points.</p>
+<ul class="simple">
+<li><p>optional <strong>MLE</strong> (red dot): the mean probability vector when <code class="docutils literal notranslate"><span class="pre">mle_flag=True</span></code></p></li>
+<li><p>optional <strong>MLE guide lines</strong>: helper lines to make the MLE easier to read <code class="docutils literal notranslate"><span class="pre">draw_mle_prob_line</span></code></p></li>
+<li><p>optional <strong>credal set</strong>: the <strong>convex hull</strong> around all points when <code class="docutils literal notranslate"><span class="pre">credal_flag=True</span></code></p></li>
+<li><p>optional <strong>min/max envelope lines</strong>: draws up to 6 lines (min &amp; max for each class) when <code class="docutils literal notranslate"><span class="pre">minmax_flag=True</span></code></p></li>
+</ul>
+<p><code class="docutils literal notranslate"><span class="pre">TernaryVisualizer.plot_convex_hull()</span></code>: Builds convex hull around points, depending on how many probabilities are given.</p>
+<p><code class="docutils literal notranslate"><span class="pre">TernaryVisualizer.plot_minmax_lines()</span></code>: Computes per-class min and max probabilities across samples, then draws constant-probability lines for each bound.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">points_3d</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="p">[</span><span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">],</span>
+        <span class="p">[</span><span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">],</span>
+        <span class="p">[</span><span class="mf">0.6</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">],</span>
+    <span class="p">]</span>
+<span class="p">)</span>
+
+<span class="n">labels_3d</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Detractor&quot;</span><span class="p">,</span> <span class="s2">&quot;Passive&quot;</span><span class="p">,</span> <span class="s2">&quot;Promoter&quot;</span><span class="p">]</span>
+
+<span class="n">create_credal_plot</span><span class="p">(</span>
+    <span class="n">input_data</span><span class="o">=</span><span class="n">points_3d</span><span class="p">,</span>
+    <span class="n">labels</span><span class="o">=</span><span class="n">labels_3d</span><span class="p">,</span>
+    <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Ternary Credal Set (Simplex)&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<img alt="../../../_images/8f2ce609b188e283c4475147d56dd4ac9a55053fe3e66fc518f5669efbf8c9b7.png" src="../../../_images/8f2ce609b188e283c4475147d56dd4ac9a55053fe3e66fc518f5669efbf8c9b7.png" />
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;Axes: title={&#39;center&#39;: &#39;Ternary Credal Set (Simplex)&#39;}&gt;
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="plot-multid-py">
+<h3>3.5 <code class="docutils literal notranslate"><span class="pre">plot_multid.py</span></code><a class="headerlink" href="#plot-multid-py" title="Link to this heading">¶</a></h3>
+<p>This module provides radar (spider) plots for multiclass probability predictions with <strong>more than three classes.</strong> It visualizes probability samples, MLE-style summaries, and credal uncertainty bands in a compact way. The plot is based on a custom Matplotlib radar projection created via <code class="docutils literal notranslate"><span class="pre">radar_factory</span></code>, supporting circular and polygonal frames.</p>
+<p><strong>Core Idea:</strong><br>
+Each axis corresponds to one class and the radius represents the predicted probability. For a probability vector <code class="docutils literal notranslate"><span class="pre">p</span> <span class="pre">=</span> <span class="pre">(p1,...,</span> <span class="pre">p)</span></code> with <code class="docutils literal notranslate"><span class="pre">sum(p)</span> <span class="pre">=</span> <span class="pre">1</span></code>, only the dominant (maximum-probability) class of each sample is plotted. Optionally, a mean probability vector MLE-style and a per-class min–max credal band can be shown. This makes the plot suitable for ensemble outputs, robust classification, and imprecise probability models.
+<strong>Methods:</strong>
+<code class="docutils literal notranslate"><span class="pre">radar_factory():</span></code></p>
+<ul class="simple">
+<li><p>Creates and registers a custom radar projection. Parameters: num_vars = number of classes; frame = “circle” or “polygon” (recommended).</p></li>
+<li><p>Returns: theta (np.ndarray, shape (num_vars,)) giving angular class positions.</p></li>
+</ul>
+<p><code class="docutils literal notranslate"><span class="pre">spider_plot()</span></code>:</p>
+<ul class="simple">
+<li><p>General spider plot for multiclass credal predictions.</p></li>
+<li><p>Input: probs (np.ndarray of shape (N, C), row-wise normalized) and labels (list of length C).</p></li>
+<li><p>Options: <code class="docutils literal notranslate"><span class="pre">mle_flag</span></code> shows the mean probability vector; <code class="docutils literal notranslate"><span class="pre">credal_flag</span></code> shows the min–max credal band; <code class="docutils literal notranslate"><span class="pre">ax</span></code> is an optional existing radar axis.</p></li>
+</ul>
+<p><strong>Visualization:</strong><br>
+<strong>Sample points:</strong> angle = most probable class, radius = probability value.
+<strong>MLE summary:</strong> single point at the mean probability vector.
+<strong>Credal band:</strong> shaded min–max envelope plus lower and upper bounds per class. Radial values lie in <code class="docutils literal notranslate"><span class="pre">[0,</span> <span class="pre">1]</span></code>. For polygon frames, scaling uses <code class="docutils literal notranslate"><span class="pre">r_max</span> <span class="pre">=</span> <span class="pre">cos(π</span> <span class="pre">/</span> <span class="pre">C)</span></code>.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">n_classes</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="n">n_samples</span> <span class="o">=</span> <span class="mi">5</span>
+<span class="n">points_multi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">dirichlet</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">n_classes</span><span class="p">),</span> <span class="n">size</span><span class="o">=</span><span class="n">n_samples</span><span class="p">)</span>
+
+<span class="n">labels_multi</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;airplane&quot;</span><span class="p">,</span> <span class="s2">&quot;automobile&quot;</span><span class="p">,</span> <span class="s2">&quot;bird&quot;</span><span class="p">,</span> <span class="s2">&quot;cat&quot;</span><span class="p">,</span> <span class="s2">&quot;deer&quot;</span><span class="p">,</span> <span class="s2">&quot;dog&quot;</span><span class="p">,</span> <span class="s2">&quot;frog&quot;</span><span class="p">,</span> <span class="s2">&quot;horse&quot;</span><span class="p">,</span> <span class="s2">&quot;ship&quot;</span><span class="p">,</span> <span class="s2">&quot;truck&quot;</span><span class="p">]</span>
+
+<span class="n">create_credal_plot</span><span class="p">(</span>
+    <span class="n">input_data</span><span class="o">=</span><span class="n">points_multi</span><span class="p">,</span>
+    <span class="n">labels</span><span class="o">=</span><span class="n">labels_multi</span><span class="p">,</span>
+    <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Multi-Class Credal Set (Spider)&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<img alt="../../../_images/19f342959548cb21b7a8220ce7db15bbafe56ce43415de48c6b94b744588488a.png" src="../../../_images/19f342959548cb21b7a8220ce7db15bbafe56ce43415de48c6b94b744588488a.png" />
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;RadarAxes: title={&#39;center&#39;: &#39;Multi-Class Credal Set (Spider)&#39;}&gt;
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="id1">
+<h2>4. Specialized plots:<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h2>
+<p>Besides the <strong>credal based plots</strong>, our visualization tool includes three further visualizations that focus on different aspects of uncertainty and reliability.</p>
+<p><strong>Cluster-margin (SVM) uncertainty plot:</strong><br>
+A 2D visualization that uses an SVM’s <strong>distance to the decision boundary</strong> as a <em>margin-based uncertainty</em>.
+It highlights <strong>where the ambiguous region between two clusters lies</strong> in feature space (high uncertainty near the boundary).</p>
+<p><strong>Dirichlet / Evidential plot:</strong><br>
+A visualization tailored to <strong>Dirichlet-based predictions</strong> (common in evidential deep learning). It helps interpret not only the predicted class probabilities, but also the <strong>strength / concentration</strong> of the Dirichlet distribution (how “certain” the model is overall).</p>
+<p><strong>Coverage–Efficiency plot:</strong><br>
+A diagnostic plot for <strong>prediction sets</strong>. It shows the trade-off between <strong>coverage</strong> (how often the true label is included in the set) and <strong>efficiency</strong> (how small the set is on average). This is especially useful to compare behaviour on <strong>ID vs. OOD</strong> data.</p>
+<section id="clustervisualizer-py">
+<h3>4.1 <code class="docutils literal notranslate"><span class="pre">clustervisualizer.py</span></code><a class="headerlink" href="#clustervisualizer-py" title="Link to this heading">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">clustervisualizer.py</span></code> is a simple visualization tool for inspecting how <strong>confident a classifier separates two clusters</strong> in a 2D feature space.
+It is based on a <strong>Support Vector Machine (SVM)</strong> and highlights where the model is uncertain about a sample’s class belonging.<br></p>
+<p><strong>Core idea:</strong><br>
+The visualization makes model uncertainty intuitive and easy to understand. Areas near the decision boundary appear highly uncertain, while regions farther away indicate higher confidence. As the two clusters move closer together or overlap, the region of uncertainty expands, demonstrating the difficulty of the classification. <br>
+SVMs are <strong>margin-based classifiers</strong>. They <strong>separate classes</strong> by learning a decision boundary the maximizes the margin between samples of different classes. Using a soft margin allows misclassification but can improve the overall classification in the long run.</p>
+<p>The SVM provides a margin-based confidence through its decision_function.
+In this plot, the absolute margin values are inverted and normalized so that:<br></p>
+<ul class="simple">
+<li><p><strong>High uncertainty:</strong> values close to the decision boundary</p></li>
+<li><p><strong>Low uncertainty:</strong> values far from the decision boundary</p></li>
+</ul>
+<p><strong>What the plot shows:</strong></p>
+<ul class="simple">
+<li><p>A continuous uncertainty background derived from the SVM decision function</p></li>
+<li><p>The two input clusters overlaid as scatter points</p></li>
+<li><p>A colorbar indicating relative uncertainty</p></li>
+<li><p>Clear visual emphasis on ambiguous regions between classes</p></li>
+</ul>
+<p><strong>Methods:</strong> <br></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">_check_shape()</span></code>: Validates that input arrays are NumPy arrays with shape <strong>(n_samples, 2)</strong> and are non-empty.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">_2_cluster_to_x()</span></code>: Stacks the two clusters into a single feature matrix <code class="docutils literal notranslate"><span class="pre">X</span></code> with shape <code class="docutils literal notranslate"><span class="pre">(n1+n2,</span> <span class="pre">2)</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">_2_cluster_to_y()</span></code>: Creates a label vector <code class="docutils literal notranslate"><span class="pre">y</span></code> of zeros (for cluster1) and ones (for cluster2), shape <code class="docutils literal notranslate"><span class="pre">(n1+n2,)</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">_plot_svm_beam()</span></code>: Builds a dense 2D grid over the data range, evaluates the SVM <code class="docutils literal notranslate"><span class="pre">decision_function</span></code>, converts absolute margin to uncertainty, normalizes it to <code class="docutils literal notranslate"><span class="pre">[0,</span> <span class="pre">1]</span></code>, and plots it as a filled contour heatmap + colorbar.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">plot_uncertainty()</span></code>: Main entry point.</p>
+<ul>
+<li><p>validates <code class="docutils literal notranslate"><span class="pre">gamma</span></code> and <code class="docutils literal notranslate"><span class="pre">C</span></code></p></li>
+<li><p>scatters the two clusters with distinct colors</p></li>
+<li><p>trains an <code class="docutils literal notranslate"><span class="pre">sklearn.svm.SVC</span></code> on <code class="docutils literal notranslate"><span class="pre">(X,</span> <span class="pre">y)</span></code></p></li>
+<li><p>overlays the uncertainty heatmap from <code class="docutils literal notranslate"><span class="pre">_plot_svm_beam</span></code></p></li>
+<li><p>optionally calls <code class="docutils literal notranslate"><span class="pre">plt.show()</span></code> and returns the Matplotlib <code class="docutils literal notranslate"><span class="pre">Axes</span></code></p></li>
+</ul>
+</li>
+</ul>
+<p><strong>Model Parameters: To adapt the underlying SVM behaviour change those parameters</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">Kernel</span></code>: SVM kernel type (<code class="docutils literal notranslate"><span class="pre">“linear”</span></code>, <code class="docutils literal notranslate"><span class="pre">“rbf”</span></code>, <code class="docutils literal notranslate"><span class="pre">“sigmoid”</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">C</span></code>: Regularization strength controlling tolerance for misclassification; Lower values allow more misclassification</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">gamma</span></code>: Kernel coefficient controlling the locality of influence; Higher values produce more localized decision boundaries</p></li>
+</ul>
+<p><strong>Visualization Options:</strong><br></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">title</span></code>: Plot title</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">x_label</span></code>, <code class="docutils literal notranslate"><span class="pre">y_label</span></code>: Axis labels</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">class_labels</span></code>: Custom names for the two classes</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">show</span></code>: If <code class="docutils literal notranslate"><span class="pre">True</span></code>, the plot is displayed immediately; If <code class="docutils literal notranslate"><span class="pre">False</span></code>, the Matplotlib Axes object is returned</p></li>
+</ul>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">value</span> <span class="o">=</span> <span class="mi">42</span>
+<span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+<span class="n">n1</span><span class="p">,</span> <span class="n">n2</span> <span class="o">=</span> <span class="mi">120</span><span class="p">,</span> <span class="mi">120</span>
+<span class="n">cluster1</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span> <span class="n">scale</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="n">n1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+<span class="n">cluster2</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="p">(</span><span class="mf">2.0</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">),</span> <span class="n">scale</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="n">n2</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+
+<span class="n">plot_uncertainty</span><span class="p">(</span>
+    <span class="n">cluster1</span><span class="p">,</span>
+    <span class="n">cluster2</span><span class="p">,</span>
+    <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Quick demo&quot;</span><span class="p">,</span>
+    <span class="n">kernel</span><span class="o">=</span><span class="s2">&quot;rbf&quot;</span><span class="p">,</span>
+    <span class="n">C</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+    <span class="n">gamma</span><span class="o">=</span><span class="s2">&quot;scale&quot;</span><span class="p">,</span>
+    <span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<img alt="../../../_images/955f5dffb6d3bd0cfab6efdba95a60468283ceba6112274685b69c6bb81ecf6e.png" src="../../../_images/955f5dffb6d3bd0cfab6efdba95a60468283ceba6112274685b69c6bb81ecf6e.png" />
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;Axes: title={&#39;center&#39;: &#39;Quick demo (kernel: rbf, C: 0.5)&#39;}, xlabel=&#39;Feature 1&#39;, ylabel=&#39;Feature 2&#39;&gt;
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="dirichlet-distribution-plot">
+<h3>4.2 Dirichlet distribution plot<a class="headerlink" href="#dirichlet-distribution-plot" title="Link to this heading">¶</a></h3>
+<p>Dirichlet distribution plots visualize probability density over the simplex of categorical probability vectors. Each point in the ternary plot represents a possible distribution over three classes, and the contours show which distributions are more likely under a given α. In machine learning, these plots are used to understand and debug Bayesian priors for categorical and multinomial models. They make clear how α controls uncertainty, sparsity, and bias toward specific classes. This is especially useful in topic models, mixture models, and uncertainty-aware classifiers where probabilities themselves are treated as random variables.</p>
+<section id="how-to-generate-a-dirichlet-distribution-plot">
+<h4>How to generate a Dirichlet distribution plot:<a class="headerlink" href="#how-to-generate-a-dirichlet-distribution-plot" title="Link to this heading">¶</a></h4>
+<p>The user needs to call upon the create_dirichlet_plot function. They may pass through parameters such as: alpha, title and labels. Although only alpha is needed; title and labels will be defaulted to: <code class="docutils literal notranslate"><span class="pre">“Dirichlet</span> <span class="pre">Distribution</span> <span class="pre">X,</span> <span class="pre">Y,</span> <span class="pre">Z”</span></code> and <code class="docutils literal notranslate"><span class="pre">&quot;θ₁&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;θ₂&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;θ₃&quot;</span></code>.</p>
+</section>
+<section id="notes-on-alpha-values">
+<h4>Notes on alpha values:<a class="headerlink" href="#notes-on-alpha-values" title="Link to this heading">¶</a></h4>
+<p>The alpha values must be <strong>strictly positive</strong>; zero or negative values are not allowed, as they do not define a valid Dirichlet distribution. Each <code class="docutils literal notranslate"><span class="pre">αᵢ</span></code> controls how strongly the distribution favors higher probability mass for class i. Larger <code class="docutils literal notranslate"><span class="pre">α</span></code> values lead to smoother, more concentrated distributions, while values less than 1 encourage sparse, peaked distributions near the simplex corners. Unequal <code class="docutils literal notranslate"><span class="pre">α</span></code> values bias the distribution toward specific classes, encoding prior beliefs about class dominance.</p>
+</section>
+</section>
+<section id="dirichlet-visualization-py">
+<h3>4.2.1 <code class="docutils literal notranslate"><span class="pre">dirichlet_visualization.py</span></code><a class="headerlink" href="#dirichlet-visualization-py" title="Link to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">dirichlet_visualization.py</span></code> is the user-facing API Module.</p>
+<p><strong>Method:</strong> <br></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">create_dirichlet_plot()</span></code>: Asserts that the <code class="docutils literal notranslate"><span class="pre">np.array</span></code> has three alpha values, sets default labels/title if non are given and takes the parameters to plot the Dirichlet distribution</p></li>
+</ul>
+</section>
+<section id="plot-dirichlet-py">
+<h3>4.2.2 <code class="docutils literal notranslate"><span class="pre">plot_dirichlet.py</span></code><a class="headerlink" href="#plot-dirichlet-py" title="Link to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">plot_dirichlet.py</span></code> is the module that handles the actual generation of the Dirichlet distribution plot.</p>
+<p><strong>Methods:</strong> <br></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">triangle_corners()</span></code>: Returns the Cartesian coordinates of the three vertices of an equilateral ternary simplex.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">xy_to_barycentric()</span></code>: Converts a Cartesian point inside the ternary triangle into barycentric coordinates with numerical clipping for stability.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pdf()</span></code>: Evaluates the Dirichlet probability density function at given barycentric coordinates.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">label_corners_and_vertices()</span></code>: Annotates the ternary plot with corner labels, vertex values, and evenly spaced edge tick marks.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dirichlet_plot()</span></code>: Generates a filled contour plot of a Dirichlet distribution over a ternary simplex using a refined triangular mesh.</p></li>
+</ul>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">alpha_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">8</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+<span class="n">labels</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;Red&quot;</span><span class="p">,</span> <span class="s2">&quot;Green&quot;</span><span class="p">,</span> <span class="s2">&quot;Blue&quot;</span><span class="p">)</span>
+<span class="n">title</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Distribution of likelihood if balls in a Urn are: </span><span class="si">{</span><span class="n">labels</span><span class="si">}</span><span class="s2">&quot;</span>
+
+<span class="n">create_dirichlet_plot</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="n">alpha_values</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="n">title</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<img alt="../../../_images/0c0fa76d74a4154894b7cf96b78ce6797e957c027499889f065d48f85b108961.png" src="../../../_images/0c0fa76d74a4154894b7cf96b78ce6797e957c027499889f065d48f85b108961.png" />
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;Axes: title={&#39;center&#39;: &quot;Distribution of likelihood if balls in a Urn are: (&#39;Red&#39;, &#39;Green&#39;, &#39;Blue&#39;)&quot;}&gt;
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="coverage-efficency">
+<h3>4.3 Coverage Efficency<a class="headerlink" href="#coverage-efficency" title="Link to this heading">¶</a></h3>
+<p>These modules implement the <strong>Coverage efficiency</strong> visualization to evaluate how <em>trustworthy</em> a classifier is when using <strong>prediction sets</strong> instead of single-label predictions.<br>
+The plot tracks two critical metrics:</p>
+<ul class="simple">
+<li><p><strong>Coverage (blue, reliability):</strong>
+The fraction of samples where the <strong>true class is included</strong> in the predicted set.
+Ideally, empirical coverage follows the <strong>diagonal “Ideal Coverage”</strong> line (coverage ≈ target confidence).
+If coverage falls <strong>below</strong> the diagonal, the model is <strong>overconfident</strong> (it promises more safety than it delivers).</p></li>
+<li><p><strong>Efficiency (red, precision):</strong>
+Measures how <strong>small</strong> the prediction set is on average (normalized).
+Here, efficiency is plotted as <code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">-</span> <span class="pre">normalized_set_size</span></code>:</p>
+<ul>
+<li><p><strong>1.0</strong> ≈ very small sets (often size 1; very precise)</p></li>
+<li><p><strong>0.0</strong> ≈ very large sets (close to all classes; very uncertain)</p></li>
+</ul>
+</li>
+</ul>
+<p>A dangerous failure mode is: <strong>coverage drops while efficiency stays high</strong>: the model is making <strong>confident but wrong</strong> predictions.</p>
+<p><strong>Interpretation:</strong>
+The visualization is based on <strong>prediction sets</strong> (similar in spirit to conformal prediction):
+for a target confidence level <code class="docutils literal notranslate"><span class="pre">(1</span> <span class="pre">-</span> <span class="pre">α)</span></code> the model outputs the <strong>smallest set of top-k classes</strong> whose cumulative probability mass reaches that confidence.</p>
+<ul class="simple">
+<li><p><strong>x-axis:</strong> Target confidence level <code class="docutils literal notranslate"><span class="pre">(1</span> <span class="pre">-</span> <span class="pre">α)</span></code> (the safety level requested by the user)</p></li>
+<li><p><strong>blue curve:</strong> empirical coverage achieved by those sets</p></li>
+<li><p><strong>red curve:</strong> efficiency (how compact the sets remain while meeting confidence)</p></li>
+</ul>
+<p><strong>Explaination of OOD/ID</strong><br></p>
+<ul class="simple">
+<li><p><strong>ID (in-distribution):</strong> data similar to the training distribution</p></li>
+<li><p><strong>OOD (out-of-distribution):</strong> data that differs from training (domain shift, novel patterns, etc.)</p></li>
+</ul>
+<p>In an ideal OOD scenario, <strong>efficiency should decrease</strong> (sets expand) because the model correctly expresses uncertainty.
+If efficiency stays high on OOD while coverage drops, the model is <strong>overconfident under shift</strong>.</p>
+<p><strong>How to access the module:</strong><br>
+<code class="docutils literal notranslate"><span class="pre">coverage_efficiency_ood.py</span></code> provides two main entry points:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">plot_coverage_efficiency_id_ood(probs_id,</span> <span class="pre">targets_id,</span> <span class="pre">probs_ood,</span> <span class="pre">targets_ood,</span> <span class="pre">...)</span></code>
+Use this if your data is <strong>already split</strong> into ID and OOD parts.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">plot_coverage_efficiency_from_ood_labels(probs,</span> <span class="pre">targets,</span> <span class="pre">ood_labels,</span> <span class="pre">...)</span></code>
+Use this if you have a <strong>combined dataset</strong> with binary markers (default convention: <code class="docutils literal notranslate"><span class="pre">0=ID</span></code>, <code class="docutils literal notranslate"><span class="pre">1=OOD</span></code>).
+The function automatically splits the arrays and calls the ID/OOD plotting routine.</p></li>
+</ul>
+<p><strong>Inputs and configuration:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">probs</span></code>: must be a 2D array of shape <strong>(N, C)</strong> (class probabilities per sample; rows should sum to 1)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">targets</span></code>: must be a 1D array of shape <strong>(N,)</strong> (integer class indices)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ood_labels</span></code> (optional): must be 1D of shape <strong>(N,)</strong> and use the chosen ID/OOD label convention</p></li>
+</ul>
+<p>Styling (colors, fonts, line styles) is controlled centrally via <code class="docutils literal notranslate"><span class="pre">config.py</span></code> for consistent visuals across the library.</p>
+<p><strong>Implementation overview (what the code actually does):</strong><br></p>
+<p><code class="docutils literal notranslate"><span class="pre">CoverageEfficiencyVisualizer._compute_metrics()</span></code>:</p>
+<ul class="simple">
+<li><p>sorts probabilities per sample (descending)</p></li>
+<li><p>for each confidence level <code class="docutils literal notranslate"><span class="pre">(1</span> <span class="pre">-</span> <span class="pre">α)</span></code>, selects the smallest top-k set reaching that cumulative probability</p></li>
+<li><p>computes:</p>
+<ul>
+<li><p><strong>coverage</strong>: whether the true label lies within that set</p></li>
+<li><p><strong>efficiency</strong>: average set size (later normalized)</p></li>
+</ul>
+</li>
+</ul>
+<p><code class="docutils literal notranslate"><span class="pre">CoverageEfficiencyVisualizer.plot_coverage_efficiency()</span></code>:</p>
+<ul class="simple">
+<li><p>plots <strong>ideal coverage</strong> (diagonal) vs <strong>empirical coverage</strong> (blue)</p></li>
+<li><p>plots <strong>efficiency</strong> on a second y-axis (red), as <code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">-</span> <span class="pre">normalized_set_size</span></code></p></li>
+<li><p>returns the Matplotlib <code class="docutils literal notranslate"><span class="pre">Axes</span></code></p></li>
+</ul>
+<p><code class="docutils literal notranslate"><span class="pre">coverage_efficiency_ood.py</span></code>:</p>
+<ul class="simple">
+<li><p>validates shapes</p></li>
+<li><p>plots ID and OOD <strong>side-by-side</strong>, or performs the split first when <code class="docutils literal notranslate"><span class="pre">ood_labels</span></code> are provided</p></li>
+</ul>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># In-Order Distribution:</span>
+<span class="n">n_samples</span> <span class="o">=</span> <span class="mi">1000</span>
+<span class="n">n_classes</span> <span class="o">=</span> <span class="mi">10</span>
+
+<span class="n">probs_id</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">dirichlet</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">n_classes</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.2</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">n_samples</span><span class="p">)</span>
+
+<span class="n">targets_id</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">n_classes</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">probs_id</span><span class="p">])</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+
+<span class="n">visualizer</span><span class="o">.</span><span class="n">plot_coverage_efficiency</span><span class="p">(</span>
+    <span class="n">probs</span><span class="o">=</span><span class="n">probs_id</span><span class="p">,</span> <span class="n">targets</span><span class="o">=</span><span class="n">targets_id</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;In-Distribution (ID): High Confidence &amp; Efficiency&quot;</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span>
+<span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+<span class="c1"># Out-of-Order Distribution:</span>
+<span class="n">probs_ood</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">dirichlet</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">n_classes</span><span class="p">)</span> <span class="o">*</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">n_samples</span><span class="p">)</span>
+
+<span class="n">targets_ood</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">n_classes</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">n_samples</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+
+<span class="n">visualizer</span><span class="o">.</span><span class="n">plot_coverage_efficiency</span><span class="p">(</span>
+    <span class="n">probs</span><span class="o">=</span><span class="n">probs_ood</span><span class="p">,</span> <span class="n">targets</span><span class="o">=</span><span class="n">targets_ood</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Out-of-Distribution (OOD): Low Confidence &amp; Efficiency&quot;</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span>
+<span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<img alt="../../../_images/6caf79bc5fbebb13acd9b20b374a0e6e908f84d5f50a54a1417e97dac3bfe50a.png" src="../../../_images/6caf79bc5fbebb13acd9b20b374a0e6e908f84d5f50a54a1417e97dac3bfe50a.png" />
+<img alt="../../../_images/50f851992bf436dc61698066fa996d7d8ad237efa28a56fc1fb4ea3f4547ae25.png" src="../../../_images/50f851992bf436dc61698066fa996d7d8ad237efa28a56fc1fb4ea3f4547ae25.png" />
+</div>
+</div>
+</section>
+<section id="further-reading">
+<h3>5. Further reading:<a class="headerlink" href="#further-reading" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><strong>Credal:</strong> <span class="xref std std-doc">Credal Tutorial</span></p></li>
+<li><p><strong>Clustermargin:</strong> <span class="xref std std-doc">Clustermargin Tutorial</span></p></li>
+<li><p><strong>Dirichlet:</strong> <span class="xref std std-doc">Dirichlet Tutorial</span></p></li>
+<li><p><strong>Coverage–Efficiency:</strong> <span class="xref std std-doc">Coverage-Efficiency Tutorial</span></p></li>
+</ul>
+</section>
 </section>
 </section>
 
@@ -383,7 +884,34 @@ The Credal Set Plot is a more advanced tool for visualizing the uncertainty of a
             <ul>
 <li><a class="reference internal" href="#">Visualisation Tools</a><ul>
 <li><a class="reference internal" href="#introduction">Introduction</a></li>
-<li><a class="reference internal" href="#todo-expand-notebook-content-based-on-the-work-of-group-2">todo: expand notebook content based on the work of group #2</a></li>
+<li><a class="reference internal" href="#first-things-first">0. First things first:</a></li>
+<li><a class="reference internal" href="#what-can-you-visualize-in-probly">1. What can you visualize in probly?</a><ul>
+<li><a class="reference internal" href="#credal-sets">Credal Sets: <br></a></li>
+<li><a class="reference internal" href="#specialized-plots">Specialized plots:<br></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#imports">2. Imports</a></li>
+<li><a class="reference internal" href="#credal">3. Credal</a><ul>
+<li><a class="reference internal" href="#public-api-credal-visualization-py">3.1 Public API <code class="docutils literal notranslate"><span class="pre">credal_visualization.py</span></code></a></li>
+<li><a class="reference internal" href="#input-handling-py">3.2 <code class="docutils literal notranslate"><span class="pre">input_handling.py</span></code></a></li>
+<li><a class="reference internal" href="#plot-2d-py">3.3 <code class="docutils literal notranslate"><span class="pre">plot_2d.py</span></code></a></li>
+<li><a class="reference internal" href="#plot-3d-py">3.4 <code class="docutils literal notranslate"><span class="pre">plot_3d.py</span></code></a></li>
+<li><a class="reference internal" href="#plot-multid-py">3.5 <code class="docutils literal notranslate"><span class="pre">plot_multid.py</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id1">4. Specialized plots:</a><ul>
+<li><a class="reference internal" href="#clustervisualizer-py">4.1 <code class="docutils literal notranslate"><span class="pre">clustervisualizer.py</span></code></a></li>
+<li><a class="reference internal" href="#dirichlet-distribution-plot">4.2 Dirichlet distribution plot</a><ul>
+<li><a class="reference internal" href="#how-to-generate-a-dirichlet-distribution-plot">How to generate a Dirichlet distribution plot:</a></li>
+<li><a class="reference internal" href="#notes-on-alpha-values">Notes on alpha values:</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#dirichlet-visualization-py">4.2.1 <code class="docutils literal notranslate"><span class="pre">dirichlet_visualization.py</span></code></a></li>
+<li><a class="reference internal" href="#plot-dirichlet-py">4.2.2 <code class="docutils literal notranslate"><span class="pre">plot_dirichlet.py</span></code></a></li>
+<li><a class="reference internal" href="#coverage-efficency">4.3 Coverage Efficency</a></li>
+<li><a class="reference internal" href="#further-reading">5. Further reading:</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>

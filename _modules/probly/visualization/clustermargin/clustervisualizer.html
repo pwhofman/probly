@@ -231,6 +231,9 @@
 </ul>
 </li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../../../../notebooks/examples/evaluation_and_quantification/index.html">Evaluation and Quantification</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of Evaluation and Quantification</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../notebooks/examples/evaluation_and_quantification/plotting_credal_tutorial.html">Credal Sets Visualization Plotting</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../notebooks/examples/evaluation_and_quantification/clustermargin_tutorial.html">A tutorial for clustervisualiser.py</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../notebooks/examples/evaluation_and_quantification/dirichlet_tutorial.html">Dirichlet distribution tutorial</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../../notebooks/examples/evaluation_and_quantification/calibration_metrics.html">Calibration Metrics</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../../notebooks/examples/evaluation_and_quantification/interpretation_techniques.html">Interpretation techniques</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../../notebooks/examples/evaluation_and_quantification/visualization_tools.html">Visualisation Tools</a></li>
@@ -477,7 +480,17 @@
 
     <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">label</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">unique_labels</span><span class="p">):</span>
         <span class="n">mask</span> <span class="o">=</span> <span class="n">y</span> <span class="o">==</span> <span class="n">label</span>
-        <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="n">mask</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">X</span><span class="p">[</span><span class="n">mask</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">s</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">colors</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">legend_names</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span>
+            <span class="n">X</span><span class="p">[</span><span class="n">mask</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+            <span class="n">X</span><span class="p">[</span><span class="n">mask</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+            <span class="n">s</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+            <span class="n">color</span><span class="o">=</span><span class="n">colors</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+            <span class="n">alpha</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span>
+            <span class="n">zorder</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+            <span class="n">label</span><span class="o">=</span><span class="n">legend_names</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+            <span class="n">edgecolors</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">WHITE</span><span class="p">,</span>
+            <span class="n">linewidths</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+        <span class="p">)</span>
 
     <span class="n">clf</span> <span class="o">=</span> <span class="n">SVC</span><span class="p">(</span><span class="n">kernel</span><span class="o">=</span><span class="n">kernel</span><span class="p">,</span> <span class="n">C</span><span class="o">=</span><span class="n">C</span><span class="p">,</span> <span class="n">gamma</span><span class="o">=</span><span class="n">gamma</span><span class="p">)</span>
     <span class="n">clf</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
