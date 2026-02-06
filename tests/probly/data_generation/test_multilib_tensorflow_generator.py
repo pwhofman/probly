@@ -1,0 +1,84 @@
+from __future__ import annotations
+
+import numpy as np
+import pytest
+
+tf = pytest.importorskip("tensorflow", reason="TensorFlow not installed")
+
+from probly.data_generation.tensorflow_generator import TensorFlowDataGenerator  # noqa: E402
+
+
+def create_simple_model():
+    model = tf.keras.Sequential([tf.keras.layers.Dense(2, input_shape=(4,))])
+    return model
+
+
+def create_simple_dataset():
+    rng = np.random.default_rng(0)
+    x = rng.random((10, 4), dtype=np.float32)
+    y = np.array([0, 1] * 5, dtype=np.int64)
+    return tf.data.Dataset.from_tensor_slices((x, y))
+
+
+def test_generate_logic():
+    model = create_simple_model()
+    dataset = create_simple_dataset()
+
+    generator = TensorFlowDataGenerator(
+        model=model,
+        dataset=dataset,
+        batch_size=2,
+    )
+
+    results = generator.generate()
+
+    assert results is not None
+    assert "metrics" in results
+    assert "accuracy" in results["metrics"]
+
+
+def test_initialization():
+    model = create_simple_model()
+    dataset = create_simple_dataset()
+
+    generator = TensorFlowDataGenerator(
+        model=model,
+        dataset=dataset,
+        batch_size=4,
+    )
+
+    assert generator.batch_size == 4
+    assert generator.device in ["cpu", "GPU", None]
+
+
+def test_count_method():
+    model = create_simple_model()
+    dataset = create_simple_dataset()
+
+    generator = TensorFlowDataGenerator(model=model, dataset=dataset, batch_size=2)
+
+    test_tensor = tf.constant([0, 1, 1, 2, 2, 2], dtype=tf.int32)
+    counts = generator._count(test_tensor)  # noqa: SLF001
+
+    assert counts == {0: 1, 1: 2, 2: 3}
+    assert isinstance(counts[0], int)
+
+
+def test_save_load_cycle(tmp_path):
+    model = create_simple_model()
+    dataset = create_simple_dataset()
+
+    generator = TensorFlowDataGenerator(model, dataset, batch_size=2)
+    generator.generate()
+
+    file_path = tmp_path / "results.json"
+    generator.save(str(file_path))
+
+    assert file_path.exists()
+
+    new_generator = TensorFlowDataGenerator(model, dataset, batch_size=2)
+    loaded_results = new_generator.load(str(file_path))
+
+    assert loaded_results is not None
+    assert "metrics" in loaded_results
+    assert loaded_results["info"]["framework"] == "tensorflow"
