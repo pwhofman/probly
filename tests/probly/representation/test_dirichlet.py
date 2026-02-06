@@ -9,6 +9,7 @@ from scipy import stats
 from probly.representation.distribution.array_dirichlet import ArrayDirichlet
 from probly.representation.sampling import ArraySample
 
+
 def test_array_dirichlet_initialization_valid() -> None:
     """Test standard initialization with valid numpy arrays."""
     alphas = np.array([0.5, 1.0, 2.5], dtype=float)
@@ -97,7 +98,6 @@ def test_transpose_property() -> None:
     np.testing.assert_array_equal(got, alphas.T)
 
 
-
 def test_operator_add_returns_distribution_and_keeps_positive() -> None:
     """Minimal operator/ufunc interop test."""
     dist = ArrayDirichlet.from_array([[1.0, 2.0, 3.0]])
@@ -155,9 +155,10 @@ def test_entropy_matches_scipy_batched() -> None:
     expected = np.array([stats.dirichlet(a).entropy() for a in alphas], dtype=float)
     assert np.allclose(ent, expected, rtol=1e-10, atol=1e-12)
 
+
 def test_sample_function_dirichlet() -> None:
     """Test the sampling function returns."""
-    shape = (2, 3)  
+    shape = (2, 3)
     dist = ArrayDirichlet(np.ones(shape))
 
     n_samples = 4
@@ -167,16 +168,18 @@ def test_sample_function_dirichlet() -> None:
     assert samples.array.shape == (n_samples, *shape)
     assert samples.sample_axis == 0
 
+
 def test_sample_simplex_constraints() -> None:
     """Samples must be valid probability vectors."""
     dist = ArrayDirichlet(np.array([1.0, 2.0, 3.0]))
 
     n_samples = 5000
     sample_wrapper = dist.sample(n_samples)
-    samples = sample_wrapper.array  
+    samples = sample_wrapper.array
 
     assert np.all(samples >= 0.0)
     np.testing.assert_allclose(samples.sum(axis=-1), 1.0, atol=1e-12)
+
 
 def test_sample_statistics_dirichlet_var() -> None:
     """Check if sample variance roughly matches Dirichlet element-wise variance."""
