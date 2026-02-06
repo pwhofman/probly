@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from probly.representation.distribution.array_gaussian import ArrayGaussian
 
 
-_RNG = np.random.default_rng()
+rng = np.random.default_rng()
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
@@ -91,7 +91,7 @@ class ArrayGaussianMixture:
         k = len(self.components)
         weights = self.weights
 
-        comp_idx = _RNG.choice(k, size=num_samples, p=weights)
+        comp_idx = rng.choice(k, size=num_samples, p=weights)
 
         reference_comp = self.components[0]
         reference_array = reference_comp.sample(1).array
