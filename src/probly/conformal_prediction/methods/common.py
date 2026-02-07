@@ -1,0 +1,181 @@
+"""Common utilities for CP and LazyDispatch Prediction."""
+
+from __future__ import annotations
+
+from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, Any, Protocol
+
+import torch
+import torch.nn.functional as F
+
+from lazy_dispatch import lazydispatch
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Sequence
+
+    import numpy as np
+    import numpy.typing as npt
+
+
+@lazydispatch
+def predict_probs[T](model: Predictor, x: T) -> T:
+    """Universal probability prediction function.
+
+    Args:
+        model: The model to use for prediction.
+        x: Input data for which to predict probabilities.
+
+    Returns:
+        T: Predicted probabilities with same type as input.
+    """
+    # scikit-learn-style probabilities
+    if hasattr(model, "predict_proba"):
+        return model.predict_proba(x)  # type: ignore[no-any-return]
+
+    # fallback for scikit-learn-like models with custom naming
+    if hasattr(model, "predict_probs"):
+        return model.predict_probs(x)  # type: ignore[no-any-return]
+
+    # fallback for other models (that only have predict)
+    if hasattr(model, "predict"):
+        return model.predict(x)  # type: ignore[no-any-return]
+
+    msg = f"Model type {type(model)} is not supported directly. Please register it via @predict_probs.register"
+    raise TypeError(msg)
+
+
+@predict_probs.register(torch.nn.Module)
+def predict_probs_torch(model: torch.nn.Module, x: Sequence[Any]) -> torch.Tensor:
+    """Handler for PyTorch models: stays on GPU (Tensor)."""
+    # decide device
+
+    try:
+        device = next(model.parameters()).device
+    except StopIteration:
+        device = torch.device("cpu")
+
+    # convert input to tensor on correct device
+    x_tensor = x.to(device) if isinstance(x, torch.Tensor) else torch.as_tensor(x, dtype=torch.float32, device=device)
+
+    # set model to evaluation mode and disable gradient calculation
+    model.eval()
+    with torch.no_grad():
+        logits = model(x_tensor)
+
+        # fix tuple outputs
+        if isinstance(logits, tuple):
+            logits = logits[0]
+
+        # use softmax for multiclass, sigmoid for binary
+        # binary classification or flat output -> sigmoid
+        probs = F.softmax(logits, dim=1) if logits.ndim > 1 and logits.shape[1] > 1 else torch.sigmoid(logits)
+
+    return probs
+
+
+def _register_flax_models() -> None:
+    """Register Flax NNX models for predict_probs (imports only if flax available)."""
+    try:
+        from flax import nnx  # noqa: PLC0415
+        import jax  # noqa: PLC0415
+        import jax.numpy as jnp  # noqa: PLC0415
+
+        @predict_probs.register(nnx.Module)
+        def predict_probs_flax(model: nnx.Module, x: Any) -> jnp.ndarray:  # noqa: ANN401
+            """Predict probabilities for Flax NNX models."""
+            if not hasattr(x, "shape"):
+                x = jnp.asarray(x)
+
+            if callable(model):
+                logits = model(x)
+            elif hasattr(model, "apply"):
+                logits = model.apply(x)
+            else:
+                msg = "Model must be callable or expose apply()."
+                raise TypeError(msg)
+
+            if isinstance(logits, tuple):
+                logits = logits[0]
+
+            # use softmax for multiclass, sigmoid for binary
+            probs = (
+                jax.nn.softmax(logits, axis=-1) if logits.ndim > 1 and logits.shape[1] > 1 else jax.nn.sigmoid(logits)
+            )
+
+            return probs
+    except ImportError:
+        pass  # flax not available, skip registration
+
+
+_register_flax_models()
+
+
+class Predictor(Protocol):
+    """Protocol for models used with ConformalPredictor."""
+
+    def __call__(self, x: Sequence[Any]) -> Sequence[Any]:
+        """Callable method signature for conformal models."""
+
+
+class ConformalPredictor(ABC):
+    """Base class for Conformal Prediction."""
+
+    def __init__(
+        self,
+        model: Predictor,
+        nonconformity_func: Callable[..., npt.NDArray[np.floating]] | None = None,
+    ) -> None:
+        """Initialize the Conformal Predictor."""
+        self.model = model
+        self.conformity_func = nonconformity_func
+
+        # saves the ML-model and nonconformity function
+        self.nonconformity_scores: npt.NDArray[np.floating] | None = None
+        self.threshold: float | None = None
+        self.is_calibrated: bool = False
+
+    @abstractmethod
+    def calibrate(self, x_cal: Sequence[Any], y_cal: Sequence[Any], alpha: float) -> float:
+        """Virtual method to calibrate the calibration set.
+
+        Args:
+            x_cal (Sequence[Any]): Calibration input data.
+            y_cal (Sequence[Any]): Calibration labels.
+            alpha (float): The significance level.
+        """
+        raise NotImplementedError
+
+    def __str__(self) -> str:
+        """String representation of the class."""
+        model_name = self.model.__class__.__name__
+        status = "calibrated" if self.is_calibrated else "not calibrated"
+        return f"{self.__class__.__name__}(model={model_name}, status={status})"
+
+
+class ConformalClassifier(ConformalPredictor, ABC):
+    """Base class for Classification Conformal Prediction."""
+
+    @abstractmethod
+    def predict(self, x_test: Sequence[Any], alpha: float, probs: Any | None = None) -> npt.NDArray[np.bool_]:  # noqa: ANN401
+        """Generate prediction sets as boolean matrix (n_samples, n_classes) at given significance level.
+
+        Args:
+            x_test (Sequence[Any]): Test input data.
+            alpha (float): Significance level for prediction sets.
+            probs (Any | None): Optional precomputed probabilities from the model.
+        """
+        raise NotImplementedError
+
+
+class ConformalRegressor(ConformalPredictor, ABC):
+    """Base class for Regression Conformal Prediction."""
+
+    @abstractmethod
+    def predict(self, x_test: Sequence[Any], alpha: float) -> npt.NDArray[np.floating]:
+        """Generate prediction intervals, e.g. shape (n_samples, 2) for [lower, upper] at given significance level.
+
+        Args:
+            x_test (Sequence[Any]): Test input data.
+            alpha (float): Significance level for prediction intervals.
+        """
+        raise NotImplementedError
