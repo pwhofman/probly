@@ -116,6 +116,13 @@ def test_apsscore_provided_probs() -> None:
     assert scores_without_probs.shape == (2, 3)
 
 
+def test_aps_score_func_single_sample_2d() -> None:
+    """Test aps_score_func with single sample as 2D array."""
+    probs = np.array([[0.5, 0.3, 0.2]])  # 2D with shape (1, 3)
+    scores = aps_score_func(probs)
+    assert scores.shape == (1, 3)
+
+
 def test_aps_score_func_edge_case_single_sample() -> None:
     """Test aps_score_func with single sample."""
     probs = np.array([[0.5, 0.3, 0.2]])

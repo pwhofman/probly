@@ -75,6 +75,14 @@ def test_cqr_score_jax_matches_numpy_reference() -> None:
     np.testing.assert_allclose(scores_jax, ref_scores, rtol=1e-6, atol=1e-6)
 
 
+def test_cqr_score_jax_dtype_preservation() -> None:
+    """Test that cqr_score_jax preserves input dtype."""
+    y_true = jnp.array([1.0, 2.0, 3.0], dtype=jnp.float32)
+    y_pred = jnp.array([[0.5, 1.5], [1.5, 2.5], [2.5, 3.5]], dtype=jnp.float32)
+    scores = cqr_score_jax(y_true, y_pred)
+    assert scores.dtype == jnp.float32
+
+
 def test_cqr_score_jax_with_jit_and_vmap() -> None:
     """Verify that cqr_score_jax works correctly with jax.jit and jax.vmap."""
     # simple synthetic data

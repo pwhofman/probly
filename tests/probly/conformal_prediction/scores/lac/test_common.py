@@ -139,6 +139,13 @@ def test_lacscore_prediction() -> None:
     assert np.allclose(prediction_scores, 1 - 0.33, atol=0.01)
 
 
+def test_lac_score_func_single_sample_2d() -> None:
+    """Test lac_score_func with single sample as 2D array."""
+    probs = np.array([[0.5, 0.3, 0.2]])  # shape (1, 3)
+    scores = lac_score_func(probs)
+    assert scores.shape == (1, 3)
+
+
 def test_lac_score_func_edge_case_single_sample() -> None:
     """Test lac_score_func with single sample."""
     probs = np.array([[0.5, 0.3, 0.2]])

@@ -30,6 +30,7 @@ class IrisFlaxModel(nnx.Module):
         self.dense2 = nnx.Linear(8, 3, rngs=nnx.Rngs(42))
 
     def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
+        """Forward pass."""
         x = self.dense1(x)
         x = jax.nn.relu(x)
         x = self.dense2(x)
@@ -43,16 +44,19 @@ class FlaxPredictor:
         self.params = params
 
     def __call__(self, x: Any) -> jnp.ndarray:  # noqa: ANN401
+        """Predict probabilities."""
         x = jnp.asarray(x, dtype=jnp.float32)
         logits = self.model(x)
         return jax.nn.softmax(logits, axis=-1)
 
     def predict(self, x: Any) -> jnp.ndarray:  # noqa: ANN401
+        """Alias for __call__."""
         return self(x)
 
 
 @pytest.mark.skip(reason="Flaky Test")
 def test_saps_with_iris_dataset() -> None:
+    """Test SAPSScore with a simple Flax model on the Iris dataset."""
     iris = load_iris()
     x, y = iris.data, iris.target
 
@@ -125,6 +129,7 @@ class SAPSFlaxTestModel:
 
 
 def test_rank1() -> None:
+    """Test SAPS score when rank is 1."""
     probs = jnp.array([[0.15, 0.4, 0.25, 0.2]])  # shape (1, 4)
     u = jnp.array([[0.3, 0.3, 0.3, 0.3]])  # shape (1, 4)
     lambda_val = 0.1
@@ -140,6 +145,7 @@ def test_rank1() -> None:
 
 
 def test_rank_greater_than_1() -> None:
+    """Test SAPS score when rank is greater than 1."""
     probs = jnp.array([[0.2, 0.5, 0.3, 0.1]])  # Dummy probabilities for testing
     u = jnp.array([[0.6, 0.6, 0.6, 0.6]])  # shape (1, 4)
     lambda_val = 0.2
@@ -153,6 +159,7 @@ def test_rank_greater_than_1() -> None:
 
 
 def test_2d_single_row() -> None:
+    """Test with 2D array that has a single row."""
     probs = jnp.array([[0.6, 0.1, 0.3]])  # Dummy probabilities for testing
     u = jnp.array([[0.4, 0.4, 0.4]])  # shape (1, 3)
 
@@ -165,6 +172,7 @@ def test_2d_single_row() -> None:
 
 
 def test_output_type() -> None:
+    """Test that saps_score_jax returns correct types."""
     # Use 2D array to avoid axis error
     probs = jnp.array([[0.3, 0.4, 0.3]])  # shape (1, 3)
     u = jnp.array([[0.5, 0.5, 0.5]])  # shape (1, 3)
@@ -173,6 +181,14 @@ def test_output_type() -> None:
 
     assert isinstance(score, jnp.ndarray)
     assert score.shape == (1, 3)
+
+
+def test_saps_score_flax_edge_case_single_class() -> None:
+    """Test SAPS score with single class probabilities."""
+    probs = jnp.array([[1.0]])
+    u = jnp.array([[0.5]])
+    scores = saps_score_jax(probs, lambda_val=0.1, u=u)
+    assert scores.shape == (1, 1)
 
 
 def test_invalid_dimensions() -> None:
@@ -185,6 +201,7 @@ def test_invalid_dimensions() -> None:
 
 
 def test_random_u_generation() -> None:
+    """Test SAPS score with random u values."""
     # Use 2D array to avoid axis error
     probs = jnp.array([[0.3, 0.4, 0.3]])  # shape (1, 3)
     u = jnp.array([[0.5, 0.2, 0.8]])  # shape (1, 3)

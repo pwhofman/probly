@@ -112,6 +112,13 @@ def test_rapsscore_provided_probs() -> None:
     assert scores_without_probs.shape == (2, 3)
 
 
+def test_raps_score_func_single_sample_2d() -> None:
+    """Test raps_score_func with single sample as 2D array."""
+    probs = np.array([[0.5, 0.3, 0.2]])  # 2D with shape (1, 3)
+    scores = raps_score_func(probs, lambda_reg=0.1, k_reg=0)
+    assert scores.shape == (1, 3)
+
+
 def test_raps_score_func_edge_case_single_sample() -> None:
     """Test raps_score_func with single sample."""
     probs = np.array([[0.5, 0.3, 0.2]])

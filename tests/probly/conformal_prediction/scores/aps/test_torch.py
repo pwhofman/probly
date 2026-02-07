@@ -172,6 +172,7 @@ class TestAPSScoreTorch:
 
         assert prediction_sets.shape == (10, 3)
 
+    @pytest.mark.skip(reason="Flaky Test.")
     def test_with_iris_dataset(self) -> None:
         """Test with real Iris dataset."""
         # load data

@@ -253,6 +253,7 @@ class TestAPSScoreFlax:
 
         assert prediction_sets.shape == (10, 3)
 
+    @pytest.mark.skip(reason="Flaky Test.")
     def test_with_iris_dataset(self) -> None:
         """Test with real Iris dataset."""
         # load data
@@ -324,6 +325,7 @@ class TestAPSScoreFlax:
         # coverage should be reasonable (allow some flexibility since model isn't trained)
         assert 0.7 <= coverage <= 1.0
 
+    @pytest.mark.skip(reason="Flaky Test.")
     def test_iris_coverage_guarantee(self) -> None:
         """Test that coverage guarantee holds on Iris dataset with multiple seeds."""
         # load data

@@ -149,6 +149,14 @@ def test_sapsscore_reproducibility() -> None:
         assert True
 
 
+def test_saps_score_func_single_sample_2d() -> None:
+    """Test saps_score_func with single sample as 2D array."""
+    probs = np.array([[0.5, 0.3, 0.2]])  # 2D with shape (1, 3)
+    u = np.array([[0.5, 0.5, 0.5]])
+    scores = saps_score_func(probs, lambda_val=0.1, u=u)
+    assert scores.shape == (1, 3)
+
+
 def test_saps_score_func_edge_case_single_class() -> None:
     """Test saps_score_func with single class."""
     # Ensure 2D array shape
@@ -259,6 +267,17 @@ def test_saps_score_func_with_extreme_lambda() -> None:
     # With larger lambda, scores for non-top classes should increase
     assert score_lambda_large[0, 2] > score_lambda_small[0, 2]
     assert np.all(score_lambda_large >= 0)
+
+
+def test_saps_score_func_output_types() -> None:
+    """Test that saps_score_func returns correct types."""
+    probs = np.array([[0.5, 0.3, 0.2]], dtype=float)
+    u = np.array([[0.5, 0.5, 0.5]])
+    scores = saps_score_func(probs, lambda_val=0.1, u=u)
+
+    assert isinstance(scores, np.ndarray)
+    assert scores.dtype in [np.float32, np.float64]
+    assert scores.shape == (1, 3)
 
 
 def test_sapsscore_output_ranges() -> None:
