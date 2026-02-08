@@ -38,6 +38,17 @@ def _is_probabilities(x: torch.Tensor, atol: float = 1e-4) -> bool:
     return bool(torch.allclose(sums, torch.ones_like(sums), atol=atol, rtol=0))
 
 
+def to_device(x: object, device: str) -> object:
+    """Move tensor/nested tensors to the specified device."""
+    if isinstance(x, torch.Tensor):
+        return x.to(device)
+    if isinstance(x, (list, tuple)):
+        return type(x)(to_device(xx, device) for xx in x)
+    if isinstance(x, Mapping):
+        return {k: to_device(v, device) for k, v in x.items()}
+    return x
+
+
 if TYPE_CHECKING:  # typing-only import to satisfy Ruff's TC rules
     from collections.abc import Sized
 
@@ -78,16 +89,6 @@ class FirstOrderDataGenerator(PyFirstOrderDataGenerator):
     input_getter: Callable[[Any], Any] | None = None
     model_name: str | None = None
     return_torch: bool = True
-
-    def to_device(self, x: object) -> object:
-        """Move tensor/nested tensors to the same device if applicable."""
-        if isinstance(x, torch.Tensor):
-            return x.to(self.device)
-        if isinstance(x, (list, tuple)):
-            return type(x)(self.to_device(xx) for xx in x)
-        if isinstance(x, Mapping):
-            return {k: self.to_device(v) for k, v in x.items()}
-        return x
 
     def to_probs(self, outputs: torch.Tensor) -> torch.Tensor:
         """Convert model outputs to probabilities."""
@@ -167,7 +168,7 @@ class FirstOrderDataGenerator(PyFirstOrderDataGenerator):
         total_batches = len(loader)
         for batch_idx, batch in enumerate(loader):
             inpt = self.prepares_batch_inp(batch)
-            inpt = self.to_device(inpt)
+            inpt = to_device(inpt, self.device)
             outputs = self.model(inpt)
             if not isinstance(outputs, torch.Tensor):
                 msg = "Model must return a torch.Tensor (logits or probs)."

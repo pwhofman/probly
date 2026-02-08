@@ -19,6 +19,7 @@ from probly.data_generation.torch_first_order_generator import (
     load_distributions_pt,
     output_dataloader,
     save_distributions_pt,
+    to_device,
 )
 from probly.transformation.bayesian import bayesian
 
@@ -119,7 +120,7 @@ def test_to_device_nested_structures_cpu() -> None:
         "a": torch.tensor([1.0, 2.0]),
         "b": [torch.tensor([3.0]), {"c": torch.tensor([4.0])}],
     }
-    moved = gen.to_device(nested)
+    moved = to_device(nested, gen.device)
     assert isinstance(moved, dict)
     assert torch.allclose(moved["a"], nested["a"])  # type: ignore[index]
     assert isinstance(moved["b"], list)  # type: ignore[index]
