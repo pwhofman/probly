@@ -112,6 +112,7 @@ line-length = 120
 target-version = "py312"
 output-format = "full"
 
+
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = [
@@ -197,6 +198,7 @@ convention = "google"
 ]
 "examples/*.py" = [
     "T201",
+    "D205",
 ]
 
 # Use isort-compatible settings

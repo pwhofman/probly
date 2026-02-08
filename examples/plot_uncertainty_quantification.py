@@ -1,4 +1,5 @@
 """Uncertainty Quantification.
+===========================
 
 This example demonstrates a simple form of uncertainty quantification (UQ)
 for a regression-like setting.

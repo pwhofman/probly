@@ -168,7 +168,17 @@ def plot_uncertainty(
 
     for i, label in enumerate(unique_labels):
         mask = y == label
-        ax.scatter(X[mask, 0], X[mask, 1], s=20, color=colors[i], alpha=0.8, zorder=10, label=legend_names[i])
+        ax.scatter(
+            X[mask, 0],
+            X[mask, 1],
+            s=20,
+            color=colors[i],
+            alpha=0.8,
+            zorder=10,
+            label=legend_names[i],
+            edgecolors=cfg.WHITE,
+            linewidths=0.5,
+        )
 
     clf = SVC(kernel=kernel, C=C, gamma=gamma)
     clf.fit(X, y)
