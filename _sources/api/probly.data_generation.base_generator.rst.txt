@@ -1,0 +1,12 @@
+probly.data\_generation.base\_generator
+=======================================
+
+.. automodule:: probly.data_generation.base_generator
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      BaseDataGenerator
+   

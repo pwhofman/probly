@@ -1,0 +1,20 @@
+probly.data\_generation.jax\_first\_order\_generator
+====================================================
+
+.. automodule:: probly.data_generation.jax_first_order_generator
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      output_dataloader
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      FirstOrderDataGenerator
+      FirstOrderDataset
+      JAXOutputDataLoader
+   

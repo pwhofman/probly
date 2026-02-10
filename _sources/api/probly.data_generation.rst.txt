@@ -1,0 +1,20 @@
+probly.data\_generation
+=======================
+
+.. automodule:: probly.data_generation
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   base_generator
+   factory
+   first_order_datagenerator
+   jax_first_order_generator
+   jax_generator
+   pytorch_generator
+   tensorflow_generator
+   torch_first_order_generator

@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" />
 
     <!-- Generated with Sphinx 8.2.3 and Furo 2024.08.06 -->
-        <title>Sphinx-Gallery smoke test. - probly 0.3.1 documentation</title>
+        <title>probly.data_generation - probly 0.3.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=354aac6f" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -310,40 +310,40 @@
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <div class="sphx-glr-download-link-note admonition note">
-<p class="admonition-title">Note</p>
-<p><a class="reference internal" href="#sphx-glr-download-auto-examples-plot-gallery-smoke-test-py"><span class="std std-ref">Go to the end</span></a>
-to download the full example code.</p>
+          <section id="module-probly.data_generation">
+<span id="probly-data-generation"></span><h1>probly.data_generation<a class="headerlink" href="#module-probly.data_generation" title="Link to this heading">¶</a></h1>
+<p>Data generation utilities and classes.</p>
+<p class="rubric">Modules</p>
+<div class="table-wrapper autosummary longtable docutils container">
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="probly.data_generation.base_generator.html#module-probly.data_generation.base_generator" title="probly.data_generation.base_generator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">base_generator</span></code></a></p></td>
+<td><p>Data generation base interfaces.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="probly.data_generation.factory.html#module-probly.data_generation.factory" title="probly.data_generation.factory"><code class="xref py py-obj docutils literal notranslate"><span class="pre">factory</span></code></a></p></td>
+<td><p>Factory for creating framework-specific data generators.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="probly.data_generation.first_order_datagenerator.html#module-probly.data_generation.first_order_datagenerator" title="probly.data_generation.first_order_datagenerator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">first_order_datagenerator</span></code></a></p></td>
+<td><p>Backend/General First-Order data generator.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="probly.data_generation.jax_first_order_generator.html#module-probly.data_generation.jax_first_order_generator" title="probly.data_generation.jax_first_order_generator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">jax_first_order_generator</span></code></a></p></td>
+<td><p>JAX FirstOrder data generator.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="probly.data_generation.jax_generator.html#module-probly.data_generation.jax_generator" title="probly.data_generation.jax_generator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">jax_generator</span></code></a></p></td>
+<td><p>JAX data generator implementation.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="probly.data_generation.pytorch_generator.html#module-probly.data_generation.pytorch_generator" title="probly.data_generation.pytorch_generator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pytorch_generator</span></code></a></p></td>
+<td><p>PyTorch data generator implementation.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="probly.data_generation.tensorflow_generator.html#module-probly.data_generation.tensorflow_generator" title="probly.data_generation.tensorflow_generator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tensorflow_generator</span></code></a></p></td>
+<td><p>TensorFlow data generator implementation.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="probly.data_generation.torch_first_order_generator.html#module-probly.data_generation.torch_first_order_generator" title="probly.data_generation.torch_first_order_generator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">torch_first_order_generator</span></code></a></p></td>
+<td><p>Torch FirstOrder data generator.</p></td>
+</tr>
+</tbody>
+</table>
 </div>
-<section class="sphx-glr-example-title" id="sphinx-gallery-smoke-test">
-<span id="sphx-glr-auto-examples-plot-gallery-smoke-test-py"></span><h1>Sphinx-Gallery smoke test.<a class="headerlink" href="#sphinx-gallery-smoke-test" title="Link to this heading">¶</a></h1>
-<p>This page exists mainly to verify that Sphinx-Gallery is correctly configured for
-the project.</p>
-<p>These examples are executed during the documentation build. Keep them lightweight
-and avoid optional heavy ML dependencies unless you explicitly want the docs build
-to require them.</p>
-<img src="../_images/sphx_glr_plot_gallery_smoke_test_001.png" srcset="../_images/sphx_glr_plot_gallery_smoke_test_001.png" alt="Sphinx-Gallery is running (probly 0.3.1)" class = "sphx-glr-single-img"/><div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
-
-<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
-
-<span class="kn">import</span><span class="w"> </span><span class="nn">probly</span>
-
-<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.figure.html#matplotlib.pyplot.figure" title="matplotlib.pyplot.figure" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">figure</span></a><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
-<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html#matplotlib.pyplot.plot" title="matplotlib.pyplot.plot" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">plot</span></a><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
-<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.title.html#matplotlib.pyplot.title" title="matplotlib.pyplot.title" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">title</span></a><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Sphinx-Gallery is running (probly </span><span class="si">{</span><span class="n">probly</span><span class="o">.</span><span class="n">__version__</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
-<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.tight_layout.html#matplotlib.pyplot.tight_layout" title="matplotlib.pyplot.tight_layout" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span></a><span class="p">()</span>
-</pre></div>
-</div>
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 0.111 seconds)</p>
-<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-gallery-smoke-test-py">
-<div class="sphx-glr-download sphx-glr-download-python docutils container">
-<p><a class="reference download internal" download="" href="../_downloads/e6cd9b664a93bd13b64084c3e7f6bdff/plot_gallery_smoke_test.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">plot_gallery_smoke_test.py</span></code></a></p>
-</div>
-<div class="sphx-glr-download sphx-glr-download-zip docutils container">
-<p><a class="reference download internal" download="" href="../_downloads/0d2d4000386985954bb6a57b056887ad/plot_gallery_smoke_test.zip"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">zipped:</span> <span class="pre">plot_gallery_smoke_test.zip</span></code></a></p>
-</div>
-</div>
-<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
 </section>
 
         </article>

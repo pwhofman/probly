@@ -1,0 +1,12 @@
+probly.data\_generation.tensorflow\_generator
+=============================================
+
+.. automodule:: probly.data_generation.tensorflow_generator
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      TensorFlowDataGenerator
+   

@@ -1,0 +1,21 @@
+probly.data\_generation.first\_order\_datagenerator
+===================================================
+
+.. automodule:: probly.data_generation.first_order_datagenerator
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      output_dataloader
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      DatasetLike
+      FirstOrderDataGenerator
+      FirstOrderDataset
+      SimpleDataLoader
+   

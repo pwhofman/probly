@@ -1,0 +1,12 @@
+probly.data\_generation.factory
+===============================
+
+.. automodule:: probly.data_generation.factory
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      create_data_generator
+   

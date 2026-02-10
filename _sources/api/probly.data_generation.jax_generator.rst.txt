@@ -1,0 +1,12 @@
+probly.data\_generation.jax\_generator
+======================================
+
+.. automodule:: probly.data_generation.jax_generator
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      JAXDataGenerator
+   
