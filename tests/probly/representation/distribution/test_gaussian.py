@@ -103,7 +103,7 @@ def test_sample_function() -> None:
     dist = ArrayGaussian(np.zeros(shape), np.ones(shape))
 
     n_samples = 4
-    samples = dist.num_sample(n_samples)
+    samples = dist.sample(n_samples)
 
     assert isinstance(samples, ArraySample)
     assert samples.array.shape == (n_samples, *shape)
@@ -117,7 +117,7 @@ def test_sample_statistics() -> None:
     dist = ArrayGaussian(np.array([mean_val]), np.array([var_val]))
 
     n_samples = 100000
-    sample_wrapper = dist.num_sample(n_samples)
+    sample_wrapper = dist.sample(n_samples)
     samples = sample_wrapper.array
 
     assert np.mean(samples) == pytest.approx(mean_val, abs=0.05)

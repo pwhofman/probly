@@ -17,9 +17,6 @@ if TYPE_CHECKING:
     from probly.representation.distribution.array_gaussian import ArrayGaussian
 
 
-rng = np.random.default_rng()
-
-
 @dataclass(frozen=True, slots=True, weakref_slot=True)
 class ArrayGaussianMixture:
     """Gaussian mixture."""
@@ -86,8 +83,15 @@ class ArrayGaussianMixture:
             weights=self.weights,
         )
 
-    def num_sample(self, num_samples: int) -> ArraySample:
+    def sample(
+        self,
+        num_samples: int,
+        rng: np.random.Generator | None = None,
+    ) -> ArraySample:
         """Draw samples from the Gaussian mixture. Returns an ArraySample."""
+        if rng is None:
+            rng = np.random.default_rng()
+
         k = len(self.components)
         weights = self.weights
 
@@ -104,7 +108,7 @@ class ArrayGaussianMixture:
             if num_samples_for_component == 0:
                 continue
 
-            samples_for_component = component.sample(num_samples_for_component).array
+            samples_for_component = component.sample(num_samples_for_component, rng=rng).array
             result[indices_for_component] = samples_for_component
 
         return ArraySample(array=result, sample_axis=0)

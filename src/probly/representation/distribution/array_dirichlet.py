@@ -105,7 +105,7 @@ class ArrayDirichlet(
 
         return log_beta + digamma_sum - digamma_individual  # type: ignore[no-any-return]
 
-    def num_sample(
+    def sample(
         self,
         num_samples: int = 1,
         rng: np.random.Generator | None = None,

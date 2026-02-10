@@ -101,9 +101,9 @@ class ArrayDirichletMixture:
             weights=self.weights,
         )
 
-    def num_sample(
+    def sample(
         self,
-        num_samples: int = 1,
+        num_samples: int,
         rng: np.random.Generator | None = None,
     ) -> ArraySample:
         """Sample from the mixture.

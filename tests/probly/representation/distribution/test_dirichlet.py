@@ -162,7 +162,7 @@ def test_sample_function_dirichlet() -> None:
     dist = ArrayDirichlet(np.ones(shape))
 
     n_samples = 4
-    samples = dist.num_sample(n_samples)
+    samples = dist.sample(n_samples)
 
     assert isinstance(samples, ArraySample)
     assert samples.array.shape == (n_samples, *shape)
@@ -174,7 +174,7 @@ def test_sample_simplex_constraints() -> None:
     dist = ArrayDirichlet(np.array([1.0, 2.0, 3.0]))
 
     n_samples = 5000
-    sample_wrapper = dist.num_sample(n_samples)
+    sample_wrapper = dist.sample(n_samples)
     samples = sample_wrapper.array
 
     assert np.all(samples >= 0.0)
@@ -187,7 +187,7 @@ def test_sample_statistics_dirichlet_var() -> None:
     dist = ArrayDirichlet(alphas)
 
     n_samples = 300000
-    sample_wrapper = dist.num_sample(n_samples)
+    sample_wrapper = dist.sample(n_samples)
     samples = sample_wrapper.array
 
     a0 = alphas.sum()
