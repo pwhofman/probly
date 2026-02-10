@@ -65,9 +65,13 @@ jax = [
 jax-cuda12 = [
     "jax[cuda12]",
 ]
+tensorflow = [
+    "tensorflow",
+]
 all_ml = [
     {include-group = "torch"},
     {include-group = "jax"},
+    {include-group = "tensorflow"},
 ]
 test = [
     "pytest>=8.3.5",       # for testing
