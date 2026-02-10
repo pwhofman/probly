@@ -1,0 +1,13 @@
+probly.conformal\_prediction.utils.quantile
+===========================================
+
+.. automodule:: probly.conformal_prediction.utils.quantile
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      calculate_quantile
+      calculate_weighted_quantile
+   

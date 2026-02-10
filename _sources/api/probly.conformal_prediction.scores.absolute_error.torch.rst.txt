@@ -1,0 +1,12 @@
+probly.conformal\_prediction.scores.absolute\_error.torch
+=========================================================
+
+.. automodule:: probly.conformal_prediction.scores.absolute_error.torch
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      absolute_error_torch
+   

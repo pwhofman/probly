@@ -1,0 +1,13 @@
+probly.conformal\_prediction.methods.class\_conditional
+=======================================================
+
+.. automodule:: probly.conformal_prediction.methods.class_conditional
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      ClassConditionalClassifier
+      ClassConditionalRegressor
+   

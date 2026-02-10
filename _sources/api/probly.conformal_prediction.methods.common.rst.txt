@@ -1,0 +1,21 @@
+probly.conformal\_prediction.methods.common
+===========================================
+
+.. automodule:: probly.conformal_prediction.methods.common
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      predict_probs_torch
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      ConformalClassifier
+      ConformalPredictor
+      ConformalRegressor
+      Predictor
+   

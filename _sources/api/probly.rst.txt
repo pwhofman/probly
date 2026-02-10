@@ -11,6 +11,7 @@
    :recursive:
 
    calibration
+   conformal_prediction
    data_generation
    datasets
    evaluation

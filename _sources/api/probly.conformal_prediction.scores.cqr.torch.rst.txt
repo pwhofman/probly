@@ -1,0 +1,12 @@
+probly.conformal\_prediction.scores.cqr.torch
+=============================================
+
+.. automodule:: probly.conformal_prediction.scores.cqr.torch
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      cqr_score_torch
+   

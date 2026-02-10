@@ -1,0 +1,13 @@
+probly.conformal\_prediction.methods.cvplus
+===========================================
+
+.. automodule:: probly.conformal_prediction.methods.cvplus
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      CVPlusClassifier
+      CVPlusRegressor
+   

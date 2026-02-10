@@ -1,0 +1,12 @@
+probly.conformal\_prediction.scores.aps.flax
+============================================
+
+.. automodule:: probly.conformal_prediction.scores.aps.flax
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      aps_score_jax
+   

@@ -1,0 +1,19 @@
+probly.conformal\_prediction.scores.lac.common
+==============================================
+
+.. automodule:: probly.conformal_prediction.scores.lac.common
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      accretive_completion
+      register
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      LACScore
+   

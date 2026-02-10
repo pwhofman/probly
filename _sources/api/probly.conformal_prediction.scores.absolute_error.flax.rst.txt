@@ -1,0 +1,12 @@
+probly.conformal\_prediction.scores.absolute\_error.flax
+========================================================
+
+.. automodule:: probly.conformal_prediction.scores.absolute_error.flax
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      absolute_error_jax
+   

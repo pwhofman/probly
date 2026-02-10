@@ -1,0 +1,15 @@
+probly.conformal\_prediction.methods.split
+==========================================
+
+.. automodule:: probly.conformal_prediction.methods.split
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      SplitConformal
+      SplitConformalClassifier
+      SplitConformalPredictor
+      SplitConformalRegressor
+   

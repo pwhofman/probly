@@ -1,0 +1,14 @@
+probly.conformal\_prediction.methods.jackknifeplus
+==================================================
+
+.. automodule:: probly.conformal_prediction.methods.jackknifeplus
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      JackknifeCVBase
+      JackknifePlusClassifier
+      JackknifePlusRegressor
+   

@@ -1,0 +1,12 @@
+probly.conformal\_prediction.scores.cqr.flax
+============================================
+
+.. automodule:: probly.conformal_prediction.scores.cqr.flax
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      cqr_score_jax
+   

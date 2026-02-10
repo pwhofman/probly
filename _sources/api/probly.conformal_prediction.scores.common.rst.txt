@@ -1,0 +1,16 @@
+probly.conformal\_prediction.scores.common
+==========================================
+
+.. automodule:: probly.conformal_prediction.scores.common
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      ClassificationScore
+      ClassificationScoreProtocol
+      RegressionScore
+      RegressionScoreProtocol
+      Score
+   

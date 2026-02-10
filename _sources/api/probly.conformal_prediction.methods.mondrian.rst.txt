@@ -1,0 +1,14 @@
+probly.conformal\_prediction.methods.mondrian
+=============================================
+
+.. automodule:: probly.conformal_prediction.methods.mondrian
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      GroupedConformalBase
+      MondrianConformalClassifier
+      MondrianConformalRegressor
+   

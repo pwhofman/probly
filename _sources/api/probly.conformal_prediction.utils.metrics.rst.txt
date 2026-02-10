@@ -1,0 +1,13 @@
+probly.conformal\_prediction.utils.metrics
+==========================================
+
+.. automodule:: probly.conformal_prediction.utils.metrics
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      average_set_size
+      empirical_coverage
+   
