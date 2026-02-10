@@ -53,7 +53,7 @@ class ArrayGaussianMixture:
     @property
     def dtype(self) -> DTypeLike:
         """The data type of the underlying array."""
-        return self.components[0].dtype  # type: ignore[no-any-return]
+        return self.components[0].dtype
 
     @property
     def device(self) -> str:

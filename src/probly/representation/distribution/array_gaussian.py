@@ -123,7 +123,7 @@ class ArrayGaussian(GaussianDistribution):
                 gaussians.append(x)
                 unpacked.append(x.mean)
             else:
-                unpacked.append(x)  # type: ignore[arg-type]
+                unpacked.append(x)
 
         if not gaussians:
             return NotImplemented
@@ -177,7 +177,7 @@ class ArrayGaussian(GaussianDistribution):
     @property
     def device(self) -> str:
         """Return the hardware device on which the arrays reside (CPU for NumPy)."""
-        return self.mean.device  # type: ignore[no-any-return]
+        return self.mean.device
 
     def __getitem__(self, index: int | slice | tuple | np.ndarray) -> Self:
         """Return a sliced view of this Gaussian."""
@@ -204,4 +204,4 @@ class ArrayGaussian(GaussianDistribution):
 
     def __hash__(self) -> int:
         """Compute the hash of the distribution."""
-        return super().__hash__()  # type: ignore[no-any-return]
+        return super().__hash__()
