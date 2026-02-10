@@ -1,0 +1,12 @@
+probly.representation.distribution.mixture\_gaussian
+====================================================
+
+.. automodule:: probly.representation.distribution.mixture_gaussian
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      ArrayGaussianMixture
+   

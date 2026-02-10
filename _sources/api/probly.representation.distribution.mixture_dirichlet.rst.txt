@@ -1,0 +1,12 @@
+probly.representation.distribution.mixture\_dirichlet
+=====================================================
+
+.. automodule:: probly.representation.distribution.mixture_dirichlet
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      ArrayDirichletMixture
+   

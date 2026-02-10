@@ -1,0 +1,14 @@
+probly.representation.distribution.common
+=========================================
+
+.. automodule:: probly.representation.distribution.common
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      DirichletDistribution
+      Distribution
+      GaussianDistribution
+   

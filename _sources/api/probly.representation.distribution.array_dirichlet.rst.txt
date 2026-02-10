@@ -1,0 +1,12 @@
+probly.representation.distribution.array\_dirichlet
+===================================================
+
+.. automodule:: probly.representation.distribution.array_dirichlet
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      ArrayDirichlet
+   

@@ -4,3 +4,14 @@ probly.representation.distribution
 .. automodule:: probly.representation.distribution
 
    
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   array_dirichlet
+   array_gaussian
+   common
+   mixture_dirichlet
+   mixture_gaussian
