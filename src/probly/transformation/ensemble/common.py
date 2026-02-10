@@ -9,6 +9,8 @@ from lazy_dispatch import lazydispatch
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+    from flax.nnx import rnglib
+
     from lazy_dispatch.isinstance import LazyType
     from probly.predictor import Predictor
 
@@ -25,16 +27,23 @@ def register(cls: LazyType, generator: Callable) -> None:
     ensemble_generator.register(cls=cls, func=generator)
 
 
-def ensemble[T: Predictor](base: T, num_members: int, reset_params: bool = True, key: int = 1) -> T:
+def ensemble[T: Predictor](
+    base: T,
+    num_members: int,
+    reset_params: bool = True,
+    seed: int = 1,
+    rngs: rnglib.Rngs | None = None,
+) -> T:
     """Create an ensemble predictor from a base predictor based on :cite:`lakshminarayananSimpleScalable2017`.
 
     Args:
         base: Predictor, The base model to be used for the ensemble.
         num_members: The number of members in the ensemble.
         reset_params: Whether to reset the parameters of each member.
-        key: Flax only, the key to use as seed to reinitialize the model.
+        seed: int, seed to be used for deterministic member reset.
+        rngs: nnx.Rngs used for flax member re-initialization, overwrites seed.
 
     Returns:
         Predictor, The ensemble predictor.
     """
-    return ensemble_generator(base, num_members=num_members, reset_params=reset_params, key=key)
+    return ensemble_generator(base, num_members=num_members, reset_params=reset_params, seed=seed, rngs=rngs)
