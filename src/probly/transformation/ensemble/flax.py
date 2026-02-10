@@ -12,12 +12,14 @@ from .common import register
 
 reset_traverser = singledispatch_traverser[nnx.Module](name="reset_traverser")
 
-KEY = GlobalVariable[int]("KEY", "Key to be used for reinitialization.")
+RNGS = GlobalVariable[nnx.Rngs]("RNGS")
 
 
 @reset_traverser.register
 def _(obj: nnx.Module, state: State) -> tuple[nnx.Module, State]:
-    rng = nnx.Rngs(KEY(state))
+    if hasattr(obj, "rngs") and hasattr(obj, "rng_collection") and not any(obj.iter_children()):
+        obj.rngs = RNGS(state)[obj.rng_collection].fork()
+        return obj, state
     if not any(obj.iter_children()) and "rngs" in obj.__init__.__code__.co_varnames:
         params = {}
 
@@ -28,7 +30,7 @@ def _(obj: nnx.Module, state: State) -> tuple[nnx.Module, State]:
                 if name in obj.__dict__ and name != "rngs"
             }
         )
-        params["rngs"] = rng
+        params["rngs"] = RNGS(state)
 
         params.pop("kernel_shape", None)
 
@@ -41,19 +43,22 @@ def _clone(obj: nnx.Module) -> nnx.Module:
     return traverse(obj, nn_traverser, init={CLONE: True})
 
 
-def _clone_reset(obj: nnx.Module, key: int) -> nnx.Module:
-    return traverse(obj, nn_compose(reset_traverser), init={CLONE: True, KEY: key})
+def _clone_reset(obj: nnx.Module, rngs: nnx.Rngs) -> nnx.Module:
+    return traverse(obj, nn_compose(reset_traverser), init={CLONE: True, RNGS: rngs})
 
 
 def generate_flax_ensemble(
     obj: nnx.Module,
     num_members: int,
     reset_params: bool,
-    key: int = 1,
+    seed: int,
+    rngs: nnx.Rngs,
 ) -> nnx.List:
     """Build a flax ensemble based on :cite:`lakshminarayananSimpleScalable2017`."""
     if reset_params:
-        return nnx.List([_clone_reset(obj, key + i) for i in range(num_members)])
+        if rngs is None:
+            rngs = nnx.Rngs(seed)
+        return nnx.List([_clone_reset(obj, rngs) for _ in range(num_members)])
     return nnx.List([_clone(obj) for _ in range(num_members)])
 
 
