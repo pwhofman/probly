@@ -740,8 +740,8 @@
         <span class="k">if</span> <span class="n">ax</span> <span class="o">==</span> <span class="n">new_sample_axis</span><span class="p">:</span>
             <span class="n">new_sample_axis</span> <span class="o">=</span> <span class="kc">None</span>
             <span class="k">break</span>
-        <span class="k">if</span> <span class="n">ax</span> <span class="o">&lt;</span> <span class="n">new_sample_axis</span><span class="p">:</span>  <span class="c1"># type: ignore[operator]</span>
-            <span class="n">new_sample_axis</span> <span class="o">-=</span> <span class="mi">1</span>  <span class="c1"># type: ignore[operator]</span>
+        <span class="k">if</span> <span class="n">ax</span> <span class="o">&lt;</span> <span class="n">new_sample_axis</span><span class="p">:</span>
+            <span class="n">new_sample_axis</span> <span class="o">-=</span> <span class="mi">1</span>
 
     <span class="n">res</span> <span class="o">=</span> <span class="n">func</span><span class="o">.</span><span class="n">_implementation</span><span class="p">(</span><span class="n">a_array</span><span class="p">,</span> <span class="n">axes</span><span class="p">)</span>  <span class="c1"># type: ignore[attr-defined]  # noqa: SLF001</span>
 

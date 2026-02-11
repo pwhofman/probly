@@ -325,7 +325,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">probly.traverse_nn</span><span class="w"> </span><span class="kn">import</span> <span class="n">nn_compose</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pytraverse</span><span class="w"> </span><span class="kn">import</span> <span class="n">GlobalVariable</span><span class="p">,</span> <span class="n">State</span><span class="p">,</span> <span class="n">TraverserResult</span><span class="p">,</span> <span class="n">singledispatch_traverser</span><span class="p">,</span> <span class="n">traverse_with_state</span>
 
-<span class="n">KL_DIVERGENCE</span> <span class="o">=</span> <span class="n">GlobalVariable</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">](</span><span class="s2">&quot;KL_DIVERGENCE&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
+<span class="n">KL_DIVERGENCE</span> <span class="o">=</span> <span class="n">GlobalVariable</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">](</span><span class="s2">&quot;KL_DIVERGENCE&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>  <span class="c1"># ty: ignore[invalid-argument-type]</span>
 
 
 <span class="nd">@singledispatch_traverser</span><span class="p">[</span><span class="nb">object</span><span class="p">]</span>
@@ -342,7 +342,11 @@
 <a class="viewcode-back" href="../../../../api/probly.train.bayesian.torch.html#probly.train.bayesian.torch.collect_kl_divergence">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">collect_kl_divergence</span><span class="p">(</span><span class="n">model</span><span class="p">:</span> <span class="n">Predictor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Collect the KL divergence of the Bayesian model by summing the KL divergence of each Bayesian layer.&quot;&quot;&quot;</span>
-    <span class="n">_</span><span class="p">,</span> <span class="n">state</span> <span class="o">=</span> <span class="n">traverse_with_state</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">nn_compose</span><span class="p">(</span><span class="n">kl_divergence_traverser</span><span class="p">))</span>
+    <span class="n">_</span><span class="p">,</span> <span class="n">state</span> <span class="o">=</span> <span class="n">traverse_with_state</span><span class="p">(</span>
+        <span class="n">model</span><span class="p">,</span>
+        <span class="n">nn_compose</span><span class="p">(</span><span class="n">kl_divergence_traverser</span><span class="p">),</span>
+        <span class="n">init</span><span class="o">=</span><span class="p">{</span><span class="n">KL_DIVERGENCE</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">},</span>
+    <span class="p">)</span>
     <span class="k">return</span> <span class="n">state</span><span class="p">[</span><span class="n">KL_DIVERGENCE</span><span class="p">]</span></div>
 
 

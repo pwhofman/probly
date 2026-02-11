@@ -422,7 +422,7 @@
 <span class="sd">            Optional string identifier (saved with metadata).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="n">output_transform</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">jnp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">output_transform</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">object</span><span class="p">],</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">return_jax</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
 
 <div class="viewcode-block" id="FirstOrderDataGenerator.to_probs">
@@ -430,9 +430,7 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">to_probs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">outputs</span><span class="p">:</span> <span class="nb">object</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">object</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert model outputs to probabilities as jnp.ndarray or lists.&quot;&quot;&quot;</span>
         <span class="n">arr</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">_to_batch_outputs</span><span class="p">(</span><span class="n">outputs</span><span class="p">)</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_transform</span> <span class="ow">is</span> <span class="kc">None</span>
-            <span class="k">else</span> <span class="n">_ensure_2d</span><span class="p">(</span><span class="n">cast</span><span class="p">(</span><span class="s2">&quot;jnp.ndarray&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_transform</span><span class="p">(</span><span class="n">outputs</span><span class="p">)))</span>
+            <span class="n">_to_batch_outputs</span><span class="p">(</span><span class="n">outputs</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_transform</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">_ensure_2d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_transform</span><span class="p">(</span><span class="n">outputs</span><span class="p">))</span>
         <span class="p">)</span>
         <span class="n">mode</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_mode</span> <span class="ow">or</span> <span class="s2">&quot;auto&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;probs&quot;</span><span class="p">:</span>
@@ -529,7 +527,7 @@
 
 <div class="viewcode-block" id="FirstOrderDataGenerator.load_distributions">
 <a class="viewcode-back" href="../../../api/probly.data_generation.jax_first_order_generator.html#probly.data_generation.jax_first_order_generator.FirstOrderDataGenerator.load_distributions">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">load_distributions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load_distributions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>  <span class="c1"># ty:ignore[invalid-method-override]</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Load distributions and convert to JAX arrays.</span>
 
 <span class="sd">        Returns:</span>
@@ -561,7 +559,7 @@
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
             <span class="n">inp</span><span class="p">,</span> <span class="n">lbl</span><span class="p">,</span> <span class="n">dist</span> <span class="o">=</span> <span class="n">item</span>
             <span class="k">return</span> <span class="n">inp</span><span class="p">,</span> <span class="n">lbl</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
-        <span class="n">inp</span><span class="p">,</span> <span class="n">dist</span> <span class="o">=</span> <span class="n">item</span>
+        <span class="n">inp</span><span class="p">,</span> <span class="n">dist</span> <span class="o">=</span> <span class="n">item</span>  <span class="c1"># ty:ignore[not-iterable]</span>
         <span class="k">return</span> <span class="n">inp</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span></div>
 
 
@@ -666,9 +664,9 @@
                     <span class="n">inp</span><span class="p">,</span> <span class="n">lbl</span><span class="p">,</span> <span class="n">dist</span> <span class="o">=</span> <span class="n">item</span>
                     <span class="n">inputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">inp</span><span class="p">)</span>
                     <span class="n">labels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">lbl</span><span class="p">)</span>
-                    <span class="n">dists</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dist</span><span class="p">)</span>
+                    <span class="n">dists</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dist</span><span class="p">)</span>  <span class="c1"># ty:ignore[invalid-argument-type]</span>
                 <span class="k">else</span><span class="p">:</span>
-                    <span class="n">inp</span><span class="p">,</span> <span class="n">dist</span> <span class="o">=</span> <span class="n">item</span>
+                    <span class="n">inp</span><span class="p">,</span> <span class="n">dist</span> <span class="o">=</span> <span class="n">item</span>  <span class="c1"># ty:ignore[not-iterable]</span>
                     <span class="n">inputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">inp</span><span class="p">)</span>
                     <span class="n">dists</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dist</span><span class="p">)</span>
 

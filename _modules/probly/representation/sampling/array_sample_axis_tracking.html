@@ -330,23 +330,22 @@
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_normalize_index</span><span class="p">(</span><span class="n">index</span><span class="p">:</span> <span class="n">Index</span><span class="p">,</span> <span class="n">ndim</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">IndexElement</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
-        <span class="n">index</span> <span class="o">=</span> <span class="p">(</span><span class="n">index</span><span class="p">,)</span>
+    <span class="n">normalized_index</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">IndexElement</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">index</span><span class="p">,)</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> <span class="k">else</span> <span class="n">index</span>  <span class="c1"># type: ignore[assignment]</span>
 
     <span class="c1"># Expand ellipsis</span>
-    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">index</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">normalized_index</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">idx</span> <span class="ow">is</span> <span class="bp">Ellipsis</span><span class="p">:</span>
-            <span class="n">before</span> <span class="o">=</span> <span class="n">index</span><span class="p">[:</span><span class="n">i</span><span class="p">]</span>
-            <span class="n">after</span> <span class="o">=</span> <span class="n">index</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span> <span class="p">:]</span>
+            <span class="n">before</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">IndexElement</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="n">normalized_index</span><span class="p">[:</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">after</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">IndexElement</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="n">normalized_index</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span> <span class="p">:]</span>
             <span class="n">missing</span> <span class="o">=</span> <span class="n">ndim</span> <span class="o">-</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">after</span><span class="p">))</span>
-            <span class="n">index</span> <span class="o">=</span> <span class="n">before</span> <span class="o">+</span> <span class="p">(</span><span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">),)</span> <span class="o">*</span> <span class="n">missing</span> <span class="o">+</span> <span class="n">after</span>
+            <span class="n">normalized_index</span> <span class="o">=</span> <span class="n">before</span> <span class="o">+</span> <span class="p">(</span><span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">),)</span> <span class="o">*</span> <span class="n">missing</span> <span class="o">+</span> <span class="n">after</span>
             <span class="k">break</span>
 
     <span class="c1"># Pad with full slices if index is short</span>
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">index</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">ndim</span><span class="p">:</span>
-        <span class="n">index</span> <span class="o">=</span> <span class="n">index</span> <span class="o">+</span> <span class="p">(</span><span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">),)</span> <span class="o">*</span> <span class="p">(</span><span class="n">ndim</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">index</span><span class="p">))</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">normalized_index</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">ndim</span><span class="p">:</span>
+        <span class="n">normalized_index</span> <span class="o">=</span> <span class="n">normalized_index</span> <span class="o">+</span> <span class="p">(</span><span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">),)</span> <span class="o">*</span> <span class="p">(</span><span class="n">ndim</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">normalized_index</span><span class="p">))</span>
 
-    <span class="k">return</span> <span class="n">index</span>
+    <span class="k">return</span> <span class="n">normalized_index</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_convert_idx</span><span class="p">(</span><span class="n">idx</span><span class="p">:</span> <span class="n">IndexElement</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="nb">int</span><span class="p">:</span>
@@ -539,7 +538,7 @@
             <span class="k">return</span> <span class="kc">None</span>
 
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">advanced_index</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="n">new_axis</span> <span class="o">=</span> <span class="n">_track_axis_advanced</span><span class="p">(</span><span class="n">advanced_index</span><span class="p">,</span> <span class="n">new_axis</span><span class="p">)</span>  <span class="c1"># type: ignore[arg-type]</span>
+        <span class="n">new_axis</span> <span class="o">=</span> <span class="n">_track_axis_advanced</span><span class="p">(</span><span class="n">advanced_index</span><span class="p">,</span> <span class="n">new_axis</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">new_axis</span></div>
 

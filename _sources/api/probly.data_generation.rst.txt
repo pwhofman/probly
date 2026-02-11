@@ -16,5 +16,4 @@ probly.data\_generation
    jax_first_order_generator
    jax_generator
    pytorch_generator
-   tensorflow_generator
    torch_first_order_generator
