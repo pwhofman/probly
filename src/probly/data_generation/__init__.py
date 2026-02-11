@@ -10,11 +10,24 @@ from .first_order_datagenerator import (
 )
 
 # Torch backend exports
-from .torch_first_order_generator import (
-    FirstOrderDataGenerator as TorchFirstOrderDataGenerator,
-    FirstOrderDataset as TorchFirstOrderDataset,
-    output_dataloader as torch_output_dataloader,
-)
+try:
+    from .torch_first_order_generator import (
+        FirstOrderDataGenerator as TorchFirstOrderDataGenerator,
+        FirstOrderDataset as TorchFirstOrderDataset,
+        output_dataloader as torch_output_dataloader,
+    )
+
+    _TORCH_AVAILABLE = True
+except ModuleNotFoundError:
+    # If running under pytest, skip Torch-dependent tests at module import.
+    if "pytest" in _sys.modules:
+        import pytest
+
+        pytest.skip(
+            "PyTorch not installed so skipping Torch-dependent tests.",
+            allow_module_level=True,
+        )
+    _TORCH_AVAILABLE = False
 
 # JAX backend exports (conditionally available)
 try:
@@ -40,11 +53,15 @@ __all__ = [
     # Explicit backend-prefixed names only (no ambiguous defaults)
     "GeneralFirstOrderDataGenerator",
     "GeneralFirstOrderDataset",
-    "TorchFirstOrderDataGenerator",
-    "TorchFirstOrderDataset",
     "general_output_dataloader",
-    "torch_output_dataloader",
 ]
+
+if _TORCH_AVAILABLE:
+    __all__ += [
+        "TorchFirstOrderDataGenerator",
+        "TorchFirstOrderDataset",
+        "torch_output_dataloader",
+    ]
 
 if _JAX_AVAILABLE:
     __all__ += [

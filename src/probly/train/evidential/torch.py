@@ -109,15 +109,7 @@ def unified_evidential_train(
 @switchdispatch
 def compute_loss(
     _mode: str,
-    *,
-    _outputs: torch.Tensor,
-    _loss_fn: Callable[..., torch.Tensor],
-    _model: nn.Module,
-    _x: torch.Tensor,
-    _y: torch.Tensor,
-    _device: torch.device,
-    _oodloader: DataLoader | None = None,
-    _class_count: torch.Tensor | None = None,
+    **_kwargs: dict[str, Any],
 ) -> torch.Tensor:
     """Dispatch function for computing the loss based on the selected mode via switchdispatch."""
     msg = 'Enter a valid mode ["PostNet", "NatPostNet", "EDL", "PrNet", "IRD", "DER", "RPN"]'
@@ -131,7 +123,7 @@ def _postnet_loss(
     y: torch.Tensor,
     outputs: tuple[torch.Tensor, torch.Tensor, torch.Tensor],
     loss_fn: Callable[..., torch.Tensor],
-    **_: dict[str, Any],
+    **_kwargs: dict[str, Any],
 ) -> torch.Tensor:
     alpha, _, _ = outputs
     return loss_fn(alpha, y)
@@ -142,9 +134,9 @@ def _natpostnet_loss(
     _mode: str,
     *,
     y: torch.Tensor,
-    outputs: torch.Tensor,
+    outputs: tuple[torch.Tensor, torch.Tensor, torch.Tensor],
     loss_fn: Callable[..., torch.Tensor],
-    **_: dict[str, Any],
+    **_kwargs: dict[str, Any],
 ) -> torch.Tensor:
     alpha, _, _ = outputs
     return loss_fn(alpha, y)
@@ -157,7 +149,7 @@ def _edl_loss(
     y: torch.Tensor,
     outputs: torch.Tensor,
     loss_fn: Callable[..., torch.Tensor],
-    **_: dict[str, Any],
+    **_kwargs: dict[str, Any],
 ) -> torch.Tensor:
     return loss_fn(outputs, y)
 
@@ -193,7 +185,7 @@ def _ird_loss(
     loss_fn: Callable[..., torch.Tensor],
     model: nn.Module,
     x: torch.Tensor,
-    **_: dict[str, Any],
+    **_kwargs: dict[str, Any],
 ) -> torch.Tensor:
     x_adv = x + 0.01 * torch.randn_like(x)
     alpha = outputs
@@ -210,9 +202,9 @@ def _der_loss(
     _mode: str,
     *,
     y: torch.Tensor,
-    outputs: torch.Tensor,
+    outputs: tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor],
     loss_fn: Callable[..., torch.Tensor],
-    **_: dict[str, Any],
+    **_kwargs: dict[str, Any],
 ) -> torch.Tensor:
     mu, kappa, alpha, beta = outputs
     return loss_fn(y, mu, kappa, alpha, beta)

@@ -38,6 +38,7 @@ class TorchTensorSample(Sample[torch.Tensor]):
             msg = "tensor must be a torch tensor."
             raise TypeError(msg)
 
+    @override
     @classmethod
     def from_iterable(  # noqa: C901
         cls,
@@ -45,7 +46,7 @@ class TorchTensorSample(Sample[torch.Tensor]):
         sample_dim: SampleAxis | None = None,
         sample_axis: SampleAxis | None = "auto",
         dtype: torch.dtype | None = None,
-    ) -> Self:
+    ) -> Self:  # type:ignore[invalid-method-override]
         """Create an TorchTensorSample from a sequence of samples.
 
         Args:
@@ -85,12 +86,12 @@ class TorchTensorSample(Sample[torch.Tensor]):
                 sample_dim = (
                     (0 if first_sample.ndim == 0 else 1) if isinstance(first_sample, (np.ndarray, torch.Tensor)) else 0
                 )
-            samples = torch.stack(samples, dim=sample_dim)
+            samples = torch.stack(samples, dim=sample_dim)  # type:ignore[invalid-argument-type]
 
         if dtype is not None:
             samples = samples.to(dtype=dtype)
 
-        return cls(tensor=samples, sample_dim=sample_dim)
+        return cls(tensor=samples, sample_dim=sample_dim)  # type:ignore[invalid-argument-type]
 
     def __len__(self) -> int:
         """Return the len of the array."""

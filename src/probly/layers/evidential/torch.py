@@ -349,6 +349,8 @@ class NatPNClassHead(nn.Module):
         n_prior: Prior for evidence scaling. If None, defaults to num_classes.
     """
 
+    alpha_prior: torch.Tensor
+
     def __init__(
         self,
         latent_dim: int,

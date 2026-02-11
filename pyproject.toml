@@ -18,11 +18,11 @@ dependencies = [
     "joblib",
 ]
 authors = [
-    {name = "Paul Hofman", email = "paul.hofman@ifi.lmu.de"},
-    {name = "Timo Löhr"},
-    {name = "Maximilian Muschalik"},
-    {name = "Clemens Damke"},
-    {name = "Alireza Javanmardi"}
+    { name = "Paul Hofman", email = "paul.hofman@ifi.lmu.de" },
+    { name = "Timo Löhr" },
+    { name = "Maximilian Muschalik" },
+    { name = "Clemens Damke" },
+    { name = "Alireza Javanmardi" },
 ]
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
@@ -43,8 +43,11 @@ where = ["./src"]
 include = ["probly*", "pytraverse*", "lazy_dispatch*"]
 
 [tool.setuptools.dynamic]
-version = {attr = "probly.__version__"}
-readme = {file = ["README.md", "CHANGELOG.md"], content-type = "text/markdown"}
+version = { attr = "probly.__version__" }
+readme = { file = [
+    "README.md",
+    "CHANGELOG.md",
+], content-type = "text/markdown" }
 
 [project.urls]
 documentation = "https://pwhofman.github.io/probly"
@@ -54,25 +57,10 @@ changelog = "https://github.com/pwhofman/probly/blob/main/CHANGELOG.md"
 
 
 [dependency-groups]
-torch = [
-    "torch>=2.0.0",
-    "torchvision",
-]
-jax = [
-    "jax>=0.8.0",
-    "flax>=0.12.0",
-]
-jax-cuda12 = [
-    "jax[cuda12]",
-]
-tensorflow = [
-    "tensorflow",
-]
-all_ml = [
-    {include-group = "torch"},
-    {include-group = "jax"},
-    {include-group = "tensorflow"},
-]
+torch = ["torch>=2.0.0", "torchvision"]
+jax = ["jax>=0.8.0", "flax>=0.12.0"]
+jax-cuda12 = ["jax[cuda12]"]
+all_ml = [{ include-group = "torch" }, { include-group = "jax" }]
 test = [
     "pytest>=8.3.5",       # for testing
     "pytest-cov>=6.0.0",   # for coverage
@@ -80,9 +68,9 @@ test = [
     "packaging",           # for version parsing
 ]
 lint = [
-    "ruff>=0.14.1",       # for linting
-    "pre-commit>=4.3.0",  # for running the linters pre-commit hooks
-    "mypy>=1.18.2"        # for static type checking
+    "ruff>=0.14.1",      # for linting
+    "pre-commit>=4.3.0", # for running the linters pre-commit hooks
+    "ty>=0.0.14",        # for static type checking
 ]
 docs = [
     "sphinx>=8.0.0",
@@ -100,10 +88,10 @@ dev = [
     "ipykernel>=6.29.5",
     "notebook>=7.3.3",
     "ipywidgets",
-    {include-group = "test"},
-    {include-group = "lint"},
-    {include-group = "docs"},
-    {include-group = "all_ml"},
+    { include-group = "test" },
+    { include-group = "lint" },
+    { include-group = "docs" },
+    { include-group = "all_ml" },
 ]
 
 
@@ -121,7 +109,7 @@ ignore = [
     "PLR2004", # Magic value used in comparison, consider replacing {value} with a constant variable
     "FBT",     # enforce keyword for bool
     "PLR0913", # too many arguments (>5)
-    "FIX002", # TODOs are fine in code
+    "FIX002",  # TODOs are fine in code
     "COM812",
 ]
 # Exclude a variety of commonly ignored directories.
@@ -189,17 +177,10 @@ convention = "google"
     "I002",
     "D101",
     "D103",
-    "PERF401",  # it's fine to have non-optimized code in notebooks
+    "PERF401", # it's fine to have non-optimized code in notebooks
 ]
-"docs/**/*.py" = [
-    "INP001",
-    "PTH",
-    "I002"
-]
-"examples/*.py" = [
-    "T201",
-    "D205",
-]
+"docs/**/*.py" = ["INP001", "PTH", "I002"]
+"examples/*.py" = ["T201", "D205"]
 
 # Use isort-compatible settings
 [tool.ruff.lint.isort]
@@ -224,15 +205,7 @@ exclude_also = [
     "if __name__ == .__main__.:",
     "\\s*\\.\\.\\.\\s*",
 ]
-exclude_lines = [
-    "if TYPE_CHECKING",
-]
+exclude_lines = ["if TYPE_CHECKING"]
 
-[tool.mypy]
-python_version = "3.13"
-strict = true
-ignore_missing_imports = true    # to avoid issues with torch, numpy, scipy, etc. stubs
-disallow_subclassing_any = false # to make sure we can subclass from e.g. torch.nn.Module
-disallow_any_generics = false    # to avoid warnings for type-based singledispatch
-disallow_untyped_calls = false   # to avoid issues with using torch, numpy, scipy, etc. internals
-disable_error_code = "misc"      # disable errors caused by torch not typing decorators, wrapping would be overkill
+[tool.ty.src]
+exclude = ["notebooks", "docs", "tests"]

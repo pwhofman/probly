@@ -85,23 +85,23 @@ class FirstOrderDataGenerator(PyFirstOrderDataGenerator):
     device: str = "cpu"
     batch_size: int = 64
     output_mode: str = "auto"  # your options: 'auto' | 'logits' | 'probs'
-    output_transform: Callable[[torch.Tensor], torch.Tensor] | None = None
+    output_transform: Callable[[object], torch.Tensor] | None = None
     input_getter: Callable[[Any], Any] | None = None
     model_name: str | None = None
     return_torch: bool = True
 
-    def to_probs(self, outputs: torch.Tensor) -> torch.Tensor:
+    def to_probs(self, outputs: object) -> torch.Tensor:
         """Convert model outputs to probabilities."""
         if self.output_transform is not None:
             return self.output_transform(outputs)
 
         mode = (self.output_mode or "auto").lower()
         if mode == "probs":
-            return outputs
+            return outputs  # ty:ignore[invalid-return-type]
         if mode == "logits":
-            return F.softmax(outputs, dim=-1)
+            return F.softmax(outputs, dim=-1)  # ty:ignore[invalid-argument-type]
         if mode == "auto":
-            return outputs if _is_probabilities(outputs) else F.softmax(outputs, dim=-1)
+            return outputs if _is_probabilities(outputs) else F.softmax(outputs, dim=-1)  # ty:ignore[invalid-return-type, invalid-argument-type]
         msg = f"Invalid output_mode '{self.output_mode}'. Expected one of: 'auto', 'logits', 'probs'."
         raise ValueError(msg)
 
@@ -185,7 +185,7 @@ class FirstOrderDataGenerator(PyFirstOrderDataGenerator):
             rows = probs.detach().cpu()
             for i in range(batch_size_local):
                 idx = start_idx + i
-                distributions[idx] = rows[i] if self.return_torch else rows[i].tolist()
+                distributions[idx] = rows[i] if self.return_torch else rows[i].tolist()  # ty:ignore[invalid-assignment]
             start_idx += batch_size_local
             if progress:
                 logger.info("[FirstOrderDataGenerator] Batch %d/%d", batch_idx + 1, total_batches)
@@ -207,7 +207,7 @@ class FirstOrderDataGenerator(PyFirstOrderDataGenerator):
 
         return distributions
 
-    def load_distributions(self, path: str | Path) -> tuple[dict[int, torch.Tensor], dict[str, Any]]:
+    def load_distributions(self, path: str | Path) -> tuple[dict[int, torch.Tensor], dict[str, Any]]:  # ty:ignore[invalid-method-override]
         """Load distributions from JSON and return Torch tensors.
 
         Returns:
@@ -281,7 +281,7 @@ class FirstOrderDataset(Dataset):
             return sample[0]
         return sample
 
-    def __getitem__(self, idx: int) -> object:
+    def __getitem__(self, idx: int) -> object:  # ty:ignore[invalid-method-override]
         """Return input (+ optional label) and distribution at index."""
         sample = self.base_dataset[idx]
         dist = self.distributions.get(idx)
