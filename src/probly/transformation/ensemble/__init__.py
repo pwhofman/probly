@@ -25,4 +25,4 @@ def _(_: type) -> None:
 ## Sklearn
 @common.ensemble_generator.delayed_register(SKLEARN_MODULE)
 def _(_: type) -> None:
-    from . import sklearn_models as sklearn_models  # noqa: PLC0415
+    from . import sklearn as sklearn  # noqa: PLC0415

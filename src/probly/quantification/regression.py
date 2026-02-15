@@ -69,7 +69,7 @@ def variance_conditional_expectation(probs: np.ndarray) -> np.ndarray:
     return vce
 
 
-def total_differential_entropy(probs: np.ndarray) -> float | np.ndarray:
+def total_differential_entropy(probs: np.ndarray) -> np.ndarray:
     """Compute total differential entropy as epistemic uncertainty based on :cite:`depewegDecompositionUncertainty2018`.
 
     Assume that the input is from a distribution over parameters of

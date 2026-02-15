@@ -40,11 +40,11 @@ class TestEnsembleAttributes:
                 jax.tree_util.tree_map(lambda x, y: jnp.array_equal(x, y), original_params, member_params),
             )  # no difference
 
-    @pytest.mark.skip(reason="not implemented yet")
     def test_ensemble_attributes_with_reset(self, flax_model_small_2d_2d) -> None:
         """Tests if the member attributes are not inherited from the base model."""
         num_members = 2
-        ensemble_model = ensemble(flax_model_small_2d_2d, num_members=2, reset_params=True)
+        seed = 2
+        ensemble_model = ensemble(flax_model_small_2d_2d, num_members=2, reset_params=True, seed=seed)
 
         assert ensemble_model is not None
         assert isinstance(ensemble_model, nnx.List)
@@ -122,12 +122,28 @@ class TestEnsembleGeneration:
             count_module_member = count_layers(member, nnx.Module)
             assert count_module_member == count_module_original
 
-    def test_not_implemented_error_with_reset(self, flax_model_small_2d_2d) -> None:
-        num_members = 2
+    def test_rngs_reset(self, flax_dropout_model) -> None:
+        num_members = 1
+        rngs = nnx.Rngs(0, params=1, dropout=2)
+        ensemble_model = ensemble(flax_dropout_model, num_members=num_members, reset_params=True, rngs=rngs)
 
-        msg = "resetting parameters of flax models is not supported yet."
-        with pytest.raises(NotImplementedError, match=msg):
-            ensemble(flax_model_small_2d_2d, num_members=num_members, reset_params=True)
+        assert ensemble_model is not None
+        assert isinstance(ensemble_model, nnx.List)
+        assert len(ensemble_model) == num_members
+
+        # simulate rngs
+        new_rngs = nnx.Rngs(0, params=1, dropout=2)
+        kernel1_key = new_rngs.params()
+        kernel_init = jax.nn.initializers.lecun_normal()
+        linear1_kernel = kernel_init(kernel1_key, (2, 2))
+        _ = new_rngs.params()  # linear1 bias
+        dropout_rngs = new_rngs["dropout"].fork()
+        kernel2_key = new_rngs.params()
+        linear2_kernel = kernel_init(kernel2_key, (2, 2))
+
+        assert jnp.equal(ensemble_model[0].layers[0].kernel.value, linear1_kernel).all()
+        assert ensemble_model[0].layers[1].rngs.key.value == dropout_rngs.key.value
+        assert jnp.equal(ensemble_model[0].layers[2].kernel.value, linear2_kernel).all()
 
 
 class TestEnsembleCalls:
@@ -145,10 +161,10 @@ class TestEnsembleCalls:
             assert custom_model_out.shape == member_out.shape
             assert jnp.equal(custom_model_out, member_out).all()  # no parameter reset
 
-    @pytest.mark.skip(reason="not implemented yet")
     def test_ensemble_flax_custom_model_call_with_reset(self, flax_custom_model) -> None:
         num_members = 2
-        ensemble_model = ensemble(flax_custom_model, num_members=num_members, reset_params=True)
+        seed = 2
+        ensemble_model = ensemble(flax_custom_model, num_members=num_members, reset_params=True, seed=seed)
 
         x = jnp.ones((2, 1, 10))
         custom_model_out = flax_custom_model(x)

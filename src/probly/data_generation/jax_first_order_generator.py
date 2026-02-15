@@ -110,13 +110,15 @@ class FirstOrderDataGenerator(PyFirstOrderDataGenerator):
             Optional string identifier (saved with metadata).
     """
 
-    output_transform: Callable[[object], jnp.ndarray] | None = None
+    output_transform: Callable[[jnp.ndarray], jnp.ndarray] | None = None
     return_jax: bool = True
 
     def to_probs(self, outputs: object) -> object:
         """Convert model outputs to probabilities as jnp.ndarray or lists."""
         arr = (
-            _to_batch_outputs(outputs) if self.output_transform is None else _ensure_2d(self.output_transform(outputs))
+            _to_batch_outputs(outputs)
+            if self.output_transform is None
+            else _ensure_2d(cast("jnp.ndarray", self.output_transform(outputs)))
         )
         mode = (self.output_mode or "auto").lower()
         if mode == "probs":
@@ -204,7 +206,7 @@ class FirstOrderDataGenerator(PyFirstOrderDataGenerator):
             )
         return distributions
 
-    def load_distributions(self, path: str | Path) -> tuple[dict[int, jnp.ndarray], dict[str, Any]]:  # ty:ignore[invalid-method-override]
+    def load_distributions(self, path: str | Path) -> tuple[dict[int, jnp.ndarray], dict[str, Any]]:
         """Load distributions and convert to JAX arrays.
 
         Returns:
@@ -232,7 +234,7 @@ class FirstOrderDataset(PyFirstOrderDataset):
         if isinstance(item, tuple) and len(item) == 3:
             inp, lbl, dist = item
             return inp, lbl, jnp.array(dist, dtype=jnp.float32)
-        inp, dist = item  # ty:ignore[not-iterable]
+        inp, dist = item
         return inp, jnp.array(dist, dtype=jnp.float32)
 
 
@@ -334,9 +336,9 @@ class JAXOutputDataLoader:
                     inp, lbl, dist = item
                     inputs.append(inp)
                     labels.append(lbl)
-                    dists.append(dist)  # ty:ignore[invalid-argument-type]
+                    dists.append(dist)
                 else:
-                    inp, dist = item  # ty:ignore[not-iterable]
+                    inp, dist = item
                     inputs.append(inp)
                     dists.append(dist)
 

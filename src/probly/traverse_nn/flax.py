@@ -129,7 +129,7 @@ def _sequential_traverser(
         else:
             seq.append(new_module)
 
-    new_obj = Sequential(*(reversed(seq) if traverse_reversed else seq))  # ty: ignore[invalid-argument-type]
+    new_obj = Sequential(*(reversed(seq) if traverse_reversed else seq))
 
     return new_obj, state
 

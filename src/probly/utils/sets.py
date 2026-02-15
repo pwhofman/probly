@@ -34,7 +34,7 @@ def capacity(q: np.ndarray, a: Iterable[int]) -> np.ndarray:
         min_capacity: numpy.ndarray, shape (n_instances,), capacity of q given a
 
     """
-    selected_sum = np.sum(q[:, :, a], axis=2)  # ty: ignore[invalid-argument-type]
+    selected_sum = np.sum(q[:, :, a], axis=2)
     min_capacity = np.min(selected_sum, axis=1)
     return min_capacity
 

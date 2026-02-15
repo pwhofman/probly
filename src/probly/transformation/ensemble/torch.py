@@ -31,6 +31,7 @@ def generate_torch_ensemble(
     obj: nn.Module,
     num_members: int,
     reset_params: bool = True,
+    **_kwargs,  # noqa: ANN003
 ) -> nn.ModuleList:
     """Build a torch ensemble based on :cite:`lakshminarayananSimpleScalable2017`."""
     if reset_params:
