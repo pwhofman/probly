@@ -7,7 +7,7 @@ from sklearn.base import BaseEstimator, clone
 from .common import register
 
 
-def generate_sklearn_ensemble(obj: BaseEstimator, num_members: int, reset_params: bool, **_kwargs) -> BaseEstimator:  # noqa: ANN003
+def generate_sklearn_ensemble(obj: BaseEstimator, num_members: int, reset_params: bool, **_kwargs) -> list[object]:  # noqa: ANN003
     """Generates an ensemble model from a sklearn base estimator."""
     if reset_params:
         obj.__setattr__("random_state", None)
