@@ -97,6 +97,13 @@ def test_coverage_convex_hull(sample_first_order_data: tuple[np.array, np.array]
     cov = coverage_convex_hull(probs, targets)
     validate_metric(cov)
 
+    rng = np.random.default_rng()
+    probs = rng.dirichlet(np.ones(10), (100, 5))
+    weights = rng.dirichlet(np.ones(5), (100,))
+    targets = np.einsum("ij,ijk->ik", weights, probs)
+    cov = coverage_convex_hull(probs, targets)
+    assert cov == 1.0
+
 
 def test_covered_efficiency(
     sample_conformal_data: tuple[np.array, np.array],
