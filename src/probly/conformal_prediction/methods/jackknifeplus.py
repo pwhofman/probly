@@ -123,7 +123,7 @@ class JackknifeCVBase(ConformalPredictor):
 
             model = self.model_factory()
             if hasattr(model, "fit"):
-                model.fit(x_np[train_mask], y_np[train_mask])
+                model.fit(x_np[train_mask], y_np[train_mask])  # type: ignore[call-non-callable]
             self.fitted_models.append(model)
 
             prediction = self.predict_fold(model, x_np[val_mask])
@@ -295,7 +295,7 @@ class JackknifePlusClassifier(JackknifeCVBase, ConformalClassifier):
         sample_idx = np.arange(len(y_true))
         return np.asarray(1.0 - y_pred[sample_idx, y_idx], dtype=float)
 
-    def predict(self, x_test: Sequence[Any], alpha: float, _probs: Any = None) -> npt.NDArray[np.bool_]:  # noqa: ANN401
+    def predict(self, x_test: Sequence[Any], alpha: float, probs: Any | None = None) -> npt.NDArray[np.bool_]:  # noqa: ANN401, ARG002
         """Predict prediction sets for test data."""
         if not self.is_calibrated or self.nonconformity_scores is None:
             msg = "Predictor must be calibrated before predict()."

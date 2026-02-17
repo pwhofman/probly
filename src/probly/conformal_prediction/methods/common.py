@@ -89,7 +89,7 @@ def _register_flax_models() -> None:
             if callable(model):
                 logits = model(x)
             elif hasattr(model, "apply"):
-                logits = model.apply(x)
+                logits = model.apply(x)  # type: ignore[call-non-callable]
             else:
                 msg = "Model must be callable or expose apply()."
                 raise TypeError(msg)

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import numpy as np
 from scipy.optimize import linprog
 from tqdm import tqdm
@@ -89,7 +91,7 @@ def efficiency(preds: np.ndarray) -> float:
     return float(eff)
 
 
-def coverage_convex_hull(probs: np.ndarray, targets: np.ndarray) -> float:
+def coverage_convex_hull(probs: np.ndarray, targets: np.ndarray, **kwargs: Any) -> float:  # noqa: ANN401
     """Compute credal set coverage via convex hull :cite:`nguyenCredalEnsembling2025`.
 
     The coverage is defined as the proportion of instances whose true distribution is contained in the convex hull.
@@ -99,6 +101,7 @@ def coverage_convex_hull(probs: np.ndarray, targets: np.ndarray) -> float:
     Args:
         probs: The predicted probabilities as an array of shape (n_instances, n_samples, n_classes).
         targets: The true labels as an array of shape (n_instances, n_classes).
+        **kwargs: Additional keyword arguments for the linear programming solver, e.g. tolerance.
 
     Returns:
         cov: The coverage.
@@ -111,7 +114,7 @@ def coverage_convex_hull(probs: np.ndarray, targets: np.ndarray) -> float:
     for i in tqdm(range(probs.shape[0]), desc="Instances"):
         a_eq = np.vstack((probs[i].T, np.ones(n_extrema)))
         b_eq = np.concatenate((targets[i], [1]), axis=0)
-        res = linprog(c=c, A_eq=a_eq, b_eq=b_eq, bounds=bounds)
+        res = linprog(c=c, A_eq=a_eq, b_eq=b_eq, bounds=bounds, **kwargs)
         covered += res.success
     cov = covered / probs.shape[0]
     return float(cov)
