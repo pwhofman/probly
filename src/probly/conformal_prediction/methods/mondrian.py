@@ -139,7 +139,7 @@ class GroupedConformalBase(ConformalPredictor):
             raise RuntimeError(msg)
 
         # fallback: use max threshold among calibrated groups
-        max_threshold = max(self.group_thresholds.values())  # type: ignore[type-var]
+        max_threshold = max(self.group_thresholds.values())
 
         for i, group_id in enumerate(group_ids_np):
             thresholds[i] = self.group_thresholds.get(int(group_id), max_threshold)
@@ -155,8 +155,8 @@ class GroupedConformalBase(ConformalPredictor):
         threshold_lower = np.empty(n_samples, dtype=float)
         threshold_upper = np.empty(n_samples, dtype=float)
 
-        max_lower = max(self.group_thresholds_lower.values()) if self.group_thresholds_lower else np.inf  # type: ignore[type-var]
-        max_upper = max(self.group_thresholds_upper.values()) if self.group_thresholds_upper else np.inf  # type: ignore[type-var]
+        max_lower = max(self.group_thresholds_lower.values()) if self.group_thresholds_lower else np.inf
+        max_upper = max(self.group_thresholds_upper.values()) if self.group_thresholds_upper else np.inf
 
         for i, group_id in enumerate(group_ids_np):
             gid = int(group_id)
