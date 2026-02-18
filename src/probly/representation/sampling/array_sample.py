@@ -19,7 +19,7 @@ from probly.representation.sampling.common_sample import Sample, SampleAxis, cre
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-    from numpy.typing import DTypeLike, NDArray
+    from numpy.typing import DTypeLike
 
 type Numeric = np.number | np.ndarray | float | int
 
@@ -28,7 +28,7 @@ type Numeric = np.number | np.ndarray | float | int
 class ArraySample[D: Numeric](Sample[D], np.lib.mixins.NDArrayOperatorsMixin):
     """A sample of predictions stored in a numpy array."""
 
-    array: NDArray
+    array: np.ndarray
     sample_axis: int
 
     def __post_init__(self) -> None:
@@ -46,9 +46,8 @@ class ArraySample[D: Numeric](Sample[D], np.lib.mixins.NDArrayOperatorsMixin):
             msg = "array must be a numpy ndarray."
             raise TypeError(msg)
 
-    @override
     @classmethod
-    def from_iterable(cls, samples: Iterable[D], sample_axis: SampleAxis = "auto", dtype: DTypeLike = None) -> Self:  # type: ignore[invalid-method-override]
+    def from_iterable(cls, samples: Iterable[D], sample_axis: SampleAxis = "auto", dtype: DTypeLike = None) -> Self:
         """Create an ArraySample from a sequence of samples.
 
         Args:
@@ -66,7 +65,7 @@ class ArraySample[D: Numeric](Sample[D], np.lib.mixins.NDArrayOperatorsMixin):
                     raise ValueError(msg)
                 sample_axis = 0 if samples.ndim == 1 else 1
             if sample_axis != 0:
-                samples = np.moveaxis(samples, 0, sample_axis)  # type: ignore[invalid-argument-type]
+                samples = np.moveaxis(samples, 0, sample_axis)
             if dtype is not None:
                 samples = samples.astype(dtype)
         else:
@@ -80,24 +79,24 @@ class ArraySample[D: Numeric](Sample[D], np.lib.mixins.NDArrayOperatorsMixin):
                     raise ValueError(msg)
                 first_sample = samples[0]
                 sample_axis = (0 if first_sample.ndim == 0 else 1) if isinstance(first_sample, np.ndarray) else 0
-            samples = np.stack(samples, axis=sample_axis, dtype=dtype)  # type: ignore[invalid-argument-type]
+            samples = np.stack(samples, axis=sample_axis, dtype=dtype)
 
-        return cls(array=samples, sample_axis=sample_axis)  # type: ignore[invalid-argument-type]
+        return cls(array=samples, sample_axis=sample_axis)
 
     @override
     @classmethod
-    def from_sample(cls, sample: Sample[D], sample_axis: SampleAxis = "auto", dtype: DTypeLike = None) -> Self:  # type: ignore[invalid-method-override]
+    def from_sample(cls, sample: Sample[D], sample_axis: SampleAxis = "auto", dtype: DTypeLike = None) -> Self:
         if isinstance(sample, ArraySample):
             sample_array = sample.array
 
             if dtype is not None:
-                sample_array = sample_array.astype(dtype)  # type: ignore[no-matching-overload]
+                sample_array = sample_array.astype(dtype)
 
             in_sample_axis = sample.sample_axis
             if sample_axis not in ("auto", in_sample_axis):
-                sample_array = np.moveaxis(sample_array, in_sample_axis, sample_axis)  # type: ignore[invalid-argument-type]
-                in_sample_axis = sample_axis
-            return cls(array=sample_array, sample_axis=in_sample_axis)  # type: ignore[invalid-argument-type]
+                sample_array = np.moveaxis(sample_array, in_sample_axis, sample_axis)  # type: ignore[arg-type]
+                in_sample_axis = sample_axis  # type: ignore[assignment]
+            return cls(array=sample_array, sample_axis=in_sample_axis)
 
         return cls.from_iterable(sample.samples, sample_axis=sample_axis, dtype=dtype)
 
@@ -112,7 +111,7 @@ class ArraySample[D: Numeric](Sample[D], np.lib.mixins.NDArrayOperatorsMixin):
     @property
     def dtype(self) -> DTypeLike:
         """The data type of the underlying array."""
-        return self.array.dtype
+        return self.array.dtype  # type: ignore[no-any-return]
 
     @property
     def device(self) -> str:
@@ -132,7 +131,7 @@ class ArraySample[D: Numeric](Sample[D], np.lib.mixins.NDArrayOperatorsMixin):
     @property
     def shape(self) -> tuple[int, ...]:
         """The shape of the underlying array."""
-        return self.array.shape
+        return self.array.shape  # type: ignore[no-any-return]
 
     @property
     def size(self) -> int:
@@ -147,7 +146,7 @@ class ArraySample[D: Numeric](Sample[D], np.lib.mixins.NDArrayOperatorsMixin):
     @property
     def sample_size(self) -> int:
         """Return the number of samples."""
-        return self.array.shape[self.sample_axis]
+        return self.array.shape[self.sample_axis]  # type: ignore[no-any-return]
 
     @property
     def samples(self) -> np.ndarray:
@@ -159,22 +158,22 @@ class ArraySample[D: Numeric](Sample[D], np.lib.mixins.NDArrayOperatorsMixin):
     @override
     def sample_mean(self) -> D:
         """Compute the mean of the sample."""
-        return self.array.mean(axis=self.sample_axis)
+        return self.array.mean(axis=self.sample_axis)  # type: ignore[no-any-return]
 
     @override
     def sample_std(self, ddof: int = 1) -> D:
         """Compute the standard deviation of the sample."""
-        return self.array.std(axis=self.sample_axis, ddof=ddof)
+        return self.array.std(axis=self.sample_axis, ddof=ddof)  # type: ignore[no-any-return]
 
     @override
     def sample_var(self, ddof: int = 1) -> D:
         """Compute the variance of the sample."""
-        return self.array.var(axis=self.sample_axis, ddof=ddof)
+        return self.array.var(axis=self.sample_axis, ddof=ddof)  # type: ignore[no-any-return]
 
     @override
     def concat(self, other: Sample[D]) -> Self:
         if isinstance(other, ArraySample):
-            other_array = np.moveaxis(other.array, other.sample_axis, self.sample_axis)  # type: ignore[invalid-argument-type]
+            other_array = np.moveaxis(other.array, other.sample_axis, self.sample_axis)
         else:
             other_array = np.stack(list(other.samples), axis=self.sample_axis, dtype=self.array.dtype)
 
@@ -336,26 +335,6 @@ class ArraySample[D: Numeric](Sample[D], np.lib.mixins.NDArrayOperatorsMixin):
     def __hash__(self) -> int:
         """Compute the hash of the ArraySample."""
         return super().__hash__()
-
-    def transpose(self, *axes: int | None) -> Self:
-        """Return a transposed version of the ArraySample.
-
-        This method implicitly also provides full axis tracking support for
-        - `np.moveaxis`
-        - `np.rollaxis`
-        Those functions call out to `transpose` methods for custom array types.
-
-        Args:
-            axes: The axes to transpose.
-
-        Returns:
-            A transposed version of the ArraySample.
-        """
-        if len(axes) == 0:
-            return np.transpose(self)  # type: ignore[return-value]
-        if len(axes) == 1 and not isinstance(axes[0], int):
-            return np.transpose(self, axes[0])  # type: ignore[return-value]
-        return np.transpose(self, axes)  # type: ignore[return-value]
 
 
 @array_sample_internals.register

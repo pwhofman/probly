@@ -89,7 +89,7 @@ class ArrayDiscreteCredalSet(ArrayCategoricalCredalSet, DiscreteCredalSet[np.nda
     @property
     def dtype(self) -> np.dtype:
         """Return the data type of the credal set array."""
-        return self.array.dtype
+        return self.array.dtype  # type: ignore[no-any-return]
 
     @property
     def ndim(self) -> int:
@@ -99,7 +99,7 @@ class ArrayDiscreteCredalSet(ArrayCategoricalCredalSet, DiscreteCredalSet[np.nda
     @property
     def shape(self) -> tuple[int, ...]:
         """Return the shape of the credal set array."""
-        return self.array.shape[:-2]
+        return self.array.shape[:-2]  # type: ignore[no-any-return]
 
     def __len__(self) -> int:
         """Return the number of members in the credal set."""
@@ -128,11 +128,11 @@ class ArrayDiscreteCredalSet(ArrayCategoricalCredalSet, DiscreteCredalSet[np.nda
 
     def lower(self) -> np.ndarray:
         """Compute the lower envelope of the credal set."""
-        return np.min(self.array, axis=-2)
+        return np.min(self.array, axis=-2)  # type: ignore[no-any-return]
 
     def upper(self) -> np.ndarray:
         """Compute the upper envelope of the credal set."""
-        return np.max(self.array, axis=-2)
+        return np.max(self.array, axis=-2)  # type: ignore[no-any-return]
 
     def copy(self) -> Self:
         """Create a copy of the ArraySample.
@@ -202,7 +202,7 @@ class ArrayConvexCredalSet(ArrayCategoricalCredalSet, ConvexCredalSet[np.ndarray
     @property
     def dtype(self) -> np.dtype:
         """Return the data type of the credal set array."""
-        return self.array.dtype
+        return self.array.dtype  # type: ignore[no-any-return]
 
     @property
     def ndim(self) -> int:
@@ -212,7 +212,7 @@ class ArrayConvexCredalSet(ArrayCategoricalCredalSet, ConvexCredalSet[np.ndarray
     @property
     def shape(self) -> tuple[int, ...]:
         """Return the shape of the credal set array."""
-        return self.array.shape[:-2]
+        return self.array.shape[:-2]  # type: ignore[no-any-return]
 
     def __len__(self) -> int:
         """Return the number of vertices defining the convex set."""
@@ -236,14 +236,14 @@ class ArrayConvexCredalSet(ArrayCategoricalCredalSet, ConvexCredalSet[np.ndarray
 
         For a convex hull, the lower envelope is the element-wise minimum of its vertices.
         """
-        return np.min(self.array, axis=-2)
+        return np.min(self.array, axis=-2)  # type: ignore[no-any-return]
 
     def upper(self) -> np.ndarray:
         """Compute the upper envelope of the convex credal set.
 
         For a convex hull, the upper envelope is the element-wise maximum of its vertices.
         """
-        return np.max(self.array, axis=-2)
+        return np.max(self.array, axis=-2)  # type: ignore[no-any-return]
 
     def copy(self) -> Self:
         """Create a copy of the credal set."""
@@ -316,7 +316,7 @@ class ArrayDistanceBasedCredalSet(
     @property
     def dtype(self) -> np.dtype:
         """Return the data type of the nominal array."""
-        return self.nominal.dtype
+        return self.nominal.dtype  # type: ignore[no-any-return]
 
     @property
     def ndim(self) -> int:
@@ -326,7 +326,7 @@ class ArrayDistanceBasedCredalSet(
     @property
     def shape(self) -> tuple[int, ...]:
         """Return the shape of the credal set array (batch dimensions)."""
-        return self.nominal.shape[:-1]
+        return self.nominal.shape[:-1]  # type: ignore[no-any-return]
 
     def __len__(self) -> int:
         """Return the size of the first dimension (usually batch size)."""
@@ -394,7 +394,7 @@ class ArrayDistanceBasedCredalSet(
         """Vectorized equality comparison."""
         if not isinstance(value, type(self)):
             return NotImplemented
-        return np.equal(self.nominal, value.nominal) & (self.radius == value.radius)
+        return np.equal(self.nominal, value.nominal) & (self.radius == value.radius)  # type: ignore[no-any-return]
 
     def __hash__(self) -> int:
         """Compute the hash of the credal set."""
@@ -452,7 +452,7 @@ class ArrayProbabilityIntervals(ArrayCategoricalCredalSet, ProbabilityIntervalsC
     @property
     def dtype(self) -> np.dtype:
         """Return the data type of the bounds."""
-        return self.lower_bounds.dtype
+        return self.lower_bounds.dtype  # type: ignore[no-any-return]
 
     @property
     def ndim(self) -> int:
@@ -462,12 +462,12 @@ class ArrayProbabilityIntervals(ArrayCategoricalCredalSet, ProbabilityIntervalsC
     @property
     def shape(self) -> tuple[int, ...]:
         """Return the shape (excluding the class dimensions)."""
-        return self.lower_bounds.shape[:-1]
+        return self.lower_bounds.shape[:-1]  # type: ignore[no-any-return]
 
     @property
     def num_classes(self) -> int:
         """Return the number of classes."""
-        return self.lower_bounds.shape[-1]
+        return self.lower_bounds.shape[-1]  # type: ignore[no-any-return]
 
     def __len__(self) -> int:
         """Return the length of the first dimension."""
@@ -602,7 +602,7 @@ class ArraySingletonCredalSet(ArrayCategoricalCredalSet, SingletonCredalSet[np.n
     @property
     def dtype(self) -> np.dtype:
         """Return the data type of the credal set array."""
-        return self.array.dtype
+        return self.array.dtype  # type: ignore[no-any-return]
 
     @property
     def ndim(self) -> int:
@@ -612,7 +612,7 @@ class ArraySingletonCredalSet(ArrayCategoricalCredalSet, SingletonCredalSet[np.n
     @property
     def shape(self) -> tuple[int, ...]:
         """Return the shape of the credal set array (batch dimensions)."""
-        return self.array.shape[:-1]
+        return self.array.shape[:-1]  # type: ignore[no-any-return]
 
     def __len__(self) -> int:
         """Return the size of the first dimension (usually batch size)."""

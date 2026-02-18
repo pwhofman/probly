@@ -183,8 +183,8 @@ type RegisteredLooseTraverser[T, R] = Callable[
 
 
 class _TraverserDecoratorKwargs[T](d.TraverserDecoratorKwargs[T]):
-    mode: NotRequired[d.Mode]
-    update_vars: NotRequired[bool]
+    mode: NotRequired[d.Mode] = "auto"
+    update_vars: NotRequired[bool] = False
 
 
 class _AbstractSingledispatchTraverser[T: object, D](abc.ABC):
@@ -212,8 +212,7 @@ class _AbstractSingledispatchTraverser[T: object, D](abc.ABC):
             if name is None:
                 if hasattr(traverser, "__name__"):
                     self.__name__ = traverser.__name__
-                if hasattr(traverser, "__qualname__"):
-                    self.__qualname__ = traverser.__qualname__
+                self.__qualname__ = traverser.__qualname__
             self.register(traverser)
 
         if name is not None:
@@ -311,7 +310,7 @@ class _AbstractSingledispatchTraverser[T: object, D](abc.ABC):
                     def partial_register(
                         traverser: RegisteredLooseTraverser[T, Any],
                     ) -> Traverser[T]:
-                        return self.register(cls, traverser, **kwargs)
+                        return self.register(cls, traverser, **kwargs)  # type: ignore[arg-type]
 
                     return partial_register
             else:
@@ -335,7 +334,7 @@ class _AbstractSingledispatchTraverser[T: object, D](abc.ABC):
         if not callable(traverser):
             msg = f"Expected a callable traverser, got {traverser!r}."
             raise TypeError(msg)
-        traverser: Traverser[T] = d.traverser(traverser, **kwargs)  # type: ignore[invalid-assignment]
+        traverser = d.traverser(traverser, **kwargs)  # type: ignore[arg-type]
 
         if cls is not None:
             return self._dispatch.register(cls, traverser)

@@ -65,22 +65,22 @@ class ArrayDirichlet(
     @property
     def dtype(self) -> DTypeLike:
         """The data type of the underlying array."""
-        return self.alphas.dtype
+        return self.alphas.dtype  # type: ignore[no-any-return]
 
     @property
     def device(self) -> str:
         """The device of the underlying array."""
-        return self.alphas.device
+        return self.alphas.device  # type: ignore[no-any-return]
 
     @property
     def ndim(self) -> int:
         """Number of batch dimensions (excluding category axis)."""
-        return self.alphas.ndim - 1
+        return self.alphas.ndim - 1  # type: ignore[no-any-return]
 
     @property
     def shape(self) -> tuple[int, ...]:
         """Batch shape (excluding category axis)."""
-        return self.alphas.shape[:-1]
+        return self.alphas.shape[:-1]  # type: ignore[no-any-return]
 
     @property
     def size(self) -> int:
@@ -103,7 +103,7 @@ class ArrayDirichlet(
         digamma_sum = (alpha_0 - K) * special.digamma(alpha_0)
         digamma_individual = np.sum((self.alphas - 1) * special.digamma(self.alphas), axis=-1)
 
-        return log_beta + digamma_sum - digamma_individual
+        return log_beta + digamma_sum - digamma_individual  # type: ignore[no-any-return]
 
     def sample(
         self,
@@ -193,4 +193,4 @@ class ArrayDirichlet(
 
     def __hash__(self) -> int:
         """Compute the hash of the distribution."""
-        return super().__hash__()
+        return super().__hash__()  # type: ignore[no-any-return]

@@ -25,7 +25,7 @@ jobs:
                     uv sync --only-group lint
                     uv run --no-sync pre-commit install
             -   name: Run code-quality checks
-                run: SKIP=ty-check uv run --no-sync pre-commit run --all-files --show-diff-on-failure
+                run: uv run --no-sync pre-commit run --all-files --show-diff-on-failure
     # ----------------------------------------------------------------------------------------------
     # Install and Import Check
     # ----------------------------------------------------------------------------------------------
@@ -145,11 +145,9 @@ jobs:
                 enable-cache: true
         -   name: Run Ruff Style and Linting Checks
             run: |
-               uv run ruff check
-               uv run ruff format --check
-
-        -   name: Run ty Static Type Check
-            run: uv run ty check
+               uv run ruff check .
+               uv run ruff format --check .
 
         -   name: Execute Unit Tests and Measure Coverage
-            run: uv run pytest --cov=src/probly --cov-report=xml
+            run: |
+               uv run pytest --cov=src/probly --cov-report=xml

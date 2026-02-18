@@ -46,37 +46,37 @@ class switchdispatch[C: Callable]:  # noqa: N801
         update_wrapper(self, func, updated=())
 
     @overload
-    def register[F: C](self, key: object) -> Callable[[F], F]: ...
+    def register(self, key: object) -> Callable[[C], C]: ...
 
     @overload
-    def register[F: C](self, key: object, f: F) -> F: ...
+    def register(self, key: object, f: C) -> C: ...
 
-    def register[F: C](
+    def register(
         self,
         key: object,
-        f: F | None = None,
-    ) -> F | Callable[[F], F]:
+        f: C | None = None,
+    ) -> C | Callable[[C], C]:
         """Register a new function for the given key."""
         return self.multi_register([key], f)  # type: ignore[arg-type]
 
     @overload
-    def multi_register[F: C](self, keys: Iterable[object]) -> Callable[[F], F]: ...
+    def multi_register(self, keys: Iterable[object]) -> Callable[[C], C]: ...
 
     @overload
-    def multi_register[F: C](self, keys: Iterable[object], f: F) -> F: ...
+    def multi_register(self, key: Iterable[object], f: C) -> C: ...
 
-    def multi_register[F: C](
+    def multi_register(
         self,
         keys: Iterable[object],
-        f: F | None = None,
-    ) -> F | Callable[[F], F]:
+        f: C | None = None,
+    ) -> C | Callable[[C], C]:
         """Register a new function for the given keys."""
         if f is not None:
             for key in keys:
                 self._registry[key] = f
             return f
 
-        def wrapper(f: F) -> F:
+        def wrapper(f: C) -> C:
             for key in keys:
                 self._registry[key] = f
             return f

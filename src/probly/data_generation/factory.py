@@ -10,10 +10,12 @@ from typing import TYPE_CHECKING, Any, Literal, overload
 
 from .jax_generator import JAXDataGenerator
 from .pytorch_generator import PyTorchDataGenerator
+from .tensorflow_generator import TensorFlowDataGenerator
 
 if TYPE_CHECKING:  # import for type checking only
     from collections.abc import Callable
 
+    import tensorflow as tf
     import torch
     from torch.utils.data import Dataset as TorchDataset
 
@@ -28,6 +30,16 @@ def create_data_generator(
     batch_size: int = 32,
     device: str | None = None,
 ) -> PyTorchDataGenerator: ...
+
+
+@overload
+def create_data_generator(
+    framework: Literal["tensorflow"],
+    model: tf.keras.Model,
+    dataset: tf.data.Dataset,
+    batch_size: int = 32,
+    device: str | None = None,
+) -> TensorFlowDataGenerator: ...
 
 
 @overload
@@ -52,6 +64,14 @@ def create_data_generator(
 
     if framework == "pytorch":
         return PyTorchDataGenerator(
+            model=model,
+            dataset=dataset,
+            batch_size=batch_size,
+            device=device,
+        )
+
+    if framework == "tensorflow":
+        return TensorFlowDataGenerator(
             model=model,
             dataset=dataset,
             batch_size=batch_size,

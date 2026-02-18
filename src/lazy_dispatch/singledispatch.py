@@ -122,7 +122,7 @@ class lazydispatch[A: Callable, Out]:  # noqa: N801
             func = cls  # type: ignore[assignment]
 
             argname, cls = next(iter(func.__annotations__.items()))
-            if not is_valid_dispatch_type(cls):
+            if not is_valid_dispatch_type(cls):  # type: ignore[arg-type]
                 if _is_union_type(cls) or isinstance(cls, tuple):
                     msg = f"Invalid annotation for {argname!r}. {cls!r} not all arguments are classes or strings."
                     raise TypeError(msg)
@@ -179,7 +179,7 @@ class lazydispatch[A: Callable, Out]:  # noqa: N801
             func = cls  # type: ignore[assignment]
 
             argname, cls = next(iter(func.__annotations__.items()))
-            if not is_valid_dispatch_type(cls):
+            if not is_valid_dispatch_type(cls):  # type: ignore[arg-type]
                 if _is_union_type(cls) or isinstance(cls, tuple):
                     msg = f"Invalid annotation for {argname!r}. {cls!r} not all arguments are classes or strings."
                     raise TypeError(msg)

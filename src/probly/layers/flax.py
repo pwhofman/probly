@@ -147,7 +147,7 @@ class DropConnectLinear(nnx.Module):
             precision=self.precision,
             **dot_general_kwargs,
         )
-        if bias is not None:
+        if self.bias is not None:
             out += jnp.reshape(bias, (1,) * (out.ndim - 1) + (-1,))
         return out
 
@@ -284,7 +284,7 @@ class BatchEnsembleLinear(nnx.Linear):
         y = y * self.r[:, None, :]
         # Add bias
         if self.use_bias:
-            y += jnp.reshape(self.bias, (1,) * (y.ndim - 1) + (-1,))  # type: ignore[invalid-argument-type]
+            y += jnp.reshape(self.bias, (1,) * (y.ndim - 1) + (-1,))
         return y
 
 
@@ -420,7 +420,7 @@ class BatchEnsembleConv(nnx.Conv):
         y = super().__call__(x)
         # Remove bias
         if self.use_bias:
-            bias = self.bias.reshape((1,) * (y.ndim - self.bias.ndim) + self.bias.shape)  # type: ignore[possibly-missing-attribute]
+            bias = self.bias.reshape((1,) * (y.ndim - self.bias.ndim) + self.bias.shape)
             y -= bias
         # Reshape back to (ensemble_size, batch_size, (kernel_size), channel_size)
         y = y.reshape(inputs.shape[0], inputs.shape[1], *y.shape[1:])
@@ -428,6 +428,6 @@ class BatchEnsembleConv(nnx.Conv):
         y *= self.r[s_r_dim]
         # Add bias
         if self.use_bias:
-            bias = self.bias.reshape((1,) * (y.ndim - self.bias.ndim) + self.bias.shape)  # type: ignore[possibly-missing-attribute]
+            bias = self.bias.reshape((1,) * (y.ndim - self.bias.ndim) + self.bias.shape)
             y += bias
         return y

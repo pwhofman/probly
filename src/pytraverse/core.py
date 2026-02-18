@@ -129,9 +129,9 @@ class Variable[V](ABC):
     def _get[T](self, state: State[T], d: GlobalState | StackState) -> V:
         if self.fallback is not None:
             if self.index in d:
-                return d[self.index]
+                return d[self.index]  # type: ignore[no-any-return]
             return self.fallback.get(state)
-        return d.get(self.index, self.default)
+        return d.get(self.index, self.default)  # type: ignore[no-any-return]
 
     @abstractmethod
     def get[T](self, state: State[T]) -> V:
@@ -380,7 +380,7 @@ class ComputedVariable[T, V](Variable[V]):
             doc: Optional documentation string. If None, uses the compute_func's __doc__.
         """
         self.compute_func = compute_func
-        self.__name__ = name if name is not None else getattr(compute_func, "__name__", "ComputedVariable")
+        self.__name__ = name if name is not None else compute_func.__name__
         self.doc = doc if doc is not None else compute_func.__doc__
 
     def __repr__(self) -> str:
@@ -563,7 +563,7 @@ class State[T]:
         Returns:
             The new child state containing the pushed object.
         """
-        return State[T](obj=obj, meta=meta, traverser=traverser, parent=self)
+        return State(obj=obj, meta=meta, traverser=traverser, parent=self)
 
     def pop(self) -> State[T]:
         """Pop the current state and return its parent.

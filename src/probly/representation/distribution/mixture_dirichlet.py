@@ -71,22 +71,22 @@ class ArrayDirichletMixture:
     @property
     def dtype(self) -> DTypeLike:
         """The data type of the underlying array."""
-        return self.components[0].dtype
+        return self.components[0].dtype  # type: ignore[no-any-return]
 
     @property
     def device(self) -> str:
         """The device of the underlying array."""
-        return self.components[0].device
+        return self.components[0].device  # type: ignore[no-any-return]
 
     @property
     def ndim(self) -> int:
         """Number of batch dimensions (excluding category axis)."""
-        return self.components[0].ndim
+        return self.components[0].ndim  # type: ignore[no-any-return]
 
     @property
     def shape(self) -> tuple[int, ...]:
         """Batch shape (excluding category axis)."""
-        return self.components[0].shape
+        return self.components[0].shape  # type: ignore[no-any-return]
 
     @property
     def size(self) -> int:

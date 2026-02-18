@@ -52,7 +52,7 @@ def compute_reliability_diagram(probabilities: np.ndarray, labels: np.ndarray, n
     return diagram
 
 
-def plot_reliability_diagram(diagram: dict, title: str = "Model Calibration") -> tuple[plt.Figure, plt.Axes]:
+def plot_reliability_diagram(diagram: dict, title: str = "Model Calibration") -> tuple[plt.figure, plt.axes]:
     """Plots the diagram calculated with `compute_reliability_diagram`.
 
     Args:

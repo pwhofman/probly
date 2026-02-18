@@ -2,15 +2,20 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from flax.nnx import Linear, Rngs, rnglib
 
 from probly.layers.flax import DropConnectLinear
 
 from .common import register
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
 
 def replace_flax_dropconnect(
-    obj: Linear, p: float, rng_collection: str, rngs: rnglib.Rngs | rnglib.RngStream | int
+    obj: Callable, p: float, rng_collection: str, rngs: rnglib.Rngs | rnglib.RngStream | int
 ) -> DropConnectLinear:
     """Replace a given layer by a DropConnectLinear layer based on :cite:`mobinyDropConnectEffective2019`."""
     if isinstance(rngs, int):

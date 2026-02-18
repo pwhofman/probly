@@ -5,10 +5,16 @@ from __future__ import annotations
 from torch import nn
 
 from probly.transformation.ensemble import ensemble
-from probly.traverse_nn import nn_traverser
-from pytraverse import traverse
+from pytraverse import singledispatch_traverser, traverse
 
 from .common import register
+
+subensemble_traverser = singledispatch_traverser[nn.Module](name="subensemble_traverser")
+
+
+@subensemble_traverser.register
+def _(obj: nn.Module) -> nn.Module:
+    return list(obj.children())
 
 
 def generate_torch_subensemble(
@@ -26,7 +32,7 @@ def generate_torch_subensemble(
     - using an obj as shared backbone and copying the head model num_heads times.
     Resets the parameters of each head.
     """
-    layers = [m for m in traverse(obj, nn_traverser).children() if isinstance(m, nn.Module)]
+    layers = [m for m in traverse(obj, subensemble_traverser) if isinstance(m, nn.Module)]
 
     if head_layer > len(layers):
         msg = f"head_layer {head_layer} must be less than to {len(layers)}"
@@ -51,15 +57,15 @@ def generate_torch_subensemble(
     for p in backbone.parameters():
         p.requires_grad = False
 
-    backbone_layers = [m for m in traverse(backbone, nn_traverser).children() if isinstance(m, nn.Module)]
+    backbone_layers = [m for m in traverse(backbone, subensemble_traverser) if isinstance(m, nn.Module)]
 
     subensemble = nn.ModuleList(
         [
             nn.Sequential(
                 nn.Sequential(*backbone_layers),
-                nn.Sequential(*[m for m in traverse(h, nn_traverser).children() if isinstance(m, nn.Module)]),
+                nn.Sequential(*[m for m in traverse(h, subensemble_traverser) if isinstance(m, nn.Module)]),
             )
-            for h in heads  # ty: ignore
+            for h in heads
         ],
     )
 

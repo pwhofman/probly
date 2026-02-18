@@ -85,6 +85,25 @@ def test_pytorch_factory_returns_torch_generator() -> None:
     assert gen_stub.device == "cpu"
 
 
+def test_tensorflow_factory_returns_tf_generator() -> None:
+    factory, _, _, tf_stub = _prepare_factory_with_stubs()
+
+    gen = factory.create_data_generator(
+        framework="tensorflow",
+        model="tf_model",
+        dataset="tf_dataset",
+        batch_size=64,
+        device="gpu",
+    )
+
+    assert isinstance(gen, tf_stub)
+    gen_stub = cast(_BaseStub, gen)
+    assert gen_stub.model == "tf_model"
+    assert gen_stub.dataset == "tf_dataset"
+    assert gen_stub.batch_size == 64
+    assert gen_stub.device == "gpu"
+
+
 def test_jax_factory_returns_jax_generator() -> None:
     factory, jax_stub, _, _ = _prepare_factory_with_stubs()
 

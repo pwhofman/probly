@@ -43,14 +43,13 @@ class JaxArraySample(Sample[jax.Array]):
             msg = "array must be a JAX array."
             raise TypeError(msg)
 
-    @override
     @classmethod
     def from_iterable(
         cls,
         samples: Iterable[jax.Array],
         sample_axis: SampleAxis = "auto",
         dtype: DTypeLike | None = None,
-    ) -> Self:  # type:ignore[invalid-method-override]
+    ) -> Self:
         """Create an JaxArraySample from a sequence of samples.
 
         Args:
@@ -82,9 +81,9 @@ class JaxArraySample(Sample[jax.Array]):
                 sample_axis = (
                     (0 if first_sample.ndim == 0 else 1) if isinstance(first_sample, (np.ndarray, jax.Array)) else 0
                 )
-            samples = jnp.stack(samples, axis=sample_axis, dtype=dtype)  # type:ignore[invalid-argument-type]
+            samples = jnp.stack(samples, axis=sample_axis, dtype=dtype)
 
-        return cls(array=samples, sample_axis=sample_axis)  # type:ignore[invalid-argument-type]
+        return cls(array=samples, sample_axis=sample_axis)
 
     @override
     @classmethod
@@ -93,17 +92,17 @@ class JaxArraySample(Sample[jax.Array]):
         sample: Sample[jax.Array],
         sample_axis: SampleAxis = "auto",
         dtype: DTypeLike | None = None,
-    ) -> Self:  # type:ignore[invalid-method-override]
+    ) -> Self:
         if isinstance(sample, JaxArraySample):
             sample_array = sample.array
 
             if dtype is not None:
                 sample_array = sample_array.astype(dtype)
 
-            in_sample_axis: int = sample.sample_axis
+            in_sample_axis = sample.sample_axis
             if sample_axis not in ("auto", in_sample_axis):
                 sample_array = jnp.moveaxis(sample_array, in_sample_axis, sample_axis)  # type: ignore[arg-type]
-                in_sample_axis = sample_axis  # type:ignore[invalid-assignment]
+                in_sample_axis = sample_axis  # type: ignore[assignment]
             return cls(array=sample_array, sample_axis=in_sample_axis)
 
         return cls.from_iterable(sample.samples, sample_axis=sample_axis, dtype=dtype)

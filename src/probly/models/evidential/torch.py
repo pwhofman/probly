@@ -38,10 +38,7 @@ class EDLModel(nn.Module):
         super().__init__()
 
         if latent_dim is None:
-            latent_dim = getattr(encoder, "latent_dim", None)
-            if not isinstance(latent_dim, int):
-                msg = "latent_dim must be specified if encoder has no attribute 'latent_dim'"
-                raise ValueError(msg)
+            latent_dim = encoder.latent_dim
 
         if head is None:
             head = t.EDLHead(latent_dim=latent_dim, num_classes=num_classes)
@@ -118,8 +115,6 @@ class PostNetModel(nn.Module):
         OOD Samples via Density-Based Pseudo-Counts", NeurIPS 2020.
         https://arxiv.org/abs/2006.09239
     """
-
-    class_counts: torch.Tensor
 
     def __init__(
         self,
@@ -209,10 +204,7 @@ class NatPNModel(nn.Module):
         super().__init__()
 
         if latent_dim is None:
-            latent_dim = getattr(encoder, "latent_dim", None)
-            if not isinstance(latent_dim, int):
-                msg = "latent_dim must be specified if encoder has no attribute 'latent_dim'"
-                raise ValueError(msg)
+            latent_dim = encoder.latent_dim
 
         if head is None:
             head = t.NatPNClassHead(latent_dim=latent_dim, num_classes=10)
@@ -341,10 +333,7 @@ class EvidentialRegressionModel(nn.Module):
         super().__init__()
 
         if latent_dim is None:
-            latent_dim = getattr(encoder, "latent_dim", None)
-            if not isinstance(latent_dim, int):
-                msg = "latent_dim must be specified if encoder has no attribute 'latent_dim'"
-                raise ValueError(msg)
+            latent_dim = encoder.latent_dim
 
         if head is None:
             head = t.RegressionHead(latent_dim=latent_dim)
