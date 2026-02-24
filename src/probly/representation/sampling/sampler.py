@@ -80,10 +80,13 @@ class Sampler[In, KwIn, Out, S: Sample](Representer[In, KwIn, Out]):
 
     sampling_strategy: SamplingStrategy
     sample_factory: SampleFactory[Out, S]
+    num_samples: int
+    sample_axis: int
 
     def __init__(
         self,
         predictor: Predictor[In, KwIn, Out],
+        num_samples: int,
         sampling_strategy: SamplingStrategy = "sequential",
         sample_factory: SampleFactory[Out, S] = create_sample,  # type: ignore[assignment]
         sample_axis: int = 1,
@@ -92,21 +95,23 @@ class Sampler[In, KwIn, Out, S: Sample](Representer[In, KwIn, Out]):
 
         Args:
             predictor: The predictor to be used for sampling.
+            num_samples: The number of samples to draw.
             sampling_strategy: How the samples should be computed.
             sample_factory: Factory to create the sample.
             sample_axis: The axis along which samples are organized.
         """
         super().__init__(predictor)
+        self.num_samples = num_samples
         self.sampling_strategy = sampling_strategy
         self.sample_factory = sample_factory
         self.sample_axis = sample_axis
 
-    def predict(self, *args: In, num_samples: int, **kwargs: Unpack[KwIn]) -> S:
+    def predict(self, *args: In, **kwargs: Unpack[KwIn]) -> S:
         """Sample from the predictor for a given input."""
         return self.sample_factory(
             sampler_factory(
                 self.predictor,
-                num_samples=num_samples,
+                num_samples=self.num_samples,
                 strategy=self.sampling_strategy,
             )(*args, **kwargs),
             sample_axis=self.sample_axis,
