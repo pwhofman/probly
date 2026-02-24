@@ -18,7 +18,7 @@ RNGS = GlobalVariable[nnx.Rngs]("RNGS")
 @reset_traverser.register
 def _(obj: nnx.Module, state: State) -> tuple[nnx.Module, State]:
     if hasattr(obj, "rngs") and hasattr(obj, "rng_collection") and not any(obj.iter_children()):
-        obj.rngs = RNGS(state)[obj.rng_collection].fork()
+        obj.rngs = RNGS(state)[obj.rng_collection].fork()  # type: ignore[invalid-assignment, invalid-argument-type]
         return obj, state
     if not any(obj.iter_children()) and "rngs" in obj.__init__.__code__.co_varnames:
         params = {}
