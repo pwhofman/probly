@@ -333,7 +333,7 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#probly.representation.sampling.sampler.EnsembleSampler" title="probly.representation.sampling.sampler.EnsembleSampler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">EnsembleSampler</span></code></a>(predictor[, sample_factory, ...])</p></td>
 <td><p>A sampler that creates representations from ensemble predictions.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#probly.representation.sampling.sampler.Sampler" title="probly.representation.sampling.sampler.Sampler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Sampler</span></code></a>(predictor[, sampling_strategy, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#probly.representation.sampling.sampler.Sampler" title="probly.representation.sampling.sampler.Sampler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Sampler</span></code></a>(predictor, num_samples[, ...])</p></td>
 <td><p>A representation predictor that creates representations from finite samples.</p></td>
 </tr>
 </tbody>
@@ -384,13 +384,14 @@
 
 <dl class="py class">
 <dt class="sig sig-object py" id="probly.representation.sampling.sampler.Sampler">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.sampling.sampler.</span></span><span class="sig-name descname"><span class="pre">Sampler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">predictor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sampling_strategy='sequential'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_factory=&lt;lazy_dispatch.singledispatch.lazydispatch</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_axis=1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/sampling/sampler.html#Sampler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.sampling.sampler.Sampler" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">probly.representation.sampling.sampler.</span></span><span class="sig-name descname"><span class="pre">Sampler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">predictor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sampling_strategy='sequential'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_factory=&lt;lazy_dispatch.singledispatch.lazydispatch</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_axis=1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/sampling/sampler.html#Sampler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.sampling.sampler.Sampler" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="probly.representation.representer.html#probly.representation.representer.Representer" title="probly.representation.representer.Representer"><code class="xref py py-class docutils literal notranslate"><span class="pre">Representer</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Generic" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Generic</span></code></a></p>
 <p>A representation predictor that creates representations from finite samples.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>predictor</strong> (<a class="reference internal" href="probly.conformal_prediction.methods.common.html#probly.conformal_prediction.methods.common.Predictor" title="probly.conformal_prediction.methods.common.Predictor"><em>Predictor</em></a><em>[</em><em>In</em><em>, </em><em>KwIn</em><em>, </em><em>Out</em><em>]</em>)</p></li>
+<li><p><strong>num_samples</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>)</p></li>
 <li><p><strong>sampling_strategy</strong> (<em>SamplingStrategy</em>)</p></li>
 <li><p><strong>sample_factory</strong> (<a class="reference internal" href="probly.representation.sampling.common_sample.html#probly.representation.sampling.common_sample.SampleFactory" title="probly.representation.sampling.common_sample.SampleFactory"><em>SampleFactory</em></a><em>[</em><em>Out</em><em>, </em><em>S</em><em>]</em>)</p></li>
 <li><p><strong>sample_axis</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>)</p></li>
@@ -399,13 +400,12 @@
 </dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="probly.representation.sampling.sampler.Sampler.predict">
-<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/sampling/sampler.html#Sampler.predict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.sampling.sampler.Sampler.predict" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/sampling/sampler.html#Sampler.predict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.sampling.sampler.Sampler.predict" title="Link to this definition">¶</a></dt>
 <dd><p>Sample from the predictor for a given input.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>args</strong> (<em>In</em>)</p></li>
-<li><p><strong>num_samples</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>)</p></li>
 <li><p><strong>kwargs</strong> (<em>Unpack</em><em>[</em><em>KwIn</em><em>]</em>)</p></li>
 </ul>
 </dd>
@@ -416,8 +416,18 @@
 </dd></dl>
 
 <dl class="py attribute">
+<dt class="sig sig-object py" id="probly.representation.sampling.sampler.Sampler.num_samples">
+<span class="sig-name descname"><span class="pre">num_samples</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></em><a class="headerlink" href="#probly.representation.sampling.sampler.Sampler.num_samples" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
 <dt class="sig sig-object py" id="probly.representation.sampling.sampler.Sampler.predictor">
 <span class="sig-name descname"><span class="pre">predictor</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="probly.conformal_prediction.methods.common.html#probly.conformal_prediction.methods.common.Predictor" title="probly.conformal_prediction.methods.common.Predictor"><span class="pre">Predictor</span></a><span class="p"><span class="pre">[</span></span><span class="pre">In</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">KwIn</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Out</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#probly.representation.sampling.sampler.Sampler.predictor" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="probly.representation.sampling.sampler.Sampler.sample_axis">
+<span class="sig-name descname"><span class="pre">sample_axis</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></em><a class="headerlink" href="#probly.representation.sampling.sampler.Sampler.sample_axis" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -512,7 +522,9 @@
 </li>
 <li><a class="reference internal" href="#probly.representation.sampling.sampler.Sampler"><code class="docutils literal notranslate"><span class="pre">Sampler</span></code></a><ul>
 <li><a class="reference internal" href="#probly.representation.sampling.sampler.Sampler.predict"><code class="docutils literal notranslate"><span class="pre">Sampler.predict()</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.sampling.sampler.Sampler.num_samples"><code class="docutils literal notranslate"><span class="pre">Sampler.num_samples</span></code></a></li>
 <li><a class="reference internal" href="#probly.representation.sampling.sampler.Sampler.predictor"><code class="docutils literal notranslate"><span class="pre">Sampler.predictor</span></code></a></li>
+<li><a class="reference internal" href="#probly.representation.sampling.sampler.Sampler.sample_axis"><code class="docutils literal notranslate"><span class="pre">Sampler.sample_axis</span></code></a></li>
 <li><a class="reference internal" href="#probly.representation.sampling.sampler.Sampler.sample_factory"><code class="docutils literal notranslate"><span class="pre">Sampler.sample_factory</span></code></a></li>
 <li><a class="reference internal" href="#probly.representation.sampling.sampler.Sampler.sampling_strategy"><code class="docutils literal notranslate"><span class="pre">Sampler.sampling_strategy</span></code></a></li>
 </ul>
