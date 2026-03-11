@@ -128,8 +128,8 @@ STATIC_METRICS: dict[str, Callable[[np.ndarray, np.ndarray], float]] = {
 }
 
 DYNAMIC_METRICS: dict[str, Callable[[np.ndarray, np.ndarray, float], float]] = {
-    "fpr": lambda a, b, thr: out_of_distribution_detection_fpr_at_x_tpr(a, b, thr),
-    "fnr": lambda a, b, thr: out_of_distribution_detection_fnr_at_x_tpr(a, b, thr),
+    "fpr": out_of_distribution_detection_fpr_at_x_tpr,
+    "fnr": out_of_distribution_detection_fnr_at_x_tpr,
 }
 
 
