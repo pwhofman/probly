@@ -442,8 +442,8 @@
 <span class="p">}</span>
 
 <span class="n">DYNAMIC_METRICS</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;fpr&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">thr</span><span class="p">:</span> <span class="n">out_of_distribution_detection_fpr_at_x_tpr</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">thr</span><span class="p">),</span>
-    <span class="s2">&quot;fnr&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">thr</span><span class="p">:</span> <span class="n">out_of_distribution_detection_fnr_at_x_tpr</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">thr</span><span class="p">),</span>
+    <span class="s2">&quot;fpr&quot;</span><span class="p">:</span> <span class="n">out_of_distribution_detection_fpr_at_x_tpr</span><span class="p">,</span>
+    <span class="s2">&quot;fnr&quot;</span><span class="p">:</span> <span class="n">out_of_distribution_detection_fnr_at_x_tpr</span><span class="p">,</span>
 <span class="p">}</span>
 
 
