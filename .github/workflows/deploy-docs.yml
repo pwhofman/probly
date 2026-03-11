@@ -31,8 +31,7 @@ jobs:
 
       - name: Build Sphinx documentation
         working-directory: ./docs
-        run: |
-          make clean html
+        run: uv run make clean html
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
