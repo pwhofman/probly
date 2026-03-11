@@ -37,7 +37,7 @@ class TestEnsembleAttributes:
 
             assert jax.tree_util.tree_reduce(
                 lambda a, b: a & b,
-                jax.tree_util.tree_map(lambda x, y: jnp.array_equal(x, y), original_params, member_params),
+                jax.tree_util.tree_map(jnp.array_equal, original_params, member_params),
             )  # no difference
 
     @pytest.mark.skip(reason="not implemented yet")
