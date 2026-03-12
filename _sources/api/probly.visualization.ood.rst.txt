@@ -1,7 +1,7 @@
-probly.plot.ood
-===============
+probly.visualization.ood
+========================
 
-.. automodule:: probly.plot.ood
+.. automodule:: probly.visualization.ood
 
    
    .. rubric:: Functions

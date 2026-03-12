@@ -8,7 +8,7 @@
         <link rel="prefetch" href="../_static/logo/logo_dark.png" as="image">
 
     <!-- Generated with Sphinx 8.2.3 and Furo 2025.12.19 -->
-        <title>probly.plot - probly 0.3.1 documentation</title>
+        <title>probly.visualization.ood - probly 0.3.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -181,7 +181,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
         <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
       </label>
     </div>
@@ -297,27 +297,89 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
             <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="module-probly.plot">
-<span id="probly-plot"></span><h1>probly.plot<a class="headerlink" href="#module-probly.plot" title="Link to this heading">¶</a></h1>
-<p>Init module for plot implementations.</p>
-<p class="rubric">Modules</p>
+          <section id="module-probly.visualization.ood">
+<span id="probly-visualization-ood"></span><h1>probly.visualization.ood<a class="headerlink" href="#module-probly.visualization.ood" title="Link to this heading">¶</a></h1>
+<p>Plotting utilities for OOD evaluation.</p>
+<p class="rubric">Functions</p>
 <div class="table-wrapper autosummary longtable docutils container">
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="probly.plot.credal.html#module-probly.plot.credal" title="probly.plot.credal"><code class="xref py py-obj docutils literal notranslate"><span class="pre">credal</span></code></a></p></td>
-<td><p>Collection of credal plotting functions.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#probly.visualization.ood.plot_histogram" title="probly.visualization.ood.plot_histogram"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_histogram</span></code></a>(id_scores, ood_scores[, ax, ...])</p></td>
+<td><p>Plot ID vs OOD score histogram.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="probly.plot.ood.html#module-probly.plot.ood" title="probly.plot.ood"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ood</span></code></a></p></td>
-<td><p>Plotting utilities for OOD evaluation.</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#probly.visualization.ood.plot_pr_curve" title="probly.visualization.ood.plot_pr_curve"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_pr_curve</span></code></a>(recall, precision, aupr[, ax])</p></td>
+<td><p>Plot Precision-Recall curve.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#probly.visualization.ood.plot_roc_curve" title="probly.visualization.ood.plot_roc_curve"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_roc_curve</span></code></a>(fpr, tpr, auroc[, fpr95, ax])</p></td>
+<td><p>Plot ROC curve.</p></td>
 </tr>
 </tbody>
 </table>
 </div>
+<dl class="py function">
+<dt class="sig sig-object py" id="probly.visualization.ood.plot_histogram">
+<span class="sig-prename descclassname"><span class="pre">probly.visualization.ood.</span></span><span class="sig-name descname"><span class="pre">plot_histogram</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">id_scores</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ood_scores</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bins</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Score</span> <span class="pre">Distribution'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/visualization/ood.html#plot_histogram"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.visualization.ood.plot_histogram" title="Link to this definition">¶</a></dt>
+<dd><p>Plot ID vs OOD score histogram.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>id_scores</strong> (<em>np.ndarray</em>)</p></li>
+<li><p><strong>ood_scores</strong> (<em>np.ndarray</em>)</p></li>
+<li><p><strong>ax</strong> (<em>Axes</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>bins</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>)</p></li>
+<li><p><strong>title</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Figure | SubFigure</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="probly.visualization.ood.plot_pr_curve">
+<span class="sig-prename descclassname"><span class="pre">probly.visualization.ood.</span></span><span class="sig-name descname"><span class="pre">plot_pr_curve</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">recall</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">precision</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">aupr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/visualization/ood.html#plot_pr_curve"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.visualization.ood.plot_pr_curve" title="Link to this definition">¶</a></dt>
+<dd><p>Plot Precision-Recall curve.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>recall</strong> (<em>np.ndarray</em>)</p></li>
+<li><p><strong>precision</strong> (<em>np.ndarray</em>)</p></li>
+<li><p><strong>aupr</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>)</p></li>
+<li><p><strong>ax</strong> (<em>Axes</em><em> | </em><em>None</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Figure | SubFigure</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="probly.visualization.ood.plot_roc_curve">
+<span class="sig-prename descclassname"><span class="pre">probly.visualization.ood.</span></span><span class="sig-name descname"><span class="pre">plot_roc_curve</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fpr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tpr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">auroc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fpr95</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/visualization/ood.html#plot_roc_curve"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.visualization.ood.plot_roc_curve" title="Link to this definition">¶</a></dt>
+<dd><p>Plot ROC curve.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fpr</strong> (<em>np.ndarray</em>)</p></li>
+<li><p><strong>tpr</strong> (<em>np.ndarray</em>)</p></li>
+<li><p><strong>auroc</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>)</p></li>
+<li><p><strong>fpr95</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em> | </em><em>None</em>)</p></li>
+<li><p><strong>ax</strong> (<em>Axes</em><em> | </em><em>None</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Figure | SubFigure</p>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
 
         </article>
@@ -345,8 +407,29 @@
         
       </footer>
     </div>
-    <aside class="toc-drawer no-toc">
+    <aside class="toc-drawer">
       
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">probly.visualization.ood</a><ul>
+<li><a class="reference internal" href="#probly.visualization.ood.plot_histogram"><code class="docutils literal notranslate"><span class="pre">plot_histogram()</span></code></a></li>
+<li><a class="reference internal" href="#probly.visualization.ood.plot_pr_curve"><code class="docutils literal notranslate"><span class="pre">plot_pr_curve()</span></code></a></li>
+<li><a class="reference internal" href="#probly.visualization.ood.plot_roc_curve"><code class="docutils literal notranslate"><span class="pre">plot_roc_curve()</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
       
       
     </aside>

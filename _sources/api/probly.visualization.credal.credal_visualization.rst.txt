@@ -9,4 +9,6 @@ probly.visualization.credal.credal\_visualization
    .. autosummary::
    
       create_credal_plot
+      credal_set_plot
+      simplex_plot
    

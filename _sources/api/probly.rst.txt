@@ -19,7 +19,6 @@
    lazy_types
    losses
    models
-   plot
    predictor
    quantification
    representation
