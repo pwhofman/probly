@@ -3,7 +3,8 @@ from __future__ import annotations
 import pytest
 
 from probly.layers.evidential.torch import BatchedRadialFlowDensity
-from probly.losses.evidential.torch import (
+from probly.predictor import Predictor
+from probly.train.evidential.torch import (
     der_loss,
     dirichlet_entropy,
     evidential_ce_loss,
@@ -22,7 +23,6 @@ from probly.losses.evidential.torch import (
     rpn_ng_kl,
     rpn_prior,
 )
-from probly.predictor import Predictor
 from probly.transformation import evidential_regression
 from tests.probly.torch_utils import validate_loss
 
