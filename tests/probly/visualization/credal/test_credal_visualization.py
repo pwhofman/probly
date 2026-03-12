@@ -6,13 +6,14 @@ from unittest.mock import patch
 
 import matplotlib as mpl
 import matplotlib.axes as mplaxes
+import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
 mpl.use("Agg")
 
 import probly.visualization.credal.credal_visualization as credalviz
-from probly.visualization.credal.credal_visualization import create_credal_plot
+from probly.visualization.credal.credal_visualization import create_credal_plot, credal_set_plot, simplex_plot
 
 data2d = np.array(
     [
@@ -120,3 +121,28 @@ def test_simulated_error(monkeypatch: pytest.MonkeyPatch) -> None:
     for data in (data2d, data3d, data4d):
         with pytest.raises(ValueError, match=error_msg):
             create_credal_plot(data, show=False)
+
+
+def test_simplex_plot_outputs() -> None:
+    probs = np.array([[1 / 3, 1 / 3, 1 / 3], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]])
+    fig, ax = simplex_plot(probs)
+    assert isinstance(fig, plt.Figure)
+    assert isinstance(ax, plt.Axes)
+    assert ax.name == "ternary"
+    assert ax.collections[0].get_offsets().shape[0] == len(probs)
+
+
+def test_credal_set_plot() -> None:
+    probs = np.array([[1 / 3, 1 / 3, 1 / 3], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]])
+    fig, ax = credal_set_plot(probs)
+    assert isinstance(fig, plt.Figure)
+    assert isinstance(ax, plt.Axes)
+    assert ax.name == "ternary"
+    assert ax.collections[0].get_offsets().shape[0] == len(probs)
+
+    probs = np.array([[1 / 3, 1 / 3, 1 / 3], [1 / 3, 1 / 3, 1 / 3]])
+    with pytest.raises(
+        ValueError,
+        match=r"The set of vertices is empty. Please check the probabilities in the credal set.",
+    ):
+        credal_set_plot(probs)
