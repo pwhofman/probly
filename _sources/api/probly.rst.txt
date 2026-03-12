@@ -17,7 +17,6 @@
    evaluation
    layers
    lazy_types
-   losses
    models
    predictor
    quantification
