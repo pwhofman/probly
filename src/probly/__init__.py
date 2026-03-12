@@ -3,12 +3,19 @@
 __version__ = "0.3.1"
 
 from probly import (
+    calibration as calibration,
+    conformal_prediction as conformal_prediction,
+    data_generation as data_generation,
     datasets as datasets,
     evaluation as evaluation,
-    plot as plot,
+    layers as layers,
+    losses as losses,
+    models as models,
     quantification as quantification,
     representation as representation,
     train as train,
     transformation as transformation,
+    traverse_nn as traverse_nn,
     utils as utils,
+    visualization as visualization,
 )
