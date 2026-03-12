@@ -816,3 +816,70 @@ def rpn_ng_kl(
     loss = (term_mu + term_kappa + term_gamma).mean()
 
     return loss
+
+
+def normal_wishart_log_prob(
+    m: Tensor,
+    l_precision: Tensor,
+    kappa: Tensor,
+    nu: Tensor,
+    mu_k: Tensor,
+    sigma2_k: Tensor,
+) -> Tensor:
+    """Compute simplified univariate Normal-Wishart log-likelihood.
+
+    Args:
+        m (Tensor): Prior mean parameter.
+        l_precision (Tensor): Precision (> 0), formerly `L`.
+        kappa (Tensor): Strength parameter (> 0).
+        nu (Tensor): Degrees of freedom (> 2).
+        mu_k (Tensor): Sample mean from ensemble.
+        sigma2_k (Tensor): Sample variance from ensemble.
+
+    Returns:
+        Tensor: Log-likelihood under the Normal-Wishart model.
+    """
+    # Likelihood of ensemble mean under Normal prior for mean
+    log_p_mu = -0.5 * kappa * l_precision * (mu_k - m) ** 2
+
+    # Likelihood of variance under Wishart prior on precision
+    log_p_sigma = 0.5 * (nu - 1) * torch.log(l_precision) - 0.5 * nu * (sigma2_k * l_precision)
+
+    return log_p_mu + log_p_sigma
+
+
+def rpn_distillation_loss(
+    rpn_params: tuple[Tensor, Tensor, Tensor, Tensor],
+    mus: list[Tensor],
+    variances: list[Tensor],
+) -> Tensor:
+    """Compute the distillation loss for Regression Prior Networks (RPN).
+
+    This loss measures how well the RPN's Normal-Wishart distribution
+    matches the empirical ensemble distributions (mu_k, var_k).
+
+    Args:
+        rpn_params (tuple[Tensor, Tensor, Tensor, Tensor]):
+            The RPN output parameters (m, l_precision, kappa, nu).
+        mus (list[Tensor]): Ensemble predicted means.
+        variances (list[Tensor]): Ensemble predicted variances.
+
+    Returns:
+        Tensor: Scalar loss value.
+    """
+    m, l_precision, kappa, nu = rpn_params  # formerly "L"
+
+    losses: list[Tensor] = []
+
+    for mu_k, var_k in zip(mus, variances, strict=False):
+        log_prob = normal_wishart_log_prob(
+            m,
+            l_precision,
+            kappa,
+            nu,
+            mu_k,
+            var_k,
+        )
+        losses.append(-log_prob.mean())  # negative log-likelihood
+
+    return torch.stack(losses).mean()

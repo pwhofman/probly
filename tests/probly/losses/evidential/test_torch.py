@@ -6,14 +6,13 @@ from probly.layers.evidential.torch import BatchedRadialFlowDensity
 from probly.losses.evidential.torch import (
     der_loss,
     dirichlet_entropy,
-    dirichlet_prior_networks_loss,
     evidential_ce_loss,
     evidential_kl_divergence,
     evidential_log_loss,
     evidential_mse_loss,
     evidential_nignll_loss,
     evidential_regression_regularization,
-    loss_ird,
+    ird_loss,
     lp_fn,
     natpn_loss,
     postnet_loss,
@@ -300,14 +299,14 @@ def test_dirichlet_entropy(
     validate_loss(loss)
 
 
-def test_loss_ird(
+def test_ird_loss(
     sample_classification_data: tuple[Tensor, Tensor],
     evidential_classification_model: nn.Module,
 ) -> None:
     inputs, targets = sample_classification_data
     outputs = evidential_classification_model(inputs)
     targets_onehot = torch.nn.functional.one_hot(targets, num_classes=outputs.shape[1]).float()
-    criterion = loss_ird
+    criterion = ird_loss
 
     # Test 1: ID-only loss (without adversarial inputs)
     loss = criterion(outputs, targets_onehot)
@@ -330,23 +329,3 @@ def test_natpn_loss(
     criterion = natpn_loss
     loss = criterion(outputs, targets)
     validate_loss(loss)
-
-
-def test_dirichlet_prior_networks_loss(
-    sample_classification_data: tuple[Tensor, Tensor],
-    evidential_classification_model: nn.Module,
-) -> None:
-    inputs, targets = sample_classification_data
-    outputs = evidential_classification_model(inputs)
-    criterion = dirichlet_prior_networks_loss
-
-    # Test 1: ID-only loss (without OOD)
-    loss = criterion(outputs, targets)
-    validate_loss(loss)
-
-    # Test 2: ID + OOD loss
-    # Generate OOD inputs and get their alpha predictions
-    ood_inputs = torch.randn_like(inputs)
-    alpha_ood = evidential_classification_model(ood_inputs)
-    loss_with_ood = criterion(outputs, targets, alpha_ood=alpha_ood)
-    validate_loss(loss_with_ood)
