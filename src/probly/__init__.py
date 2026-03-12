@@ -8,7 +8,6 @@ from probly import (
     datasets as datasets,
     evaluation as evaluation,
     layers as layers,
-    losses as losses,
     models as models,
     quantification as quantification,
     representation as representation,
