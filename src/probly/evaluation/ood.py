@@ -8,7 +8,7 @@ import numpy as np
 import sklearn.metrics as sm
 from sklearn.metrics import precision_recall_curve, roc_curve
 
-from probly.plot.ood import plot_histogram, plot_pr_curve, plot_roc_curve
+from probly.visualization.ood import plot_histogram, plot_pr_curve, plot_roc_curve
 
 if TYPE_CHECKING:
     from collections.abc import Callable
