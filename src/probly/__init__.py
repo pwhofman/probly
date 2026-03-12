@@ -4,7 +4,6 @@ __version__ = "0.3.1"
 
 from probly import (
     calibration as calibration,
-    conformal_prediction as conformal_prediction,
     data_generation as data_generation,
     datasets as datasets,
     evaluation as evaluation,
