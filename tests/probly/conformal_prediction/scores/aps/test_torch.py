@@ -15,6 +15,8 @@ import torch.nn.functional as F
 
 from probly.conformal_prediction.methods.split import SplitConformal, SplitConformalClassifier
 from probly.conformal_prediction.scores.aps.common import APSScore
+from tests.probly.general_utils import set_seed_general
+from tests.probly.torch_utils import set_seed_torch
 
 
 class SimpleNet(nn.Module):
@@ -358,20 +360,18 @@ class TestAPSScoreTorch:
         x, y = iris.data, iris.target
 
         # Test multiple random splits for robustness
-        for seed in [123, 456, 789]:
+        alpha = 0.1
+        num_seeds = 10
+        coverage = 0.0
+        for seed in range(num_seeds):
+            set_seed_general(seed)
+            set_seed_torch(seed)
+
             # split data
-            x_temp, x_test, y_temp, y_test = train_test_split(
-                x,
-                y,
-                test_size=0.3,
-                stratify=y,
-            )
+            x_temp, x_test, y_temp, y_test = train_test_split(x, y, test_size=0.3, stratify=y, random_state=seed)
 
             x_train, x_calib, y_train, y_calib = train_test_split(
-                x_temp,
-                y_temp,
-                test_size=0.25,
-                stratify=y_temp,
+                x_temp, y_temp, test_size=0.25, stratify=y_temp, random_state=seed
             )
 
             # scale features
@@ -380,8 +380,6 @@ class TestAPSScoreTorch:
             x_calib_scaled = scaler.transform(x_calib).astype(np.float32)
             x_test_scaled = scaler.transform(x_test).astype(np.float32)
 
-            # create model with specific seed
-            torch.manual_seed(seed)  # for reproducibility
             model = SimpleNet(input_dim=4, output_dim=3)
 
             # simple training
@@ -406,13 +404,13 @@ class TestAPSScoreTorch:
             predictor = SplitConformalClassifier(model=model, score=score)
 
             # calibrate
-            threshold = predictor.calibrate(x_calib_scaled, y_calib, alpha=0.1)
+            threshold = predictor.calibrate(x_calib_scaled, y_calib, alpha=alpha)
 
             assert predictor.is_calibrated
             assert 0 <= threshold <= 1 + 1e-6
 
             # predict
-            prediction_sets = predictor.predict(x_test_scaled, alpha=0.1)
+            prediction_sets = predictor.predict(x_test_scaled, alpha=alpha)
 
             # Convert to numpy array if needed
             if hasattr(prediction_sets, "detach"):
@@ -424,7 +422,7 @@ class TestAPSScoreTorch:
 
             # calculate coverage
             covered = sum(prediction_sets_np[i, y_test[i]] for i in range(len(y_test)))
-            coverage = covered / len(y_test)
+            coverage += covered / len(y_test)
 
-            # coverage should be near 1 - alpha; allow slack for finite-sample variation
-            assert coverage >= 0.80, f"Coverage too low with seed {seed}: {coverage:.3f}"
+        coverage /= num_seeds
+        assert coverage >= 1 - alpha, f"Coverage too low: {coverage:.3f}"

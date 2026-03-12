@@ -11,11 +11,11 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Python and uv
         id: setup-uv-python
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v7
         with:
             python-version: "3.12"
 
@@ -31,11 +31,10 @@ jobs:
 
       - name: Build Sphinx documentation
         working-directory: ./docs
-        run: |
-          make clean html
+        run: uv run make clean html
 
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@v4
         with:
             github_token: ${{ secrets.GITHUB_TOKEN }}
             publish_dir: ./docs/build/html

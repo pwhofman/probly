@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import random
+
 import numpy as np
 
 # Machine epsilon for np.float64. We assume (for now) that we don't use more precise floats.
@@ -14,3 +16,9 @@ def validate_uncertainty(uncertainty: np.ndarray) -> None:
     assert not np.isnan(uncertainty).any()
     assert not np.isinf(uncertainty).any()
     assert (uncertainty >= -VALIDATE_EPS).all()
+
+
+def set_seed_general(seed: int) -> None:
+    """Set the random seed for reproducibility."""
+    random.seed(seed)
+    np.random.default_rng(42)
