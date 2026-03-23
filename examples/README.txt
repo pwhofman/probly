@@ -1,7 +1,9 @@
-``probly`` examples
-====================
+.. _general_examples:
 
-This folder contains short, focused example scripts rendered into the documentation
-via Sphinx-Gallery.
+Examples
+========
 
-By convention, example files are named ``plot_*.py``.
+This is the gallery of examples that showcase the usage of `probly`. Some
+examples demonstrate the use of the :ref:`API <api_ref>` in general and some
+demonstrate specific applications in tutorial form. Also check out our
+:ref:`user guide <user_guide>` for more detailed illustrations.

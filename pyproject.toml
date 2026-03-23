@@ -73,7 +73,7 @@ lint = [
     "ty>=0.0.14",        # for static type checking
 ]
 docs = [
-    "sphinx>=8.0.0",
+    "sphinx>=9.0.0",
     "sphinx-gallery",
     "furo",                     # Beautiful modern theme (or use sphinx-rtd-theme)
     "myst-nb",                  # Optional: Jupyter Notebook support
@@ -81,7 +81,7 @@ docs = [
     "sphinx-copybutton",        # Optional: Adds copy buttons to code blocks
     "sphinx-autodoc-typehints", # Optional: Show type hints in your API docs
     "sphinxcontrib-bibtex",     # Optional: For bibliography support
-    "ipython<9.12.0",           # for code execution in notebooks
+    "ipython",                  # for code execution in notebooks
     "pandas>=2.3.3",            # for code execution in some examples
 ]
 dev = [
@@ -141,6 +141,7 @@ exclude = [
     "site-packages",
     "venv",
     "docs/build",
+    "supporting_files"
 ]
 
 [tool.ruff.lint.pydocstyle]
@@ -208,4 +209,4 @@ exclude_also = [
 exclude_lines = ["if TYPE_CHECKING"]
 
 [tool.ty.src]
-exclude = ["notebooks", "docs", "tests"]
+exclude = ["notebooks", "docs", "tests", "supporting_files"]
