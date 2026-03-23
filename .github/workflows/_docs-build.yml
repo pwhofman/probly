@@ -24,8 +24,6 @@ jobs:
           sudo apt-get install -y pandoc
       - name: Install dependencies
         run: uv sync
-      - name: Copy content to docs/source folder
-        run: cp .github/CONTRIBUTING.md docs/source/contributing.md
       - name: Build Sphinx documentation
         run: uv run sphinx-build ${{ inputs.strict && '-W' || '' }} -b html docs/source docs/build/html
       - name: Upload docs artifact

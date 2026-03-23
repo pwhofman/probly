@@ -21,7 +21,6 @@ REPO_ROOT = DOCS_DIR.parent  # .../probly
 # Add package + example dirs to Python path
 sys.path.insert(0, str(REPO_ROOT / "src"))
 sys.path.insert(0, str(REPO_ROOT / "examples"))
-sys.path.insert(0, str(REPO_ROOT / "cc_examples"))
 
 # -- Project information -----------------------------------------------------
 project = "probly"
@@ -37,31 +36,24 @@ extensions = [
     "sphinx.ext.autosummary",  # generates .rst files for each module
     "sphinx.ext.viewcode",  # adds [source] links to code that link to the source code in the docs.
     "sphinx.ext.napoleon",  # for Google-style docstrings
-    "sphinx.ext.duration",  # optional, show the duration of the build
-    "sphinx_gallery.gen_gallery",
+    "sphinx.ext.duration",  # show the duration of the build
+    "sphinx_gallery.gen_gallery",  # for rendering example galleries from Python scripts
     "sphinx.ext.intersphinx",  # for linking to other projects' docs
     "sphinx.ext.mathjax",  # for math support
     "sphinx.ext.doctest",  # for testing code snippets in the docs
     "sphinx_copybutton",  # adds a copy button to code blocks
-    # "sphinx.ext.linkcode",  # adds [source] links to code that link to GitHub. Use when repo is public.  # noqa: E501, ERA001
-    "myst_nb",  # for jupyter notebook support, also includes myst_parser
-    # "sphinx.ext.autosectionlabel",  # for auto-generating section labels
+    "sphinx.ext.linkcode",  # adds [source] links to code that link to GitHub.
+    "sphinx.ext.autosectionlabel",  # for auto-generating section labels
     "sphinxcontrib.bibtex",  # for bibliography support
 ]
 
-suppress_warnings = [
-    "toc.not_included",
-    "autodoc.import_object",
-    "autodoc",
-    "autosummary",
-]
+suppress_warnings = []
 
 templates_path = ["_templates"]
 
-# Notebooks: don't execute during docs build
-nb_execution_mode = "off"
+# Prefix labels with doc name: "api:Overview" instead of just "Overview"
+autosectionlabel_prefix_document = True
 
-# Bibliography
 exclude_patterns = [
     "_build",
     "Thumbs.db",
@@ -70,37 +62,25 @@ exclude_patterns = [
     "**/*.json",
     "**/*.zip",
     "**/*.md5",
-    # Prefer Sphinx-Gallery .rst over generated notebooks/markdown in auto_examples.
-    "auto_examples/*.ipynb",
-    "auto_examples/**/*.ipynb",
-    "auto_examples/*.md",
-    "auto_examples/**/*.md",
     # Exclude top-level notebooks directory
     "../../notebooks",
     "../../notebooks/**",
+    "../../supporting_files/**",
+    "sg_execution_times.rst"
 ]
 
 bibtex_bibfiles = ["references.bib"]
 bibtex_default_style = "alpha"
 
 # -- Sphinx-Gallery ----------------------------------------------------------
-# Two galleries rendered into auto_examples/ and its cc_examples subfolder.
 sphinx_gallery_conf = {
-    "examples_dirs": [
-        str(REPO_ROOT / "examples"),
-        str(REPO_ROOT / "cc_examples"),
-    ],
-    "gallery_dirs": [
-        "auto_examples",
-        "auto_examples/cc_examples",
-    ],
-    "backreferences_dir": "generated/backreferences",
+    "examples_dirs": [str(REPO_ROOT / "examples")],
+    "gallery_dirs": ["auto_examples"],
     "doc_module": ("probly",),
     "reference_url": {"probly": None},
     "filename_pattern": r"plot_.*\.py",
     "plot_gallery": True,
     "download_all_examples": False,
-    # Avoid generating .ipynb alongside .rst to prevent duplicate-doc warnings.
     "notebook_extensions": set(),
     "run_stale_examples": True,
     # Don't kill the whole build if one example errors
@@ -123,17 +103,12 @@ intersphinx_mapping = {
 def linkcode_resolve(domain: str, info: dict[str, str]) -> str | None:
     """Return a URL to the source for the given Python object for Sphinx linkcode.
 
-    Parameters
-    ----------
-    domain : str
-        The domain, e.g. "py".
-    info : dict[str, str]
-        Info dict containing keys like "module" and "fullname".
+    Args:
+        domain: The domain, e.g. "py".
+        info: Info dict containing keys like "module" and "fullname".
 
     Returns:
-    -------
-    str | None
-        The URL to the source file (or None if it cannot be resolved).
+        The URL to the source file, or None if it cannot be resolved.
     """
     if domain != "py" or not info.get("module"):
         return None
@@ -153,7 +128,6 @@ def linkcode_resolve(domain: str, info: dict[str, str]) -> str | None:
     base = "https://github.com/n-teGruppe/probly"
     branch = "sphinx_gallery"
     return f"{base}/blob/{branch}/{relpath}#L{lineno}"
-
 
 # -- HTML output -------------------------------------------------------------
 html_theme = "furo"
@@ -187,27 +161,18 @@ autosummary_generate = True
 autodoc_default_options = {
     "show-inheritance": True,
     "members": True,
-    "ignore-module-all": True,
     "inherited-members": True,
     "member-order": "groupwise",
     "special-members": "__call__",
     "undoc-members": True,
     "exclude-members": "__weakref__",
 }
-autoclass_content = "class"
-autodoc_inherit_docstrings = False
-
-autodoc_typehints = "description"  # put typehints in the description instead of the signature
+autoclass_content = "both"
+autodoc_inherit_docstrings = True
+autodoc_typehints = "description"
+autodoc_member_order = "groupwise"
 
 # -- Copy Paste Button -----------------------------------------------------------------------------
 # Ignore >>> when copying code
 copybutton_prompt_text = r">>> |\.\.\. "
 copybutton_prompt_is_regexp = True
-
-# -- Linkcheck ---------------------------------------------------------------
-linkcheck_ignore = [
-    r"https://doi.org/10.1142/S0218488500000253",
-    r"https://www.worldscientific.com/.*",
-    r"https://doi.org/10.1080/03081070500473490",
-    r"https://www.tandfonline.com/.*",
-]
