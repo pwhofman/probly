@@ -1,0 +1,35 @@
+# Reusable workflow: Build Sphinx documentation
+# Called by CI (strict mode) and deploy (permissive mode)
+name: Build Sphinx Docs
+on:
+  workflow_call:
+    inputs:
+      strict:
+        description: "Treat warnings as errors (-W flag)"
+        type: boolean
+        default: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Set up Python and uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.12"
+          enable-cache: true
+      - name: Install pandoc
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pandoc
+      - name: Install dependencies
+        run: uv sync
+      - name: Copy content to docs/source folder
+        run: cp .github/CONTRIBUTING.md docs/source/contributing.md
+      - name: Build Sphinx documentation
+        run: uv run sphinx-build ${{ inputs.strict && '-W' || '' }} -b html docs/source docs/build/html
+      - name: Upload docs artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sphinx-docs
+          path: docs/build/html
