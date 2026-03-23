@@ -44,7 +44,7 @@ def generate_torch_subensemble(
     head.to(device)
 
     # call ensemble to create heads from head
-    heads = ensemble(head, num_members=num_heads, reset_params=reset_params)
+    heads = ensemble(head, num_members=num_heads, reset_params=reset_params)  # type: ignore[arg-type]
     heads.to(device)
 
     # freeze backbone

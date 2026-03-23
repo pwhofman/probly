@@ -10,11 +10,11 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
     from lazy_dispatch.isinstance import LazyType
-    from probly.predictor import Predictor
+    from probly.predictor import EnsemblePredictor, Predictor
 
 
 @lazydispatch
-def ensemble_generator[In, KwIn, Out](base: Predictor[In, KwIn, Out]) -> Predictor[In, KwIn, Out]:
+def ensemble_generator[In, KwIn, Out](base: Predictor[In, KwIn, Out]) -> EnsemblePredictor[In, KwIn, Out]:
     """Generate an ensemble from a base model."""
     msg = f"No ensemble generator is registered for type {type(base)}"
     raise NotImplementedError(msg)
@@ -25,7 +25,7 @@ def register(cls: LazyType, generator: Callable) -> None:
     ensemble_generator.register(cls=cls, func=generator)
 
 
-def ensemble[T: Predictor](base: T, num_members: int, reset_params: bool = True) -> T:
+def ensemble[T: EnsemblePredictor](base: T, num_members: int, reset_params: bool = True) -> T:
     """Create an ensemble predictor from a base predictor based on :cite:`lakshminarayananSimpleScalable2017`.
 
     Args:
