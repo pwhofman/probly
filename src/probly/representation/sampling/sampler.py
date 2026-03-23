@@ -6,7 +6,7 @@ from collections.abc import Callable, Iterable
 from typing import Any, Literal, Unpack
 
 from probly.lazy_types import FLAX_MODULE, SKLEARN_MODULE, TORCH_MODULE
-from probly.predictor import Predictor, predict
+from probly.predictor import EnsemblePredictor, Predictor, predict
 from probly.representation.representer import Representer
 from probly.traverse_nn import nn_compose
 from pytraverse import CLONE, GlobalVariable, function_traverser, lazydispatch_traverser, traverse_with_state
@@ -113,7 +113,7 @@ class Sampler[In, KwIn, Out, S: Sample](Representer[In, KwIn, Out]):
                 self.predictor,
                 num_samples=self.num_samples,
                 strategy=self.sampling_strategy,
-            )(*args, **kwargs),
+            )(*args, **kwargs),  # type: ignore[no-any-return]
             sample_axis=self.sample_axis,
         )
 
@@ -125,7 +125,7 @@ class EnsembleSampler[In, KwIn, Out, S: Sample](Representer[In, KwIn, Iterable[O
 
     def __init__(
         self,
-        predictor: Predictor[In, KwIn, Iterable[Out]],
+        predictor: EnsemblePredictor[In, KwIn, Out],
         sample_factory: SampleFactory[Out, S] = create_sample,  # type: ignore[assignment]
         sample_axis: int = 1,
     ) -> None:
@@ -143,6 +143,6 @@ class EnsembleSampler[In, KwIn, Out, S: Sample](Representer[In, KwIn, Iterable[O
     def sample(self, *args: In, **kwargs: Unpack[KwIn]) -> S:
         """Sample from the ensemble predictor for a given input."""
         return self.sample_factory(
-            self.predictor(*args, **kwargs),
+            predict(self.predictor, *args, **kwargs),
             sample_axis=self.sample_axis,
         )
