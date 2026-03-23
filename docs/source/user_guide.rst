@@ -9,4 +9,4 @@ User Guide
    :maxdepth: 3
    :glob:
 
-   user_guide/*
+   modules/*

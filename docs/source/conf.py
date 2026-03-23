@@ -14,13 +14,8 @@ import probly
 
 # -- Paths -------------------------------------------------------------------
 # conf.py lives in:  .../probly/docs/source/conf.py
-DOCS_SOURCE_DIR = Path(__file__).resolve().parent  # .../docs/source
-DOCS_DIR = DOCS_SOURCE_DIR.parent  # .../docs
-REPO_ROOT = DOCS_DIR.parent  # .../probly
-
-# Add package + example dirs to Python path
-sys.path.insert(0, str(REPO_ROOT / "src"))
-sys.path.insert(0, str(REPO_ROOT / "examples"))
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent  # .../probly
+print(f"REPO_ROOT: {REPO_ROOT}")  # noqa: T201
 
 # -- Project information -----------------------------------------------------
 project = "probly"
@@ -66,7 +61,7 @@ exclude_patterns = [
     "../../notebooks",
     "../../notebooks/**",
     "../../supporting_files/**",
-    "sg_execution_times.rst"
+    "sg_execution_times.rst",
 ]
 
 bibtex_bibfiles = ["references.bib"]
@@ -85,7 +80,7 @@ sphinx_gallery_conf = {
     "run_stale_examples": True,
     # Don't kill the whole build if one example errors
     "abort_on_example_error": False,
-    "default_thumb_file": str(DOCS_DIR / "_static" / "logo" / "logo_light.png"),
+    "default_thumb_file": str(REPO_ROOT / "docs" / "source" / "_static" / "logo" / "logo_light.png"),
 }
 
 # -- Intersphinx -------------------------------------------------------------
@@ -128,6 +123,7 @@ def linkcode_resolve(domain: str, info: dict[str, str]) -> str | None:
     base = "https://github.com/n-teGruppe/probly"
     branch = "sphinx_gallery"
     return f"{base}/blob/{branch}/{relpath}#L{lineno}"
+
 
 # -- HTML output -------------------------------------------------------------
 html_theme = "furo"
