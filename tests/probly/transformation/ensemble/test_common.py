@@ -31,9 +31,5 @@ def test_registered_generator_called(dummy_predictor: Predictor) -> None:
 
     result = ensemble(dummy_predictor, num_members=4)
 
-    mock_generator.assert_called_once_with(
-        dummy_predictor,
-        num_members=4,
-        reset_params=True,
-    )
+    mock_generator.assert_called_once_with(dummy_predictor, num_members=4, reset_params=True, seed=1, rngs=None)
     assert result is expected_result
