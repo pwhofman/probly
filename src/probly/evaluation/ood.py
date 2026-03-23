@@ -189,20 +189,15 @@ def evaluate_ood(
     Provides backward compatibility while supporting multiple metrics.
 
     Parameters:
-    in_distribution :
-        Scores for in-distribution samples.
-    out_distribution :
-        Scores for out-of-distribution samples.
-    metrics : str, list of str, or None
-        - None or "auroc": Returns single AUROC value (backward compatible)
-        - "all": Returns dict with all available metrics
-        - list: Returns dict with specified metrics
+        in_distribution: Scores for in-distribution samples.
+        out_distribution: Scores for out-of-distribution samples.
+        metrics: Metrics to compute. Can be:
+            - None or "auroc": Returns single AUROC value (backward compatible)
+            - "all": Returns dict with all available metrics
+            - list: Returns dict with specified metrics
 
-    Returns:
-    dict[str, float]
-        Dictionary mapping metric names to values.
-        If metrics is None or "auroc",
-        the dict contains only the "auroc" entry.
+    Returns: A dictionary mapping metric names to values. If metrics is None or "auroc", the dict
+        contains only the "auroc" entry.
     """
     in_s = np.asarray(in_distribution)
     out_s = np.asarray(out_distribution)
@@ -249,20 +244,16 @@ def visualize_ood(
     """Generate visualization plots from OOD scores.
 
     Parameters:
-    in_distribution :
-        Scores for in-distribution samples.
-    out_distribution :
-        Scores for out-of-distribution samples.
-    plot_types : list[str], optional
-        List of specific plots to return (e.g. ['roc', 'hist', 'pr']).
-        If None, all plots are generated.
-    invert_scores : bool
-        If True (default), assumes scores are 'Confidence' (High = ID).
-        They will be inverted (1.0 - score) for metrics where OOD is the positive class.
-        If False, assumes scores are 'Anomaly Scores' (High = OOD).
+        in_distribution: Scores for in-distribution samples.
+        out_distribution: Scores for out-of-distribution samples.
+        plot_types: List of specific plots to return (e.g. ['roc', 'hist', 'pr']). If None, all plots
+            are generated.
+        invert_scores: If True (default), assumes scores are 'Confidence' (High = ID). They will be
+            inverted (1.0 - score) for metrics where OOD is the positive class. If False, assumes
+            scores are 'Anomaly Scores' (High = OOD).
 
     Returns:
-        Dict containing matplotlib Figures for the requested plots.
+        A dict containing matplotlib Figures for the requested plots.
     """
     id_s = np.asarray(in_distribution)
     ood_s = np.asarray(out_distribution)
