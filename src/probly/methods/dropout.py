@@ -15,8 +15,7 @@ if TYPE_CHECKING:
 class Dropout[In, KwIn, Out, S: Sample]:
     """Dropout for uncertainty quantification.
 
-    Based on: Gal and Ghahramani, "Dropout as a Bayesian Approximation: Representing Model Uncertainty in Deep
-    Learning" (2016).
+    Based on :cite:t:`galDropoutBayesian2016`.
     """
 
     model: Predictor[In, KwIn, Out]
