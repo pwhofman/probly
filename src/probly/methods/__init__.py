@@ -1,5 +1,5 @@
 """Init module for paper method implementations."""
 
-from probly.methods.dropout import MCDropout
+from probly.methods.dropout import Dropout
 
-__all__ = ["MCDropout"]
+__all__ = ["Dropout"]
