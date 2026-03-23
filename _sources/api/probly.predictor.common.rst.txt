@@ -1,0 +1,19 @@
+probly.predictor.common
+=======================
+
+.. automodule:: probly.predictor.common
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      predict_list
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      EnsemblePredictor
+      Predictor
+   

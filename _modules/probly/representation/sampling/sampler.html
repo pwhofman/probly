@@ -308,7 +308,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Unpack</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">probly.lazy_types</span><span class="w"> </span><span class="kn">import</span> <span class="n">FLAX_MODULE</span><span class="p">,</span> <span class="n">SKLEARN_MODULE</span><span class="p">,</span> <span class="n">TORCH_MODULE</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">probly.predictor</span><span class="w"> </span><span class="kn">import</span> <span class="n">Predictor</span><span class="p">,</span> <span class="n">predict</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">probly.predictor</span><span class="w"> </span><span class="kn">import</span> <span class="n">EnsemblePredictor</span><span class="p">,</span> <span class="n">Predictor</span><span class="p">,</span> <span class="n">predict</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">probly.representation.representer</span><span class="w"> </span><span class="kn">import</span> <span class="n">Representer</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">probly.traverse_nn</span><span class="w"> </span><span class="kn">import</span> <span class="n">nn_compose</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pytraverse</span><span class="w"> </span><span class="kn">import</span> <span class="n">CLONE</span><span class="p">,</span> <span class="n">GlobalVariable</span><span class="p">,</span> <span class="n">function_traverser</span><span class="p">,</span> <span class="n">lazydispatch_traverser</span><span class="p">,</span> <span class="n">traverse_with_state</span>
@@ -425,7 +425,7 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">predictor</span><span class="p">,</span>
                 <span class="n">num_samples</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_samples</span><span class="p">,</span>
                 <span class="n">strategy</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sampling_strategy</span><span class="p">,</span>
-            <span class="p">)(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">),</span>
+            <span class="p">)(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">),</span>  <span class="c1"># type: ignore[no-any-return]</span>
             <span class="n">sample_axis</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sample_axis</span><span class="p">,</span>
         <span class="p">)</span></div>
 </div>
@@ -441,7 +441,7 @@
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">predictor</span><span class="p">:</span> <span class="n">Predictor</span><span class="p">[</span><span class="n">In</span><span class="p">,</span> <span class="n">KwIn</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Out</span><span class="p">]],</span>
+        <span class="n">predictor</span><span class="p">:</span> <span class="n">EnsemblePredictor</span><span class="p">[</span><span class="n">In</span><span class="p">,</span> <span class="n">KwIn</span><span class="p">,</span> <span class="n">Out</span><span class="p">],</span>
         <span class="n">sample_factory</span><span class="p">:</span> <span class="n">SampleFactory</span><span class="p">[</span><span class="n">Out</span><span class="p">,</span> <span class="n">S</span><span class="p">]</span> <span class="o">=</span> <span class="n">create_sample</span><span class="p">,</span>  <span class="c1"># type: ignore[assignment]</span>
         <span class="n">sample_axis</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -461,7 +461,7 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">In</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Unpack</span><span class="p">[</span><span class="n">KwIn</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">S</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Sample from the ensemble predictor for a given input.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sample_factory</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">predictor</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">),</span>
+            <span class="n">predict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">predictor</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">),</span>
             <span class="n">sample_axis</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sample_axis</span><span class="p">,</span>
         <span class="p">)</span></div>
 </div>

@@ -4,9 +4,11 @@ probly.predictor
 .. automodule:: probly.predictor
 
    
-   .. rubric:: Classes
+.. rubric:: Modules
 
-   .. autosummary::
-   
-      Predictor
-   
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   common
+   torch

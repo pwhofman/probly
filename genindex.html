@@ -378,8 +378,6 @@
 </li>
           <li><a href="api/probly.models.evidential.torch.html#probly.models.evidential.torch.PrNetModel.__call__">(probly.models.evidential.torch.PrNetModel method)</a>
 </li>
-          <li><a href="api/probly.predictor.html#probly.predictor.Predictor.__call__">(probly.predictor.Predictor method)</a>
-</li>
           <li><a href="api/probly.representation.sampling.common_sample.html#probly.representation.sampling.common_sample.SampleFactory.__call__">(probly.representation.sampling.common_sample.SampleFactory method)</a>
 </li>
           <li><a href="api/probly.train.bayesian.torch.html#probly.train.bayesian.torch.ELBOLoss.__call__">(probly.train.bayesian.torch.ELBOLoss method)</a>
@@ -1723,6 +1721,8 @@
 </li>
         <li><a href="api/probly.transformation.ensemble.html#probly.transformation.ensemble">ensemble() (in module probly.transformation)</a>
 </li>
+        <li><a href="api/probly.predictor.common.html#probly.predictor.common.EnsemblePredictor">EnsemblePredictor (class in probly.predictor.common)</a>
+</li>
         <li><a href="api/probly.representation.sampling.sampler.html#probly.representation.sampling.sampler.EnsembleSampler">EnsembleSampler (class in probly.representation.sampling.sampler)</a>
 </li>
         <li><a href="api/probly.representation.distribution.array_dirichlet.html#probly.representation.distribution.array_dirichlet.ArrayDirichlet.entropy">entropy (probly.representation.distribution.array_dirichlet.ArrayDirichlet property)</a>
@@ -1817,10 +1817,10 @@
           <li><a href="api/probly.train.calibration.torch.html#probly.train.calibration.torch.LabelRelaxationLoss.eval">(probly.train.calibration.torch.LabelRelaxationLoss method)</a>
 </li>
         </ul></li>
-        <li><a href="api/probly.evaluation.ood.html#probly.evaluation.ood.evaluate_ood">evaluate_ood() (in module probly.evaluation.ood)</a>
-</li>
     </ul></td>
     <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="api/probly.evaluation.ood.html#probly.evaluation.ood.evaluate_ood">evaluate_ood() (in module probly.evaluation.ood)</a>
+</li>
         <li><a href="api/probly.train.evidential.torch.html#probly.train.evidential.torch.evidential_ce_loss">evidential_ce_loss() (in module probly.train.evidential.torch)</a>
 </li>
         <li><a href="api/probly.transformation.evidential.classification.common.html#probly.transformation.evidential.classification.common.evidential_classification">evidential_classification() (in module probly.transformation.evidential.classification.common)</a>
@@ -3277,6 +3277,10 @@
 </li>
           <li><a href="api/probly.predictor.html#module-probly.predictor">probly.predictor</a>
 </li>
+          <li><a href="api/probly.predictor.common.html#module-probly.predictor.common">probly.predictor.common</a>
+</li>
+          <li><a href="api/probly.predictor.torch.html#module-probly.predictor.torch">probly.predictor.torch</a>
+</li>
           <li><a href="api/probly.quantification.html#module-probly.quantification">probly.quantification</a>
 </li>
           <li><a href="api/probly.quantification.classification.html#module-probly.quantification.classification">probly.quantification.classification</a>
@@ -4220,6 +4224,8 @@
           <li><a href="api/probly.conformal_prediction.methods.jackknifeplus.html#probly.conformal_prediction.methods.jackknifeplus.JackknifePlusRegressor.predict_fold">(probly.conformal_prediction.methods.jackknifeplus.JackknifePlusRegressor method)</a>
 </li>
         </ul></li>
+        <li><a href="api/probly.predictor.common.html#probly.predictor.common.predict_list">predict_list() (in module probly.predictor.common)</a>
+</li>
         <li><a href="api/probly.conformal_prediction.scores.absolute_error.common.html#probly.conformal_prediction.scores.absolute_error.common.AbsoluteErrorScore.predict_nonconformity">predict_nonconformity() (probly.conformal_prediction.scores.absolute_error.common.AbsoluteErrorScore method)</a>
 
         <ul>
@@ -4249,7 +4255,7 @@
         <li><a href="api/probly.conformal_prediction.methods.common.html#probly.conformal_prediction.methods.common.Predictor">Predictor (class in probly.conformal_prediction.methods.common)</a>
 
         <ul>
-          <li><a href="api/probly.predictor.html#probly.predictor.Predictor">(class in probly.predictor)</a>
+          <li><a href="api/probly.predictor.common.html#probly.predictor.common.Predictor">(class in probly.predictor.common)</a>
 </li>
         </ul></li>
         <li><a href="api/probly.representation.representer.html#probly.representation.representer.Representer.predictor">predictor (probly.representation.representer.Representer attribute)</a>
@@ -4611,8 +4617,6 @@
           <li><a href="api/probly.conformal_prediction.scores.lac.common.html#module-probly.conformal_prediction.scores.lac.common">module</a>
 </li>
         </ul></li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li>
     probly.conformal_prediction.scores.lac.flax
 
@@ -4620,6 +4624,8 @@
           <li><a href="api/probly.conformal_prediction.scores.lac.flax.html#module-probly.conformal_prediction.scores.lac.flax">module</a>
 </li>
         </ul></li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li>
     probly.conformal_prediction.scores.lac.torch
 
@@ -4877,6 +4883,20 @@
 
         <ul>
           <li><a href="api/probly.predictor.html#module-probly.predictor">module</a>
+</li>
+        </ul></li>
+        <li>
+    probly.predictor.common
+
+        <ul>
+          <li><a href="api/probly.predictor.common.html#module-probly.predictor.common">module</a>
+</li>
+        </ul></li>
+        <li>
+    probly.predictor.torch
+
+        <ul>
+          <li><a href="api/probly.predictor.torch.html#module-probly.predictor.torch">module</a>
 </li>
         </ul></li>
         <li>
