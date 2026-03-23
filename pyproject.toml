@@ -181,6 +181,7 @@ convention = "google"
 ]
 "docs/**/*.py" = ["INP001", "PTH", "I002"]
 "examples/*.py" = ["T201", "D205"]
+"src/probly_benchmark/*.py" = ["T201"]
 
 # Use isort-compatible settings
 [tool.ruff.lint.isort]
