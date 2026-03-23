@@ -1,10 +1,12 @@
 # A GitHub Actions workflow file to run on pull request events.
 name: Pull Request Checks
+
 on:
     pull_request:
     push:
         branches: [main]
     workflow_dispatch:
+
 jobs:
     # ----------------------------------------------------------------------------------------------
     # Code Quality Checks

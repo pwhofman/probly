@@ -1,5 +1,4 @@
-"""
-==================================
+"""==================================
 A Brief Introduction to PyTraverse
 ==================================
 
@@ -16,6 +15,7 @@ extended via single dispatch, and enriched with state variables.
 # ---------------------
 # Let's start with the simplest possible traverser: one that does not actually
 # traverse anything:
+from __future__ import annotations
 
 import pytraverse as t
 
@@ -280,9 +280,7 @@ def depth_counter_traverser(state: t.State) -> t.State:
     return state
 
 
-depth_conditional_mul_traverser = t.traverser(
-    mul_traverser, traverse_if=lambda state: state[DEPTH_COUNT] > 0
-)
+depth_conditional_mul_traverser = t.traverser(mul_traverser, traverse_if=lambda state: state[DEPTH_COUNT] > 0)
 
 traversed_data = t.traverse(
     mixed_data,

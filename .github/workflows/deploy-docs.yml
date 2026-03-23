@@ -1,8 +1,10 @@
 # Deploy docs to GitHub Pages
 name: Deploy Docs
+
 on:
   push:
     branches: [main]
+
 jobs:
   build:
     uses: ./.github/workflows/_docs-build.yaml

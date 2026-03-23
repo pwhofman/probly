@@ -1,5 +1,4 @@
-"""
-========================================
+"""========================================
 Applying the Dropout Transformation
 ========================================
 
@@ -7,9 +6,11 @@ Transform a standard PyTorch model with :func:`~probly.transformation.dropout`
 so that dropout stays active during inference (MC-Dropout).
 """
 
+from __future__ import annotations
+
 import torch
-import torch.nn.functional as F
 from torch import nn
+import torch.nn.functional as F
 
 from probly.transformation import dropout
 

@@ -16,4 +16,3 @@ Transformation of models are transformations.
 .. rubric:: Examples
 
 * :ref:`sphx_glr_auto_examples_transformation_plot_dropout.py`
-
