@@ -3,22 +3,21 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html">
+<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="probly.transformation" href="probly.transformation.html"><link rel="prev" title="probly.train.evidential.common" href="probly.train.evidential.common.html">
         <link rel="prefetch" href="../_static/logo/logo_light.png" as="image">
         <link rel="prefetch" href="../_static/logo/logo_dark.png" as="image">
 
-    <!-- Generated with Sphinx 8.2.3 and Furo 2025.12.19 -->
+    <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
         <title>probly.train.evidential.torch - probly 0.3.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
-    <link rel="stylesheet" type="text/css" href="../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
     <link rel="stylesheet" type="text/css" href="../_static/sg_gallery.css?v=d2d258e8" />
     <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-binder.css?v=f4aeca0c" />
     <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-dataframe.css?v=2082cf3c" />
     <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="../_static/css/custom.css?v=201d0c9a" />
+    <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
     
     
 
@@ -203,68 +202,272 @@
 </form>
 <div id="searchbox"></div><div class="sidebar-tree">
   <p class="caption" role="heading"><span class="caption-text">Content</span></p>
-<ul>
+<ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../introduction.html">Introduction</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../installation.html">The <code class="docutils literal notranslate"><span class="pre">probly</span></code> Python Package</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../core_concepts.html">Core Concepts</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../main_components.html">Main Components</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../advanced_topics.html">Advanced Topics</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../examples_and_tutorials.html">Examples and Tutorials</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../methods.html">Implemented methods</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../contributing_to_probly.html">Contributing Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../user_guide.html">User Guide</a><input aria-label="Toggle navigation of User Guide" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../modules/transformation.html">1. Transformation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Examples and Tutorials</a></li>
+<li class="toctree-l1 current has-children"><a class="reference internal" href="../api.html">API Reference</a><input aria-label="Toggle navigation of API Reference" checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l2 current has-children"><a class="reference internal" href="probly.html">probly</a><input aria-label="Toggle navigation of probly" checked="" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l3 has-children"><a class="reference internal" href="probly.calibration.html">probly.calibration</a><input aria-label="Toggle navigation of probly.calibration" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4 has-children"><a class="reference internal" href="probly.calibration.bayesian_binning.html">probly.calibration.bayesian_binning</a><input aria-label="Toggle navigation of probly.calibration.bayesian_binning" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="probly.calibration.bayesian_binning.flax.html">probly.calibration.bayesian_binning.flax</a></li>
+<li class="toctree-l5"><a class="reference internal" href="probly.calibration.bayesian_binning.torch.html">probly.calibration.bayesian_binning.torch</a></li>
+</ul>
+</li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="probly.calibration.histogram_binning.html">probly.calibration.histogram_binning</a><input aria-label="Toggle navigation of probly.calibration.histogram_binning" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="probly.calibration.histogram_binning.flax.html">probly.calibration.histogram_binning.flax</a></li>
+<li class="toctree-l5"><a class="reference internal" href="probly.calibration.histogram_binning.torch.html">probly.calibration.histogram_binning.torch</a></li>
+</ul>
+</li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="probly.calibration.isotonic_regression.html">probly.calibration.isotonic_regression</a><input aria-label="Toggle navigation of probly.calibration.isotonic_regression" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="probly.calibration.isotonic_regression.common.html">probly.calibration.isotonic_regression.common</a></li>
+<li class="toctree-l5"><a class="reference internal" href="probly.calibration.isotonic_regression.torch.html">probly.calibration.isotonic_regression.torch</a></li>
+</ul>
+</li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="probly.calibration.scaling.html">probly.calibration.scaling</a><input aria-label="Toggle navigation of probly.calibration.scaling" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="probly.calibration.scaling.common.html">probly.calibration.scaling.common</a></li>
+<li class="toctree-l5"><a class="reference internal" href="probly.calibration.scaling.flax_base.html">probly.calibration.scaling.flax_base</a></li>
+<li class="toctree-l5"><a class="reference internal" href="probly.calibration.scaling.flax_platt.html">probly.calibration.scaling.flax_platt</a></li>
+<li class="toctree-l5"><a class="reference internal" href="probly.calibration.scaling.flax_temperature.html">probly.calibration.scaling.flax_temperature</a></li>
+<li class="toctree-l5"><a class="reference internal" href="probly.calibration.scaling.flax_vector.html">probly.calibration.scaling.flax_vector</a></li>
+<li class="toctree-l5"><a class="reference internal" href="probly.calibration.scaling.torch_base.html">probly.calibration.scaling.torch_base</a></li>
+<li class="toctree-l5"><a class="reference internal" href="probly.calibration.scaling.torch_platt.html">probly.calibration.scaling.torch_platt</a></li>
+<li class="toctree-l5"><a class="reference internal" href="probly.calibration.scaling.torch_temperature.html">probly.calibration.scaling.torch_temperature</a></li>
+<li class="toctree-l5"><a class="reference internal" href="probly.calibration.scaling.torch_vector.html">probly.calibration.scaling.torch_vector</a></li>
+</ul>
+</li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="probly.calibration.visualization.html">probly.calibration.visualization</a><input aria-label="Toggle navigation of probly.calibration.visualization" class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="probly.calibration.visualization.reliability_diagram.html">probly.calibration.visualization.reliability_diagram</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="probly.conformal_prediction.html">probly.conformal_prediction</a><input aria-label="Toggle navigation of probly.conformal_prediction" class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" role="switch" type="checkbox"/><label for="toctree-checkbox-10"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4 has-children"><a class="reference internal" href="probly.conformal_prediction.methods.html">probly.conformal_prediction.methods</a><input aria-label="Toggle navigation of probly.conformal_prediction.methods" class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" role="switch" type="checkbox"/><label for="toctree-checkbox-11"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="probly.conformal_prediction.methods.class_conditional.html">probly.conformal_prediction.methods.class_conditional</a></li>
+<li class="toctree-l5"><a class="reference internal" href="probly.conformal_prediction.methods.common.html">probly.conformal_prediction.methods.common</a></li>
+<li class="toctree-l5"><a class="reference internal" href="probly.conformal_prediction.methods.cvplus.html">probly.conformal_prediction.methods.cvplus</a></li>
+<li class="toctree-l5"><a class="reference internal" href="probly.conformal_prediction.methods.jackknifeplus.html">probly.conformal_prediction.methods.jackknifeplus</a></li>
+<li class="toctree-l5"><a class="reference internal" href="probly.conformal_prediction.methods.mondrian.html">probly.conformal_prediction.methods.mondrian</a></li>
+<li class="toctree-l5"><a class="reference internal" href="probly.conformal_prediction.methods.split.html">probly.conformal_prediction.methods.split</a></li>
+</ul>
+</li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="probly.conformal_prediction.scores.html">probly.conformal_prediction.scores</a><input aria-label="Toggle navigation of probly.conformal_prediction.scores" class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" role="switch" type="checkbox"/><label for="toctree-checkbox-12"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5 has-children"><a class="reference internal" href="probly.conformal_prediction.scores.absolute_error.html">probly.conformal_prediction.scores.absolute_error</a><input aria-label="Toggle navigation of probly.conformal_prediction.scores.absolute_error" class="toctree-checkbox" id="toctree-checkbox-13" name="toctree-checkbox-13" role="switch" type="checkbox"/><label for="toctree-checkbox-13"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l6"><a class="reference internal" href="probly.conformal_prediction.scores.absolute_error.common.html">probly.conformal_prediction.scores.absolute_error.common</a></li>
+<li class="toctree-l6"><a class="reference internal" href="probly.conformal_prediction.scores.absolute_error.flax.html">probly.conformal_prediction.scores.absolute_error.flax</a></li>
+<li class="toctree-l6"><a class="reference internal" href="probly.conformal_prediction.scores.absolute_error.torch.html">probly.conformal_prediction.scores.absolute_error.torch</a></li>
+</ul>
+</li>
+<li class="toctree-l5 has-children"><a class="reference internal" href="probly.conformal_prediction.scores.aps.html">probly.conformal_prediction.scores.aps</a><input aria-label="Toggle navigation of probly.conformal_prediction.scores.aps" class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" role="switch" type="checkbox"/><label for="toctree-checkbox-14"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l6"><a class="reference internal" href="probly.conformal_prediction.scores.aps.common.html">probly.conformal_prediction.scores.aps.common</a></li>
+<li class="toctree-l6"><a class="reference internal" href="probly.conformal_prediction.scores.aps.flax.html">probly.conformal_prediction.scores.aps.flax</a></li>
+<li class="toctree-l6"><a class="reference internal" href="probly.conformal_prediction.scores.aps.torch.html">probly.conformal_prediction.scores.aps.torch</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="probly.conformal_prediction.scores.common.html">probly.conformal_prediction.scores.common</a></li>
+<li class="toctree-l5 has-children"><a class="reference internal" href="probly.conformal_prediction.scores.cqr.html">probly.conformal_prediction.scores.cqr</a><input aria-label="Toggle navigation of probly.conformal_prediction.scores.cqr" class="toctree-checkbox" id="toctree-checkbox-15" name="toctree-checkbox-15" role="switch" type="checkbox"/><label for="toctree-checkbox-15"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l6"><a class="reference internal" href="probly.conformal_prediction.scores.cqr.common.html">probly.conformal_prediction.scores.cqr.common</a></li>
+<li class="toctree-l6"><a class="reference internal" href="probly.conformal_prediction.scores.cqr.flax.html">probly.conformal_prediction.scores.cqr.flax</a></li>
+<li class="toctree-l6"><a class="reference internal" href="probly.conformal_prediction.scores.cqr.torch.html">probly.conformal_prediction.scores.cqr.torch</a></li>
+</ul>
+</li>
+<li class="toctree-l5 has-children"><a class="reference internal" href="probly.conformal_prediction.scores.lac.html">probly.conformal_prediction.scores.lac</a><input aria-label="Toggle navigation of probly.conformal_prediction.scores.lac" class="toctree-checkbox" id="toctree-checkbox-16" name="toctree-checkbox-16" role="switch" type="checkbox"/><label for="toctree-checkbox-16"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l6"><a class="reference internal" href="probly.conformal_prediction.scores.lac.common.html">probly.conformal_prediction.scores.lac.common</a></li>
+<li class="toctree-l6"><a class="reference internal" href="probly.conformal_prediction.scores.lac.flax.html">probly.conformal_prediction.scores.lac.flax</a></li>
+<li class="toctree-l6"><a class="reference internal" href="probly.conformal_prediction.scores.lac.torch.html">probly.conformal_prediction.scores.lac.torch</a></li>
+</ul>
+</li>
+<li class="toctree-l5 has-children"><a class="reference internal" href="probly.conformal_prediction.scores.raps.html">probly.conformal_prediction.scores.raps</a><input aria-label="Toggle navigation of probly.conformal_prediction.scores.raps" class="toctree-checkbox" id="toctree-checkbox-17" name="toctree-checkbox-17" role="switch" type="checkbox"/><label for="toctree-checkbox-17"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l6"><a class="reference internal" href="probly.conformal_prediction.scores.raps.common.html">probly.conformal_prediction.scores.raps.common</a></li>
+<li class="toctree-l6"><a class="reference internal" href="probly.conformal_prediction.scores.raps.flax.html">probly.conformal_prediction.scores.raps.flax</a></li>
+<li class="toctree-l6"><a class="reference internal" href="probly.conformal_prediction.scores.raps.torch.html">probly.conformal_prediction.scores.raps.torch</a></li>
+</ul>
+</li>
+<li class="toctree-l5 has-children"><a class="reference internal" href="probly.conformal_prediction.scores.saps.html">probly.conformal_prediction.scores.saps</a><input aria-label="Toggle navigation of probly.conformal_prediction.scores.saps" class="toctree-checkbox" id="toctree-checkbox-18" name="toctree-checkbox-18" role="switch" type="checkbox"/><label for="toctree-checkbox-18"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l6"><a class="reference internal" href="probly.conformal_prediction.scores.saps.common.html">probly.conformal_prediction.scores.saps.common</a></li>
+<li class="toctree-l6"><a class="reference internal" href="probly.conformal_prediction.scores.saps.flax.html">probly.conformal_prediction.scores.saps.flax</a></li>
+<li class="toctree-l6"><a class="reference internal" href="probly.conformal_prediction.scores.saps.torch.html">probly.conformal_prediction.scores.saps.torch</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="probly.conformal_prediction.utils.html">probly.conformal_prediction.utils</a><input aria-label="Toggle navigation of probly.conformal_prediction.utils" class="toctree-checkbox" id="toctree-checkbox-19" name="toctree-checkbox-19" role="switch" type="checkbox"/><label for="toctree-checkbox-19"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="probly.conformal_prediction.utils.metrics.html">probly.conformal_prediction.utils.metrics</a></li>
+<li class="toctree-l5"><a class="reference internal" href="probly.conformal_prediction.utils.quantile.html">probly.conformal_prediction.utils.quantile</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="probly.data_generation.html">probly.data_generation</a><input aria-label="Toggle navigation of probly.data_generation" class="toctree-checkbox" id="toctree-checkbox-20" name="toctree-checkbox-20" role="switch" type="checkbox"/><label for="toctree-checkbox-20"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="probly.data_generation.base_generator.html">probly.data_generation.base_generator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.data_generation.factory.html">probly.data_generation.factory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.data_generation.first_order_datagenerator.html">probly.data_generation.first_order_datagenerator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.data_generation.jax_first_order_generator.html">probly.data_generation.jax_first_order_generator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.data_generation.jax_generator.html">probly.data_generation.jax_generator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.data_generation.pytorch_generator.html">probly.data_generation.pytorch_generator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.data_generation.torch_first_order_generator.html">probly.data_generation.torch_first_order_generator</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="probly.datasets.html">probly.datasets</a><input aria-label="Toggle navigation of probly.datasets" class="toctree-checkbox" id="toctree-checkbox-21" name="toctree-checkbox-21" role="switch" type="checkbox"/><label for="toctree-checkbox-21"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="probly.datasets.torch.html">probly.datasets.torch</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="probly.evaluation.html">probly.evaluation</a><input aria-label="Toggle navigation of probly.evaluation" class="toctree-checkbox" id="toctree-checkbox-22" name="toctree-checkbox-22" role="switch" type="checkbox"/><label for="toctree-checkbox-22"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="probly.evaluation.metrics.html">probly.evaluation.metrics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.evaluation.ood.html">probly.evaluation.ood</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.evaluation.tasks.html">probly.evaluation.tasks</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="probly.layers.html">probly.layers</a><input aria-label="Toggle navigation of probly.layers" class="toctree-checkbox" id="toctree-checkbox-23" name="toctree-checkbox-23" role="switch" type="checkbox"/><label for="toctree-checkbox-23"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4 has-children"><a class="reference internal" href="probly.layers.evidential.html">probly.layers.evidential</a><input aria-label="Toggle navigation of probly.layers.evidential" class="toctree-checkbox" id="toctree-checkbox-24" name="toctree-checkbox-24" role="switch" type="checkbox"/><label for="toctree-checkbox-24"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="probly.layers.evidential.torch.html">probly.layers.evidential.torch</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="probly.layers.flax.html">probly.layers.flax</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.layers.torch.html">probly.layers.torch</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="probly.lazy_types.html">probly.lazy_types</a></li>
+<li class="toctree-l3"><a class="reference internal" href="probly.methods.html">probly.methods</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="probly.models.html">probly.models</a><input aria-label="Toggle navigation of probly.models" class="toctree-checkbox" id="toctree-checkbox-25" name="toctree-checkbox-25" role="switch" type="checkbox"/><label for="toctree-checkbox-25"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4 has-children"><a class="reference internal" href="probly.models.evidential.html">probly.models.evidential</a><input aria-label="Toggle navigation of probly.models.evidential" class="toctree-checkbox" id="toctree-checkbox-26" name="toctree-checkbox-26" role="switch" type="checkbox"/><label for="toctree-checkbox-26"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="probly.models.evidential.torch.html">probly.models.evidential.torch</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="probly.predictor.html">probly.predictor</a><input aria-label="Toggle navigation of probly.predictor" class="toctree-checkbox" id="toctree-checkbox-27" name="toctree-checkbox-27" role="switch" type="checkbox"/><label for="toctree-checkbox-27"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="probly.predictor.common.html">probly.predictor.common</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.predictor.torch.html">probly.predictor.torch</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="probly.quantification.html">probly.quantification</a><input aria-label="Toggle navigation of probly.quantification" class="toctree-checkbox" id="toctree-checkbox-28" name="toctree-checkbox-28" role="switch" type="checkbox"/><label for="toctree-checkbox-28"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="probly.quantification.classification.html">probly.quantification.classification</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.quantification.regression.html">probly.quantification.regression</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="probly.representation.html">probly.representation</a><input aria-label="Toggle navigation of probly.representation" class="toctree-checkbox" id="toctree-checkbox-29" name="toctree-checkbox-29" role="switch" type="checkbox"/><label for="toctree-checkbox-29"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4 has-children"><a class="reference internal" href="probly.representation.credal_set.html">probly.representation.credal_set</a><input aria-label="Toggle navigation of probly.representation.credal_set" class="toctree-checkbox" id="toctree-checkbox-30" name="toctree-checkbox-30" role="switch" type="checkbox"/><label for="toctree-checkbox-30"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="probly.representation.credal_set.array.html">probly.representation.credal_set.array</a></li>
+<li class="toctree-l5"><a class="reference internal" href="probly.representation.credal_set.array_functions.html">probly.representation.credal_set.array_functions</a></li>
+<li class="toctree-l5"><a class="reference internal" href="probly.representation.credal_set.common.html">probly.representation.credal_set.common</a></li>
+</ul>
+</li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="probly.representation.distribution.html">probly.representation.distribution</a><input aria-label="Toggle navigation of probly.representation.distribution" class="toctree-checkbox" id="toctree-checkbox-31" name="toctree-checkbox-31" role="switch" type="checkbox"/><label for="toctree-checkbox-31"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="probly.representation.distribution.array_dirichlet.html">probly.representation.distribution.array_dirichlet</a></li>
+<li class="toctree-l5"><a class="reference internal" href="probly.representation.distribution.array_gaussian.html">probly.representation.distribution.array_gaussian</a></li>
+<li class="toctree-l5"><a class="reference internal" href="probly.representation.distribution.common.html">probly.representation.distribution.common</a></li>
+<li class="toctree-l5"><a class="reference internal" href="probly.representation.distribution.mixture_dirichlet.html">probly.representation.distribution.mixture_dirichlet</a></li>
+<li class="toctree-l5"><a class="reference internal" href="probly.representation.distribution.mixture_gaussian.html">probly.representation.distribution.mixture_gaussian</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="probly.representation.representer.html">probly.representation.representer</a></li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="probly.representation.sampling.html">probly.representation.sampling</a><input aria-label="Toggle navigation of probly.representation.sampling" class="toctree-checkbox" id="toctree-checkbox-32" name="toctree-checkbox-32" role="switch" type="checkbox"/><label for="toctree-checkbox-32"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="probly.representation.sampling.array_sample.html">probly.representation.sampling.array_sample</a></li>
+<li class="toctree-l5"><a class="reference internal" href="probly.representation.sampling.array_sample_axis_tracking.html">probly.representation.sampling.array_sample_axis_tracking</a></li>
+<li class="toctree-l5"><a class="reference internal" href="probly.representation.sampling.array_sample_functions.html">probly.representation.sampling.array_sample_functions</a></li>
+<li class="toctree-l5"><a class="reference internal" href="probly.representation.sampling.common_sample.html">probly.representation.sampling.common_sample</a></li>
+<li class="toctree-l5"><a class="reference internal" href="probly.representation.sampling.flax_sampler.html">probly.representation.sampling.flax_sampler</a></li>
+<li class="toctree-l5"><a class="reference internal" href="probly.representation.sampling.jax_sample.html">probly.representation.sampling.jax_sample</a></li>
+<li class="toctree-l5"><a class="reference internal" href="probly.representation.sampling.sample.html">probly.representation.sampling.sample</a></li>
+<li class="toctree-l5"><a class="reference internal" href="probly.representation.sampling.sampler.html">probly.representation.sampling.sampler</a></li>
+<li class="toctree-l5"><a class="reference internal" href="probly.representation.sampling.sklearn_sampler.html">probly.representation.sampling.sklearn_sampler</a></li>
+<li class="toctree-l5"><a class="reference internal" href="probly.representation.sampling.torch_sample.html">probly.representation.sampling.torch_sample</a></li>
+<li class="toctree-l5"><a class="reference internal" href="probly.representation.sampling.torch_sampler.html">probly.representation.sampling.torch_sampler</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3 current has-children"><a class="reference internal" href="probly.train.html">probly.train</a><input aria-label="Toggle navigation of probly.train" checked="" class="toctree-checkbox" id="toctree-checkbox-33" name="toctree-checkbox-33" role="switch" type="checkbox"/><label for="toctree-checkbox-33"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l4 has-children"><a class="reference internal" href="probly.train.bayesian.html">probly.train.bayesian</a><input aria-label="Toggle navigation of probly.train.bayesian" class="toctree-checkbox" id="toctree-checkbox-34" name="toctree-checkbox-34" role="switch" type="checkbox"/><label for="toctree-checkbox-34"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="probly.train.bayesian.torch.html">probly.train.bayesian.torch</a></li>
+</ul>
+</li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="probly.train.calibration.html">probly.train.calibration</a><input aria-label="Toggle navigation of probly.train.calibration" class="toctree-checkbox" id="toctree-checkbox-35" name="toctree-checkbox-35" role="switch" type="checkbox"/><label for="toctree-checkbox-35"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="probly.train.calibration.torch.html">probly.train.calibration.torch</a></li>
+</ul>
+</li>
+<li class="toctree-l4 current has-children"><a class="reference internal" href="probly.train.evidential.html">probly.train.evidential</a><input aria-label="Toggle navigation of probly.train.evidential" checked="" class="toctree-checkbox" id="toctree-checkbox-36" name="toctree-checkbox-36" role="switch" type="checkbox"/><label for="toctree-checkbox-36"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l5"><a class="reference internal" href="probly.train.evidential.common.html">probly.train.evidential.common</a></li>
+<li class="toctree-l5 current current-page"><a class="current reference internal" href="#">probly.train.evidential.torch</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="probly.transformation.html">probly.transformation</a><input aria-label="Toggle navigation of probly.transformation" class="toctree-checkbox" id="toctree-checkbox-37" name="toctree-checkbox-37" role="switch" type="checkbox"/><label for="toctree-checkbox-37"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="probly.transformation.batchensemble.html">probly.transformation.batchensemble</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.transformation.bayesian.html">probly.transformation.bayesian</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.transformation.dropconnect.html">probly.transformation.dropconnect</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.transformation.dropout.html">probly.transformation.dropout</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.transformation.ensemble.html">probly.transformation.ensemble</a></li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="probly.transformation.evidential.html">probly.transformation.evidential</a><input aria-label="Toggle navigation of probly.transformation.evidential" class="toctree-checkbox" id="toctree-checkbox-38" name="toctree-checkbox-38" role="switch" type="checkbox"/><label for="toctree-checkbox-38"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5 has-children"><a class="reference internal" href="probly.transformation.evidential.classification.html">probly.transformation.evidential.classification</a><input aria-label="Toggle navigation of probly.transformation.evidential.classification" class="toctree-checkbox" id="toctree-checkbox-39" name="toctree-checkbox-39" role="switch" type="checkbox"/><label for="toctree-checkbox-39"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l6"><a class="reference internal" href="probly.transformation.evidential.classification.common.html">probly.transformation.evidential.classification.common</a></li>
+<li class="toctree-l6"><a class="reference internal" href="probly.transformation.evidential.classification.torch.html">probly.transformation.evidential.classification.torch</a></li>
+</ul>
+</li>
+<li class="toctree-l5 has-children"><a class="reference internal" href="probly.transformation.evidential.regression.html">probly.transformation.evidential.regression</a><input aria-label="Toggle navigation of probly.transformation.evidential.regression" class="toctree-checkbox" id="toctree-checkbox-40" name="toctree-checkbox-40" role="switch" type="checkbox"/><label for="toctree-checkbox-40"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l6"><a class="reference internal" href="probly.transformation.evidential.regression.common.html">probly.transformation.evidential.regression.common</a></li>
+<li class="toctree-l6"><a class="reference internal" href="probly.transformation.evidential.regression.torch.html">probly.transformation.evidential.regression.torch</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="probly.transformation.subensemble.html">probly.transformation.subensemble</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="probly.traverse_nn.html">probly.traverse_nn</a><input aria-label="Toggle navigation of probly.traverse_nn" class="toctree-checkbox" id="toctree-checkbox-41" name="toctree-checkbox-41" role="switch" type="checkbox"/><label for="toctree-checkbox-41"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="probly.traverse_nn.common.html">probly.traverse_nn.common</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.traverse_nn.flax.html">probly.traverse_nn.flax</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.traverse_nn.torch.html">probly.traverse_nn.torch</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="probly.utils.html">probly.utils</a><input aria-label="Toggle navigation of probly.utils" class="toctree-checkbox" id="toctree-checkbox-42" name="toctree-checkbox-42" role="switch" type="checkbox"/><label for="toctree-checkbox-42"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="probly.utils.errors.html">probly.utils.errors</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.utils.probabilities.html">probly.utils.probabilities</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.utils.sets.html">probly.utils.sets</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.utils.switchdispatch.html">probly.utils.switchdispatch</a></li>
+<li class="toctree-l4"><a class="reference internal" href="probly.utils.torch.html">probly.utils.torch</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="probly.visualization.html">probly.visualization</a><input aria-label="Toggle navigation of probly.visualization" class="toctree-checkbox" id="toctree-checkbox-43" name="toctree-checkbox-43" role="switch" type="checkbox"/><label for="toctree-checkbox-43"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4 has-children"><a class="reference internal" href="probly.visualization.clustermargin.html">probly.visualization.clustermargin</a><input aria-label="Toggle navigation of probly.visualization.clustermargin" class="toctree-checkbox" id="toctree-checkbox-44" name="toctree-checkbox-44" role="switch" type="checkbox"/><label for="toctree-checkbox-44"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="probly.visualization.clustermargin.clustervisualizer.html">probly.visualization.clustermargin.clustervisualizer</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="probly.visualization.config.html">probly.visualization.config</a></li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="probly.visualization.credal.html">probly.visualization.credal</a><input aria-label="Toggle navigation of probly.visualization.credal" class="toctree-checkbox" id="toctree-checkbox-45" name="toctree-checkbox-45" role="switch" type="checkbox"/><label for="toctree-checkbox-45"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="probly.visualization.credal.credal_visualization.html">probly.visualization.credal.credal_visualization</a></li>
+<li class="toctree-l5"><a class="reference internal" href="probly.visualization.credal.input_handling.html">probly.visualization.credal.input_handling</a></li>
+<li class="toctree-l5"><a class="reference internal" href="probly.visualization.credal.plot_2d.html">probly.visualization.credal.plot_2d</a></li>
+<li class="toctree-l5"><a class="reference internal" href="probly.visualization.credal.plot_3d.html">probly.visualization.credal.plot_3d</a></li>
+<li class="toctree-l5"><a class="reference internal" href="probly.visualization.credal.plot_multid.html">probly.visualization.credal.plot_multid</a></li>
+</ul>
+</li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="probly.visualization.dirichlet.html">probly.visualization.dirichlet</a><input aria-label="Toggle navigation of probly.visualization.dirichlet" class="toctree-checkbox" id="toctree-checkbox-46" name="toctree-checkbox-46" role="switch" type="checkbox"/><label for="toctree-checkbox-46"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="probly.visualization.dirichlet.dirichlet_visualization.html">probly.visualization.dirichlet.dirichlet_visualization</a></li>
+<li class="toctree-l5"><a class="reference internal" href="probly.visualization.dirichlet.plot_dirichlet.html">probly.visualization.dirichlet.plot_dirichlet</a></li>
+</ul>
+</li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="probly.visualization.efficiency.html">probly.visualization.efficiency</a><input aria-label="Toggle navigation of probly.visualization.efficiency" class="toctree-checkbox" id="toctree-checkbox-47" name="toctree-checkbox-47" role="switch" type="checkbox"/><label for="toctree-checkbox-47"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="probly.visualization.efficiency.coverage_efficiency_ood.html">probly.visualization.efficiency.coverage_efficiency_ood</a></li>
+<li class="toctree-l5"><a class="reference internal" href="probly.visualization.efficiency.plot_coverage_efficiency.html">probly.visualization.efficiency.plot_coverage_efficiency</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="probly.visualization.ood.html">probly.visualization.ood</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="../references.html">References and Further Reading</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../faq.html">FAQ and Troubleshooting</a></li>
-</ul>
-<p class="caption" role="heading"><span class="caption-text">Notebooks</span></p>
-<ul>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../notebooks/examples/index.html">Notebook Examples</a><input aria-label="Toggle navigation of Notebook Examples" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../notebooks/examples/utilities_and_layers/index.html">Utilities and Layers</a><input aria-label="Toggle navigation of Utilities and Layers" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l3"><a class="reference internal" href="../notebooks/examples/utilities_and_layers/custom_loss_functions.html">Custom Loss Functions</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../notebooks/examples/utilities_and_layers/metrics.html">Evaluation Metrics</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../notebooks/examples/utilities_and_layers/probabilistic_layers.html">Key Probabilistic Layers in <code class="docutils literal notranslate"><span class="pre">probly</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="../notebooks/examples/utilities_and_layers/utility_functions.html">Utility Functions</a></li>
-</ul>
-</li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../notebooks/examples/evaluation_and_quantification/index.html">Evaluation and Quantification</a><input aria-label="Toggle navigation of Evaluation and Quantification" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l3"><a class="reference internal" href="../notebooks/examples/evaluation_and_quantification/plotting_credal_tutorial.html">Credal Sets Visualization Plotting</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../notebooks/examples/evaluation_and_quantification/clustermargin_tutorial.html">A tutorial for clustervisualiser.py</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../notebooks/examples/evaluation_and_quantification/dirichlet_tutorial.html">Dirichlet distribution tutorial</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../notebooks/examples/evaluation_and_quantification/calibration_metrics.html">Calibration Metrics</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../notebooks/examples/evaluation_and_quantification/interpretation_techniques.html">Interpretation techniques</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../notebooks/examples/evaluation_and_quantification/visualization_tools.html">Visualisation Tools</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="../notebooks/examples/batch_ensemble_notebook.html"><strong>Batch Ensemble Networks</strong></a></li>
-<li class="toctree-l2"><a class="reference internal" href="../notebooks/examples/bayesian_transformation.html">Bayesian Transformation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../notebooks/examples/dropconnect_transformation.html">Dropconnect Transformation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../notebooks/examples/dropout_transformation.html">Dropout Transformation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../notebooks/examples/ensemble_subensemble_comparison.html"><strong>Ensemble vs SubEnsemble Notebook</strong></a></li>
-<li class="toctree-l2"><a class="reference internal" href="../notebooks/examples/ensemble_transformation.html">Ensemble Transformation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../notebooks/examples/Ensembling_RandomForests.html">Potential Advantages of Ensembling Random Forests</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../notebooks/examples/Ensembling_RandomForests.html#theoretical-background">2. Theoretical Background</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../notebooks/examples/Ensembling_RandomForests.html#data-generation">3. Data Generation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../notebooks/examples/Ensembling_RandomForests.html#random-forest-ensemble-prototype">4. Random Forest Ensemble Prototype</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../notebooks/examples/Ensembling_RandomForests.html#uncertainty-analysis">5. Uncertainty Analysis</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../notebooks/examples/Ensembling_RandomForests.html#performance-metrics">6. Performance Metrics</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../notebooks/examples/Ensembling_RandomForests.html#conclusion">7. Conclusion</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../notebooks/examples/evidential_classification_transformation.html">Evidential Classification Transformation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../notebooks/examples/evidential_regression_transformation.html">Evidential Regression Transformation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../notebooks/examples/fashionmnist_ood_ensemble.html">Out-of-Distribution Detection with an Ensemble</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../notebooks/examples/label_relaxation_calibration.html">Calibration with Label Relaxation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../notebooks/examples/lazy_dispatch_test.html">Lazy Dispatch Test</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../notebooks/examples/multilib_demo.html">Multilib Demo</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../notebooks/examples/pytraverse_tutorial.html">A Brief Introduction to PyTraverse</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../notebooks/examples/sklearn_ensemble_tutorial.html">Uncertainty Quantification using scikit-learn-Ensembles</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../notebooks/examples/sklearn_selective_prediction.html">Using probly with scikit-learn</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../notebooks/examples/subensembles_fast_uncertainty.html">Sub-Ensembles for Fast Uncertainty Estimation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../notebooks/examples/synthetic_regression_dropout.html">Uncertainty for a Synthetic Regression Task using probly</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../notebooks/examples/temperature_scaling_calibration.html">Calibration using Temperature Scaling</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../notebooks/examples/train_bnn_classification.html">Bayesian Neural Networks</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../notebooks/examples/train_evidential_classification.html">Evidential Model for Classification</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../notebooks/examples/train_evidential_regression.html">Evidential Regression Model</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../notebooks/examples/transformations_comparison.html">Transformation Comparison: Dropout vs DropConnect vs Ensemble vs Bayesian vs Evidential (PyTorch)</a></li>
-</ul>
-</li>
 </ul>
 
 </div>
@@ -386,7 +589,7 @@
 </div>
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.train.evidential.torch.der_loss">
-<span class="sig-prename descclassname"><span class="pre">probly.train.evidential.torch.</span></span><span class="sig-name descname"><span class="pre">der_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kappa</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lam</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/train/evidential/torch.html#der_loss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.evidential.torch.der_loss" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">probly.train.evidential.torch.</span></span><span class="sig-name descname"><span class="pre">der_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kappa</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lam</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/train/evidential/torch.html#der_loss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="reference external" href="https://github.com/n-teGruppe/probly/blob/sphinx_gallery/src/probly/train/evidential/torch.py#L838"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.evidential.torch.der_loss" title="Link to this definition">¶</a></dt>
 <dd><p>Deep Evidential Regression loss for uncertainty-aware regression.</p>
 <p>Combines a Student-t negative log-likelihood with an evidence
 regularization term as proposed by Amini et al. (2020).</p>
@@ -418,7 +621,7 @@ NeurIPS 2020.
 
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.train.evidential.torch.dirichlet_entropy">
-<span class="sig-prename descclassname"><span class="pre">probly.train.evidential.torch.</span></span><span class="sig-name descname"><span class="pre">dirichlet_entropy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/train/evidential/torch.html#dirichlet_entropy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.evidential.torch.dirichlet_entropy" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">probly.train.evidential.torch.</span></span><span class="sig-name descname"><span class="pre">dirichlet_entropy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/train/evidential/torch.html#dirichlet_entropy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="reference external" href="https://github.com/n-teGruppe/probly/blob/sphinx_gallery/src/probly/train/evidential/torch.py#L793"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.evidential.torch.dirichlet_entropy" title="Link to this definition">¶</a></dt>
 <dd><p>Dirichlet entropy for predictive uncertainty estimation.</p>
 <p>Used in Information Robust Dirichlet Networks to encourage uncertainty on
 adversarial or out-of-distribution inputs by maximizing the entropy of the
@@ -457,7 +660,7 @@ Dirichlet distribution.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.train.evidential.torch.evidential_ce_loss">
-<span class="sig-prename descclassname"><span class="pre">probly.train.evidential.torch.</span></span><span class="sig-name descname"><span class="pre">evidential_ce_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alphas</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">targets</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/train/evidential/torch.html#evidential_ce_loss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.evidential.torch.evidential_ce_loss" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">probly.train.evidential.torch.</span></span><span class="sig-name descname"><span class="pre">evidential_ce_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alphas</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">targets</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/train/evidential/torch.html#evidential_ce_loss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="reference external" href="https://github.com/n-teGruppe/probly/blob/sphinx_gallery/src/probly/train/evidential/torch.py#L332"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.evidential.torch.evidential_ce_loss" title="Link to this definition">¶</a></dt>
 <dd><p>Evidential Cross Entropy Loss for classification uncertainty estimation.</p>
 <p>Implements the evidential cross-entropy loss proposed by Sensoy et al. (2018)
 for Evidential Deep Learning.</p>
@@ -485,7 +688,7 @@ NeurIPS 2018.
 
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.train.evidential.torch.evidential_kl_divergence">
-<span class="sig-prename descclassname"><span class="pre">probly.train.evidential.torch.</span></span><span class="sig-name descname"><span class="pre">evidential_kl_divergence</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alphas</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">targets</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/train/evidential/torch.html#evidential_kl_divergence"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.evidential.torch.evidential_kl_divergence" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">probly.train.evidential.torch.</span></span><span class="sig-name descname"><span class="pre">evidential_kl_divergence</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alphas</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">targets</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/train/evidential/torch.html#evidential_kl_divergence"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="reference external" href="https://github.com/n-teGruppe/probly/blob/sphinx_gallery/src/probly/train/evidential/torch.py#L388"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.evidential.torch.evidential_kl_divergence" title="Link to this definition">¶</a></dt>
 <dd><p>Evidential KL divergence loss for classification uncertainty estimation.</p>
 <p>Implements the KL divergence regularization term proposed by
 Sensoy et al. (2018) for Evidential Deep Learning.</p>
@@ -513,7 +716,7 @@ NeurIPS 2018.
 
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.train.evidential.torch.evidential_log_loss">
-<span class="sig-prename descclassname"><span class="pre">probly.train.evidential.torch.</span></span><span class="sig-name descname"><span class="pre">evidential_log_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alphas</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">targets</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/train/evidential/torch.html#evidential_log_loss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.evidential.torch.evidential_log_loss" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">probly.train.evidential.torch.</span></span><span class="sig-name descname"><span class="pre">evidential_log_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alphas</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">targets</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/train/evidential/torch.html#evidential_log_loss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="reference external" href="https://github.com/n-teGruppe/probly/blob/sphinx_gallery/src/probly/train/evidential/torch.py#L307"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.evidential.torch.evidential_log_loss" title="Link to this definition">¶</a></dt>
 <dd><p>Evidential Log Loss for classification uncertainty estimation.</p>
 <p>Implements the evidential log loss proposed by Sensoy et al. (2018)
 for Evidential Deep Learning.</p>
@@ -541,7 +744,7 @@ NeurIPS 2018.
 
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.train.evidential.torch.evidential_mse_loss">
-<span class="sig-prename descclassname"><span class="pre">probly.train.evidential.torch.</span></span><span class="sig-name descname"><span class="pre">evidential_mse_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alphas</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">targets</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/train/evidential/torch.html#evidential_mse_loss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.evidential.torch.evidential_mse_loss" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">probly.train.evidential.torch.</span></span><span class="sig-name descname"><span class="pre">evidential_mse_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alphas</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">targets</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/train/evidential/torch.html#evidential_mse_loss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="reference external" href="https://github.com/n-teGruppe/probly/blob/sphinx_gallery/src/probly/train/evidential/torch.py#L357"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.evidential.torch.evidential_mse_loss" title="Link to this definition">¶</a></dt>
 <dd><p>Evidential Mean Squared Error loss for classification uncertainty estimation.</p>
 <p>Implements the evidential MSE loss proposed by Sensoy et al. (2018),
 combining prediction error and predictive variance under a Dirichlet
@@ -570,7 +773,7 @@ NeurIPS 2018.
 
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.train.evidential.torch.evidential_nignll_loss">
-<span class="sig-prename descclassname"><span class="pre">probly.train.evidential.torch.</span></span><span class="sig-name descname"><span class="pre">evidential_nignll_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">targets</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/train/evidential/torch.html#evidential_nignll_loss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.evidential.torch.evidential_nignll_loss" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">probly.train.evidential.torch.</span></span><span class="sig-name descname"><span class="pre">evidential_nignll_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">targets</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/train/evidential/torch.html#evidential_nignll_loss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="reference external" href="https://github.com/n-teGruppe/probly/blob/sphinx_gallery/src/probly/train/evidential/torch.py#L423"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.evidential.torch.evidential_nignll_loss" title="Link to this definition">¶</a></dt>
 <dd><p>Evidence-based Normal-Inverse-Gamma (NIG) regression loss.</p>
 <p>Implements the negative log-likelihood term used in Deep Evidential
 Regression as proposed by Amini et al. (2020).</p>
@@ -599,7 +802,7 @@ NeurIPS 2020.
 
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.train.evidential.torch.evidential_regression_regularization">
-<span class="sig-prename descclassname"><span class="pre">probly.train.evidential.torch.</span></span><span class="sig-name descname"><span class="pre">evidential_regression_regularization</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">targets</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/train/evidential/torch.html#evidential_regression_regularization"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.evidential.torch.evidential_regression_regularization" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">probly.train.evidential.torch.</span></span><span class="sig-name descname"><span class="pre">evidential_regression_regularization</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">targets</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/train/evidential/torch.html#evidential_regression_regularization"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="reference external" href="https://github.com/n-teGruppe/probly/blob/sphinx_gallery/src/probly/train/evidential/torch.py#L454"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.evidential.torch.evidential_regression_regularization" title="Link to this definition">¶</a></dt>
 <dd><p>Regularization term for evidential regression.</p>
 <p>Implements the evidence regularization component proposed by
 Amini et al. (2020) to penalize confident but inaccurate predictions
@@ -629,7 +832,7 @@ NeurIPS 2020.
 
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.train.evidential.torch.ird_loss">
-<span class="sig-prename descclassname"><span class="pre">probly.train.evidential.torch.</span></span><span class="sig-name descname"><span class="pre">ird_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adversarial_alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lam</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/train/evidential/torch.html#ird_loss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.evidential.torch.ird_loss" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">probly.train.evidential.torch.</span></span><span class="sig-name descname"><span class="pre">ird_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adversarial_alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lam</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/train/evidential/torch.html#ird_loss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="reference external" href="https://github.com/n-teGruppe/probly/blob/sphinx_gallery/src/probly/train/evidential/torch.py#L597"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.evidential.torch.ird_loss" title="Link to this definition">¶</a></dt>
 <dd><p>Information Robust Dirichlet (IRD) loss for predictive uncertainty estimation.</p>
 <p>Implements the loss proposed by Tsiligkaridis (2019), combining an
 Lp calibration term, a trigamma-based regularization term, and an
@@ -664,7 +867,7 @@ shape (B_a, K).</p></li>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.train.evidential.torch.kl_dirichlet">
-<span class="sig-prename descclassname"><span class="pre">probly.train.evidential.torch.</span></span><span class="sig-name descname"><span class="pre">kl_dirichlet</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">posterior_alpha</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/train/evidential/torch.html#kl_dirichlet"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.evidential.torch.kl_dirichlet" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">probly.train.evidential.torch.</span></span><span class="sig-name descname"><span class="pre">kl_dirichlet</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">posterior_alpha</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/train/evidential/torch.html#kl_dirichlet"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="reference external" href="https://github.com/n-teGruppe/probly/blob/sphinx_gallery/src/probly/train/evidential/torch.py#L262"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.evidential.torch.kl_dirichlet" title="Link to this definition">¶</a></dt>
 <dd><p>Compute KL(Dir(alpha_p) || Dir(alpha_q)) for each batch item.</p>
 <p>Used by Posterior Networks, Dirichlet Prior Networks, and PN-style
 in-distribution / out-of-distribution losses to compare Dirichlet
@@ -687,7 +890,7 @@ distributions.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.train.evidential.torch.lp_fn">
-<span class="sig-prename descclassname"><span class="pre">probly.train.evidential.torch.</span></span><span class="sig-name descname"><span class="pre">lp_fn</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/train/evidential/torch.html#lp_fn"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.evidential.torch.lp_fn" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">probly.train.evidential.torch.</span></span><span class="sig-name descname"><span class="pre">lp_fn</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/train/evidential/torch.html#lp_fn"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="reference external" href="https://github.com/n-teGruppe/probly/blob/sphinx_gallery/src/probly/train/evidential/torch.py#L677"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.evidential.torch.lp_fn" title="Link to this definition">¶</a></dt>
 <dd><p>Lp calibration loss for predictive uncertainty estimation.</p>
 <p>Implements the Lp calibration loss proposed by Tsiligkaridis (2019) for
 Information Robust Dirichlet Networks.</p>
@@ -721,7 +924,7 @@ Information Robust Dirichlet Networks.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.train.evidential.torch.make_in_domain_target_alpha">
-<span class="sig-prename descclassname"><span class="pre">probly.train.evidential.torch.</span></span><span class="sig-name descname"><span class="pre">make_in_domain_target_alpha</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/train/evidential/torch.html#make_in_domain_target_alpha"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.evidential.torch.make_in_domain_target_alpha" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">probly.train.evidential.torch.</span></span><span class="sig-name descname"><span class="pre">make_in_domain_target_alpha</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/train/evidential/torch.html#make_in_domain_target_alpha"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="reference external" href="https://github.com/n-teGruppe/probly/blob/sphinx_gallery/src/probly/train/evidential/torch.py#L216"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.evidential.torch.make_in_domain_target_alpha" title="Link to this definition">¶</a></dt>
 <dd><p>Construct target Dirichlet distribution for in-distribution samples.</p>
 <p>Used by Dirichlet Prior Networks, Posterior Networks, and PN-style paired
 losses to create a sharp (peaked) Dirichlet target for supervised
@@ -741,7 +944,7 @@ in-distribution training.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.train.evidential.torch.make_ood_target_alpha">
-<span class="sig-prename descclassname"><span class="pre">probly.train.evidential.torch.</span></span><span class="sig-name descname"><span class="pre">make_ood_target_alpha</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_classes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/train/evidential/torch.html#make_ood_target_alpha"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.evidential.torch.make_ood_target_alpha" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">probly.train.evidential.torch.</span></span><span class="sig-name descname"><span class="pre">make_ood_target_alpha</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_classes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/train/evidential/torch.html#make_ood_target_alpha"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="reference external" href="https://github.com/n-teGruppe/probly/blob/sphinx_gallery/src/probly/train/evidential/torch.py#L235"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.evidential.torch.make_ood_target_alpha" title="Link to this definition">¶</a></dt>
 <dd><p>Construct flat Dirichlet target distribution for out-of-distribution samples.</p>
 <p>Used by Dirichlet Prior Networks, Posterior Networks, and PN-style paired
 losses to encourage high uncertainty on out-of-distribution inputs by
@@ -765,7 +968,7 @@ assigning uniform Dirichlet concentration parameters.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.train.evidential.torch.natpn_loss">
-<span class="sig-prename descclassname"><span class="pre">probly.train.evidential.torch.</span></span><span class="sig-name descname"><span class="pre">natpn_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">entropy_weight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0001</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/train/evidential/torch.html#natpn_loss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.evidential.torch.natpn_loss" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">probly.train.evidential.torch.</span></span><span class="sig-name descname"><span class="pre">natpn_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">entropy_weight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0001</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/train/evidential/torch.html#natpn_loss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="reference external" href="https://github.com/n-teGruppe/probly/blob/sphinx_gallery/src/probly/train/evidential/torch.py#L553"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.evidential.torch.natpn_loss" title="Link to this definition">¶</a></dt>
 <dd><p>Natural Posterior Network (NatPN) classification loss.</p>
 <p>Implements the Dirichlet-Categorical Bayesian loss with an entropy
 regularizer as proposed by Charpentier et al. (2022).</p>
@@ -795,7 +998,7 @@ regularization term.</p></li>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.train.evidential.torch.normal_wishart_log_prob">
-<span class="sig-prename descclassname"><span class="pre">probly.train.evidential.torch.</span></span><span class="sig-name descname"><span class="pre">normal_wishart_log_prob</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">l_precision</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kappa</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nu</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu_k</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma2_k</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/train/evidential/torch.html#normal_wishart_log_prob"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.evidential.torch.normal_wishart_log_prob" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">probly.train.evidential.torch.</span></span><span class="sig-name descname"><span class="pre">normal_wishart_log_prob</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">l_precision</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kappa</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nu</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu_k</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma2_k</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/train/evidential/torch.html#normal_wishart_log_prob"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="reference external" href="https://github.com/n-teGruppe/probly/blob/sphinx_gallery/src/probly/train/evidential/torch.py#L1025"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.evidential.torch.normal_wishart_log_prob" title="Link to this definition">¶</a></dt>
 <dd><p>Compute simplified univariate Normal-Wishart log-likelihood.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -819,7 +1022,7 @@ regularization term.</p></li>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.train.evidential.torch.pn_loss">
-<span class="sig-prename descclassname"><span class="pre">probly.train.evidential.torch.</span></span><span class="sig-name descname"><span class="pre">pn_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_in</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_in</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_ood</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/train/evidential/torch.html#pn_loss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.evidential.torch.pn_loss" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">probly.train.evidential.torch.</span></span><span class="sig-name descname"><span class="pre">pn_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_in</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_in</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_ood</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/train/evidential/torch.html#pn_loss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="reference external" href="https://github.com/n-teGruppe/probly/blob/sphinx_gallery/src/probly/train/evidential/torch.py#L479"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.evidential.torch.pn_loss" title="Link to this definition">¶</a></dt>
 <dd><p>Paired ID/OOD training loss for Dirichlet Prior Networks.</p>
 <p>Combines KL divergence to sharp in-distribution targets and flat
 out-of-distribution targets, with an additional cross-entropy term
@@ -850,7 +1053,7 @@ NeurIPS 2018.
 
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.train.evidential.torch.postnet_loss">
-<span class="sig-prename descclassname"><span class="pre">probly.train.evidential.torch.</span></span><span class="sig-name descname"><span class="pre">postnet_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">entropy_weight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-05</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/train/evidential/torch.html#postnet_loss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.evidential.torch.postnet_loss" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">probly.train.evidential.torch.</span></span><span class="sig-name descname"><span class="pre">postnet_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">entropy_weight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-05</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/train/evidential/torch.html#postnet_loss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="reference external" href="https://github.com/n-teGruppe/probly/blob/sphinx_gallery/src/probly/train/evidential/torch.py#L518"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.evidential.torch.postnet_loss" title="Link to this definition">¶</a></dt>
 <dd><p>Posterior Networks (PostNet) classification loss.</p>
 <p>Implements the expected cross-entropy loss with an entropy regularizer
 as proposed by Charpentier et al. (2020) for Posterior Networks.</p>
@@ -879,7 +1082,7 @@ OOD Samples via Density-Based Pseudo-Counts”, NeurIPS 2020.
 
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.train.evidential.torch.predictive_probs">
-<span class="sig-prename descclassname"><span class="pre">probly.train.evidential.torch.</span></span><span class="sig-name descname"><span class="pre">predictive_probs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/train/evidential/torch.html#predictive_probs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.evidential.torch.predictive_probs" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">probly.train.evidential.torch.</span></span><span class="sig-name descname"><span class="pre">predictive_probs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/train/evidential/torch.html#predictive_probs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="reference external" href="https://github.com/n-teGruppe/probly/blob/sphinx_gallery/src/probly/train/evidential/torch.py#L291"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.evidential.torch.predictive_probs" title="Link to this definition">¶</a></dt>
 <dd><p>Expected categorical probabilities under Dirichlet.</p>
 <p>Used by Posterior Networks, Dirichlet Prior Networks, and other
 Dirichlet-based classification models to obtain predictive class
@@ -899,7 +1102,7 @@ probabilities.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.train.evidential.torch.regularization_fn">
-<span class="sig-prename descclassname"><span class="pre">probly.train.evidential.torch.</span></span><span class="sig-name descname"><span class="pre">regularization_fn</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/train/evidential/torch.html#regularization_fn"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.evidential.torch.regularization_fn" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">probly.train.evidential.torch.</span></span><span class="sig-name descname"><span class="pre">regularization_fn</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/train/evidential/torch.html#regularization_fn"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="reference external" href="https://github.com/n-teGruppe/probly/blob/sphinx_gallery/src/probly/train/evidential/torch.py#L743"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.evidential.torch.regularization_fn" title="Link to this definition">¶</a></dt>
 <dd><p>Regularization term for Information Robust Dirichlet Networks.</p>
 <p>Penalizes high Dirichlet concentration values for incorrect classes to
 encourage confident but well-calibrated predictions.</p>
@@ -930,7 +1133,7 @@ encourage confident but well-calibrated predictions.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.train.evidential.torch.rpn_distillation_loss">
-<span class="sig-prename descclassname"><span class="pre">probly.train.evidential.torch.</span></span><span class="sig-name descname"><span class="pre">rpn_distillation_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rpn_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mus</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">variances</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/train/evidential/torch.html#rpn_distillation_loss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.evidential.torch.rpn_distillation_loss" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">probly.train.evidential.torch.</span></span><span class="sig-name descname"><span class="pre">rpn_distillation_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rpn_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mus</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">variances</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/train/evidential/torch.html#rpn_distillation_loss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="reference external" href="https://github.com/n-teGruppe/probly/blob/sphinx_gallery/src/probly/train/evidential/torch.py#L1055"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.evidential.torch.rpn_distillation_loss" title="Link to this definition">¶</a></dt>
 <dd><p>Compute the distillation loss for Regression Prior Networks (RPN).</p>
 <p>This loss measures how well the RPN’s Normal-Wishart distribution
 matches the empirical ensemble distributions (mu_k, var_k).</p>
@@ -953,7 +1156,7 @@ matches the empirical ensemble distributions (mu_k, var_k).</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.train.evidential.torch.rpn_loss">
-<span class="sig-prename descclassname"><span class="pre">probly.train.evidential.torch.</span></span><span class="sig-name descname"><span class="pre">rpn_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_ood</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lam_der</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lam_rpn</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/train/evidential/torch.html#rpn_loss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.evidential.torch.rpn_loss" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">probly.train.evidential.torch.</span></span><span class="sig-name descname"><span class="pre">rpn_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_ood</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lam_der</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lam_rpn</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/train/evidential/torch.html#rpn_loss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="reference external" href="https://github.com/n-teGruppe/probly/blob/sphinx_gallery/src/probly/train/evidential/torch.py#L886"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.evidential.torch.rpn_loss" title="Link to this definition">¶</a></dt>
 <dd><p>Paired in-distribution and out-of-distribution loss for Regression Prior Networks.</p>
 <p>Computes the Regression Prior Network (RPN) training objective using
 paired in-distribution (ID) and out-of-distribution (OOD) mini-batches.
@@ -988,7 +1191,7 @@ NeurIPS 2020.
 
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.train.evidential.torch.rpn_ng_kl">
-<span class="sig-prename descclassname"><span class="pre">probly.train.evidential.torch.</span></span><span class="sig-name descname"><span class="pre">rpn_ng_kl</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mu</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kappa</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kappa0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/train/evidential/torch.html#rpn_ng_kl"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.evidential.torch.rpn_ng_kl" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">probly.train.evidential.torch.</span></span><span class="sig-name descname"><span class="pre">rpn_ng_kl</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mu</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kappa</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kappa0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/train/evidential/torch.html#rpn_ng_kl"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="reference external" href="https://github.com/n-teGruppe/probly/blob/sphinx_gallery/src/probly/train/evidential/torch.py#L967"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.evidential.torch.rpn_ng_kl" title="Link to this definition">¶</a></dt>
 <dd><p>KL divergence between two Normal-Gamma distributions.</p>
 <p>Computes the KL divergence between a predicted Normal-Gamma distribution
 and a prior Normal-Gamma distribution, as used in Regression Prior Networks
@@ -1024,7 +1227,7 @@ distributions, averaged over the batch.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.train.evidential.torch.rpn_prior">
-<span class="sig-prename descclassname"><span class="pre">probly.train.evidential.torch.</span></span><span class="sig-name descname"><span class="pre">rpn_prior</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">shape</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/train/evidential/torch.html#rpn_prior"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.evidential.torch.rpn_prior" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">probly.train.evidential.torch.</span></span><span class="sig-name descname"><span class="pre">rpn_prior</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">shape</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/train/evidential/torch.html#rpn_prior"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="reference external" href="https://github.com/n-teGruppe/probly/blob/sphinx_gallery/src/probly/train/evidential/torch.py#L933"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.evidential.torch.rpn_prior" title="Link to this definition">¶</a></dt>
 <dd><p>Normal-Gamma prior with zero evidence for Regression Prior Networks.</p>
 <p>Constructs an uninformative Normal-Gamma prior used in Regression Prior
 Networks to regularize out-of-distribution predictions via KL divergence,
@@ -1054,7 +1257,7 @@ each with the specified shape.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="probly.train.evidential.torch.unified_evidential_train">
-<span class="sig-prename descclassname"><span class="pre">probly.train.evidential.torch.</span></span><span class="sig-name descname"><span class="pre">unified_evidential_train</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mode</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataloader</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_fn</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">oodloader</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">class_count</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epochs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'cpu'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/train/evidential/torch.html#unified_evidential_train"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.evidential.torch.unified_evidential_train" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">probly.train.evidential.torch.</span></span><span class="sig-name descname"><span class="pre">unified_evidential_train</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mode</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataloader</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_fn</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">oodloader</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">class_count</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epochs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'cpu'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/train/evidential/torch.html#unified_evidential_train"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="reference external" href="https://github.com/n-teGruppe/probly/blob/sphinx_gallery/src/probly/train/evidential/torch.py#L21"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.evidential.torch.unified_evidential_train" title="Link to this definition">¶</a></dt>
 <dd><p>Trains a given Neural Network using different learning approaches, depending on the approach of a selected paper.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -1092,8 +1295,26 @@ But prints the total-losses per Epoch.</p>
       <footer>
         
         <div class="related-pages">
-          
-          
+          <a class="next-page" href="probly.transformation.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">probly.transformation</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="probly.train.evidential.common.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">probly.train.evidential.common</div>
+                
+              </div>
+            </a>
         </div>
         <div class="bottom-of-page">
           <div class="left-details">
@@ -1161,8 +1382,8 @@ But prints the total-losses per Epoch.</p>
     </aside>
   </div>
 </div><script src="../_static/documentation_options.js?v=4621528c"></script>
-    <script src="../_static/doctools.js?v=9bcbadda"></script>
-    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../_static/copybutton.js?v=ccdb6887"></script>

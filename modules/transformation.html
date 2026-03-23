@@ -1,0 +1,577 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Examples and Tutorials" href="../examples.html"><link rel="prev" title="User Guide" href="../user_guide.html">
+        <link rel="prefetch" href="../_static/logo/logo_light.png" as="image">
+        <link rel="prefetch" href="../_static/logo/logo_dark.png" as="image">
+
+    <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
+        <title>1. Transformation - probly 0.3.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery.css?v=d2d258e8" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #272822;
+  --color-code-foreground: #f8f8f2;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #272822;
+  --color-code-foreground: #f8f8f2;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">probly 0.3.1 documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><div class="sidebar-scroll"><a class="sidebar-brand" href="../index.html">
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo only-light" src="../_static/logo/logo_light.png" alt="Light Logo"/>
+    <img class="sidebar-logo only-dark" src="../_static/logo/logo_dark.png" alt="Dark Logo"/>
+  </div>
+  
+  
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Content</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1 current has-children"><a class="reference internal" href="../user_guide.html">User Guide</a><input aria-label="Toggle navigation of User Guide" checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">1. Transformation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Examples and Tutorials</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../api.html">API Reference</a><input aria-label="Toggle navigation of API Reference" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../api/probly.html">probly</a><input aria-label="Toggle navigation of probly" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/probly.calibration.html">probly.calibration</a><input aria-label="Toggle navigation of probly.calibration" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../api/probly.calibration.bayesian_binning.html">probly.calibration.bayesian_binning</a><input aria-label="Toggle navigation of probly.calibration.bayesian_binning" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.calibration.bayesian_binning.flax.html">probly.calibration.bayesian_binning.flax</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.calibration.bayesian_binning.torch.html">probly.calibration.bayesian_binning.torch</a></li>
+</ul>
+</li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../api/probly.calibration.histogram_binning.html">probly.calibration.histogram_binning</a><input aria-label="Toggle navigation of probly.calibration.histogram_binning" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.calibration.histogram_binning.flax.html">probly.calibration.histogram_binning.flax</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.calibration.histogram_binning.torch.html">probly.calibration.histogram_binning.torch</a></li>
+</ul>
+</li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../api/probly.calibration.isotonic_regression.html">probly.calibration.isotonic_regression</a><input aria-label="Toggle navigation of probly.calibration.isotonic_regression" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.calibration.isotonic_regression.common.html">probly.calibration.isotonic_regression.common</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.calibration.isotonic_regression.torch.html">probly.calibration.isotonic_regression.torch</a></li>
+</ul>
+</li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../api/probly.calibration.scaling.html">probly.calibration.scaling</a><input aria-label="Toggle navigation of probly.calibration.scaling" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.calibration.scaling.common.html">probly.calibration.scaling.common</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.calibration.scaling.flax_base.html">probly.calibration.scaling.flax_base</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.calibration.scaling.flax_platt.html">probly.calibration.scaling.flax_platt</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.calibration.scaling.flax_temperature.html">probly.calibration.scaling.flax_temperature</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.calibration.scaling.flax_vector.html">probly.calibration.scaling.flax_vector</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.calibration.scaling.torch_base.html">probly.calibration.scaling.torch_base</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.calibration.scaling.torch_platt.html">probly.calibration.scaling.torch_platt</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.calibration.scaling.torch_temperature.html">probly.calibration.scaling.torch_temperature</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.calibration.scaling.torch_vector.html">probly.calibration.scaling.torch_vector</a></li>
+</ul>
+</li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../api/probly.calibration.visualization.html">probly.calibration.visualization</a><input aria-label="Toggle navigation of probly.calibration.visualization" class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.calibration.visualization.reliability_diagram.html">probly.calibration.visualization.reliability_diagram</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/probly.conformal_prediction.html">probly.conformal_prediction</a><input aria-label="Toggle navigation of probly.conformal_prediction" class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" role="switch" type="checkbox"/><label for="toctree-checkbox-10"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../api/probly.conformal_prediction.methods.html">probly.conformal_prediction.methods</a><input aria-label="Toggle navigation of probly.conformal_prediction.methods" class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" role="switch" type="checkbox"/><label for="toctree-checkbox-11"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.conformal_prediction.methods.class_conditional.html">probly.conformal_prediction.methods.class_conditional</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.conformal_prediction.methods.common.html">probly.conformal_prediction.methods.common</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.conformal_prediction.methods.cvplus.html">probly.conformal_prediction.methods.cvplus</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.conformal_prediction.methods.jackknifeplus.html">probly.conformal_prediction.methods.jackknifeplus</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.conformal_prediction.methods.mondrian.html">probly.conformal_prediction.methods.mondrian</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.conformal_prediction.methods.split.html">probly.conformal_prediction.methods.split</a></li>
+</ul>
+</li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../api/probly.conformal_prediction.scores.html">probly.conformal_prediction.scores</a><input aria-label="Toggle navigation of probly.conformal_prediction.scores" class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" role="switch" type="checkbox"/><label for="toctree-checkbox-12"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5 has-children"><a class="reference internal" href="../api/probly.conformal_prediction.scores.absolute_error.html">probly.conformal_prediction.scores.absolute_error</a><input aria-label="Toggle navigation of probly.conformal_prediction.scores.absolute_error" class="toctree-checkbox" id="toctree-checkbox-13" name="toctree-checkbox-13" role="switch" type="checkbox"/><label for="toctree-checkbox-13"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l6"><a class="reference internal" href="../api/probly.conformal_prediction.scores.absolute_error.common.html">probly.conformal_prediction.scores.absolute_error.common</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../api/probly.conformal_prediction.scores.absolute_error.flax.html">probly.conformal_prediction.scores.absolute_error.flax</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../api/probly.conformal_prediction.scores.absolute_error.torch.html">probly.conformal_prediction.scores.absolute_error.torch</a></li>
+</ul>
+</li>
+<li class="toctree-l5 has-children"><a class="reference internal" href="../api/probly.conformal_prediction.scores.aps.html">probly.conformal_prediction.scores.aps</a><input aria-label="Toggle navigation of probly.conformal_prediction.scores.aps" class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" role="switch" type="checkbox"/><label for="toctree-checkbox-14"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l6"><a class="reference internal" href="../api/probly.conformal_prediction.scores.aps.common.html">probly.conformal_prediction.scores.aps.common</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../api/probly.conformal_prediction.scores.aps.flax.html">probly.conformal_prediction.scores.aps.flax</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../api/probly.conformal_prediction.scores.aps.torch.html">probly.conformal_prediction.scores.aps.torch</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.conformal_prediction.scores.common.html">probly.conformal_prediction.scores.common</a></li>
+<li class="toctree-l5 has-children"><a class="reference internal" href="../api/probly.conformal_prediction.scores.cqr.html">probly.conformal_prediction.scores.cqr</a><input aria-label="Toggle navigation of probly.conformal_prediction.scores.cqr" class="toctree-checkbox" id="toctree-checkbox-15" name="toctree-checkbox-15" role="switch" type="checkbox"/><label for="toctree-checkbox-15"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l6"><a class="reference internal" href="../api/probly.conformal_prediction.scores.cqr.common.html">probly.conformal_prediction.scores.cqr.common</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../api/probly.conformal_prediction.scores.cqr.flax.html">probly.conformal_prediction.scores.cqr.flax</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../api/probly.conformal_prediction.scores.cqr.torch.html">probly.conformal_prediction.scores.cqr.torch</a></li>
+</ul>
+</li>
+<li class="toctree-l5 has-children"><a class="reference internal" href="../api/probly.conformal_prediction.scores.lac.html">probly.conformal_prediction.scores.lac</a><input aria-label="Toggle navigation of probly.conformal_prediction.scores.lac" class="toctree-checkbox" id="toctree-checkbox-16" name="toctree-checkbox-16" role="switch" type="checkbox"/><label for="toctree-checkbox-16"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l6"><a class="reference internal" href="../api/probly.conformal_prediction.scores.lac.common.html">probly.conformal_prediction.scores.lac.common</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../api/probly.conformal_prediction.scores.lac.flax.html">probly.conformal_prediction.scores.lac.flax</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../api/probly.conformal_prediction.scores.lac.torch.html">probly.conformal_prediction.scores.lac.torch</a></li>
+</ul>
+</li>
+<li class="toctree-l5 has-children"><a class="reference internal" href="../api/probly.conformal_prediction.scores.raps.html">probly.conformal_prediction.scores.raps</a><input aria-label="Toggle navigation of probly.conformal_prediction.scores.raps" class="toctree-checkbox" id="toctree-checkbox-17" name="toctree-checkbox-17" role="switch" type="checkbox"/><label for="toctree-checkbox-17"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l6"><a class="reference internal" href="../api/probly.conformal_prediction.scores.raps.common.html">probly.conformal_prediction.scores.raps.common</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../api/probly.conformal_prediction.scores.raps.flax.html">probly.conformal_prediction.scores.raps.flax</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../api/probly.conformal_prediction.scores.raps.torch.html">probly.conformal_prediction.scores.raps.torch</a></li>
+</ul>
+</li>
+<li class="toctree-l5 has-children"><a class="reference internal" href="../api/probly.conformal_prediction.scores.saps.html">probly.conformal_prediction.scores.saps</a><input aria-label="Toggle navigation of probly.conformal_prediction.scores.saps" class="toctree-checkbox" id="toctree-checkbox-18" name="toctree-checkbox-18" role="switch" type="checkbox"/><label for="toctree-checkbox-18"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l6"><a class="reference internal" href="../api/probly.conformal_prediction.scores.saps.common.html">probly.conformal_prediction.scores.saps.common</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../api/probly.conformal_prediction.scores.saps.flax.html">probly.conformal_prediction.scores.saps.flax</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../api/probly.conformal_prediction.scores.saps.torch.html">probly.conformal_prediction.scores.saps.torch</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../api/probly.conformal_prediction.utils.html">probly.conformal_prediction.utils</a><input aria-label="Toggle navigation of probly.conformal_prediction.utils" class="toctree-checkbox" id="toctree-checkbox-19" name="toctree-checkbox-19" role="switch" type="checkbox"/><label for="toctree-checkbox-19"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.conformal_prediction.utils.metrics.html">probly.conformal_prediction.utils.metrics</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.conformal_prediction.utils.quantile.html">probly.conformal_prediction.utils.quantile</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/probly.data_generation.html">probly.data_generation</a><input aria-label="Toggle navigation of probly.data_generation" class="toctree-checkbox" id="toctree-checkbox-20" name="toctree-checkbox-20" role="switch" type="checkbox"/><label for="toctree-checkbox-20"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.data_generation.base_generator.html">probly.data_generation.base_generator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.data_generation.factory.html">probly.data_generation.factory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.data_generation.first_order_datagenerator.html">probly.data_generation.first_order_datagenerator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.data_generation.jax_first_order_generator.html">probly.data_generation.jax_first_order_generator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.data_generation.jax_generator.html">probly.data_generation.jax_generator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.data_generation.pytorch_generator.html">probly.data_generation.pytorch_generator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.data_generation.torch_first_order_generator.html">probly.data_generation.torch_first_order_generator</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/probly.datasets.html">probly.datasets</a><input aria-label="Toggle navigation of probly.datasets" class="toctree-checkbox" id="toctree-checkbox-21" name="toctree-checkbox-21" role="switch" type="checkbox"/><label for="toctree-checkbox-21"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.datasets.torch.html">probly.datasets.torch</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/probly.evaluation.html">probly.evaluation</a><input aria-label="Toggle navigation of probly.evaluation" class="toctree-checkbox" id="toctree-checkbox-22" name="toctree-checkbox-22" role="switch" type="checkbox"/><label for="toctree-checkbox-22"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.evaluation.metrics.html">probly.evaluation.metrics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.evaluation.ood.html">probly.evaluation.ood</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.evaluation.tasks.html">probly.evaluation.tasks</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/probly.layers.html">probly.layers</a><input aria-label="Toggle navigation of probly.layers" class="toctree-checkbox" id="toctree-checkbox-23" name="toctree-checkbox-23" role="switch" type="checkbox"/><label for="toctree-checkbox-23"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../api/probly.layers.evidential.html">probly.layers.evidential</a><input aria-label="Toggle navigation of probly.layers.evidential" class="toctree-checkbox" id="toctree-checkbox-24" name="toctree-checkbox-24" role="switch" type="checkbox"/><label for="toctree-checkbox-24"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.layers.evidential.torch.html">probly.layers.evidential.torch</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.layers.flax.html">probly.layers.flax</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.layers.torch.html">probly.layers.torch</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../api/probly.lazy_types.html">probly.lazy_types</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/probly.methods.html">probly.methods</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/probly.models.html">probly.models</a><input aria-label="Toggle navigation of probly.models" class="toctree-checkbox" id="toctree-checkbox-25" name="toctree-checkbox-25" role="switch" type="checkbox"/><label for="toctree-checkbox-25"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../api/probly.models.evidential.html">probly.models.evidential</a><input aria-label="Toggle navigation of probly.models.evidential" class="toctree-checkbox" id="toctree-checkbox-26" name="toctree-checkbox-26" role="switch" type="checkbox"/><label for="toctree-checkbox-26"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.models.evidential.torch.html">probly.models.evidential.torch</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/probly.predictor.html">probly.predictor</a><input aria-label="Toggle navigation of probly.predictor" class="toctree-checkbox" id="toctree-checkbox-27" name="toctree-checkbox-27" role="switch" type="checkbox"/><label for="toctree-checkbox-27"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.predictor.common.html">probly.predictor.common</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.predictor.torch.html">probly.predictor.torch</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/probly.quantification.html">probly.quantification</a><input aria-label="Toggle navigation of probly.quantification" class="toctree-checkbox" id="toctree-checkbox-28" name="toctree-checkbox-28" role="switch" type="checkbox"/><label for="toctree-checkbox-28"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.quantification.classification.html">probly.quantification.classification</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.quantification.regression.html">probly.quantification.regression</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/probly.representation.html">probly.representation</a><input aria-label="Toggle navigation of probly.representation" class="toctree-checkbox" id="toctree-checkbox-29" name="toctree-checkbox-29" role="switch" type="checkbox"/><label for="toctree-checkbox-29"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../api/probly.representation.credal_set.html">probly.representation.credal_set</a><input aria-label="Toggle navigation of probly.representation.credal_set" class="toctree-checkbox" id="toctree-checkbox-30" name="toctree-checkbox-30" role="switch" type="checkbox"/><label for="toctree-checkbox-30"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.representation.credal_set.array.html">probly.representation.credal_set.array</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.representation.credal_set.array_functions.html">probly.representation.credal_set.array_functions</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.representation.credal_set.common.html">probly.representation.credal_set.common</a></li>
+</ul>
+</li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../api/probly.representation.distribution.html">probly.representation.distribution</a><input aria-label="Toggle navigation of probly.representation.distribution" class="toctree-checkbox" id="toctree-checkbox-31" name="toctree-checkbox-31" role="switch" type="checkbox"/><label for="toctree-checkbox-31"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.representation.distribution.array_dirichlet.html">probly.representation.distribution.array_dirichlet</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.representation.distribution.array_gaussian.html">probly.representation.distribution.array_gaussian</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.representation.distribution.common.html">probly.representation.distribution.common</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.representation.distribution.mixture_dirichlet.html">probly.representation.distribution.mixture_dirichlet</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.representation.distribution.mixture_gaussian.html">probly.representation.distribution.mixture_gaussian</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.representation.representer.html">probly.representation.representer</a></li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../api/probly.representation.sampling.html">probly.representation.sampling</a><input aria-label="Toggle navigation of probly.representation.sampling" class="toctree-checkbox" id="toctree-checkbox-32" name="toctree-checkbox-32" role="switch" type="checkbox"/><label for="toctree-checkbox-32"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.representation.sampling.array_sample.html">probly.representation.sampling.array_sample</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.representation.sampling.array_sample_axis_tracking.html">probly.representation.sampling.array_sample_axis_tracking</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.representation.sampling.array_sample_functions.html">probly.representation.sampling.array_sample_functions</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.representation.sampling.common_sample.html">probly.representation.sampling.common_sample</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.representation.sampling.flax_sampler.html">probly.representation.sampling.flax_sampler</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.representation.sampling.jax_sample.html">probly.representation.sampling.jax_sample</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.representation.sampling.sample.html">probly.representation.sampling.sample</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.representation.sampling.sampler.html">probly.representation.sampling.sampler</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.representation.sampling.sklearn_sampler.html">probly.representation.sampling.sklearn_sampler</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.representation.sampling.torch_sample.html">probly.representation.sampling.torch_sample</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.representation.sampling.torch_sampler.html">probly.representation.sampling.torch_sampler</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/probly.train.html">probly.train</a><input aria-label="Toggle navigation of probly.train" class="toctree-checkbox" id="toctree-checkbox-33" name="toctree-checkbox-33" role="switch" type="checkbox"/><label for="toctree-checkbox-33"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../api/probly.train.bayesian.html">probly.train.bayesian</a><input aria-label="Toggle navigation of probly.train.bayesian" class="toctree-checkbox" id="toctree-checkbox-34" name="toctree-checkbox-34" role="switch" type="checkbox"/><label for="toctree-checkbox-34"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.train.bayesian.torch.html">probly.train.bayesian.torch</a></li>
+</ul>
+</li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../api/probly.train.calibration.html">probly.train.calibration</a><input aria-label="Toggle navigation of probly.train.calibration" class="toctree-checkbox" id="toctree-checkbox-35" name="toctree-checkbox-35" role="switch" type="checkbox"/><label for="toctree-checkbox-35"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.train.calibration.torch.html">probly.train.calibration.torch</a></li>
+</ul>
+</li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../api/probly.train.evidential.html">probly.train.evidential</a><input aria-label="Toggle navigation of probly.train.evidential" class="toctree-checkbox" id="toctree-checkbox-36" name="toctree-checkbox-36" role="switch" type="checkbox"/><label for="toctree-checkbox-36"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.train.evidential.common.html">probly.train.evidential.common</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.train.evidential.torch.html">probly.train.evidential.torch</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/probly.transformation.html">probly.transformation</a><input aria-label="Toggle navigation of probly.transformation" class="toctree-checkbox" id="toctree-checkbox-37" name="toctree-checkbox-37" role="switch" type="checkbox"/><label for="toctree-checkbox-37"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.transformation.batchensemble.html">probly.transformation.batchensemble</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.transformation.bayesian.html">probly.transformation.bayesian</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.transformation.dropconnect.html">probly.transformation.dropconnect</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.transformation.dropout.html">probly.transformation.dropout</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.transformation.ensemble.html">probly.transformation.ensemble</a></li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../api/probly.transformation.evidential.html">probly.transformation.evidential</a><input aria-label="Toggle navigation of probly.transformation.evidential" class="toctree-checkbox" id="toctree-checkbox-38" name="toctree-checkbox-38" role="switch" type="checkbox"/><label for="toctree-checkbox-38"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5 has-children"><a class="reference internal" href="../api/probly.transformation.evidential.classification.html">probly.transformation.evidential.classification</a><input aria-label="Toggle navigation of probly.transformation.evidential.classification" class="toctree-checkbox" id="toctree-checkbox-39" name="toctree-checkbox-39" role="switch" type="checkbox"/><label for="toctree-checkbox-39"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l6"><a class="reference internal" href="../api/probly.transformation.evidential.classification.common.html">probly.transformation.evidential.classification.common</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../api/probly.transformation.evidential.classification.torch.html">probly.transformation.evidential.classification.torch</a></li>
+</ul>
+</li>
+<li class="toctree-l5 has-children"><a class="reference internal" href="../api/probly.transformation.evidential.regression.html">probly.transformation.evidential.regression</a><input aria-label="Toggle navigation of probly.transformation.evidential.regression" class="toctree-checkbox" id="toctree-checkbox-40" name="toctree-checkbox-40" role="switch" type="checkbox"/><label for="toctree-checkbox-40"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l6"><a class="reference internal" href="../api/probly.transformation.evidential.regression.common.html">probly.transformation.evidential.regression.common</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../api/probly.transformation.evidential.regression.torch.html">probly.transformation.evidential.regression.torch</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.transformation.subensemble.html">probly.transformation.subensemble</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/probly.traverse_nn.html">probly.traverse_nn</a><input aria-label="Toggle navigation of probly.traverse_nn" class="toctree-checkbox" id="toctree-checkbox-41" name="toctree-checkbox-41" role="switch" type="checkbox"/><label for="toctree-checkbox-41"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.traverse_nn.common.html">probly.traverse_nn.common</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.traverse_nn.flax.html">probly.traverse_nn.flax</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.traverse_nn.torch.html">probly.traverse_nn.torch</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/probly.utils.html">probly.utils</a><input aria-label="Toggle navigation of probly.utils" class="toctree-checkbox" id="toctree-checkbox-42" name="toctree-checkbox-42" role="switch" type="checkbox"/><label for="toctree-checkbox-42"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.utils.errors.html">probly.utils.errors</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.utils.probabilities.html">probly.utils.probabilities</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.utils.sets.html">probly.utils.sets</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.utils.switchdispatch.html">probly.utils.switchdispatch</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.utils.torch.html">probly.utils.torch</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/probly.visualization.html">probly.visualization</a><input aria-label="Toggle navigation of probly.visualization" class="toctree-checkbox" id="toctree-checkbox-43" name="toctree-checkbox-43" role="switch" type="checkbox"/><label for="toctree-checkbox-43"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../api/probly.visualization.clustermargin.html">probly.visualization.clustermargin</a><input aria-label="Toggle navigation of probly.visualization.clustermargin" class="toctree-checkbox" id="toctree-checkbox-44" name="toctree-checkbox-44" role="switch" type="checkbox"/><label for="toctree-checkbox-44"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.visualization.clustermargin.clustervisualizer.html">probly.visualization.clustermargin.clustervisualizer</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.visualization.config.html">probly.visualization.config</a></li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../api/probly.visualization.credal.html">probly.visualization.credal</a><input aria-label="Toggle navigation of probly.visualization.credal" class="toctree-checkbox" id="toctree-checkbox-45" name="toctree-checkbox-45" role="switch" type="checkbox"/><label for="toctree-checkbox-45"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.visualization.credal.credal_visualization.html">probly.visualization.credal.credal_visualization</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.visualization.credal.input_handling.html">probly.visualization.credal.input_handling</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.visualization.credal.plot_2d.html">probly.visualization.credal.plot_2d</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.visualization.credal.plot_3d.html">probly.visualization.credal.plot_3d</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.visualization.credal.plot_multid.html">probly.visualization.credal.plot_multid</a></li>
+</ul>
+</li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../api/probly.visualization.dirichlet.html">probly.visualization.dirichlet</a><input aria-label="Toggle navigation of probly.visualization.dirichlet" class="toctree-checkbox" id="toctree-checkbox-46" name="toctree-checkbox-46" role="switch" type="checkbox"/><label for="toctree-checkbox-46"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.visualization.dirichlet.dirichlet_visualization.html">probly.visualization.dirichlet.dirichlet_visualization</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.visualization.dirichlet.plot_dirichlet.html">probly.visualization.dirichlet.plot_dirichlet</a></li>
+</ul>
+</li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../api/probly.visualization.efficiency.html">probly.visualization.efficiency</a><input aria-label="Toggle navigation of probly.visualization.efficiency" class="toctree-checkbox" id="toctree-checkbox-47" name="toctree-checkbox-47" role="switch" type="checkbox"/><label for="toctree-checkbox-47"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.visualization.efficiency.coverage_efficiency_ood.html">probly.visualization.efficiency.coverage_efficiency_ood</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../api/probly.visualization.efficiency.plot_coverage_efficiency.html">probly.visualization.efficiency.plot_coverage_efficiency</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="../api/probly.visualization.ood.html">probly.visualization.ood</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../references.html">References and Further Reading</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../faq.html">FAQ and Troubleshooting</a></li>
+</ul>
+
+</div>
+</div><div style="text-align: center; margin-top: 1rem; margin-bottom: 1rem;">
+  <a href="https://github.com/pwhofman/probly" target="_blank" rel="noopener noreferrer" title="GitHub Repository">
+    <img src="../_static/github-mark.svg" alt="GitHub Logo" width="28" height="28" style="display: inline-block;">
+  </a>
+</div>
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          
+
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="transformation">
+<span id="id1"></span><h1><span class="section-number">1. </span>Transformation<a class="headerlink" href="#transformation" title="Link to this heading">¶</a></h1>
+<p>Transformation of models are transformations.</p>
+<aside class="topic">
+<p class="topic-title">Models</p>
+<p>One important thing to note is …</p>
+</aside>
+<p class="rubric">Examples</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="../auto_examples/transformation/plot_dropout.html#sphx-glr-auto-examples-transformation-plot-dropout-py"><span class="std std-ref">Applying the Dropout Transformation</span></a></p></li>
+</ul>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="../examples.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Examples and Tutorials</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="../user_guide.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">User Guide</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2025, probly team
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer no-toc">
+      
+      
+      
+    </aside>
+  </div>
+</div><script src="../_static/documentation_options.js?v=4621528c"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=ccdb6887"></script>
+    </body>
+</html>

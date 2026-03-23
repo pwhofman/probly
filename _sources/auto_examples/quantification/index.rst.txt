@@ -1,0 +1,48 @@
+
+
+.. _sphx_glr_auto_examples_quantification:
+
+.. _quantification_examples:
+
+Quantification
+--------------
+
+Examples concerning the :mod:`probly.quantification` module.
+
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbnails">
+
+.. thumbnail-parent-div-open
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates a simple form of uncertainty quantification (UQ) for a regression-like setting. We simulate a predictive distribution by sampling multiple model predictions (e.g., think &quot;ensemble&quot; predictions). From these samples we compute: - Predictive mean - Predictive standard deviation - An uncertainty band (mean +/- 2 std)">
+
+.. only:: html
+
+  .. image:: /auto_examples/quantification/images/thumb/sphx_glr_plot_uncertainty_quantification_thumb.png
+    :alt:
+
+  :doc:`/auto_examples/quantification/plot_uncertainty_quantification`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Uncertainty Quantification</div>
+    </div>
+
+
+.. thumbnail-parent-div-close
+
+.. raw:: html
+
+    </div>
+
+
+.. toctree::
+   :hidden:
+
+   /auto_examples/quantification/plot_uncertainty_quantification
+

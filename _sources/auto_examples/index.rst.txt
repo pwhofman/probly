@@ -1,12 +1,34 @@
 :orphan:
 
-``probly`` examples
-====================
+.. _general_examples:
 
-This folder contains short, focused example scripts rendered into the documentation
-via Sphinx-Gallery.
+Examples
+========
 
-By convention, example files are named ``plot_*.py``.
+This is the gallery of examples that showcase the usage of `probly`. Some
+examples demonstrate the use of the :ref:`API <api_ref>` in general and some
+demonstrate specific applications in tutorial form. Also check out our
+:ref:`user guide <user_guide>` for more detailed illustrations.
+
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbnails">
+
+.. thumbnail-parent-div-open
+
+.. thumbnail-parent-div-close
+
+.. raw:: html
+
+    </div>
+
+
+Pytraverse
+----------
+
+Examples concerning the :mod:`pytraverse` module.
 
 
 
@@ -18,122 +40,97 @@ By convention, example files are named ``plot_*.py``.
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="This page exists mainly to verify that Sphinx-Gallery is correctly configured for the project.">
+    <div class="sphx-glr-thumbcontainer" tooltip="The goal of this example is to showcase the key aspects of PyTraverse and how they can be used to rewrite datastructures.">
 
 .. only:: html
 
-  .. image:: /auto_examples/images/thumb/sphx_glr_plot_gallery_smoke_test_thumb.png
+  .. image:: /auto_examples/pytraverse/images/thumb/sphx_glr_plot_pytraverse_tutorial_thumb.png
     :alt:
 
-  :doc:`/auto_examples/plot_gallery_smoke_test`
+  :doc:`/auto_examples/pytraverse/plot_pytraverse_tutorial`
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">Sphinx-Gallery smoke test.</div>
+      <div class="sphx-glr-thumbnail-title">A Brief Introduction to PyTraverse</div>
     </div>
 
 
+.. thumbnail-parent-div-close
+
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates a simple form of uncertainty quantification (UQ) for a regression-like setting.">
+    </div>
+
+
+Quantification
+--------------
+
+Examples concerning the :mod:`probly.quantification` module.
+
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbnails">
+
+.. thumbnail-parent-div-open
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates a simple form of uncertainty quantification (UQ) for a regression-like setting. We simulate a predictive distribution by sampling multiple model predictions (e.g., think &quot;ensemble&quot; predictions). From these samples we compute: - Predictive mean - Predictive standard deviation - An uncertainty band (mean +/- 2 std)">
 
 .. only:: html
 
-  .. image:: /auto_examples/images/thumb/sphx_glr_plot_uncertainty_quantification_thumb.png
+  .. image:: /auto_examples/quantification/images/thumb/sphx_glr_plot_uncertainty_quantification_thumb.png
     :alt:
 
-  :doc:`/auto_examples/plot_uncertainty_quantification`
+  :doc:`/auto_examples/quantification/plot_uncertainty_quantification`
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">Uncertainty Quantification.</div>
+      <div class="sphx-glr-thumbnail-title">Uncertainty Quantification</div>
     </div>
 
 
-.. raw:: html
-
-    <div class="sphx-glr-thumbcontainer" tooltip="This tiny example shows how repeated stochastic predictions can be summarized into mean probabilities and visualized as error bars.">
-
-.. only:: html
-
-  .. image:: /auto_examples/images/thumb/sphx_glr_plot_intro_uncertainty_glimpse_thumb.png
-    :alt:
-
-  :doc:`/auto_examples/plot_intro_uncertainty_glimpse`
+.. thumbnail-parent-div-close
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">Hello, uncertainty (glimpse).</div>
     </div>
 
 
-.. raw:: html
+Release Highlights
+------------------
 
-    <div class="sphx-glr-thumbcontainer" tooltip="You typically don&#x27;t want to care about the concrete sample type. probly provides create_sample which selects the best representation based on the sample element type.">
+These examples illustrate the main features of the releases of probly.
 
-.. only:: html
 
-  .. image:: /auto_examples/images/thumb/sphx_glr_plot_create_sample_dispatch_thumb.png
-    :alt:
-
-  :doc:`/auto_examples/plot_create_sample_dispatch`
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">Automatic sample construction (dispatcher).</div>
+    <div class="sphx-glr-thumbnails">
+
+.. thumbnail-parent-div-open
+
+.. thumbnail-parent-div-close
+
+.. raw:: html
+
     </div>
 
 
-.. raw:: html
+Representation
+--------------
 
-    <div class="sphx-glr-thumbcontainer" tooltip="This example illustrates the difference between epistemic and aleatoric uncertainty in probabilistic models.">
+Examples concerning the :mod:`probly.representation` module.
 
-.. only:: html
-
-  .. image:: /auto_examples/images/thumb/sphx_glr_plot_epistemic_vs_aleatoric_thumb.png
-    :alt:
-
-  :doc:`/auto_examples/plot_epistemic_vs_aleatoric`
-
-.. raw:: html
-
-      <div class="sphx-glr-thumbnail-title">Epistemic vs Aleatoric Uncertainty.</div>
-    </div>
 
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="A minimal thresholding “predictor” that turns continuous inputs into class labels, plus a plot showing how the decision changes with the threshold.">
+    <div class="sphx-glr-thumbnails">
 
-.. only:: html
-
-  .. image:: /auto_examples/images/thumb/sphx_glr_plot_intro_threshold_decision_thumb.png
-    :alt:
-
-  :doc:`/auto_examples/plot_intro_threshold_decision`
-
-.. raw:: html
-
-      <div class="sphx-glr-thumbnail-title">Threshold-based decision sketch.</div>
-    </div>
-
-
-.. raw:: html
-
-    <div class="sphx-glr-thumbcontainer" tooltip="probly defines a small protocol for &quot;predictors&quot; and a generic probly.predictor.predict helper.">
-
-.. only:: html
-
-  .. image:: /auto_examples/images/thumb/sphx_glr_plot_using_predict_protocol_thumb.png
-    :alt:
-
-  :doc:`/auto_examples/plot_using_predict_protocol`
-
-.. raw:: html
-
-      <div class="sphx-glr-thumbnail-title">Using the generic predict().</div>
-    </div>
-
+.. thumbnail-parent-div-open
 
 .. raw:: html
 
@@ -141,31 +138,51 @@ By convention, example files are named ``plot_*.py``.
 
 .. only:: html
 
-  .. image:: /auto_examples/images/thumb/sphx_glr_plot_samples_with_array_sample_thumb.png
+  .. image:: /auto_examples/representation/images/thumb/sphx_glr_plot_samples_with_array_sample_thumb.png
     :alt:
 
-  :doc:`/auto_examples/plot_samples_with_array_sample`
+  :doc:`/auto_examples/representation/plot_samples_with_array_sample`
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">Working with samples (`ArraySample`).</div>
+      <div class="sphx-glr-thumbnail-title">Working with ArraySample</div>
     </div>
 
 
+.. thumbnail-parent-div-close
+
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates selective prediction (abstention).">
+    </div>
+
+
+Transformation
+--------------
+
+Examples concerning the :mod:`probly.transformation` module.
+
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbnails">
+
+.. thumbnail-parent-div-open
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Transform a standard PyTorch model with dropout so that dropout stays active during inference (MC-Dropout).">
 
 .. only:: html
 
-  .. image:: /auto_examples/images/thumb/sphx_glr_plot_selective_prediction_thumb.png
+  .. image:: /auto_examples/transformation/images/thumb/sphx_glr_plot_dropout_thumb.png
     :alt:
 
-  :doc:`/auto_examples/plot_selective_prediction`
+  :doc:`/auto_examples/transformation/plot_dropout`
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">Selective Prediction.</div>
+      <div class="sphx-glr-thumbnail-title">Applying the Dropout Transformation</div>
     </div>
 
 
@@ -178,16 +195,14 @@ By convention, example files are named ``plot_*.py``.
 
 .. toctree::
    :hidden:
+   :includehidden:
 
-   /auto_examples/plot_gallery_smoke_test
-   /auto_examples/plot_uncertainty_quantification
-   /auto_examples/plot_intro_uncertainty_glimpse
-   /auto_examples/plot_create_sample_dispatch
-   /auto_examples/plot_epistemic_vs_aleatoric
-   /auto_examples/plot_intro_threshold_decision
-   /auto_examples/plot_using_predict_protocol
-   /auto_examples/plot_samples_with_array_sample
-   /auto_examples/plot_selective_prediction
+
+   /auto_examples/pytraverse/index.rst
+   /auto_examples/quantification/index.rst
+   /auto_examples/release_highlights/index.rst
+   /auto_examples/representation/index.rst
+   /auto_examples/transformation/index.rst
 
 
 
