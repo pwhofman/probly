@@ -86,7 +86,7 @@ jobs:
       name: Test Documentation Build
       needs:
           - install_and_import
-      uses: ./.github/workflows/_docs-build.yaml
+      uses: ./.github/workflows/_docs-build.yml
       with:
         strict: true
     # ----------------------------------------------------------------------------------------------
