@@ -1,0 +1,6 @@
+probly.methods
+==============
+
+.. automodule:: probly.methods
+
+   

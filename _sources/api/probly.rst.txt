@@ -17,6 +17,7 @@
    evaluation
    layers
    lazy_types
+   methods
    models
    predictor
    quantification
