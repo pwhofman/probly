@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from abc import ABC, ABCMeta, abstractmethod
-from typing import TYPE_CHECKING, Literal, Self
+from typing import TYPE_CHECKING, Literal, Protocol, Self
 
 if TYPE_CHECKING:
     from probly.representation.sampling.common_sample import Sample
@@ -67,3 +67,15 @@ class ProbabilityIntervalsCredalSet[T](CategoricalCredalSet[T]):
 
 class SingletonCredalSet[T](DiscreteCredalSet[T]):
     """A credal set containing a single distribution."""
+
+
+class ProbabilityIntervalsFactory[S: Sample, C: ProbabilityIntervalsCredalSet](Protocol):
+    """Factory protocol for probability-interval credal sets."""
+
+    def __call__(self, sample: S, distribution_axis: int = -1) -> C:
+        """Create a probability-interval credal set from a sample."""
+
+
+def dispatch_on_sample(sample: Sample, **_kwargs: object) -> object:
+    """Dispatch on the concrete sample object itself."""
+    return sample.samples

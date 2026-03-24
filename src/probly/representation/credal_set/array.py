@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any, Literal, Self, override
 
 import numpy as np
 
+from lazy_dispatch.singledispatch import lazydispatch
 from probly.representation.credal_set.common import (
     CategoricalCredalSet,
     ConvexCredalSet,
@@ -17,6 +18,8 @@ from probly.representation.credal_set.common import (
     SingletonCredalSet,
 )
 from probly.representation.sampling.sample import ArraySample
+
+from .common import ProbabilityIntervalsFactory, dispatch_on_sample
 
 if TYPE_CHECKING:
     from numpy.typing import DTypeLike
@@ -663,3 +666,9 @@ class ArraySingletonCredalSet(ArrayCategoricalCredalSet, SingletonCredalSet[np.n
     def __hash__(self) -> int:
         """Compute the hash of the credal set."""
         return super().__hash__()
+
+
+create_probability_intervals = lazydispatch[ProbabilityIntervalsFactory, ProbabilityIntervalsCredalSet](
+    ArrayProbabilityIntervals.from_sample,
+    dispatch_on=dispatch_on_sample,
+)
