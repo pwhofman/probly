@@ -27,7 +27,7 @@ jobs:
                     python-version: "3.12"
                     enable-cache: true
             -   name: Run code-quality checks
-                run: uvx prek run --all-files --show-diff-on-failure
+                run: uv run prek run --all-files --show-diff-on-failure
     # ----------------------------------------------------------------------------------------------
     # Install and Import Check
     # ----------------------------------------------------------------------------------------------
@@ -46,9 +46,9 @@ jobs:
             -   name: Create uv virtual environment
                 run: uv venv
             -   name: Install probly package
-                run: uvx --no-sync uv pip install .
+                run: uv run --no-sync uv pip install .
             -   name: Test import
-                run: uvx --no-sync python -c "import probly; print('✅ probly imported successfully')"
+                run: uv run --no-sync python -c "import probly; print('✅ probly imported successfully')"
     # ----------------------------------------------------------------------------------------------
     # Unit Tests with Matrix
     # ----------------------------------------------------------------------------------------------
@@ -83,7 +83,7 @@ jobs:
             -   name: Install test dependencies
                 run: uv sync --no-dev --group test --group ${{ matrix.dependency-group }}
             -   name: Run unit tests
-                run: uvx --no-sync pytest "tests/probly" -m "not integration"
+                run: uv run --no-sync pytest "tests/probly" -m "not integration"
     # ----------------------------------------------------------------------------------------------
     # Test Documentation Build (strict — warnings are errors)
     # ----------------------------------------------------------------------------------------------
@@ -116,7 +116,7 @@ jobs:
             -   name: Install test dependencies
                 run: uv sync --no-dev --group test --group all_ml
             -   name: Measure coverage
-                run: uvx --no-sync pytest "tests/probly" --cov=probly --cov-report=xml
+                run: uv run --no-sync pytest "tests/probly" --cov=probly --cov-report=xml
             -   name: Upload coverage to codecov
                 if: ${{ github.repository == 'pwhofman/probly' }} # Only upload reports for main repo and not forks
                 uses: codecov/codecov-action@1af58845a975a7985b0beb0cbe6fbbb71a41dbad  # v5.5.3
