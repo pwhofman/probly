@@ -68,9 +68,9 @@ test = [
     "packaging",           # for version parsing
 ]
 lint = [
-    "ruff>=0.14.1",      # for linting
+    "ruff>=0.14.1", # for linting
     "pre-commit>=4.3.0", # for running the linters pre-commit hooks
-    "ty>=0.0.14",        # for static type checking
+    "ty==0.0.14", # for static type checking
 ]
 docs = [
     "sphinx>=9.0.0",
@@ -92,6 +92,7 @@ dev = [
     { include-group = "lint" },
     { include-group = "docs" },
     { include-group = "all_ml" },
+    "prek>=0.3.8",
 ]
 
 
@@ -100,18 +101,6 @@ line-length = 120
 target-version = "py312"
 output-format = "full"
 
-
-[tool.ruff.lint]
-select = ["ALL"]
-ignore = [
-    "N812",    # Checks for lowercase imports that are aliased to non-lowercase names (e.g. torch.nn.functional as F)
-    "RET504",  # Unnecessary assignment to {name} before return statement
-    "PLR2004", # Magic value used in comparison, consider replacing {value} with a constant variable
-    "FBT",     # enforce keyword for bool
-    "PLR0913", # too many arguments (>5)
-    "FIX002",  # TODOs are fine in code
-    "COM812",
-]
 # Exclude a variety of commonly ignored directories.
 exclude = [
     ".bzr",
@@ -141,7 +130,21 @@ exclude = [
     "site-packages",
     "venv",
     "docs/build",
-    "supporting_files"
+    "supporting_files",
+    "examples"
+]
+
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    "N812",    # Checks for lowercase imports that are aliased to non-lowercase names (e.g. torch.nn.functional as F)
+    "RET504",  # Unnecessary assignment to {name} before return statement
+    "PLR2004", # Magic value used in comparison, consider replacing {value} with a constant variable
+    "FBT",     # enforce keyword for bool
+    "PLR0913", # too many arguments (>5)
+    "FIX002",  # TODOs are fine in code
+    "COM812",
 ]
 
 [tool.ruff.lint.pydocstyle]
@@ -181,8 +184,6 @@ convention = "google"
     "PERF401", # it's fine to have non-optimized code in notebooks
 ]
 "docs/**/*.py" = ["INP001", "PTH", "I002"]
-"examples/*.py" = ["T201", "D205"]
-"src/probly_benchmark/*.py" = ["T201"]
 
 # Use isort-compatible settings
 [tool.ruff.lint.isort]
@@ -210,4 +211,4 @@ exclude_also = [
 exclude_lines = ["if TYPE_CHECKING"]
 
 [tool.ty.src]
-exclude = ["notebooks", "docs", "tests", "supporting_files"]
+exclude = ["notebooks", "docs", "tests", "supporting_files", "examples"]

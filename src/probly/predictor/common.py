@@ -26,7 +26,7 @@ def predict[In, KwIn, Out](predictor: Predictor[In, KwIn, Out], *args: In, **kwa
     if hasattr(predictor, "predict"):
         return predictor.predict(*args, **kwargs)  # type: ignore[no-any-return]
     if callable(predictor):
-        return predictor(*args, **kwargs)  # type: ignore[no-any-return]
+        return predictor(*args, **kwargs)
     msg = f"No predict function registered for type {type(predictor)}"
     raise NotImplementedError(msg)
 

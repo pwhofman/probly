@@ -59,7 +59,7 @@ def generate_torch_subensemble(
                 nn.Sequential(*backbone_layers),
                 nn.Sequential(*[m for m in traverse(h, nn_traverser).children() if isinstance(m, nn.Module)]),
             )
-            for h in heads  # ty: ignore
+            for h in heads
         ],
     )
 

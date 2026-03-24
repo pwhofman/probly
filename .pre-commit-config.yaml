@@ -1,4 +1,17 @@
 repos:
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.10.10
+    hooks:
+        - id: uv-lock
+          priority: 0
+    # zizmor detects security vulnerabilities in GitHub Actions workflows.
+    # Additional configuration for the tool is found in `.github/zizmor.yml`
+  - repo: https://github.com/zizmorcore/zizmor-pre-commit
+    rev: v1.23.1
+    hooks:
+         - id: zizmor
+           priority: 0
+           args: [--min-severity=low]
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
@@ -10,7 +23,7 @@ repos:
       - id: mixed-line-ending
       - id: check-merge-conflict
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.12.0
+    rev: v0.15.7
     hooks:
       - id: ruff-check
         args: [--fix, --exit-non-zero-on-fix, --no-cache]
@@ -22,8 +35,7 @@ repos:
     hooks:
     -   id: ty-check
         name: ty-check
-        language: python
-        entry: ty check
+        language: system
+        entry: .venv/bin/ty check
         pass_filenames: false
-        args: [ --python=.venv/ ]
-        additional_dependencies: [ ty ]
+        args: [ --verbose, --output-format=full ]
