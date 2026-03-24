@@ -18,8 +18,6 @@ class Dropout[In, KwIn, Out, S: Sample]:
     Based on :cite:t:`galDropoutBayesian2016`.
     """
 
-    model: Predictor[In, KwIn, Out]
-
     def __init__(
         self,
         base: Predictor[In, KwIn, Out],
@@ -33,14 +31,29 @@ class Dropout[In, KwIn, Out, S: Sample]:
             p: The dropout probability
             num_samples: The number of samples to draw
         """
-        self.model = dropout(base, p=p)
+        self._model = dropout(base, p=p)
         self._sampler: Sampler[In, KwIn, Out, S] = Sampler(
-            predictor=self.model,
+            predictor=self._model,
             num_samples=num_samples,
         )
-        self.p = p
-        self.num_samples = num_samples
+        self._p = p
+        self._num_samples = num_samples
 
     def predict(self, *args: In, **kwargs: Unpack[KwIn]) -> S:
         """Run stochastic forward passes and return an uncertainty representation."""
         return self._sampler.predict(*args, **kwargs)
+
+    @property
+    def model(self) -> Predictor[In, KwIn, Out]:
+        """Get the base model."""
+        return self._model
+
+    @property
+    def p(self) -> float:
+        """Get the dropout probability."""
+        return self._p
+
+    @property
+    def num_samples(self) -> int:
+        """Get the number of samples."""
+        return self._num_samples
