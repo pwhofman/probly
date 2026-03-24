@@ -73,7 +73,7 @@ lint = [
     "ty>=0.0.14",        # for static type checking
 ]
 docs = [
-    "sphinx>=8.0.0",
+    "sphinx>=9.0.0",
     "sphinx-gallery",
     "furo",                     # Beautiful modern theme (or use sphinx-rtd-theme)
     "myst-nb",                  # Optional: Jupyter Notebook support
@@ -81,7 +81,7 @@ docs = [
     "sphinx-copybutton",        # Optional: Adds copy buttons to code blocks
     "sphinx-autodoc-typehints", # Optional: Show type hints in your API docs
     "sphinxcontrib-bibtex",     # Optional: For bibliography support
-    "ipython<9.12.0",           # for code execution in notebooks
+    "ipython",                  # for code execution in notebooks
     "pandas>=2.3.3",            # for code execution in some examples
 ]
 dev = [
@@ -100,18 +100,6 @@ line-length = 120
 target-version = "py312"
 output-format = "full"
 
-
-[tool.ruff.lint]
-select = ["ALL"]
-ignore = [
-    "N812",    # Checks for lowercase imports that are aliased to non-lowercase names (e.g. torch.nn.functional as F)
-    "RET504",  # Unnecessary assignment to {name} before return statement
-    "PLR2004", # Magic value used in comparison, consider replacing {value} with a constant variable
-    "FBT",     # enforce keyword for bool
-    "PLR0913", # too many arguments (>5)
-    "FIX002",  # TODOs are fine in code
-    "COM812",
-]
 # Exclude a variety of commonly ignored directories.
 exclude = [
     ".bzr",
@@ -141,6 +129,21 @@ exclude = [
     "site-packages",
     "venv",
     "docs/build",
+    "supporting_files",
+    "examples"
+]
+
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    "N812",    # Checks for lowercase imports that are aliased to non-lowercase names (e.g. torch.nn.functional as F)
+    "RET504",  # Unnecessary assignment to {name} before return statement
+    "PLR2004", # Magic value used in comparison, consider replacing {value} with a constant variable
+    "FBT",     # enforce keyword for bool
+    "PLR0913", # too many arguments (>5)
+    "FIX002",  # TODOs are fine in code
+    "COM812",
 ]
 
 [tool.ruff.lint.pydocstyle]
@@ -180,7 +183,6 @@ convention = "google"
     "PERF401", # it's fine to have non-optimized code in notebooks
 ]
 "docs/**/*.py" = ["INP001", "PTH", "I002"]
-"examples/*.py" = ["T201", "D205"]
 
 # Use isort-compatible settings
 [tool.ruff.lint.isort]
@@ -208,4 +210,4 @@ exclude_also = [
 exclude_lines = ["if TYPE_CHECKING"]
 
 [tool.ty.src]
-exclude = ["notebooks", "docs", "tests"]
+exclude = ["notebooks", "docs", "tests", "supporting_files", "examples"]
