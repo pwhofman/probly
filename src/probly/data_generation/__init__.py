@@ -19,14 +19,6 @@ try:
 
     _TORCH_AVAILABLE = True
 except ModuleNotFoundError:
-    # If running under pytest, skip Torch-dependent tests at module import.
-    if "pytest" in _sys.modules:
-        import pytest
-
-        pytest.skip(
-            "PyTorch not installed so skipping Torch-dependent tests.",
-            allow_module_level=True,
-        )
     _TORCH_AVAILABLE = False
 
 # JAX backend exports (conditionally available)
@@ -39,14 +31,6 @@ try:
 
     _JAX_AVAILABLE = True
 except ModuleNotFoundError:
-    # If running under pytest, skip JAX-dependent tests at module import.
-    if "pytest" in _sys.modules:
-        import pytest
-
-        pytest.skip(
-            "JAX not installed so skipping JAX-dependent tests.",
-            allow_module_level=True,
-        )
     _JAX_AVAILABLE = False
 
 __all__ = [

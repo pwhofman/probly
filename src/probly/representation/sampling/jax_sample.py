@@ -198,7 +198,7 @@ class JaxArraySample(Sample[jax.Array]):
         moved_array = jnp.moveaxis(self.array, self.sample_axis, new_sample_axis)
         return type(self)(array=moved_array, sample_axis=new_sample_axis)
 
-    def __array__(self, dtype: npt.DTypeLike = None, copy: bool | None = None) -> np.ndarray:
+    def __array__(self, dtype: npt.DTypeLike | None = None, copy: bool | None = None) -> np.ndarray:
         """Get the underlying numpy array.
 
         Args:

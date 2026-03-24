@@ -68,9 +68,9 @@ test = [
     "packaging",           # for version parsing
 ]
 lint = [
-    "ruff>=0.14.1",      # for linting
+    "ruff>=0.15.5",      # for linting
     "pre-commit>=4.3.0", # for running the linters pre-commit hooks
-    "ty>=0.0.14",        # for static type checking
+    "ty>=0.0.21",        # for static type checking
 ]
 docs = [
     "sphinx>=8.0.0",

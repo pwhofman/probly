@@ -563,6 +563,7 @@ class State[T]:
         Returns:
             The new child state containing the pushed object.
         """
+        res = State[T](obj=obj, meta=meta, traverser=traverser, parent=self)
         return State[T](obj=obj, meta=meta, traverser=traverser, parent=self)
 
     def pop(self) -> State[T]:

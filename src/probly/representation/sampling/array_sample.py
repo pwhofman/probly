@@ -48,7 +48,9 @@ class ArraySample[D: Numeric](Sample[D], np.lib.mixins.NDArrayOperatorsMixin):
 
     @override
     @classmethod
-    def from_iterable(cls, samples: Iterable[D], sample_axis: SampleAxis = "auto", dtype: DTypeLike = None) -> Self:  # type: ignore[invalid-method-override]
+    def from_iterable(
+        cls, samples: Iterable[D], sample_axis: SampleAxis = "auto", dtype: DTypeLike | None = None
+    ) -> Self:  # type: ignore[invalid-method-override]
         """Create an ArraySample from a sequence of samples.
 
         Args:
@@ -66,9 +68,9 @@ class ArraySample[D: Numeric](Sample[D], np.lib.mixins.NDArrayOperatorsMixin):
                     raise ValueError(msg)
                 sample_axis = 0 if samples.ndim == 1 else 1
             if sample_axis != 0:
-                samples = np.moveaxis(samples, 0, sample_axis)  # type: ignore[invalid-argument-type]
+                samples = np.moveaxis(samples, 0, sample_axis)
             if dtype is not None:
-                samples = samples.astype(dtype)
+                samples = samples.astype(dtype)  # ty:ignore[no-matching-overload]
         else:
             if hasattr(samples, "__array__"):
                 return cls.from_iterable(np.asarray(samples, dtype=dtype), sample_axis=sample_axis)
@@ -82,22 +84,22 @@ class ArraySample[D: Numeric](Sample[D], np.lib.mixins.NDArrayOperatorsMixin):
                 sample_axis = (0 if first_sample.ndim == 0 else 1) if isinstance(first_sample, np.ndarray) else 0
             samples = np.stack(samples, axis=sample_axis, dtype=dtype)  # type: ignore[invalid-argument-type]
 
-        return cls(array=samples, sample_axis=sample_axis)  # type: ignore[invalid-argument-type]
+        return cls(array=samples, sample_axis=sample_axis)
 
     @override
     @classmethod
-    def from_sample(cls, sample: Sample[D], sample_axis: SampleAxis = "auto", dtype: DTypeLike = None) -> Self:  # type: ignore[invalid-method-override]
+    def from_sample(cls, sample: Sample[D], sample_axis: SampleAxis = "auto", dtype: DTypeLike | None = None) -> Self:  # type: ignore[invalid-method-override]
         if isinstance(sample, ArraySample):
             sample_array = sample.array
 
             if dtype is not None:
-                sample_array = sample_array.astype(dtype)  # type: ignore[no-matching-overload]
+                sample_array = sample_array.astype(dtype)
 
             in_sample_axis = sample.sample_axis
             if sample_axis not in ("auto", in_sample_axis):
-                sample_array = np.moveaxis(sample_array, in_sample_axis, sample_axis)  # type: ignore[invalid-argument-type]
+                sample_array = np.moveaxis(sample_array, in_sample_axis, sample_axis)
                 in_sample_axis = sample_axis
-            return cls(array=sample_array, sample_axis=in_sample_axis)  # type: ignore[invalid-argument-type]
+            return cls(array=sample_array, sample_axis=in_sample_axis)
 
         return cls.from_iterable(sample.samples, sample_axis=sample_axis, dtype=dtype)
 
@@ -174,7 +176,7 @@ class ArraySample[D: Numeric](Sample[D], np.lib.mixins.NDArrayOperatorsMixin):
     @override
     def concat(self, other: Sample[D]) -> Self:
         if isinstance(other, ArraySample):
-            other_array = np.moveaxis(other.array, other.sample_axis, self.sample_axis)  # type: ignore[invalid-argument-type]
+            other_array = np.moveaxis(other.array, other.sample_axis, self.sample_axis)
         else:
             other_array = np.stack(list(other.samples), axis=self.sample_axis, dtype=self.array.dtype)
 
@@ -224,7 +226,7 @@ class ArraySample[D: Numeric](Sample[D], np.lib.mixins.NDArrayOperatorsMixin):
         """
         self.array[index] = value
 
-    def __array__(self, dtype: DTypeLike = None, copy: bool | None = None) -> np.ndarray:
+    def __array__(self, dtype: DTypeLike | None = None, copy: bool | None = None) -> np.ndarray:
         """Get the underlying numpy array.
 
         Args:
@@ -331,7 +333,7 @@ class ArraySample[D: Numeric](Sample[D], np.lib.mixins.NDArrayOperatorsMixin):
 
     def __eq__(self, value: Any) -> Self:  # type: ignore[override]  # noqa: ANN401, PYI032
         """Vectorized equality comparison."""
-        return np.equal(self, value)  # type: ignore[return-value]
+        return np.equal(self, value)
 
     def __hash__(self) -> int:
         """Compute the hash of the ArraySample."""
