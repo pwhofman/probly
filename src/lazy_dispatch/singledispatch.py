@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from functools import reduce, singledispatch, update_wrapper
 import operator
-from typing import TYPE_CHECKING, Any, get_args, overload
+from typing import TYPE_CHECKING, Any, Concatenate, get_args, overload
 
 from lazy_dispatch.isinstance import (
     LazyType,
@@ -37,30 +37,14 @@ def first_argument[T](x: T, *args: Any, **kwargs: Any) -> T:  # noqa: ANN401, AR
     return x
 
 
-class lazydispatch[A: Callable, Out]:  # noqa: N801
+class Lazydispatch[T, **In, Out]:
     """A lazy version of functools.singledispatch that also works with string types."""
-
-    def __new__(
-        cls,
-        func: A | None = None,
-        *,
-        dispatch_on: Callable = first_argument,
-    ) -> lazydispatch[A, Out] | Callable[[A], lazydispatch[A, Out]]:
-        """Create a new lazy_singledispatch or return a decorator."""
-        if func is None:
-
-            def decorator(func: A) -> lazydispatch[A, Out]:
-                return cls(func, dispatch_on=dispatch_on)
-
-            return decorator
-
-        return super().__new__(cls)
 
     def __init__(
         self,
-        func: A | None = None,
+        func: Callable[Concatenate[T, In], Out] | None = None,
         *,
-        dispatch_on: Callable = first_argument,
+        dispatch_on: Callable[Concatenate[T, In], Any] = first_argument,
     ) -> None:
         """Initialize the lazy_singledispatch instance."""
         if func is None:
@@ -196,9 +180,37 @@ class lazydispatch[A: Callable, Out]:  # noqa: N801
 
         return func  # type: ignore[return-value]
 
-    def __call__(self, *args: Any, **kwargs: Any) -> Out:  # noqa: ANN401
+    def __call__(self, *args: In.args, **kwargs: In.kwargs) -> Out:
         """Call the appropriate registered function based on the type of the first argument."""
         if not args:
             msg = f"{self.funcname} requires at least 1 positional argument"
             raise TypeError(msg)
         return self.dispatch(self.dispatch_on(*args, **kwargs).__class__)(*args, **kwargs)
+
+
+@overload
+def lazydispatch[T, **In, Out](
+    func: Callable[Concatenate[T, In], Out], *, dispatch_on: Callable = first_argument
+) -> Lazydispatch[T, In, Out]: ...
+
+
+@overload
+def lazydispatch[T, **In, Out](
+    *, dispatch_on: Callable = first_argument
+) -> Callable[[Callable[Concatenate[T, In], Out]], Lazydispatch[T, In, Out]]: ...
+
+
+def lazydispatch[T, **In, Out](
+    func: Callable[Concatenate[T, In], Out] | None = None,
+    *,
+    dispatch_on: Callable = first_argument,
+) -> Lazydispatch[T, In, Out] | Callable[[Callable[Concatenate[T, In], Out]], Lazydispatch[T, In, Out]]:
+    """Create a new lazy_singledispatch or return a decorator."""
+    if func is None:
+
+        def decorator(func: Callable[Concatenate[T, In], Out]) -> Lazydispatch[T, In, Out]:
+            return Lazydispatch(func, dispatch_on=dispatch_on)
+
+        return decorator
+
+    return Lazydispatch(func, dispatch_on=dispatch_on)

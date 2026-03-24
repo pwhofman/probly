@@ -5,7 +5,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Literal, Protocol, Self, TypedDict, Unpack
 
-from lazy_dispatch.singledispatch import lazydispatch
+from lazy_dispatch import Lazydispatch, lazydispatch
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
@@ -147,7 +147,7 @@ def first_dispatchable_sample(samples: Iterable, **_kwargs: Unpack[SampleParams]
         return None
 
 
-create_sample = lazydispatch[SampleFactory, Sample](
-    ListSample.from_iterable,  # type: ignore[invalid-argument-type]
+create_sample: Lazydispatch[Any, ..., Any] = lazydispatch(
+    ListSample.from_iterable,
     dispatch_on=first_dispatchable_sample,
 )

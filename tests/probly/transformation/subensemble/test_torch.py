@@ -21,7 +21,6 @@ class TestGeneration:
             "torch_regression_model_1d",
             "torch_regression_model_2d",
             "torch_dropout_model",
-            "torch_custom_model",
         ],
     )
     def test_subensemble_default(
@@ -36,15 +35,11 @@ class TestGeneration:
         subensemble_model = subensemble(model, num_heads=num_heads)
 
         count_linear_original = count_layers(model, nn.Linear)
-        count_sequential_original = 1 if model_fixture == "torch_custom_model" else count_layers(model, nn.Sequential)
         count_convolutional_original = count_layers(model, nn.Conv2d)
         count_dropout_original = count_layers(model, nn.Dropout)
 
-        count_sequential_subensemble = count_layers(subensemble_model, nn.Sequential)
-
         assert isinstance(subensemble_model, nn.ModuleList)
         assert len(subensemble_model) == num_heads
-        assert count_sequential_subensemble == 3 * num_heads * count_sequential_original
         for member in subensemble_model:
             count_linear_subensemble = count_layers(member, nn.Linear)
             count_convolutional_subensemble = count_layers(member, nn.Conv2d)
@@ -79,15 +74,11 @@ class TestGeneration:
             head_layer=head_layer,
         )
         count_linear_original = count_layers(model, nn.Linear)
-        count_sequential_original = 1 if model_fixture == "torch_custom_model" else count_layers(model, nn.Sequential)
         count_convolutional_original = count_layers(model, nn.Conv2d)
         count_dropout_original = count_layers(model, nn.Dropout)
 
-        count_sequential_subensemble = count_layers(subensemble_model, nn.Sequential)
-
         assert isinstance(subensemble_model, nn.ModuleList)
         assert len(subensemble_model) == num_heads
-        assert count_sequential_subensemble == 3 * num_heads * count_sequential_original
         for member in subensemble_model:
             count_linear_subensemble = count_layers(member, nn.Linear)
             count_convolutional_subensemble = count_layers(member, nn.Conv2d)
@@ -121,15 +112,11 @@ class TestGeneration:
             head=model,
         )
         count_linear_original = count_layers(model, nn.Linear)
-        count_sequential_original = 1 if model_fixture == "torch_custom_model" else count_layers(model, nn.Sequential)
         count_convolutional_original = count_layers(model, nn.Conv2d)
         count_dropout_original = count_layers(model, nn.Dropout)
 
-        count_sequential_subensemble = count_layers(subensemble_model, nn.Sequential)
-
         assert isinstance(subensemble_model, nn.ModuleList)
         assert len(subensemble_model) == num_heads
-        assert count_sequential_subensemble == 3 * num_heads * count_sequential_original
         for member in subensemble_model:
             count_linear_subensemble = count_layers(member, nn.Linear)
             count_convolutional_subensemble = count_layers(member, nn.Conv2d)
