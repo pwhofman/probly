@@ -803,9 +803,12 @@ def dirichlet_entropy(alpha: torch.Tensor) -> torch.Tensor:
         https://arxiv.org/abs/1910.04819
 
     The entropy is given by:
+
+    .. code-block:: none
+
         H(alpha) = log B(alpha)
-                   + (alpha_0 - K) * ψ(alpha_0)
-                   - Σ_k (alpha_k - 1) * ψ(alpha_k)
+                   + (alpha_0 - K) * psi(alpha_0)
+                   - sum_k (alpha_k - 1) * psi(alpha_k)
 
     Args:
         alpha: Dirichlet concentration parameters, shape (B_a, K), must be > 0.

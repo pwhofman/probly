@@ -118,11 +118,11 @@ class ClassificationScore(ClassificationScoreProtocol):
         """Initialize classification score.
 
         Args:
-        model: The prediction model.
-        score_func: Function that takes probabilities and returns score matrix.
-                    Randomization (for APS/SAPS) MUST be built into this function.
-        randomize: Whether to use randomization (for reproducibility).
-        random_state: Seed for randomization.
+            model: The prediction model.
+            score_func: Function that takes probabilities and returns score matrix.
+                Randomization (for APS/SAPS) MUST be built into this function.
+            randomize: Whether to use randomization (for reproducibility).
+            random_state: Seed for randomization.
         """
         self.model = model
         self.score_func = score_func

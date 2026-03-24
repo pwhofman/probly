@@ -42,7 +42,10 @@ extensions = [
     "sphinxcontrib.bibtex",  # for bibliography support
 ]
 
-suppress_warnings = []
+suppress_warnings = [
+    "ref.python",  # Ambiguous cross-references from re-exported symbols
+    "py.domain",  # Duplicate object descriptions from autosummary recursive
+]
 
 templates_path = ["_templates"]
 
