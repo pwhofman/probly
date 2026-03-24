@@ -25,7 +25,9 @@ def register(cls: LazyType, generator: Callable) -> None:
     ensemble_generator.register(cls=cls, func=generator)
 
 
-def ensemble[T: EnsemblePredictor](base: T, num_members: int, reset_params: bool = True) -> T:
+def ensemble[In, KwIn, Out](
+    base: Predictor[In, KwIn, Out], num_members: int, reset_params: bool = True
+) -> EnsemblePredictor[In, KwIn, Out]:
     """Create an ensemble predictor from a base predictor based on :cite:`lakshminarayananSimpleScalable2017`.
 
     Args:
