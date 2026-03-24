@@ -17,7 +17,7 @@ def generate_torch_subensemble(
     *,
     head: nn.Module | None = None,
     reset_params: bool = False,
-    head_layer: int | None = None,
+    head_layer: int | None = 1,
 ) -> nn.ModuleList:
     """Build a torch subensemble.
 
@@ -26,16 +26,16 @@ def generate_torch_subensemble(
     - using an obj as shared backbone and copying the head model num_heads times.
     Resets the parameters of each head.
     """
-    if head_layer is not None:
+    if head is None:
+        if head_layer is None:
+            msg = "head_layer must be provided when head is not provided."
+            raise ValueError(msg)
         layers = [m for m in traverse(obj, nn_traverser).children() if isinstance(m, nn.Module)]
         if not isinstance(obj, nn.Sequential):
             msg = f"head_layer is only supported for nn.Sequential models, but got {type(obj)} instead."
             raise ValueError(msg)
         if head_layer > len(layers):
             msg = f"head_layer {head_layer} must be less than to {len(layers)}"
-            raise ValueError(msg)
-        if head is not None:
-            msg = "head_layer and head cannot be provided at the same time."
             raise ValueError(msg)
 
         backbone = nn.Sequential(*layers[:-head_layer])
