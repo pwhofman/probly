@@ -11,19 +11,13 @@ from .common import register
 def cqr_score_jax(y_true: Array, y_pred: Array) -> Array:
     """Compute CQR nonconformity scores for JAX arrays.
 
-    Parameters
-    ----------
-    y_true:
-        True targets as JAX array of shape ``(n_samples,)``.
-    y_pred:
-        Predicted lower and upper quantiles as JAX array of shape
-        ``(n_samples, 2)``.
+    Args:
+        y_true: True targets as JAX array of shape ``(n_samples,)``.
+        y_pred: Predicted lower and upper quantiles as JAX array of shape
+            ``(n_samples, 2)``.
 
     Returns:
-    -------
-    Array
-        One-dimensional array of nonconformity scores with shape
-        ``(n_samples,)``.
+        One-dimensional array of nonconformity scores with shape ``(n_samples,)``.
     """
     y_true = jnp.ravel(y_true)
     if y_pred.ndim != 2 or y_pred.shape[1] != 2:

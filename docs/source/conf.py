@@ -42,13 +42,37 @@ extensions = [
     "sphinxcontrib.bibtex",  # for bibliography support
 ]
 
-suppress_warnings = []
+suppress_warnings = [
+    "ref.python",  # Ambiguous cross-references from re-exported symbols
+    "py.domain",  # Duplicate object descriptions from autosummary recursive
+]
+
+# --- Autosummary settings ----------------------------------------------------
+# This is the key switch: generate stub .rst files from autosummary directives
+autosummary_generate = True
+autosummary_generate_overwrite = True
+
+# --- Autodoc settings --------------------------------------------------------
+# "both" = show both class docstring AND __init__ docstring
+autoclass_content = "both"
+# Show type hints in the description, not the signature
+autodoc_typehints = "both"
+# Only show types for parameters that are actually documented
+autodoc_typehints_description_target = "documented_params"
+# Default flags applied to every autodoc directive — avoids duplication
+# by ensuring automodule never auto-expands members unless you say so
+autodoc_default_options = {
+    "members": True,
+    "undoc-members": True,
+    "show-inheritance": True,
+}
 
 templates_path = ["_templates"]
 
 # Prefix labels with doc name: "api:Overview" instead of just "Overview"
 autosectionlabel_prefix_document = True
 
+# -- Exclude patterns ------------------------------------------------------------------------------
 exclude_patterns = [
     "_build",
     "Thumbs.db",
@@ -64,10 +88,12 @@ exclude_patterns = [
     "sg_execution_times.rst",
 ]
 
+
+# -- Bibtex settings -------------------------------------------------------------------------------
 bibtex_bibfiles = ["references.bib"]
 bibtex_default_style = "alpha"
 
-# -- Sphinx-Gallery ----------------------------------------------------------
+# -- Sphinx-Gallery --------------------------------------------------------------------------------
 sphinx_gallery_conf = {
     "examples_dirs": [str(REPO_ROOT / "examples")],
     "gallery_dirs": ["auto_examples"],
@@ -83,7 +109,7 @@ sphinx_gallery_conf = {
     "default_thumb_file": str(REPO_ROOT / "docs" / "source" / "_static" / "logo" / "logo_light.png"),
 }
 
-# -- Intersphinx -------------------------------------------------------------
+# -- Intersphinx -----------------------------------------------------------------------------------
 intersphinx_mapping = {
     "python3": ("https://docs.python.org/3", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
@@ -94,7 +120,7 @@ intersphinx_mapping = {
 }
 
 
-# -- Linkcode (optional) -----------------------------------------------------
+# -- Linkcode (optional) ---------------------------------------------------------------------------
 def linkcode_resolve(domain: str, info: dict[str, str]) -> str | None:
     """Return a URL to the source for the given Python object for Sphinx linkcode.
 
@@ -125,7 +151,7 @@ def linkcode_resolve(domain: str, info: dict[str, str]) -> str | None:
     return f"{base}/blob/{branch}/{relpath}#L{lineno}"
 
 
-# -- HTML output -------------------------------------------------------------
+# -- HTML output -----------------------------------------------------------------------------------
 html_theme = "furo"
 
 html_static_path = ["_static"]
@@ -151,22 +177,6 @@ html_sidebars = {
 }
 
 html_show_sourcelink = False
-
-# -- Autodoc -----------------------------------------------------------------
-autosummary_generate = True
-autodoc_default_options = {
-    "show-inheritance": True,
-    "members": True,
-    "inherited-members": True,
-    "member-order": "groupwise",
-    "special-members": "__call__",
-    "undoc-members": True,
-    "exclude-members": "__weakref__",
-}
-autoclass_content = "both"
-autodoc_inherit_docstrings = True
-autodoc_typehints = "description"
-autodoc_member_order = "groupwise"
 
 # -- Copy Paste Button -----------------------------------------------------------------------------
 # Ignore >>> when copying code
