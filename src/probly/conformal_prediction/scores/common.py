@@ -40,6 +40,7 @@ class Score(Protocol):
     """Interface for nonconformity scores used in split conformal prediction.
 
     Each score (APS, LAC, RAPS, ...) must implement:
+
     - calibration_nonconformity: used on calibration data.
     - predict_nonconformity: used on test data, must return a score matrix
       of shape according to the specific score type (classification or regression).

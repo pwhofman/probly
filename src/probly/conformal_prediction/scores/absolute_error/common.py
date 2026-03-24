@@ -18,7 +18,7 @@ from probly.conformal_prediction.scores.common import RegressionScore
 
 @lazydispatch
 def absolute_error_score_func[T](y_true: T, y_pred: T) -> Any:  # noqa: ANN401
-    """Compute absolute error |y - y_hat|."""
+    """Compute absolute error."""
     return np.abs(y_true - y_pred)  # type: ignore[operator]
 
 
@@ -28,7 +28,7 @@ def register(cls: LazyType, func: Callable) -> None:
 
 
 class AbsoluteErrorScore(RegressionScore):
-    """Standard absolute residual score: |y - y_hat|."""
+    """Standard absolute residual score."""
 
     def __init__(self, model: Predictor) -> None:
         """Initialize with a prediction model."""

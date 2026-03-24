@@ -9,7 +9,7 @@ from .common import register
 
 
 def absolute_error_jax(y_true: Array, y_pred: Array) -> Array:
-    """Compute absolute error |y - y_hat|."""
+    """Compute absolute error."""
     return jnp.abs(y_true - y_pred)
 
 
