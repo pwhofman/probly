@@ -531,7 +531,7 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="probly.train.bayesian.torch.ELBOLoss">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">probly.train.bayesian.torch.</span></span><span class="sig-name descname"><span class="pre">ELBOLoss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kl_penalty</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-05</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/train/bayesian/torch.html#ELBOLoss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="reference external" href="https://github.com/n-teGruppe/probly/blob/sphinx_gallery/src/probly/train/bayesian/torch.py#L41"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.bayesian.torch.ELBOLoss" title="Link to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></a></p>
+<dd><p>Bases: <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></a></p>
 <p>Evidence lower bound loss based on <span id="id2">[<a class="reference internal" href="../references.html#id2" title="Charles Blundell, Julien Cornebise, Koray Kavukcuoglu, and Daan Wierstra. Weight uncertainty in neural network. In Francis R. Bach and David M. Blei, editors, Proceedings of the 32nd International Conference on Machine Learning, ICML 2015, Lille, France, 6-11 July 2015, volume 37 of JMLR Workshop and Conference Proceedings, 1613–1622. JMLR.org, 2015. URL: http://proceedings.mlr.press/v37/blundell15.html.">BCKW15</a>]</span>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -577,7 +577,7 @@ accessed from this module using the given name</p></li>
 <span class="sig-name descname"><span class="pre">apply</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fn</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/n-teGruppe/probly/blob/sphinx_gallery/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py#L1026"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.bayesian.torch.ELBOLoss.apply" title="Link to this definition">¶</a></dt>
 <dd><p>Apply <code class="docutils literal notranslate"><span class="pre">fn</span></code> recursively to every submodule (as returned by <code class="docutils literal notranslate"><span class="pre">.children()</span></code>) as well as self.</p>
 <p>Typical use includes initializing the parameters of a model
-(see also <a class="reference external" href="https://docs.pytorch.org/docs/stable/nn.init.html#nn-init-doc" title="(in PyTorch v2.10)"><span>torch.nn.init</span></a>).</p>
+(see also <a class="reference external" href="https://docs.pytorch.org/docs/stable/nn.init.html#nn-init-doc" title="(in PyTorch v2.11)"><span>torch.nn.init</span></a>).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>fn</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> -&gt; None) – function to be applied to each submodule</p>
@@ -646,7 +646,7 @@ are direct members of this module.</p>
 <dd class="field-even"><p><em>torch.Tensor</em> – module buffer</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterator" title="(in Python v3.14)"><em>Iterator</em></a>[<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><em>Tensor</em></a>]</p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterator" title="(in Python v3.14)"><em>Iterator</em></a>[<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><em>Tensor</em></a>]</p>
 </dd>
 </dl>
 <p>Example:</p>
@@ -668,7 +668,7 @@ are direct members of this module.</p>
 <dd class="field-odd"><p><em>Module</em> – a child module</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterator" title="(in Python v3.14)"><em>Iterator</em></a>[<a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.10)"><em>Module</em></a>]</p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterator" title="(in Python v3.14)"><em>Iterator</em></a>[<a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.11)"><em>Module</em></a>]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -676,10 +676,10 @@ are direct members of this module.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="probly.train.bayesian.torch.ELBOLoss.compile">
 <span class="sig-name descname"><span class="pre">compile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/n-teGruppe/probly/blob/sphinx_gallery/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py#L3030"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.bayesian.torch.ELBOLoss.compile" title="Link to this definition">¶</a></dt>
-<dd><p>Compile this Module’s forward using <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.compile.html#torch.compile" title="(in PyTorch v2.10)"><code class="xref py py-func docutils literal notranslate"><span class="pre">torch.compile()</span></code></a>.</p>
+<dd><p>Compile this Module’s forward using <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.compile.html#torch.compile" title="(in PyTorch v2.11)"><code class="xref py py-func docutils literal notranslate"><span class="pre">torch.compile()</span></code></a>.</p>
 <p>This Module’s <cite>__call__</cite> method is compiled and all arguments are passed as-is
-to <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.compile.html#torch.compile" title="(in PyTorch v2.10)"><code class="xref py py-func docutils literal notranslate"><span class="pre">torch.compile()</span></code></a>.</p>
-<p>See <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.compile.html#torch.compile" title="(in PyTorch v2.10)"><code class="xref py py-func docutils literal notranslate"><span class="pre">torch.compile()</span></code></a> for details on the arguments for this function.</p>
+to <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.compile.html#torch.compile" title="(in PyTorch v2.11)"><code class="xref py py-func docutils literal notranslate"><span class="pre">torch.compile()</span></code></a>.</p>
+<p>See <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.compile.html#torch.compile" title="(in PyTorch v2.11)"><code class="xref py py-func docutils literal notranslate"><span class="pre">torch.compile()</span></code></a> for details on the arguments for this function.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -751,8 +751,8 @@ copied to that device</p>
 particular modules for details of their behaviors in training/evaluation
 mode, i.e. whether they are affected, e.g. <code class="xref py py-class docutils literal notranslate"><span class="pre">Dropout</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">BatchNorm</span></code>,
 etc.</p>
-<p>This is equivalent with <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module.train" title="(in PyTorch v2.10)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">self.train(False)</span></code></a>.</p>
-<p>See <a class="reference external" href="https://docs.pytorch.org/docs/stable/notes/autograd.html#locally-disable-grad-doc" title="(in PyTorch v2.10)"><span>Locally disabling gradient computation</span></a> for a comparison between
+<p>This is equivalent with <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module.train" title="(in PyTorch v2.11)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">self.train(False)</span></code></a>.</p>
+<p>See <a class="reference external" href="https://docs.pytorch.org/docs/stable/notes/autograd.html#locally-disable-grad-doc" title="(in PyTorch v2.11)"><span>Locally disabling gradient computation</span></a> for a comparison between
 <cite>.eval()</cite> and several similar mechanisms that may be confused with it.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -803,9 +803,9 @@ strings are acceptable.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>inputs</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><em>Tensor</em></a>) – torch.Tensor of size (n_instances, n_classes)</p></li>
-<li><p><strong>targets</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><em>Tensor</em></a>) – torch.Tensor of size (n_instances,)</p></li>
-<li><p><strong>kl</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><em>Tensor</em></a>) – torch.Tensor, KL divergence of the model</p></li>
+<li><p><strong>inputs</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><em>Tensor</em></a>) – torch.Tensor of size (n_instances, n_classes)</p></li>
+<li><p><strong>targets</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><em>Tensor</em></a>) – torch.Tensor of size (n_instances,)</p></li>
+<li><p><strong>kl</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><em>Tensor</em></a>) – torch.Tensor, KL divergence of the model</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -834,7 +834,7 @@ fully-qualified string.)</p>
 <dd class="field-even"><p>The buffer referenced by <code class="docutils literal notranslate"><span class="pre">target</span></code></p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)">torch.Tensor</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)">torch.Tensor</a></p>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#AttributeError" title="(in Python v3.14)"><strong>AttributeError</strong></a> – If the target string references an invalid
@@ -931,7 +931,7 @@ fully-qualified string.)</p>
 <dd class="field-even"><p>The submodule referenced by <code class="docutils literal notranslate"><span class="pre">target</span></code></p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.10)">torch.nn.Module</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.11)">torch.nn.Module</a></p>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#AttributeError" title="(in Python v3.14)"><strong>AttributeError</strong></a> – If at any point along the path resulting from
@@ -990,12 +990,12 @@ copied to that device</p>
 <dd><p>Copy parameters and buffers from <a class="reference internal" href="#probly.train.bayesian.torch.ELBOLoss.state_dict" title="probly.train.bayesian.torch.ELBOLoss.state_dict"><code class="xref py py-attr docutils literal notranslate"><span class="pre">state_dict</span></code></a> into this module and its descendants.</p>
 <p>If <code class="xref py py-attr docutils literal notranslate"><span class="pre">strict</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code>, then
 the keys of <a class="reference internal" href="#probly.train.bayesian.torch.ELBOLoss.state_dict" title="probly.train.bayesian.torch.ELBOLoss.state_dict"><code class="xref py py-attr docutils literal notranslate"><span class="pre">state_dict</span></code></a> must exactly match the keys returned
-by this module’s <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module.state_dict" title="(in PyTorch v2.10)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">state_dict()</span></code></a> function.</p>
+by this module’s <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module.state_dict" title="(in PyTorch v2.11)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">state_dict()</span></code></a> function.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>If <code class="xref py py-attr docutils literal notranslate"><span class="pre">assign</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code> the optimizer must be created after
 the call to <a class="reference internal" href="#probly.train.bayesian.torch.ELBOLoss.load_state_dict" title="probly.train.bayesian.torch.ELBOLoss.load_state_dict"><code class="xref py py-attr docutils literal notranslate"><span class="pre">load_state_dict</span></code></a> unless
-<a class="reference external" href="https://docs.pytorch.org/docs/stable/future_mod.html#torch.__future__.get_swap_module_params_on_conversion" title="(in PyTorch v2.10)"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_swap_module_params_on_conversion()</span></code></a> is <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
+<a class="reference external" href="https://docs.pytorch.org/docs/stable/future_mod.html#torch.__future__.get_swap_module_params_on_conversion" title="(in PyTorch v2.11)"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_swap_module_params_on_conversion()</span></code></a> is <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -1004,7 +1004,7 @@ the call to <a class="reference internal" href="#probly.train.bayesian.torch.ELB
 persistent buffers.</p></li>
 <li><p><strong>strict</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>optional</em>) – whether to strictly enforce that the keys
 in <a class="reference internal" href="#probly.train.bayesian.torch.ELBOLoss.state_dict" title="probly.train.bayesian.torch.ELBOLoss.state_dict"><code class="xref py py-attr docutils literal notranslate"><span class="pre">state_dict</span></code></a> match the keys returned by this module’s
-<a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module.state_dict" title="(in PyTorch v2.10)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">state_dict()</span></code></a> function. Default: <code class="docutils literal notranslate"><span class="pre">True</span></code></p></li>
+<a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module.state_dict" title="(in PyTorch v2.11)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">state_dict()</span></code></a> function. Default: <code class="docutils literal notranslate"><span class="pre">True</span></code></p></li>
 <li><p><strong>assign</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>optional</em>) – When set to <code class="docutils literal notranslate"><span class="pre">False</span></code>, the properties of the tensors
 in the current module are preserved whereas setting it to <code class="docutils literal notranslate"><span class="pre">True</span></code> preserves
 properties of the Tensors in the state dict. The only
@@ -1048,7 +1048,7 @@ exists in <a class="reference internal" href="#probly.train.bayesian.torch.ELBOL
 <dd class="field-odd"><p><em>Module</em> – a module in the network</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterator" title="(in Python v3.14)"><em>Iterator</em></a>[<a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.10)"><em>Module</em></a>]</p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterator" title="(in Python v3.14)"><em>Iterator</em></a>[<a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.11)"><em>Module</em></a>]</p>
 </dd>
 </dl>
 <div class="admonition note">
@@ -1114,7 +1114,7 @@ are direct members of this module. Defaults to True.</p></li>
 <dd class="field-even"><p><em>(str, torch.Tensor)</em> – Tuple containing the name and buffer</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterator" title="(in Python v3.14)"><em>Iterator</em></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)">tuple</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>, <a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><em>Tensor</em></a>]]</p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterator" title="(in Python v3.14)"><em>Iterator</em></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)">tuple</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>, <a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><em>Tensor</em></a>]]</p>
 </dd>
 </dl>
 <p>Example:</p>
@@ -1135,7 +1135,7 @@ are direct members of this module. Defaults to True.</p></li>
 <dd class="field-odd"><p><em>(str, Module)</em> – Tuple containing a name and child module</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterator" title="(in Python v3.14)"><em>Iterator</em></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)">tuple</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>, <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.10)"><em>Module</em></a>]]</p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterator" title="(in Python v3.14)"><em>Iterator</em></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)">tuple</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>, <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.11)"><em>Module</em></a>]]</p>
 </dd>
 </dl>
 <p>Example:</p>
@@ -1154,7 +1154,7 @@ are direct members of this module. Defaults to True.</p></li>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>memo</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#set" title="(in Python v3.14)"><em>set</em></a><em>[</em><a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.10)"><em>Module</em></a><em>] </em><em>| </em><em>None</em>) – a memo to store the set of modules already added to the result</p></li>
+<li><p><strong>memo</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#set" title="(in Python v3.14)"><em>set</em></a><em>[</em><a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.11)"><em>Module</em></a><em>] </em><em>| </em><em>None</em>) – a memo to store the set of modules already added to the result</p></li>
 <li><p><strong>prefix</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – a prefix that will be added to the name of the module</p></li>
 <li><p><strong>remove_duplicate</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>) – whether to remove the duplicated module instances in the result
 or not</p></li>
@@ -1203,7 +1203,7 @@ parameters in the result. Defaults to True.</p></li>
 <dd class="field-even"><p><em>(str, Parameter)</em> – Tuple containing the name and parameter</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterator" title="(in Python v3.14)"><em>Iterator</em></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)">tuple</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>, <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.parameter.Parameter.html#torch.nn.parameter.Parameter" title="(in PyTorch v2.10)"><em>Parameter</em></a>]]</p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterator" title="(in Python v3.14)"><em>Iterator</em></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)">tuple</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>, <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.parameter.Parameter.html#torch.nn.parameter.Parameter" title="(in PyTorch v2.11)"><em>Parameter</em></a>]]</p>
 </dd>
 </dl>
 <p>Example:</p>
@@ -1230,7 +1230,7 @@ are direct members of this module.</p>
 <dd class="field-even"><p><em>Parameter</em> – module parameter</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterator" title="(in Python v3.14)"><em>Iterator</em></a>[<a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.parameter.Parameter.html#torch.nn.parameter.Parameter" title="(in PyTorch v2.10)"><em>Parameter</em></a>]</p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterator" title="(in Python v3.14)"><em>Iterator</em></a>[<a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.parameter.Parameter.html#torch.nn.parameter.Parameter" title="(in PyTorch v2.11)"><em>Parameter</em></a>]</p>
 </dd>
 </dl>
 <p>Example:</p>
@@ -1247,7 +1247,7 @@ are direct members of this module.</p>
 <dt class="sig sig-object py" id="probly.train.bayesian.torch.ELBOLoss.register_backward_hook">
 <span class="sig-name descname"><span class="pre">register_backward_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/n-teGruppe/probly/blob/sphinx_gallery/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py#L1422"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.bayesian.torch.ELBOLoss.register_backward_hook" title="Link to this definition">¶</a></dt>
 <dd><p>Register a backward hook on the module.</p>
-<p>This function is deprecated in favor of <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module.register_full_backward_hook" title="(in PyTorch v2.10)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">register_full_backward_hook()</span></code></a> and
+<p>This function is deprecated in favor of <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module.register_full_backward_hook" title="(in PyTorch v2.11)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">register_full_backward_hook()</span></code></a> and
 the behavior of this function will change in future versions.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -1258,7 +1258,7 @@ the behavior of this function will change in future versions.</p>
 <dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.utils.hooks.RemovableHandle</span></code></p>
 </dd>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>hook</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><em>Callable</em></a><em>[</em><em>[</em><a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.10)"><em>Module</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><em>tuple</em></a><em>[</em><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><em>Tensor</em></a><em>, </em><em>...</em><em>] </em><em>| </em><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><em>Tensor</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><em>tuple</em></a><em>[</em><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><em>Tensor</em></a><em>, </em><em>...</em><em>] </em><em>| </em><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><em>Tensor</em></a><em>]</em><em>, </em><em>None</em><em> | </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><em>tuple</em></a><em>[</em><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><em>Tensor</em></a><em>, </em><em>...</em><em>] </em><em>| </em><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><em>Tensor</em></a><em>]</em>)</p>
+<dd class="field-odd"><p><strong>hook</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><em>Callable</em></a><em>[</em><em>[</em><a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.11)"><em>Module</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><em>tuple</em></a><em>[</em><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><em>Tensor</em></a><em>, </em><em>...</em><em>] </em><em>| </em><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><em>Tensor</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><em>tuple</em></a><em>[</em><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><em>Tensor</em></a><em>, </em><em>...</em><em>] </em><em>| </em><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><em>Tensor</em></a><em>]</em><em>, </em><em>None</em><em> | </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><em>tuple</em></a><em>[</em><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><em>Tensor</em></a><em>, </em><em>...</em><em>] </em><em>| </em><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><em>Tensor</em></a><em>]</em>)</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1325,9 +1325,9 @@ output possibly modified. The hook should have the following signature:</p>
 <li><p><strong>hook</strong> (<em>Callable</em>) – The user defined hook to be registered.</p></li>
 <li><p><strong>prepend</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, the provided <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired
 before all existing <code class="docutils literal notranslate"><span class="pre">forward</span></code> hooks on this
-<a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code></a>. Otherwise, the provided
+<a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code></a>. Otherwise, the provided
 <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired after all existing <code class="docutils literal notranslate"><span class="pre">forward</span></code> hooks on
-this <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code></a>. Note that global
+this <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code></a>. Note that global
 <code class="docutils literal notranslate"><span class="pre">forward</span></code> hooks registered with
 <code class="xref py py-func docutils literal notranslate"><span class="pre">register_module_forward_hook()</span></code> will fire before all hooks
 registered by this method.
@@ -1378,9 +1378,9 @@ the following signature:</p>
 <li><p><strong>hook</strong> (<em>Callable</em>) – The user defined hook to be registered.</p></li>
 <li><p><strong>prepend</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>) – If true, the provided <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired before
 all existing <code class="docutils literal notranslate"><span class="pre">forward_pre</span></code> hooks on this
-<a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code></a>. Otherwise, the provided
+<a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code></a>. Otherwise, the provided
 <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired after all existing <code class="docutils literal notranslate"><span class="pre">forward_pre</span></code> hooks
-on this <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code></a>. Note that global
+on this <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code></a>. Note that global
 <code class="docutils literal notranslate"><span class="pre">forward_pre</span></code> hooks registered with
 <code class="xref py py-func docutils literal notranslate"><span class="pre">register_module_forward_pre_hook()</span></code> will fire before all
 hooks registered by this method.
@@ -1439,9 +1439,9 @@ will raise an error.</p>
 <li><p><strong>hook</strong> (<em>Callable</em>) – The user-defined hook to be registered.</p></li>
 <li><p><strong>prepend</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>) – If true, the provided <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired before
 all existing <code class="docutils literal notranslate"><span class="pre">backward</span></code> hooks on this
-<a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code></a>. Otherwise, the provided
+<a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code></a>. Otherwise, the provided
 <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired after all existing <code class="docutils literal notranslate"><span class="pre">backward</span></code> hooks on
-this <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code></a>. Note that global
+this <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code></a>. Note that global
 <code class="docutils literal notranslate"><span class="pre">backward</span></code> hooks registered with
 <code class="xref py py-func docutils literal notranslate"><span class="pre">register_module_full_backward_hook()</span></code> will fire before
 all hooks registered by this method.</p></li>
@@ -1485,9 +1485,9 @@ will raise an error.</p>
 <li><p><strong>hook</strong> (<em>Callable</em>) – The user-defined hook to be registered.</p></li>
 <li><p><strong>prepend</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>) – If true, the provided <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired before
 all existing <code class="docutils literal notranslate"><span class="pre">backward_pre</span></code> hooks on this
-<a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code></a>. Otherwise, the provided
+<a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code></a>. Otherwise, the provided
 <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired after all existing <code class="docutils literal notranslate"><span class="pre">backward_pre</span></code> hooks
-on this <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code></a>. Note that global
+on this <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code></a>. Note that global
 <code class="docutils literal notranslate"><span class="pre">backward_pre</span></code> hooks registered with
 <code class="xref py py-func docutils literal notranslate"><span class="pre">register_module_full_backward_pre_hook()</span></code> will fire before
 all hooks registered by this method.</p></li>
@@ -1557,7 +1557,7 @@ loading the state dict.</p>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>)</p></li>
-<li><p><strong>module</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.10)"><em>Module</em></a><em> | </em><em>None</em>)</p></li>
+<li><p><strong>module</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.11)"><em>Module</em></a><em> | </em><em>None</em>)</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
@@ -1591,7 +1591,7 @@ module’s <a class="reference internal" href="#probly.train.bayesian.torch.ELBO
 <dl class="py method">
 <dt class="sig sig-object py" id="probly.train.bayesian.torch.ELBOLoss.register_state_dict_post_hook">
 <span class="sig-name descname"><span class="pre">register_state_dict_post_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/n-teGruppe/probly/blob/sphinx_gallery/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py#L2103"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.bayesian.torch.ELBOLoss.register_state_dict_post_hook" title="Link to this definition">¶</a></dt>
-<dd><p>Register a post-hook for the <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module.state_dict" title="(in PyTorch v2.10)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">state_dict()</span></code></a> method.</p>
+<dd><p>Register a post-hook for the <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module.state_dict" title="(in PyTorch v2.11)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">state_dict()</span></code></a> method.</p>
 <dl class="simple">
 <dt>It should have the following signature::</dt><dd><p>hook(module, state_dict, prefix, local_metadata) -&gt; None</p>
 </dd>
@@ -1602,7 +1602,7 @@ module’s <a class="reference internal" href="#probly.train.bayesian.torch.ELBO
 <dl class="py method">
 <dt class="sig sig-object py" id="probly.train.bayesian.torch.ELBOLoss.register_state_dict_pre_hook">
 <span class="sig-name descname"><span class="pre">register_state_dict_pre_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/n-teGruppe/probly/blob/sphinx_gallery/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py#L2127"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.bayesian.torch.ELBOLoss.register_state_dict_pre_hook" title="Link to this definition">¶</a></dt>
-<dd><p>Register a pre-hook for the <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module.state_dict" title="(in PyTorch v2.10)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">state_dict()</span></code></a> method.</p>
+<dd><p>Register a pre-hook for the <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module.state_dict" title="(in PyTorch v2.11)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">state_dict()</span></code></a> method.</p>
 <dl class="simple">
 <dt>It should have the following signature::</dt><dd><p>hook(module, prefix, keep_vars) -&gt; None</p>
 </dd>
@@ -1619,7 +1619,7 @@ call is made.</p>
 in-place.</p>
 <p>This method is helpful for freezing part of the module for finetuning
 or training parts of a model individually (e.g., GAN training).</p>
-<p>See <a class="reference external" href="https://docs.pytorch.org/docs/stable/notes/autograd.html#locally-disable-grad-doc" title="(in PyTorch v2.10)"><span>Locally disabling gradient computation</span></a> for a comparison between
+<p>See <a class="reference external" href="https://docs.pytorch.org/docs/stable/notes/autograd.html#locally-disable-grad-doc" title="(in PyTorch v2.11)"><span>Locally disabling gradient computation</span></a> for a comparison between
 <cite>.requires_grad_()</cite> and several similar mechanisms that may be confused with it.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -1693,7 +1693,7 @@ will be raised because <code class="docutils literal notranslate"><span class="p
 <li><p><strong>target</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The fully-qualified string name of the submodule
 to look for. (See above example for how to specify a
 fully-qualified string.)</p></li>
-<li><p><strong>module</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.10)"><em>Module</em></a>) – The module to set the submodule to.</p></li>
+<li><p><strong>module</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.11)"><em>Module</em></a>) – The module to set the submodule to.</p></li>
 <li><p><strong>strict</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>) – If <code class="docutils literal notranslate"><span class="pre">False</span></code>, the method will replace an existing submodule
 or create a new submodule if the parent module exists. If <code class="docutils literal notranslate"><span class="pre">True</span></code>,
 the method will only attempt to replace an existing submodule and throw an error
@@ -1717,7 +1717,7 @@ if the submodule doesn’t already exist.</p></li>
 <dl class="py method">
 <dt class="sig sig-object py" id="probly.train.bayesian.torch.ELBOLoss.share_memory">
 <span class="sig-name descname"><span class="pre">share_memory</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/n-teGruppe/probly/blob/sphinx_gallery/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py#L2963"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.bayesian.torch.ELBOLoss.share_memory" title="Link to this definition">¶</a></dt>
-<dd><p>See <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.Tensor.share_memory_.html#torch.Tensor.share_memory_" title="(in PyTorch v2.10)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">torch.Tensor.share_memory_()</span></code></a>.</p>
+<dd><p>See <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.Tensor.share_memory_.html#torch.Tensor.share_memory_" title="(in PyTorch v2.11)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">torch.Tensor.share_memory_()</span></code></a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Self" title="(in Python v3.14)"><em>Self</em></a></p>
@@ -1758,7 +1758,7 @@ Otherwise, an <code class="docutils literal notranslate"><span class="pre">Order
 Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
 <li><p><strong>prefix</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>optional</em>) – a prefix added to parameter and buffer
 names to compose the keys in state_dict. Default: <code class="docutils literal notranslate"><span class="pre">''</span></code>.</p></li>
-<li><p><strong>keep_vars</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>optional</em>) – by default the <a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a> s
+<li><p><strong>keep_vars</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>optional</em>) – by default the <a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a> s
 returned in the state dict are detached from autograd. If it’s
 set to <code class="docutils literal notranslate"><span class="pre">True</span></code>, detaching will not be performed.
 Default: <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
@@ -1804,7 +1804,7 @@ Default: <code class="docutils literal notranslate"><span class="pre">False</spa
 <span class="sig-name descname"><span class="pre">to</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">memory_format</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">torch.channels_last</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/n-teGruppe/probly/blob/sphinx_gallery/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py#L1244"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd></dd></dl>
 
-<p>Its signature is similar to <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.Tensor.to.html#torch.Tensor.to" title="(in PyTorch v2.10)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">torch.Tensor.to()</span></code></a>, but only accepts
+<p>Its signature is similar to <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.Tensor.to.html#torch.Tensor.to" title="(in PyTorch v2.11)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">torch.Tensor.to()</span></code></a>, but only accepts
 floating point or complex <code class="xref py py-attr docutils literal notranslate"><span class="pre">dtype</span></code>s. In addition, this method will
 only cast the floating point or complex parameters and buffers to <code class="xref py py-attr docutils literal notranslate"><span class="pre">dtype</span></code>
 (if given). The integral parameters and buffers will be moved
@@ -1820,13 +1820,13 @@ pinned memory to CUDA devices.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>device</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensor_attributes.html#torch.device" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.device</span></code></a>) – the desired device of the parameters
+<li><p><strong>device</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensor_attributes.html#torch.device" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.device</span></code></a>) – the desired device of the parameters
 and buffers in this module</p></li>
-<li><p><strong>dtype</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensor_attributes.html#torch.dtype" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.dtype</span></code></a>) – the desired floating point or complex dtype of
+<li><p><strong>dtype</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensor_attributes.html#torch.dtype" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.dtype</span></code></a>) – the desired floating point or complex dtype of
 the parameters and buffers in this module</p></li>
-<li><p><strong>tensor</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><em>torch.Tensor</em></a>) – Tensor whose dtype and device are the desired
+<li><p><strong>tensor</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><em>torch.Tensor</em></a>) – Tensor whose dtype and device are the desired
 dtype and device for all parameters and buffers in this module</p></li>
-<li><p><strong>memory_format</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensor_attributes.html#torch.memory_format" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.memory_format</span></code></a>) – the desired memory
+<li><p><strong>memory_format</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensor_attributes.html#torch.memory_format" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.memory_format</span></code></a>) – the desired memory
 format for 4D parameters and buffers in this module (keyword
 only argument)</p></li>
 </ul>
@@ -1887,7 +1887,7 @@ only argument)</p></li>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>device</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensor_attributes.html#torch.device" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.device</span></code></a>) – The desired device of the parameters
+<li><p><strong>device</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensor_attributes.html#torch.device" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.device</span></code></a>) – The desired device of the parameters
 and buffers in this module.</p></li>
 <li><p><strong>recurse</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>) – Whether parameters and buffers of submodules should
 be recursively moved to the specified device.</p></li>
@@ -1974,11 +1974,11 @@ copied to that device</p>
 <dt class="sig sig-object py" id="probly.train.bayesian.torch.ELBOLoss.zero_grad">
 <span class="sig-name descname"><span class="pre">zero_grad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">set_to_none</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/n-teGruppe/probly/blob/sphinx_gallery/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py#L2935"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.train.bayesian.torch.ELBOLoss.zero_grad" title="Link to this definition">¶</a></dt>
 <dd><p>Reset gradients of all model parameters.</p>
-<p>See similar function under <a class="reference external" href="https://docs.pytorch.org/docs/stable/optim.html#torch.optim.Optimizer" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.optim.Optimizer</span></code></a> for more context.</p>
+<p>See similar function under <a class="reference external" href="https://docs.pytorch.org/docs/stable/optim.html#torch.optim.Optimizer" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.optim.Optimizer</span></code></a> for more context.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>set_to_none</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>) – instead of setting to zero, set the grads to None.
-See <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.optim.Optimizer.zero_grad.html#torch.optim.Optimizer.zero_grad" title="(in PyTorch v2.10)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">torch.optim.Optimizer.zero_grad()</span></code></a> for details.</p>
+See <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.optim.Optimizer.zero_grad.html#torch.optim.Optimizer.zero_grad" title="(in PyTorch v2.11)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">torch.optim.Optimizer.zero_grad()</span></code></a> for details.</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p>None</p>
@@ -2017,7 +2017,7 @@ See <a class="reference external" href="https://docs.pytorch.org/docs/stable/gen
 <dd class="field-odd"><p><strong>model</strong> (<a class="reference internal" href="probly.conformal_prediction.methods.html#probly.conformal_prediction.methods.Predictor" title="probly.conformal_prediction.methods.Predictor"><em>Predictor</em></a>)</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)">torch.Tensor</a></p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)">torch.Tensor</a></p>
 </dd>
 </dl>
 </dd></dl>

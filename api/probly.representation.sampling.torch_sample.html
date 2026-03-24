@@ -521,12 +521,12 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="probly.representation.sampling.torch_sample.TorchTensorSample">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">probly.representation.sampling.torch_sample.</span></span><span class="sig-name descname"><span class="pre">TorchTensorSample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_dim</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/probly/representation/sampling/torch_sample.html#TorchTensorSample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="reference external" href="https://github.com/n-teGruppe/probly/blob/sphinx_gallery/src/probly/representation/sampling/torch_sample.py#L19"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.sampling.torch_sample.TorchTensorSample" title="Link to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="probly.representation.sampling.common_sample.html#probly.representation.sampling.common_sample.Sample" title="probly.representation.sampling.common_sample.Sample"><code class="xref py py-class docutils literal notranslate"><span class="pre">Sample</span></code></a>[<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>]</p>
+<dd><p>Bases: <a class="reference internal" href="probly.representation.sampling.common_sample.html#probly.representation.sampling.common_sample.Sample" title="probly.representation.sampling.common_sample.Sample"><code class="xref py py-class docutils literal notranslate"><span class="pre">Sample</span></code></a>[<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>]</p>
 <p>A sample implementation for torch tensors.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>tensor</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><em>Tensor</em></a>)</p></li>
+<li><p><strong>tensor</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><em>Tensor</em></a>)</p></li>
 <li><p><strong>sample_dim</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>)</p></li>
 </ul>
 </dd>
@@ -538,10 +538,10 @@
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>samples</strong> (<em>Iterable</em><em>[</em><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><em>torch.Tensor</em></a><em>]</em>) – The predictions to create the sample from.</p></li>
+<li><p><strong>samples</strong> (<em>Iterable</em><em>[</em><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><em>torch.Tensor</em></a><em>]</em>) – The predictions to create the sample from.</p></li>
 <li><p><strong>sample_dim</strong> (<a class="reference internal" href="probly.representation.sampling.common_sample.html#probly.representation.sampling.common_sample.SampleAxis" title="probly.representation.sampling.common_sample.SampleAxis"><em>SampleAxis</em></a><em> | </em><em>None</em>) – The dimension along which samples are organized.</p></li>
 <li><p><strong>sample_axis</strong> (<a class="reference internal" href="probly.representation.sampling.common_sample.html#probly.representation.sampling.common_sample.SampleAxis" title="probly.representation.sampling.common_sample.SampleAxis"><em>SampleAxis</em></a><em> | </em><em>None</em>) – Alias for sample_dim for compatibility.</p></li>
-<li><p><strong>dtype</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensor_attributes.html#torch.dtype" title="(in PyTorch v2.10)"><em>torch.dtype</em></a><em> | </em><em>None</em>) – Desired data type of the array.</p></li>
+<li><p><strong>dtype</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensor_attributes.html#torch.dtype" title="(in PyTorch v2.11)"><em>torch.dtype</em></a><em> | </em><em>None</em>) – Desired data type of the array.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -579,7 +579,7 @@
 <dd><p>Append another sample to this sample.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>other</strong> (<a class="reference internal" href="probly.representation.sampling.common_sample.html#probly.representation.sampling.common_sample.Sample" title="probly.representation.sampling.common_sample.Sample"><em>Sample</em></a><em>[</em><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><em>Tensor</em></a><em>]</em>)</p>
+<dd class="field-odd"><p><strong>other</strong> (<a class="reference internal" href="probly.representation.sampling.common_sample.html#probly.representation.sampling.common_sample.Sample" title="probly.representation.sampling.common_sample.Sample"><em>Sample</em></a><em>[</em><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><em>Tensor</em></a><em>]</em>)</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Self" title="(in Python v3.14)"><em>Self</em></a></p>
@@ -624,7 +624,7 @@
 <dd><p>Compute the mean of the sample.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><em>Tensor</em></a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><em>Tensor</em></a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -638,7 +638,7 @@
 <dd class="field-odd"><p><strong>ddof</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>)</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><em>Tensor</em></a></p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><em>Tensor</em></a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -652,7 +652,7 @@
 <dd class="field-odd"><p><strong>ddof</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>)</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><em>Tensor</em></a></p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><em>Tensor</em></a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -661,14 +661,14 @@
 <dt class="sig sig-object py" id="probly.representation.sampling.torch_sample.TorchTensorSample.size">
 <span class="sig-name descname"><span class="pre">size</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></span><a class="reference internal" href="../_modules/probly/representation/sampling/torch_sample.html#TorchTensorSample.size"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="reference external" href="https://github.com/n-teGruppe/probly/blob/sphinx_gallery/src/probly/representation/sampling/torch_sample.py#L136"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#probly.representation.sampling.torch_sample.TorchTensorSample.size" title="Link to this definition">¶</a></dt>
 <dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">size</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.pytorch.org/docs/stable/size.html#torch.Size" title="(in PyTorch v2.10)"><span class="pre">Size</span></a></span></span></dt>
+<span class="sig-name descname"><span class="pre">size</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.pytorch.org/docs/stable/size.html#torch.Size" title="(in PyTorch v2.11)"><span class="pre">Size</span></a></span></span></dt>
 <dd><p>The total number of elements in the underlying array.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>dim</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em> | </em><em>None</em>)</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/size.html#torch.Size" title="(in PyTorch v2.10)"><em>Size</em></a> | <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)">int</a></p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/size.html#torch.Size" title="(in PyTorch v2.11)"><em>Size</em></a> | <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)">int</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -695,7 +695,7 @@
 
 <dl class="py property">
 <dt class="sig sig-object py" id="probly.representation.sampling.torch_sample.TorchTensorSample.T">
-<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">T</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><span class="pre">Tensor</span></a></span><a class="headerlink" href="#probly.representation.sampling.torch_sample.TorchTensorSample.T" title="Link to this definition">¶</a></dt>
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">T</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><span class="pre">Tensor</span></a></span><a class="headerlink" href="#probly.representation.sampling.torch_sample.TorchTensorSample.T" title="Link to this definition">¶</a></dt>
 <dd><p>The transposed version of the underlying array.</p>
 </dd></dl>
 
@@ -707,13 +707,13 @@
 
 <dl class="py property">
 <dt class="sig sig-object py" id="probly.representation.sampling.torch_sample.TorchTensorSample.dtype">
-<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">dtype</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensor_attributes.html#torch.dtype" title="(in PyTorch v2.10)"><span class="pre">dtype</span></a></span><a class="headerlink" href="#probly.representation.sampling.torch_sample.TorchTensorSample.dtype" title="Link to this definition">¶</a></dt>
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">dtype</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensor_attributes.html#torch.dtype" title="(in PyTorch v2.11)"><span class="pre">dtype</span></a></span><a class="headerlink" href="#probly.representation.sampling.torch_sample.TorchTensorSample.dtype" title="Link to this definition">¶</a></dt>
 <dd><p>The data type of the underlying array.</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="probly.representation.sampling.torch_sample.TorchTensorSample.mT">
-<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">mT</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><span class="pre">Tensor</span></a></span><a class="headerlink" href="#probly.representation.sampling.torch_sample.TorchTensorSample.mT" title="Link to this definition">¶</a></dt>
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">mT</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><span class="pre">Tensor</span></a></span><a class="headerlink" href="#probly.representation.sampling.torch_sample.TorchTensorSample.mT" title="Link to this definition">¶</a></dt>
 <dd><p>The transposed version of the underlying array.</p>
 </dd></dl>
 
@@ -742,7 +742,7 @@
 
 <dl class="py property">
 <dt class="sig sig-object py" id="probly.representation.sampling.torch_sample.TorchTensorSample.samples">
-<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">samples</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><span class="pre">Tensor</span></a></span><a class="headerlink" href="#probly.representation.sampling.torch_sample.TorchTensorSample.samples" title="Link to this definition">¶</a></dt>
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">samples</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><span class="pre">Tensor</span></a></span><a class="headerlink" href="#probly.representation.sampling.torch_sample.TorchTensorSample.samples" title="Link to this definition">¶</a></dt>
 <dd><p>Return an iterator over the samples.</p>
 </dd></dl>
 
@@ -754,7 +754,7 @@
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="probly.representation.sampling.torch_sample.TorchTensorSample.tensor">
-<span class="sig-name descname"><span class="pre">tensor</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><span class="pre">Tensor</span></a></span><a class="headerlink" href="#probly.representation.sampling.torch_sample.TorchTensorSample.tensor" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">tensor</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><span class="pre">Tensor</span></a></span><a class="headerlink" href="#probly.representation.sampling.torch_sample.TorchTensorSample.tensor" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
