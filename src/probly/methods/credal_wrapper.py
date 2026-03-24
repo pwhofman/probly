@@ -24,7 +24,7 @@ class CredalWrapper[In, KwIn, Out]:
             base: The base predictor to be used for the ensemble.
             num_members: The number of members in the ensemble.
         """
-        self.ensemble = ensemble(base, num_members=num_members)  # type: ignore[assignment]
+        self.ensemble = ensemble(base, num_members=num_members)
         self._sampler = EnsembleSampler(self.ensemble, sample_factory=create_sample)
 
     def predict(self, *args: In, **kwargs: Unpack[KwIn]) -> ProbabilityIntervalsCredalSet[Out]:

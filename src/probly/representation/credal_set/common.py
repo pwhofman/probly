@@ -78,4 +78,7 @@ class ProbabilityIntervalsFactory[S: Sample, C: ProbabilityIntervalsCredalSet](P
 
 def dispatch_on_sample(sample: Sample, **_kwargs: object) -> object:
     """Dispatch on the concrete sample object itself."""
-    return sample.samples
+    try:
+        return sample.samples
+    except Exception:  # noqa: BLE001
+        return None
