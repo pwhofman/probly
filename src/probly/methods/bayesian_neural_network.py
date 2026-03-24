@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Unpack
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from probly.predictor import Predictor
@@ -11,12 +11,12 @@ from probly.representation.sampling.sampler import Sampler
 from probly.transformation import bayesian
 
 
-class BayesianNeuralNetwork[In, KwIn, Out]:
+class BayesianNeuralNetwork[**In, Out]:
     """Bayesian neural network implementation based on :cite:`blundellWeightUncertainty2015`."""
 
     def __init__(
         self,
-        base: Predictor[In, KwIn, Out],
+        base: Predictor[In, Out],
         num_samples: int,
         use_base_weights: bool,
         posterior_std: float,
@@ -31,8 +31,14 @@ class BayesianNeuralNetwork[In, KwIn, Out]:
             prior_mean=prior_mean,
             prior_std=prior_std,
         )
-        self._sampler = Sampler(self.model, num_samples=num_samples)
+        self.num_samples = num_samples
 
-    def predict(self, *args: In, **kwargs: Unpack[KwIn]) -> Sample[Out]:
+    def sampler(self, num_samples: int | None = None) -> Sampler[In, Out, Sample[Out]]:
+        """Create a sampler for the Bayesian neural network."""
+        if num_samples is None:
+            num_samples = self.num_samples
+        return Sampler(self.model, num_samples=num_samples)
+
+    def predict(self, *args: In.args, **kwargs: In.kwargs) -> Sample[Out]:
         """Predict the output for a given input."""
-        return self._sampler.predict(*args, **kwargs)
+        return self.sampler().predict(*args, **kwargs)
