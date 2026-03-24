@@ -2,10 +2,15 @@
 
 from __future__ import annotations
 
+import logging
+
 import torch
 from torch import nn
 
-from src.probly.methods import CredalWrapper
+from probly.methods import CredalWrapper
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 class SimpleNN(nn.Module):
@@ -26,9 +31,13 @@ class SimpleNN(nn.Module):
         return out
 
 
-model = SimpleNN(input_size=10, hidden_size=5, output_size=2)
-crewra = CredalWrapper(model, num_members=10)
-# create dummy input
-input_data = torch.randn(1, 10)
-# get predictions from the credal wrapper
-predictions = crewra.predict(input_data)
+if __name__ == "__main__":
+    logger.info("Testing the CredalWrapper method.")
+    model = SimpleNN(input_size=10, hidden_size=5, output_size=2)
+    crewra = CredalWrapper(model, num_members=10)
+    # create dummy input
+    input_data = torch.randn(1, 10)
+    # get predictions from the credal wrapper
+    predictions = crewra.predict(input_data)
+
+    logger.info(predictions)

@@ -14,7 +14,7 @@ from probly.representation.credal_set.common import (
 )
 from probly.representation.sampling.torch_sample import TorchTensorSample
 
-from .array import create_probability_intervals
+from .common import create_probability_intervals
 
 if TYPE_CHECKING:
     from probly.representation.sampling.common_sample import Sample

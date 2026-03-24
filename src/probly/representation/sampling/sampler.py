@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable
-from typing import Any, Literal, Unpack
+from collections.abc import Callable
+from typing import Any, Literal
 
 from probly.lazy_types import FLAX_MODULE, SKLEARN_MODULE, TORCH_MODULE
 from probly.predictor import EnsemblePredictor, Predictor, predict
@@ -36,9 +36,9 @@ def _(_: type) -> None:
     from . import sklearn_sampler as sklearn_sampler  # noqa: PLC0414, PLC0415
 
 
-def get_sampling_predictor[In, KwIn, Out](
-    predictor: Predictor[In, KwIn, Out],
-) -> tuple[Predictor[In, KwIn, Out], Callable[[], None]]:
+def get_sampling_predictor[**In, Out](
+    predictor: Predictor[In, Out],
+) -> tuple[Predictor[In, Out], Callable[[], None]]:
     """Get the predictor to be used for sampling."""
     predictor, state = traverse_with_state(
         predictor,
@@ -54,14 +54,14 @@ def get_sampling_predictor[In, KwIn, Out](
     return predictor, cleanup
 
 
-def sampler_factory[In, KwIn, Out](
-    predictor: Predictor[In, KwIn, Out],
+def sampler_factory[**In, Out](
+    predictor: Predictor[In, Out],
     num_samples: int = 1,
     strategy: SamplingStrategy = "sequential",
-) -> Predictor[In, KwIn, list[Out]]:
+) -> Predictor[In, list[Out]]:
     """Sample multiple predictions from the predictor."""
 
-    def sampler(*args: In, **kwargs: Unpack[KwIn]) -> list[Out]:
+    def sampler(*args: In.args, **kwargs: In.kwargs) -> list[Out]:
         sampling_predictor, cleanup = get_sampling_predictor(predictor)
         try:
             if strategy == "sequential":
@@ -75,7 +75,7 @@ def sampler_factory[In, KwIn, Out](
     return sampler
 
 
-class Sampler[In, KwIn, Out, S: Sample](Representer[In, KwIn, Out]):
+class Sampler[**In, Out, S: Sample](Representer[In, Out]):
     """A representation predictor that creates representations from finite samples."""
 
     sampling_strategy: SamplingStrategy
@@ -85,10 +85,10 @@ class Sampler[In, KwIn, Out, S: Sample](Representer[In, KwIn, Out]):
 
     def __init__(
         self,
-        predictor: Predictor[In, KwIn, Out],
+        predictor: Predictor[In, Out],
         num_samples: int,
         sampling_strategy: SamplingStrategy = "sequential",
-        sample_factory: SampleFactory[Out, S] = create_sample,  # type: ignore[assignment]
+        sample_factory: SampleFactory[Out, S] = create_sample,
         sample_axis: int = 1,
     ) -> None:
         """Initialize the sampler.
@@ -106,7 +106,7 @@ class Sampler[In, KwIn, Out, S: Sample](Representer[In, KwIn, Out]):
         self.sample_factory = sample_factory
         self.sample_axis = sample_axis
 
-    def predict(self, *args: In, **kwargs: Unpack[KwIn]) -> S:
+    def predict(self, *args: In.args, **kwargs: In.kwargs) -> S:
         """Sample from the predictor for a given input."""
         return self.sample_factory(
             sampler_factory(
@@ -118,15 +118,15 @@ class Sampler[In, KwIn, Out, S: Sample](Representer[In, KwIn, Out]):
         )
 
 
-class EnsembleSampler[In, KwIn, Out, S: Sample](Representer[In, KwIn, Iterable[Out]]):
+class EnsembleSampler[**In, Out, S: Sample](Representer[In, Out]):
     """A sampler that creates representations from ensemble predictions."""
 
     sample_factory: SampleFactory[Out, S]
 
     def __init__(
         self,
-        predictor: EnsemblePredictor[In, KwIn, Out],
-        sample_factory: SampleFactory[Out, S] = create_sample,  # type: ignore[assignment]
+        predictor: EnsemblePredictor[In, Out],
+        sample_factory: SampleFactory[Out, S] = create_sample,
         sample_axis: int = 1,
     ) -> None:
         """Initialize the ensemble sampler.
@@ -140,7 +140,7 @@ class EnsembleSampler[In, KwIn, Out, S: Sample](Representer[In, KwIn, Iterable[O
         self.sample_factory = sample_factory
         self.sample_axis = sample_axis
 
-    def sample(self, *args: In, **kwargs: Unpack[KwIn]) -> S:
+    def sample(self, *args: In.args, **kwargs: In.kwargs) -> S:
         """Sample from the ensemble predictor for a given input."""
         return self.sample_factory(
             predict(self.predictor, *args, **kwargs),
