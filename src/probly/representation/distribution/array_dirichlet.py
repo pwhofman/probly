@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any, Literal, Self, override
 import numpy as np
 from scipy import special
 
-from probly.representation.distribution.common import DirichletDistribution
+from probly.representation.distribution.common import DirichletDistribution, create_distribution
 from probly.representation.sampling.sample import ArraySample
 
 if TYPE_CHECKING:
@@ -194,3 +194,6 @@ class ArrayDirichlet(
     def __hash__(self) -> int:
         """Compute the hash of the distribution."""
         return super().__hash__()
+
+
+create_distribution.register(np.ndarray, ArrayDirichlet)
