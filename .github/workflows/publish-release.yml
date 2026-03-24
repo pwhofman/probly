@@ -11,12 +11,13 @@ on:
   release:
     types: [published]
     branches: [main]
-permissions:
-  contents: read
 jobs:
   deploy:
     runs-on: ubuntu-latest
     environment: release
+    permissions:
+      contents: read
+      id-token: write
     steps:
     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
       with:
@@ -33,6 +34,3 @@ jobs:
       run: python -m build
     - name: Publish package
       uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e  # v1.13.0
-      with:
-        user: __token__
-        password: ${{ secrets.PYPI_API_TOKEN }}
