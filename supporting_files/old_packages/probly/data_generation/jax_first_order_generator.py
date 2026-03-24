@@ -208,8 +208,6 @@ class FirstOrderDataGenerator(PyFirstOrderDataGenerator):
         """Load distributions and convert to JAX arrays.
 
         Returns:
-        -------
-        (distributions, meta)
             distributions: dict[int, jnp.ndarray]
             meta: dict with any metadata saved alongside distributions
         """

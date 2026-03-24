@@ -29,18 +29,12 @@ def cqr_score_func[T](y_true: T, y_pred: T) -> npt.NDArray[np.floating]:
     where ``y_pred`` contains the predicted lower and upper quantiles
     ``[q_lo, q_hi]`` for each instance.
 
-    Parameters
-    ----------
-    y_true:
-        True target values, shape ``(n_samples,)``.
-    y_pred:
-        Predicted lower and upper quantiles, shape ``(n_samples, 2)``.
+    Args:
+        y_true: True target values, shape ``(n_samples,)``.
+        y_pred: Predicted lower and upper quantiles, shape ``(n_samples, 2)``.
 
     Returns:
-    -------
-    np.ndarray
-        One-dimensional array of nonconformity scores with shape
-        ``(n_samples,)``.
+        One-dimensional array of nonconformity scores with shape ``(n_samples,)``.
     """
     y_np = np.asarray(y_true, dtype=float).reshape(-1)
     pred_np = np.asarray(y_pred, dtype=float)
@@ -62,13 +56,10 @@ def cqr_score_func[T](y_true: T, y_pred: T) -> npt.NDArray[np.floating]:
 def register(cls: LazyType, func: Callable[..., Any]) -> None:
     """Register a backend-specific implementation for CQR scores.
 
-    Parameters
-    ----------
-    cls:
-        Lazy type identifying the array backend (e.g. JAX Array).
-    func:
-        Backend-specific implementation with the same signature as
-        :func:`cqr_score_func`.
+    Args:
+        cls: Lazy type identifying the array backend (e.g. JAX Array).
+        func: Backend-specific implementation with the same signature as
+            :func:`cqr_score_func`.
     """
     cqr_score_func.register(cls=cls, func=func)
 
