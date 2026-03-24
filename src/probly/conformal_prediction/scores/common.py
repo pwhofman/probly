@@ -72,11 +72,7 @@ class ClassificationScoreProtocol(Score, Protocol):
 
 
 class RegressionScoreProtocol(Score, Protocol):
-    """Nonconformity scores for regression (e.g.. Residuals).
-
-    calibration_nonconformity: 1D scores (|y - y_hat|, standardized Residuals, ...).
-    predict_nonconformity: 1D scores or local scales (n_instances,).
-    """
+    """Nonconformity scores for regression (e.g.. Residuals)."""
 
     def predict_nonconformity(
         self,
@@ -270,9 +266,9 @@ class RegressionScore(RegressionScoreProtocol):
         """Initialize regression score.
 
         Args:
-        model: The prediction model.
-        score_func: Function that computes scores from (predictions, true_values).
-        interval_func: Optional function to construct intervals.
+            model: The prediction model.
+            score_func: Function that computes scores from (predictions, true_values).
+            interval_func: Optional function to construct intervals.
         """
         self.model = model
         self.score_func = score_func
