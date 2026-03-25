@@ -5,25 +5,41 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from probly.transformation.bayesian.common import bayesian
-from probly.transformation.ensemble.common import ensemble
 from pytraverse import GlobalVariable
 
 if TYPE_CHECKING:
     from probly.predictor import EnsemblePredictor, Predictor
 
 USE_BASE_WEIGHTS = GlobalVariable[bool]("USE_BASE_WEIGHTS", default=False)
-POSTERIOR_STD = GlobalVariable[list[float]]("POSTERIOR_STD", default=[0.05] * 5)
-PRIOR_MEAN = GlobalVariable[list[float]]("PRIOR_MEAN", default=[-1.0, -0.5, 0.0, 0.5, 1.0])
-PRIOR_STD = GlobalVariable[list[float]]("PRIOR_STD", default=[0.1, 0.325, 0.55, 0.775, 1.0])
+POSTERIOR_STD = GlobalVariable[float]("POSTERIOR_STD", default=0.05)
+PRIOR_MEAN = GlobalVariable[float]("PRIOR_MEAN", default=0.0)
+PRIOR_STD = GlobalVariable[float]("PRIOR_STD", default=1.0)
 NUM_MEMBERS = GlobalVariable[int]("NUM_MEMBERS", default=5)
+
+
+def _resolve_param(
+    value: float | list[float] | None,
+    num_members: int,
+    default: float,
+    name: str,
+) -> list[float]:
+    """Resolve a scalar, list, or None parameter to a list of length num_members."""
+    if value is None:
+        return [default] * num_members
+    if isinstance(value, (int, float)):
+        return [float(value)] * num_members
+    if len(value) != num_members:
+        msg = f"'{name}' has length {len(value)}, expected {num_members} (num_members)."
+        raise ValueError(msg)
+    return list(value)
 
 
 def credal_bnn[**In, Out](
     base: Predictor[In, Out],
     use_base_weights: bool = USE_BASE_WEIGHTS.default,
-    posterior_std: list[float] = POSTERIOR_STD.default,
-    prior_mean: list[float] = PRIOR_MEAN.default,
-    prior_std: list[float] = PRIOR_STD.default,
+    posterior_std: float | list[float] | None = POSTERIOR_STD.default,
+    prior_mean: float | list[float] | None = PRIOR_MEAN.default,
+    prior_std: float | list[float] | None = PRIOR_STD.default,
     num_members: int = NUM_MEMBERS.default,
 ) -> EnsemblePredictor[In, Out]:
     """Create a CredalBNN predictor from a base predictor based on :cite:`caprio2023credalbnn`.
@@ -39,33 +55,26 @@ def credal_bnn[**In, Out](
     Returns:
         The CredalBNN predictor.
     """
-    if min(posterior_std) <= 0:
-        msg = (
-            "Any initial posterior standard deviation posterior_std must be greater than 0, "
-            f"but got one value of {posterior_std} instead."
-        )
+    posterior_stds = _resolve_param(posterior_std, num_members, POSTERIOR_STD.default, "posterior_std")
+    prior_means = _resolve_param(prior_mean, num_members, PRIOR_MEAN.default, "prior_mean")
+    prior_stds = _resolve_param(prior_std, num_members, PRIOR_STD.default, "prior_std")
+
+    if min(posterior_stds) <= 0:
+        msg = f"All posterior_std values must be > 0, got {posterior_stds}."
         raise ValueError(msg)
-    if min(prior_std) <= 0:
-        msg = (
-            f"Any prior standard deviation prior_std must be greater than 0, but got  one value of {prior_std} instead."
-        )
+    if min(prior_stds) <= 0:
+        msg = f"All prior_std values must be > 0, got {prior_stds}."
         raise ValueError(msg)
-    if len(posterior_std) != num_members or len(prior_std) != num_members or len(prior_mean) != num_members:
-        msg = (
-            f"posterior_std, prior_std and prior_mean must have length of {num_members} (num_members), but got"
-            f" {len(posterior_std)}, {len(prior_std)} and {len(prior_mean)} respectively."
-        )
 
     bnn_members = [
         bayesian(
             base,
             use_base_weights=use_base_weights,
-            posterior_std=posterior_std[i],
-            prior_mean=prior_mean[i],
-            prior_std=prior_std[i],
+            posterior_std=posterior_stds[i],
+            prior_mean=prior_means[i],
+            prior_std=prior_stds[i],
         )
         for i in range(num_members)
     ]
 
-    # TODO(tloehr): fix ensemble based on list of bnn members instead of just one  # noqa: TD003
-    return ensemble(bnn_members[0], num_members=num_members, reset_params=False)
+    return bnn_members
