@@ -13,8 +13,9 @@ from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 
 from probly.evaluation.tasks import selective_prediction
-from probly.methods.dropout import Dropout
 from probly.quantification.classification import total_entropy
+from probly.representation.sampling import Sampler
+from probly.transformation.dropout import dropout
 from probly_benchmark.models import LeNet
 
 # ---------------------------------------------------------------------------
@@ -109,17 +110,18 @@ def main(seed: int = 0) -> None:
     base_model = LeNet().to(DEVICE)
 
     print("Building Dropout...")
-    dropout = Dropout(base_model, p=DROPOUT_P, num_samples=NUM_SAMPLES)
+    dropout_model = dropout(base_model, p=DROPOUT_P)
 
     print("Training...")
-    train(dropout.model, train_loader)  # ty:ignore[invalid-argument-type]
+    train(dropout_model, train_loader)  # ty:ignore[invalid-argument-type]
 
     print("Predicting...")
+    sampler = Sampler(dropout_model, num_samples=NUM_SAMPLES)
     all_probs: list[np.ndarray] = []
     all_labels: list[np.ndarray] = []
     with torch.no_grad():
         for x, y in test_loader:
-            sample = dropout.predict(x.to(DEVICE))
+            sample = sampler.predict(x.to(DEVICE))
             # sample.tensor shape: (batch, num_samples, n_classes)
             all_probs.append(sample.tensor.cpu().numpy())
             all_labels.append(y.numpy())
