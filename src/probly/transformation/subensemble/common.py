@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 
 @lazydispatch
-def subensemble_generator[In, KwIn, Out](base: Predictor[In, KwIn, Out]) -> Predictor[In, KwIn, Out]:
+def subensemble_generator[**In, Out](base: Predictor[In, Out]) -> Predictor[In, Out]:
     """Generate a subensemble from a base model."""
     msg = f"No subensemble generator is registered for type {type(base)}"
     raise NotImplementedError(msg)

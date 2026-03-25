@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 
 @lazydispatch
-def evidential_classification_appender[In, KwIn, Out](base: Predictor[In, KwIn, Out]) -> Predictor[In, KwIn, Out]:
+def evidential_classification_appender[**In, Out](base: Predictor[In, Out]) -> Predictor[In, Out]:
     """Append an evidential classification activation function to a base model."""
     msg = f"No evidential classification appender registered for type {type(base)}"
     raise NotImplementedError(msg)

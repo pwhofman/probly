@@ -9,15 +9,15 @@ if TYPE_CHECKING:
     from probly.predictor import Predictor
 
 
-class Representer[In, KwIn, Out](ABC):
+class Representer[**In, Out](ABC):
     """Abstract base class for representation builders."""
 
-    predictor: Predictor[In, KwIn, Out]
+    predictor: Predictor[In, Out]
 
-    def __init__(self, predictor: Predictor[In, KwIn, Out]) -> None:
+    def __init__(self, predictor: Predictor[In, Out]) -> None:
         """Initialize the representer with a predictor.
 
         Args:
-            predictor: Predictor[In, KwIn, Out], the predictor to be used for building representations.
+            predictor: Predictor[In, Out], the predictor to be used for building representations.
         """
         self.predictor = predictor

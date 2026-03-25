@@ -17,12 +17,12 @@ def compute_reliability_diagram(probabilities: np.ndarray, labels: np.ndarray, n
         n_bins: The number of bins the intervall [0, 1] should be divided into
 
     Returns:
-        diagram: An dict object of the form ["n_bins"]["bin_accuracies"]["bin_confidences"]["bin_counts"]
-        where
-            - ["n_bins contains"] the number of bins
-            - ["bin_accuracies"] contains the mean accuracies for all bins
-            - ["bin_confidences"] contains the mean confidences for all bins
-            - ["bin_counts"] contains the number of predictions in every bin
+        diagram: An dict object of the form ["n_bins"]["bin_accuracies"]["bin_confidences"]
+        ["bin_counts"] where
+        - ["n_bins contains"] the number of bins
+        - ["bin_accuracies"] contains the mean accuracies for all bins
+        - ["bin_confidences"] contains the mean confidences for all bins
+        - ["bin_counts"] contains the number of predictions in every bin
     """
     diagram = {"n_bins": n_bins, "bin_accuracies": [], "bin_confidences": [], "bin_counts": []}
 

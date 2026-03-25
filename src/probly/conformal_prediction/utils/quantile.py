@@ -9,14 +9,12 @@ import numpy.typing as npt
 def calculate_quantile(scores: npt.NDArray[np.floating], alpha: float) -> float:
     """Calculate the quantile for conformal prediction.
 
-    Parameters:
-    scores : np.ndarray
-            Non-conformity scores
-    alpha : float
-            Significance level (target coverage is 1-alpha)
+    Args:
+        scores: Non-conformity scores.
+        alpha: Significance level (target coverage is 1-alpha).
 
     Returns:
-    float (The (1-alpha)-quantile of the scores)
+        The (1-alpha)-quantile of the scores.
     """
     if not 0 <= alpha <= 1:
         msg = f"alpha must be in [0, 1], got {alpha}"
