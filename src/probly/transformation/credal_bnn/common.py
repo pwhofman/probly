@@ -59,13 +59,6 @@ def credal_bnn[**In, Out](
     prior_means = _resolve_param(prior_mean, num_members, PRIOR_MEAN.default, "prior_mean")
     prior_stds = _resolve_param(prior_std, num_members, PRIOR_STD.default, "prior_std")
 
-    if min(posterior_stds) <= 0:
-        msg = f"All posterior_std values must be > 0, got {posterior_stds}."
-        raise ValueError(msg)
-    if min(prior_stds) <= 0:
-        msg = f"All prior_std values must be > 0, got {prior_stds}."
-        raise ValueError(msg)
-
     bnn_members = [
         bayesian(
             base,
