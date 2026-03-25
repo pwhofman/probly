@@ -2,7 +2,7 @@
 
 from lazy_dispatch.isinstance import LazyType, lazy_isinstance, lazy_issubclass
 from lazy_dispatch.load import lazy_callable, lazy_import
-from lazy_dispatch.registry_meta import ProtocolRegistry, ProtocolRegistryMeta, Registry, RegistryMeta
+from lazy_dispatch.registry_meta import ProtocolRegistry, ProtocolRegistryMeta, Registry, RegistryMeta, annotator
 from lazy_dispatch.singledispatch import Lazydispatch, is_valid_dispatch_type, lazydispatch
 
 __all__ = [
@@ -12,6 +12,7 @@ __all__ = [
     "ProtocolRegistryMeta",
     "Registry",
     "RegistryMeta",
+    "annotator",
     "is_valid_dispatch_type",
     "lazy_callable",
     "lazy_import",

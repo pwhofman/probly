@@ -5,12 +5,13 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from lazy_dispatch import lazydispatch
+from probly.predictor import EnsemblePredictor
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
     from lazy_dispatch.isinstance import LazyType
-    from probly.predictor import EnsemblePredictor, Predictor
+    from probly.predictor import Predictor
 
 
 @lazydispatch
@@ -25,6 +26,7 @@ def register(cls: LazyType, generator: Callable) -> None:
     ensemble_generator.register(cls=cls, func=generator)
 
 
+@EnsemblePredictor.register_factory
 def ensemble[**In, Out](
     base: Predictor[In, Out], num_members: int, reset_params: bool = True
 ) -> EnsemblePredictor[In, Out]:

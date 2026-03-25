@@ -58,9 +58,9 @@ def generate_torch_subensemble(
         [
             nn.Sequential(
                 backbone,
-                head,  # type: ignore[operator]
+                head,
             )
-            for head in heads
+            for head in heads  # ty:ignore[not-iterable]
         ],
     )
 

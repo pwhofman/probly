@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Any, Literal
+from typing import Any, Literal, override
 
 from probly.lazy_types import FLAX_MODULE, SKLEARN_MODULE, TORCH_MODULE
-from probly.predictor import EnsemblePredictor, Predictor, predict
-from probly.representation.representer import Representer
+from probly.predictor import EnsemblePredictor, Predictor, RandomPredictor, predict
+from probly.representation.representer import Representer, representer
 from probly.traverse_nn import nn_compose
 from pytraverse import CLONE, GlobalVariable, function_traverser, lazydispatch_traverser, traverse_with_state
 
@@ -75,7 +75,8 @@ def sampler_factory[**In, Out](
     return sampler
 
 
-class Sampler[**In, Out, S: Sample](Representer[In, Out]):
+@representer.register(RandomPredictor)
+class Sampler[**In, Out, S: Sample](Representer[Any, In, S]):
     """A representation predictor that creates representations from finite samples."""
 
     sampling_strategy: SamplingStrategy
@@ -85,7 +86,7 @@ class Sampler[**In, Out, S: Sample](Representer[In, Out]):
 
     def __init__(
         self,
-        predictor: Predictor[In, Out],
+        predictor: RandomPredictor[In, Out],
         num_samples: int,
         sampling_strategy: SamplingStrategy = "sequential",
         sample_factory: SampleFactory[Out, S] = create_sample,
@@ -117,8 +118,13 @@ class Sampler[**In, Out, S: Sample](Representer[In, Out]):
             sample_axis=self.sample_axis,
         )
 
+    @override
+    def __call__(self, *args: In.args, **kwargs: In.kwargs) -> S:
+        return self.predict(*args, **kwargs)
 
-class EnsembleSampler[**In, Out, S: Sample](Representer[In, Out]):
+
+@representer.register(EnsemblePredictor)
+class EnsembleSampler[**In, Out, S: Sample](Representer[Any, In, S]):
     """A sampler that creates representations from ensemble predictions."""
 
     sample_factory: SampleFactory[Out, S]
@@ -146,3 +152,7 @@ class EnsembleSampler[**In, Out, S: Sample](Representer[In, Out]):
             predict(self.predictor, *args, **kwargs),
             sample_axis=self.sample_axis,
         )
+
+    @override
+    def __call__(self, *args: In.args, **kwargs: In.kwargs) -> S:
+        return self.predict(*args, **kwargs)

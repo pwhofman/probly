@@ -9,8 +9,7 @@ from probly.representation.credal_set import create_probability_intervals
 if TYPE_CHECKING:
     from probly.predictor import Predictor
     from probly.representation.credal_set.common import ProbabilityIntervalsCredalSet
-from probly.representation.sampling.sample import create_sample
-from probly.representation.sampling.sampler import EnsembleSampler
+from probly.representation import representer
 from probly.transformation.ensemble.common import ensemble
 
 
@@ -25,10 +24,10 @@ class CredalWrapper[**In, Out]:
             num_members: The number of members in the ensemble.
         """
         self.ensemble = ensemble(base, num_members=num_members)
-        self._sampler = EnsembleSampler(self.ensemble, sample_factory=create_sample)
+        self._representer = representer(self.ensemble)
 
     def predict(self, *args: In.args, **kwargs: In.kwargs) -> ProbabilityIntervalsCredalSet[Out]:
         """Predict a credal set for the given input."""
-        sample = self._sampler.predict(*args, **kwargs)
+        sample = self._representer.predict(*args, **kwargs)
         cset = create_probability_intervals(sample)
         return cset
