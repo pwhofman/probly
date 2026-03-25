@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from abc import ABCMeta
-from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, is_protocol, runtime_checkable
 from weakref import WeakSet
 
 if TYPE_CHECKING:
@@ -80,6 +80,9 @@ class ProtocolRegistryMeta[T](RegistryMeta[T], type(Protocol)):
     which controls whether structural checking is performed, as is the default for protocols.
     If `structural_checking` is False, ProtocolRegistry classes will only consider regular inheritance and
     explicit registration, not structural compatibility, when checking for instance and subclass relationships.
+    `_structural_checking` is True by default, so that ProtocolRegistryMeta behaves like Protocol by default.
+    The chosen checking behavior is inherited by subclasses, but can be overridden by passing `structural_checking`
+    to the class definition.
     """
 
     _structural_checking: bool = True
@@ -90,7 +93,7 @@ class ProtocolRegistryMeta[T](RegistryMeta[T], type(Protocol)):
         bases: tuple[type, ...],
         namespace: dict[str, Any],
         /,
-        structural_checking: bool = True,
+        structural_checking: bool | None = None,
         **kwargs: Any,  # noqa: ANN401
     ) -> ProtocolRegistryMeta[T]:
         """Create a new protocol registry class."""
@@ -106,12 +109,15 @@ class ProtocolRegistryMeta[T](RegistryMeta[T], type(Protocol)):
         bases: tuple[type, ...],
         namespace: dict[str, Any],
         /,
-        structural_checking: bool = True,
+        structural_checking: bool | None = None,
         **kwargs: Any,  # noqa: ANN401
     ) -> None:
         """Initialize the protocol registry class."""
         super().__init__(name, bases, namespace, **kwargs)
-        cls._structural_checking = structural_checking
+        if structural_checking is not None:
+            cls._structural_checking = structural_checking
+        else:
+            structural_checking = cls._structural_checking
 
         if not structural_checking:
             if "__subclasshook__" not in namespace:
@@ -119,10 +125,11 @@ class ProtocolRegistryMeta[T](RegistryMeta[T], type(Protocol)):
                 # there is no custom __subclasshook__ defined in the class body.
                 cls.__subclasshook__: Callable[[type, type], bool] = _no_structural_checking_subclass_hook
 
-            # Disable the gate that prevents Protocols from being checked via isinstance()
-            # In other words: Non-structural ProtocolRegistries should be runtime_checkable by default.
-            # For potential downsides of this approach, please consider cpython issue gh-113320.
-            runtime_checkable(cls)
+            if is_protocol(cls):
+                # Disable the gate that prevents Protocols from being checked via isinstance()
+                # In other words: Non-structural ProtocolRegistries should be runtime_checkable by default.
+                # For potential downsides of this approach, please consider cpython issue gh-113320.
+                runtime_checkable(cls)
 
         protocol_attrs: set[str] | None = getattr(cls, "__protocol_attrs__", None)
 

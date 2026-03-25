@@ -203,6 +203,91 @@ class TestProtocolRegistryMeta:
         assert not issubclass(StructuralButNotNominal, BaseProtocol)
         assert not isinstance(StructuralButNotNominal(), BaseProtocol)
 
+    def test_structural_checking_false_propagates_to_protocol_subclasses(self) -> None:
+        """Protocol subclasses should inherit non-structural checking from their parent."""
+
+        class PredictorProtocol(ProtocolRegistry, Protocol, structural_checking=False):
+            def predict(self) -> int:
+                return 1
+
+        class EnsemblePredictorProtocol(PredictorProtocol, Protocol):
+            pass
+
+        class RandomPredictorProtocol(PredictorProtocol, Protocol):
+            pass
+
+        class HasPredict:
+            def predict(self) -> int:
+                return 1
+
+        assert PredictorProtocol._structural_checking is False  # noqa: SLF001
+        assert EnsemblePredictorProtocol._structural_checking is False  # noqa: SLF001
+        assert RandomPredictorProtocol._structural_checking is False  # noqa: SLF001
+        assert not issubclass(HasPredict, EnsemblePredictorProtocol)
+        assert not isinstance(HasPredict(), EnsemblePredictorProtocol)
+        assert not issubclass(HasPredict, RandomPredictorProtocol)
+        assert not isinstance(HasPredict(), RandomPredictorProtocol)
+
+    def test_structural_checking_can_be_overridden_in_subclasses(self) -> None:
+        """Subclasses should be able to override inherited non-structural checking."""
+
+        class BaseProtocol(ProtocolRegistry, Protocol, structural_checking=False):
+            def f(self) -> None:
+                return None
+
+        @runtime_checkable
+        class StructuralChild(BaseProtocol, Protocol, structural_checking=True):
+            pass
+
+        class HasF:
+            def f(self) -> None:
+                return None
+
+        assert BaseProtocol._structural_checking is False  # noqa: SLF001
+        assert StructuralChild._structural_checking is True  # noqa: SLF001
+        assert issubclass(HasF, StructuralChild)
+        assert isinstance(HasF(), StructuralChild)
+
+    def test_non_protocol_subclass_allows_structural_checking_false(self) -> None:
+        """Non-protocol subclasses should accept structural_checking=False without type errors."""
+
+        class BaseProtocol(ProtocolRegistry, Protocol, structural_checking=False):
+            def f(self) -> None:
+                return None
+
+        class ConcreteChild(BaseProtocol, structural_checking=False):
+            pass
+
+        class HasF:
+            def f(self) -> None:
+                return None
+
+        child = ConcreteChild()
+
+        assert ConcreteChild._structural_checking is False  # noqa: SLF001
+        assert issubclass(ConcreteChild, BaseProtocol)
+        assert isinstance(child, BaseProtocol)
+        assert not issubclass(HasF, ConcreteChild)
+        assert not isinstance(HasF(), ConcreteChild)
+
+    def test_non_protocol_subclass_custom_hook_is_respected_in_nominal_mode(self) -> None:
+        """Custom hooks on non-protocol subclasses should still drive subclass decisions."""
+
+        class BaseProtocol(ProtocolRegistry, Protocol, structural_checking=False):
+            def f(self) -> None:
+                return None
+
+        class ConcreteChild(BaseProtocol, structural_checking=False):
+            @classmethod
+            def __subclasshook__(cls, subclass: type, /) -> bool:
+                return True
+
+        class Candidate:
+            pass
+
+        assert issubclass(Candidate, ConcreteChild)
+        assert isinstance(Candidate(), ConcreteChild)
+
     def test_direct_metaclass_use_honors_structural_checking_false(self) -> None:
         """Direct use of the metaclass should also disable Protocol structural matching."""
 
