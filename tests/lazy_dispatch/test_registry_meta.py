@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
-from lazy_dispatch.registry_meta import RegistryMeta
+from typing import Protocol, runtime_checkable
+
+import pytest
+
+from lazy_dispatch.registry_meta import ProtocolRegistry, ProtocolRegistryMeta, RegistryMeta
 
 
 class TestRegistryMeta:
@@ -29,25 +33,6 @@ class TestRegistryMeta:
 
         assert registered is Virtual
         assert isinstance(Virtual(), Base)
-
-    def test_all_subclasses_includes_real_and_registered_subclasses(self) -> None:
-        """Real subclasses and registered virtual subclasses should both be returned."""
-
-        class Base(metaclass=RegistryMeta):
-            pass
-
-        class RealChild(Base):
-            pass
-
-        class VirtualChild:
-            pass
-
-        Base.register(VirtualChild)
-
-        subclasses = Base.__all_subclasses__()
-
-        assert RealChild in subclasses
-        assert VirtualChild in subclasses
 
     def test_register_instance_marks_instance_for_class_and_parents(self) -> None:
         """Registered instances should match the class and its registry-meta parents."""
@@ -94,3 +79,253 @@ class TestRegistryMeta:
 
         assert isinstance(b, F)
         assert not isinstance(b, G)
+
+    def test_regular_subclass_relationships_work_without_registration(self) -> None:
+        """Regular inheritance should still satisfy issubclass and isinstance."""
+
+        class Base(metaclass=RegistryMeta):
+            pass
+
+        class Child(Base):
+            pass
+
+        child = Child()
+
+        assert issubclass(Child, Base)
+        assert isinstance(child, Child)
+        assert isinstance(child, Base)
+
+
+class TestProtocolRegistryMeta:
+    """Tests for ProtocolRegistryMeta."""
+
+    def test_runtime_checkable_non_method_member_matches_protocol_behavior(self) -> None:
+        """ProtocolRegistry should match Protocol behavior for non-method runtime members."""
+
+        class Candidate:
+            pass
+
+        @runtime_checkable
+        class RegistryProtocol(ProtocolRegistry):
+            x = 1
+
+            def f(self) -> None:
+                return None
+
+        @runtime_checkable
+        class PlainProtocol(Protocol):
+            x = 1
+
+            def f(self) -> None:
+                return None
+
+        assert isinstance(Candidate(), RegistryProtocol) is isinstance(Candidate(), PlainProtocol)
+
+        with pytest.raises(TypeError) as registry_error:
+            issubclass(Candidate, RegistryProtocol)
+        with pytest.raises(TypeError) as protocol_error:
+            issubclass(Candidate, PlainProtocol)
+
+        assert str(registry_error.value) == str(protocol_error.value)
+
+    def test_runtime_checkable_protocol_registry_uses_structural_checks(self) -> None:
+        """Runtime-checkable protocols should use structural checks when enabled."""
+
+        @runtime_checkable
+        class RuntimeStructural(ProtocolRegistry):
+            def f(self) -> None:
+                return None
+
+        class HasF:
+            def f(self) -> None:
+                return None
+
+        class MissingF:
+            pass
+
+        assert issubclass(HasF, RuntimeStructural)
+        assert isinstance(HasF(), RuntimeStructural)
+        assert not issubclass(MissingF, RuntimeStructural)
+        assert not isinstance(MissingF(), RuntimeStructural)
+
+    def test_subprotocol_inheriting_protocol_registry_behaves_like_protocol(self) -> None:
+        """A subprotocol should keep Protocol behavior when inheriting from ProtocolRegistry."""
+
+        class BaseProtocol(ProtocolRegistry):
+            def f(self) -> None:
+                return None
+
+        @runtime_checkable
+        class SubProtocol(BaseProtocol, Protocol):
+            pass
+
+        class HasF:
+            def f(self) -> None:
+                return None
+
+        class MissingF:
+            pass
+
+        assert issubclass(HasF, SubProtocol)
+        assert isinstance(HasF(), SubProtocol)
+        assert not issubclass(MissingF, SubProtocol)
+        assert not isinstance(MissingF(), SubProtocol)
+
+    def test_regular_subclass_of_protocol_registry_does_not_structurally_match(self) -> None:
+        """A regular subclass should not become a structural protocol implicitly."""
+
+        class BaseProtocol(ProtocolRegistry):
+            def f(self) -> None:
+                return None
+
+        class RegularSubclass(BaseProtocol):
+            pass
+
+        class HasFOnly:
+            def f(self) -> None:
+                return None
+
+        assert not issubclass(HasFOnly, RegularSubclass)
+        assert not isinstance(HasFOnly(), RegularSubclass)
+
+    def test_structural_checking_false_disables_protocol_runtime_structure(self) -> None:
+        """`structural_checking=False` should disable Protocol-style structural matches."""
+
+        class BaseProtocol(ProtocolRegistry, structural_checking=False):
+            def f(self) -> None:
+                return None
+
+        class StructuralButNotNominal:
+            def f(self, value: int) -> int:
+                return value
+
+        assert BaseProtocol._structural_checking is False  # noqa: SLF001
+        assert not issubclass(StructuralButNotNominal, BaseProtocol)
+        assert not isinstance(StructuralButNotNominal(), BaseProtocol)
+
+    def test_direct_metaclass_use_honors_structural_checking_false(self) -> None:
+        """Direct use of the metaclass should also disable Protocol structural matching."""
+
+        class DirectProtocol(Protocol, metaclass=ProtocolRegistryMeta, structural_checking=False):
+            def f(self) -> None:
+                return None
+
+        class StructuralButNotNominal:
+            def f(self, value: int) -> int:
+                return value
+
+        assert DirectProtocol._structural_checking is False  # noqa: SLF001
+        assert not issubclass(StructuralButNotNominal, DirectProtocol)
+        assert not isinstance(StructuralButNotNominal(), DirectProtocol)
+
+    def test_structural_checking_false_with_non_method_member_uses_nominal_checks(self) -> None:
+        """Non-method members should not force Protocol TypeErrors when structural checks are disabled."""
+
+        class BaseProtocol(ProtocolRegistry, structural_checking=False):
+            x = 1
+
+            def f(self) -> None:
+                return None
+
+        class Candidate:
+            pass
+
+        assert not isinstance(Candidate(), BaseProtocol)
+        assert not issubclass(Candidate, BaseProtocol)
+
+    def test_structural_checking_false_with_custom_hook_allows_runtime_checks(self) -> None:
+        """Custom subclass hooks should not block runtime checks in non-structural mode."""
+
+        class BaseProtocol(ProtocolRegistry, structural_checking=False):
+            def f(self) -> None:
+                return None
+
+            @classmethod
+            def __subclasshook__(cls, subclass: type, /) -> bool:
+                return False
+
+        class Candidate:
+            pass
+
+        assert not issubclass(Candidate, BaseProtocol)
+        assert not isinstance(Candidate(), BaseProtocol)
+
+    def test_protocol_registry_register_and_register_instance(self) -> None:
+        """ProtocolRegistry should support register and register_instance with pre/post checks."""
+
+        class BaseProtocol(ProtocolRegistry, structural_checking=False):
+            def f(self) -> None:
+                return None
+
+        class Virtual:
+            pass
+
+        class Concrete:
+            pass
+
+        virtual_instance = Virtual()
+        concrete_instance = Concrete()
+        another_concrete_instance = Concrete()
+
+        assert not issubclass(Virtual, BaseProtocol)
+        assert not isinstance(virtual_instance, BaseProtocol)
+        assert not isinstance(concrete_instance, BaseProtocol)
+        assert not isinstance(another_concrete_instance, BaseProtocol)
+
+        registered = BaseProtocol.register(Virtual)
+        assert registered is Virtual
+        assert issubclass(Virtual, BaseProtocol)
+        assert isinstance(virtual_instance, BaseProtocol)
+
+        returned_instance = BaseProtocol.register_instance(concrete_instance)
+        assert returned_instance is concrete_instance
+        assert isinstance(concrete_instance, BaseProtocol)
+        assert not isinstance(another_concrete_instance, BaseProtocol)
+
+    def test_protocol_registry_meta_register_and_register_instance(self) -> None:
+        """Direct ProtocolRegistryMeta use should support register and register_instance."""
+
+        class DirectProtocol(Protocol, metaclass=ProtocolRegistryMeta, structural_checking=False):
+            def f(self) -> None:
+                return None
+
+        class Virtual:
+            pass
+
+        class Concrete:
+            pass
+
+        virtual_instance = Virtual()
+        concrete_instance = Concrete()
+        another_concrete_instance = Concrete()
+
+        assert not issubclass(Virtual, DirectProtocol)
+        assert not isinstance(virtual_instance, DirectProtocol)
+        assert not isinstance(concrete_instance, DirectProtocol)
+        assert not isinstance(another_concrete_instance, DirectProtocol)
+
+        registered = DirectProtocol.register(Virtual)
+        assert registered is Virtual
+        assert issubclass(Virtual, DirectProtocol)
+        assert isinstance(virtual_instance, DirectProtocol)
+
+        returned_instance = DirectProtocol.register_instance(concrete_instance)
+        assert returned_instance is concrete_instance
+        assert isinstance(concrete_instance, DirectProtocol)
+        assert not isinstance(another_concrete_instance, DirectProtocol)
+
+    def test_regular_subclass_relationships_work_for_protocol_registry_meta(self) -> None:
+        """Regular inheritance should still satisfy issubclass and isinstance."""
+
+        class DirectProtocol(Protocol, metaclass=ProtocolRegistryMeta, structural_checking=False):
+            def f(self) -> None:
+                return None
+
+        class Child(DirectProtocol):
+            pass
+
+        child = Child()
+
+        assert issubclass(Child, DirectProtocol)
+        assert isinstance(child, Child)
+        assert isinstance(child, DirectProtocol)
