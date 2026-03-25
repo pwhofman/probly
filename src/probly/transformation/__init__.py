@@ -13,6 +13,8 @@ from probly.transformation.subensemble import subensemble
 __all__ = [
     "batchensemble",
     "bayesian",
+    "credal_bnn",
+    "credal_ensembling",
     "credal_wrapper",
     "dropconnect",
     "dropout",

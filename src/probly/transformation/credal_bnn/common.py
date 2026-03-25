@@ -18,7 +18,7 @@ PRIOR_STD = GlobalVariable[list[float]]("PRIOR_STD", default=[0.1, 0.325, 0.55, 
 NUM_MEMBERS = GlobalVariable[int]("NUM_MEMBERS", default=5)
 
 
-def credalbnn[**In, Out](
+def credal_bnn[**In, Out](
     base: Predictor[In, Out],
     use_base_weights: bool = USE_BASE_WEIGHTS.default,
     posterior_std: list[float] = POSTERIOR_STD.default,

@@ -4,4 +4,4 @@ from __future__ import annotations
 
 from . import common
 
-credalbnn = common.credalbnn
+credal_bnn = common.credal_bnn
