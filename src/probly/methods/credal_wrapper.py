@@ -29,6 +29,6 @@ class CredalWrapper[**In, Out]:
 
     def predict(self, *args: In.args, **kwargs: In.kwargs) -> ProbabilityIntervalsCredalSet[Out]:
         """Predict a credal set for the given input."""
-        sample = self._sampler.sample(*args, **kwargs)
+        sample = self._sampler.predict(*args, **kwargs)
         cset = create_probability_intervals(sample)
         return cset

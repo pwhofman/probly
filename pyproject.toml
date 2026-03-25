@@ -68,9 +68,9 @@ test = [
     "packaging",           # for version parsing
 ]
 lint = [
-    "ruff>=0.14.1", # for linting
+    "ruff>=0.14.1",      # for linting
     "pre-commit>=4.3.0", # for running the linters pre-commit hooks
-    "ty==0.0.14", # for static type checking
+    "ty==0.0.14",        # for static type checking
 ]
 docs = [
     "sphinx>=9.0.0",
@@ -131,7 +131,7 @@ exclude = [
     "venv",
     "docs/build",
     "supporting_files",
-    "examples"
+    "examples",
 ]
 
 
@@ -184,6 +184,9 @@ convention = "google"
     "PERF401", # it's fine to have non-optimized code in notebooks
 ]
 "docs/**/*.py" = ["INP001", "PTH", "I002"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 12
 
 # Use isort-compatible settings
 [tool.ruff.lint.isort]

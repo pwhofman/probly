@@ -140,7 +140,7 @@ class EnsembleSampler[**In, Out, S: Sample](Representer[In, Out]):
         self.sample_factory = sample_factory
         self.sample_axis = sample_axis
 
-    def sample(self, *args: In.args, **kwargs: In.kwargs) -> S:
+    def predict(self, *args: In.args, **kwargs: In.kwargs) -> S:
         """Sample from the ensemble predictor for a given input."""
         return self.sample_factory(
             predict(self.predictor, *args, **kwargs),

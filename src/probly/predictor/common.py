@@ -3,19 +3,21 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import Protocol, runtime_checkable
+from typing import Protocol
 
 from lazy_dispatch.singledispatch import lazydispatch
 
 
-@runtime_checkable
 class Predictor[**In, Out](Protocol):
     """Protocol for generic predictors."""
 
 
-@runtime_checkable
 class EnsemblePredictor[**In, Out](Predictor[In, Iterable[Out]], Iterable[Predictor[In, Out]], Protocol):
     """Protocol for ensemble predictors."""
+
+
+class RandomPredictor[**In, Out](Predictor[In, Out], Protocol):
+    """Protocol for non-deterministic predictors."""
 
 
 @lazydispatch
@@ -30,6 +32,6 @@ def predict[**In, Out](predictor: Predictor[In, Out], *args: In.args, **kwargs: 
 
 
 @predict.register(list)
-def predict_list[**In, Out](predictor: list, *args: In.args, **kwargs: In.kwargs) -> list[Out]:
+def predict_list[**In, Out](predictor: list[Predictor[In, Out]], *args: In.args, **kwargs: In.kwargs) -> list[Out]:
     """Predict for a list of predictors."""
     return [predict(p, *args, **kwargs) for p in predictor]
