@@ -1,4 +1,4 @@
-"""Dropout benchmark on MNIST using selective prediction."""
+"""Dropconnect benchmark on MNIST using selective prediction."""
 
 from __future__ import annotations
 
@@ -13,8 +13,9 @@ from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 
 from probly.evaluation.tasks import selective_prediction
-from probly.methods.dropconnect import DropConnect
 from probly.quantification.classification import total_entropy
+from probly.representation.sampling import Sampler
+from probly.transformation.dropconnect import dropconnect
 from probly_benchmark.models import LeNet
 
 # ---------------------------------------------------------------------------
@@ -23,7 +24,7 @@ from probly_benchmark.models import LeNet
 BATCH_SIZE = 128
 NUM_EPOCHS = 5
 LR = 1e-3
-DROPOUT_P = 0.25
+DROPCONNECT_P = 0.25
 NUM_SAMPLES = 50
 N_BINS = 50
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -109,17 +110,18 @@ def main(seed: int = 0) -> None:
     base_model = LeNet().to(DEVICE)
 
     print("Building DropConnect...")
-    dropout = DropConnect(base_model, p=DROPOUT_P, num_samples=NUM_SAMPLES)
+    dropconnect_model = dropconnect(base_model, p=DROPCONNECT_P)
 
     print("Training...")
-    train(dropout.model, train_loader)  # ty:ignore[invalid-argument-type]
+    train(dropconnect_model, train_loader)  # ty:ignore[invalid-argument-type]
 
     print("Predicting...")
+    sampler = Sampler(dropconnect_model, num_samples=NUM_SAMPLES)
     all_probs: list[np.ndarray] = []
     all_labels: list[np.ndarray] = []
     with torch.no_grad():
         for x, y in test_loader:
-            sample = dropout.predict(x.to(DEVICE))
+            sample = sampler.predict(x.to(DEVICE))
             all_probs.append(sample.tensor.cpu().numpy())
             all_labels.append(y.numpy())
     probs = np.concatenate(all_probs)
