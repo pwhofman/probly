@@ -40,6 +40,7 @@ class Score(Protocol):
     """Interface for nonconformity scores used in split conformal prediction.
 
     Each score (APS, LAC, RAPS, ...) must implement:
+
     - calibration_nonconformity: used on calibration data.
     - predict_nonconformity: used on test data, must return a score matrix
       of shape according to the specific score type (classification or regression).
@@ -71,11 +72,7 @@ class ClassificationScoreProtocol(Score, Protocol):
 
 
 class RegressionScoreProtocol(Score, Protocol):
-    """Nonconformity scores for regression (e.g.. Residuals).
-
-    calibration_nonconformity: 1D scores (|y - y_hat|, standardized Residuals, ...).
-    predict_nonconformity: 1D scores or local scales (n_instances,).
-    """
+    """Nonconformity scores for regression (e.g.. Residuals)."""
 
     def predict_nonconformity(
         self,
@@ -118,11 +115,11 @@ class ClassificationScore(ClassificationScoreProtocol):
         """Initialize classification score.
 
         Args:
-        model: The prediction model.
-        score_func: Function that takes probabilities and returns score matrix.
-                    Randomization (for APS/SAPS) MUST be built into this function.
-        randomize: Whether to use randomization (for reproducibility).
-        random_state: Seed for randomization.
+            model: The prediction model.
+            score_func: Function that takes probabilities and returns score matrix.
+                Randomization (for APS/SAPS) MUST be built into this function.
+            randomize: Whether to use randomization (for reproducibility).
+            random_state: Seed for randomization.
         """
         self.model = model
         self.score_func = score_func
@@ -269,9 +266,9 @@ class RegressionScore(RegressionScoreProtocol):
         """Initialize regression score.
 
         Args:
-        model: The prediction model.
-        score_func: Function that computes scores from (predictions, true_values).
-        interval_func: Optional function to construct intervals.
+            model: The prediction model.
+            score_func: Function that computes scores from (predictions, true_values).
+            interval_func: Optional function to construct intervals.
         """
         self.model = model
         self.score_func = score_func

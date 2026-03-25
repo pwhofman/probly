@@ -109,9 +109,7 @@ class ArrayDirichletMixture:
         """Sample from the mixture.
 
         Returns:
-        -------
-        ArraySample
-            Samples with shape: (num_samples, *alphas.shape).
+            Samples with shape: ``(num_samples, *alphas.shape)``.
         """
         if num_samples < 0:
             msg = "num_samples must be >= 0."

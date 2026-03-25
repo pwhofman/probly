@@ -210,7 +210,7 @@ class FirstOrderDataGenerator(PyFirstOrderDataGenerator):
     def load_distributions(self, path: str | Path) -> tuple[dict[int, torch.Tensor], dict[str, Any]]:  # ty:ignore[invalid-method-override]
         """Load distributions from JSON and return Torch tensors.
 
-        Returns:
+        Returns
         -------
         (distributions, meta)
             distributions: dict[int, torch.Tensor]
