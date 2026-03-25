@@ -2,6 +2,7 @@
 
 from probly.transformation.batchensemble import batchensemble
 from probly.transformation.bayesian import bayesian
+from probly.transformation.credal_wrapper import credal_wrapper
 from probly.transformation.dropconnect import dropconnect
 from probly.transformation.dropout import dropout
 from probly.transformation.ensemble import ensemble
@@ -12,6 +13,7 @@ from probly.transformation.subensemble import subensemble
 __all__ = [
     "batchensemble",
     "bayesian",
+    "credal_wrapper",
     "dropconnect",
     "dropout",
     "ensemble",
