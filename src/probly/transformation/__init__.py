@@ -15,6 +15,7 @@ __all__ = [
     "bayesian",
     "credal_bnn",
     "credal_ensembling",
+    "credal_relative_likelihood",
     "credal_wrapper",
     "dropconnect",
     "dropout",
