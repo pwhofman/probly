@@ -5,11 +5,13 @@ from __future__ import annotations
 from pathlib import Path
 import sys
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+_here = Path(__file__).resolve().parent
+sys.path.insert(0, str(_here))  # make _sphinx_helpers importable
+sys.path.insert(0, str(_here.parent / "src"))
 
-from _sphinx_helpers import make_linkcode_resolve
+from _sphinx_helpers import make_linkcode_resolve  # noqa: E402
 
-import probly
+import probly  # noqa: E402
 
 # -- Paths -------------------------------------------------------------------
 # conf.py lives in:  .../probly/docs/source/conf.py
