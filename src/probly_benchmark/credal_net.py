@@ -109,7 +109,7 @@ def main(seed: int = 0) -> None:
     base_model = LeNet().to(DEVICE)
 
     print("Building Credal Net...")
-    credal_model = credal_net(base_model, num_classes=NUM_CLASSES)
+    credal_model = credal_net(base_model)
 
     print("Training...")
     train(credal_model, train_loader)  # ty:ignore[invalid-argument-type]

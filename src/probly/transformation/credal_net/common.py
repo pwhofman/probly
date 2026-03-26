@@ -25,7 +25,7 @@ def register(cls: LazyType, generator: Callable) -> None:
     credal_net_generator.register(cls=cls, func=generator)
 
 
-def credal_net[T: Predictor](base: T, num_classes: int) -> T:
+def credal_net[T: Predictor](base: T) -> T:
     """Create a credal net predictor from a base predictor based on :cite:`wang2024credalnet`.
 
     Args:
@@ -35,4 +35,4 @@ def credal_net[T: Predictor](base: T, num_classes: int) -> T:
     Returns:
         Predictor, The credal net predictor.
     """
-    return credal_net_generator(base, num_classes=num_classes)
+    return credal_net_generator(base)
