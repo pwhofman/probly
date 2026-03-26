@@ -41,7 +41,7 @@ class JackknifeCVBase(ConformalPredictor):
         random_state: int | None = None,
     ) -> None:
         """Initialize the JackknifeCVBase."""
-        super().__init__(model=None)  # type: ignore[arg-type]
+        super().__init__(model=None)  # ty: ignore[invalid-argument-type]
         self.model_factory = model_factory
         self.cv = cv
         self.random_state = random_state
@@ -123,7 +123,7 @@ class JackknifeCVBase(ConformalPredictor):
 
             model = self.model_factory()
             if hasattr(model, "fit"):
-                model.fit(x_np[train_mask], y_np[train_mask])  # type: ignore[call-non-callable]
+                model.fit(x_np[train_mask], y_np[train_mask])  # ty: ignore[call-non-callable]
             self.fitted_models.append(model)
 
             prediction = self.predict_fold(model, x_np[val_mask])

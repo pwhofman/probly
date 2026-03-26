@@ -43,9 +43,9 @@ EnsemblePredictor.register(list)
 def predict[**In, Out](predictor: Predictor[In, Out], *args: In.args, **kwargs: In.kwargs) -> Out:
     """Generic predict function."""
     if hasattr(predictor, "predict"):
-        return predictor.predict(*args, **kwargs)  # type: ignore[no-any-return]
+        return predictor.predict(*args, **kwargs)  # ty: ignore[call-non-callable]
     if callable(predictor):
-        return predictor(*args, **kwargs)
+        return predictor(*args, **kwargs)  # ty:ignore[call-top-callable, invalid-return-type]
     msg = f"No predict function registered for type {type(predictor)}"
     raise NotImplementedError(msg)
 

@@ -25,7 +25,7 @@ def _(obj: nnx.Module) -> nnx.List[nnx.Module]:
 @reset_traverser.register
 def _(obj: nnx.Module) -> nnx.Module:
     if hasattr(obj, "reset_parameters"):
-        obj.reset_parameters()  # type: ignore[operator]
+        obj.reset_parameters()  # ty: ignore[call-non-callable]
     return obj
 
 

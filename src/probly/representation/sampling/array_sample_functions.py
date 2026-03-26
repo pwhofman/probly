@@ -48,7 +48,7 @@ def array_function(
     kwargs: dict[str, Any],
 ) -> Any:  # noqa: ANN401
     """Implementation of numpy array functions for sample arrays."""
-    return func._implementation(*args, **kwargs)  # type: ignore[attr-defined]  # noqa: SLF001
+    return func._implementation(*args, **kwargs)  # ty: ignore[unresolved-attribute]  # noqa: SLF001
 
 
 def array_function_override(
@@ -147,7 +147,7 @@ def array_reduction_function(
     if out_array is not None:
         params.arguments["out"] = out_array
 
-    res = func._implementation(*params.args, **params.kwargs)  # type: ignore[attr-defined]  # noqa: SLF001
+    res = func._implementation(*params.args, **params.kwargs)  # ty: ignore[unresolved-attribute]  # noqa: SLF001
 
     if out_array is not None:
         return out
@@ -176,12 +176,12 @@ def array_transpose(
     a_array, a_sample_axis = array_sample_internals(a)
 
     if a_array is None:
-        return func._implementation(*params.args, **params.kwargs)  # type: ignore[attr-defined] # noqa: SLF001
+        return func._implementation(*params.args, **params.kwargs)  # ty: ignore[unresolved-attribute] # noqa: SLF001
 
     axes = tuple(range(a_array.ndim)[::-1]) if axes is None else tuple(a if a >= 0 else a_array.ndim + a for a in axes)
 
     new_sample_axis = axes.index(a_sample_axis)
-    res = func._implementation(a_array, axes=axes)  # type: ignore[attr-defined]  # noqa: SLF001
+    res = func._implementation(a_array, axes=axes)  # ty: ignore[unresolved-attribute]  # noqa: SLF001
 
     return type(a)(res, sample_axis=new_sample_axis)
 
@@ -198,7 +198,7 @@ def array_matrix_transpose(
     a_array, a_sample_axis = array_sample_internals(a)
 
     if a_array is None or a_sample_axis is None:
-        return func._implementation(*params.args, **params.kwargs)  # type: ignore[attr-defined] # noqa: SLF001
+        return func._implementation(*params.args, **params.kwargs)  # ty: ignore[unresolved-attribute] # noqa: SLF001
 
     a_ndim = a_array.ndim
 
@@ -209,7 +209,7 @@ def array_matrix_transpose(
     else:
         new_sample_axis = a_sample_axis
 
-    res = func._implementation(a_array)  # type: ignore[attr-defined]  # noqa: SLF001
+    res = func._implementation(a_array)  # ty: ignore[unresolved-attribute]  # noqa: SLF001
 
     return type(a)(res, sample_axis=new_sample_axis)
 
@@ -236,10 +236,10 @@ def array_sample_axis_preserving_function(
 
     a_array, a_sample_axis = array_sample_internals(a)
 
-    res = func._implementation(*args, **kwargs)  # type: ignore[attr-defined]  # noqa: SLF001
+    res = func._implementation(*args, **kwargs)  # ty: ignore[unresolved-attribute]  # noqa: SLF001
 
     if a_array is not None:
-        return type(a)(res, sample_axis=a_sample_axis)
+        return type(a)(res, sample_axis=a_sample_axis)  # ty:ignore[unknown-argument, too-many-positional-arguments]
 
     return res
 
@@ -255,7 +255,7 @@ def array_reshape_function(  # noqa: C901, PLR0912
     order: Literal["C", "F", "A"] = params.arguments.get("order", "C")
 
     a_array, a_sample_axis = array_sample_internals(a)
-    res = func._implementation(*params.args, **params.kwargs)  # type: ignore[attr-defined]  # noqa: SLF001
+    res = func._implementation(*params.args, **params.kwargs)  # ty: ignore[unresolved-attribute]  # noqa: SLF001
 
     if a_array is None or a_sample_axis is None:
         return res
@@ -321,7 +321,7 @@ def array_swapaxes_function(
     a_array, a_sample_axis = array_sample_internals(a)
 
     if a_array is None or a_sample_axis is None:
-        return func._implementation(a, axis1, axis2)  # type: ignore[attr-defined] # noqa: SLF001
+        return func._implementation(a, axis1, axis2)  # ty: ignore[unresolved-attribute] # noqa: SLF001
 
     a_ndim = a_array.ndim
     axis1 = axis1 if axis1 >= 0 else a_ndim + axis1
@@ -334,7 +334,7 @@ def array_swapaxes_function(
     else:
         new_sample_axis = a_sample_axis
 
-    res = func._implementation(a_array, axis1, axis2)  # type: ignore[attr-defined]  # noqa: SLF001
+    res = func._implementation(a_array, axis1, axis2)  # ty: ignore[unresolved-attribute]  # noqa: SLF001
 
     return type(a)(res, sample_axis=new_sample_axis)
 
@@ -352,7 +352,7 @@ def array_expand_dims_function(
     a_array, a_sample_axis = array_sample_internals(a)
 
     if a_array is None or a_sample_axis is None:
-        return func._implementation(a, axis)  # type: ignore[attr-defined] # noqa: SLF001
+        return func._implementation(a, axis)  # ty: ignore[unresolved-attribute] # noqa: SLF001
 
     a_ndim = a_array.ndim
     axes = axis if isinstance(axis, tuple) else (axis,)
@@ -364,7 +364,7 @@ def array_expand_dims_function(
         if axis <= new_sample_axis:
             new_sample_axis += 1
 
-    res = func._implementation(a_array, axis)  # type: ignore[attr-defined]  # noqa: SLF001
+    res = func._implementation(a_array, axis)  # ty: ignore[unresolved-attribute]  # noqa: SLF001
 
     return type(a)(res, sample_axis=new_sample_axis)
 
@@ -382,7 +382,7 @@ def array_squeeze_function(
     a_array, a_sample_axis = array_sample_internals(a)
 
     if a_array is None or a_sample_axis is None:
-        return func._implementation(a, axis)  # type: ignore[attr-defined] # noqa: SLF001
+        return func._implementation(a, axis)  # ty: ignore[unresolved-attribute] # noqa: SLF001
 
     a_ndim = a_array.ndim
 
@@ -401,7 +401,7 @@ def array_squeeze_function(
         if ax < new_sample_axis:
             new_sample_axis -= 1
 
-    res = func._implementation(a_array, axes)  # type: ignore[attr-defined]  # noqa: SLF001
+    res = func._implementation(a_array, axes)  # ty: ignore[unresolved-attribute]  # noqa: SLF001
 
     if new_sample_axis is None:
         return res
@@ -423,12 +423,12 @@ def array_apply_along_axis_function(
     arr_array, arr_sample_axis = array_sample_internals(arr)
 
     if arr_array is None or arr_sample_axis is None:
-        return func._implementation(func1d, axis, arr)  # type: ignore[attr-defined] # noqa: SLF001
+        return func._implementation(func1d, axis, arr)  # ty: ignore[unresolved-attribute] # noqa: SLF001
 
     arr_ndim = arr_array.ndim
     axis = axis if axis >= 0 else arr_ndim + axis
 
-    res = func._implementation(func1d, axis, arr_array)  # type: ignore[attr-defined]  # noqa: SLF001
+    res = func._implementation(func1d, axis, arr_array)  # ty: ignore[unresolved-attribute]  # noqa: SLF001
 
     if axis == arr_sample_axis or not isinstance(res, np.ndarray):
         return res

@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 def _enforce_train_mode(obj: nnx.Module, state: State) -> tuple[nnx.Module, State]:
     if getattr(obj, "deterministic", False):
-        obj.deterministic = False  # type: ignore[attr-defined]
+        obj.deterministic = False  # ty: ignore[unresolved-attribute]
         state[sampler.CLEANUP_FUNCS].add(lambda: setattr(obj, "deterministic", True))
         return obj, state
     return obj, state

@@ -111,11 +111,11 @@ class Lazydispatch[T, **In, Out]:
 
     def eager_register(self, cls: type | UnionType | Callable, func: Callable | None = None) -> Callable:
         """Eagerly register a new implementation for the given type or union type."""
-        return self._singledispatcher.register(cls, func)  # type: ignore[arg-type]
+        return self._singledispatcher.register(cls, func)  # ty: ignore[no-matching-overload]
 
     def register(self, cls: LazyType | Callable, func: Callable | None = None) -> Callable:
         """Register a new implementation for the given type or string."""
-        if is_valid_dispatch_type(cls):  # type: ignore[arg-type]
+        if is_valid_dispatch_type(cls):  # ty: ignore[invalid-argument-type]
             if func is None:
                 return lambda f: self.register(cls, f)
         else:
@@ -130,7 +130,7 @@ class Lazydispatch[T, **In, Out]:
                     f"on an annotated function."
                 )
                 raise TypeError(msg)
-            func = cls  # type: ignore[assignment]
+            func = cls  # ty: ignore[invalid-assignment]
 
             argname, cls = next(iter(func.__annotations__.items()))
             if not is_valid_dispatch_type(cls):
@@ -140,7 +140,7 @@ class Lazydispatch[T, **In, Out]:
                 msg = f"Invalid annotation for {argname!r}. {cls!r} is not a class or string."
                 raise TypeError(msg)
 
-        types, strings = _split_lazy_type(cls)  # type: ignore[arg-type]
+        types, strings = _split_lazy_type(cls)  # ty: ignore[invalid-argument-type]
 
         if len(types) > 0:
             # Use reduce with operator.or_ to dynamically create a Union (PEP 604 style) and avoid private API usage.
@@ -154,9 +154,9 @@ class Lazydispatch[T, **In, Out]:
 
         if len(strings) > 0:
             for s in strings:
-                self.string_registry[s] = func  # type: ignore[assignment]
+                self.string_registry[s] = func  # ty: ignore[invalid-assignment]
 
-        return func  # type: ignore[return-value]
+        return func  # ty: ignore[invalid-return-type]
 
     @overload
     def delayed_register(self, cls: LazyType) -> Callable[[RegistrationFunction], RegistrationFunction]: ...
@@ -173,9 +173,9 @@ class Lazydispatch[T, **In, Out]:
         func: RegistrationFunction | None = None,
     ) -> RegistrationFunction | Callable[[RegistrationFunction], RegistrationFunction]:
         """Register a delayed registration function."""
-        if is_valid_dispatch_type(cls):  # type: ignore[arg-type]
+        if is_valid_dispatch_type(cls):  # ty: ignore[invalid-argument-type]
             if func is None:
-                return lambda f: self.delayed_register(cls, f)  # type: ignore[arg-type]
+                return lambda f: self.delayed_register(cls, f)  # ty: ignore[invalid-argument-type]
         else:
             if func is not None:
                 msg = (
@@ -191,7 +191,7 @@ class Lazydispatch[T, **In, Out]:
                     f"on an annotated function."
                 )
                 raise TypeError(msg)
-            func = cls  # type: ignore[assignment]
+            func = cls  # ty: ignore[invalid-assignment]
 
             argname, cls = next(iter(func.__annotations__.items()))
             if not is_valid_dispatch_type(cls):
@@ -201,15 +201,15 @@ class Lazydispatch[T, **In, Out]:
                 msg = f"Invalid annotation for {argname!r}. {cls!r} is not a class or string."
                 raise TypeError(msg)
 
-        types, strings = _split_lazy_type(cls)  # type: ignore[arg-type]
+        types, strings = _split_lazy_type(cls)  # ty: ignore[invalid-argument-type]
 
         for t in types:
-            self.delayed_registration_registry[t] = func  # type: ignore[assignment]
+            self.delayed_registration_registry[t] = func  # ty: ignore[invalid-assignment]
 
         for s in strings:
-            self.delayed_registration_registry[s] = func  # type: ignore[assignment]
+            self.delayed_registration_registry[s] = func  # ty: ignore[invalid-assignment]
 
-        return func  # type: ignore[return-value]
+        return func  # ty: ignore[invalid-return-type]
 
     def __call__(self, *args: In.args, **kwargs: In.kwargs) -> Out:
         """Call the appropriate registered function based on the type of the first argument."""

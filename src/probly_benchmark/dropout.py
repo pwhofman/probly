@@ -113,7 +113,7 @@ def main(seed: int = 0) -> None:
     dropout_model = dropout(base_model, p=DROPOUT_P)
 
     print("Training...")
-    train(dropout_model, train_loader)  # ty:ignore[invalid-argument-type]
+    train(dropout_model, train_loader)
 
     print("Predicting...")
     sampler = Sampler(dropout_model, num_samples=NUM_SAMPLES)

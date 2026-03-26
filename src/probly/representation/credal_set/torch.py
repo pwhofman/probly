@@ -201,9 +201,9 @@ class TorchProbabilityIntervals(TorchCategoricalCredalSet, ProbabilityIntervalsC
             upper_bounds=self.upper_bounds.to(device),
         )
 
-    def __eq__(self, value: Any) -> Self:  # type: ignore[override]  # noqa: ANN401, PYI032
+    def __eq__(self, value: Any) -> Self:  # ty: ignore[invalid-method-override]  # noqa: ANN401, PYI032
         """Vectorized equality comparison."""
-        return torch.equal(self, value)  # type: ignore[return-value]
+        return torch.equal(self, value)  # ty: ignore[invalid-return-type, invalid-argument-type]
 
     def __hash__(self) -> int:
         """Compute the hash of the intervals."""

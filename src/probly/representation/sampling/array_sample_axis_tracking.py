@@ -20,7 +20,7 @@ type Index = IndexElement | tuple[IndexElement, ...]
 
 
 def _normalize_index(index: Index, ndim: int) -> tuple[IndexElement, ...]:
-    normalized_index: tuple[IndexElement, ...] = (index,) if not isinstance(index, tuple) else index  # type: ignore[assignment]
+    normalized_index: tuple[IndexElement, ...] = (index,) if not isinstance(index, tuple) else index  # ty: ignore[invalid-assignment]
 
     # Expand ellipsis
     for i, idx in enumerate(normalized_index):
@@ -45,7 +45,7 @@ def _convert_idx(idx: IndexElement) -> np.ndarray | int:
             return idx.__index__()
         return idx
     try:
-        return idx.__index__()  # type: ignore[union-attr]
+        return idx.__index__()  # ty: ignore[unresolved-attribute]
     except Exception:  # noqa: BLE001
         idx = np.asanyarray(idx)
         if idx.ndim == 0:
@@ -53,7 +53,7 @@ def _convert_idx(idx: IndexElement) -> np.ndarray | int:
         return idx
 
 
-def _split_index(  # noqa: C901, PLR0912
+def _split_index(  # noqa: PLR0912
     index: tuple[IndexElement, ...],
 ) -> tuple[tuple[BasicIndexElement, ...], tuple[AdvancedIndexElement, ...]]:
     """Split index into basic and advanced index components.

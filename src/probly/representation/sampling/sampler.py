@@ -115,7 +115,7 @@ class Sampler[**In, Out, S: Sample](Representer[Any, In, S]):
                 self.predictor,
                 num_samples=self.num_samples,
                 strategy=self.sampling_strategy,
-            )(*args, **kwargs),  # type: ignore[no-any-return]
+            )(*args, **kwargs),
             sample_axis=self.sample_axis,
         )
 

@@ -335,7 +335,7 @@ class _AbstractSingledispatchTraverser[T: object, D](abc.ABC):
         if not callable(traverser):
             msg = f"Expected a callable traverser, got {traverser!r}."
             raise TypeError(msg)
-        traverser: Traverser[T] = d.traverser(traverser, **kwargs)  # type: ignore[invalid-assignment]
+        traverser: Traverser[T] = d.traverser(traverser, **kwargs)
 
         if cls is not None:
             return self._dispatch.register(cls, traverser)
@@ -416,4 +416,4 @@ class LazydispatchTraverser[T](_AbstractSingledispatchTraverser[T, lazy_dispatch
         registration_fn: RegistrationFunction | None = None,
     ) -> RegistrationFunction | Callable[[RegistrationFunction], RegistrationFunction]:
         """Register a function that will be called when a matching type is encountered."""
-        return self._dispatch.delayed_register(cls, registration_fn)  # type: ignore # noqa: PGH003
+        return self._dispatch.delayed_register(cls, registration_fn)  # ty: ignore[unresolved-attribute]

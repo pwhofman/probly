@@ -47,7 +47,7 @@ def radar_factory(num_vars: int, frame: str = "circle") -> np.ndarray:  # noqa: 
         PolarTransform = RadarTransform
 
         def __init__(self, *args: object, **kwargs: object) -> None:
-            super().__init__(*args, **kwargs)  # type: ignore[arg-type]
+            super().__init__(*args, **kwargs)  # ty: ignore[invalid-argument-type]
             self.set_theta_zero_location("N")
 
         def fill(self, *args: object, **kwargs: object) -> list[Polygon]:

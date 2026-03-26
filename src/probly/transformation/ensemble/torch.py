@@ -15,7 +15,7 @@ reset_traverser = singledispatch_traverser[nn.Module](name="reset_traverser")
 @reset_traverser.register
 def _(obj: nn.Module) -> nn.Module:
     if hasattr(obj, "reset_parameters"):
-        obj.reset_parameters()  # type: ignore[operator]
+        obj.reset_parameters()  # ty: ignore[call-non-callable]
     return obj
 
 

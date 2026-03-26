@@ -97,13 +97,13 @@ class ArraySample[D: Numeric](Sample[D], np.lib.mixins.NDArrayOperatorsMixin):
             sample_array = sample.array
 
             if dtype is not None:
-                sample_array = sample_array.astype(dtype)  # type: ignore[no-matching-overload]
+                sample_array = sample_array.astype(dtype)
 
             in_sample_axis = sample.sample_axis
             if sample_axis not in ("auto", in_sample_axis):
-                sample_array = np.moveaxis(sample_array, in_sample_axis, sample_axis)  # type: ignore[invalid-argument-type]
+                sample_array = np.moveaxis(sample_array, in_sample_axis, sample_axis)
                 in_sample_axis = sample_axis
-            return cls(array=sample_array, sample_axis=in_sample_axis)  # type: ignore[invalid-argument-type]
+            return cls(array=sample_array, sample_axis=in_sample_axis)
 
         return cls.from_iterable(sample.samples, sample_axis=sample_axis, dtype=dtype)
 
@@ -128,7 +128,7 @@ class ArraySample[D: Numeric](Sample[D], np.lib.mixins.NDArrayOperatorsMixin):
     @property
     def mT(self) -> Self:  # noqa: N802
         """The transposed version of the underlying array."""
-        return np.matrix_transpose(self)  #  type: ignore[return-value]
+        return np.matrix_transpose(self)  # ty: ignore[invalid-return-type]
 
     @property
     def ndim(self) -> int:
@@ -148,7 +148,7 @@ class ArraySample[D: Numeric](Sample[D], np.lib.mixins.NDArrayOperatorsMixin):
     @property
     def T(self) -> Self:  # noqa: N802
         """The transposed version of the underlying array."""
-        return np.transpose(self)  #  type: ignore[return-value]
+        return np.transpose(self)  # ty: ignore[invalid-return-type]
 
     @property
     def sample_size(self) -> int:
@@ -180,7 +180,7 @@ class ArraySample[D: Numeric](Sample[D], np.lib.mixins.NDArrayOperatorsMixin):
     @override
     def concat(self, other: Sample[D]) -> Self:
         if isinstance(other, ArraySample):
-            other_array = np.moveaxis(other.array, other.sample_axis, self.sample_axis)  # type: ignore[invalid-argument-type]
+            other_array = np.moveaxis(other.array, other.sample_axis, self.sample_axis)
         else:
             other_array = np.stack(list(other.samples), axis=self.sample_axis, dtype=self.array.dtype)
 
