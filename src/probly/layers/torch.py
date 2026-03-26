@@ -1163,3 +1163,38 @@ class PrNetHead(nn.Module):
     def forward(self, features: torch.Tensor) -> torch.Tensor:
         """Produce positive Dirichlet concentration parameters."""
         return F.softplus(self.net(features)) + 1.0
+
+
+# ======================================================================================================================
+
+
+class IntSoftmax(nn.Module):
+    """Implementation of the integer softmax layer."""
+
+    def __init__(self) -> None:
+        """Initialize the IntSoftmax layer."""
+        super().__init__()
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Forward pass of the IntSoftmax layer."""
+        # Extract number of classes
+        n_classes = int(x.shape[-1] / 2)
+
+        # Extract center and the radius
+        center = x[:, :n_classes]
+        radius = x[:, n_classes:]
+
+        # Ensure the nonnegativity of radius
+        radius_nonneg = F.softplus(radius)
+
+        # Compute upper and lower probabilities
+        exp_center = torch.exp(center)
+        exp_center_sum = torch.sum(exp_center, dim=-1, keepdim=True)
+
+        lo = torch.exp(center - radius_nonneg) / (exp_center_sum - exp_center + torch.exp(center - radius_nonneg))
+        hi = torch.exp(center + radius_nonneg) / (exp_center_sum - exp_center + torch.exp(center + radius_nonneg))
+
+        # Generate output
+        output = torch.cat([lo, hi], dim=-1)
+
+        return output
