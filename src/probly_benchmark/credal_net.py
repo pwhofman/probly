@@ -15,7 +15,7 @@ from torchvision import datasets, transforms
 from probly.evaluation.tasks import selective_prediction
 from probly.quantification.classification import upper_entropy
 from probly.representation.credal_set.torch import TorchProbabilityIntervalsCredalSet
-from probly.transformation.credal_net import credal_net
+from probly.transformation import credal_net
 from probly_benchmark.models import LeNet
 
 # ---------------------------------------------------------------------------
@@ -112,7 +112,7 @@ def main(seed: int = 0) -> None:
     credal_model = credal_net(base_model)
 
     print("Training...")
-    train(credal_model, train_loader)  # ty:ignore[invalid-argument-type]
+    train(credal_model, train_loader)
 
     print("Predicting...")
     credal_model.eval()

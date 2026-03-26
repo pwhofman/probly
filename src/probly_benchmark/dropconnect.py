@@ -14,8 +14,8 @@ from torchvision import datasets, transforms
 
 from probly.evaluation.tasks import selective_prediction
 from probly.quantification.classification import total_entropy
-from probly.representation.sampling import Sampler
-from probly.transformation.dropconnect import dropconnect
+from probly.representation import Sampler
+from probly.transformation import dropconnect
 from probly_benchmark.models import LeNet
 
 # ---------------------------------------------------------------------------
