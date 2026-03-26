@@ -113,7 +113,7 @@ def main(seed: int = 0) -> None:
     dropconnect_model = dropconnect(base_model, p=DROPCONNECT_P)
 
     print("Training...")
-    train(dropconnect_model, train_loader)  # ty:ignore[invalid-argument-type]
+    train(dropconnect_model, train_loader)
 
     print("Predicting...")
     sampler = Sampler(dropconnect_model, num_samples=NUM_SAMPLES)
