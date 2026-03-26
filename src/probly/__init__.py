@@ -7,11 +7,11 @@ from probly import (
     datasets as datasets,
     evaluation as evaluation,
     layers as layers,
+    plot as plot,
     quantification as quantification,
     representation as representation,
     train as train,
     transformation as transformation,
     traverse_nn as traverse_nn,
     utils as utils,
-    visualization as visualization,
 )
