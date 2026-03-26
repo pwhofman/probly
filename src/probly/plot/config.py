@@ -22,8 +22,11 @@ class PlotConfig:
         "#9b59b6",  # purple
         "#16a085",  # teal
         "#d35400",  # dark orange
-        "#7f8c8d",  # gray
     )
+    color_positive: str = "#ff0d57"  # pink-red
+    color_negative: str = "#1e88e5"  # blue
+    color_neutral: str = "#7f8c8d"  # gray
+    color_gridline: str = "#e0e0e0"  # light-gray
 
     # Figure / axes defaults
     figure_size: tuple[float, float] = (6.0, 6.0)
@@ -36,7 +39,19 @@ class PlotConfig:
     # Primitive styling defaults
     line_width: float = 1.5
     fill_alpha: float = 0.3
+    marker_size: float = 30.0
+    grid_alpha: float = 0.5
+    grid_linestyle: str = "--"
+    histogram_alpha: float = 0.6
 
     def color(self, index: int) -> str:
-        """Return a color from the categorical palette."""
+        """Return a color from the categorical palette.
+
+        Args:
+            index: Index to select color from the palette. Will wrap around if
+                index exceeds palette length.
+
+        Returns:
+            A hex color string from the categorical palette.
+        """
         return self.categorical_palette[index % len(self.categorical_palette)]
