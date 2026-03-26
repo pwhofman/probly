@@ -17,9 +17,9 @@ from torch import Tensor
 
 from probly.conformal_prediction.methods.common import (
     ConformalClassifier,
+    ConformalModel,
     ConformalPredictor,
     ConformalRegressor,
-    Predictor,
     predict_probs,
 )
 from probly.conformal_prediction.scores.lac.common import accretive_completion
@@ -103,7 +103,7 @@ class SplitConformalPredictor(ConformalPredictor):
 
     def __init__(
         self,
-        model: Predictor,
+        model: ConformalModel,
     ) -> None:
         """Create a split conformal predictor."""
         super().__init__(model=model)
@@ -142,7 +142,7 @@ class SplitConformalClassifier(SplitConformalPredictor, ConformalClassifier):
 
     def __init__(
         self,
-        model: Predictor,
+        model: ConformalModel,
         score: ClassificationScore,
         use_accretive: bool = False,
     ) -> None:
@@ -191,7 +191,7 @@ class SplitConformalRegressor(SplitConformalPredictor, ConformalRegressor):
 
     def __init__(
         self,
-        model: Predictor,
+        model: ConformalModel,
         score: RegressionScore,
     ) -> None:
         """Create a split conformal predictor for regression."""

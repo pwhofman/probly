@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
     from lazy_dispatch.isinstance import LazyType
-    from probly.conformal_prediction.methods.common import Predictor
+    from probly.conformal_prediction.methods.common import ConformalModel
 
 import numpy as np
 import numpy.typing as npt
@@ -35,17 +35,20 @@ def accretive_completion(
     prediction_sets: np.ndarray,
     probs: np.ndarray,
 ) -> np.ndarray:
-    """Implements Accretive Completion to eliminate empty prediction sets (Null Regions).
+    """Implement Accretive Completion to eliminate empty prediction sets.
+
+    Ensures every prediction set has at least one class (eliminates Null Regions).
 
     Args:
-        prediction_sets (np.ndarray): Boolean array of shape (n_samples, n_classes).
-                                      True indicates the class is in the set.
-        probs (np.ndarray): Array of shape (n_samples, n_classes).
-                           Usually conditional probabilities p(y|x).
-                           High score implies higher likelihood of the class.
+        prediction_sets: Boolean array of shape (n_samples, n_classes).
+            True indicates the class is in the set.
+        probs: Array of shape (n_samples, n_classes).
+            Usually conditional probabilities p(y|x).
+            High score implies higher likelihood of the class.
 
     Returns:
-        np.ndarray: The modified prediction sets where every row has at least one True.
+        The modified prediction sets where every row has at least one True.
+
     """
     # ensure inputs are numpy arrays
     prediction_sets = np.asarray(prediction_sets)
@@ -69,7 +72,7 @@ def accretive_completion(
 class LACScore(ClassificationScore):
     """LAC Nonconformity-Score."""
 
-    def __init__(self, model: Predictor) -> None:
+    def __init__(self, model: ConformalModel) -> None:
         """Initialize LAC score with model."""
         super().__init__(model=model, score_func=self.compute_score)
 

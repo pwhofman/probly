@@ -402,7 +402,7 @@ class ArrayDistanceBasedCredalSet(
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class ArrayProbabilityIntervals(ArrayCategoricalCredalSet, ProbabilityIntervalsCredalSet[np.ndarray]):
+class ArrayProbabilityIntervalsCredalSet(ArrayCategoricalCredalSet, ProbabilityIntervalsCredalSet[np.ndarray]):
     """A credal set defined by probability intervals over outcomes.
 
     This represents uncertainty through lower and upper probability bounds for each class.

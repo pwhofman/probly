@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 
 @lazydispatch
-def predict_probs[T](model: Predictor, x: T) -> T:
+def predict_probs[T](model: ConformalModel, x: T) -> T:
     """Universal probability prediction function.
 
     Args:
@@ -111,7 +111,7 @@ def _register_flax_models() -> None:
 _register_flax_models()
 
 
-class Predictor(Protocol):
+class ConformalModel(Protocol):
     """Protocol for models used with ConformalPredictor."""
 
     def __call__(self, x: Sequence[Any]) -> Sequence[Any]:
@@ -123,7 +123,7 @@ class ConformalPredictor(ABC):
 
     def __init__(
         self,
-        model: Predictor,
+        model: ConformalModel,
         nonconformity_func: Callable[..., npt.NDArray[np.floating]] | None = None,
     ) -> None:
         """Initialize the Conformal Predictor."""
@@ -140,9 +140,10 @@ class ConformalPredictor(ABC):
         """Virtual method to calibrate the calibration set.
 
         Args:
-            x_cal (Sequence[Any]): Calibration input data.
-            y_cal (Sequence[Any]): Calibration labels.
-            alpha (float): The significance level.
+            x_cal: Calibration input data.
+            y_cal: Calibration labels.
+            alpha: The significance level.
+
         """
         raise NotImplementedError
 
@@ -158,12 +159,16 @@ class ConformalClassifier(ConformalPredictor, ABC):
 
     @abstractmethod
     def predict(self, x_test: Sequence[Any], alpha: float, probs: Any | None = None) -> npt.NDArray[np.bool_]:  # noqa: ANN401
-        """Generate prediction sets as boolean matrix (n_samples, n_classes) at given significance level.
+        """Generate prediction sets as boolean matrix at given significance level.
 
         Args:
-            x_test (Sequence[Any]): Test input data.
-            alpha (float): Significance level for prediction sets.
-            probs (Any | None): Optional precomputed probabilities from the model.
+            x_test: Test input data.
+            alpha: Significance level for prediction sets.
+            probs: Optional precomputed probabilities from the model.
+
+        Returns:
+            Prediction sets as boolean matrix of shape (n_samples, n_classes).
+
         """
         raise NotImplementedError
 
@@ -173,10 +178,14 @@ class ConformalRegressor(ConformalPredictor, ABC):
 
     @abstractmethod
     def predict(self, x_test: Sequence[Any], alpha: float) -> npt.NDArray[np.floating]:
-        """Generate prediction intervals, e.g. shape (n_samples, 2) for [lower, upper] at given significance level.
+        """Generate prediction intervals at given significance level.
 
         Args:
-            x_test (Sequence[Any]): Test input data.
-            alpha (float): Significance level for prediction intervals.
+            x_test: Test input data.
+            alpha: Significance level for prediction intervals.
+
+        Returns:
+            Prediction intervals of shape (n_samples, 2) with [lower, upper] bounds.
+
         """
         raise NotImplementedError

@@ -158,9 +158,8 @@ class PostNetModel(nn.Module):
             x: Input tensor of shape (batch_size, ...) compatible with the encoder.
 
         Returns:
-            alpha: Dirichlet concentration parameters of shape.
-            p_mean: Predictive mean of the Dirichlet distribution.
-            z: Latent representation of the input.
+            A tuple of Dirichlet concentration parameters of shape, a predictive mean of the
+            Dirichlet distribution, and latent representation of the input.
         """
         features = self.encoder(x)
 

@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
     from lazy_dispatch.isinstance import LazyType
-    from probly.conformal_prediction.methods.common import Predictor
+    from probly.conformal_prediction.methods.common import ConformalModel
 
 from lazy_dispatch import lazydispatch
 from probly.conformal_prediction.scores.common import ClassificationScore
@@ -63,7 +63,7 @@ class RAPSScore(ClassificationScore):
 
     def __init__(
         self,
-        model: Predictor,
+        model: ConformalModel,
         lambda_reg: float = 0.1,  # regularization strength
         k_reg: int = 0,  # number of classes without penalty
         epsilon: float = 0.01,  # small constant

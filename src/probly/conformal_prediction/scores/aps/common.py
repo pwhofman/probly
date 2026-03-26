@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
     from lazy_dispatch.isinstance import LazyType
-    from probly.conformal_prediction.methods.common import Predictor
+    from probly.conformal_prediction.methods.common import ConformalModel
 
 
 import numpy as np
@@ -48,7 +48,7 @@ class APSScore(ClassificationScore):
 
     def __init__(
         self,
-        model: Predictor,
+        model: ConformalModel,
         randomize: bool = True,
         random_state: int | None = None,
     ) -> None:

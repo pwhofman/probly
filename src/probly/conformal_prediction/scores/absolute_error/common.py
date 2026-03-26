@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
     from lazy_dispatch.isinstance import LazyType
-    from probly.conformal_prediction.methods.common import Predictor
+    from probly.conformal_prediction.methods.common import ConformalModel
 
 import numpy as np
 
@@ -30,6 +30,6 @@ def register(cls: LazyType, func: Callable) -> None:
 class AbsoluteErrorScore(RegressionScore):
     """Standard absolute residual score."""
 
-    def __init__(self, model: Predictor) -> None:
+    def __init__(self, model: ConformalModel) -> None:
         """Initialize with a prediction model."""
         super().__init__(model=model, score_func=absolute_error_score_func)

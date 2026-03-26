@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from probly.layers.evidential.torch import BatchedRadialFlowDensity
+from probly.layers.torch import BatchedRadialFlowDensity
 from probly.predictor import Predictor
 from probly.train.evidential.torch import (
     der_loss,

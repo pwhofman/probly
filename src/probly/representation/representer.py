@@ -25,7 +25,8 @@ class Representer[**CtrIn, **In, Out](ABC):
         """Initialize the representer with a predictor.
 
         Args:
-            predictor: Predictor[In, Out], the predictor to be used for building representations.
+            predictor: The predictor to be used for building representations.
+
         """
         self.predictor = predictor
 

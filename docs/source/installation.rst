@@ -3,15 +3,15 @@
 Installation
 ============
 
-`probly` is intended to work with **Python 3.12 and above**. Installation can be done via `pip` and
-or `uv`:
+`probly` is intended to work with **Python 3.12 and above**. Installation can be done via `uv` or
+directly via `pip`:
 
 .. code-block:: sh
 
-   pip install probly
+   uv add probly
 
 or
 
 .. code-block:: sh
 
-   uv add probly
+   pip install probly

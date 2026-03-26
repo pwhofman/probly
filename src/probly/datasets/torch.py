@@ -181,7 +181,8 @@ class DCICDataset(torch.utils.data.Dataset):
         """Return the number of instances in the dataset.
 
         Returns:
-            int: The number of instances in the dataset.
+            The number of instances in the dataset.
+
         """
         return len(self.data)
 
