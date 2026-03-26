@@ -9,20 +9,24 @@ import sklearn.metrics as sm
 
 
 def selective_prediction(criterion: np.ndarray, losses: np.ndarray, n_bins: int = 50) -> tuple[float, np.ndarray]:
-    """Selective prediction downstream task for evaluation based on :cite: lakshminarayananSimpleScalable2017.
+    """Selective prediction downstream task for evaluation.
 
     Perform selective prediction based on criterion and losses.
     The criterion is used the sort the losses. In line with uncertainty
     literature the sorting is done in descending order, i.e.
     the losses with the largest criterion are rejected first.
 
+    Based on :cite:`lakshminarayananSimpleScalable2017`.
+
     Args:
-        criterion: numpy.ndarray shape (n_instances,), criterion values
-        losses: numpy.ndarray shape (n_instances,), loss values
-        n_bins: int, number of bins
+        criterion: Criterion values of shape (n_instances,).
+        losses: Loss values of shape (n_instances,).
+        n_bins: Number of bins.
+
     Returns:
-        auroc: float, area under the loss curve
-        bin_losses: numpy.ndarray shape (n_bins,), loss per bin
+        A tuple containing:
+            - auroc: Area under the loss curve.
+            - bin_losses: Loss per bin of shape (n_bins,).
 
     """
     if n_bins > len(losses):

@@ -246,7 +246,7 @@ def make_ood_target_alpha(
     Args:
         batch_size: Number of out-of-distribution samples in the batch.
         num_classes: Number of classes. Defaults to 10.
-        alpha0: Total Dirichlet concentration (strength) parameter.
+        alpha0: Total Dirichlet concentration parameter (strength).
 
     Returns:
         Target Dirichlet concentration parameters, shape (B, C).
@@ -1066,13 +1066,13 @@ def rpn_distillation_loss(
     matches the empirical ensemble distributions (mu_k, var_k).
 
     Args:
-        rpn_params (tuple[Tensor, Tensor, Tensor, Tensor]):
-            The RPN output parameters (m, l_precision, kappa, nu).
-        mus (list[Tensor]): Ensemble predicted means.
-        variances (list[Tensor]): Ensemble predicted variances.
+        rpn_params: The RPN output parameters (m, l_precision, kappa, nu).
+        mus: Ensemble predicted means.
+        variances: Ensemble predicted variances.
 
     Returns:
-        Tensor: Scalar loss value.
+        Scalar loss value.
+
     """
     m, l_precision, kappa, nu = rpn_params  # formerly "L"
 

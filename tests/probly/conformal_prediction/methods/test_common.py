@@ -15,14 +15,14 @@ import numpy.typing as npt
 
 from probly.conformal_prediction.methods.common import (
     ConformalClassifier,
+    ConformalModel,
     ConformalPredictor,
     ConformalRegressor,
-    Predictor,
 )
 from probly.conformal_prediction.utils.quantile import calculate_quantile
 
 
-class DummyModel(Predictor):
+class DummyModel(ConformalModel):
     """Simple dummy model for testing."""
 
     def __call__(self, x: Sequence[Any]) -> npt.NDArray[np.floating]:

@@ -15,9 +15,9 @@ from torch import Tensor
 
 from probly.conformal_prediction.methods.common import (
     ConformalClassifier,
+    ConformalModel,
     ConformalPredictor,
     ConformalRegressor,
-    Predictor,
     predict_probs,
 )
 from probly.conformal_prediction.scores.lac.common import accretive_completion
@@ -44,7 +44,7 @@ class GroupedConformalBase(ConformalPredictor):
     group_thresholds_upper: dict[int, float | np.floating]
     is_asymmetric: bool
 
-    def __init__(self, model: Predictor, group_func: ClassFunc) -> None:
+    def __init__(self, model: ConformalModel, group_func: ClassFunc) -> None:
         """Initialize base conformal predictor."""
         super().__init__(model=model)
         self.group_func = group_func
@@ -173,7 +173,7 @@ class MondrianConformalClassifier(GroupedConformalBase, ConformalClassifier):
 
     def __init__(
         self,
-        model: Predictor,
+        model: ConformalModel,
         score: ClassificationScore,
         region_func: RegionFunc,
         use_accretive: bool = False,
@@ -231,7 +231,7 @@ class MondrianConformalRegressor(GroupedConformalBase, ConformalRegressor):
 
     def __init__(
         self,
-        model: Predictor,
+        model: ConformalModel,
         score: RegressionScore,
         region_func: RegionFunc,
     ) -> None:
