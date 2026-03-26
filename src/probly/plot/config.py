@@ -4,6 +4,34 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+import matplotlib as mpl
+
+_FONT_FAMILY = "Fira Sans"
+
+
+def _apply_rc_defaults() -> None:
+    """Set global matplotlib rcParams for the Fira Sans font family."""
+    rc = mpl.rcParams
+    rc["font.family"] = "sans-serif"
+    rc["font.sans-serif"] = [_FONT_FAMILY]
+
+    rc["xtick.labelsize"] = 10
+    rc["ytick.labelsize"] = 10
+
+    rc["axes.labelsize"] = 12
+    rc["axes.labelweight"] = 600
+
+    rc["axes.titlesize"] = 14
+    rc["axes.titleweight"] = 700
+
+    rc["font.weight"] = 300
+    rc["legend.fontsize"] = 10
+    rc["figure.titlesize"] = 16
+    rc["figure.titleweight"] = 700
+
+
+_apply_rc_defaults()
+
 
 @dataclass(frozen=True, slots=True)
 class PlotConfig:
@@ -33,8 +61,8 @@ class PlotConfig:
     dpi: int = 100
 
     # Text defaults
-    title_fontsize: float = 13.0
-    label_fontsize: float = 11.0
+    title_fontsize: float = 14.0
+    label_fontsize: float = 12.0
 
     # Primitive styling defaults
     line_width: float = 1.5

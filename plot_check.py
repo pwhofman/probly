@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 import matplotlib.pyplot as plt
 import numpy as np
 
-from probly.plot.credal_plot import plot_credal_set
+from probly.plot import plot_credal_set
 from probly.representation.credal_set.array import (
     ArrayConvexCredalSet,
     ArrayDiscreteCredalSet,

@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 import matplotlib.pyplot as plt
 
 from .config import PlotConfig
+from .utils import _plot_line_with_outline
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
@@ -140,7 +141,14 @@ def plot_roc_curve(
     if fpr95 is not None:
         label += f" (FPR@95 = {fpr95:.3f})"
 
-    ax.plot(fpr, tpr, lw=config.line_width, color=config.color(0), label=label)
+    _plot_line_with_outline(
+        ax,
+        fpr,
+        tpr,
+        linewidth=config.line_width,
+        color=config.color(0),
+        label=label,
+    )
     ax.plot(
         [0, 1],
         [0, 1],
@@ -193,10 +201,11 @@ def plot_pr_curve(
     config = config or PlotConfig()
     fig, ax = _resolve_axes(ax, config)
 
-    ax.plot(
+    _plot_line_with_outline(
+        ax,
         recall,
         precision,
-        lw=config.line_width,
+        linewidth=config.line_width,
         color=config.color(0),
         label=f"AUPR = {aupr:.3f}",
     )

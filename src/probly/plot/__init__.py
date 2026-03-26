@@ -2,7 +2,7 @@
 
 from ._base import PlotFunction
 from .config import PlotConfig
-from .credal_plot import plot_credal_set
+from .credal import plot_credal_set
 from .ood import plot_histogram, plot_pr_curve, plot_roc_curve
 
 __all__ = [
