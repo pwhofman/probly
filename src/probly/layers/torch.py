@@ -593,7 +593,7 @@ def _inverse_softplus(x: torch.Tensor) -> torch.Tensor:
 
 
 class DropConnectLinear(nn.Module):
-    """Custom Linear layer with DropConnect applied to weights during training based on :cite:`aminiDeepEvidential2020`.
+    """Custom Linear layer with DropConnect applied to weights during training based on :cite:`mobiny2021dropconnect`.
 
     Attributes:
         in_features: int, number of input features.
@@ -644,7 +644,7 @@ class DropConnectLinear(nn.Module):
 
 
 class NormalInverseGammaLinear(nn.Module):
-    """Custom Linear layer modeling the parameters of a normal-inverse-gamma-distribution.
+    """Custom Linear layer for a normal-inverse-gamma-distribution based on :cite:`aminiDeepEvidential2020`.
 
     Attributes:
         gamma: torch.Tensor, shape (out_features, in_features), the mean of the normal distribution.
