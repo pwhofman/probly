@@ -30,15 +30,15 @@ def predict_probs[T](model: ConformalModel, x: T) -> T:
     """
     # scikit-learn-style probabilities
     if hasattr(model, "predict_proba"):
-        return model.predict_proba(x)  # type: ignore[no-any-return]
+        return model.predict_proba(x)  # ty: ignore[call-non-callable]
 
     # fallback for scikit-learn-like models with custom naming
     if hasattr(model, "predict_probs"):
-        return model.predict_probs(x)  # type: ignore[no-any-return]
+        return model.predict_probs(x)  # ty: ignore[call-non-callable]
 
     # fallback for other models (that only have predict)
     if hasattr(model, "predict"):
-        return model.predict(x)  # type: ignore[no-any-return]
+        return model.predict(x)  # ty: ignore[call-non-callable]
 
     msg = f"Model type {type(model)} is not supported directly. Please register it via @predict_probs.register"
     raise TypeError(msg)
@@ -87,9 +87,9 @@ def _register_flax_models() -> None:
                 x = jnp.asarray(x)
 
             if callable(model):
-                logits = model(x)
+                logits = model(x)  # ty:ignore[call-top-callable]
             elif hasattr(model, "apply"):
-                logits = model.apply(x)  # type: ignore[call-non-callable]
+                logits = model.apply(x)  # ty: ignore[call-non-callable]
             else:
                 msg = "Model must be callable or expose apply()."
                 raise TypeError(msg)
@@ -103,6 +103,7 @@ def _register_flax_models() -> None:
             )
 
             return probs
+
     except ImportError:
         pass  # flax not available, skip registration
 

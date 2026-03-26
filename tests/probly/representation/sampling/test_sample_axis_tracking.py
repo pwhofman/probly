@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from probly.representation.sampling.array_sample_axis_tracking import track_axis
+from probly.representation.sample.array_axis_tracking import track_axis
 
 
 class TestBasicIndexing:

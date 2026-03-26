@@ -21,7 +21,7 @@ from probly.data_generation.torch_first_order_generator import (
     save_distributions_pt,
     to_device,
 )
-from probly.transformation.bayesian import bayesian
+from probly.method.bayesian import bayesian
 
 
 # Ensure no JSON artifacts persist in the working directory
