@@ -15,11 +15,12 @@ if TYPE_CHECKING:
 
 if __name__ == "__main__":
     credal_set = ArrayProbabilityIntervalsCredalSet(
-        lower_bounds=np.array([0.1, 0.2, 0.3]), upper_bounds=np.array([0.4, 0.5, 0.6])
+        lower_bounds=np.array([[0.1, 0.2, 0.3], [0.3, 0.1, 0.1]]),
+        upper_bounds=np.array([[0.4, 0.5, 0.6], [0.6, 0.3, 0.7]]),
     )
     print(credal_set)  # noqa: T201
 
     plot_credal_set(credal_set)
     plt.show()
 
-    a: PlotFunction[ArrayProbabilityIntervalsCredalSet] = plot_credal_set
+    a: PlotFunction = plot_credal_set

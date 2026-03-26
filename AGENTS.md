@@ -5,7 +5,6 @@ This role of this file is to describe common mistakes and confusion points that 
 ## Common Mistakes to do right:
 - We use Google-Style docstrings in this project. When writing docstrings, do not write typing information this is inferred from code.
 
-
 ## Useful Commands:
 
 ### Build Docs

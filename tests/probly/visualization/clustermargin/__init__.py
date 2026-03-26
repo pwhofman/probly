@@ -1,1 +1,1 @@
-"""Tests for margin-based uncertainty."""
+"""Tests for the clustermargin visualization module."""

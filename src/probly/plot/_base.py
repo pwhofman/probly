@@ -16,14 +16,14 @@ class PlotFunction(Protocol[DataT_contra]):
     """Protocol for typed, composable plotting functions.
 
     Implementations must accept the data as the first positional-only argument,
-    followed by keyword-only arguments for axes, title, config, and show.
+    followed by keyword-only arguments for title, config, and show. Each
+    implementation is responsible for creating its own figure and axes internally.
     """
 
     def __call__(
         self,
         data: DataT_contra,
         *,
-        ax: Axes | None = None,
         title: str | None = None,
         config: PlotConfig | None = None,
         show: bool = False,
@@ -32,7 +32,6 @@ class PlotFunction(Protocol[DataT_contra]):
 
         Args:
             data: The data to plot (positional-only; implementations may use any name).
-            ax: The matplotlib axes to plot on. If None, a new figure and axes will be created.
             title: Title of the plot.
             config: Configuration for plotting.
             show: Whether to call plt.show() after plotting.
