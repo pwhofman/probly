@@ -69,7 +69,7 @@ test = [
 lint = [
     "ruff>=0.14.1",      # for linting
     "pre-commit>=4.3.0", # for running the linters pre-commit hooks
-    "ty==0.0.14",        # for static type checking
+    "ty==0.0.25",        # for static type checking
 ]
 docs = [
     "sphinx>=9.0.0",
@@ -183,6 +183,7 @@ convention = "google"
     "PERF401", # it's fine to have non-optimized code in notebooks
 ]
 "docs/**/*.py" = ["INP001", "PTH", "I002"]
+"src/probly_benchmark/*.py" = ["T201"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 12

@@ -535,7 +535,7 @@ def traverser[T](  # noqa: C901, PLR0912, PLR0915
     skip_if: StatePredicate[T] | None = None,
     vars: dict[str, Variable] | None = None,  # noqa: A002
     update_vars: bool = False,
-    type: type[T] = object,  # type: ignore[assignment]  # noqa: A002, ARG001
+    type: type[T] = object,  # ty: ignore[invalid-parameter-default]  # noqa: A002, ARG001
 ) -> Traverser[T] | Callable[[LooseTraverser[T]], Traverser[T]]:
     """Decorator to convert functions into proper traverser functions.
 
@@ -589,7 +589,7 @@ def traverser[T](  # noqa: C901, PLR0912, PLR0915
                 skip_if=skip_if,
                 vars=vars,
                 update_vars=update_vars,
-            )  # type:ignore[no-matching-overload]
+            )  # ty:ignore[no-matching-overload]
 
         return _decorator
 
@@ -636,7 +636,7 @@ def traverser[T](  # noqa: C901, PLR0912, PLR0915
             traverse_name = "traverse"
 
     if mode == "full_positional":
-        _traverser: Traverser[T] = traverser_fn  # type: ignore[assignment]
+        _traverser: Traverser[T] = traverser_fn  # ty:ignore[invalid-assignment]
 
     elif mode == "full":
         if TYPE_CHECKING:
@@ -651,13 +651,13 @@ def traverser[T](  # noqa: C901, PLR0912, PLR0915
             state: State[T],
             traverse: TraverserCallback[T],
         ) -> TraverserResult[T]:
-            return traverser_fn(  # type: ignore[call-arg]
+            return traverser_fn(
                 **{
                     obj_name: obj,
                     state_name: state,
                     traverse_name: traverse,
-                },  # type:ignore[invalid-argument-type]
-            )
+                },  # ty:ignore[invalid-argument-type]
+            )  # ty:ignore[missing-argument, invalid-return-type]
 
     elif mode == "obj":
         if TYPE_CHECKING:
@@ -668,19 +668,19 @@ def traverser[T](  # noqa: C901, PLR0912, PLR0915
             state: State[T],
             traverse: TraverserCallback[T],  # noqa: ARG001
         ) -> TraverserResult[T]:
-            kwargs: dict[str, Any] = {obj_name: obj}  # type: ignore[dict-item]
+            kwargs: dict[str, Any] = {obj_name: obj}  # ty:ignore[invalid-assignment]
             if vars is not None:
                 for k, v in vars.items():
                     kwargs[k] = v.get(state)
-            res = traverser_fn(**kwargs)  # type: ignore[call-arg]
+            res = traverser_fn(**kwargs)  # ty:ignore[missing-argument]
             if update_vars:
-                obj, updates = res  # type: ignore[assignment]
+                obj, updates = res  # ty:ignore[not-iterable]
                 for k, v in updates.items():
-                    if k not in vars:  # type: ignore[operator]
+                    if k not in vars:  # ty:ignore[unsupported-operator]
                         continue
-                    state = vars[k].set(state, v)  # type: ignore[index]
+                    state = vars[k].set(state, v)  # ty:ignore[not-subscriptable]
             else:
-                obj = res  # type: ignore[assignment]
+                obj = res  # ty:ignore[invalid-assignment]
             return obj, state
 
     elif mode == "state":
@@ -690,7 +690,7 @@ def traverser[T](  # noqa: C901, PLR0912, PLR0915
             state: State[T],
             traverse: TraverserCallback[T],  # noqa: ARG001
         ) -> TraverserResult[T]:
-            state = traverser_fn(**{state_name: state})  # type: ignore[assignment, call-arg]
+            state = traverser_fn(**{state_name: state})  # ty:ignore[missing-argument, invalid-assignment, invalid-argument-type]
             return obj, state
 
     elif mode == "obj_state":
@@ -700,7 +700,7 @@ def traverser[T](  # noqa: C901, PLR0912, PLR0915
             state: State[T],
             traverse: TraverserCallback[T],  # noqa: ARG001
         ) -> TraverserResult[T]:
-            return traverser_fn(**{obj_name: obj, state_name: state})  # type: ignore[call-arg, return-value]
+            return traverser_fn(**{obj_name: obj, state_name: state})  # ty:ignore[missing-argument, invalid-return-type, invalid-argument-type]
 
     elif mode == "obj_traverse":
 
@@ -716,19 +716,19 @@ def traverser[T](  # noqa: C901, PLR0912, PLR0915
             ) -> T:
                 return traverse(obj, state, meta, traverser)[0]
 
-            kwargs: dict[str, Any] = {obj_name: obj, traverse_name: _traverse}  # type: ignore[dict-item]
+            kwargs: dict[str, Any] = {obj_name: obj, traverse_name: _traverse}  # ty:ignore[invalid-assignment]
             if vars is not None:
                 for k, v in vars.items():
                     kwargs[k] = v.get(state)
-            res = traverser_fn(**kwargs)  # type: ignore[call-arg]
+            res = traverser_fn(**kwargs)  # ty:ignore[missing-argument]
             if update_vars:
-                obj, updates = res  # type: ignore[assignment]
-                for k, v in updates.items():  # type: ignore[union-attr]
-                    if k not in vars:  # type: ignore[operator]
+                obj, updates = res  # ty:ignore[not-iterable]
+                for k, v in updates.items():  # ty:ignore[unresolved-attribute]
+                    if k not in vars:  # ty:ignore[unsupported-operator]
                         continue
-                    state = vars[k].set(state, v)  # type: ignore[index]
+                    state = vars[k].set(state, v)  # ty:ignore[not-subscriptable]
             else:
-                obj = res  # type: ignore[assignment]
+                obj = res  # ty:ignore[invalid-assignment]
             return obj, state
 
     else:
@@ -743,6 +743,6 @@ def traverser[T](  # noqa: C901, PLR0912, PLR0915
         _traverser = _skip_if(_traverser, lambda state: not traverse_if(state))
 
     if _traverser is not traverser_fn:
-        _traverser = update_wrapper(_traverser, traverser_fn)  # type:ignore[invalid-argument-type]
+        _traverser = update_wrapper(_traverser, traverser_fn)  # ty:ignore[invalid-argument-type]
 
     return _traverser

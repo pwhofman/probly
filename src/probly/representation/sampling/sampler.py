@@ -54,11 +54,12 @@ def get_sampling_predictor[**In, Out](
     return predictor, cleanup
 
 
+@EnsemblePredictor.register_factory
 def sampler_factory[**In, Out](
     predictor: Predictor[In, Out],
     num_samples: int = 1,
     strategy: SamplingStrategy = "sequential",
-) -> Predictor[In, list[Out]]:
+) -> Callable[In, list[Out]]:
     """Sample multiple predictions from the predictor."""
 
     def sampler(*args: In.args, **kwargs: In.kwargs) -> list[Out]:

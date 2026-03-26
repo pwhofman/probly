@@ -91,7 +91,7 @@ class Variable[V](ABC):
         index: int,
         name: str | None = None,
         doc: str | None = None,
-        default: V | Variable[V] = None,  # type: ignore[assignment]
+        default: V | Variable[V] = None,  # ty:ignore[invalid-parameter-default]
     ) -> None:
         """Initialize a Variable instance.
 
@@ -111,7 +111,7 @@ class Variable[V](ABC):
             self.__name__ = name
         self.doc = doc
         if isinstance(default, Variable):
-            self.default = None  # type: ignore[assignment]
+            self.default = None  # ty:ignore[invalid-assignment]
             self.fallback = default
         else:
             self.default = default
@@ -193,7 +193,7 @@ class GlobalVariable[V](Variable[V]):
         self,
         name: str | None,
         doc: str | None = None,
-        default: V | Variable[V] = None,  # type: ignore[assignment]
+        default: V | Variable[V] = None,  # ty:ignore[invalid-parameter-default]
     ) -> None:
         """Initialize a new State instance.
 
@@ -265,7 +265,7 @@ class StackVariable[V](Variable[V]):
         self,
         name: str | None,
         doc: str | None = None,
-        default: V | Variable[V] = None,  # type: ignore[assignment]
+        default: V | Variable[V] = None,  # ty:ignore[invalid-parameter-default]
     ) -> None:
         """Initialize a new State instance.
 
@@ -401,7 +401,7 @@ class ComputedVariable[T, V](Variable[V]):
         Returns:
             V: The computed value for the given state.
         """
-        return self.compute_func(state)  # type: ignore[arg-type]
+        return self.compute_func(state)  # ty:ignore[invalid-argument-type]
 
     def set[Q](self, state: State[Q], value: V) -> State[Q]:  # noqa: ARG002
         """Set the value of a computed variable in the given state.
@@ -563,7 +563,7 @@ class State[T]:
         Returns:
             The new child state containing the pushed object.
         """
-        return State[T](obj=obj, meta=meta, traverser=traverser, parent=self)
+        return State[T](obj=obj, meta=meta, traverser=traverser, parent=self)  # ty:ignore[invalid-return-type]
 
     def pop(self) -> State[T]:
         """Pop the current state and return its parent.
@@ -610,7 +610,7 @@ class State[T]:
         path: Path[T] = []
         current: State[T] | None = self
         while current is not None:
-            path.append((current.object, current.meta))  # type: ignore[arg-type]
+            path.append((current.object, current.meta))  # ty:ignore[invalid-argument-type]
             current = current.parent
         return list(reversed(path))
 

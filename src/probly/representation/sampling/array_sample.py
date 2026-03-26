@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Literal, Self, override
+from typing import TYPE_CHECKING, Any, Literal, Self, Unpack, override
 
 import numpy as np
 
@@ -14,7 +14,7 @@ from probly.representation.sampling.array_sample_functions import (
     array_sample_internals,
     track_sample_axis_after_reduction,
 )
-from probly.representation.sampling.common_sample import Sample, SampleAxis, create_sample
+from probly.representation.sampling.common_sample import Sample, SampleAxis, SampleParams, create_sample
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -48,7 +48,13 @@ class ArraySample[D: Numeric](Sample[D], np.lib.mixins.NDArrayOperatorsMixin):
 
     @override
     @classmethod
-    def from_iterable(cls, samples: Iterable[D], sample_axis: SampleAxis = "auto", dtype: DTypeLike = None) -> Self:  # type: ignore[invalid-method-override]
+    def from_iterable(
+        cls,
+        samples: Iterable[D],
+        sample_axis: SampleAxis = "auto",
+        dtype: DTypeLike = None,
+        **_kwargs: Unpack[SampleParams],
+    ) -> Self:
         """Create an ArraySample from a sequence of samples.
 
         Args:
@@ -66,7 +72,7 @@ class ArraySample[D: Numeric](Sample[D], np.lib.mixins.NDArrayOperatorsMixin):
                     raise ValueError(msg)
                 sample_axis = 0 if samples.ndim == 1 else 1
             if sample_axis != 0:
-                samples = np.moveaxis(samples, 0, sample_axis)  # type: ignore[invalid-argument-type]
+                samples = np.moveaxis(samples, 0, sample_axis)  # ty:ignore[invalid-argument-type]
             if dtype is not None:
                 samples = samples.astype(dtype)
         else:
@@ -80,13 +86,13 @@ class ArraySample[D: Numeric](Sample[D], np.lib.mixins.NDArrayOperatorsMixin):
                     raise ValueError(msg)
                 first_sample = samples[0]
                 sample_axis = (0 if first_sample.ndim == 0 else 1) if isinstance(first_sample, np.ndarray) else 0
-            samples = np.stack(samples, axis=sample_axis, dtype=dtype)  # type: ignore[invalid-argument-type]
+            samples = np.stack(samples, axis=sample_axis, dtype=dtype)  # ty:ignore[no-matching-overload]
 
-        return cls(array=samples, sample_axis=sample_axis)  # type: ignore[invalid-argument-type]
+        return cls(array=samples, sample_axis=sample_axis)  # ty:ignore[invalid-argument-type]
 
     @override
     @classmethod
-    def from_sample(cls, sample: Sample[D], sample_axis: SampleAxis = "auto", dtype: DTypeLike = None) -> Self:  # type: ignore[invalid-method-override]
+    def from_sample(cls, sample: Sample[D], sample_axis: SampleAxis = "auto", dtype: DTypeLike = None) -> Self:  # ty:ignore[invalid-method-override]
         if isinstance(sample, ArraySample):
             sample_array = sample.array
 
@@ -329,9 +335,9 @@ class ArraySample[D: Numeric](Sample[D], np.lib.mixins.NDArrayOperatorsMixin):
 
         return type(self)(array=self.array.to_device(device), sample_axis=self.sample_axis)
 
-    def __eq__(self, value: Any) -> Self:  # type: ignore[override]  # noqa: ANN401, PYI032
+    def __eq__(self, value: Any) -> Self:  # noqa: ANN401, PYI032  # ty:ignore[invalid-method-override]
         """Vectorized equality comparison."""
-        return np.equal(self, value)  # type: ignore[return-value]
+        return np.equal(self, value)  # ty:ignore[invalid-return-type]
 
     def __hash__(self) -> int:
         """Compute the hash of the ArraySample."""
@@ -352,10 +358,10 @@ class ArraySample[D: Numeric](Sample[D], np.lib.mixins.NDArrayOperatorsMixin):
             A transposed version of the ArraySample.
         """
         if len(axes) == 0:
-            return np.transpose(self)  # type: ignore[return-value]
+            return np.transpose(self)  # ty:ignore[invalid-return-type]
         if len(axes) == 1 and not isinstance(axes[0], int):
-            return np.transpose(self, axes[0])  # type: ignore[return-value]
-        return np.transpose(self, axes)  # type: ignore[return-value]
+            return np.transpose(self, axes[0])  # ty:ignore[invalid-return-type]
+        return np.transpose(self, axes)  # ty:ignore[no-matching-overload]
 
 
 @array_sample_internals.register

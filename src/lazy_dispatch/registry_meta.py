@@ -4,19 +4,17 @@ from __future__ import annotations
 
 from abc import ABCMeta
 import functools
-from typing import TYPE_CHECKING, Any, Protocol, Self, is_protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, is_protocol, runtime_checkable
 from weakref import WeakSet
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-EXCLUDED_ATTRS = frozenset(
-    {
-        "_subclass_registry",
-        "_instance_registry",
-        "_structural_checking",
-    }
-)
+EXCLUDED_ATTRS = frozenset({
+    "_subclass_registry",
+    "_instance_registry",
+    "_structural_checking",
+})
 
 
 class RegistryMeta[T: object](ABCMeta):
@@ -44,14 +42,14 @@ class RegistryMeta[T: object](ABCMeta):
         cls._subclass_registry.add(subclass)
         return res
 
-    def register_instance[Q: T](cls, instance: Q) -> Q:
+    def register_instance[Q](cls: RegistryMeta[T], instance: Q) -> Q:
         """Register an instance in the registry."""
-        cls._instance_registry.add(instance)
+        cls._instance_registry.add(instance)  # ty:ignore[invalid-argument-type]
         return instance
 
-    def register_factory[**In](cls, func: Callable[In, Any]) -> Callable[In, Self]:
+    def register_factory[**In, Q](cls: RegistryMeta[T], func: Callable[In, Q]) -> Callable[In, Q]:
         """Decorator to annotate the results of a function with the registry type."""
-        return annotator(cls)(func)  # ty:ignore[invalid-argument-type]
+        return annotator(cls)(func)
 
     def _non_registered_instancecheck(cls, instance: object) -> bool:
         """Check if an instance is an instance of cls without checking the registry."""
@@ -148,27 +146,33 @@ class ProtocolRegistryMeta[T](RegistryMeta[T], type(Protocol)):
         return super()._non_registered_instancecheck(instance)
 
 
-class Registry(metaclass=RegistryMeta):
+class Registry[T](metaclass=RegistryMeta):
     """Helper class to create registries without needing to use the metaclass mechanism explicitly."""
 
 
-class ProtocolRegistry(Protocol, metaclass=ProtocolRegistryMeta):
+class ProtocolRegistry[T](Protocol, metaclass=ProtocolRegistryMeta):
     """Helper class to create protocol registries without needing to use the metaclass mechanism explicitly."""
 
 
-def annotator[**In, T: type[RegistryMeta]](registry_type: T) -> Callable[Callable[In, Any], Callable[In, T]]:
+class _RegistryAnnotator[T: object](Protocol):
+    """Callable protocol for decorators that preserve input signature and change return type."""
+
+    def __call__[**In, Q](self, func: Callable[In, Q], /) -> Callable[In, Q]:
+        """Decorate `func` while preserving its parameters."""
+
+
+def annotator[T: object](registry_type: RegistryMeta[T]) -> _RegistryAnnotator[T]:
     """Decorator to annotate the result of a function with a registry type.
 
     This is useful for functions that return instances of a registry, but where the return type is not known statically,
     e.g. because the function is a lazy dispatch function that can return different types.
     """
 
-    def decorator(func: Callable[In, Any]) -> Callable[In, T]:
+    def decorator[**In, Q](func: Callable[In, Q]) -> Callable[In, Q]:
         @functools.wraps(func)
-        def wrapper(*args: In.args, **kwargs: In.kwargs) -> T:
+        def wrapper(*args: In.args, **kwargs: In.kwargs) -> Q:
             res = func(*args, **kwargs)
-            registry_type.register_instance(res)
-            return res
+            return registry_type.register_instance(res)
 
         return wrapper
 

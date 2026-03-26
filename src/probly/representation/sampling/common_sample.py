@@ -100,12 +100,18 @@ class ListSample[T](list[T], Sample[T]):
     """A sample of predictions stored in a list."""
 
     @classmethod
-    def from_iterable(cls, samples: Iterable[T], sample_axis: SampleAxis = "auto") -> Self:  # type: ignore[invalid-method-override]
+    def from_iterable(
+        cls,
+        samples: Iterable[T],
+        sample_axis: SampleAxis = "auto",
+        **__kwargs: Unpack[SampleParams],
+    ) -> Self:
         """Create a ListSample from a sequence of samples.
 
         Args:
             samples: The predictions to create the sample from.
             sample_axis: The axis along which samples are organized.
+            kwargs: Parameters for sample creation.
 
         Returns:
             The created ListSample.
@@ -142,9 +148,9 @@ def first_dispatchable_sample(samples: Iterable, **_kwargs: Unpack[SampleParams]
         The first dispatchable sample.
     """
     try:
-        return samples[0]  # type: ignore[index]
+        return samples[0]  # ty:ignore[not-subscriptable]
     except Exception:  # noqa: BLE001
-        return None
+        return next(iter(samples))
 
 
 create_sample: Lazydispatch[Any, ..., Any] = lazydispatch(

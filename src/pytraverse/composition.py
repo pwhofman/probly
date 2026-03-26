@@ -318,7 +318,7 @@ class _AbstractSingledispatchTraverser[T: object, D](abc.ABC):
                 if traverser is not None:
                     msg = f"Invalid first argument to `register({cls!r})`."
                     raise TypeError(msg)
-                traverser = cls  # type: ignore[assignment]
+                traverser = cls  # ty:ignore[invalid-assignment]
                 cls = None
         else:
             if traverser is not None:
@@ -366,7 +366,7 @@ class SingledispatchTraverser[T](_AbstractSingledispatchTraverser[T, type | type
     def _create_dispatcher(
         self,
     ) -> ExtensibleTraverser[T]:
-        return singledispatch(identity_traverser)  # type: ignore[return-value]
+        return singledispatch(identity_traverser)  # ty:ignore[invalid-return-type]
 
     def _is_valid_dispatch_type(self, cls: Any) -> bool:  # noqa: ANN401
         return _is_valid_dispatch_type(cls)
@@ -386,7 +386,7 @@ class LazydispatchTraverser[T](_AbstractSingledispatchTraverser[T, lazy_dispatch
     def _create_dispatcher(
         self,
     ) -> ExtensibleTraverser[T]:
-        return lazy_dispatch.lazydispatch(identity_traverser)  # type: ignore[return-value]
+        return lazy_dispatch.lazydispatch(identity_traverser)  # ty:ignore[invalid-return-type]
 
     def _is_valid_dispatch_type(self, cls: Any) -> bool:  # noqa: ANN401
         return lazy_dispatch.is_valid_dispatch_type(cls)
