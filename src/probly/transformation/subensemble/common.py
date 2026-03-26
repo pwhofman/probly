@@ -2,36 +2,38 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Protocol
 
 from lazy_dispatch import lazydispatch
+from probly.transformation.ensemble import EnsemblePredictor
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from lazy_dispatch.isinstance import LazyType
     from probly.predictor import Predictor
 
 
+class SubensemblePredictor[**In, Out](EnsemblePredictor[In, Out], Protocol):
+    """Protocol for subensemble predictors."""
+
+
 @lazydispatch
-def subensemble_generator[**In, Out](base: Predictor[In, Out]) -> Predictor[In, Out]:
+def subensemble_generator[**In, H, Out](
+    base: Predictor[In, H],
+    *args: Any,  # noqa: ANN401
+    **kwargs: Any,  # noqa: ANN401
+) -> SubensemblePredictor[In, Out]:
     """Generate a subensemble from a base model."""
     msg = f"No subensemble generator is registered for type {type(base)}"
     raise NotImplementedError(msg)
 
 
-def register(cls: LazyType, generator: Callable) -> None:
-    """Register a class which can be used as a base for a subensemble."""
-    subensemble_generator.register(cls=cls, func=generator)
-
-
-def subensemble[T: Predictor](
-    base: T,
+@SubensemblePredictor.register_factory
+def subensemble[**In, H, Out](
+    base: Predictor[In, H],
     num_heads: int,
-    head: T | None = None,
+    head: Predictor[[H], Out] | None = None,
     reset_params: bool = True,
     head_layer: int = 1,
-) -> T:
+) -> SubensemblePredictor[In, Out]:
     """Create a subensemble predictor from a base model or a base model and head model.
 
     Supported configurations:
@@ -51,7 +53,7 @@ def subensemble[T: Predictor](
         head_layer: int, Optional the number of layers used to create the head if no head model is provided.
 
     Returns:
-        Predictor, The subensemble predictor.
+        SubensemblePredictor, The subensemble predictor.
 
     Raises:
         ValueError: If `head_layer` or `num_heads` is not a positive integer.

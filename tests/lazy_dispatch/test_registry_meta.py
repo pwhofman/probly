@@ -6,7 +6,7 @@ from typing import Protocol, runtime_checkable
 
 import pytest
 
-from lazy_dispatch.registry_meta import ProtocolRegistry, ProtocolRegistryMeta, RegistryMeta
+from lazy_dispatch.registry_meta import ProtocolRegistry, ProtocolRegistryMeta, RegistrationError, RegistryMeta
 
 
 class TestRegistryMeta:
@@ -33,6 +33,24 @@ class TestRegistryMeta:
 
         assert registered is Virtual
         assert isinstance(Virtual(), Base)
+
+    def test_register_lazy_string_adds_virtual_subclass_for_isinstance(self) -> None:
+        """Lazy string registrations should resolve to virtual subclasses at runtime."""
+
+        class Base(metaclass=RegistryMeta):
+            pass
+
+        class Virtual:
+            pass
+
+        lazy_name = f"{Virtual.__module__}.{Virtual.__qualname__}"
+        registered = Base.register(lazy_name)
+
+        assert registered is Base
+        assert lazy_name in Base._string_registry  # noqa: SLF001
+        assert issubclass(Virtual, Base)
+        assert isinstance(Virtual(), Base)
+        assert lazy_name not in Base._string_registry  # noqa: SLF001
 
     def test_register_instance_marks_instance_for_class_and_parents(self) -> None:
         """Registered instances should match the class and its registry-meta parents."""
@@ -79,6 +97,18 @@ class TestRegistryMeta:
 
         assert isinstance(b, F)
         assert not isinstance(b, G)
+
+    def test_register_instance_raises_registration_error_for_non_weakrefable_objects(self) -> None:
+        """Non-weakrefable instances should raise a registration-specific error."""
+
+        class Base(metaclass=RegistryMeta):
+            pass
+
+        with pytest.raises(RegistrationError) as error:
+            Base.register_instance([])
+
+        assert error.value.registry is Base
+        assert error.value.target_type is list
 
     def test_regular_subclass_relationships_work_without_registration(self) -> None:
         """Regular inheritance should still satisfy issubclass and isinstance."""
@@ -366,6 +396,38 @@ class TestProtocolRegistryMeta:
         assert returned_instance is concrete_instance
         assert isinstance(concrete_instance, BaseProtocol)
         assert not isinstance(another_concrete_instance, BaseProtocol)
+
+    def test_protocol_registry_lazy_string_registration_works_without_structural_checking(self) -> None:
+        """ProtocolRegistry should support lazy string registrations in non-structural mode."""
+
+        class BaseProtocol(ProtocolRegistry, structural_checking=False):
+            def f(self) -> None:
+                return None
+
+        class Virtual:
+            def f(self) -> None:
+                return None
+
+        lazy_name = f"{Virtual.__module__}.{Virtual.__qualname__}"
+        registered = BaseProtocol.register(lazy_name)
+
+        assert registered is BaseProtocol
+        assert lazy_name in BaseProtocol._string_registry  # noqa: SLF001
+        assert issubclass(Virtual, BaseProtocol)
+        assert isinstance(Virtual(), BaseProtocol)
+        assert lazy_name not in BaseProtocol._string_registry  # noqa: SLF001
+
+    def test_protocol_registry_lazy_string_registration_fails_with_structural_checking(self) -> None:
+        """ProtocolRegistry should reject lazy string registrations in structural mode."""
+
+        class StructuralProtocol(ProtocolRegistry):
+            def f(self) -> None:
+                return None
+
+        lazy_name = "builtins.list"
+
+        with pytest.raises(RuntimeError, match="Lazy subclass registration not supported"):
+            StructuralProtocol.register(lazy_name)
 
     def test_protocol_registry_meta_register_and_register_instance(self) -> None:
         """Direct ProtocolRegistryMeta use should support register and register_instance."""

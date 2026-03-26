@@ -7,7 +7,7 @@ from flax import nnx
 from probly.traverse_nn import nn_compose, nn_traverser
 from pytraverse import CLONE, singledispatch_traverser, traverse
 
-from .common import register
+from .common import subensemble_generator
 
 reset_traverser = singledispatch_traverser[nnx.Module](name="reset_traverser")
 subensemble_traverser = singledispatch_traverser[nnx.Module](name="subensemble_traverser")
@@ -37,6 +37,7 @@ def _copy(module: nnx.Module) -> nnx.Module:
     return traverse(module, nn_traverser, init={CLONE: True})
 
 
+@subensemble_generator.register(nnx.Module)
 def generate_flax_subensemble(
     obj: nnx.Module,
     num_heads: int,
@@ -86,6 +87,3 @@ def generate_flax_subensemble(
         ],
     )
     return subensemble
-
-
-register(nnx.Module, generate_flax_subensemble)

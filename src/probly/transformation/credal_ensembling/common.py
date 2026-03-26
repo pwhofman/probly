@@ -2,17 +2,23 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Protocol
 
+from probly.transformation.ensemble import EnsemblePredictor
 from probly.transformation.ensemble.common import ensemble
 
 if TYPE_CHECKING:
-    from probly.predictor import EnsemblePredictor, Predictor
+    from probly.predictor import Predictor
 
 
+class CredalEnsemblingPredictor[**In, Out](EnsemblePredictor[In, Out], Protocol):
+    """A predictor that applies the credal ensembling representer."""
+
+
+@CredalEnsemblingPredictor.register_factory
 def credal_ensembling[**In, Out](
     base: Predictor[In, Out], num_members: int, reset_params: bool = True
-) -> EnsemblePredictor[In, Out]:
+) -> CredalEnsemblingPredictor[In, Out]:
     """Create a credal ensembling predictor from a base predictor based on :cite:`nguyenCredalEnsembling2025`.
 
     Args:

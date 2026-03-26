@@ -8,7 +8,7 @@ import pytest
 
 from probly.predictor import Predictor
 from probly.transformation import ensemble
-from probly.transformation.ensemble.common import ensemble_generator, register
+from probly.transformation.ensemble.common import ensemble_generator
 
 
 def test_unregistered_type_raises(dummy_predictor: Predictor) -> None:
@@ -27,7 +27,7 @@ def test_registered_generator_called(dummy_predictor: Predictor) -> None:
     expected_result = object()
     mock_generator.return_value = expected_result
 
-    register(type(dummy_predictor), mock_generator)
+    ensemble_generator.register(type(dummy_predictor), mock_generator)
 
     result = ensemble(dummy_predictor, num_members=4)
 

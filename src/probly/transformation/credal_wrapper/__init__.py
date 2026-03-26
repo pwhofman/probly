@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
-from . import common
+from .common import CredalWrapperPredictor, credal_wrapper
 
-credal_wrapper = common.credal_wrapper
+__all__ = [
+    "CredalWrapperPredictor",
+    "credal_wrapper",
+]

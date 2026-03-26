@@ -7,7 +7,7 @@ from torch import nn
 from probly.traverse_nn import nn_compose, nn_traverser
 from pytraverse import CLONE, singledispatch_traverser, traverse
 
-from .common import register
+from .common import ensemble_generator
 
 reset_traverser = singledispatch_traverser[nn.Module](name="reset_traverser")
 
@@ -27,6 +27,7 @@ def _copy(module: nn.Module) -> nn.Module:
     return traverse(module, nn_traverser, init={CLONE: True})
 
 
+@ensemble_generator.register(nn.Module)
 def generate_torch_ensemble(
     obj: nn.Module,
     num_members: int,
@@ -36,6 +37,3 @@ def generate_torch_ensemble(
     if reset_params:
         return nn.ModuleList([_reset_copy(obj) for _ in range(num_members)])
     return nn.ModuleList([_copy(obj) for _ in range(num_members)])
-
-
-register(nn.Module, generate_torch_ensemble)

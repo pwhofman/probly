@@ -6,8 +6,9 @@ from collections.abc import Callable
 from typing import Any, Literal, override
 
 from probly.lazy_types import FLAX_MODULE, SKLEARN_MODULE, TORCH_MODULE
-from probly.predictor import EnsemblePredictor, Predictor, RandomPredictor, predict
+from probly.predictor import Predictor, RandomPredictor, predict
 from probly.representation.representer import Representer, representer
+from probly.transformation.ensemble import EnsemblePredictor
 from probly.traverse_nn import nn_compose
 from pytraverse import CLONE, GlobalVariable, function_traverser, lazydispatch_traverser, traverse_with_state
 

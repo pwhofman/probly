@@ -2,19 +2,12 @@
 
 from __future__ import annotations
 
-from probly.lazy_types import TORCH_MODULE
-
-from .common import CredalPredictor, EnsemblePredictor, Predictor, RandomPredictor, predict
-
-
-@predict.delayed_register(TORCH_MODULE)
-def _(_: type) -> None:
-    from . import torch as torch  # noqa: PLC0415
-
+from .common import CredalPredictor, DistributionPredictor, IterablePredictor, Predictor, RandomPredictor, predict
 
 __all__ = [
     "CredalPredictor",
-    "EnsemblePredictor",
+    "DistributionPredictor",
+    "IterablePredictor",
     "Predictor",
     "RandomPredictor",
     "predict",

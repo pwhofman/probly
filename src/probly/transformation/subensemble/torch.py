@@ -8,9 +8,10 @@ from probly.transformation.ensemble import ensemble
 from probly.traverse_nn import nn_traverser
 from pytraverse import traverse
 
-from .common import register
+from .common import subensemble_generator
 
 
+@subensemble_generator.register(nn.Module)
 def generate_torch_subensemble(
     obj: nn.Module,
     num_heads: int,
@@ -65,6 +66,3 @@ def generate_torch_subensemble(
     )
 
     return subensemble
-
-
-register(nn.Module, generate_torch_subensemble)

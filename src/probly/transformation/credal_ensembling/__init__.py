@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
-from . import common
+from .common import CredalEnsemblingPredictor, credal_ensembling
 
-credal_ensembling = common.credal_ensembling
+__all__ = [
+    "CredalEnsemblingPredictor",
+    "credal_ensembling",
+]

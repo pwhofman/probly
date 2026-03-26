@@ -7,14 +7,67 @@ import functools
 from typing import TYPE_CHECKING, Any, Protocol, is_protocol, runtime_checkable
 from weakref import WeakSet
 
+from lazy_dispatch.isinstance import _find_closest_string_type, _split_lazy_type
+
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-EXCLUDED_ATTRS = frozenset({
-    "_subclass_registry",
-    "_instance_registry",
-    "_structural_checking",
-})
+    from lazy_dispatch import LazyType
+
+EXCLUDED_ATTRS = frozenset(
+    {
+        "_subclass_registry",
+        "_instance_registry",
+        "_string_registry",
+        "_structural_checking",
+    }
+)
+
+
+class RegistrationError(Exception):
+    """Exception raised when an object cannot be registered."""
+
+    def __init__(self, *, registry: type, target: object) -> None:
+        """Create a registration error with contextual metadata."""
+        self.registry = registry
+        self.target_type = type(target)
+        super().__init__(
+            f"Registration failed for registry class {registry.__qualname__!r} and target type "
+            f"{self.target_type.__qualname__!r}: "
+            "Registered instances must be weak-referenceable and hashable."
+        )
+
+
+@classmethod
+def _lazy_subclass_hook[T](cls: RegistryMeta[T], subclass: type, /) -> bool:
+    """A __subclasshook__ that checks whether the ."""
+    string_registry = getattr(cls, "_string_registry", None)
+
+    if string_registry is not None and len(string_registry) > 0:
+        closest = _find_closest_string_type(subclass, string_registry)
+        if closest is not None:
+            real_type, string_type = closest
+            string_registry.remove(string_type)
+            cls._register(real_type)
+
+    return NotImplemented
+
+
+def _lazy_subclass_hook_with_pre_hook[T](
+    pre_hook: Callable[[RegistryMeta[T], type], bool],
+) -> Callable[[RegistryMeta[T], type], bool]:
+    """A __subclasshook__ that checks the pre_hook before checking the string registry."""
+
+    @classmethod
+    def hook(cls: RegistryMeta[T], subclass: type, /) -> bool:
+        pre_res = pre_hook(cls, subclass)
+
+        if pre_res is not NotImplemented:
+            return pre_res
+
+        return _lazy_subclass_hook(cls, subclass)
+
+    return hook
 
 
 class RegistryMeta[T: object](ABCMeta):
@@ -22,6 +75,7 @@ class RegistryMeta[T: object](ABCMeta):
 
     _subclass_registry: WeakSet[type]
     _instance_registry: WeakSet[T]
+    _string_registry: set[str]
 
     def __init__(
         cls,
@@ -35,16 +89,58 @@ class RegistryMeta[T: object](ABCMeta):
         super().__init__(name, bases, namespace, **kwargs)
         cls._subclass_registry: WeakSet[type] = WeakSet()
         cls._instance_registry: WeakSet[T] = WeakSet()
+        cls._string_registry: set[str] = set()
 
-    def register(cls, subclass: type) -> type:
+        if not is_protocol(cls):
+            subclasshook = namespace.get("__subclasshook__")
+            if subclasshook is None:
+                subclasshook = _lazy_subclass_hook
+            else:
+                if isinstance(subclasshook, classmethod):
+                    subclasshook = subclasshook.__func__
+                subclasshook = _lazy_subclass_hook_with_pre_hook(subclasshook)
+
+            cls.__subclasshook__ = subclasshook  # ty: ignore[invalid-assignment]
+
+    def _register(cls, subclass: type) -> type:
         """Register a subclass in the registry."""
         res = super().register(subclass)
         cls._subclass_registry.add(subclass)
         return res
 
+    def _register_lazy(cls, subclass_strings: set[str]) -> None:
+        if is_protocol(cls) and len(subclass_strings) > 0:
+            msg = (
+                "Lazy subclass registration not supported for Protocols. Use ProtocolRegistry "
+                "with structural_checking=False instead if you want to use lazy subclass registration."
+            )
+            raise RuntimeError(msg)
+        cls._string_registry.update(subclass_strings)
+
+    def register(cls, subclass: LazyType) -> type:
+        """Register a (lazy) subclass or a set of subclasses in registry."""
+        types, strings = _split_lazy_type(subclass)
+        for t in types:
+            cls._register(t)
+
+        cls._register_lazy(strings)
+
+        if isinstance(subclass, type):
+            return subclass
+        return cls
+
     def register_instance[Q](cls: RegistryMeta[T], instance: Q) -> Q:
         """Register an instance in the registry."""
-        cls._instance_registry.add(instance)  # ty:ignore[invalid-argument-type]
+        if isinstance(instance, cls):
+            return instance
+
+        try:
+            cls._instance_registry.add(instance)  # ty:ignore[invalid-argument-type]
+        except TypeError as err:
+            raise RegistrationError(
+                registry=cls,
+                target=instance,
+            ) from err
         return instance
 
     def register_factory[**In, Q](cls: RegistryMeta[T], func: Callable[In, Q]) -> Callable[In, Q]:
@@ -57,8 +153,11 @@ class RegistryMeta[T: object](ABCMeta):
 
     def __instancecheck__(cls, instance: object) -> bool:
         """Check if an instance is in the registry."""
-        if instance in cls._instance_registry:
-            return True
+        try:
+            if instance in cls._instance_registry:
+                return True
+        except TypeError:
+            pass
 
         for subclass in cls._subclass_registry:
             if isinstance(instance, subclass):
@@ -68,12 +167,6 @@ class RegistryMeta[T: object](ABCMeta):
                 return True
 
         return cls._non_registered_instancecheck(instance)
-
-
-@classmethod
-def _no_structural_checking_subclass_hook(cls: type, subclass: type, /) -> bool:  # noqa: ARG001
-    """A __subclasshook__ that disables structural checking."""
-    return NotImplemented
 
 
 class ProtocolRegistryMeta[T](RegistryMeta[T], type(Protocol)):
@@ -123,10 +216,23 @@ class ProtocolRegistryMeta[T](RegistryMeta[T], type(Protocol)):
             structural_checking = cls._structural_checking
 
         if not structural_checking:
-            if "__subclasshook__" not in namespace:
-                # Override Protocol's __subclasshook__ with one that disables structural checking if
-                # there is no custom __subclasshook__ defined in the class body.
-                cls.__subclasshook__: Callable[[type, type], bool] = _no_structural_checking_subclass_hook
+            # Override Protocol's __subclasshook__ with one that disables structural checking
+            # and instead adds lazy subclass registration support to the hook.
+
+            # This has to be done here, because Protocol inspects the callstack of __subclasscheck__ to determine
+            # whether the subclass check is being called from an isinstance check coming from ABCMeta;
+            # see __allow_reckless_class_checks and _ProtocolMeta in typing for details.
+            # To align the behavior of ProtocolRegistry and Protocol, __subclasshook__ has to be used.
+            subclasshook: Callable[[RegistryMeta[T], type], bool] | classmethod | None = namespace.get(
+                "__subclasshook__"
+            )
+            if subclasshook is None:
+                subclasshook = _lazy_subclass_hook
+            else:
+                if isinstance(subclasshook, classmethod):
+                    subclasshook = subclasshook.__func__
+                subclasshook = _lazy_subclass_hook_with_pre_hook(subclasshook)
+            cls.__subclasshook__ = subclasshook  # ty:ignore[invalid-assignment]
 
             if is_protocol(cls):
                 # Disable the gate that prevents Protocols from being checked via isinstance()
@@ -138,6 +244,12 @@ class ProtocolRegistryMeta[T](RegistryMeta[T], type(Protocol)):
 
         if protocol_attrs is not None:
             cls.__protocol_attrs__ = protocol_attrs - EXCLUDED_ATTRS
+
+    def _register_lazy(cls, subclass_strings: set[str]) -> None:
+        if len(subclass_strings) > 0 and cls._structural_checking:
+            msg = "Lazy subclass registration not supported for ProtocolRegistries with structural_checking=True."
+            raise RuntimeError(msg)
+        cls._string_registry.update(subclass_strings)
 
     def _non_registered_instancecheck(cls, instance: object) -> bool:
         """Check if an instance is an instance of cls without checking the registry."""
@@ -172,7 +284,10 @@ def annotator[T: object](registry_type: RegistryMeta[T]) -> _RegistryAnnotator[T
         @functools.wraps(func)
         def wrapper(*args: In.args, **kwargs: In.kwargs) -> Q:
             res = func(*args, **kwargs)
-            return registry_type.register_instance(res)
+            try:
+                return registry_type.register_instance(res)
+            except RegistrationError:
+                return res  # If the result cannot be registered, return it as is.
 
         return wrapper
 

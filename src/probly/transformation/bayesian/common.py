@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Protocol
 
+from probly.predictor import RandomPredictor
 from probly.traverse_nn import nn_compose
 from pytraverse import CLONE, GlobalVariable, lazydispatch_traverser, traverse
 
@@ -11,6 +12,11 @@ if TYPE_CHECKING:
     from lazy_dispatch.isinstance import LazyType
     from probly.predictor import Predictor
     from pytraverse.composition import RegisteredLooseTraverser
+
+
+class BayesianPredictor[**In, Out](RandomPredictor[In, Out], Protocol):
+    """A predictor that applies Bayesian layers."""
+
 
 USE_BASE_WEIGHTS = GlobalVariable[bool]("USE_BASE_WEIGHTS", default=False)
 POSTERIOR_STD = GlobalVariable[float]("POSTERIOR_STD", default=0.05)
@@ -34,13 +40,14 @@ def register(cls: LazyType, traverser: RegisteredLooseTraverser) -> None:
     )
 
 
-def bayesian[T: Predictor](
-    base: T,
+@BayesianPredictor.register_factory
+def bayesian[**In, Out](
+    base: Predictor[In, Out],
     use_base_weights: bool = USE_BASE_WEIGHTS.default,
     posterior_std: float = POSTERIOR_STD.default,
     prior_mean: float = PRIOR_MEAN.default,
     prior_std: float = PRIOR_STD.default,
-) -> T:
+) -> BayesianPredictor[In, Out]:
     """Create a Bayesian predictor from a base predictor based on :cite:`blundellWeightUncertainty2015`.
 
     Args:

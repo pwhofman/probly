@@ -2,16 +2,26 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from collections.abc import Iterable
+from typing import Protocol
 
 from lazy_dispatch import lazydispatch
-from probly.predictor import EnsemblePredictor
+from probly.lazy_types import FLAX_LIST, TORCH_MODULE_LIST
+from probly.predictor import Predictor, predict
+from probly.predictor.common import IterablePredictor
 
-if TYPE_CHECKING:
-    from collections.abc import Callable
 
-    from lazy_dispatch.isinstance import LazyType
-    from probly.predictor import Predictor
+class EnsemblePredictor[**In, Out](IterablePredictor[In, Out], Iterable[Predictor[In, Out]], Protocol):
+    """Protocol for ensemble predictors."""
+
+
+EnsemblePredictor.register(
+    (
+        list,
+        FLAX_LIST,
+        TORCH_MODULE_LIST,
+    )
+)
 
 
 @lazydispatch
@@ -19,11 +29,6 @@ def ensemble_generator[**In, Out](base: Predictor[In, Out]) -> EnsemblePredictor
     """Generate an ensemble from a base model."""
     msg = f"No ensemble generator is registered for type {type(base)}"
     raise NotImplementedError(msg)
-
-
-def register(cls: LazyType, generator: Callable) -> None:
-    """Register a class which can be used as a base for an ensemble."""
-    ensemble_generator.register(cls=cls, func=generator)
 
 
 @EnsemblePredictor.register_factory
@@ -41,3 +46,9 @@ def ensemble[**In, Out](
         Predictor, The ensemble predictor.
     """
     return ensemble_generator(base, num_members=num_members, reset_params=reset_params)
+
+
+@predict.register(EnsemblePredictor)
+def predict_list[**In, Out](predictor: EnsemblePredictor[In, Out], *args: In.args, **kwargs: In.kwargs) -> list[Out]:
+    """Predict for a list of predictors."""
+    return [predict(p, *args, **kwargs) for p in predictor]
