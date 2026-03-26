@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
 
-    from probly.representation.credal_set.array import ArrayProbabilityIntervals
+    from probly.representation.credal_set.array import ArrayProbabilityIntervalsCredalSet
 
     from .config import PlotConfig
 
@@ -15,7 +15,7 @@ __all__ = ["plot_credal_set"]
 
 
 def plot_credal_set(
-    data: ArrayProbabilityIntervals,
+    data: ArrayProbabilityIntervalsCredalSet,
     *,
     ax: Axes | None = None,
     title: str | None = None,

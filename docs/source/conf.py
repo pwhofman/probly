@@ -4,12 +4,23 @@ from __future__ import annotations
 
 from pathlib import Path
 import sys
+from typing import TYPE_CHECKING
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+_here = Path(__file__).resolve().parent
+sys.path.insert(0, str(_here))  # make _sphinx_helpers importable
+sys.path.insert(0, str(_here.parent / "src"))
 
-from _sphinx_helpers import make_linkcode_resolve
+from _sphinx_helpers import make_linkcode_resolve  # noqa: E402
 
-import probly
+import probly  # noqa: E402
+
+if TYPE_CHECKING:
+    from docutils.nodes import Element
+    from sphinx.addnodes import pending_xref
+    from sphinx.application import Sphinx
+    from sphinx.builders import Builder
+    from sphinx.domains.python import PythonDomain
+    from sphinx.environment import BuildEnvironment
 
 # -- Paths -------------------------------------------------------------------
 # conf.py lives in:  .../probly/docs/source/conf.py
@@ -118,6 +129,62 @@ nitpick = True
 nitpick_ignore_regex = [
     (r"py:.*", r"^(T|S|C|D|F|V|Q|In|Out|type)$"),
 ]
+
+# Workaround for https://github.com/sphinx-doc/sphinx/issues/10568  --------------------------------
+#
+# Several bare names in signatures cause "more than one target found for
+# cross-reference" warnings and wrong hyperlinks:
+#
+#   * PEP 695 type parameters (T, S, D, In, Out, …) — Sphinx resolves them
+#     to unrelated ``.T`` properties (numpy transpose convention) instead of
+#     treating them as type variables.
+#   * Common attribute names (``type``) — many classes define these,
+#     so Sphinx picks an arbitrary target.
+#
+# The ``missing-reference`` event cannot help because Sphinx *does* resolve
+# the reference (ambiguously); the event only fires for truly unresolved refs.
+#
+# We monkey-patch ``PythonDomain.resolve_xref`` to short-circuit for these
+# names, returning plain unlinked text before the domain ever searches.
+_SKIP_XREF_NAMES = frozenset(
+    {
+        # PEP 695 usual type parameters
+        "T",
+        "S",
+        "C",
+        "D",
+        "F",
+        "V",
+        "Q",
+        "In",
+        "Out",
+        # Common attribute names with many targets
+        "type",
+    }
+)
+
+
+def setup(_app: Sphinx) -> None:
+    """Patch the Python domain resolver to skip ambiguous short names."""
+    from sphinx.domains.python import PythonDomain  # noqa: PLC0415
+
+    _orig_resolve = PythonDomain.resolve_xref
+
+    def _patched_resolve(
+        self: PythonDomain,
+        env: BuildEnvironment,
+        fromdocname: str,
+        builder: Builder,
+        xref_type: str,
+        target: str,
+        node: pending_xref,
+        contnode: Element,
+    ) -> Element | None:
+        if target in _SKIP_XREF_NAMES:
+            return contnode  # plain text, no link, no warning
+        return _orig_resolve(self, env, fromdocname, builder, xref_type, target, node, contnode)
+
+    PythonDomain.resolve_xref = _patched_resolve
 
 
 linkcode_resolve = make_linkcode_resolve(REPO_ROOT)

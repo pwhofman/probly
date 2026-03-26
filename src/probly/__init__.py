@@ -7,7 +7,6 @@ from probly import (
     datasets as datasets,
     evaluation as evaluation,
     layers as layers,
-    models as models,
     quantification as quantification,
     representation as representation,
     train as train,
