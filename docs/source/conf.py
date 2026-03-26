@@ -7,6 +7,15 @@ import inspect
 import os
 from pathlib import Path
 import sys
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from docutils.nodes import Element
+    from sphinx.addnodes import pending_xref
+    from sphinx.application import Sphinx
+    from sphinx.builders import Builder
+    from sphinx.domains.python import PythonDomain
+    from sphinx.environment import BuildEnvironment
 
 sys.path.insert(0, os.path.abspath("../../src"))
 
@@ -43,23 +52,19 @@ extensions = [
 ]
 
 suppress_warnings = [
-    "ref.python",  # Ambiguous cross-references from re-exported symbols
+    # "ref.python",  # Ambiguous cross-references from re-exported symbols
     "py.domain",  # Duplicate object descriptions from autosummary recursive
 ]
 
-# --- Autosummary settings ----------------------------------------------------
-# This is the key switch: generate stub .rst files from autosummary directives
+# --- Autosummary settings ----------------------------------------------------s
 autosummary_generate = True
 autosummary_generate_overwrite = True
 
 # --- Autodoc settings --------------------------------------------------------
-# "both" = show both class docstring AND __init__ docstring
-autoclass_content = "both"
-# Show type hints in the description, not the signature
-autodoc_typehints = "both"
+autoclass_content = "both"  # class docstring AND __init__ docstring
+autodoc_typehints = "signature"  # show type hints only in the signature,
 # Only show types for parameters that are actually documented
-autodoc_typehints_description_target = "documented_params"
-# Default flags applied to every autodoc directive — avoids duplication
+autodoc_typehints_description_target = "documented_params"  # only params that are actually documented
 # by ensuring automodule never auto-expands members unless you say so
 autodoc_default_options = {
     "members": True,
@@ -97,6 +102,7 @@ bibtex_default_style = "alpha"
 sphinx_gallery_conf = {
     "examples_dirs": [str(REPO_ROOT / "examples")],
     "gallery_dirs": ["auto_examples"],
+    "backreferences_dir": "gen_modules/backreferences",
     "doc_module": ("probly",),
     "reference_url": {"probly": None},
     "filename_pattern": r"plot_.*\.py",
@@ -118,6 +124,69 @@ intersphinx_mapping = {
     "PIL": ("https://pillow.readthedocs.io/en/stable/", None),
     "torch": ("https://pytorch.org/docs/stable/", None),
 }
+
+nitpick = True
+nitpick_ignore_regex = [
+    (r"py:.*", r"^(T|S|C|D|F|V|Q|In|Out|type|alpha)$"),
+]
+
+
+# -- Prevent Sphinx from hyperlinking ambiguous short names ----------------------------------------
+# Workaround for https://github.com/sphinx-doc/sphinx/issues/10568
+#
+# Several bare names in signatures cause "more than one target found for
+# cross-reference" warnings and wrong hyperlinks:
+#
+#   * PEP 695 type parameters (T, S, D, In, Out, …) — Sphinx resolves them
+#     to unrelated ``.T`` properties (numpy transpose convention) instead of
+#     treating them as type variables.
+#   * Common attribute names (``type``) — many classes define these,
+#     so Sphinx picks an arbitrary target.
+#
+# The ``missing-reference`` event cannot help because Sphinx *does* resolve
+# the reference (ambiguously); the event only fires for truly unresolved refs.
+#
+# We monkey-patch ``PythonDomain.resolve_xref`` to short-circuit for these
+# names, returning plain unlinked text before the domain ever searches.
+_SKIP_XREF_NAMES = frozenset(
+    {
+        # PEP 695 usual type parameters
+        "T",
+        "S",
+        "C",
+        "D",
+        "F",
+        "V",
+        "Q",
+        "In",
+        "Out",
+        # Common attribute names with many targets
+        "type",
+    }
+)
+
+
+def setup(_app: Sphinx) -> None:
+    """Patch the Python domain resolver to skip ambiguous short names."""
+    from sphinx.domains.python import PythonDomain  # noqa: PLC0415
+
+    _orig_resolve = PythonDomain.resolve_xref
+
+    def _patched_resolve(
+        self: PythonDomain,
+        env: BuildEnvironment,
+        fromdocname: str,
+        builder: Builder,
+        xref_type: str,
+        target: str,
+        node: pending_xref,
+        contnode: Element,
+    ) -> Element | None:
+        if target in _SKIP_XREF_NAMES:
+            return contnode  # plain text, no link, no warning
+        return _orig_resolve(self, env, fromdocname, builder, xref_type, target, node, contnode)
+
+    PythonDomain.resolve_xref = _patched_resolve
 
 
 # -- Linkcode (optional) ---------------------------------------------------------------------------

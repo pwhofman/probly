@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from numpy.random import Generator
 
     from lazy_dispatch.isinstance import LazyType
-    from probly.conformal_prediction.methods.common import Predictor
+    from probly.conformal_prediction.methods.common import ConformalModel
 
 import numpy as np
 import numpy.typing as npt
@@ -64,7 +64,7 @@ class SAPSScore(ClassificationScore):
 
     def __init__(
         self,
-        model: Predictor,
+        model: ConformalModel,
         lambda_val: float = 0.1,
         random_state: int | None = 42,
     ) -> None:

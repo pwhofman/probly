@@ -23,7 +23,17 @@ class BayesianNeuralNetwork[**In, Out]:
         prior_mean: float,
         prior_std: float,
     ) -> None:
-        """Initialize the Bayesian neural network with a base predictor and the number of members in the ensemble."""
+        """Initialize the Bayesian neural network.
+
+        Args:
+            base: The base predictor.
+            num_samples: Number of samples.
+            use_base_weights: Whether to use the base weights.
+            posterior_std: Standard deviation of the posterior.
+            prior_mean: Mean of the prior.
+            prior_std: Standard deviation of the prior.
+
+        """
         self.model = bayesian(
             base,
             use_base_weights=use_base_weights,
@@ -34,11 +44,24 @@ class BayesianNeuralNetwork[**In, Out]:
         self.num_samples = num_samples
 
     def sampler(self, num_samples: int | None = None) -> Sampler[In, Out, Sample[Out]]:
-        """Create a sampler for the Bayesian neural network."""
+        """Create a sampler for the Bayesian neural network.
+
+        Args:
+            num_samples: Number of samples. If None, uses the default from initialization.
+
+        Returns:
+            A sampler for the Bayesian neural network.
+
+        """
         if num_samples is None:
             num_samples = self.num_samples
         return Sampler(self.model, num_samples=num_samples)
 
     def predict(self, *args: In.args, **kwargs: In.kwargs) -> Sample[Out]:
-        """Predict the output for a given input."""
+        """Predict the output for a given input.
+
+        Returns:
+            A sample of predictions.
+
+        """
         return self.sampler().predict(*args, **kwargs)

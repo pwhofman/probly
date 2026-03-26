@@ -12,16 +12,17 @@ import torch.nn.functional as F
 
 
 class BatchEnsembleLinear(nn.Module):
-    """Implements a BatchEnsemble linear layer.
+    """Implement a BatchEnsemble linear layer.
 
     Attributes:
-        in_features: int, number of input features
-        out_features: int, number of output features
-        num_members: int, number of batch ensemble members
-        weight: torch.Tensor, shared weight matrix
-        bias: torch.Tensor, shared bias vector
-        s: torch.Tensor, rank-one factor for input features
-        r: torch.Tensor, rank-one factor for output features
+        in_features: Number of input features.
+        out_features: Number of output features.
+        num_members: Number of batch ensemble members.
+        weight: Shared weight matrix.
+        bias: Shared bias vector.
+        s: Rank-one factor for input features.
+        r: Rank-one factor for output features.
+
     """
 
     def __init__(
@@ -34,16 +35,17 @@ class BatchEnsembleLinear(nn.Module):
         r_mean: float = 1.0,
         r_std: float = 0.01,
     ) -> None:
-        """Initializes the BatchEnsemble linear layer.
+        """Initialize the BatchEnsemble linear layer.
 
         Args:
-            base_layer (nn.Linear): The original linear layer to be used.
-            num_members (int): number of ensemble members
-            use_base_weights (bool): Whether to use the weights of the base layer as prior means. Default is False.
-            s_mean (float): mean of a normal distribution to initialize s
-            s_std (float): standard deviation of a normal distribution to initialize s
-            r_mean (float): mean of a normal distribution to initialize r
-            r_std (float): standard deviation of a normal distribution to initialize r
+            base_layer: The original linear layer to be used.
+            num_members: Number of ensemble members.
+            use_base_weights: Whether to use the weights of the base layer as prior means.
+            s_mean: Mean of a normal distribution to initialize s.
+            s_std: Standard deviation of a normal distribution to initialize s.
+            r_mean: Mean of a normal distribution to initialize r.
+            r_std: Standard deviation of a normal distribution to initialize r.
+
         """
         super().__init__()
         self.in_features = base_layer.in_features
@@ -70,11 +72,12 @@ class BatchEnsembleLinear(nn.Module):
         """Forward pass of the BatchEnsemble linear layer.
 
         Args:
-            x: torch.Tensor, Input tensor of shape [B, in_features] or [E, B, in_features],
-                            where B is the batch size and E is the ensemble size.
+            x: Input tensor of shape [B, in_features] or [E, B, in_features],
+                where B is the batch size and E is the ensemble size.
 
         Returns:
-            torch.Tensor: Output tensor of shape [E, B, out_features].
+            Output tensor of shape [E, B, out_features].
+
         """
         # TODO @<jnpippert>: maybe use buffers for some parameters? r,s, and their mu and std? # noqa: TD003
         if x.dim() == 2:
@@ -99,21 +102,22 @@ class BatchEnsembleLinear(nn.Module):
 
 
 class BatchEnsembleConv2d(nn.Module):
-    """Implements a BatchEnsemble convolutional layer.
+    """Implement a BatchEnsemble convolutional layer.
 
     Attributes:
-        in_channels: int, number of input channels
-        out_channels: int, number of output channels
-        kernel_size: int or tuple, size of the convolutional kernel
-        stride: int or tuple, stride of the convolution
-        padding: int or tuple, padding of the convolution
-        dilation: int or tuple, dilation of the convolution
-        groups: int, number of groups for grouped convolution
-        num_members: int, number of batch ensemble members
-        weight: torch.Tensor, shared weight matrix
-        bias: torch.Tensor, shared bias vector
-        s: torch.Tensor, rank-one factor for input features
-        r: torch.Tensor, rank-one factor for output features
+        in_channels: Number of input channels.
+        out_channels: Number of output channels.
+        kernel_size: Size of the convolutional kernel.
+        stride: Stride of the convolution.
+        padding: Padding of the convolution.
+        dilation: Dilation of the convolution.
+        groups: Number of groups for grouped convolution.
+        num_members: Number of batch ensemble members.
+        weight: Shared weight matrix.
+        bias: Shared bias vector.
+        s: Rank-one factor for input features.
+        r: Rank-one factor for output features.
+
     """
 
     def __init__(
@@ -126,16 +130,17 @@ class BatchEnsembleConv2d(nn.Module):
         r_mean: float = 1.0,
         r_std: float = 0.01,
     ) -> None:
-        """Initializes the BatchEnsemble linear layer.
+        """Initialize the BatchEnsemble convolutional layer.
 
         Args:
-            base_layer (nn.Linear): The original linear layer to be used.
-            num_members (int): number of ensemble members
-            use_base_weights (bool): Whether to use the weights of the base layer as prior means. Default is False.
-            s_mean (float): mean of a normal distribution to initialize s
-            s_std (float): standard deviation of a normal distribution to initialize s
-            r_mean (float): mean of a normal distribution to initialize r
-            r_std (float): standard deviation of a normal distribution to initialize r
+            base_layer: The original convolutional layer to be used.
+            num_members: Number of ensemble members.
+            use_base_weights: Whether to use the weights of the base layer as prior means.
+            s_mean: Mean of a normal distribution to initialize s.
+            s_std: Standard deviation of a normal distribution to initialize s.
+            r_mean: Mean of a normal distribution to initialize r.
+            r_std: Standard deviation of a normal distribution to initialize r.
+
         """
         super().__init__()
 
@@ -171,11 +176,12 @@ class BatchEnsembleConv2d(nn.Module):
         """Forward pass of the BatchEnsemble Conv2d layer.
 
         Args:
-            x: torch.Tensor, Input tensor of shape [B, in_channels, H, W] or [E, B, in_channels, H, W],
-                            where B is the batch size, E is the ensemble size, H is height, and W is width.
+            x: Input tensor of shape [B, in_channels, H, W] or [E, B, in_channels, H, W],
+                where B is the batch size, E is the ensemble size, H is height, and W is width.
 
         Returns:
-            torch.Tensor: Output tensor of shape [E, B, out_channels, H_out, W_out].
+            Output tensor of shape [E, B, out_channels, H_out, W_out].
+
         """
         if x.dim() == 4:
             # If this is the first layer, expand to ensemble dimension
@@ -217,20 +223,21 @@ class BatchEnsembleConv2d(nn.Module):
 
 
 class BayesLinear(nn.Module):
-    """Implements a Bayesian linear layer based on :cite:`blundellWeightUncertainty2015`.
+    """Implement a Bayesian linear layer based on :cite:`blundellWeightUncertainty2015`.
 
     Attributes:
-        in_features: int, number of input features
-        out_features: int, number of output features
-        bias: bool, whether to use a bias term
-        weight_mu: torch.Tensor, mean of the posterior weights
-        weight_rho: torch.Tensor, transformed standard deviation of the posterior weights
-        weight_prior_mu: torch.Tensor, mean of the prior weights
-        weight_prior_sigma: torch.Tensor, standard deviation of the prior weights
-        bias_mu: torch.Tensor, mean of the posterior bias
-        bias_rho: torch.Tensor, transformed standard deviation of the posterior bias
-        bias_prior_mu: torch.Tensor, mean of the prior bias
-        bias_prior_sigma: torch.Tensor, standard deviation of the prior bias
+        in_features: Number of input features.
+        out_features: Number of output features.
+        bias: Whether to use a bias term.
+        weight_mu: Mean of the posterior weights.
+        weight_rho: Transformed standard deviation of the posterior weights.
+        weight_prior_mu: Mean of the prior weights.
+        weight_prior_sigma: Standard deviation of the prior weights.
+        bias_mu: Mean of the posterior bias.
+        bias_rho: Transformed standard deviation of the posterior bias.
+        bias_prior_mu: Mean of the prior bias.
+        bias_prior_sigma: Standard deviation of the prior bias.
+
     """
 
     def __init__(
@@ -241,16 +248,17 @@ class BayesLinear(nn.Module):
         prior_mean: float = 0.0,
         prior_std: float = 1.0,
     ) -> None:
-        """Initializes the Bayesian linear layer.
+        """Initialize the Bayesian linear layer.
 
         Reparameterize the standard deviation of the posterior weights using the re-parameterization trick.
 
         Args:
             base_layer: The original linear layer to be used.
-            use_base_weights: Whether to use the weights of the base layer as prior means. Default is False.
-            posterior_std: float, initial standard deviation of the posterior
-            prior_mean: float, mean of the prior
-            prior_std: float, standard deviation of the prior
+            use_base_weights: Whether to use the weights of the base layer as prior means.
+            posterior_std: Initial standard deviation of the posterior.
+            prior_mean: Mean of the prior.
+            prior_std: Standard deviation of the prior.
+
         """
         super().__init__()
         self.in_features = base_layer.in_features

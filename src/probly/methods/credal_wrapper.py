@@ -28,7 +28,12 @@ class CredalWrapper[**In, Out]:
         self._sampler = EnsembleSampler(self.ensemble, sample_factory=create_sample)
 
     def predict(self, *args: In.args, **kwargs: In.kwargs) -> ProbabilityIntervalsCredalSet[Out]:
-        """Predict a credal set for the given input."""
+        """Predict a credal set for the given input.
+
+        Returns:
+            A credal set representing probability intervals.
+
+        """
         sample = self._sampler.sample(*args, **kwargs)
         cset = create_probability_intervals(sample)
         return cset
