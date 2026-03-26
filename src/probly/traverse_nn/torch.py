@@ -139,6 +139,6 @@ torch_traverser: t.Traverser[Module] = t.sequential(
     _torch_traverser,
     name="torch_traverser",
 )
-torch_traverser.register = _torch_traverser.register  # type: ignore[attr-defined]
+torch_traverser.register = _torch_traverser.register  # ty: ignore[unresolved-attribute]
 
 tnn.nn_traverser.register(Module, torch_traverser)

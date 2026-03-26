@@ -7,13 +7,13 @@ but with an equality-based dispatcher.
 from __future__ import annotations
 
 from functools import update_wrapper
-from typing import TYPE_CHECKING, Any, overload
+from typing import TYPE_CHECKING, Any, Concatenate, overload
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
 
 
-class switchdispatch[C: Callable]:  # noqa: N801
+class switchdispatch[T, **In, Out]:  # noqa: N801
     """A switch dispatch decorator.
 
     Similar to functools.singledispatch, but dispatches based on equality
@@ -37,44 +37,54 @@ class switchdispatch[C: Callable]:  # noqa: N801
         >>> print(func(3))  # Output: "default"
     """
 
-    def __init__(self, func: C) -> None:
+    def __init__(self, func: Callable[Concatenate[T, In], Out]) -> None:
         """Initialize the switchdispatch with the default function."""
         self._func = func
-        self._registry: dict[object, C] = {}
+        self._registry: dict[object, Callable[Concatenate[T, *In], Out]] = {}
         update_wrapper(self, func, updated=())
 
     @overload
-    def register[F: C](self, key: object) -> Callable[[F], F]: ...
+    def register(self, key: T) -> Callable[[Callable[Concatenate[T, In], Out]], Callable[Concatenate[T, In], Out]]: ...
 
     @overload
-    def register[F: C](self, key: object, f: F) -> F: ...
+    def register(self, key: T, f: Callable[Concatenate[T, In], Out]) -> Callable[Concatenate[T, In], Out]: ...
 
-    def register[F: C](
+    def register(
         self,
         key: object,
-        f: F | None = None,
-    ) -> F | Callable[[F], F]:
+        f: Callable[Concatenate[T, In], Out] | None = None,
+    ) -> (
+        Callable[Concatenate[T, In], Out]
+        | Callable[[Callable[Concatenate[T, In], Out]], Callable[Concatenate[T, In], Out]]
+    ):
         """Register a new function for the given key."""
-        return self.multi_register([key], f)  # type: ignore[arg-type]
+        return self.multi_register([key], f)  # ty:ignore[invalid-argument-type]
 
     @overload
-    def multi_register[F: C](self, keys: Iterable[object]) -> Callable[[F], F]: ...
+    def multi_register(
+        self, keys: Iterable[object]
+    ) -> Callable[[Callable[Concatenate[T, In], Out]], Callable[Concatenate[T, In], Out]]: ...
 
     @overload
-    def multi_register[F: C](self, keys: Iterable[object], f: F) -> F: ...
+    def multi_register(
+        self, keys: Iterable[object], f: Callable[Concatenate[T, In], Out]
+    ) -> Callable[Concatenate[T, In], Out]: ...
 
-    def multi_register[F: C](
+    def multi_register(
         self,
         keys: Iterable[object],
-        f: F | None = None,
-    ) -> F | Callable[[F], F]:
+        f: Callable[Concatenate[T, In], Out] | None = None,
+    ) -> (
+        Callable[Concatenate[T, In], Out]
+        | Callable[[Callable[Concatenate[T, In], Out]], Callable[Concatenate[T, In], Out]]
+    ):
         """Register a new function for the given keys."""
         if f is not None:
             for key in keys:
                 self._registry[key] = f
             return f
 
-        def wrapper(f: F) -> F:
+        def wrapper(f: Callable[Concatenate[T, In], Out]) -> Callable[Concatenate[T, In], Out]:
             for key in keys:
                 self._registry[key] = f
             return f

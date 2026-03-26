@@ -13,9 +13,9 @@ from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 
 from probly.evaluation.tasks import selective_prediction
+from probly.method.dropout import dropout
 from probly.quantification.classification import total_entropy
-from probly.representation.sampling import Sampler
-from probly.transformation.dropout import dropout
+from probly.representer.sampler import Sampler
 from probly_benchmark.models import LeNet
 
 # ---------------------------------------------------------------------------

@@ -13,9 +13,9 @@ from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 
 from probly.evaluation.tasks import selective_prediction
+from probly.method.credal_net import credal_net
 from probly.quantification.classification import upper_entropy
 from probly.representation.credal_set.torch import TorchProbabilityIntervalsCredalSet
-from probly.transformation.credal_net import credal_net
 from probly_benchmark.models import LeNet
 
 # ---------------------------------------------------------------------------

@@ -19,7 +19,7 @@ from probly.conformal_prediction.scores.common import RegressionScore
 @lazydispatch
 def absolute_error_score_func[T](y_true: T, y_pred: T) -> Any:  # noqa: ANN401
     """Compute absolute error."""
-    return np.abs(y_true - y_pred)  # type: ignore[operator]
+    return np.abs(y_true - y_pred)  # ty: ignore[unsupported-operator]
 
 
 def register(cls: LazyType, func: Callable) -> None:

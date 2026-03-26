@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Literal, Self, override
 import numpy as np
 
 from probly.representation.distribution.common import GaussianDistribution
-from probly.representation.sampling.array_sample import ArraySample
+from probly.representation.sample.array import ArraySample
 
 if TYPE_CHECKING:
     from numpy.typing import ArrayLike, DTypeLike

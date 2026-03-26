@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
+from probly.method import evidential_classification
 from probly.predictor import Predictor
-from probly.transformation import evidential_classification
 
 torch = pytest.importorskip("torch")
 from torch import Tensor, nn  # noqa: E402

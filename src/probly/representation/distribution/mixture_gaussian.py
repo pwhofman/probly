@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, Self
 
 import numpy as np
 
-from probly.representation.sampling.array_sample import ArraySample
+from probly.representation.sample.array import ArraySample
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
