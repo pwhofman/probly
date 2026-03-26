@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from probly.transformation.evidential import evidential_classification
+from probly.method.evidential import evidential_classification
 
 if TYPE_CHECKING:
     from probly.predictor import Predictor
