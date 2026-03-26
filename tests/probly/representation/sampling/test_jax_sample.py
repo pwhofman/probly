@@ -7,7 +7,7 @@ import pytest
 pytest.importorskip("jax")
 from jax import numpy as jnp
 
-from probly.representation.sampling.jax_sample import JaxArraySample
+from probly.representation.sample.jax import JaxArraySample
 
 
 class TestJaxArraySample:

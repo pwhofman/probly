@@ -9,7 +9,7 @@ import numpy as np
 from scipy import special
 
 from probly.representation.distribution.common import DirichletDistribution
-from probly.representation.sampling.sample import ArraySample
+from probly.representation.sample import ArraySample
 
 if TYPE_CHECKING:
     from numpy.typing import DTypeLike
@@ -90,7 +90,7 @@ class ArrayDirichlet(
     @property
     def T(self) -> Self:  # noqa: N802
         """The transposed version of the distribution."""
-        return np.transpose(self)  # type: ignore[no-any-return]
+        return np.transpose(self)  # ty: ignore[invalid-return-type]
 
     @property
     @override
@@ -185,11 +185,11 @@ class ArrayDirichlet(
             return self
         return type(self)(alphas=self.alphas.to_device(device))
 
-    def __eq__(self, value: Any) -> Self:  # type: ignore[override]  # noqa: ANN401, PYI032
+    def __eq__(self, value: Any) -> Self:  # ty: ignore[invalid-method-override]  # noqa: ANN401, PYI032
         """Vectorized equality comparison."""
         if isinstance(value, ArrayDirichlet):
-            return np.equal(self.alphas, value.alphas)  # type: ignore[no-any-return]
-        return np.equal(self.alphas, value)  # type: ignore[no-any-return]
+            return np.equal(self.alphas, value.alphas)  # ty: ignore[invalid-return-type]
+        return np.equal(self.alphas, value)  # ty: ignore[invalid-return-type]
 
     def __hash__(self) -> int:
         """Compute the hash of the distribution."""

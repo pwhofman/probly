@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any, Literal
 if TYPE_CHECKING:
     import numpy as np
 
-    from probly.representation.sampling.common_sample import Sample
+    from probly.representation.sample.common import Sample
 
 type DistributionType = Literal["gaussian", "dirichlet"]
 

@@ -3,4 +3,4 @@
 Transformation
 --------------
 
-Examples concerning the :mod:`probly.transformation` module.
+Examples concerning the :mod:`probly.method` module.

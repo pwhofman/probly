@@ -10,9 +10,9 @@ from jax import numpy as jnp
 import numpy as np
 import torch
 
-from probly.representation.sampling.jax_sample import JaxArraySample
-from probly.representation.sampling.sample import ArraySample, create_sample
-from probly.representation.sampling.torch_sample import TorchTensorSample
+from probly.representation.sample import ArraySample, create_sample
+from probly.representation.sample.jax import JaxArraySample
+from probly.representation.sample.torch import TorchTensorSample
 
 
 class TestSampleDispatching:

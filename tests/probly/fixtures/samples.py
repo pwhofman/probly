@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from probly.representation.sampling.sample import ArraySample
+from probly.representation.sample import ArraySample
 
 
 @pytest.fixture

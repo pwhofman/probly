@@ -19,7 +19,7 @@ from __future__ import annotations
 import matplotlib.pyplot as plt
 import numpy as np
 
-from probly.representation.sampling.sample import create_sample
+from probly.representation.sample import create_sample
 
 samples = [
     np.array([[0.2, 0.8], [0.7, 0.3]]),
