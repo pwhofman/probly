@@ -2,21 +2,22 @@
 
 from __future__ import annotations
 
-import random
-import ssl
+from typing import TYPE_CHECKING
 
 from matplotlib import pyplot as plt
 import numpy as np
 import torch
 from torch import nn
-from torch.utils.data import DataLoader
-from torchvision import datasets, transforms
 
 from probly.evaluation.tasks import selective_prediction
 from probly.quantification.classification import total_entropy
 from probly.representation import Sampler
 from probly.transformation import dropout
+from probly_benchmark import data, utils
 from probly_benchmark.models import LeNet
+
+if TYPE_CHECKING:
+    from torch.utils.data import DataLoader
 
 # ---------------------------------------------------------------------------
 # Config
@@ -89,22 +90,10 @@ def plot_arc(
 # ---------------------------------------------------------------------------
 def main(seed: int = 0) -> None:
     """Run the full benchmark pipeline."""
-    # Set seed for reproducibility
-    random.seed(seed)
-    np.random.seed(seed)  # noqa: NPY002
-    np.random.default_rng(seed)
-    torch.manual_seed(seed)
-    torch.mps.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
+    utils.set_seed(seed)
 
     print("Loading MNIST...")
-    ssl._create_default_https_context = ssl._create_unverified_context  # ty:ignore[invalid-assignment]  # noqa: SLF001
-    tf = transforms.ToTensor()
-    train_data = datasets.MNIST("~/.cache/mnist", train=True, download=True, transform=tf)
-    test_data = datasets.MNIST("~/.cache/mnist", train=False, download=True, transform=tf)
-    train_loader = DataLoader(train_data, batch_size=BATCH_SIZE, shuffle=True)
-    test_loader = DataLoader(test_data, batch_size=BATCH_SIZE, shuffle=False)
+    train_loader, test_loader = data.load_mnist(BATCH_SIZE)
 
     print("Building model...")
     base_model = LeNet().to(DEVICE)
