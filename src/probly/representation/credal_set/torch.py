@@ -13,12 +13,12 @@ from probly.representation.credal_set.common import (
     CategoricalCredalSet,
     ProbabilityIntervalsCredalSet,
 )
-from probly.representation.sampling.torch_sample import TorchTensorSample
+from probly.representation.sample.torch import TorchTensorSample
 
 from .common import create_probability_intervals
 
 if TYPE_CHECKING:
-    from probly.representation.sampling.common_sample import Sample
+    from probly.representation.sample.common import Sample
 
 
 class TorchCategoricalCredalSet(CategoricalCredalSet[torch.Tensor], metaclass=ABCMeta):

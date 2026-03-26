@@ -9,7 +9,7 @@ import numpy as np
 from scipy import special
 
 from probly.representation.distribution.common import DirichletDistribution
-from probly.representation.sampling.sample import ArraySample
+from probly.representation.sample import ArraySample
 
 if TYPE_CHECKING:
     from numpy.typing import DTypeLike

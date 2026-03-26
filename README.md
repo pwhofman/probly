@@ -35,13 +35,13 @@ import probly
 import torch.nn.functional as F
 
 net = ...  # get neural network
-model = probly.transformation.dropout(net)  # make neural network a Dropout model
+model = probly.method.dropout(net)  # make neural network a Dropout model
 train(model)  # train model as usual
 
 data = ...  # get data
 data_ood = ...  # get out of distribution data
 sampler = probly.representation.Sampler(model, num_samples=20)
-sample = sampler.predict(data) # predict an uncertainty representation
+sample = sampler.predict(data)  # predict an uncertainty representation
 sample_ood = sampler.predict(data_ood)
 
 eu = probly.quantification.classification.mutual_information(sample)  # quantify model's epistemic uncertainty

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from probly.representation.sampling.sample import ArraySample
+from probly.representation.sample import ArraySample
 
 
 class TestArraySample:

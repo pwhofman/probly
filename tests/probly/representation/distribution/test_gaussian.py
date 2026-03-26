@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 from probly.representation.distribution.array_gaussian import ArrayGaussian
-from probly.representation.sampling import ArraySample
+from probly.representation.sample import ArraySample
 
 
 def test_array_gaussian_initialization_valid() -> None:

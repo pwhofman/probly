@@ -7,7 +7,7 @@ import pytest
 pytest.importorskip("torch")
 import torch
 
-from probly.representation.sampling.torch_sample import TorchTensorSample
+from probly.representation.sample.torch import TorchTensorSample
 
 
 class TestTorchTensorSample:

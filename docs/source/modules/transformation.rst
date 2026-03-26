@@ -4,7 +4,7 @@
 Transformation
 ==============
 
-.. currentmodule:: probly.transformation
+.. currentmodule:: probly.method
 
 Transformation of models are at the core of ``probly``. They allow you to turn your machine learning
 model into a uncertainty-aware version of itself. This allows ``probly`` to be used **post-hoc**,

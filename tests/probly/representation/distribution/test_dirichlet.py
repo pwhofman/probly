@@ -7,7 +7,7 @@ import pytest
 from scipy import stats
 
 from probly.representation.distribution.array_dirichlet import ArrayDirichlet
-from probly.representation.sampling import ArraySample
+from probly.representation.sample import ArraySample
 
 
 def test_array_dirichlet_initialization_valid() -> None:

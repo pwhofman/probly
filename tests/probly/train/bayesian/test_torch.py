@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pytest
 
+from probly.method import bayesian
 from probly.train.bayesian.torch import ELBOLoss, collect_kl_divergence
-from probly.transformation import bayesian
 from tests.probly.torch_utils import validate_loss
 
 torch = pytest.importorskip("torch")

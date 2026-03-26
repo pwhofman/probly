@@ -7,8 +7,8 @@ import logging
 import torch
 from torch import nn
 
-from probly.representation.sampling import EnsembleSampler
-from probly.transformation import ensemble
+from probly.method import ensemble
+from probly.representer.sampler import EnsembleSampler
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

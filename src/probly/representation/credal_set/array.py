@@ -16,12 +16,12 @@ from probly.representation.credal_set.common import (
     ProbabilityIntervalsCredalSet,
     SingletonCredalSet,
 )
-from probly.representation.sampling.sample import ArraySample
+from probly.representation.sample import ArraySample
 
 if TYPE_CHECKING:
     from numpy.typing import DTypeLike
 
-    from probly.representation.sampling.common_sample import Sample
+    from probly.representation.sample.common import Sample
 
 
 class ArrayCategoricalCredalSet(CategoricalCredalSet[np.ndarray], metaclass=ABCMeta):
