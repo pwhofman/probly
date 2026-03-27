@@ -106,10 +106,10 @@ def plot_credal_set(
         if series_labels is not None:
             ax.legend()
 
-        fig.tight_layout()
-
         if title is not None:
-            fig.suptitle(title, fontsize=config.title_fontsize, y=1.05)
+            ax.set_title(title, fontsize=config.title_fontsize, pad=20)
+
+        fig.tight_layout()
 
         if show:
             plt.show()
