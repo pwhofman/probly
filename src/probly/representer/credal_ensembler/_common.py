@@ -1,0 +1,39 @@
+"""Implementation of representers for credal sets based on ensembles."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, override
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
+from lazy_dispatch import lazydispatch
+from probly.method.credal_ensembling import CredalEnsemblingPredictor
+from probly.predictor import predict
+from probly.representation.credal_set._common import ConvexCredalSet
+from probly.representer.representer import Representer, representer
+
+
+@lazydispatch
+def compute_representative_set[T](probs: Iterable[T], alpha: float, distance: str) -> Iterable[T]:
+    """Compute the credal set from the ensemble predictions."""
+    msg = f"compute_representative_set method not implemented for type {type(probs)}."
+    raise NotImplementedError(msg)
+
+
+@representer.register(CredalEnsemblingPredictor)
+class CredalEnsemblingRepresenter[**In, Out, C: ConvexCredalSet](Representer[Any, In, C]):
+    def __init__(self, predictor: CredalEnsemblingPredictor, alpha: float = 0.0, distance: str = "euclidean") -> None:
+        super().__init__(predictor)
+        self.alpha = alpha
+        self.distance = distance
+
+    def _predict(self, *args: In.args, **kwargs: In.kwargs) -> Iterable[Out]:
+        """Predict the outputs from the ensemble predictor."""
+        return predict(self.predictor, *args, **kwargs)
+
+    @override
+    def __call__(self, *args: In.args, **kwargs: In.kwargs) -> C:
+        pred = self._predict(*args, **kwargs)
+        sample = compute_representative_set(pred, alpha=self.alpha, distance=self.distance)
+        return sample
