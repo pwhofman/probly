@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from probly.lazy_types import JAX_ARRAY, TORCH_TENSOR
 
+from ._common import ListSample, Sample, SampleAxis, SampleFactory, SampleParams, create_sample
 from .array import ArraySample
-from .common import ListSample, Sample, SampleFactory, create_sample
 
 
 @create_sample.delayed_register(TORCH_TENSOR)
@@ -22,6 +22,8 @@ __all__ = [
     "ArraySample",
     "ListSample",
     "Sample",
+    "SampleAxis",
     "SampleFactory",
+    "SampleParams",
     "create_sample",
 ]

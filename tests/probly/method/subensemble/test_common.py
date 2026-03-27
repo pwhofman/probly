@@ -2,8 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from probly.method.subensemble import subensemble
-from probly.method.subensemble.common import subensemble_generator
+from probly.method.subensemble import subensemble, subensemble_generator
 from probly.predictor import Predictor
 
 

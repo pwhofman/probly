@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from typing import Any, Literal, override
 
-from probly.lazy_types import FLAX_MODULE, SKLEARN_MODULE, TORCH_MODULE
-from probly.method.ensemble import EnsemblePredictor
-from probly.predictor import Predictor, RandomPredictor, predict
+from probly.predictor import IterablePredictor, Predictor, RandomPredictor, predict
 from probly.representation.sample import Sample, SampleFactory, create_sample
 from probly.representer.representer import Representer, representer
 from probly.traverse_nn import nn_compose
@@ -19,21 +17,6 @@ type SamplingStrategy = Literal["sequential"]
 sampling_preparation_traverser = lazydispatch_traverser[object](name="sampling_preparation_traverser")
 
 CLEANUP_FUNCS = GlobalVariable[set[Callable[[], Any]]](name="CLEANUP_FUNCS")
-
-
-@sampling_preparation_traverser.delayed_register(TORCH_MODULE)
-def _(_: type) -> None:
-    from . import torch as torch  # noqa: PLC0414, PLC0415
-
-
-@sampling_preparation_traverser.delayed_register(FLAX_MODULE)
-def _(_: type) -> None:
-    from . import flax as flax  # noqa: PLC0414, PLC0415
-
-
-@sampling_preparation_traverser.delayed_register(SKLEARN_MODULE)
-def _(_: type) -> None:
-    from . import sklearn as sklearn  # noqa: PLC0414, PLC0415
 
 
 def get_sampling_predictor[**In, Out](
@@ -54,7 +37,7 @@ def get_sampling_predictor[**In, Out](
     return predictor, cleanup
 
 
-@EnsemblePredictor.register_factory
+@IterablePredictor.register_factory
 def sampler_factory[**In, Out](
     predictor: Predictor[In, Out],
     num_samples: int = 1,
@@ -76,14 +59,49 @@ def sampler_factory[**In, Out](
     return sampler
 
 
+@representer.register(IterablePredictor)
+class IterableSampler[**In, Out, S: Sample](Representer[Any, In, S]):
+    """A sampler that creates representations from ensemble predictions."""
+
+    sample_factory: SampleFactory[Out, S]
+    sample_axis: int
+
+    def __init__(
+        self,
+        predictor: IterablePredictor[In, Out],
+        sample_factory: SampleFactory[Out, S] = create_sample,
+        sample_axis: int = 1,
+    ) -> None:
+        """Initialize the ensemble sampler.
+
+        Args:
+            predictor: The ensemble predictor.
+            sample_factory: Factory to create the sample.
+            sample_axis: The axis along which samples are organized.
+        """
+        super().__init__(predictor)
+        self.sample_factory = sample_factory
+        self.sample_axis = sample_axis
+
+    def _predict(self, *args: In.args, **kwargs: In.kwargs) -> Iterable[Out]:
+        """Predict multiple outputs from the ensemble predictor."""
+        return predict(self.predictor, *args, **kwargs)
+
+    @override
+    def __call__(self, *args: In.args, **kwargs: In.kwargs) -> S:
+        """Sample from the ensemble predictor for a given input."""
+        return self.sample_factory(
+            self._predict(*args, **kwargs),
+            sample_axis=self.sample_axis,
+        )
+
+
 @representer.register(RandomPredictor)
-class Sampler[**In, Out, S: Sample](Representer[Any, In, S]):
+class Sampler[**In, Out, S: Sample](IterableSampler[In, Out, S]):
     """A representation predictor that creates representations from finite samples."""
 
     sampling_strategy: SamplingStrategy
-    sample_factory: SampleFactory[Out, S]
     num_samples: int
-    sample_axis: int
 
     def __init__(
         self,
@@ -102,58 +120,15 @@ class Sampler[**In, Out, S: Sample](Representer[Any, In, S]):
             sample_factory: Factory to create the sample.
             sample_axis: The axis along which samples are organized.
         """
-        super().__init__(predictor)
+        super().__init__(predictor, sample_factory, sample_axis)
         self.num_samples = num_samples
         self.sampling_strategy = sampling_strategy
-        self.sample_factory = sample_factory
-        self.sample_axis = sample_axis
 
-    def predict(self, *args: In.args, **kwargs: In.kwargs) -> S:
+    @override
+    def _predict(self, *args: In.args, **kwargs: In.kwargs) -> Iterable[Out]:
         """Sample from the predictor for a given input."""
-        return self.sample_factory(
-            sampler_factory(
-                self.predictor,
-                num_samples=self.num_samples,
-                strategy=self.sampling_strategy,
-            )(*args, **kwargs),
-            sample_axis=self.sample_axis,
-        )
-
-    @override
-    def __call__(self, *args: In.args, **kwargs: In.kwargs) -> S:
-        return self.predict(*args, **kwargs)
-
-
-@representer.register(EnsemblePredictor)
-class EnsembleSampler[**In, Out, S: Sample](Representer[Any, In, S]):
-    """A sampler that creates representations from ensemble predictions."""
-
-    sample_factory: SampleFactory[Out, S]
-
-    def __init__(
-        self,
-        predictor: EnsemblePredictor[In, Out],
-        sample_factory: SampleFactory[Out, S] = create_sample,
-        sample_axis: int = 1,
-    ) -> None:
-        """Initialize the ensemble sampler.
-
-        Args:
-            predictor: The ensemble predictor.
-            sample_factory: Factory to create the sample.
-            sample_axis: The axis along which samples are organized.
-        """
-        super().__init__(predictor)
-        self.sample_factory = sample_factory
-        self.sample_axis = sample_axis
-
-    def predict(self, *args: In.args, **kwargs: In.kwargs) -> S:
-        """Sample from the ensemble predictor for a given input."""
-        return self.sample_factory(
-            predict(self.predictor, *args, **kwargs),
-            sample_axis=self.sample_axis,
-        )
-
-    @override
-    def __call__(self, *args: In.args, **kwargs: In.kwargs) -> S:
-        return self.predict(*args, **kwargs)
+        return sampler_factory(
+            self.predictor,
+            num_samples=self.num_samples,
+            strategy=self.sampling_strategy,
+        )(*args, **kwargs)

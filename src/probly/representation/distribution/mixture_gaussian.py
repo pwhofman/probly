@@ -14,14 +14,14 @@ if TYPE_CHECKING:
 
     from numpy.typing import DTypeLike
 
-    from probly.representation.distribution.array_gaussian import ArrayGaussian
+    from probly.representation.distribution.array_gaussian import ArrayGaussianDistribution
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
 class ArrayGaussianMixture:
     """Gaussian mixture."""
 
-    components: Sequence[ArrayGaussian]
+    components: Sequence[ArrayGaussianDistribution]
     weights: np.ndarray
 
     def __post_init__(self) -> None:

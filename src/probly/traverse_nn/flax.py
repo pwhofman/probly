@@ -12,7 +12,7 @@ import pytraverse as t
 from pytraverse import generic
 from pytraverse.decorators import traverser
 
-from . import common as tnn
+from . import _common as tnn
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator

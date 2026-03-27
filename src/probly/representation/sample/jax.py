@@ -10,7 +10,7 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 
-from probly.representation.sample.common import Sample, SampleAxis, create_sample
+from probly.representation.sample._common import Sample, SampleAxis, create_sample
 
 if TYPE_CHECKING:
     from collections.abc import Iterable

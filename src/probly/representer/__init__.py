@@ -1,10 +1,10 @@
 """Representation builders that create representations from predictor outputs."""
 
 from .representer import representer
-from .sampler import EnsembleSampler, Sampler
+from .sampler import IterableSampler, Sampler
 
 __all__ = [
-    "EnsembleSampler",
+    "IterableSampler",
     "Sampler",
     "representer",
 ]
