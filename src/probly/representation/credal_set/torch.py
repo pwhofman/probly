@@ -11,6 +11,7 @@ import torch
 
 from probly.representation.credal_set._common import (
     CategoricalCredalSet,
+    ConvexCredalSet,
     ProbabilityIntervalsCredalSet,
 )
 from probly.representation.sample.torch import TorchTensorSample
@@ -18,6 +19,8 @@ from probly.representation.sample.torch import TorchTensorSample
 from ._common import create_probability_intervals
 
 if TYPE_CHECKING:
+    from numpy.typing import DTypeLike
+
     from probly.representation.sample._common import Sample
 
 
@@ -48,6 +51,102 @@ class TorchCategoricalCredalSet(CategoricalCredalSet[torch.Tensor], metaclass=AB
         """
         msg = "from_array_sample method not implemented."
         raise NotImplementedError(msg)
+
+
+@dataclass(frozen=True, slots=True, weakref_slot=True)
+class TorchConvexCredalSet(TorchCategoricalCredalSet, ConvexCredalSet[torch.Tensor]):
+    """A convex credal set defined by the convex hull of distributions stored in a torch tensor.
+
+    Internally, this is represented exactly like a discrete credal set:
+    an array of shape (..., num_vertices, num_classes), where the distributions
+    are the extreme points (vertices) of the polytope.
+    """
+
+    tensor: torch.Tensor
+
+    @override
+    @classmethod
+    def from_torch_sample(
+        cls,
+        sample: TorchTensorSample,
+        distribution_axis: int = -1,
+    ) -> Self:
+        if distribution_axis < 0:
+            distribution_axis += sample.ndim - 1
+
+        tensor = torch.moveaxis(sample.samples, (0, distribution_axis + 1), (-2, -1))
+
+        return cls(tensor=tensor)
+
+    @property
+    def device(self) -> str | torch.device:
+        """Return the device of the credal set array."""
+        return self.tensor.device
+
+    @property
+    def dtype(self) -> torch.dtype:
+        """Return the data type of the credal set array."""
+        return self.tensor.dtype
+
+    @property
+    def ndim(self) -> int:
+        """Return the number of dimensions of the credal set array."""
+        return self.tensor.ndim - 2
+
+    @property
+    def shape(self) -> tuple[int, ...]:
+        """Return the shape of the credal set array."""
+        return self.tensor.shape[:-2]
+
+    def __len__(self) -> int:
+        """Return the number of vertices defining the convex set."""
+        shape = self.shape
+
+        if len(shape) == 0:
+            msg = "len() of unsized credal set"
+            raise TypeError(msg)
+
+        return shape[0]
+
+    def __array__(self, dtype: DTypeLike = None, copy: bool | None = None) -> np.ndarray:
+        """Get the underlying numpy array of vertices."""
+        if dtype is None and not copy:
+            return self.tensor.numpy()
+
+        return np.asarray(self.tensor, dtype=dtype, copy=copy)
+
+    def lower(self) -> torch.Tensor:
+        """Compute the lower envelope of the convex credal set.
+
+        For a convex hull, the lower envelope is the element-wise minimum of its vertices.
+        """
+        return torch.min(self.tensor, dim=-2)[0]
+
+    def upper(self) -> torch.Tensor:
+        """Compute the upper envelope of the convex credal set.
+
+        For a convex hull, the upper envelope is the element-wise maximum of its vertices.
+        """
+        return torch.max(self.tensor, dim=-2)[0]
+
+    def copy(self) -> Self:
+        """Create a copy of the credal set."""
+        return type(self)(tensor=self.tensor.clone())
+
+    def to(self, device: str | torch.device) -> Self:
+        """Move the underlying array to the specified device."""
+        if device == self.device:
+            return self
+
+        return type(self)(tensor=self.tensor.to(device))
+
+    def __eq__(self, value: Any) -> Self:  # ty: ignore[invalid-method-override]  # noqa: ANN401, PYI032
+        """Vectorized equality comparison."""
+        return torch.equal(self.tensor, value)  # ty: ignore[invalid-return-type]
+
+    def __hash__(self) -> int:
+        """Compute the hash of the credal set."""
+        return super().__hash__()
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
