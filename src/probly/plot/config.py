@@ -54,7 +54,7 @@ class PlotConfig:
     color_positive: str = "#ff0d57"  # pink-red
     color_negative: str = "#1e88e5"  # blue
     color_neutral: str = "#7f8c8d"  # gray
-    color_gridline: str = "#e0e0e0"  # light-gray
+    color_gridline: str = "#e8e8e8"  # lighter gray for gridlines
 
     # Figure / axes defaults
     figure_size: tuple[float, float] = (6.0, 6.0)
