@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 from scipy import stats
 
-from probly.representation.distribution.array_dirichlet import ArrayDirichlet
+from probly.representation.distribution.array_dirichlet import ArrayDirichletDistribution
 from probly.representation.sample import ArraySample
 
 
@@ -14,7 +14,7 @@ def test_array_dirichlet_initialization_valid() -> None:
     """Test standard initialization with valid numpy arrays."""
     alphas = np.array([0.5, 1.0, 2.5], dtype=float)
 
-    dist = ArrayDirichlet(alphas=alphas)
+    dist = ArrayDirichletDistribution(alphas=alphas)
 
     np.testing.assert_array_equal(dist.alphas, alphas)
 
@@ -28,9 +28,9 @@ def test_from_array_basic() -> None:
     """Test the from_array factory method."""
     alphas_list = [1, 2, 3]
 
-    dist = ArrayDirichlet.from_array(alphas_list, dtype=np.float32)
+    dist = ArrayDirichletDistribution.from_array(alphas_list, dtype=np.float32)
 
-    assert isinstance(dist, ArrayDirichlet)
+    assert isinstance(dist, ArrayDirichletDistribution)
     assert isinstance(dist.alphas, np.ndarray)
 
     assert dist.alphas.dtype == np.float32
@@ -40,13 +40,13 @@ def test_from_array_basic() -> None:
 def test_array_dirichlet_raises_on_non_ndarray() -> None:
     """Test that __post_init__ enforces alphas to be a numpy ndarray."""
     with pytest.raises(TypeError, match="alphas must be a numpy ndarray"):
-        ArrayDirichlet(alphas=[1.0, 2.0, 3.0])  # type: ignore[arg-type]
+        ArrayDirichletDistribution(alphas=[1.0, 2.0, 3.0])  # type: ignore[arg-type]
 
 
 def test_array_dirichlet_raises_on_0d_array() -> None:
     """Test that alphas must have at least one dimension."""
     with pytest.raises(ValueError, match="alphas must have at least one dimension"):
-        ArrayDirichlet(alphas=np.asarray(1.0))
+        ArrayDirichletDistribution(alphas=np.asarray(1.0))
 
 
 @pytest.mark.parametrize("invalid_value", [0.0, -0.1, -5.0])
@@ -55,7 +55,7 @@ def test_array_dirichlet_raises_on_non_positive_alphas(invalid_value: float) -> 
     alphas = np.array([1.0, invalid_value, 2.0], dtype=float)
 
     with pytest.raises(ValueError, match="alphas must be strictly positive"):
-        ArrayDirichlet(alphas=alphas)
+        ArrayDirichletDistribution(alphas=alphas)
 
 
 def test_array_dirichlet_raises_on_too_few_classes() -> None:
@@ -63,13 +63,13 @@ def test_array_dirichlet_raises_on_too_few_classes() -> None:
     alphas = np.array([1.0], dtype=float)
 
     with pytest.raises(ValueError, match="Dirichlet distribution requires at least 2 classes"):
-        ArrayDirichlet(alphas=alphas)
+        ArrayDirichletDistribution(alphas=alphas)
 
 
 def test_array_properties_batched() -> None:
     """Test shape, ndim, size delegation."""
     alphas = np.ones((2, 3, 4), dtype=float)
-    dist = ArrayDirichlet(alphas=alphas)
+    dist = ArrayDirichletDistribution(alphas=alphas)
 
     assert dist.shape == (2, 3)
     assert dist.ndim == 2
@@ -78,18 +78,18 @@ def test_array_properties_batched() -> None:
 
 def test_len_behaviour() -> None:
     """Test __len__ behaviour (like "unsized vs sized" containers)."""
-    dist_single = ArrayDirichlet.from_array([1.0, 2.0, 3.0])
+    dist_single = ArrayDirichletDistribution.from_array([1.0, 2.0, 3.0])
     with pytest.raises(TypeError, match="len\\(\\) of unsized distribution"):
         _ = len(dist_single)
 
-    dist_batch = ArrayDirichlet.from_array(np.ones((5, 3)))
+    dist_batch = ArrayDirichletDistribution.from_array(np.ones((5, 3)))
     assert len(dist_batch) == 5
 
 
 def test_transpose_property() -> None:
     """Test the .T property."""
     alphas = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], dtype=float)
-    dist = ArrayDirichlet(alphas=alphas)
+    dist = ArrayDirichletDistribution(alphas=alphas)
 
     transposed = dist.T
 
@@ -100,23 +100,23 @@ def test_transpose_property() -> None:
 
 def test_operator_add_returns_distribution_and_keeps_positive() -> None:
     """Minimal operator/ufunc interop test."""
-    dist = ArrayDirichlet.from_array([[1.0, 2.0, 3.0]])
+    dist = ArrayDirichletDistribution.from_array([[1.0, 2.0, 3.0]])
 
     out = dist + 1.0
-    assert isinstance(out, ArrayDirichlet)
+    assert isinstance(out, ArrayDirichletDistribution)
     np.testing.assert_array_equal(out.alphas, dist.alphas + 1.0)
 
     out2 = dist - 1000.0
-    assert isinstance(out2, ArrayDirichlet)
+    assert isinstance(out2, ArrayDirichletDistribution)
     assert np.all(out2.alphas >= 1e-10)
 
 
 def test_copy_creates_independent_array() -> None:
     """Test copy() behaviour."""
-    dist = ArrayDirichlet.from_array([[1.0, 2.0, 3.0]])
+    dist = ArrayDirichletDistribution.from_array([[1.0, 2.0, 3.0]])
     copied = dist.copy()
 
-    assert isinstance(copied, ArrayDirichlet)
+    assert isinstance(copied, ArrayDirichletDistribution)
     assert copied is not dist
     assert copied.alphas is not dist.alphas
     np.testing.assert_array_equal(copied.alphas, dist.alphas)
@@ -128,7 +128,7 @@ def test_copy_creates_independent_array() -> None:
 def test_entropy_matches_scipy_single() -> None:
     """Test entropy correctness against SciPy for a single distribution."""
     alpha = np.array([2.0, 3.0, 4.0], dtype=float)
-    dist = ArrayDirichlet(alpha)
+    dist = ArrayDirichletDistribution(alpha)
 
     expected = stats.dirichlet(alpha).entropy()
     assert np.all(np.isfinite(expected))
@@ -145,7 +145,7 @@ def test_entropy_matches_scipy_batched() -> None:
         ],
         dtype=float,
     )
-    dist = ArrayDirichlet(alphas=alphas)
+    dist = ArrayDirichletDistribution(alphas=alphas)
 
     ent = dist.entropy
     assert isinstance(ent, np.ndarray)
@@ -159,7 +159,7 @@ def test_entropy_matches_scipy_batched() -> None:
 def test_sample_function_dirichlet() -> None:
     """Test the sampling function returns."""
     shape = (2, 3)
-    dist = ArrayDirichlet(np.ones(shape))
+    dist = ArrayDirichletDistribution(np.ones(shape))
 
     n_samples = 4
     samples = dist.sample(n_samples)
@@ -171,7 +171,7 @@ def test_sample_function_dirichlet() -> None:
 
 def test_sample_simplex_constraints() -> None:
     """Samples must be valid probability vectors."""
-    dist = ArrayDirichlet(np.array([1.0, 2.0, 3.0]))
+    dist = ArrayDirichletDistribution(np.array([1.0, 2.0, 3.0]))
 
     n_samples = 5000
     sample_wrapper = dist.sample(n_samples)
@@ -184,7 +184,7 @@ def test_sample_simplex_constraints() -> None:
 def test_sample_statistics_dirichlet_var() -> None:
     """Check if sample variance roughly matches Dirichlet element-wise variance."""
     alphas = np.array([2.0, 3.0, 5.0], dtype=float)
-    dist = ArrayDirichlet(alphas)
+    dist = ArrayDirichletDistribution(alphas)
 
     n_samples = 300000
     sample_wrapper = dist.sample(n_samples)

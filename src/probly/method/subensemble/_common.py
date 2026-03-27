@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 from lazy_dispatch import lazydispatch
 from probly.method.ensemble import EnsemblePredictor
@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from probly.predictor import Predictor
 
 
+@runtime_checkable
 class SubensemblePredictor[**In, Out](EnsemblePredictor[In, Out], Protocol):
     """Protocol for subensemble predictors."""
 

@@ -3,25 +3,22 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 from lazy_dispatch import lazydispatch
-from probly.lazy_types import FLAX_LIST, TORCH_MODULE_LIST
 from probly.predictor import Predictor, predict
-from probly.predictor.common import IterablePredictor
+from probly.predictor._common import IterablePredictor
 
 
+@runtime_checkable
 class EnsemblePredictor[**In, Out](IterablePredictor[In, Out], Iterable[Predictor[In, Out]], Protocol):
     """Protocol for ensemble predictors."""
 
-
-EnsemblePredictor.register(
-    (
-        list,
-        FLAX_LIST,
-        TORCH_MODULE_LIST,
-    )
-)
+    @classmethod
+    def __instancehook__(cls, instance: object) -> bool:
+        if isinstance(instance, Iterable) and all(isinstance(p, Predictor) for p in instance):
+            return True
+        return NotImplemented
 
 
 @lazydispatch

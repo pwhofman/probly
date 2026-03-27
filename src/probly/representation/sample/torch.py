@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any, Self, overload, override
 import numpy as np
 import torch
 
-from probly.representation.sample.common import Sample, SampleAxis, create_sample
+from probly.representation.sample._common import Sample, SampleAxis, create_sample
 
 if TYPE_CHECKING:
     from collections.abc import Iterable

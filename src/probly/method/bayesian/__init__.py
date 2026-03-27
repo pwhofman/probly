@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from probly.lazy_types import TORCH_MODULE
 
-from .common import BayesianPredictor, bayesian, bayesian_traverser, register
+from ._common import BayesianPredictor, bayesian, bayesian_traverser, register
 
 
 ## Torch

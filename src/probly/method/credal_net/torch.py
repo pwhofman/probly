@@ -8,7 +8,7 @@ from probly.layers.torch import IntSoftmax
 from probly.traverse_nn import nn_compose
 from pytraverse import TRAVERSE_REVERSED, GlobalVariable, State, singledispatch_traverser, traverse
 
-from .common import register
+from ._common import register
 
 REPLACED = GlobalVariable[bool]("REPLACED", default=False)
 

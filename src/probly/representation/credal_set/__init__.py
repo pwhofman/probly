@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from probly.lazy_types import TORCH_TENSOR
 
+from ._common import CategoricalCredalSet, CredalSet, CredalSetType, DiscreteCredalSet, create_probability_intervals
 from .array import ArrayCategoricalCredalSet, ArrayDiscreteCredalSet
-from .common import CategoricalCredalSet, CredalSet, DiscreteCredalSet, create_probability_intervals
 
 
 @create_probability_intervals.delayed_register(TORCH_TENSOR)
@@ -18,6 +18,7 @@ __all__ = [
     "ArrayDiscreteCredalSet",
     "CategoricalCredalSet",
     "CredalSet",
+    "CredalSetType",
     "DiscreteCredalSet",
     "create_probability_intervals",
 ]

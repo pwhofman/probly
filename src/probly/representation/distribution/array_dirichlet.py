@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any, Literal, Self, override
 import numpy as np
 from scipy import special
 
-from probly.representation.distribution.common import DirichletDistribution
+from probly.representation.distribution._common import DirichletDistribution
 from probly.representation.sample import ArraySample
 
 if TYPE_CHECKING:
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class ArrayDirichlet(
+class ArrayDirichletDistribution(
     DirichletDistribution,
     np.lib.mixins.NDArrayOperatorsMixin,
 ):
@@ -130,7 +130,7 @@ class ArrayDirichlet(
         value: Self | np.ndarray,
     ) -> None:
         """Set a subset of the distribution by index."""
-        if isinstance(value, ArrayDirichlet):
+        if isinstance(value, ArrayDirichletDistribution):
             self.alphas[index] = value.alphas
         else:
             self.alphas[index] = value
@@ -153,14 +153,14 @@ class ArrayDirichlet(
         **kwargs: Any,  # noqa: ANN401
     ) -> Any:  # noqa: ANN401
         """Handle numpy ufuncs."""
-        alphas_inputs = [x.alphas if isinstance(x, ArrayDirichlet) else x for x in inputs]
+        alphas_inputs = [x.alphas if isinstance(x, ArrayDirichletDistribution) else x for x in inputs]
 
         if method in ("__call__", "reduce", "reduceat", "accumulate") and "out" in kwargs:
             outs = kwargs["out"]
             if outs is not None:
                 if not isinstance(outs, tuple):
                     outs = (outs,)
-                kwargs["out"] = tuple(o.alphas if isinstance(o, ArrayDirichlet) else o for o in outs)
+                kwargs["out"] = tuple(o.alphas if isinstance(o, ArrayDirichletDistribution) else o for o in outs)
         else:
             outs = None
 
@@ -187,7 +187,7 @@ class ArrayDirichlet(
 
     def __eq__(self, value: Any) -> Self:  # ty: ignore[invalid-method-override]  # noqa: ANN401, PYI032
         """Vectorized equality comparison."""
-        if isinstance(value, ArrayDirichlet):
+        if isinstance(value, ArrayDirichletDistribution):
             return np.equal(self.alphas, value.alphas)  # ty: ignore[invalid-return-type]
         return np.equal(self.alphas, value)  # ty: ignore[invalid-return-type]
 

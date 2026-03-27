@@ -7,7 +7,7 @@ from flax import nnx
 from probly.traverse_nn import nn_compose, nn_traverser
 from pytraverse import CLONE, singledispatch_traverser, traverse
 
-from .common import subensemble_generator
+from ._common import subensemble_generator
 
 reset_traverser = singledispatch_traverser[nnx.Module](name="reset_traverser")
 subensemble_traverser = singledispatch_traverser[nnx.Module](name="subensemble_traverser")

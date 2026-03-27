@@ -9,16 +9,16 @@ from typing import TYPE_CHECKING, Any, Self, override
 import numpy as np
 import torch
 
-from probly.representation.credal_set.common import (
+from probly.representation.credal_set._common import (
     CategoricalCredalSet,
     ProbabilityIntervalsCredalSet,
 )
 from probly.representation.sample.torch import TorchTensorSample
 
-from .common import create_probability_intervals
+from ._common import create_probability_intervals
 
 if TYPE_CHECKING:
-    from probly.representation.sample.common import Sample
+    from probly.representation.sample._common import Sample
 
 
 class TorchCategoricalCredalSet(CategoricalCredalSet[torch.Tensor], metaclass=ABCMeta):
