@@ -29,50 +29,37 @@ if TYPE_CHECKING:
     )
 
 _NUM_BINARY_CLASSES = 2
-_BINARY_Y_MARGIN = 0.1
-_BINARY_TICK_LENGTH = 0.02
-_BINARY_TICK_LABEL_OFFSET = -0.05
+_BINARY_Y_HEIGHT = 0.05
+_BINARY_Y_PAD = 0.02
 
 
 def _setup_binary_axes(
     ax: Axes,
-    labels: list[str],
+    labels: list[str],  # noqa: ARG001
     config: PlotConfig,
 ) -> None:
     """Set up axes for a binary credal set interval plot.
 
-    Draws a horizontal baseline from 0 to 1 with tick marks at 0.1 intervals
-    and class labels at each endpoint.
+    Uses a native matplotlib x-axis with ticks from 0 to 1 and an axis label
+    of "Probability of Class 1". The y-axis and all spines except the bottom
+    are hidden.
 
     Args:
         ax: The matplotlib axes to configure.
-        labels: Two class labels for the endpoints.
+        labels: Two class labels (kept for API compatibility).
         config: Plot configuration.
     """
-    ax.plot([0, 1], [0, 0], color="black", linewidth=config.line_width, zorder=0)
+    ax.set_xlim(0.0, 1.0)
+    ax.set_xticks(np.linspace(0.0, 1.0, 11))
+    ax.set_xlabel("Probability of Class 1", fontsize=config.label_fontsize)
 
-    tick_values = np.linspace(0.0, 1.0, 11)
-    for t in tick_values[1:-1]:
-        ax.plot(
-            [t, t],
-            [-_BINARY_TICK_LENGTH / 2, _BINARY_TICK_LENGTH / 2],
-            color="black",
-        )
-        ax.text(
-            t,
-            _BINARY_TICK_LABEL_OFFSET,
-            f"{t:.1f}",
-            ha="center",
-            va="center",
-            fontsize=8,
-        )
+    ax.set_ylim(-_BINARY_Y_PAD, _BINARY_Y_HEIGHT + _BINARY_Y_PAD)
+    ax.set_yticks([])
 
-    ax.text(0, _BINARY_TICK_LABEL_OFFSET - 0.05, labels[0], ha="center", va="top", fontsize=config.label_fontsize)
-    ax.text(1, _BINARY_TICK_LABEL_OFFSET - 0.05, labels[1], ha="center", va="top", fontsize=config.label_fontsize)
-
-    ax.axis("off")
-    ax.set_xlim(-0.05, 1.05)
-    ax.set_ylim(-0.2, 0.2)
+    ax.spines["bottom"].set_position(("data", 0))
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.spines["left"].set_visible(False)
 
 
 def _draw_binary_interval(
@@ -94,8 +81,8 @@ def _draw_binary_interval(
         config: Plot configuration.
         label: Optional legend label for this interval.
     """
-    y_margin = np.array([_BINARY_Y_MARGIN, -_BINARY_Y_MARGIN])
-    ax.fill_betweenx(y_margin, low, high, color=color, alpha=config.fill_alpha, zorder=2, label=label)
+    y_extent = np.array([0.0, _BINARY_Y_HEIGHT])
+    ax.fill_betweenx(y_extent, low, high, color=color, alpha=config.fill_alpha, zorder=2, label=label)
 
 
 @lazydispatch
@@ -148,7 +135,11 @@ def _draw_intervals_binary(
     for idx in range(n_sets):
         color = config.color(idx)
         label = series_labels[idx] if series_labels else None
-        _draw_binary_interval(ax, lower_all[idx, 1], upper_all[idx, 1], color, config, label=label)
+        low, high = lower_all[idx, 1], upper_all[idx, 1]
+        if np.isclose(low, high):
+            ax.scatter(low, 0, color=color, s=config.marker_size, zorder=3, label=label)
+        else:
+            _draw_binary_interval(ax, low, high, color, config, label=label)
 
 
 @_draw_credal_set_binary.register(ArrayDistanceBasedCredalSet)

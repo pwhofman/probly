@@ -110,6 +110,14 @@ def _draw_intervals(
         vertices = _compute_interval_vertices(lower_all[idx], upper_all[idx])
         color = config.color(idx)
         label = series_labels[idx] if series_labels else None
+
+        unique_verts = np.unique(np.round(vertices, decimals=8), axis=0)
+        if len(unique_verts) <= 1:
+            # Zero-area: all vertices collapse to a single point; draw a dot
+            pt = unique_verts[0] if len(unique_verts) == 1 else vertices[0]
+            ternary_ax.scatter(pt[0:1], pt[1:2], pt[2:3], color=color, s=config.marker_size, zorder=3, label=label)
+            continue
+
         _draw_polygon(ternary_ax, vertices, color, config, label=label)
 
 
@@ -129,29 +137,50 @@ def _draw_distance_based(
         color = config.color(idx)
         label = series_labels[idx] if series_labels else None
         vertices = _compute_interval_vertices(lower_all[idx], upper_all[idx])
-        _draw_polygon(ternary_ax, vertices, color, config, label=label)
+
+        unique_verts = np.unique(np.round(vertices, decimals=8), axis=0)
+        if len(unique_verts) <= 1:
+            pt = unique_verts[0] if len(unique_verts) == 1 else vertices[0]
+            ternary_ax.scatter(pt[0:1], pt[1:2], pt[2:3], color=color, s=config.marker_size, zorder=3, label=label)
+        else:
+            _draw_polygon(ternary_ax, vertices, color, config, label=label)
 
         nom = nominal_all[idx]
         ternary_ax.scatter(nom[0:1], nom[1:2], nom[2:3], color=color, s=config.marker_size, zorder=3)
 
 
-@_draw_credal_set_ternary.register(ArrayDiscreteCredalSet | ArrayConvexCredalSet)
-def _draw_vertex_set(
-    data: ArrayConvexCredalSet | ArrayDiscreteCredalSet,
+@_draw_credal_set_ternary.register(ArrayDiscreteCredalSet)
+def _draw_discrete_set(
+    data: ArrayDiscreteCredalSet,
     ternary_ax: TernaryAxes,
     config: PlotConfig,
     series_labels: list[str] | None = None,
 ) -> None:
-    # Shape: (..., num_vertices, num_classes) -> flatten batch dims
     arr = data.array.reshape(-1, data.array.shape[-2], _NUM_TERNARY_CLASSES)
     n_sets = arr.shape[0]
 
     for idx in range(n_sets):
         color = config.color(idx)
         label = series_labels[idx] if series_labels else None
-        pts = arr[idx]  # (num_vertices, 3)
+        pts = arr[idx]
+        ternary_ax.scatter(pts[:, 0], pts[:, 1], pts[:, 2], color=color, s=config.marker_size, zorder=3, label=label)
 
-        # Remove near-duplicates
+
+@_draw_credal_set_ternary.register(ArrayConvexCredalSet)
+def _draw_convex_set(
+    data: ArrayConvexCredalSet,
+    ternary_ax: TernaryAxes,
+    config: PlotConfig,
+    series_labels: list[str] | None = None,
+) -> None:
+    arr = data.array.reshape(-1, data.array.shape[-2], _NUM_TERNARY_CLASSES)
+    n_sets = arr.shape[0]
+
+    for idx in range(n_sets):
+        color = config.color(idx)
+        label = series_labels[idx] if series_labels else None
+        pts = arr[idx]
+
         pts = np.unique(np.round(pts, decimals=10), axis=0)
         n_pts = len(pts)
 
@@ -166,7 +195,6 @@ def _draw_vertex_set(
             ternary_ax.plot(pts[:, 0], pts[:, 1], pts[:, 2], color=color, linewidth=config.line_width, label=label)
             continue
 
-        # Scatter markers without label; polygon carries the label
         ternary_ax.scatter(pts[:, 0], pts[:, 1], pts[:, 2], color=color, s=config.marker_size, zorder=3)
         hull_pts = _compute_convex_hull_vertices(pts)
         _draw_polygon(ternary_ax, hull_pts, color, config, label=label)

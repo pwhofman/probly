@@ -74,8 +74,8 @@ def plot_credal_set(
     Args:
         data: The credal set to plot. Must have 2 or 3 classes.
         title: Title of the plot.
-        labels: Class labels. Defaults to ``["C1", "C2"]`` for binary or
-            ``["C1", "C2", "C3"]`` for ternary.
+        labels: Class labels. Defaults to ``["C0", "C1"]`` for binary or
+            ``["C0", "C1", "C2"]`` for ternary.
         series_labels: Optional legend labels, one per batch element. When
             provided a legend is shown. Defaults to ``None`` (no legend).
         config: Plot configuration. Defaults to ``PlotConfig()``.
@@ -94,20 +94,22 @@ def plot_credal_set(
     config = config or PlotConfig()
 
     if num_classes == _NUM_BINARY_CLASSES:
-        labels = labels or ["C1", "C2"]
+        labels = labels or ["C0", "C1"]
         if len(labels) != _NUM_BINARY_CLASSES:
             msg = f"Expected 2 labels, got {len(labels)}."
             raise ValueError(msg)
 
-        fig, ax = plt.subplots(figsize=(config.figure_size[0], 2), dpi=config.dpi)
+        fig, ax = plt.subplots(figsize=(config.figure_size[0], 1.2), dpi=config.dpi)
         _setup_binary_axes(ax, labels, config)
         _draw_credal_set_binary(data, ax, config, series_labels)
 
         if series_labels is not None:
             ax.legend()
 
+        fig.tight_layout()
+
         if title is not None:
-            ax.set_title(title, fontsize=config.title_fontsize, pad=20)
+            fig.suptitle(title, fontsize=config.title_fontsize, y=1.05)
 
         if show:
             plt.show()
@@ -115,7 +117,7 @@ def plot_credal_set(
         return ax
 
     if num_classes == _NUM_TERNARY_CLASSES:
-        labels = labels or ["C1", "C2", "C3"]
+        labels = labels or ["C0", "C1", "C2"]
         if len(labels) != _NUM_TERNARY_CLASSES:
             msg = f"Expected 3 labels, got {len(labels)}."
             raise ValueError(msg)
@@ -131,6 +133,10 @@ def plot_credal_set(
         ternary_ax.set_tlabel(labels[0], fontsize=config.label_fontsize)
         ternary_ax.set_llabel(labels[1], fontsize=config.label_fontsize)
         ternary_ax.set_rlabel(labels[2], fontsize=config.label_fontsize)
+
+        ternary_ax.taxis.set_label_position("side")
+        ternary_ax.laxis.set_label_position("side")
+        ternary_ax.raxis.set_label_position("side")
 
         if series_labels is not None:
             ternary_ax.legend()
