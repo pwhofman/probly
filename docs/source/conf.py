@@ -51,15 +51,12 @@ extensions = [
     "sphinxcontrib.bibtex",  # for bibliography support
 ]
 
-suppress_warnings = [
-    # "ref.python",  # Ambiguous cross-references from re-exported symbols
-    "py.domain",  # Duplicate object descriptions from autosummary recursive
-]
+suppress_warnings = []
 
 # --- Autosummary settings ----------------------------------------------------s
 autosummary_generate = True
 autosummary_generate_overwrite = True
-autosummary_imported_members = True
+autosummary_imported_members = False
 
 # --- Autodoc settings --------------------------------------------------------
 autoclass_content = "both"  # class docstring AND __init__ docstring
