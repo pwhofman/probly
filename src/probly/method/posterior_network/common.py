@@ -4,12 +4,29 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from probly.method.evidential import evidential_classification
+if TYPE_CHECKING:
+    from probly.predictor import Predictor
+from lazy_dispatch import lazydispatch
 
 if TYPE_CHECKING:
     from probly.predictor import Predictor
 
 
-def posterior_network[**In, Out](base: Predictor[In, Out]) -> Predictor[In, Out]:
-    """Create a Posterior Network predictor from a base model based on :cite:`charpentierPosteriorNetwork2020`."""
-    return evidential_classification(base)
+@lazydispatch
+def posterior_network_generator[**In, Out](
+    encoder: Predictor[In, Out], dim: int, num_classes: int, class_counts: list | None = None, num_flows: int = 6
+) -> Predictor[In, Out]:
+    """Return a posterior network given an encoder model."""
+    msg = f"No posterior network registered for type {type(encoder)}"
+    raise NotImplementedError(msg)
+
+
+def posterior_network[**In, Out](
+    encoder: Predictor[In, Out],
+    dim: int,
+    num_classes: int,
+    class_counts: list | None = None,
+    num_flows: int = 6,
+) -> Predictor[In, Out]:
+    """Create a Posterior Network predictor from an encoder based on :cite:`charpentierPosteriorNetwork2020`."""
+    return posterior_network_generator(encoder, dim, num_classes, class_counts, num_flows)
