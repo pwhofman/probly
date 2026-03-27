@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 from flax.nnx import Dropout, Linear, Rngs, Sequential, rnglib
 
-from .common import register
+from ._common import register
 
 if TYPE_CHECKING:
     from collections.abc import Callable
