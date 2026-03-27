@@ -9,7 +9,7 @@ import numpy as np
 
 import probly.quantification.classification as qc_cls
 import probly.quantification.regression as qc_reg
-from probly.representation import Sampler
+from probly.representer import Sampler
 
 type MetricFn = Callable[[np.ndarray, np.ndarray], float]
 type QueryFn = Callable[[np.ndarray], np.ndarray]
