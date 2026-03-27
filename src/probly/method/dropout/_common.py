@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from probly.predictor import RandomPredictor
 from probly.traverse_nn import is_first_layer, nn_compose
@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from pytraverse.composition import RegisteredLooseTraverser
 
 
+@runtime_checkable
 class DropoutPredictor[**In, Out](RandomPredictor[In, Out], Protocol):
     """A predictor that applies dropout."""
 
