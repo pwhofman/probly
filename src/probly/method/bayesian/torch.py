@@ -6,7 +6,7 @@ from torch import nn
 
 from probly.layers.torch import BayesConv2d, BayesLinear
 
-from .common import register
+from ._common import register
 
 
 def replace_torch_bayesian_linear(

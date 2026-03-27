@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from .common import CredalBNNPredictor, credal_bnn
+from ._common import CredalBNNPredictor, credal_bnn
 
 __all__ = [
     "CredalBNNPredictor",

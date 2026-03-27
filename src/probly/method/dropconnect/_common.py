@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
+from probly.predictor import RandomPredictor
 from probly.traverse_nn import is_first_layer, nn_compose
 from pytraverse import CLONE, GlobalVariable, lazydispatch_traverser, traverse
 
@@ -13,6 +14,12 @@ if TYPE_CHECKING:
     from lazy_dispatch.isinstance import LazyType
     from probly.predictor import Predictor
     from pytraverse.composition import RegisteredLooseTraverser
+
+
+@runtime_checkable
+class DropConnectPredictor[**In, Out](RandomPredictor[In, Out], Protocol):
+    """A predictor that applies DropConnect."""
+
 
 P = GlobalVariable[float]("P", "The probability of dropconnect.")
 
@@ -34,6 +41,7 @@ def register(cls: LazyType, traverser: RegisteredLooseTraverser) -> None:
     )
 
 
+@DropConnectPredictor.register_factory
 def dropconnect[T: Predictor](
     base: T, p: float = 0.25, rng_collection: str = "dropconnect", rngs: Rngs | RngStream | int = 1
 ) -> T:

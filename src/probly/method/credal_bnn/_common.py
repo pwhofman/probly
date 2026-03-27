@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
-from probly.method.bayesian.common import bayesian
+from probly.method.bayesian._common import bayesian
 from probly.method.ensemble import EnsemblePredictor
 from pytraverse import GlobalVariable
 
