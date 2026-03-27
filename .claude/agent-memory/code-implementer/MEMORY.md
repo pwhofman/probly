@@ -1,0 +1,1 @@
+- [Project commands and conventions](project_commands.md) — key CLI commands, docstring style, pre-commit setup

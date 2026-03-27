@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import numpy as np
-
-# TODO(mmshlk): remove sklearn dependency - https://github.com/pwhofman/probly/issues/132
 import sklearn.metrics as sm
 
 

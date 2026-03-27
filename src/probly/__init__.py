@@ -8,6 +8,7 @@ from probly import (
     evaluation as evaluation,
     layers as layers,
     method as method,
+    plot as plot,
     predictor as predictor,
     quantification as quantification,
     representation as representation,
@@ -15,5 +16,4 @@ from probly import (
     train as train,
     traverse_nn as traverse_nn,
     utils as utils,
-    visualization as visualization,
 )
