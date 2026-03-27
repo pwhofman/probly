@@ -24,7 +24,7 @@ from probly.evaluation.active_learning import active_learning_loop
 # ---------------------------------------------------------------------------
 N_TRAIN = 300
 N_TEST = 200
-POOL_SIZE = 10
+POOL_SIZE = 5
 N_ITERATIONS = 10
 N_SEEDS = 10
 
@@ -58,7 +58,7 @@ def make_sine_regression(
 def make_two_moons_classification(
     n_train: int = N_TRAIN,
     n_test: int = N_TEST,
-    noise: float = 0.2,
+    noise: float = 0.1,
     seed: int = 0,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Generate a two-moons binary classification dataset."""

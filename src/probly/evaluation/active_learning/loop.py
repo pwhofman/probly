@@ -88,6 +88,8 @@ def active_learning_loop(
     x_test = to_numpy(x_test)
     y_test = to_numpy(y_test)
 
+    if metric is None and hasattr(model, "predict_proba"):
+        metric = "accuracy"
     metric_fn, metric_name = resolve_metric(metric)
 
     if query_fn is None:
