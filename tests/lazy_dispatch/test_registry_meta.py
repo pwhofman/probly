@@ -125,6 +125,84 @@ class TestRegistryMeta:
         assert isinstance(child, Child)
         assert isinstance(child, Base)
 
+    def test_instancehook_caches_positive_results_for_hashable_instances(self) -> None:
+        """Truthy instance-hook results should be cached for hashable objects."""
+
+        class Base(metaclass=RegistryMeta):
+            hook_calls = 0
+
+            @classmethod
+            def __instancehook__(cls, instance: object, /) -> bool:
+                cls.hook_calls += 1
+                return isinstance(instance, Candidate)
+
+        class Candidate:
+            pass
+
+        instance = Candidate()
+
+        assert isinstance(instance, Base)
+        assert isinstance(instance, Base)
+        assert Base.hook_calls == 1
+
+    def test_instancehook_works_for_non_hashable_instances(self) -> None:
+        """Truthy instance-hook results should still work for non-hashable objects."""
+
+        class Base(metaclass=RegistryMeta):
+            hook_calls = 0
+
+            @classmethod
+            def __instancehook__(cls, instance: object, /) -> bool:
+                cls.hook_calls += 1
+                return isinstance(instance, list)
+
+        instance = []
+
+        assert isinstance(instance, Base)
+        assert isinstance(instance, Base)
+        assert Base.hook_calls == 2
+
+    def test_instancehook_notimplemented_delegates_to_regular_instance_checks(self) -> None:
+        """NotImplemented should fall back to the regular inheritance/registration checks."""
+
+        class Base(metaclass=RegistryMeta):
+            @classmethod
+            def __instancehook__(cls, instance: object, /) -> bool:
+                return NotImplemented
+
+        class Child(Base):
+            pass
+
+        class Virtual:
+            pass
+
+        Base.register(Virtual)
+
+        assert isinstance(Child(), Base)
+        assert isinstance(Virtual(), Base)
+
+    def test_instancehook_overrides_regular_inheritance_rules(self) -> None:
+        """Non-NotImplemented instance-hook results should override normal checks."""
+
+        class AlwaysFalseBase(metaclass=RegistryMeta):
+            @classmethod
+            def __instancehook__(cls, instance: object, /) -> bool:
+                return False
+
+        class Child(AlwaysFalseBase):
+            pass
+
+        class AlwaysTrueBase(metaclass=RegistryMeta):
+            @classmethod
+            def __instancehook__(cls, instance: object, /) -> bool:
+                return True
+
+        class Unrelated:
+            pass
+
+        assert not isinstance(Child(), AlwaysFalseBase)
+        assert isinstance(Unrelated(), AlwaysTrueBase)
+
 
 class TestProtocolRegistryMeta:
     """Tests for ProtocolRegistryMeta."""
@@ -476,3 +554,49 @@ class TestProtocolRegistryMeta:
         assert issubclass(Child, DirectProtocol)
         assert isinstance(child, Child)
         assert isinstance(child, DirectProtocol)
+
+    def test_protocol_subclasshook_must_be_declared_per_subclass(self) -> None:
+        """Protocol subclass hooks should not be inherited implicitly."""
+
+        class BaseProtocol(ProtocolRegistry, Protocol, structural_checking=False):
+            @classmethod
+            def __subclasshook__(cls, subclass: type, /) -> bool:
+                return True
+
+        class DerivedProtocol(BaseProtocol, Protocol):
+            pass
+
+        class DerivedProtocolWithHook(BaseProtocol, Protocol):
+            @classmethod
+            def __subclasshook__(cls, subclass: type, /) -> bool:
+                return True
+
+        class Candidate:
+            pass
+
+        assert issubclass(Candidate, BaseProtocol)
+        assert not issubclass(Candidate, DerivedProtocol)
+        assert issubclass(Candidate, DerivedProtocolWithHook)
+
+    def test_protocol_instancehook_must_be_declared_per_subclass(self) -> None:
+        """Protocol instance hooks should mirror Protocol's subclass-hook inheritance behavior."""
+
+        class BaseProtocol(ProtocolRegistry, Protocol, structural_checking=False):
+            @classmethod
+            def __instancehook__(cls, instance: object, /) -> bool:
+                return True
+
+        class DerivedProtocol(BaseProtocol, Protocol):
+            pass
+
+        class DerivedProtocolWithHook(BaseProtocol, Protocol):
+            @classmethod
+            def __instancehook__(cls, instance: object, /) -> bool:
+                return True
+
+        class Candidate:
+            pass
+
+        assert isinstance(Candidate(), BaseProtocol)
+        assert not isinstance(Candidate(), DerivedProtocol)
+        assert isinstance(Candidate(), DerivedProtocolWithHook)

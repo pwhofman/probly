@@ -2,17 +2,17 @@
 
 from probly.lazy_types import FLAX_MODULE, TORCH_MODULE
 
-from . import common
+from . import _common
 
 ## NN
 
-LAYER_COUNT = common.LAYER_COUNT
-is_first_layer = common.is_first_layer
+LAYER_COUNT = _common.LAYER_COUNT
+is_first_layer = _common.is_first_layer
 
-layer_count_traverser = common.layer_count_traverser
-nn_traverser = common.nn_traverser
+layer_count_traverser = _common.layer_count_traverser
+nn_traverser = _common.nn_traverser
 
-nn_compose = common.compose
+nn_compose = _common.compose
 
 
 ## Torch

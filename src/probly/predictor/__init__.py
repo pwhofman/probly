@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from .common import CredalPredictor, DistributionPredictor, IterablePredictor, Predictor, RandomPredictor, predict
+from ._common import CredalPredictor, DistributionPredictor, IterablePredictor, Predictor, RandomPredictor, predict
 
 __all__ = [
     "CredalPredictor",

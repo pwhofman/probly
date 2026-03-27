@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from probly.method.bayesian.common import bayesian
 from probly.method.ensemble import EnsemblePredictor
@@ -18,6 +18,7 @@ PRIOR_STD = GlobalVariable[float]("PRIOR_STD", default=1.0)
 NUM_MEMBERS = GlobalVariable[int]("NUM_MEMBERS", default=5)
 
 
+@runtime_checkable
 class CredalBNNPredictor[**In, Out](EnsemblePredictor[In, Out], Protocol):
     """A predictor that applies the Credal Bayesian Neural Network transformation."""
 
@@ -76,4 +77,4 @@ def credal_bnn[**In, Out](
         for i in range(num_members)
     ]
 
-    return bnn_members
+    return bnn_members  # ty:ignore[invalid-return-type]

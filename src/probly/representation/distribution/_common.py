@@ -8,9 +8,9 @@ from typing import TYPE_CHECKING, Any, Literal
 if TYPE_CHECKING:
     import numpy as np
 
-    from probly.representation.sample.common import Sample
+    from probly.representation.sample._common import Sample
 
-type DistributionType = Literal["gaussian", "dirichlet"]
+type DistributionType = Literal["gaussian", "dirichlet", "categorical"]
 
 
 class Distribution(ABC):
@@ -26,6 +26,17 @@ class Distribution(ABC):
     @abstractmethod
     def sample(self, num_samples: int) -> Sample[Any]:
         """Draw samples from Distribution."""
+
+
+class CategoricalDistribution(Distribution):
+    """Base class for categorical distributions."""
+
+    type: Literal["categorical"] = "categorical"
+
+    @property
+    @abstractmethod
+    def num_classes(self) -> int:
+        """Get the number of classes."""
 
 
 class DirichletDistribution(Distribution):

@@ -14,14 +14,14 @@ if TYPE_CHECKING:
 
     from numpy.typing import DTypeLike
 
-    from probly.representation.distribution.array_dirichlet import ArrayDirichlet
+    from probly.representation.distribution.array_dirichlet import ArrayDirichletDistribution
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
 class ArrayDirichletMixture:
     """Dirichlet mixture distribution."""
 
-    components: Sequence[ArrayDirichlet]
+    components: Sequence[ArrayDirichletDistribution]
     weights: np.ndarray
 
     def __post_init__(self) -> None:
