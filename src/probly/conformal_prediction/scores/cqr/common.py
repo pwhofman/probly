@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
     from lazy_dispatch.isinstance import LazyType
-    from probly.conformal_prediction.methods.common import Predictor
+    from probly.conformal_prediction.methods.common import ConformalModel
 
 from probly.conformal_prediction.scores.common import RegressionScore
 
@@ -73,7 +73,7 @@ class CQRScore(RegressionScore):
     upper conditional quantiles.
     """
 
-    def __init__(self, model: Predictor) -> None:
+    def __init__(self, model: ConformalModel) -> None:
         """Initialize CQR score with a quantile regression model."""
         super().__init__(model=model, score_func=self.compute_score)
 

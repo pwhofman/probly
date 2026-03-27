@@ -13,9 +13,9 @@ from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 
 from probly.evaluation.tasks import selective_prediction
+from probly.method.dropout import dropout
 from probly.quantification.classification import total_entropy
-from probly.representation.sampling import Sampler
-from probly.transformation.dropout import dropout
+from probly.representer.sampler import Sampler
 from probly_benchmark.models import LeNet
 
 # ---------------------------------------------------------------------------
@@ -113,7 +113,7 @@ def main(seed: int = 0) -> None:
     dropout_model = dropout(base_model, p=DROPOUT_P)
 
     print("Training...")
-    train(dropout_model, train_loader)  # ty:ignore[invalid-argument-type]
+    train(dropout_model, train_loader)
 
     print("Predicting...")
     sampler = Sampler(dropout_model, num_samples=NUM_SAMPLES)

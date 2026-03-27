@@ -19,15 +19,17 @@ MINIMIZE_EPS = 1e-3  # A small epsilon to avoid problems when the initial soluti
 
 
 def total_entropy(probs: np.ndarray, base: float = 2) -> np.ndarray:
-    """Compute the total entropy as the total uncertainty based on :cite:`depewegDecompositionUncertainty2018`.
+    """Compute the total entropy as the total uncertainty.
 
     The computation is based on samples from a second-order distribution.
+    Based on :cite:`depewegDecompositionUncertainty2018`.
 
     Args:
-        probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
-        base: float, default=2
+        probs: Probability distributions of shape (n_instances, n_samples, n_classes).
+        base: Base of the logarithm.
+
     Returns:
-        te: numpy.ndarray of shape (n_instances,)
+        Total entropy values of shape (n_instances,).
 
     """
     te = entropy(probs.mean(axis=1), axis=1, base=base)
@@ -61,10 +63,11 @@ def conditional_entropy(probs: np.ndarray, base: float = 2) -> np.ndarray:
     The computation is based on samples from a second-order distribution.
 
     Args:
-        probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
-        base: float, default=2
+        probs: Probability distributions of shape (n_instances, n_samples, n_classes).
+        base: Base of the logarithm.
+
     Returns:
-        ce: numpy.ndarray of shape (n_instances,)
+        Conditional entropy values of shape (n_instances,).
 
     """
     ce = entropy(probs, axis=2, base=base).mean(axis=1)
@@ -77,10 +80,11 @@ def mutual_information(probs: np.ndarray, base: float = 2) -> np.ndarray:
     The computation is based on samples from a second-order distribution.
 
     Args:
-        probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
-        base: float, default=2
+        probs: Probability distributions of shape (n_instances, n_samples, n_classes).
+        base: Base of the logarithm.
+
     Returns:
-        mi: numpy.ndarray of shape (n_instances,)
+        Mutual information values of shape (n_instances,).
 
     """
     probs_mean = probs.mean(axis=1)
@@ -95,11 +99,11 @@ def expected_loss(probs: np.ndarray, loss_fn: Callable[[np.ndarray, np.ndarray |
     The computation is based on samples from a second-order distribution.
 
     Args:
-        probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
-        loss_fn: Callable[[numpy.ndarray, np.ndarray | None], numpy.ndarray]
+        probs: Probability distributions of shape (n_instances, n_samples, n_classes).
+        loss_fn: Loss function callable.
 
     Returns:
-        el: numpy.ndarray, shape (n_instances,)
+        Expected loss values of shape (n_instances,).
 
     """
     mean = np.mean(probs, axis=1)
@@ -113,11 +117,11 @@ def expected_entropy(probs: np.ndarray, loss_fn: Callable[[np.ndarray, np.ndarra
     The computation is based on samples from a second-order distribution.
 
     Args:
-        probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
-        loss_fn: Callable[[numpy.ndarray, np.ndarray | None], numpy.ndarray]
+        probs: Probability distributions of shape (n_instances, n_samples, n_classes).
+        loss_fn: Loss function callable.
 
     Returns:
-        ee: numpy.ndarray, shape (n_instances,)
+        Expected entropy values of shape (n_instances,).
 
     """
     ee = np.mean(np.sum(probs * loss_fn(probs, None), axis=2), axis=1)
@@ -133,11 +137,11 @@ def expected_divergence(
     The computation is based on samples from a second-order distribution.
 
     Args:
-        probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
-        loss_fn: Callable[[numpy.ndarray, np.ndarray | None], numpy.ndarray]
+        probs: Probability distributions of shape (n_instances, n_samples, n_classes).
+        loss_fn: Loss function callable.
 
     Returns:
-        ed: numpy.ndarray, shape (n_instances,)
+        Expected divergence values of shape (n_instances,).
 
     """
     mean = np.mean(probs, axis=1)
@@ -151,10 +155,10 @@ def total_variance(probs: np.ndarray) -> np.ndarray:
     The computation is based on samples from a second-order distribution.
 
     Args:
-        probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
+        probs: Probability distributions of shape (n_instances, n_samples, n_classes).
 
     Returns:
-        tv: numpy.ndarray, shape (n_instances,)
+        Total variance values of shape (n_instances,).
 
     """
     probs_mean = probs.mean(axis=1)
@@ -168,10 +172,10 @@ def expected_conditional_variance(probs: np.ndarray) -> np.ndarray:
     The computation is based on samples from a second-order distribution.
 
     Args:
-        probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
+        probs: Probability distributions of shape (n_instances, n_samples, n_classes).
 
     Returns:
-        ecv: numpy.ndarray, shape (n_instances,)
+        Expected conditional variance values of shape (n_instances,).
 
     """
     ecv = np.sum(np.mean(probs * (1 - probs), axis=1), axis=1)
@@ -184,10 +188,10 @@ def variance_conditional_expectation(probs: np.ndarray) -> np.ndarray:
     The computation is based on samples from a second-order distribution.
 
     Args:
-        probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
+        probs: Probability distributions of shape (n_instances, n_samples, n_classes).
 
     Returns:
-        ecv: numpy.ndarray, shape (n_instances,)
+        Variance of conditional expectation values of shape (n_instances,).
 
     """
     probs_mean = probs.mean(axis=1, keepdims=True)
@@ -201,10 +205,10 @@ def total_uncertainty_distance(probs: np.ndarray) -> np.ndarray:
     The measure of total uncertainty is from :cite:`saleSecondOrder2024`.
 
     Args:
-        probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
+        probs: Probability distributions of shape (n_instances, n_samples, n_classes).
 
     Returns:
-        tu: numpy.ndarray of shape (n_instances,)
+        Total uncertainty distance values of shape (n_instances,).
 
     """
     probs_mean = probs.mean(axis=1)
@@ -218,10 +222,10 @@ def aleatoric_uncertainty_distance(probs: np.ndarray) -> np.ndarray:
     The measure of aleatoric uncertainty is from :cite:`saleSecondOrder2024`.
 
     Args:
-        probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
+        probs: Probability distributions of shape (n_instances, n_samples, n_classes).
 
     Returns:
-        au: numpy.ndarray of shape (n_instances,)
+        Aleatoric uncertainty distance values of shape (n_instances,).
 
     """
     au = 1 - np.mean(np.max(probs, axis=2), axis=1)
@@ -234,10 +238,10 @@ def epistemic_uncertainty_distance(probs: np.ndarray) -> np.ndarray:
     The measure of epistemic uncertainty is from :cite:`saleSecondOrder2024`.
 
     Args:
-        probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
+        probs: Probability distributions of shape (n_instances, n_samples, n_classes).
 
     Returns:
-        eu: numpy.ndarray of shape (n_instances,)
+        Epistemic uncertainty distance values of shape (n_instances,).
 
     """
 
@@ -417,10 +421,10 @@ def generalized_hartley(probs: np.ndarray, base: float = 2) -> np.ndarray:
 
     Args:
         probs: Probability distributions of shape (n_instances, n_samples, n_classes).
-        base: Base of the logarithm. Defaults to 2.
+        base: Base of the logarithm.
 
     Returns:
-        gh: Generalized Hartley measures values of shape (n_instances,).
+        Generalized Hartley measure values of shape (n_instances,).
 
     """
     gh = np.zeros(probs.shape[0])
@@ -434,13 +438,15 @@ def generalized_hartley(probs: np.ndarray, base: float = 2) -> np.ndarray:
 
 
 def evidential_uncertainty(evidences: np.ndarray) -> np.ndarray:
-    """Compute the evidential uncertainty given the evidences based on :cite:`sensoyEvidentialDeep2018`.
+    """Compute the evidential uncertainty given the evidences.
+
+    Based on :cite:`sensoyEvidentialDeep2018`.
 
     Args:
         evidences: Evidence values of shape (n_instances, n_classes).
 
     Returns:
-        eu: Evidential uncertainty values of shape (n_instances,).
+        Evidential uncertainty values of shape (n_instances,).
 
     """
     strengths = np.sum(evidences + 1.0, axis=1)

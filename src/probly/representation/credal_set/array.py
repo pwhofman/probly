@@ -16,12 +16,12 @@ from probly.representation.credal_set.common import (
     ProbabilityIntervalsCredalSet,
     SingletonCredalSet,
 )
-from probly.representation.sampling.sample import ArraySample
+from probly.representation.sample import ArraySample
 
 if TYPE_CHECKING:
     from numpy.typing import DTypeLike
 
-    from probly.representation.sampling.common_sample import Sample
+    from probly.representation.sample.common import Sample
 
 
 class ArrayCategoricalCredalSet(CategoricalCredalSet[np.ndarray], metaclass=ABCMeta):
@@ -156,9 +156,9 @@ class ArrayDiscreteCredalSet(ArrayCategoricalCredalSet, DiscreteCredalSet[np.nda
 
         return type(self)(array=self.array.to_device(device))
 
-    def __eq__(self, value: Any) -> Self:  # type: ignore[override]  # noqa: ANN401, PYI032
+    def __eq__(self, value: Any) -> Self:  # ty: ignore[invalid-method-override]  # noqa: ANN401, PYI032
         """Vectorized equality comparison."""
-        return np.equal(self, value)  # type: ignore[return-value]
+        return np.equal(self, value)  # ty: ignore[invalid-return-type]
 
     def __hash__(self) -> int:
         """Compute the hash of the ArraySample."""
@@ -256,9 +256,9 @@ class ArrayConvexCredalSet(ArrayCategoricalCredalSet, ConvexCredalSet[np.ndarray
 
         return type(self)(array=self.array.to_device(device))
 
-    def __eq__(self, value: Any) -> Self:  # type: ignore[override]  # noqa: ANN401, PYI032
+    def __eq__(self, value: Any) -> Self:  # ty: ignore[invalid-method-override]  # noqa: ANN401, PYI032
         """Vectorized equality comparison."""
-        return np.equal(self, value)  # type: ignore[return-value]
+        return np.equal(self, value)  # ty: ignore[invalid-return-type]
 
     def __hash__(self) -> int:
         """Compute the hash of the credal set."""
@@ -390,7 +390,7 @@ class ArrayDistanceBasedCredalSet(
         )
         return type(self)(nominal=new_nominal, radius=new_radius)
 
-    def __eq__(self, value: Any) -> Self:  # type: ignore[override]  # noqa: ANN401, PYI032
+    def __eq__(self, value: Any) -> Self:  # ty: ignore[invalid-method-override]  # noqa: ANN401, PYI032
         """Vectorized equality comparison."""
         if not isinstance(value, type(self)):
             return NotImplemented
@@ -402,7 +402,7 @@ class ArrayDistanceBasedCredalSet(
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class ArrayProbabilityIntervals(ArrayCategoricalCredalSet, ProbabilityIntervalsCredalSet[np.ndarray]):
+class ArrayProbabilityIntervalsCredalSet(ArrayCategoricalCredalSet, ProbabilityIntervalsCredalSet[np.ndarray]):
     """A credal set defined by probability intervals over outcomes.
 
     This represents uncertainty through lower and upper probability bounds for each class.
@@ -554,9 +554,9 @@ class ArrayProbabilityIntervals(ArrayCategoricalCredalSet, ProbabilityIntervalsC
             upper_bounds=self.upper_bounds.to_device(device),
         )
 
-    def __eq__(self, value: Any) -> Self:  # type: ignore[override]  # noqa: ANN401, PYI032
+    def __eq__(self, value: Any) -> Self:  # ty: ignore[invalid-method-override]  # noqa: ANN401, PYI032
         """Vectorized equality comparison."""
-        return np.equal(self, value)  # type: ignore[return-value]
+        return np.equal(self, value)  # ty: ignore[invalid-return-type]
 
     def __hash__(self) -> int:
         """Compute the hash of the intervals."""
@@ -656,9 +656,9 @@ class ArraySingletonCredalSet(ArrayCategoricalCredalSet, SingletonCredalSet[np.n
 
         return type(self)(array=self.array.to_device(device))
 
-    def __eq__(self, value: Any) -> Self:  # type: ignore[override]  # noqa: ANN401, PYI032
+    def __eq__(self, value: Any) -> Self:  # ty: ignore[invalid-method-override]  # noqa: ANN401, PYI032
         """Vectorized equality comparison."""
-        return np.equal(self, value)  # type: ignore[return-value]
+        return np.equal(self, value)  # ty: ignore[invalid-return-type]
 
     def __hash__(self) -> int:
         """Compute the hash of the credal set."""

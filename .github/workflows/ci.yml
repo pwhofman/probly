@@ -24,7 +24,7 @@ jobs:
             -   name: Set up Python and uv
                 uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78  # v7.0.0
                 with:
-                    python-version: "3.12"
+                    python-version: "3.13"
                     enable-cache: true
             -   name: Run code-quality checks
                 run: uv run prek run --all-files --show-diff-on-failure
@@ -41,7 +41,7 @@ jobs:
             -   name: Set up Python and uv
                 uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78  # v7.0.0
                 with:
-                    python-version: "3.12"
+                    python-version: "3.13"
                     enable-cache: true
             -   name: Create uv virtual environment
                 run: uv venv
@@ -59,16 +59,16 @@ jobs:
             matrix:
                 include:
                     - os: ubuntu-latest
-                      python-version: "3.12"
+                      python-version: "3.13"
                       dependency-group: "all_ml"
                     - os: ubuntu-latest
-                      python-version: "3.12"
+                      python-version: "3.13"
                       dependency-group: "torch"
                     - os: windows-latest
-                      python-version: "3.12"
+                      python-version: "3.13"
                       dependency-group: "all_ml"
                     - os: macos-latest
-                      python-version: "3.12"
+                      python-version: "3.13"
                       dependency-group: "all_ml"
         runs-on: ${{ matrix.os }}
         steps:
@@ -111,7 +111,7 @@ jobs:
             -   name: Set up Python and uv
                 uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78  # v7.0.0
                 with:
-                    python-version: "3.12"
+                    python-version: "3.13"
                     enable-cache: true
             -   name: Install test dependencies
                 run: uv sync --no-dev --group test --group all_ml

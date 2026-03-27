@@ -17,15 +17,16 @@ if TYPE_CHECKING:
 
 
 def out_of_distribution_detection_auroc(in_distribution: np.ndarray, out_distribution: np.ndarray) -> float:
-    """Perform out-of-distribution detection using prediction functionals from id and ood data.
+    """Perform out-of-distribution detection using prediction functionals.
 
     This can be epistemic uncertainty, as is common, but also e.g. softmax confidence.
 
     Args:
-        in_distribution: in-distribution prediction functionals
-        out_distribution: out-of-distribution prediction functionals
+        in_distribution: In-distribution prediction functionals.
+        out_distribution: Out-of-distribution prediction functionals.
+
     Returns:
-        auroc: float, area under the roc curve
+        Area under the ROC curve.
 
     """
     preds = np.concatenate((in_distribution, out_distribution))
@@ -35,17 +36,18 @@ def out_of_distribution_detection_auroc(in_distribution: np.ndarray, out_distrib
 
 
 def out_of_distribution_detection_aupr(in_distribution: np.ndarray, out_distribution: np.ndarray) -> float:
-    """Perform out-of-distribution detection using AUPR (Area Under the Precision-Recall Curve).
+    """Perform out-of-distribution detection using AUPR.
 
     This metric evaluates how well the model distinguishes between in- and out-of-distribution samples,
     focusing more on positive class (OOD) precision and recall.
 
     Args:
-        in_distribution: in-distribution prediction functionals
-        out_distribution: out-of-distribution prediction functionals
+        in_distribution: In-distribution prediction functionals.
+        out_distribution: Out-of-distribution prediction functionals.
 
     Returns:
-        aupr: float, area under the precision-recall curve
+        Area under the precision-recall curve.
+
     """
     preds = np.concatenate((in_distribution, out_distribution))
     labels = np.concatenate((np.zeros(len(in_distribution)), np.ones(len(out_distribution))))
@@ -58,24 +60,26 @@ def out_of_distribution_detection_fpr_at_x_tpr(
     out_distribution: np.ndarray,
     tpr_target: float = 0.95,
 ) -> float:
-    """Perform out-of-distribution detection using false positive rate (FPR) at a given true positive rate.
+    """Perform out-of-distribution detection using false positive rate at a given true positive rate.
 
     If no thresholds are specified, the default tpr_target is 0.95.
 
     This can be epistemic uncertainty, as is common, but also e.g. softmax confidence.
 
     Args:
-        in_distribution: numpy.ndarray, scores for in-distribution samples
-        out_distribution: numpy.ndarray, scores for out-of-distribution samples
-        tpr_target: target TPR value in [0, 1], e.g. 0.95
+        in_distribution: Scores for in-distribution samples.
+        out_distribution: Scores for out-of-distribution samples.
+        tpr_target: Target TPR value in (0, 1].
 
     Returns:
-        fpr_at_target: float, FPR at the first threshold where TPR >= tpr_target
+        False positive rate at the first threshold where TPR >= tpr_target.
 
-    Notes:
-        - Assumes that larger scores correspond to the positive class
-          (out-of-distribution).
-        - If tpr_target cannot be reached, a ValueError is raised.
+    Raises:
+        ValueError: If tpr_target is not in (0, 1] or cannot be achieved.
+
+    Note:
+        Assumes that larger scores correspond to the positive class (out-of-distribution).
+
     """
     if not 0.0 < tpr_target <= 1.0:
         msg = f"tpr_target must be in the interval (0, 1], got {tpr_target}."
@@ -103,17 +107,18 @@ def out_of_distribution_detection_fnr_at_x_tpr(
     out_distribution: np.ndarray,
     tpr_target: float = 0.95,
 ) -> float:
-    """Perform out-of-distribution detection using false negative rate at user given true positive rate.
+    """Perform out-of-distribution detection using false negative rate at a given true positive rate.
 
     If no thresholds are specified, the default tpr_target is 0.95.
 
     Args:
-        in_distribution: in-distribution prediction functionals
-        out_distribution: out-of-distribution prediction functionals
-        tpr_target: target TPR value in [0, 1], e.g. 0.95
+        in_distribution: In-distribution prediction functionals.
+        out_distribution: Out-of-distribution prediction functionals.
+        tpr_target: Target TPR value in (0, 1].
 
     Returns:
-        fnr@X: float, FNR at the first threshold where TPR >= tpr_target
+        False negative rate at the first threshold where TPR >= tpr_target.
+
     """
     preds = np.concatenate((in_distribution, out_distribution))
     labels = np.concatenate((np.zeros(len(in_distribution)), np.ones(len(out_distribution))))
@@ -150,11 +155,25 @@ def _validate_base_metric(base: str) -> None:
 def parse_dynamic_metric(spec: str) -> tuple[str, float]:
     """Parse dynamic metric specification.
 
-    Examples:
-        fpr@0.8
-        fnr@95%
-        fpr -> default threshold is 0.95
-        fnr -> default threshold is 0.95
+    Args:
+        spec: Metric specification string (e.g., 'fpr@0.8', 'fnr@95%', 'fpr').
+
+    Returns:
+        A tuple containing:
+            - base: The base metric name ('fpr' or 'fnr').
+            - threshold: The threshold value. Defaults to 0.95 if not specified.
+
+    Raises:
+        ValueError: If specification is invalid.
+
+    Example:
+        >>> parse_dynamic_metric('fpr@0.8')
+        ('fpr', 0.8)
+        >>> parse_dynamic_metric('fnr@95%')
+        ('fnr', 0.95)
+        >>> parse_dynamic_metric('fpr')
+        ('fpr', 0.95)
+
     """
     try:
         spec = spec.lower().strip()
@@ -188,16 +207,18 @@ def evaluate_ood(
 
     Provides backward compatibility while supporting multiple metrics.
 
-    Parameters:
+    Args:
         in_distribution: Scores for in-distribution samples.
         out_distribution: Scores for out-of-distribution samples.
         metrics: Metrics to compute. Can be:
-            - None or "auroc": Returns single AUROC value (backward compatible)
-            - "all": Returns dict with all available metrics
-            - list: Returns dict with specified metrics
+            - None or "auroc": Returns single AUROC value (backward compatible).
+            - "all": Returns dict with all available metrics.
+            - list: Returns dict with specified metrics.
 
-    Returns: A dictionary mapping metric names to values. If metrics is None or "auroc", the dict
-        contains only the "auroc" entry.
+    Returns:
+        A dictionary mapping metric names to values. If metrics is None or "auroc",
+        the dict contains only the "auroc" entry.
+
     """
     in_s = np.asarray(in_distribution)
     out_s = np.asarray(out_distribution)
@@ -243,17 +264,18 @@ def visualize_ood(
 ) -> dict[str, Figure]:
     """Generate visualization plots from OOD scores.
 
-    Parameters:
+    Args:
         in_distribution: Scores for in-distribution samples.
         out_distribution: Scores for out-of-distribution samples.
-        plot_types: List of specific plots to return (e.g. ['roc', 'hist', 'pr']). If None, all plots
-            are generated.
-        invert_scores: If True (default), assumes scores are 'Confidence' (High = ID). They will be
-            inverted (1.0 - score) for metrics where OOD is the positive class. If False, assumes
-            scores are 'Anomaly Scores' (High = OOD).
+        plot_types: List of specific plots to return (e.g. ['roc', 'hist', 'pr']).
+            If None, all plots are generated.
+        invert_scores: If True (default), assumes scores are 'Confidence' (High = ID).
+            They will be inverted (1.0 - score) for metrics where OOD is the positive class.
+            If False, assumes scores are 'Anomaly Scores' (High = OOD).
 
     Returns:
         A dict containing matplotlib Figures for the requested plots.
+
     """
     id_s = np.asarray(in_distribution)
     ood_s = np.asarray(out_distribution)

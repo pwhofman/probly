@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Literal, Protocol, Self
 from lazy_dispatch import lazydispatch
 
 if TYPE_CHECKING:
-    from probly.representation.sampling.common_sample import Sample
+    from probly.representation.sample.common import Sample
 
 
 type CredalSetType = Literal["categorical", "gaussian", "dirichlet"]

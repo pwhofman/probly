@@ -13,9 +13,9 @@ from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 
 from probly.evaluation.tasks import selective_prediction
+from probly.method.dropconnect import dropconnect
 from probly.quantification.classification import total_entropy
-from probly.representation.sampling import Sampler
-from probly.transformation.dropconnect import dropconnect
+from probly.representer.sampler import Sampler
 from probly_benchmark.models import LeNet
 
 # ---------------------------------------------------------------------------
@@ -113,7 +113,7 @@ def main(seed: int = 0) -> None:
     dropconnect_model = dropconnect(base_model, p=DROPCONNECT_P)
 
     print("Training...")
-    train(dropconnect_model, train_loader)  # ty:ignore[invalid-argument-type]
+    train(dropconnect_model, train_loader)
 
     print("Predicting...")
     sampler = Sampler(dropconnect_model, num_samples=NUM_SAMPLES)

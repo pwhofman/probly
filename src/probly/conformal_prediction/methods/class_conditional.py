@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, cast
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from probly.conformal_prediction.methods.common import Predictor
+    from probly.conformal_prediction.methods.common import ConformalModel
     from probly.conformal_prediction.scores.common import ClassificationScore, RegressionScore
 
 import numpy as np
@@ -32,7 +32,7 @@ class ClassConditionalClassifier(GroupedConformalBase, ConformalClassifier):
 
     def __init__(
         self,
-        model: Predictor,
+        model: ConformalModel,
         score: ClassificationScore,
         class_func: ClassFunc,
         use_accretive: bool = False,
@@ -90,7 +90,7 @@ class ClassConditionalRegressor(GroupedConformalBase, ConformalRegressor):
 
     def __init__(
         self,
-        model: Predictor,
+        model: ConformalModel,
         score: RegressionScore,
         class_func: ClassFunc,
     ) -> None:

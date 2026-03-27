@@ -17,7 +17,7 @@ from __future__ import annotations
 import matplotlib.pyplot as plt
 import numpy as np
 
-from probly.representation.sampling.sample import ArraySample
+from probly.representation.sample import ArraySample
 
 # Imagine these are 3 stochastic forward passes for 2 instances and 4 classes.
 # Shape per pass: (instances, classes)

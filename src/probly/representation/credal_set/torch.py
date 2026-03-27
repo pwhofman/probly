@@ -6,18 +6,19 @@ from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Self, override
 
+import numpy as np
 import torch
 
 from probly.representation.credal_set.common import (
     CategoricalCredalSet,
     ProbabilityIntervalsCredalSet,
 )
-from probly.representation.sampling.torch_sample import TorchTensorSample
+from probly.representation.sample.torch import TorchTensorSample
 
 from .common import create_probability_intervals
 
 if TYPE_CHECKING:
-    from probly.representation.sampling.common_sample import Sample
+    from probly.representation.sample.common import Sample
 
 
 class TorchCategoricalCredalSet(CategoricalCredalSet[torch.Tensor], metaclass=ABCMeta):
@@ -50,7 +51,7 @@ class TorchCategoricalCredalSet(CategoricalCredalSet[torch.Tensor], metaclass=AB
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class TorchProbabilityIntervals(TorchCategoricalCredalSet, ProbabilityIntervalsCredalSet[torch.Tensor]):
+class TorchProbabilityIntervalsCredalSet(TorchCategoricalCredalSet, ProbabilityIntervalsCredalSet[torch.Tensor]):
     """A credal set defined by probability intervals over outcomes.
 
     This represents uncertainty through lower and upper probability bounds for each class.
@@ -123,7 +124,7 @@ class TorchProbabilityIntervals(TorchCategoricalCredalSet, ProbabilityIntervalsC
 
         return shape[0]
 
-    def __array__(self, dtype: torch.dtype | None = None, copy: bool | None = None) -> torch.Tensor:
+    def to_torch(self, dtype: torch.dtype | None = None, copy: bool | None = None) -> torch.Tensor:
         """Get the intervals as a stacked array with shape (..., 2, num_classes).
 
         Args:
@@ -142,6 +143,23 @@ class TorchProbabilityIntervals(TorchCategoricalCredalSet, ProbabilityIntervalsC
             return torch.tensor(stacked, dtype=dtype).clone()
 
         return torch.tensor(stacked, dtype=dtype)
+
+    def __array__(self, dtype: np.dtype | None = None) -> torch.Tensor:
+        """Get the intervals as a stacked array with shape (..., 2, num_classes).
+
+        Args:
+            dtype: Desired data type.
+            copy: Whether to return a copy.
+
+        Returns:
+            Stacked array of [lower_bounds, upper_bounds].
+        """
+        stacked = np.stack([self.lower_bounds.numpy(), self.upper_bounds.numpy()], axis=-2)
+
+        if dtype is None:
+            return stacked
+
+        return stacked.as_type(dtype)
 
     @override
     def lower(self) -> torch.Tensor:
@@ -201,13 +219,13 @@ class TorchProbabilityIntervals(TorchCategoricalCredalSet, ProbabilityIntervalsC
             upper_bounds=self.upper_bounds.to(device),
         )
 
-    def __eq__(self, value: Any) -> Self:  # type: ignore[override]  # noqa: ANN401, PYI032
+    def __eq__(self, value: Any) -> Self:  # ty: ignore[invalid-method-override]  # noqa: ANN401, PYI032
         """Vectorized equality comparison."""
-        return torch.equal(self, value)  # type: ignore[return-value]
+        return torch.equal(self, value)  # ty: ignore[invalid-return-type, invalid-argument-type]
 
     def __hash__(self) -> int:
         """Compute the hash of the intervals."""
         return super().__hash__()
 
 
-create_probability_intervals.register(torch.Tensor, TorchProbabilityIntervals.from_sample)
+create_probability_intervals.register(torch.Tensor, TorchProbabilityIntervalsCredalSet.from_sample)

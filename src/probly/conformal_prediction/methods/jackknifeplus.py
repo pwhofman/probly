@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any, cast
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from probly.conformal_prediction.methods.common import Predictor
+    from probly.conformal_prediction.methods.common import ConformalModel
 
 import numpy as np
 import numpy.typing as npt
@@ -36,18 +36,18 @@ class JackknifeCVBase(ConformalPredictor):
 
     def __init__(
         self,
-        model_factory: Callable[[], Predictor],
+        model_factory: Callable[[], ConformalModel],
         cv: int | None = None,
         random_state: int | None = None,
     ) -> None:
         """Initialize the JackknifeCVBase."""
-        super().__init__(model=None)  # type: ignore[arg-type]
+        super().__init__(model=None)  # ty: ignore[invalid-argument-type]
         self.model_factory = model_factory
         self.cv = cv
         self.random_state = random_state
         self.rng = np.random.default_rng(random_state)
 
-        self.fitted_models: list[Predictor] = []
+        self.fitted_models: list[ConformalModel] = []
         self.fold_assignments: npt.NDArray[np.int_] | None = None
         self.nonconformity_scores: npt.NDArray[np.floating] | None = None
         self.n_folds_actual_: int = 0
@@ -96,7 +96,7 @@ class JackknifeCVBase(ConformalPredictor):
         return assignments
 
     @abstractmethod
-    def predict_fold(self, model: Predictor, x: npt.NDArray) -> npt.NDArray[np.floating]:
+    def predict_fold(self, model: ConformalModel, x: npt.NDArray) -> npt.NDArray[np.floating]:
         """Predict using the given model on the provided data."""
 
     @abstractmethod
@@ -123,7 +123,7 @@ class JackknifeCVBase(ConformalPredictor):
 
             model = self.model_factory()
             if hasattr(model, "fit"):
-                model.fit(x_np[train_mask], y_np[train_mask])  # type: ignore[call-non-callable]
+                model.fit(x_np[train_mask], y_np[train_mask])  # ty: ignore[call-non-callable]
             self.fitted_models.append(model)
 
             prediction = self.predict_fold(model, x_np[val_mask])
@@ -181,7 +181,7 @@ class JackknifePlusRegressor(JackknifeCVBase, ConformalRegressor):
 
     def __init__(
         self,
-        model_factory: Callable[[], Predictor],
+        model_factory: Callable[[], ConformalModel],
         cv: int | None = None,
         random_state: int | None = None,
         score_func: ScoreFunc | None = None,
@@ -192,7 +192,7 @@ class JackknifePlusRegressor(JackknifeCVBase, ConformalRegressor):
         self.score_func = score_func
         self.interval_func = interval_func
 
-    def predict_fold(self, model: Predictor, x: npt.NDArray) -> npt.NDArray[np.floating]:
+    def predict_fold(self, model: ConformalModel, x: npt.NDArray) -> npt.NDArray[np.floating]:
         """Predict using the given model on the provided data."""
         prediction = model(x.tolist())
         return cast("npt.NDArray[np.floating]", self.to_numpy(prediction))
@@ -254,7 +254,7 @@ class JackknifePlusClassifier(JackknifeCVBase, ConformalClassifier):
 
     def __init__(
         self,
-        model_factory: Callable[[], Predictor],
+        model_factory: Callable[[], ConformalModel],
         cv: int | None = None,
         random_state: int | None = None,
         use_accretive: bool = False,
@@ -266,7 +266,7 @@ class JackknifePlusClassifier(JackknifeCVBase, ConformalClassifier):
         self.score_func = score_func
         self.classes: npt.NDArray | None = None
 
-    def predict_fold(self, model: Predictor, x: npt.NDArray) -> npt.NDArray[np.floating]:
+    def predict_fold(self, model: ConformalModel, x: npt.NDArray) -> npt.NDArray[np.floating]:
         """Predict using the given model on the provided data."""
         return cast("npt.NDArray[np.floating]", self.to_numpy(predict_probs(model, x)))
 
