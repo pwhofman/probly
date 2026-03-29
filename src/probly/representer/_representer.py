@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from lazy_dispatch import lazydispatch
 
@@ -14,11 +14,11 @@ if TYPE_CHECKING:
 class Representer[**CtrIn, **In, Out](ABC):
     """Abstract base class for representation builders."""
 
-    predictor: Predictor[In, Out]
+    predictor: Predictor[In, Any]
 
     def __init__(
         self,
-        predictor: Predictor[In, Out],
+        predictor: Predictor[In, Any],
         *_args: CtrIn.args,
         **_kwargs: CtrIn.kwargs,
     ) -> None:
@@ -31,13 +31,17 @@ class Representer[**CtrIn, **In, Out](ABC):
         self.predictor = predictor
 
     @abstractmethod
-    def __call__(self, *args: In.args, **kwargs: In.kwargs) -> Out:
+    def represent(self, *args: In.args, **kwargs: In.kwargs) -> Out:
         """Build a representation for a given input."""
         raise NotImplementedError
 
+    def __call__(self, *args: In.args, **kwargs: In.kwargs) -> Out:
+        """Alias for the represent method."""
+        return self.represent(*args, **kwargs)
+
     def predict(self, *args: In.args, **kwargs: In.kwargs) -> Out:
         """Predict the representation for a given input."""
-        return self(*args, **kwargs)
+        return self.represent(*args, **kwargs)
 
 
 @lazydispatch

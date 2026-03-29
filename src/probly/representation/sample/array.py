@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any, Literal, Self, Unpack, override
 
 import numpy as np
 
-from probly.representation.sample import Sample, SampleAxis, SampleParams, create_sample
+from probly.representation.sample._common import Sample, SampleAxis, SampleParams, create_sample
 from probly.representation.sample.array_axis_tracking import Index, track_axis
 from probly.representation.sample.array_functions import (
     array_function,

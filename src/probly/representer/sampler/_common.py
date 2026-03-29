@@ -7,7 +7,7 @@ from typing import Any, Literal, override
 
 from probly.predictor import IterablePredictor, Predictor, RandomPredictor, predict
 from probly.representation.sample import Sample, SampleFactory, create_sample
-from probly.representer.representer import Representer, representer
+from probly.representer._representer import Representer, representer
 from probly.traverse_nn import nn_compose
 from pytraverse import CLONE, GlobalVariable, function_traverser, lazydispatch_traverser, traverse_with_state
 
@@ -88,7 +88,7 @@ class IterableSampler[**In, Out, S: Sample](Representer[Any, In, S]):
         return predict(self.predictor, *args, **kwargs)
 
     @override
-    def __call__(self, *args: In.args, **kwargs: In.kwargs) -> S:
+    def represent(self, *args: In.args, **kwargs: In.kwargs) -> S:
         """Sample from the ensemble predictor for a given input."""
         return self.sample_factory(
             self._predict(*args, **kwargs),

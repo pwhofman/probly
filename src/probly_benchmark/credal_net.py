@@ -5,18 +5,65 @@ from __future__ import annotations
 import random
 import ssl
 
+import joblib
 from matplotlib import pyplot as plt
 import numpy as np
+from scipy.optimize import minimize
+from scipy.stats import entropy
 import torch
 from torch import nn
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
+import tqdm
 
 from probly.evaluation.tasks import selective_prediction
 from probly.method.credal_net import credal_net
-from probly.quantification.classification import upper_entropy
 from probly.representation.credal_set.torch import TorchProbabilityIntervalsCredalSet
 from probly_benchmark.models import LeNet
+
+# ---------------------------------------------------------------------------
+# Metrics
+# ---------------------------------------------------------------------------
+
+
+def upper_entropy(probs: np.ndarray, base: float = 2, n_jobs: int | None = None) -> np.ndarray:
+    """Compute the upper entropy of a credal set.
+
+    Given the probs array the lower and upper probabilities are computed and the credal set is
+    assumed to be a convex set including all probability distributions in the interval [lower, upper]
+    for all classes. The upper entropy of this set is computed.
+
+    Args:
+        probs: Probability distributions of shape (n_instances, n_samples, n_classes).
+        base: Base of the logarithm. Defaults to 2.
+        n_jobs: Number of jobs for joblib.Parallel. Defaults to None. If -1, all available cores are used.
+
+    Returns:
+        ue: Upper entropy values of shape (n_instances,).
+    """
+    x0 = probs.mean(axis=1)
+    constraints = {"type": "eq", "fun": lambda x: np.sum(x) - 1}
+
+    def compute_upper_entropy(i: int) -> float:
+        def fun(x: np.ndarray) -> np.ndarray:
+            return -entropy(x, base=base)
+
+        bounds = list(zip(np.min(probs[i], axis=0), np.max(probs[i], axis=0), strict=False))
+        res = minimize(fun=fun, x0=x0[i], bounds=bounds, constraints=constraints)
+        return float(-res.fun)
+
+    if n_jobs:
+        ue = joblib.Parallel(n_jobs=n_jobs)(
+            joblib.delayed(compute_upper_entropy)(i)
+            for i in tqdm(range(probs.shape[0]), desc="Instances")  # ty:ignore[call-non-callable]
+        )
+        ue = np.array(ue)
+    else:
+        ue = np.empty(probs.shape[0])
+        for i in tqdm(range(probs.shape[0]), desc="Instances"):  # ty:ignore[call-non-callable]
+            ue[i] = compute_upper_entropy(i)
+    return ue
+
 
 # ---------------------------------------------------------------------------
 # Config

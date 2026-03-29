@@ -17,7 +17,6 @@ if TYPE_CHECKING:
 @dataclass(frozen=True, slots=True, weakref_slot=True)
 class ArrayCategoricalDistribution(
     CategoricalDistribution,
-    np.lib.mixins.NDArrayOperatorsMixin,
 ):
     """A categorical distribution stored as a numpy array.
 
@@ -45,10 +44,10 @@ class ArrayCategoricalDistribution(
             msg = "probabilities must sum to 1."
             raise ValueError(msg)
 
-    @classmethod
-    def from_array(cls, probabilities: np.ndarray | list, dtype: DTypeLike = None) -> Self:
-        """Create a categorical distribution from an array or list."""
-        return cls(probabilities=np.asarray(probabilities, dtype=dtype))
+    @property
+    def num_classes(self) -> int:
+        """Get the number of classes."""
+        return self.probabilities.shape[-1]
 
     def __len__(self) -> int:
         """Return the length along the first dimension."""
@@ -95,7 +94,7 @@ class ArrayCategoricalDistribution(
     @override
     def entropy(self) -> float:
         """Compute the entropy of the categorical distribution."""
-        p = self.probabilities / np.sum(self.probabilities, axis=-1, keepdims=True)
+        p = self.probabilities
         return -np.sum(p * np.log(p), axis=-1)
 
     def sample(
@@ -103,17 +102,15 @@ class ArrayCategoricalDistribution(
         num_samples: int = 1,
         rng: np.random.Generator | None = None,
     ) -> ArraySample:
-        """Sample from the Dirichlet distribution (NumPy backend)."""
+        """Sample from the categorical distribution (NumPy backend)."""
         if rng is None:
             rng = np.random.default_rng()
 
-        gammas = rng.gamma(
-            shape=self.probabilities,
-            scale=1.0,
-            size=(num_samples, *self.probabilities.shape),
+        samples = rng.choice(
+            a=self.probabilities.shape[-1],
+            size=(*self.shape, num_samples),
+            p=self.probabilities,
         )
-
-        samples = gammas / np.sum(gammas, axis=-1, keepdims=True)
 
         return ArraySample(array=samples, sample_axis=0)
 
