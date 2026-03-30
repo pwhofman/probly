@@ -2,21 +2,22 @@
 
 from __future__ import annotations
 
-import random
-import ssl
+from typing import TYPE_CHECKING
 
 from matplotlib import pyplot as plt
 import numpy as np
 import torch
 from torch import nn
-from torch.utils.data import DataLoader
-from torchvision import datasets, transforms
 
 from probly.evaluation.tasks import selective_prediction
 from probly.method.credal_net import credal_net
 from probly.quantification.classification import upper_entropy
 from probly.representation.credal_set.torch import TorchProbabilityIntervalsCredalSet
+from probly_benchmark import data, utils
 from probly_benchmark.models import LeNet
+
+if TYPE_CHECKING:
+    from torch.utils.data import DataLoader
 
 # ---------------------------------------------------------------------------
 # Config
@@ -32,10 +33,11 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # ---------------------------------------------------------------------------
 # Training
 # ---------------------------------------------------------------------------
-def train(model: nn.Module, loader: DataLoader, epochs: int = NUM_EPOCHS, lr: float = LR) -> None:
+def train(model: nn.Module, loader: DataLoader, epochs: int = NUM_EPOCHS, lr: float = LR, delta: float = 0.5) -> None:
     """Train model using NLLLoss on the upper credal probabilities."""
     model.to(DEVICE).train()
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    no_red_criterion = nn.NLLLoss(reduction="none")
     criterion = nn.NLLLoss()
 
     for epoch in range(1, epochs + 1):
@@ -44,7 +46,22 @@ def train(model: nn.Module, loader: DataLoader, epochs: int = NUM_EPOCHS, lr: fl
             optimizer.zero_grad()
             output = model(x.to(DEVICE))
             hi = output[:, NUM_CLASSES:]
-            loss = criterion(hi.log(), y.to(DEVICE))
+            lo = output[:, :NUM_CLASSES]
+            loss_up = criterion(hi.log(), y.to(DEVICE))
+            loss_lo = no_red_criterion(lo.log(), y.to(DEVICE))
+
+            # Select top delta * batch_size samples with highest loss for backward
+            loss_lo_sort, _ = torch.sort(loss_lo, descending=True, dim=-1)
+
+            bound_index = int(np.floor(delta * y.shape[0])) - 1
+            bound_value = loss_lo_sort[bound_index]
+
+            choose_index = torch.greater_equal(loss_lo, bound_value)
+            choose_outputs_lo = lo[choose_index]
+            choose_targets = y[choose_index].to(DEVICE)
+
+            loss_lo_mod = criterion(choose_outputs_lo.log(), choose_targets)
+            loss = loss_lo_mod + loss_up
             loss.backward()
             optimizer.step()
             total_loss += loss.item() * len(y)
@@ -89,21 +106,10 @@ def plot_arc(
 # ---------------------------------------------------------------------------
 def main(seed: int = 0) -> None:
     """Run the full benchmark pipeline."""
-    random.seed(seed)
-    np.random.seed(seed)  # noqa: NPY002
-    np.random.default_rng(seed)
-    torch.manual_seed(seed)
-    torch.mps.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
+    utils.set_seed(seed)
 
     print("Loading MNIST...")
-    ssl._create_default_https_context = ssl._create_unverified_context  # ty:ignore[invalid-assignment]  # noqa: SLF001
-    tf = transforms.ToTensor()
-    train_data = datasets.MNIST("~/.cache/mnist", train=True, download=True, transform=tf)
-    test_data = datasets.MNIST("~/.cache/mnist", train=False, download=True, transform=tf)
-    train_loader = DataLoader(train_data, batch_size=BATCH_SIZE, shuffle=True)
-    test_loader = DataLoader(test_data, batch_size=BATCH_SIZE, shuffle=False)
+    train_loader, test_loader = data.load_mnist(BATCH_SIZE)
 
     print("Building model...")
     base_model = LeNet().to(DEVICE)
