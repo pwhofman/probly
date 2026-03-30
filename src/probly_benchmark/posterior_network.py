@@ -14,7 +14,6 @@ from probly.method.posterior_network import posterior_network
 from probly.quantification.classification import evidential_uncertainty
 from probly.train.evidential.torch import postnet_loss
 from probly_benchmark import data, utils
-from probly_benchmark.models import LeNet
 
 if TYPE_CHECKING:
     from torch.utils.data import DataLoader
@@ -26,6 +25,7 @@ BATCH_SIZE = 128
 NUM_EPOCHS = 5
 LR = 1e-3
 N_BINS = 50
+LATENT_DIM = 16
 DEVICE = utils.get_device()
 
 
@@ -95,13 +95,28 @@ def main(seed: int = 0) -> None:
     train_loader, test_loader = data.load_mnist(BATCH_SIZE)
 
     print("Building model...")
-    base_model = LeNet().to(DEVICE)
+    encoder = nn.Sequential(
+        nn.Conv2d(1, 6, kernel_size=5),  # (1,28,28) -> (6,24,24)
+        nn.Tanh(),
+        nn.AvgPool2d(2),  # -> (6,12,12)
+        nn.Conv2d(6, 16, kernel_size=5),  # -> (16,8,8)
+        nn.Tanh(),
+        nn.AvgPool2d(2),  # -> (16,4,4)
+        nn.Flatten(),
+        nn.Linear(16 * 4 * 4, 120),
+        nn.Tanh(),
+        nn.Linear(120, 84),
+        nn.Tanh(),
+        nn.Linear(84, LATENT_DIM),
+    ).to(DEVICE)
 
     # compute the counts per class in the MNIST training set
     class_counts = np.unique_counts(train_loader.dataset.targets.tolist()).counts.tolist()  # ty: ignore
 
     print("Building Dropout...")
-    postnet_model = posterior_network(base_model, dim=16, num_classes=10, class_counts=class_counts, num_flows=2).to(  # ty: ignore
+    postnet_model = posterior_network(
+        encoder, dim=LATENT_DIM, num_classes=10, class_counts=class_counts, num_flows=2
+    ).to(  # ty: ignore
         DEVICE
     )
 

@@ -766,13 +766,15 @@ class RadialNormalizingFlow(nn.Module):
         """
         alpha = F.softplus(self.alpha)
         beta = -alpha + F.softplus(self.beta)
+        alpha = alpha.view(1, -1, 1)
+        beta = beta.view(1, -1, 1)
         u = z - self.z0
         r = torch.linalg.norm(u, dim=-1, keepdim=True)
         h = 1.0 / (alpha + r)
         z = z + beta * h * u
         h_prime = -h * h
         log_det = (self.dim - 1) * torch.log1p(beta * h) + torch.log1p(beta * h + beta * h_prime * r)
-        return z, log_det
+        return z, log_det.squeeze(-1)
 
 
 class RadialNormalizingFlowStack(nn.Module):
@@ -802,6 +804,7 @@ class RadialNormalizingFlowStack(nn.Module):
             - total_log_det: Tensor of shape [B], the total log-determinant of the Jacobian of
             the transformation applied to z.
         """
+        z = z.unsqueeze(1).expand(-1, self.num_classes, -1)
         total_log_det = torch.zeros((z.shape[0], self.num_classes), device=z.device, dtype=z.dtype)
 
         for flow in self.flows:
@@ -821,7 +824,7 @@ class RadialNormalizingFlowStack(nn.Module):
         """
         z, total_log_det = self.forward(z)
         log_base = -0.5 * z.shape[-1] * math.log(2 * math.pi) - 0.5 * (z**2).sum(dim=-1)
-        return log_base.unsqueeze(-1) + total_log_det
+        return log_base + total_log_det
 
 
 class RegressionHead(nn.Module):
