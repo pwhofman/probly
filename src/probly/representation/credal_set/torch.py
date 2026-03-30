@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any, Self, override
 import numpy as np
 import torch
 
+from probly.representation.credal_set import create_convex_credal_set
 from probly.representation.credal_set._common import (
     CategoricalCredalSet,
     ConvexCredalSet,
@@ -75,6 +76,16 @@ class TorchConvexCredalSet(TorchCategoricalCredalSet, ConvexCredalSet[torch.Tens
             distribution_axis += sample.ndim - 1
 
         tensor = torch.moveaxis(sample.samples, (0, distribution_axis + 1), (-2, -1))
+
+        return cls(tensor=tensor)
+
+    @override
+    @classmethod
+    def from_data(cls, data: torch.Tensor, distribution_axis: int = -1) -> Self:
+        if distribution_axis < 0:
+            distribution_axis += data.ndim - 1
+
+        tensor = torch.moveaxis(data, distribution_axis, -2)
 
         return cls(tensor=tensor)
 
@@ -328,3 +339,4 @@ class TorchProbabilityIntervalsCredalSet(TorchCategoricalCredalSet, ProbabilityI
 
 
 create_probability_intervals.register(torch.Tensor, TorchProbabilityIntervalsCredalSet.from_sample)
+create_convex_credal_set.register(torch.Tensor, TorchConvexCredalSet.from_data)

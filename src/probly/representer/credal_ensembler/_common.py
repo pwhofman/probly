@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, override
 
+from probly.representation.credal_set import create_convex_credal_set
+
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
@@ -35,5 +37,6 @@ class CredalEnsemblingRepresenter[**In, Out, C: ConvexCredalSet](Representer[Any
     @override
     def __call__(self, *args: In.args, **kwargs: In.kwargs) -> C:
         pred = self._predict(*args, **kwargs)
-        sample = compute_representative_set(pred, alpha=self.alpha, distance=self.distance)
-        return sample
+        distributions = compute_representative_set(pred, alpha=self.alpha, distance=self.distance)
+        cset = create_convex_credal_set(distributions)
+        return cset
