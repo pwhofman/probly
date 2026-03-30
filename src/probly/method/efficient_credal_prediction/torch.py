@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 from torch import nn
 
-from .common import LAST_LAYER, register
+from ._common import LAST_LAYER, register
 
 if TYPE_CHECKING:
     from pytraverse import State
