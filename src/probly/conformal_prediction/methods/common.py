@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 
 @lazydispatch
-def predict_probs[T](model: Predictor, x: T) -> T:
+def predict_probs[T](model: ConformalModel, x: T) -> T:
     """Universal probability prediction function.
 
     Args:
@@ -30,15 +30,15 @@ def predict_probs[T](model: Predictor, x: T) -> T:
     """
     # scikit-learn-style probabilities
     if hasattr(model, "predict_proba"):
-        return model.predict_proba(x)  # type: ignore[no-any-return]
+        return model.predict_proba(x)  # ty: ignore[call-non-callable]
 
     # fallback for scikit-learn-like models with custom naming
     if hasattr(model, "predict_probs"):
-        return model.predict_probs(x)  # type: ignore[no-any-return]
+        return model.predict_probs(x)  # ty: ignore[call-non-callable]
 
     # fallback for other models (that only have predict)
     if hasattr(model, "predict"):
-        return model.predict(x)  # type: ignore[no-any-return]
+        return model.predict(x)  # ty: ignore[call-non-callable]
 
     msg = f"Model type {type(model)} is not supported directly. Please register it via @predict_probs.register"
     raise TypeError(msg)
@@ -87,9 +87,9 @@ def _register_flax_models() -> None:
                 x = jnp.asarray(x)
 
             if callable(model):
-                logits = model(x)
+                logits = model(x)  # ty:ignore[call-top-callable]
             elif hasattr(model, "apply"):
-                logits = model.apply(x)  # type: ignore[call-non-callable]
+                logits = model.apply(x)  # ty: ignore[call-non-callable]
             else:
                 msg = "Model must be callable or expose apply()."
                 raise TypeError(msg)
@@ -103,6 +103,7 @@ def _register_flax_models() -> None:
             )
 
             return probs
+
     except ImportError:
         pass  # flax not available, skip registration
 
@@ -110,7 +111,7 @@ def _register_flax_models() -> None:
 _register_flax_models()
 
 
-class Predictor(Protocol):
+class ConformalModel(Protocol):
     """Protocol for models used with ConformalPredictor."""
 
     def __call__(self, x: Sequence[Any]) -> Sequence[Any]:
@@ -122,7 +123,7 @@ class ConformalPredictor(ABC):
 
     def __init__(
         self,
-        model: Predictor,
+        model: ConformalModel,
         nonconformity_func: Callable[..., npt.NDArray[np.floating]] | None = None,
     ) -> None:
         """Initialize the Conformal Predictor."""
@@ -139,9 +140,10 @@ class ConformalPredictor(ABC):
         """Virtual method to calibrate the calibration set.
 
         Args:
-            x_cal (Sequence[Any]): Calibration input data.
-            y_cal (Sequence[Any]): Calibration labels.
-            alpha (float): The significance level.
+            x_cal: Calibration input data.
+            y_cal: Calibration labels.
+            alpha: The significance level.
+
         """
         raise NotImplementedError
 
@@ -157,12 +159,16 @@ class ConformalClassifier(ConformalPredictor, ABC):
 
     @abstractmethod
     def predict(self, x_test: Sequence[Any], alpha: float, probs: Any | None = None) -> npt.NDArray[np.bool_]:  # noqa: ANN401
-        """Generate prediction sets as boolean matrix (n_samples, n_classes) at given significance level.
+        """Generate prediction sets as boolean matrix at given significance level.
 
         Args:
-            x_test (Sequence[Any]): Test input data.
-            alpha (float): Significance level for prediction sets.
-            probs (Any | None): Optional precomputed probabilities from the model.
+            x_test: Test input data.
+            alpha: Significance level for prediction sets.
+            probs: Optional precomputed probabilities from the model.
+
+        Returns:
+            Prediction sets as boolean matrix of shape (n_samples, n_classes).
+
         """
         raise NotImplementedError
 
@@ -172,10 +178,14 @@ class ConformalRegressor(ConformalPredictor, ABC):
 
     @abstractmethod
     def predict(self, x_test: Sequence[Any], alpha: float) -> npt.NDArray[np.floating]:
-        """Generate prediction intervals, e.g. shape (n_samples, 2) for [lower, upper] at given significance level.
+        """Generate prediction intervals at given significance level.
 
         Args:
-            x_test (Sequence[Any]): Test input data.
-            alpha (float): Significance level for prediction intervals.
+            x_test: Test input data.
+            alpha: Significance level for prediction intervals.
+
+        Returns:
+            Prediction intervals of shape (n_samples, 2) with [lower, upper] bounds.
+
         """
         raise NotImplementedError

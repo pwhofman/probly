@@ -10,10 +10,9 @@ import torch
 from torch import nn
 
 from probly.evaluation.tasks import selective_prediction
+from probly.method.dropout import dropout
 from probly.quantification.classification import total_entropy
-from probly.representation import Sampler
-from probly.transformation import dropout
-from probly_benchmark import data, utils
+from probly.representer.sampler import Sampler
 from probly_benchmark.models import LeNet
 
 if TYPE_CHECKING:

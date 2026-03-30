@@ -16,12 +16,15 @@ def torch_collect_outputs(
     """Collect outputs and targets from a model for a given data loader.
 
     Args:
-        model: torch.nn.Module, model to collect outputs from
-        loader: torch.utils.data.DataLoader, data loader to collect outputs from
-        device: torch.device, device to move data to
+        model: Model to collect outputs from.
+        loader: Data loader to collect outputs from.
+        device: Device to move data to.
+
     Returns:
-        outputs: torch.Tensor, shape (n_instances, n_classes), model outputs
-        targets: torch.Tensor, shape (n_instances,), target labels
+        A tuple containing:
+            - outputs: Model outputs of shape (n_instances, n_classes).
+            - targets: Target labels of shape (n_instances,).
+
     """
     outputs = torch.empty(0, device=device)
     targets = torch.empty(0, device=device)
@@ -35,14 +38,14 @@ def torch_reset_all_parameters(module: torch.nn.Module) -> None:
     """Reset all parameters of a torch module.
 
     Args:
-        module: torch.nn.Module, module to reset parameters
+        module: Module to reset parameters.
 
     """
     if hasattr(module, "reset_parameters"):
-        module.reset_parameters()  # type: ignore[operator]
+        module.reset_parameters()  # ty: ignore[call-non-callable]
     for child in module.children():
         if hasattr(child, "reset_parameters"):
-            child.reset_parameters()  # type: ignore[operator]
+            child.reset_parameters()  # ty: ignore[call-non-callable]
 
 
 def temperature_softmax(logits: torch.Tensor, temperature: float | torch.Tensor) -> torch.Tensor:
@@ -52,10 +55,12 @@ def temperature_softmax(logits: torch.Tensor, temperature: float | torch.Tensor)
     of logits is the class dimension.
 
     Args:
-        logits: torch.Tensor, shape (n_instances, n_classes), logits to apply softmax on
-        temperature: float, temperature scaling factor
+        logits: Logits to apply softmax on of shape (n_instances, n_classes).
+        temperature: Temperature scaling factor.
+
     Returns:
-        ts: torch.Tensor, shape (n_instances, n_classes), softmax of logits with temperature scaling applied
+        Softmax of logits with temperature scaling applied of shape (n_instances, n_classes).
+
     """
     ts = F.softmax(logits / temperature, dim=-1)
     return ts

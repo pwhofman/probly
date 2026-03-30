@@ -12,7 +12,7 @@ import pytraverse as t
 from pytraverse import generic
 from pytraverse.decorators import traverser
 
-from . import common as tnn
+from . import _common as tnn
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
@@ -94,7 +94,7 @@ def _module_traverser(
     state: t.State[Module],
     traverse: t.TraverserCallback[Module],
 ) -> t.TraverserResult[Module]:
-    children: Iterator[tuple[str, Module]] = obj.iter_children()  # type: ignore[assignment]
+    children: Iterator[tuple[str, Module]] = obj.iter_children()  # ty: ignore[invalid-assignment]
     if state[TRAVERSE_REVERSED]:
         children = reversed(list(children))
     for name, module in children:
@@ -114,7 +114,7 @@ def _sequential_traverser(
         return _module_traverser(obj, state, traverse)
 
     seq: list[Module] = []
-    children: Iterable[Module] = obj.layers  # type: ignore[assignment]
+    children: Iterable[Module] = obj.layers  # ty: ignore[invalid-assignment]
     traverse_reversed = state[TRAVERSE_REVERSED]
     if traverse_reversed:
         children = reversed(list(children))
@@ -122,7 +122,7 @@ def _sequential_traverser(
     for module in children:
         new_module, state = traverse(module, state)
         if isinstance(new_module, Sequential):
-            sub_children: Iterable[Module] = new_module.layers  # type: ignore[assignment]
+            sub_children: Iterable[Module] = new_module.layers  # ty: ignore[invalid-assignment]
             if traverse_reversed:
                 sub_children = reversed(list(sub_children))
             seq += sub_children
@@ -142,6 +142,6 @@ torch_traverser: t.Traverser[Module] = t.sequential(
     _torch_traverser,
     name="torch_traverser",
 )
-torch_traverser.register = _torch_traverser.register  # type: ignore[attr-defined]
+torch_traverser.register = _torch_traverser.register  # ty: ignore[unresolved-attribute]
 
 tnn.nn_traverser.register(Module, torch_traverser)

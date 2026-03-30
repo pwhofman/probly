@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     import jax.numpy as jnp
     import torch
 
-    from probly.conformal_prediction.methods.common import Predictor
+    from probly.conformal_prediction.methods.common import ConformalModel
 
 # PyTorch
 try:
@@ -107,7 +107,7 @@ class ClassificationScore(ClassificationScoreProtocol):
 
     def __init__(
         self,
-        model: Predictor,
+        model: ConformalModel,
         score_func: Callable[[Any], Any],
         randomize: bool = False,
         random_state: int | None = None,
@@ -259,7 +259,7 @@ class RegressionScore(RegressionScoreProtocol):
 
     def __init__(
         self,
-        model: Predictor,
+        model: ConformalModel,
         score_func: Callable[[Any, Any], Any],
         interval_func: Callable[[Any, float], Any] | None = None,
     ) -> None:

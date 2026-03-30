@@ -13,6 +13,7 @@ from lazy_dispatch.isinstance import (
     _split_lazy_type,
     lazy_issubclass,
 )
+from lazy_dispatch.registry_meta import RegistryMeta
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -56,9 +57,16 @@ class Lazydispatch[T, **In, Out]:
         self.funcname = getattr(func, "__name__", "singledispatch function")
         self.string_registry: dict[str, Callable] = {}
         self.delayed_registration_registry: dict[str | type, RegistrationFunction] = {}
+        self.registry_meta_types: set[RegistryMeta] = set()
         self.dispatch_on = dispatch_on
 
-    def dispatch(self, cls: type, *, delayed_register: bool = True) -> Callable[..., Out]:
+    def dispatch(
+        self,
+        cls: type,
+        *,
+        delayed_register: bool = True,
+        registry_meta_lookup: object = None,
+    ) -> Callable[..., Out]:
         """Find the best available function for the given type or string."""
         delayed_registration_registry = self.delayed_registration_registry
         string_registry = self.string_registry
@@ -80,15 +88,36 @@ class Lazydispatch[T, **In, Out]:
                 registration_func = string_registry.pop(string_type)
                 self.eager_register(real_type, registration_func)
 
-        return self._singledispatcher.dispatch(cls)
+        f = self._singledispatcher.dispatch(cls)
+
+        if registry_meta_lookup is not None and f is self._singledispatcher.registry[object]:
+            # If no implementation was found via the normal dispatch mechanism,
+            # check if an instance-level registry registration applies.
+            registry_meta_match: RegistryMeta | None = None
+            for registry_meta_type in self.registry_meta_types:
+                if isinstance(registry_meta_lookup, registry_meta_type):
+                    if registry_meta_match is not None:
+                        if issubclass(registry_meta_type, registry_meta_match):
+                            registry_meta_match = registry_meta_type
+                            continue
+                        if issubclass(registry_meta_match, registry_meta_type):
+                            continue
+                        msg = f"Ambiguous dispatch: {registry_meta_match!r} or {registry_meta_type!r}."
+                        raise RuntimeError(msg)
+                    registry_meta_match = registry_meta_type
+
+            if registry_meta_match is not None:
+                return self._singledispatcher.dispatch(registry_meta_match)
+
+        return f
 
     def eager_register(self, cls: type | UnionType | Callable, func: Callable | None = None) -> Callable:
         """Eagerly register a new implementation for the given type or union type."""
-        return self._singledispatcher.register(cls, func)  # type: ignore[arg-type]
+        return self._singledispatcher.register(cls, func)  # ty: ignore[no-matching-overload]
 
     def register(self, cls: LazyType | Callable, func: Callable | None = None) -> Callable:
         """Register a new implementation for the given type or string."""
-        if is_valid_dispatch_type(cls):  # type: ignore[arg-type]
+        if is_valid_dispatch_type(cls):  # ty: ignore[invalid-argument-type]
             if func is None:
                 return lambda f: self.register(cls, f)
         else:
@@ -103,7 +132,7 @@ class Lazydispatch[T, **In, Out]:
                     f"on an annotated function."
                 )
                 raise TypeError(msg)
-            func = cls  # type: ignore[assignment]
+            func = cls  # ty: ignore[invalid-assignment]
 
             argname, cls = next(iter(func.__annotations__.items()))
             if not is_valid_dispatch_type(cls):
@@ -113,7 +142,7 @@ class Lazydispatch[T, **In, Out]:
                 msg = f"Invalid annotation for {argname!r}. {cls!r} is not a class or string."
                 raise TypeError(msg)
 
-        types, strings = _split_lazy_type(cls)  # type: ignore[arg-type]
+        types, strings = _split_lazy_type(cls)  # ty: ignore[invalid-argument-type]
 
         if len(types) > 0:
             # Use reduce with operator.or_ to dynamically create a Union (PEP 604 style) and avoid private API usage.
@@ -121,11 +150,15 @@ class Lazydispatch[T, **In, Out]:
 
             self.eager_register(union_type, func)
 
+            for t in types:
+                if isinstance(t, RegistryMeta):
+                    self.registry_meta_types.add(t)
+
         if len(strings) > 0:
             for s in strings:
-                self.string_registry[s] = func  # type: ignore[assignment]
+                self.string_registry[s] = func  # ty: ignore[invalid-assignment]
 
-        return func  # type: ignore[return-value]
+        return func  # ty: ignore[invalid-return-type]
 
     @overload
     def delayed_register(self, cls: LazyType) -> Callable[[RegistrationFunction], RegistrationFunction]: ...
@@ -142,9 +175,9 @@ class Lazydispatch[T, **In, Out]:
         func: RegistrationFunction | None = None,
     ) -> RegistrationFunction | Callable[[RegistrationFunction], RegistrationFunction]:
         """Register a delayed registration function."""
-        if is_valid_dispatch_type(cls):  # type: ignore[arg-type]
+        if is_valid_dispatch_type(cls):  # ty: ignore[invalid-argument-type]
             if func is None:
-                return lambda f: self.delayed_register(cls, f)  # type: ignore[arg-type]
+                return lambda f: self.delayed_register(cls, f)  # ty: ignore[invalid-argument-type]
         else:
             if func is not None:
                 msg = (
@@ -160,7 +193,7 @@ class Lazydispatch[T, **In, Out]:
                     f"on an annotated function."
                 )
                 raise TypeError(msg)
-            func = cls  # type: ignore[assignment]
+            func = cls  # ty: ignore[invalid-assignment]
 
             argname, cls = next(iter(func.__annotations__.items()))
             if not is_valid_dispatch_type(cls):
@@ -170,22 +203,26 @@ class Lazydispatch[T, **In, Out]:
                 msg = f"Invalid annotation for {argname!r}. {cls!r} is not a class or string."
                 raise TypeError(msg)
 
-        types, strings = _split_lazy_type(cls)  # type: ignore[arg-type]
+        types, strings = _split_lazy_type(cls)  # ty: ignore[invalid-argument-type]
 
         for t in types:
-            self.delayed_registration_registry[t] = func  # type: ignore[assignment]
+            self.delayed_registration_registry[t] = func  # ty: ignore[invalid-assignment]
 
         for s in strings:
-            self.delayed_registration_registry[s] = func  # type: ignore[assignment]
+            self.delayed_registration_registry[s] = func  # ty: ignore[invalid-assignment]
 
-        return func  # type: ignore[return-value]
+        return func  # ty: ignore[invalid-return-type]
 
     def __call__(self, *args: In.args, **kwargs: In.kwargs) -> Out:
         """Call the appropriate registered function based on the type of the first argument."""
         if not args:
             msg = f"{self.funcname} requires at least 1 positional argument"
             raise TypeError(msg)
-        return self.dispatch(self.dispatch_on(*args, **kwargs).__class__)(*args, **kwargs)
+        dispatch_value = self.dispatch_on(*args, **kwargs)
+        return self.dispatch(
+            dispatch_value.__class__,
+            registry_meta_lookup=dispatch_value,
+        )(*args, **kwargs)
 
 
 @overload

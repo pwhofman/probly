@@ -7,21 +7,21 @@ from typing import TYPE_CHECKING, Any, Self
 
 import numpy as np
 
-from probly.representation.sampling.array_sample import ArraySample
+from probly.representation.sample.array import ArraySample
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
     from numpy.typing import DTypeLike
 
-    from probly.representation.distribution.array_gaussian import ArrayGaussian
+    from probly.representation.distribution.array_gaussian import ArrayGaussianDistribution
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
 class ArrayGaussianMixture:
     """Gaussian mixture."""
 
-    components: Sequence[ArrayGaussian]
+    components: Sequence[ArrayGaussianDistribution]
     weights: np.ndarray
 
     def __post_init__(self) -> None:

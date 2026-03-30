@@ -9,16 +9,16 @@ from typing import TYPE_CHECKING, Any, Self, override
 import numpy as np
 import torch
 
-from probly.representation.credal_set.common import (
+from probly.representation.credal_set._common import (
     CategoricalCredalSet,
     ProbabilityIntervalsCredalSet,
 )
-from probly.representation.sampling.torch_sample import TorchTensorSample
+from probly.representation.sample.torch import TorchTensorSample
 
-from .common import create_probability_intervals
+from ._common import create_probability_intervals
 
 if TYPE_CHECKING:
-    from probly.representation.sampling.common_sample import Sample
+    from probly.representation.sample._common import Sample
 
 
 class TorchCategoricalCredalSet(CategoricalCredalSet[torch.Tensor], metaclass=ABCMeta):
@@ -219,9 +219,9 @@ class TorchProbabilityIntervalsCredalSet(TorchCategoricalCredalSet, ProbabilityI
             upper_bounds=self.upper_bounds.to(device),
         )
 
-    def __eq__(self, value: Any) -> Self:  # type: ignore[override]  # noqa: ANN401, PYI032
+    def __eq__(self, value: Any) -> Self:  # ty: ignore[invalid-method-override]  # noqa: ANN401, PYI032
         """Vectorized equality comparison."""
-        return torch.equal(self, value)  # type: ignore[return-value]
+        return torch.equal(self, value)  # ty: ignore[invalid-return-type, invalid-argument-type]
 
     def __hash__(self) -> int:
         """Compute the hash of the intervals."""

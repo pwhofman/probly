@@ -15,9 +15,10 @@ def powerset(iterable: Iterable[int]) -> list[tuple[()]]:
     """Generate the power set of a given iterable.
 
     Args:
-        iterable: Iterable
+        iterable: An iterable of integers.
+
     Returns:
-        List[tuple], power set of the given iterable
+        Power set of the given iterable.
 
     """
     s = list(iterable)
@@ -28,10 +29,11 @@ def capacity(q: np.ndarray, a: Iterable[int]) -> np.ndarray:
     """Compute the capacity of set q given set a.
 
     Args:
-        q: numpy.ndarray, shape (n_instances, n_samples, n_classes)
-        a: Iterable, shape (n_classes,), indices indicating subset of classes
+        q: Array of shape (n_instances, n_samples, n_classes).
+        a: Indices indicating subset of classes.
+
     Returns:
-        min_capacity: numpy.ndarray, shape (n_instances,), capacity of q given a
+        Capacity of q given a of shape (n_instances,).
 
     """
     selected_sum = np.sum(q[:, :, a], axis=2)  # ty: ignore[invalid-argument-type]
@@ -43,10 +45,11 @@ def moebius(q: np.ndarray, a: Iterable[int]) -> np.ndarray:
     """Compute the Moebius function of a set q given a set a.
 
     Args:
-        q: numpy.ndarray of shape (num_samples, num_members, num_classes)
-        a: numpy.ndarray, shape (n_classes,), indices indicating subset of classes
+        q: Array of shape (n_instances, n_samples, n_classes).
+        a: Indices indicating subset of classes.
+
     Returns:
-        m_a: numpy.ndarray, shape (n_instances,), moebius value of q given a
+        Moebius value of q given a of shape (n_instances,).
 
     """
     ps_a = powerset(a)  # powerset of A

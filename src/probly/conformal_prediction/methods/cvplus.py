@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from probly.conformal_prediction.methods.common import Predictor
+    from probly.conformal_prediction.methods.common import ConformalModel
     from probly.conformal_prediction.methods.jackknifeplus import (
         IntervalFunc,
         ScoreFunc,
@@ -24,7 +24,7 @@ class CVPlusRegressor(JackknifePlusRegressor):
 
     def __init__(
         self,
-        model_factory: Callable[[], Predictor],
+        model_factory: Callable[[], ConformalModel],
         cv: int = 5,
         random_state: int | None = None,
         score_func: ScoreFunc | None = None,
@@ -39,7 +39,7 @@ class CVPlusClassifier(JackknifePlusClassifier):
 
     def __init__(
         self,
-        model_factory: Callable[[], Predictor],
+        model_factory: Callable[[], ConformalModel],
         cv: int = 5,
         random_state: int | None = None,
         use_accretive: bool = False,

@@ -7,8 +7,8 @@ import logging
 import torch
 from torch import nn
 
-from probly.representation.sampling.sampler import EnsembleSampler
-from probly.transformation import credal_wrapper
+from probly.method import credal_wrapper
+from probly.representer.sampler import IterableSampler
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -36,7 +36,7 @@ if __name__ == "__main__":
     logger.info("Testing the CredalWrapper method.")
     model = SimpleNN(input_size=10, hidden_size=5, output_size=2)
     crewra = credal_wrapper(model, num_members=10)
-    sampler = EnsembleSampler(crewra)
+    sampler = IterableSampler(crewra)
     input_data = torch.randn(1, 10)
-    predictions = sampler.sample(input_data)
+    predictions = sampler.predict(input_data)
     logger.info(predictions)

@@ -9,11 +9,11 @@ def differential_entropy_gaussian(sigma2: float | np.ndarray, base: float = 2) -
     """Compute the differential entropy of a Gaussian distribution given the variance.
 
     Args:
-        sigma2: float or numpy.ndarray shape (n_instances,), variance of the Gaussian distribution
-        base: float, base of the logarithm
+        sigma2: Variance of the Gaussian distribution.
+        base: Base of the logarithm.
 
     Returns:
-        diff_ent: float or numpy.ndarray shape (n_instances,), differential entropy of the Gaussian distribution
+        Differential entropy of the Gaussian distribution.
 
     """
     return 0.5 * np.log(2 * np.pi * np.e * sigma2) / np.log(base)
@@ -29,14 +29,14 @@ def kl_divergence_gaussian(
     """Compute the KL-divergence between two Gaussian distributions.
 
     Args:
-        mu1: float or numpy.ndarray shape (n_instances,), mean of the first Gaussian distribution
-        sigma21: float or numpy.ndarray shape (n_instances,), variance of the first Gaussian distribution
-        mu2: float or numpy.ndarray shape (n_instances,), mean of the second Gaussian distribution
-        sigma22: float or numpy.ndarray shape (n_instances,), variance of the second Gaussian distribution
-        base: float, base of the logarithm
+        mu1: Mean of the first Gaussian distribution.
+        sigma21: Variance of the first Gaussian distribution.
+        mu2: Mean of the second Gaussian distribution.
+        sigma22: Variance of the second Gaussian distribution.
+        base: Base of the logarithm.
 
     Returns:
-        kl_div: float or numpy.ndarray shape (n_instances,), KL-divergence between the two Gaussian distributions
+        KL-divergence between the two Gaussian distributions.
 
     """
     kl_div = 0.5 * np.log(sigma22 / sigma21) / np.log(base) + (sigma21 + (mu1 - mu2) ** 2) / (2 * sigma22) - 0.5
@@ -44,15 +44,15 @@ def kl_divergence_gaussian(
 
 
 def intersection_probability(probs: np.ndarray) -> np.ndarray:
-    """Compute the intersection probability of a credal set based on intervals of lower and upper probabilities.
+    """Compute the intersection probability of a credal set.
 
     Computes the intersection probability from :cite:`cuzzolinIntersectionProbability2022`.
 
     Args:
-        probs: numpy.ndarray, shape (n_instances, n_samples, n_classes), credal sets
+        probs: Credal sets of shape (n_instances, n_samples, n_classes).
 
     Returns:
-        int_probs: numpy.ndarray, shape (n_instances, n_classes), intersection probability of the credal sets
+        Intersection probability of the credal sets of shape (n_instances, n_classes).
 
     """
     lower = np.min(probs, axis=1)

@@ -10,9 +10,9 @@ import torch
 from torch import nn
 
 from probly.evaluation.tasks import selective_prediction
+from probly.method.credal_net import credal_net
 from probly.quantification.classification import upper_entropy
 from probly.representation.credal_set.torch import TorchProbabilityIntervalsCredalSet
-from probly.transformation import credal_net
 from probly_benchmark import data, utils
 from probly_benchmark.models import LeNet
 
