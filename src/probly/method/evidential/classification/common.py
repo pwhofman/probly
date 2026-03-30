@@ -34,4 +34,4 @@ def evidential_classification[T: Predictor](base: T) -> T:
     Returns:
         Predictor, The evidential classification predictor.
     """
-    return evidential_classification_appender(base)
+    return evidential_classification_appender(base)  # ty:ignore[invalid-return-type]

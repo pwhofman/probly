@@ -4,11 +4,23 @@ from __future__ import annotations
 
 from probly.lazy_types import TORCH_TENSOR
 
-from ._common import CategoricalCredalSet, CredalSet, CredalSetType, DiscreteCredalSet, create_probability_intervals
+from ._common import (
+    CategoricalCredalSet,
+    CredalSet,
+    CredalSetType,
+    DiscreteCredalSet,
+    create_convex_credal_set,
+    create_probability_intervals,
+)
 from .array import ArrayCategoricalCredalSet, ArrayDiscreteCredalSet
 
 
 @create_probability_intervals.delayed_register(TORCH_TENSOR)
+def _(_: type) -> None:
+    from . import torch as torch  # noqa: PLC0415
+
+
+@create_convex_credal_set.delayed_register(TORCH_TENSOR)
 def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415
 
@@ -20,5 +32,6 @@ __all__ = [
     "CredalSet",
     "CredalSetType",
     "DiscreteCredalSet",
+    "create_convex_credal_set",
     "create_probability_intervals",
 ]

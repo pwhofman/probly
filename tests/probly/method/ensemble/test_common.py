@@ -18,7 +18,7 @@ def test_unregistered_type_raises(dummy_predictor: Predictor) -> None:
         NotImplementedError,
         match=f"No ensemble generator is registered for type {type(base)}",
     ):
-        ensemble_generator(dummy_predictor)
+        ensemble_generator(dummy_predictor, num_members=4)
 
 
 def test_registered_generator_called(dummy_predictor: Predictor) -> None:

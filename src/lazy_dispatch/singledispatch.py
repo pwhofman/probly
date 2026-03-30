@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from functools import reduce, singledispatch, update_wrapper
 import operator
-from typing import TYPE_CHECKING, Any, Concatenate, get_args, overload
+from typing import TYPE_CHECKING, Any, get_args, overload
 
 from lazy_dispatch.isinstance import (
     LazyType,
@@ -38,14 +38,14 @@ def first_argument[T](x: T, *args: Any, **kwargs: Any) -> T:  # noqa: ANN401, AR
     return x
 
 
-class Lazydispatch[T, **In, Out]:
+class Lazydispatch[**In, Out]:
     """A lazy version of functools.singledispatch that also works with string types."""
 
     def __init__(
         self,
-        func: Callable[Concatenate[T, In], Out] | None = None,
+        func: Callable[In, Out] | None = None,
         *,
-        dispatch_on: Callable[Concatenate[T, In], Any] = first_argument,
+        dispatch_on: Callable[In, Any] = first_argument,
     ) -> None:
         """Initialize the lazy_singledispatch instance."""
         if func is None:
@@ -58,14 +58,14 @@ class Lazydispatch[T, **In, Out]:
         self.string_registry: dict[str, Callable] = {}
         self.delayed_registration_registry: dict[str | type, RegistrationFunction] = {}
         self.registry_meta_types: set[RegistryMeta] = set()
-        self.dispatch_on = dispatch_on
+        self.dispatch_on: Callable[In, Any] = dispatch_on
 
-    def dispatch(
+    def dispatch(  # noqa: C901, PLR0912
         self,
         cls: type,
         *,
         delayed_register: bool = True,
-        registry_meta_lookup: object = None,
+        registry_meta_lookup: object = NotImplemented,
     ) -> Callable[..., Out]:
         """Find the best available function for the given type or string."""
         delayed_registration_registry = self.delayed_registration_registry
@@ -90,10 +90,9 @@ class Lazydispatch[T, **In, Out]:
 
         f = self._singledispatcher.dispatch(cls)
 
-        if registry_meta_lookup is not None and f is self._singledispatcher.registry[object]:
-            # If no implementation was found via the normal dispatch mechanism,
-            # check if an instance-level registry registration applies.
-            registry_meta_match: RegistryMeta | None = None
+        if registry_meta_lookup is not NotImplemented:
+            # Check if an instance-level registry registration applies.
+            registry_meta_match: type | None = None
             for registry_meta_type in self.registry_meta_types:
                 if isinstance(registry_meta_lookup, registry_meta_type):
                     if registry_meta_match is not None:
@@ -107,6 +106,18 @@ class Lazydispatch[T, **In, Out]:
                     registry_meta_match = registry_meta_type
 
             if registry_meta_match is not None:
+                f_registered_type: type = object
+                for registered_type in self._singledispatcher.registry:
+                    registered_func = self._singledispatcher.registry[registered_type]
+                    if registered_func is f and issubclass(registered_type, f_registered_type):
+                        f_registered_type = registered_type
+
+                if issubclass(f_registered_type, registry_meta_match):
+                    return f
+                if not issubclass(registry_meta_match, f_registered_type):
+                    msg = f"Ambiguous dispatch: {f_registered_type!r} or {registry_meta_match!r}."
+                    raise RuntimeError(msg)
+
                 return self._singledispatcher.dispatch(registry_meta_match)
 
         return f
@@ -218,7 +229,7 @@ class Lazydispatch[T, **In, Out]:
         if not args:
             msg = f"{self.funcname} requires at least 1 positional argument"
             raise TypeError(msg)
-        dispatch_value = self.dispatch_on(*args, **kwargs)
+        dispatch_value = self.dispatch_on(*args, **kwargs)  # ty:ignore[invalid-argument-type]
         return self.dispatch(
             dispatch_value.__class__,
             registry_meta_lookup=dispatch_value,
@@ -226,26 +237,28 @@ class Lazydispatch[T, **In, Out]:
 
 
 @overload
-def lazydispatch[T, **In, Out](
-    func: Callable[Concatenate[T, In], Out], *, dispatch_on: Callable = first_argument
-) -> Lazydispatch[T, In, Out]: ...
+def lazydispatch[**In, Out](
+    func: Callable[In, Out],
+    *,
+    dispatch_on: Callable = first_argument,
+) -> Lazydispatch[In, Out]: ...
 
 
 @overload
 def lazydispatch[T, **In, Out](
     *, dispatch_on: Callable = first_argument
-) -> Callable[[Callable[Concatenate[T, In], Out]], Lazydispatch[T, In, Out]]: ...
+) -> Callable[[Callable[In, Out]], Lazydispatch[In, Out]]: ...
 
 
-def lazydispatch[T, **In, Out](
-    func: Callable[Concatenate[T, In], Out] | None = None,
+def lazydispatch[**In, Out](
+    func: Callable[In, Out] | None = None,
     *,
     dispatch_on: Callable = first_argument,
-) -> Lazydispatch[T, In, Out] | Callable[[Callable[Concatenate[T, In], Out]], Lazydispatch[T, In, Out]]:
+) -> Lazydispatch[In, Out] | Callable[[Callable[In, Out]], Lazydispatch[In, Out]]:
     """Create a new lazy_singledispatch or return a decorator."""
     if func is None:
 
-        def decorator(func: Callable[Concatenate[T, In], Out]) -> Lazydispatch[T, In, Out]:
+        def decorator(func: Callable[In, Out]) -> Lazydispatch[In, Out]:
             return Lazydispatch(func, dispatch_on=dispatch_on)
 
         return decorator

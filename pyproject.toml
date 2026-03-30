@@ -69,7 +69,7 @@ test = [
 lint = [
     "ruff>=0.15.8", # for linting
     "prek>=0.3.8",  # for running the linters pre-commit hooks
-    "ty>=0.0.25",   # for static type checking
+    "ty>=0.0.26",   # for static type checking
 ]
 docs = [
     "sphinx>=9.0.0",

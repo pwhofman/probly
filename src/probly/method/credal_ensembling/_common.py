@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from probly.method.ensemble import EnsemblePredictor
 from probly.method.ensemble._common import ensemble
@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from probly.predictor import Predictor
 
 
+@runtime_checkable
 class CredalEnsemblingPredictor[**In, Out](EnsemblePredictor[In, Out], Protocol):
     """A predictor that applies the credal ensembling representer."""
 
