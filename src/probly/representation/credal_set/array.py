@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any, Literal, Self, override
 
 import numpy as np
 
-from probly.representation.credal_set.common import (
+from probly.representation.credal_set._common import (
     CategoricalCredalSet,
     ConvexCredalSet,
     DiscreteCredalSet,
@@ -21,7 +21,7 @@ from probly.representation.sample import ArraySample
 if TYPE_CHECKING:
     from numpy.typing import DTypeLike
 
-    from probly.representation.sample.common import Sample
+    from probly.representation.sample._common import Sample
 
 
 class ArrayCategoricalCredalSet(CategoricalCredalSet[np.ndarray], metaclass=ABCMeta):

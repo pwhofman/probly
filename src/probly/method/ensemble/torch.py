@@ -7,7 +7,7 @@ from torch import nn
 from probly.traverse_nn import nn_compose, nn_traverser
 from pytraverse import CLONE, singledispatch_traverser, traverse
 
-from .common import ensemble_generator
+from ._common import ensemble_generator
 
 reset_traverser = singledispatch_traverser[nn.Module](name="reset_traverser")
 

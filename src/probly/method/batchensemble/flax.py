@@ -6,7 +6,7 @@ from flax import nnx
 
 from probly.layers.flax import BatchEnsembleConv, BatchEnsembleLinear
 
-from .common import register
+from ._common import register
 
 
 def replace_flax_batchensemble_linear(

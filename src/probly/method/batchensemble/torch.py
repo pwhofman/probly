@@ -8,7 +8,7 @@ from torch import nn
 
 from probly.layers.torch import BatchEnsembleConv2d, BatchEnsembleLinear
 
-from .common import register
+from ._common import register
 
 
 def replace_torch_batchensemble_linear(

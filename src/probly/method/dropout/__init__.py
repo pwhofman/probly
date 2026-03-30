@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from probly.lazy_types import FLAX_MODULE, TORCH_MODULE
 
-from .common import DropoutPredictor, dropout, dropout_traverser, register
+from ._common import DropoutPredictor, dropout, dropout_traverser, register
 
 
 ## Torch

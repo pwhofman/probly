@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Literal, Self, override
 
 import numpy as np
 
-from probly.representation.distribution.common import GaussianDistribution
+from probly.representation.distribution._common import GaussianDistribution
 from probly.representation.sample.array import ArraySample
 
 if TYPE_CHECKING:
@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class ArrayGaussian(GaussianDistribution):
+class ArrayGaussianDistribution(GaussianDistribution):
     """Gaussian distribution with array parameters."""
 
     mean: np.ndarray
@@ -51,7 +51,7 @@ class ArrayGaussian(GaussianDistribution):
         mean: ArrayLike,
         var: ArrayLike,
         dtype: DTypeLike | None = None,
-    ) -> ArrayGaussian:
+    ) -> ArrayGaussianDistribution:
         """Create an ArrayGaussian from mean and variance parameters."""
         mean_arr = np.asarray(mean, dtype=dtype if dtype is not None else float)
         var_arr = np.asarray(var, dtype=mean_arr.dtype)
@@ -116,7 +116,7 @@ class ArrayGaussian(GaussianDistribution):
                 return NotImplemented
 
         unpacked: list[np.ndarray | float | int] = []
-        gaussians: list[ArrayGaussian] = []
+        gaussians: list[ArrayGaussianDistribution] = []
 
         for x in inputs:
             if isinstance(x, type(self)):

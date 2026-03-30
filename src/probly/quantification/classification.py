@@ -36,6 +36,27 @@ def total_entropy(probs: np.ndarray, base: float = 2) -> np.ndarray:
     return te
 
 
+def margin_sampling(probs: np.ndarray) -> np.ndarray:
+    """Compute negative margin as an uncertainty measure for active learning.
+
+    The margin is the difference between the two highest class probabilities
+    averaged over samples.  A small margin means the model is uncertain between
+    its top two classes.  The sign is flipped so that higher values correspond
+    to higher uncertainty, matching the convention used by other query functions.
+
+    Args:
+        probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
+
+    Returns:
+        numpy.ndarray of shape (n_instances,) — negative margin, higher is
+        more uncertain.
+    """
+    mean_probs = probs.mean(axis=1)  # (n_instances, n_classes)
+    sorted_probs = np.sort(mean_probs, axis=1)  # ascending
+    margin = sorted_probs[:, -1] - sorted_probs[:, -2]
+    return -margin
+
+
 def conditional_entropy(probs: np.ndarray, base: float = 2) -> np.ndarray:
     """Compute conditional entropy as the aleatoric uncertainty.
 
