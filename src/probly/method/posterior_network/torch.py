@@ -32,5 +32,5 @@ class TorchPosteriorNetwork(nn.Module):
         """Forward pass of posterior network."""
         x = self.encoder(x)
         log_density = self.norm_flow.log_prob(x)
-        alphas = torch.exp(log_density) * self.class_counts
+        alphas = 1 + torch.exp(log_density) * self.class_counts
         return alphas
