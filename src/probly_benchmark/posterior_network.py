@@ -129,10 +129,10 @@ def main(seed: int = 0) -> None:
     with torch.no_grad():
         for x, y in test_loader:
             alpha = postnet_model(x.to(DEVICE))
-            all_alphas.append(alpha.tensor.cpu().numpy())
+            all_alphas.append(alpha.detach().cpu().numpy())
             all_labels.append(y.numpy())
-    alphas = np.array(all_alphas)
-    labels = np.array(all_labels)
+    alphas = np.concatenate(all_alphas, axis=0)
+    labels = np.concatenate(all_labels, axis=0)
     print(f"Sample tensor shape: {alphas.shape}")
 
     print("Evaluating selective prediction...")
