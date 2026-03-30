@@ -19,18 +19,18 @@ class TorchPosteriorNetwork(nn.Module):
         encoder: nn.Module,
         dim: int,
         num_classes: int,
-        class_counts: list | torch.Tensor | None = None,
+        class_counts: list | torch.Tensor,
         num_flows: int = 6,
     ) -> None:
         """Initialize a posterior network."""
         super().__init__()
         self.encoder = encoder
         self.norm_flow = RadialNormalizingFlowStack(dim=dim, num_classes=num_classes, num_flows=num_flows)
-        if class_counts is None:
-            class_counts = torch.ones(num_classes)
+        self.class_counts = torch.tensor(class_counts, dtype=torch.float)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward pass of posterior network."""
         x = self.encoder(x)
-        log_density = self.norm_flow(x)
-        return log_density
+        log_density = self.norm_flow.log_prob(x)
+        alphas = torch.exp(log_density) * self.class_counts
+        return alphas
