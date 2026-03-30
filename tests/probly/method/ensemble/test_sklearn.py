@@ -46,7 +46,7 @@ class TestModelGeneration:
             NotImplementedError,
             match=f"No ensemble generator is registered for type {type(base)}",
         ):
-            ensemble_generator(dummy_predictor)
+            ensemble_generator(dummy_predictor, num_members=4)
 
     @pytest.mark.parametrize(
         "model_fixture",
