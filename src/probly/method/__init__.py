@@ -5,6 +5,7 @@ from probly.method.bayesian import bayesian
 from probly.method.credal_wrapper import credal_wrapper
 from probly.method.dropconnect import dropconnect
 from probly.method.dropout import dropout
+from probly.method.efficient_credal_prediction import efficient_credal_prediction
 from probly.method.ensemble import ensemble
 from probly.method.evidential.classification import evidential_classification
 from probly.method.evidential.regression import evidential_regression
@@ -19,6 +20,7 @@ __all__ = [
     "credal_wrapper",
     "dropconnect",
     "dropout",
+    "efficient_credal_prediction",
     "ensemble",
     "evidential_classification",
     "evidential_regression",
