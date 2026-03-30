@@ -13,7 +13,7 @@ from lazy_dispatch import lazydispatch
 from probly.method.credal_ensembling import CredalEnsemblingPredictor
 from probly.predictor import predict
 from probly.representation.credal_set._common import ConvexCredalSet
-from probly.representer.representer import Representer, representer
+from probly.representer._representer import Representer, representer
 
 
 @lazydispatch
@@ -39,4 +39,4 @@ class CredalEnsemblingRepresenter[**In, Out, C: ConvexCredalSet](Representer[Any
         pred = self._predict(*args, **kwargs)
         distributions = compute_representative_set(pred, alpha=self.alpha, distance=self.distance)
         cset = create_convex_credal_set(distributions)
-        return cset
+        return cset  # ty:ignore[invalid-return-type]

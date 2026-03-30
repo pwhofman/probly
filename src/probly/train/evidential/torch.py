@@ -109,10 +109,10 @@ def unified_evidential_train(
         print(f"Epoch [{epoch + 1}/{epochs}] - Loss: {avg_loss:.4f}")  # noqa: T201
 
 
-@switchdispatch
+@switchdispatch[str, Any, torch.Tensor]
 def compute_loss(
     _mode: str,
-    **_kwargs: dict[str, Any],
+    **_kwargs: Any,  # noqa: ANN401
 ) -> torch.Tensor:
     """Dispatch function for computing the loss based on the selected mode via switchdispatch."""
     msg = 'Enter a valid mode ["PostNet", "NatPostNet", "EDL", "PrNet", "IRD", "DER", "RPN"]'

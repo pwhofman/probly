@@ -22,7 +22,9 @@ class EnsemblePredictor[**In, Out](IterablePredictor[In, Out], Iterable[Predicto
 
 
 @lazydispatch
-def ensemble_generator[**In, Out](base: Predictor[In, Out]) -> EnsemblePredictor[In, Out]:
+def ensemble_generator[**In, Out](
+    base: Predictor[In, Out], num_members: int, reset_params: bool = True
+) -> EnsemblePredictor[In, Out]:
     """Generate an ensemble from a base model."""
     msg = f"No ensemble generator is registered for type {type(base)}"
     raise NotImplementedError(msg)

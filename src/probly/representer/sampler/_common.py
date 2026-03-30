@@ -7,7 +7,7 @@ from typing import Any, Literal, override
 
 from probly.predictor import IterablePredictor, Predictor, RandomPredictor, predict
 from probly.representation.sample import Sample, SampleFactory, create_sample
-from probly.representer.representer import Representer, representer
+from probly.representer._representer import Representer, representer
 from probly.traverse_nn import nn_compose
 from pytraverse import CLONE, GlobalVariable, function_traverser, lazydispatch_traverser, traverse_with_state
 

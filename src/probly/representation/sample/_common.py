@@ -153,7 +153,7 @@ def first_dispatchable_sample(samples: Iterable, **_kwargs: Unpack[SampleParams]
         return next(iter(samples))
 
 
-create_sample: Lazydispatch[Any, ..., Any] = lazydispatch(
+create_sample: Lazydispatch[Any, Any] = lazydispatch(
     ListSample.from_iterable,
     dispatch_on=first_dispatchable_sample,
 )
