@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 if TYPE_CHECKING:
     from probly.predictor import Predictor
@@ -10,6 +10,12 @@ from lazy_dispatch import lazydispatch
 
 if TYPE_CHECKING:
     from probly.predictor import Predictor
+from probly.predictor import EvidentialPredictor
+
+
+@runtime_checkable
+class PosteriorNetworkPredictor[**In, Out](EvidentialPredictor, Protocol):
+    """Protocol for posterior network predictors."""
 
 
 @lazydispatch

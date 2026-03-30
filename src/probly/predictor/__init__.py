@@ -4,7 +4,15 @@ from __future__ import annotations
 
 from probly.lazy_types import FLAX_MODULE, TORCH_MODULE
 
-from ._common import CredalPredictor, DistributionPredictor, IterablePredictor, Predictor, RandomPredictor, predict
+from ._common import (
+    CredalPredictor,
+    DistributionPredictor,
+    EvidentialPredictor,
+    IterablePredictor,
+    Predictor,
+    RandomPredictor,
+    predict,
+)
 
 Predictor.register(
     (
@@ -16,6 +24,7 @@ Predictor.register(
 __all__ = [
     "CredalPredictor",
     "DistributionPredictor",
+    "EvidentialPredictor",
     "IterablePredictor",
     "Predictor",
     "RandomPredictor",

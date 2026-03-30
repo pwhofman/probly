@@ -7,7 +7,7 @@ from torch import nn
 
 from probly.layers.torch import RadialNormalizingFlowStack
 
-from .common import posterior_network_generator
+from ._common import posterior_network_generator
 
 
 @posterior_network_generator.register(nn.Module)

@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from probly.lazy_types import TORCH_MODULE
 
-from . import common
-from .common import posterior_network_generator
+from . import _common
+from ._common import posterior_network_generator
 
 
 ## Torch
@@ -14,7 +14,7 @@ def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415
 
 
-posterior_network = common.posterior_network
+posterior_network = _common.posterior_network
 
 __all__ = [
     "posterior_network",
