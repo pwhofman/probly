@@ -13,10 +13,9 @@ import torch.nn.functional as F
 from tqdm import tqdm
 
 from probly.evaluation.tasks import selective_prediction
+from probly.method import efficient_credal_prediction
 from probly.quantification.classification import upper_entropy
-from probly.transformation import efficient_credal_prediction
-from probly_benchmark import utils
-from probly_benchmark.data import load_mnist
+from probly_benchmark import data, utils
 from probly_benchmark.models import LeNet
 
 if TYPE_CHECKING:
@@ -26,7 +25,7 @@ if TYPE_CHECKING:
 # Config
 # ---------------------------------------------------------------------------
 BATCH_SIZE = 128
-NUM_EPOCHS = 5
+NUM_EPOCHS = 1
 LR = 1e-3
 NUM_CLASSES = 10
 N_BINS = 50
@@ -173,7 +172,7 @@ def main(seed: int = 0) -> None:
     utils.set_seed(seed)
 
     print("Loading MNIST...")
-    train_loader, test_loader = load_mnist(BATCH_SIZE)
+    train_loader, test_loader = data.load_mnist(BATCH_SIZE)
 
     print("Building model...")
     model = LeNet().to(DEVICE)
