@@ -27,7 +27,9 @@ def _normalize_index(index: Index, ndim: int) -> tuple[IndexElement, ...]:
         if idx is Ellipsis:
             before: tuple[IndexElement, ...] = normalized_index[:i]
             after: tuple[IndexElement, ...] = normalized_index[i + 1 :]
-            missing = ndim - (i + len(after))
+            consumed_before = sum(1 for idx in before if idx is not None)
+            consumed_after = sum(1 for idx in after if idx is not None)
+            missing = ndim - (consumed_before + consumed_after)
             normalized_index = before + (slice(None),) * missing + after
             break
 
@@ -187,7 +189,7 @@ def _track_axis_advanced(  # noqa: C901, PLR0912
     if special_axis_indexed:
         if num_new_axes > 1:
             return None  # multidimensional advanced indexing makes special axis ambiguous
-        new_special_axis = indexing_target_axis
+        new_special_axis = 0 if indexing_target_axis == -1 else indexing_target_axis
     elif indexing_target_axis != -2 and indexing_target_axis < special_axis:
         new_special_axis += num_new_axes
 

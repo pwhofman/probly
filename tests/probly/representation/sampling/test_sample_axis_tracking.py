@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
 from probly.representation.sample.array_axis_tracking import track_axis
 
@@ -46,6 +47,10 @@ class TestEllipsis:
     def test_ellipsis_with_axis_removed(self) -> None:
         assert track_axis((..., 10), special_axis=2, ndim=3) is None
         assert track_axis((slice(None), Ellipsis, 3), special_axis=3, ndim=4) is None
+
+    def test_ellipsis_with_trailing_newaxis_preserves_last_axis(self) -> None:
+        idx = (Ellipsis, None)
+        assert track_axis(idx, 3, 4) == 3
 
 
 class TestAdvancedIndexing:
@@ -92,6 +97,16 @@ class TestAdvancedIndexing:
     def test_advanced_higher_dim_boolean_indexing_consumes_axes(self) -> None:
         idx = ([[True], [False]], 7)
         assert track_axis(idx, 2, 3) is None
+
+    def test_noncontiguous_advanced_indices_place_indexed_axis_at_front(self) -> None:
+        idx = (np.array([0, 2]), slice(None), np.array([0, 2]), slice(None))
+        assert track_axis(idx, 0, 4) == 0
+        assert track_axis(idx, 2, 4) == 0
+
+    @pytest.mark.skip(reason="Mixed-rank advanced indexing behavior is intentionally deferred.")
+    def test_mixed_rank_advanced_indexing_tracks_indexed_axis_position(self) -> None:
+        idx = (np.array([[0, 1], [2, 0]]), slice(None), np.array([0, 2]), slice(None))
+        assert track_axis(idx, 2, 4) == 1
 
 
 class TestMixedIndexing:
