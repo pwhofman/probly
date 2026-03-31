@@ -127,7 +127,7 @@ class ArrayCategoricalDistribution(
 
     def __array__(
         self,
-        dtype: DTypeLike = None,
+        dtype: DTypeLike | None = None,
         copy: bool | None = None,
     ) -> np.ndarray:
         """Get the underlying numpy array (probabilities)."""
@@ -149,7 +149,7 @@ class ArrayCategoricalDistribution(
         """Vectorized equality comparison."""
         if isinstance(value, ArrayCategoricalDistribution):
             return np.equal(self.probabilities, value.probabilities)  # ty: ignore[invalid-return-type]
-        return np.equal(self.probabilities, value)  # ty: ignore[invalid-return-type]
+        return np.equal(self.probabilities, value)
 
     def __hash__(self) -> int:
         """Compute the hash of the distribution."""

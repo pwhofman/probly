@@ -164,6 +164,11 @@ class switch[K, V](MutableMapping):  # noqa: N801
         self._registry[key] = value
 
     @override
+    def __delitem__(self, key: K) -> None:
+        """Delete the value for the given key."""
+        del self._registry[key]
+
+    @override
     def __iter__(self) -> Iterator[K]:
         """Return an iterator over the keys in the switch cases."""
         return iter(self._registry)

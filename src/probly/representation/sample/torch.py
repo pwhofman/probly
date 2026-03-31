@@ -192,7 +192,7 @@ class TorchTensorSample(Sample[torch.Tensor]):
         """Alias for :meth:`TorchTensorSample.move_sample_dim`."""
         return self.move_sample_dim(new_sample_axis)
 
-    def __array__(self, dtype: npt.DTypeLike = None, copy: bool | None = None) -> np.ndarray:
+    def __array__(self, dtype: npt.DTypeLike | None = None, copy: bool | None = None) -> np.ndarray:
         """Get the underlying numpy array.
 
         Args:

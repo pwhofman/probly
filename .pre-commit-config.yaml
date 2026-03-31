@@ -19,6 +19,7 @@ repos:
       - id: check-yaml
       - id: check-toml
       - id: end-of-file-fixer
+        exclude: ^src/probly/.+\.pyi$
       - id: trailing-whitespace
       - id: mixed-line-ending
       - id: check-merge-conflict
@@ -33,9 +34,15 @@ repos:
 # Local hook for ty until it's available in pre-commit
   - repo: local
     hooks:
+    -   id: sigx-generate
+        name: sigx-generate
+        language: system
+        entry: .venv/bin/python scripts/generate_method_stubs.py
+        pass_filenames: false
+        args: [ --fail-on-errors ]
     -   id: ty-check
         name: ty-check
         language: system
-        entry: .venv/bin/ty check
+        entry: .venv/bin/ty check src/probly/method src/probly/predictor scripts/generate_method_stubs.py
         pass_filenames: false
         args: [ --verbose, --output-format=full ]

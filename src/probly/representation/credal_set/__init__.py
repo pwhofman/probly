@@ -9,6 +9,7 @@ from ._common import (
     CredalSet,
     CredalSetType,
     DiscreteCredalSet,
+    ProbabilityIntervalsCredalSet,
     create_convex_credal_set,
     create_probability_intervals,
 )
@@ -32,6 +33,7 @@ __all__ = [
     "CredalSet",
     "CredalSetType",
     "DiscreteCredalSet",
+    "ProbabilityIntervalsCredalSet",
     "create_convex_credal_set",
     "create_probability_intervals",
 ]

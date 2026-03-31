@@ -6,7 +6,7 @@ from collections.abc import Iterable
 from typing import Protocol, runtime_checkable
 
 from lazy_dispatch import lazydispatch
-from probly.predictor import Predictor, predict
+from probly.predictor import Predictor, predict, predict_raw
 from probly.predictor._common import IterablePredictor
 
 
@@ -47,7 +47,7 @@ def ensemble[**In, Out](
     return ensemble_generator(base, num_members=num_members, reset_params=reset_params)
 
 
-@predict.register(EnsemblePredictor)
+@predict_raw.register(EnsemblePredictor)
 def predict_list[**In, Out](predictor: EnsemblePredictor[In, Out], *args: In.args, **kwargs: In.kwargs) -> list[Out]:
     """Predict for a list of predictors."""
     return [predict(p, *args, **kwargs) for p in predictor]

@@ -47,7 +47,7 @@ class ArrayDirichletDistribution(
             raise ValueError(msg)
 
     @classmethod
-    def from_array(cls, alphas: np.ndarray | list, dtype: DTypeLike = None) -> Self:
+    def from_array(cls, alphas: np.ndarray | list, dtype: DTypeLike | None = None) -> Self:
         """Create a Dirichlet distribution from an array or list."""
         return cls(alphas=np.asarray(alphas, dtype=dtype))
 
@@ -137,7 +137,7 @@ class ArrayDirichletDistribution(
 
     def __array__(
         self,
-        dtype: DTypeLike = None,
+        dtype: DTypeLike | None = None,
         copy: bool | None = None,
     ) -> np.ndarray:
         """Get the underlying numpy array (alphas)."""
@@ -189,7 +189,7 @@ class ArrayDirichletDistribution(
         """Vectorized equality comparison."""
         if isinstance(value, ArrayDirichletDistribution):
             return np.equal(self.alphas, value.alphas)  # ty: ignore[invalid-return-type]
-        return np.equal(self.alphas, value)  # ty: ignore[invalid-return-type]
+        return np.equal(self.alphas, value)
 
     def __hash__(self) -> int:
         """Compute the hash of the distribution."""

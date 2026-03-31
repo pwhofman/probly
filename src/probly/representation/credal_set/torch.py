@@ -119,7 +119,7 @@ class TorchConvexCredalSet(TorchCategoricalCredalSet, ConvexCredalSet[torch.Tens
 
         return shape[0]
 
-    def __array__(self, dtype: DTypeLike = None, copy: bool | None = None) -> np.ndarray:
+    def __array__(self, dtype: DTypeLike | None = None, copy: bool | None = None) -> np.ndarray:
         """Get the underlying numpy array of vertices."""
         if dtype is None and not copy:
             return self.tensor.numpy()
@@ -267,9 +267,9 @@ class TorchProbabilityIntervalsCredalSet(TorchCategoricalCredalSet, ProbabilityI
         stacked = np.stack([self.lower_bounds.numpy(), self.upper_bounds.numpy()], axis=-2)
 
         if dtype is None:
-            return stacked
+            return stacked  # ty:ignore[invalid-return-type]
 
-        return stacked.as_type(dtype)
+        return stacked.as_type(dtype)  # ty:ignore[unresolved-attribute]
 
     @override
     def lower(self) -> torch.Tensor:

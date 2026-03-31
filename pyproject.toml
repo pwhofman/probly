@@ -67,9 +67,10 @@ test = [
     "packaging",           # for version parsing
 ]
 lint = [
-    "ruff>=0.15.8", # for linting
-    "prek>=0.3.8",  # for running the linters pre-commit hooks
-    "ty>=0.0.26",   # for static type checking
+    "ruff>=0.15.8",                                         # for linting
+    "prek>=0.3.8",                                          # for running the linters pre-commit hooks
+    "ty>=0.0.26",                                           # for static type checking
+    "sigx @ git+https://github.com/Cortys/sigx.git@master",
 ]
 docs = [
     "sphinx>=9.0.0",
@@ -130,6 +131,7 @@ exclude = [
     "docs/build",
     "supporting_files",
     "examples",
+    "*.pyi",
 ]
 
 

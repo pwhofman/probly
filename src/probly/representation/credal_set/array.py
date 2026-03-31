@@ -111,7 +111,7 @@ class ArrayDiscreteCredalSet(ArrayCategoricalCredalSet, DiscreteCredalSet[np.nda
 
         return shape[0]
 
-    def __array__(self, dtype: DTypeLike = None, copy: bool | None = None) -> np.ndarray:
+    def __array__(self, dtype: DTypeLike | None = None, copy: bool | None = None) -> np.ndarray:
         """Get the underlying numpy array.
 
         Args:
@@ -158,7 +158,7 @@ class ArrayDiscreteCredalSet(ArrayCategoricalCredalSet, DiscreteCredalSet[np.nda
 
     def __eq__(self, value: Any) -> Self:  # ty: ignore[invalid-method-override]  # noqa: ANN401, PYI032
         """Vectorized equality comparison."""
-        return np.equal(self, value)  # ty: ignore[invalid-return-type]
+        return np.equal(self, value)
 
     def __hash__(self) -> int:
         """Compute the hash of the ArraySample."""
@@ -224,7 +224,7 @@ class ArrayConvexCredalSet(ArrayCategoricalCredalSet, ConvexCredalSet[np.ndarray
 
         return shape[0]
 
-    def __array__(self, dtype: DTypeLike = None, copy: bool | None = None) -> np.ndarray:
+    def __array__(self, dtype: DTypeLike | None = None, copy: bool | None = None) -> np.ndarray:
         """Get the underlying numpy array of vertices."""
         if dtype is None and not copy:
             return self.array
@@ -258,7 +258,7 @@ class ArrayConvexCredalSet(ArrayCategoricalCredalSet, ConvexCredalSet[np.ndarray
 
     def __eq__(self, value: Any) -> Self:  # ty: ignore[invalid-method-override]  # noqa: ANN401, PYI032
         """Vectorized equality comparison."""
-        return np.equal(self, value)  # ty: ignore[invalid-return-type]
+        return np.equal(self, value)
 
     def __hash__(self) -> int:
         """Compute the hash of the credal set."""
@@ -338,7 +338,7 @@ class ArrayDistanceBasedCredalSet(
 
         return shape[0]
 
-    def __array__(self, dtype: DTypeLike = None, copy: bool | None = None) -> np.ndarray:
+    def __array__(self, dtype: DTypeLike | None = None, copy: bool | None = None) -> np.ndarray:
         """Get the underlying nominal numpy array.
 
         To get the full set representation (center + radius), access .nominal and .radius directly.
@@ -479,7 +479,7 @@ class ArrayProbabilityIntervalsCredalSet(ArrayCategoricalCredalSet, ProbabilityI
 
         return shape[0]
 
-    def __array__(self, dtype: DTypeLike = None, copy: bool | None = None) -> np.ndarray:
+    def __array__(self, dtype: DTypeLike | None = None, copy: bool | None = None) -> np.ndarray:
         """Get the intervals as a stacked array with shape (..., 2, num_classes).
 
         Args:
@@ -556,7 +556,7 @@ class ArrayProbabilityIntervalsCredalSet(ArrayCategoricalCredalSet, ProbabilityI
 
     def __eq__(self, value: Any) -> Self:  # ty: ignore[invalid-method-override]  # noqa: ANN401, PYI032
         """Vectorized equality comparison."""
-        return np.equal(self, value)  # ty: ignore[invalid-return-type]
+        return np.equal(self, value)
 
     def __hash__(self) -> int:
         """Compute the hash of the intervals."""
@@ -585,7 +585,7 @@ class ArraySingletonCredalSet(ArrayCategoricalCredalSet, SingletonCredalSet[np.n
         This method calculates the mean of the samples to produce a single
         precise distribution (singleton).
         """
-        sample = np.moveaxis(sample, distribution_axis, -1)  # ty:ignore[invalid-assignment, invalid-argument-type]
+        sample = np.moveaxis(sample, distribution_axis, -1)  # ty:ignore[invalid-argument-type]
         averaged_array = sample.sample_mean()
 
         return cls(array=averaged_array)
@@ -624,7 +624,7 @@ class ArraySingletonCredalSet(ArrayCategoricalCredalSet, SingletonCredalSet[np.n
 
         return shape[0]
 
-    def __array__(self, dtype: DTypeLike = None, copy: bool | None = None) -> np.ndarray:
+    def __array__(self, dtype: DTypeLike | None = None, copy: bool | None = None) -> np.ndarray:
         """Get the underlying numpy array."""
         if dtype is None and not copy:
             return self.array
@@ -658,7 +658,7 @@ class ArraySingletonCredalSet(ArrayCategoricalCredalSet, SingletonCredalSet[np.n
 
     def __eq__(self, value: Any) -> Self:  # ty: ignore[invalid-method-override]  # noqa: ANN401, PYI032
         """Vectorized equality comparison."""
-        return np.equal(self, value)  # ty: ignore[invalid-return-type]
+        return np.equal(self, value)
 
     def __hash__(self) -> int:
         """Compute the hash of the credal set."""
