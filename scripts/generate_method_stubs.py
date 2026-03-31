@@ -61,9 +61,17 @@ def has_stub_drift(repo_root: Path) -> bool:
 
 def main() -> int:
     """Run stub generation through sigx-gen."""
-    if len(sys.argv) > 2 or (len(sys.argv) == 2 and sys.argv[1] != "check"):
-        return 2
-    check_mode = len(sys.argv) == 2
+    args = sys.argv[1:]
+    check_mode = False
+    if args and args[0] == "check":
+        check_mode = True
+        args = args[1:]
+
+    # Remaining positional args may be file paths passed by pre-commit.
+    # They are intentionally ignored because the hook-level `files` filter
+    # determines when this script should run.
+    _ = args
+
     repo_root = Path(__file__).resolve().parents[1]
     src_root = (repo_root / "src").resolve()
 

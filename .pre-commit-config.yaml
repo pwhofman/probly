@@ -40,6 +40,7 @@ repos:
         language: system
         entry: .venv/bin/python scripts/generate_method_stubs.py
         pass_filenames: false
+        files: ^src/probly/method(?:/[^/]+/_common\.py|/method\.py|/_sigx_transforms\.py)$
     -   id: ty-check
         name: ty-check
         language: system
