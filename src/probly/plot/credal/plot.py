@@ -179,7 +179,6 @@ def _plot_spider(
     series_labels: list[str] | None,
     title: str | None,
     gridlines: bool,
-    envelope: bool,
     ground_truth: ArraySingletonCredalSet | None,
 ) -> Axes:
     radar_cls = _get_radar_axes(num_classes)
@@ -187,7 +186,7 @@ def _plot_spider(
     ax = fig.add_subplot(projection=radar_cls.name)
 
     _setup_spider_axes(ax, labels, config, gridlines=gridlines)
-    _draw_credal_set_spider(data, ax, config, series_labels, num_classes, envelope=envelope)
+    _draw_credal_set_spider(data, ax, config, series_labels, num_classes)
 
     theta = np.linspace(0, 2 * np.pi, num_classes, endpoint=False)
     _draw_overlay_spider(ax, theta, config, num_classes, ground_truth)
@@ -209,7 +208,6 @@ def plot_credal_set(
     config: PlotConfig | None = None,
     show: bool = False,
     gridlines: bool = True,
-    envelope: bool = False,
     ground_truth: ArraySingletonCredalSet | None = None,
 ) -> Axes:
     """Plot an Array credal set.
@@ -247,9 +245,6 @@ def plot_credal_set(
         show: Whether to call ``plt.show()`` after plotting.
         gridlines: Whether to display gridlines. Used for 3-class (ternary) and
             4+-class (spider) plots. Defaults to ``True``.
-        envelope: Whether to draw a filled envelope connecting interval bounds
-            across spokes on spider plots. Only used for 4+-class plots.
-            Defaults to ``False``.
         ground_truth: Optional ground-truth distribution to overlay as a star
             marker. Must be an
             :class:`~probly.representation.credal_set.array.ArraySingletonCredalSet`
@@ -292,7 +287,6 @@ def plot_credal_set(
             series_labels,
             title,
             gridlines,
-            envelope,
             ground_truth,
         )
 

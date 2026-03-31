@@ -16,12 +16,11 @@ The same five credal set types are supported:
 - :class:`~probly.representation.credal_set.array.ArrayDistanceBasedCredalSet` --
   the same bars plus a marker at the nominal distribution.
 - :class:`~probly.representation.credal_set.array.ArrayConvexCredalSet` --
-  member distribution envelopes with an optional min/max envelope.
+  member distribution lines with a filled min/max envelope.
 - :class:`~probly.representation.credal_set.array.ArrayDiscreteCredalSet` --
   individual member distributions as distinct colored lines.
 
-Set ``envelope=True`` to draw a filled envelope connecting the bounds across
-spokes. An optional ``ground_truth`` overlay (as an ``ArraySingletonCredalSet``)
+An optional ``ground_truth`` overlay (as an ``ArraySingletonCredalSet``)
 can be added to any plot type.
 """
 
@@ -56,8 +55,7 @@ plt.show()
 # %%
 # Probability intervals
 # ---------------------
-# Constant-width bars show the per-class probability bounds. By default no
-# envelope is drawn (``envelope=False``).
+# Constant-width bars show the per-class probability bounds.
 
 intervals = ArrayProbabilityIntervalsCredalSet(
     lower_bounds=np.array([[0.05, 0.02, 0.02, 0.01, 0.01, 0.01, 0.01, 0.01]]),
@@ -67,19 +65,17 @@ plot_credal_set(intervals, title="Probability Intervals", labels=CLASS_LABELS)
 plt.show()
 
 # %%
-# Probability intervals with envelope
-# ------------------------------------
-# Setting ``envelope=True`` adds a filled area connecting the bounds across
-# spokes. A ground-truth overlay is also shown.
+# Probability intervals with ground-truth overlay
+# ------------------------------------------------
+# A ground-truth overlay is shown as a star marker.
 
 gt = ArraySingletonCredalSet(
     array=np.array([[1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]]),
 )
 plot_credal_set(
     intervals,
-    title="Probability Intervals (envelope=True)",
+    title="Probability Intervals with Ground Truth",
     labels=CLASS_LABELS,
-    envelope=True,
     ground_truth=gt,
 )
 plt.show()
@@ -98,23 +94,10 @@ plot_credal_set(distance_based, title="Distance-Based", labels=CLASS_LABELS)
 plt.show()
 
 # %%
-# Distance-based with envelope
-# ----------------------------
-# The same credal set with ``envelope=True`` to show the connecting fill.
-
-plot_credal_set(
-    distance_based,
-    title="Distance-Based (envelope=True)",
-    labels=CLASS_LABELS,
-    envelope=True,
-)
-plt.show()
-
-# %%
 # Convex credal set
 # -----------------
-# Multiple vertex distributions drawn as prominent lines. Without
-# ``envelope=True`` only the member lines are shown.
+# Multiple vertex distributions drawn as prominent lines with a filled
+# min/max envelope.
 
 convex = ArrayConvexCredalSet(
     array=np.array([
@@ -129,23 +112,9 @@ plot_credal_set(convex, title="Convex", labels=CLASS_LABELS)
 plt.show()
 
 # %%
-# Convex with envelope
-# --------------------
-# Adding ``envelope=True`` fills the min/max envelope between members.
-
-plot_credal_set(
-    convex,
-    title="Convex (envelope=True)",
-    labels=CLASS_LABELS,
-    envelope=True,
-)
-plt.show()
-
-# %%
 # Discrete credal set
 # -------------------
-# Each member distribution is drawn as its own colored line. The ``envelope``
-# parameter has no effect on discrete sets.
+# Each member distribution is drawn as its own colored line.
 
 discrete = ArrayDiscreteCredalSet(
     array=np.array([
@@ -170,6 +139,5 @@ plot_credal_set(
     title="Custom Styling",
     labels=CLASS_LABELS,
     config=config,
-    envelope=True,
 )
 plt.show()

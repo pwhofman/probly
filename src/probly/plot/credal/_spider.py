@@ -295,34 +295,6 @@ def _draw_convex_spider_envelope(
     ax.fill(tt, rr, facecolor=color, alpha=alpha, edgecolor="none", zorder=1)
 
 
-def _draw_spider_envelope(
-    ax: Axes,
-    theta: np.ndarray,
-    lower: np.ndarray,
-    upper: np.ndarray,
-    color: object,
-    alpha: float,
-) -> None:
-    """Draw a filled band connecting lower and upper bounds across spokes.
-
-    Args:
-        ax: The RadarAxes to draw on.
-        theta: Spoke angles.
-        lower: Lower bound per spoke.
-        upper: Upper bound per spoke.
-        color: Fill color.
-        alpha: Fill transparency.
-    """
-    two_pi = 2.0 * np.pi
-    theta_ext = np.append(theta, theta[0] + two_pi)
-    lower_ext = np.append(lower, lower[0])
-    upper_ext = np.append(upper, upper[0])
-
-    tt = np.concatenate([theta_ext, theta_ext[::-1]])
-    rr = np.concatenate([upper_ext, lower_ext[::-1]])
-    ax.fill(tt, rr, facecolor=color, alpha=alpha, edgecolor="none", zorder=1)
-
-
 def _draw_intervals_on_spokes(
     ax: Axes,
     theta: np.ndarray,
@@ -332,7 +304,6 @@ def _draw_intervals_on_spokes(
     config: PlotConfig,
     *,
     label: str | None = None,
-    envelope: bool = False,
 ) -> None:
     """Draw constant-width bars on each spoke.
 
@@ -341,17 +312,13 @@ def _draw_intervals_on_spokes(
         theta: Spoke angles.
         lower: Lower bounds per class.
         upper: Upper bounds per class.
-        color: Color for bars and envelope.
+        color: Color for bars.
         config: Plot configuration.
         label: Optional legend label.
-        envelope: Whether to draw a filled envelope connecting bounds.
     """
     bar_width = config.spider_bar_width * cast("Any", ax).get_rmax()
     for t, lo, hi in zip(theta, lower, upper, strict=True):
         _draw_spider_bar(ax, float(t), float(lo), float(hi), bar_width, color, config.fill_alpha)
-
-    if envelope:
-        _draw_spider_envelope(ax, theta, lower, upper, color, config.fill_alpha * 0.5)
 
     # Invisible artist for the legend entry
     if label is not None:
@@ -370,8 +337,6 @@ def _draw_credal_set_spider(
     config: PlotConfig,
     series_labels: list[str] | None,
     num_classes: int,
-    *,
-    envelope: bool = False,
 ) -> None:
     """Draw a credal set on spider (radar) axes.
 
@@ -381,7 +346,6 @@ def _draw_credal_set_spider(
         config: Plot configuration.
         series_labels: Optional per-series legend labels.
         num_classes: Number of classes.
-        envelope: Whether to draw filled envelopes connecting bounds.
 
     Raises:
         NotImplementedError: If no handler is registered for the given type.
@@ -397,8 +361,6 @@ def _draw_singleton_spider(
     config: PlotConfig,
     series_labels: list[str] | None,
     num_classes: int,
-    *,
-    envelope: bool = False,  # noqa: ARG001
 ) -> None:
     theta = _get_theta(num_classes)
     arr = data.array.reshape(-1, num_classes)
@@ -418,8 +380,6 @@ def _draw_intervals_spider(
     config: PlotConfig,
     series_labels: list[str] | None,
     num_classes: int,
-    *,
-    envelope: bool = False,
 ) -> None:
     theta = _get_theta(num_classes)
     lower_all = data.lower_bounds.reshape(-1, num_classes)
@@ -434,7 +394,7 @@ def _draw_intervals_spider(
             ax.plot(theta, lower, color=color, linewidth=config.line_width, label=label, zorder=3)
             ax.scatter(theta, lower, color=color, s=config.marker_size, zorder=4)
         else:
-            _draw_intervals_on_spokes(ax, theta, lower, upper, color, config, label=label, envelope=envelope)
+            _draw_intervals_on_spokes(ax, theta, lower, upper, color, config, label=label)
 
 
 @_draw_credal_set_spider.register(ArrayDistanceBasedCredalSet)
@@ -444,8 +404,6 @@ def _draw_distance_based_spider(
     config: PlotConfig,
     series_labels: list[str] | None,
     num_classes: int,
-    *,
-    envelope: bool = False,
 ) -> None:
     theta = _get_theta(num_classes)
     lower_all = data.lower().reshape(-1, num_classes)
@@ -455,9 +413,7 @@ def _draw_distance_based_spider(
     for idx in range(n_sets):
         color = config.color(idx)
         label = series_labels[idx] if series_labels is not None and idx < len(series_labels) else None
-        _draw_intervals_on_spokes(
-            ax, theta, lower_all[idx], upper_all[idx], color, config, label=label, envelope=envelope
-        )
+        _draw_intervals_on_spokes(ax, theta, lower_all[idx], upper_all[idx], color, config, label=label)
         ax.scatter(theta, nominal_all[idx], color=color, s=config.marker_size, zorder=4)
 
 
@@ -468,8 +424,6 @@ def _draw_convex_set_spider(
     config: PlotConfig,
     series_labels: list[str] | None,
     num_classes: int,
-    *,
-    envelope: bool = False,
 ) -> None:
     theta = _get_theta(num_classes)
     arr = data.array.reshape(-1, data.array.shape[-2], num_classes)
@@ -482,8 +436,7 @@ def _draw_convex_set_spider(
         for member in pts:
             ax.plot(theta, member, color=color, linewidth=config.line_width, alpha=0.6, zorder=3)
 
-        if envelope:
-            _draw_convex_spider_envelope(ax, theta, pts, color, config.fill_alpha)
+        _draw_convex_spider_envelope(ax, theta, pts, color, config.fill_alpha)
 
         if label is not None:
             ax.fill([], [], facecolor=color, alpha=config.fill_alpha, label=label)
@@ -496,8 +449,6 @@ def _draw_discrete_set_spider(
     config: PlotConfig,
     series_labels: list[str] | None,
     num_classes: int,
-    *,
-    envelope: bool = False,  # noqa: ARG001
 ) -> None:
     theta = _get_theta(num_classes)
     arr = data.array.reshape(-1, data.array.shape[-2], num_classes)

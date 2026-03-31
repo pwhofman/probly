@@ -242,7 +242,7 @@ class TestEnvelopeGeometry:
                 ]
             ),
         )
-        ax = plot_credal_set(data, envelope=True, title="Envelope crossing test")
+        ax = plot_credal_set(data, title="Envelope crossing test")
         # The plot should have fill artists from the envelope
         fills = [c for c in ax.get_children() if hasattr(c, "get_facecolor")]
         assert len(fills) > 0
