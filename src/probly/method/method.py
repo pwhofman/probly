@@ -37,6 +37,7 @@ class PredictorTransformationMethod[PIn: Predictor, **In, POut: Predictor](Proto
 def predictor_transformation[Pin: Predictor, **In, POut: Predictor](
     permitted_predictor_types: Collection[type[Predictor]] | None,
     preserve_predictor_type: bool = True,
+    auto_infer_predictor_type: bool = True,
 ) -> Callable[[PredictorTransformationMethod[Pin, In, POut]], PredictorTransformationMethod[Pin, In, POut]]:
     """Decorator factory for predictor transformation methods.
 
@@ -44,6 +45,8 @@ def predictor_transformation[Pin: Predictor, **In, POut: Predictor](
         permitted_predictor_types: Optional collection of predictor types that the method can be applied to.
             If None, the method can be applied to any predictor type.
         preserve_predictor_type: Whether to preserve the originalpredictor type of the transformed predictor.
+            Default is True.
+        auto_infer_predictor_type: Whether to automatically infer the predictor type if not explicitly specified.
             Default is True.
 
     Returns:
@@ -66,10 +69,13 @@ def predictor_transformation[Pin: Predictor, **In, POut: Predictor](
         ) -> POut:
             inferred_type = None
             if permitted_predictor_types is not None:
-                for t in permitted_predictor_types:
-                    if isinstance(base, t):
-                        inferred_type = t
-                        break
+                if len(permitted_predictor_types) == 1 and auto_infer_predictor_type:
+                    inferred_type = next(iter(permitted_predictor_types))
+                else:
+                    for t in permitted_predictor_types:
+                        if isinstance(base, t):
+                            inferred_type = t
+                            break
 
             if predictor_type is not None:
                 predictor_type = (

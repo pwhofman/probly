@@ -21,6 +21,7 @@ repos:
       - id: end-of-file-fixer
         exclude: ^src/probly/.+\.pyi$
       - id: trailing-whitespace
+        exclude: ^src/probly/.+\.pyi$
       - id: mixed-line-ending
       - id: check-merge-conflict
   - repo: https://github.com/astral-sh/ruff-pre-commit

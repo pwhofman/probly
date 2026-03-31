@@ -6,6 +6,7 @@ from collections.abc import Iterable
 from typing import Protocol, runtime_checkable
 
 from lazy_dispatch import lazydispatch
+from probly.method.method import predictor_transformation
 from probly.predictor import Predictor, predict, predict_raw
 from probly.predictor._common import IterablePredictor
 
@@ -30,6 +31,7 @@ def ensemble_generator[**In, Out](
     raise NotImplementedError(msg)
 
 
+@predictor_transformation(permitted_predictor_types=None)
 @EnsemblePredictor.register_factory
 def ensemble[**In, Out](
     base: Predictor[In, Out], num_members: int, reset_params: bool = True

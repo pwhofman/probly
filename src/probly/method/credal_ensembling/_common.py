@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from probly.method.ensemble import EnsemblePredictor
 from probly.method.ensemble._common import ensemble
+from probly.method.method import predictor_transformation
+from probly.predictor import ProbabilisticClassifier
 
 if TYPE_CHECKING:
     from probly.predictor import Predictor
@@ -16,6 +18,7 @@ class CredalEnsemblingPredictor[**In, Out](EnsemblePredictor[In, Out], Protocol)
     """A predictor that applies the credal ensembling representer."""
 
 
+@predictor_transformation(permitted_predictor_types=(ProbabilisticClassifier,))
 @CredalEnsemblingPredictor.register_factory
 def credal_ensembling[**In, Out](
     base: Predictor[In, Out], num_members: int, reset_params: bool = True
