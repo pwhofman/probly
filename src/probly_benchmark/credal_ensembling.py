@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 model = LeNet(n_classes=5)
 cep = credal_ensembling(model, num_members=10)
-rep = representer(cep)
+rep = representer(cep, alpha=0.1, distance="euclidean")  # ty: ignore[unknown-argument]
 logger.info(rep)
 inputs = torch.randn(3, 1, 28, 28)
 output = rep.predict(inputs)
