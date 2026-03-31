@@ -804,7 +804,7 @@ class RadialNormalizingFlowStack(nn.Module):
             A tuple containing:
             - z: Transformed tensor of shape [B, D] after applying the flow.
             - total_log_det: Tensor of shape [B], the total log-determinant of the Jacobian of
-            the transformation applied to z.
+              the transformation applied to z.
         """
         z = z.unsqueeze(1).expand(-1, self.num_classes, -1)
         total_log_det = torch.zeros((z.shape[0], self.num_classes), device=z.device, dtype=z.dtype)
