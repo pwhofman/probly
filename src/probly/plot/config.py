@@ -71,6 +71,7 @@ class PlotConfig:
     grid_alpha: float = 0.5
     grid_linestyle: str = "--"
     histogram_alpha: float = 0.6
+    spider_bar_width: float = 0.05
 
     def color(self, index: int) -> str:
         """Return a color from the categorical palette.

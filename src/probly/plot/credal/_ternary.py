@@ -22,13 +22,7 @@ if TYPE_CHECKING:
 
     from probly.plot.config import PlotConfig
 
-    type ArrayCredalSet = (
-        ArrayProbabilityIntervalsCredalSet
-        | ArrayDistanceBasedCredalSet
-        | ArrayConvexCredalSet
-        | ArrayDiscreteCredalSet
-        | ArraySingletonCredalSet
-    )
+    from ._dispatch import ArrayCredalSet
 
 _NUM_TERNARY_CLASSES = 3
 
@@ -90,7 +84,7 @@ def _draw_singleton(
 
     for idx in range(n_sets):
         color = config.color(idx)
-        label = series_labels[idx] if series_labels else None
+        label = series_labels[idx] if series_labels is not None and idx < len(series_labels) else None
         p = pts[idx]
         ternary_ax.scatter(p[0:1], p[1:2], p[2:3], color=color, s=config.marker_size, zorder=3, label=label)
 
@@ -109,7 +103,7 @@ def _draw_intervals(
     for idx in range(n_sets):
         vertices = _compute_interval_vertices(lower_all[idx], upper_all[idx])
         color = config.color(idx)
-        label = series_labels[idx] if series_labels else None
+        label = series_labels[idx] if series_labels is not None and idx < len(series_labels) else None
 
         unique_verts = np.unique(np.round(vertices, decimals=8), axis=0)
         if len(unique_verts) <= 1:
@@ -135,7 +129,7 @@ def _draw_distance_based(
 
     for idx in range(n_sets):
         color = config.color(idx)
-        label = series_labels[idx] if series_labels else None
+        label = series_labels[idx] if series_labels is not None and idx < len(series_labels) else None
         vertices = _compute_interval_vertices(lower_all[idx], upper_all[idx])
 
         unique_verts = np.unique(np.round(vertices, decimals=8), axis=0)
@@ -161,7 +155,7 @@ def _draw_discrete_set(
 
     for idx in range(n_sets):
         color = config.color(idx)
-        label = series_labels[idx] if series_labels else None
+        label = series_labels[idx] if series_labels is not None and idx < len(series_labels) else None
         pts = arr[idx]
         ternary_ax.scatter(pts[:, 0], pts[:, 1], pts[:, 2], color=color, s=config.marker_size, zorder=3, label=label)
 
@@ -178,7 +172,7 @@ def _draw_convex_set(
 
     for idx in range(n_sets):
         color = config.color(idx)
-        label = series_labels[idx] if series_labels else None
+        label = series_labels[idx] if series_labels is not None and idx < len(series_labels) else None
         pts = arr[idx]
 
         pts = np.unique(np.round(pts, decimals=10), axis=0)
