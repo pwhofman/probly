@@ -746,6 +746,8 @@ class RadialNormalizingFlow(nn.Module):
         self.alpha = nn.Parameter(torch.empty(num_classes))
         self.beta = nn.Parameter(torch.empty(num_classes))
 
+        self.reset_parameters()
+
     def reset_parameters(self) -> None:
         """Reset the parameters of the radial normalizing flow."""
         bound = 1 / math.sqrt(self.dim)

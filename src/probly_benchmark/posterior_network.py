@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 # Config
 # ---------------------------------------------------------------------------
 BATCH_SIZE = 128
-NUM_EPOCHS = 5
+NUM_EPOCHS = 10
 LR = 1e-3
 N_BINS = 50
 LATENT_DIM = 16
@@ -42,7 +42,7 @@ def train(model: nn.Module, loader: DataLoader, epochs: int = NUM_EPOCHS, lr: fl
         total_loss = 0.0
         for x, y in loader:
             optimizer.zero_grad()
-            loss = criterion(model(x.to(DEVICE)).log(), y.to(DEVICE))
+            loss = criterion(model(x.to(DEVICE)), y.to(DEVICE))
             loss.backward()
             optimizer.step()
             total_loss += loss.item() * len(y.to(DEVICE))
@@ -114,11 +114,7 @@ def main(seed: int = 0) -> None:
     class_counts = np.unique_counts(train_loader.dataset.targets.tolist()).counts.tolist()  # ty: ignore
 
     print("Building Dropout...")
-    postnet_model = posterior_network(
-        encoder, dim=LATENT_DIM, num_classes=10, class_counts=class_counts, num_flows=2
-    ).to(  # ty: ignore
-        DEVICE
-    )
+    postnet_model = posterior_network(encoder, dim=LATENT_DIM, num_classes=10, class_counts=class_counts).to(DEVICE)  # ty: ignore
 
     print("Training...")
     train(postnet_model, train_loader)
