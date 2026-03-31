@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from flax import nnx
 from flax.nnx import rnglib
 from flax.nnx.module import first_from
@@ -64,8 +66,10 @@ class DropConnectLinear(nnx.Module):
         self.dtype = base_layer.dtype
         self.param_dtype = base_layer.param_dtype
         self.precision = base_layer.precision
-        self.kernel_init = base_layer.kernel_init
-        self.bias_init = base_layer.bias_init
+        if hasattr(base_layer, "kernel_init"):
+            self.kernel_init = base_layer.kernel_init
+        if hasattr(base_layer, "bias_init"):
+            self.bias_init = base_layer.bias_init
         self.dot_general = base_layer.dot_general
         self.promote_dtype = base_layer.promote_dtype
         self.preferred_element_type = base_layer.preferred_element_type
@@ -241,15 +245,13 @@ class BatchEnsembleLinear(nnx.Linear):
         r_init = r_mean + r_std * jax.random.normal(r_key, (self.num_members, base_layer.out_features))
         self.r = nnx.Param(r_init)
 
-    def __call__(
-        self,
-        inputs: jax.Array,
-    ) -> jax.Array:
+    def __call__(self, inputs: jax.Array, out_sharding: Any = None) -> jax.Array:  # noqa: ANN401
         """Forward pass of the BatchEnsembleLinear layer.
 
         Args:
             inputs: jax.Array, the input of shape [B, in_features] or [E, B, in_features].
                 where B is the batch size and E is the ensemble_size.
+            out_sharding: Optional sharding specification for the output array.
 
         Returns:
             jax.Array, Output of shape [E, B, out_features].
@@ -259,7 +261,7 @@ class BatchEnsembleLinear(nnx.Linear):
 
         inputs, kernel, bias = self.promote_dtype((inputs, kernel, bias), dtype=self.dtype)
 
-        dot_general_kwargs = {}
+        dot_general_kwargs = {"out_sharding": out_sharding}
         if self.preferred_element_type is not None:
             dot_general_kwargs["preferred_element_type"] = self.preferred_element_type
 
@@ -392,6 +394,7 @@ class BatchEnsembleConv(nnx.Conv):
     def __call__(
         self,
         inputs: jax.Array,
+        out_sharding: Any = None,  # noqa: ANN401
     ) -> jax.Array:
         """Forward pass of the BatchEnsembleConv layer.
 
@@ -399,6 +402,7 @@ class BatchEnsembleConv(nnx.Conv):
             inputs: jax.Array, the input of shape [B, kernel_size(n-dimensional), in_features]
                 or [E, B, kernel_size(n-dimensional), in_features],
                 where B is the batch size and E is the ensemble_size.
+            out_sharding: Optional sharding specification for the output array.
 
         Returns:
             jax.Array, Output of shape [E, B, kernel_size(n-dimensional), out_features].
@@ -417,7 +421,7 @@ class BatchEnsembleConv(nnx.Conv):
         # Reshape to n-dimensional Convolution (ensemble_size * batch_size)
         x = inputs.reshape(inputs.shape[0] * inputs.shape[1], *inputs.shape[2:])
         # Convolutional Transformation
-        y = super().__call__(x)
+        y = super().__call__(x, out_sharding=out_sharding)
         # Remove bias
         if self.use_bias:
             bias = self.bias.reshape((1,) * (y.ndim - self.bias.ndim) + self.bias.shape)  # ty: ignore[unresolved-attribute]

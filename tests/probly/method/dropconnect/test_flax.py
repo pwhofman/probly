@@ -30,18 +30,16 @@ class TestDropConnectAttributes:
         p = 0.2
         dropconnect_layer = DropConnectLinear(linear_layer, rate=p, rngs=rngs)
 
-        assert dropconnect_layer.kernel == linear_layer.kernel
+        assert dropconnect_layer.kernel is linear_layer.kernel
         assert dropconnect_layer.kernel.shape == linear_layer.kernel.shape
-        assert dropconnect_layer.bias == linear_layer.bias
+        assert dropconnect_layer.bias is linear_layer.bias
         assert dropconnect_layer.in_features == linear_layer.in_features
         assert dropconnect_layer.out_features == linear_layer.out_features
         assert dropconnect_layer.use_bias == linear_layer.use_bias
         assert dropconnect_layer.dtype == linear_layer.dtype
         assert dropconnect_layer.param_dtype == linear_layer.param_dtype
         assert dropconnect_layer.precision == linear_layer.precision
-        assert dropconnect_layer.kernel_init == linear_layer.kernel_init
-        assert dropconnect_layer.bias_init == linear_layer.bias_init
-        assert dropconnect_layer.dot_general == linear_layer.dot_general
+        assert dropconnect_layer.dot_general is linear_layer.dot_general
         assert dropconnect_layer.promote_dtype == linear_layer.promote_dtype
         assert dropconnect_layer.preferred_element_type == linear_layer.preferred_element_type
         assert dropconnect_layer.rate == p

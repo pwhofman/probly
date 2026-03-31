@@ -34,7 +34,7 @@ class PredictorTransformationMethod[PIn: Predictor, **In, POut: Predictor](Proto
 
 
 @stub_transform_factory("probly.method._sigx_transforms:predictor_transformation_transform")
-def predictor_transformation[Pin: Predictor, **In, POut: Predictor](
+def predictor_transformation[Pin: Predictor, **In, POut: Predictor](  # noqa: C901
     permitted_predictor_types: Collection[type[Predictor]] | None,
     preserve_predictor_type: bool = True,
     auto_infer_predictor_type: bool = True,
@@ -88,16 +88,16 @@ def predictor_transformation[Pin: Predictor, **In, POut: Predictor](
             else:
                 predictor_type = inferred_type
 
-            if predictor_type is None:
+            if predictor_type is None and permitted_predictor_types is not None:
                 msg = "Could not determine predictor type. Please specify predictor_type. Supported types: "
                 for predictor in permitted_predictor_types or predictor_registry.values():
                     msg += f"{predictor.__name__}, "
                 raise ValueError(msg)
-
-            base = predictor_type.register_instance(base)
+            if predictor_type is not None:
+                base = predictor_type.register_instance(base)
             res = func(base, *args, **kwargs)
 
-            if preserve_predictor_type:
+            if preserve_predictor_type and predictor_type is not None:
                 res = predictor_type.register_instance(res)
 
             return res
