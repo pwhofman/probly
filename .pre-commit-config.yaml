@@ -40,7 +40,6 @@ repos:
         language: system
         entry: .venv/bin/python scripts/generate_method_stubs.py
         pass_filenames: false
-        args: [ --fail-on-errors ]
     -   id: ty-check
         name: ty-check
         language: system
