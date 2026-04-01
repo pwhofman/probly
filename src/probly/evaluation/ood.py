@@ -8,12 +8,14 @@ import numpy as np
 import sklearn.metrics as sm
 from sklearn.metrics import precision_recall_curve, roc_curve
 
-from probly.visualization.ood import plot_histogram, plot_pr_curve, plot_roc_curve
+from probly.plot.ood import plot_histogram, plot_pr_curve, plot_roc_curve
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
     from matplotlib.figure import Figure
+
+    from probly.plot.config import PlotConfig
 
 
 def out_of_distribution_detection_auroc(in_distribution: np.ndarray, out_distribution: np.ndarray) -> float:
@@ -261,6 +263,7 @@ def visualize_ood(
     out_distribution: np.ndarray | list[float],
     plot_types: list[str] | None = None,
     invert_scores: bool = True,
+    config: PlotConfig | None = None,
 ) -> dict[str, Figure]:
     """Generate visualization plots from OOD scores.
 
@@ -272,6 +275,8 @@ def visualize_ood(
         invert_scores: If True (default), assumes scores are 'Confidence' (High = ID).
             They will be inverted (1.0 - score) for metrics where OOD is the positive class.
             If False, assumes scores are 'Anomaly Scores' (High = OOD).
+        config: Plot configuration shared across all generated figures.  Defaults
+            to ``PlotConfig()`` when ``None``.
 
     Returns:
         A dict containing matplotlib Figures for the requested plots.
@@ -285,7 +290,7 @@ def visualize_ood(
     figures = {}
 
     if "hist" in requested_plots:
-        figures["hist"] = plot_histogram(id_scores=id_s, ood_scores=ood_s)
+        figures["hist"] = plot_histogram(id_scores=id_s, ood_scores=ood_s, config=config)
 
     if "roc" in requested_plots or "pr" in requested_plots:
         if invert_scores:
@@ -303,11 +308,11 @@ def visualize_ood(
             auroc = sm.auc(fpr, tpr)
             idx_95 = np.where(tpr >= 0.95)[0]
             fpr95 = fpr[idx_95[0]] if len(idx_95) > 0 else None
-            figures["roc"] = plot_roc_curve(fpr=fpr, tpr=tpr, auroc=auroc, fpr95=fpr95)
+            figures["roc"] = plot_roc_curve(fpr=fpr, tpr=tpr, auroc=auroc, fpr95=fpr95, config=config)
 
         if "pr" in requested_plots:
             precision, recall, _ = precision_recall_curve(labels, preds)
             aupr = sm.auc(recall, precision)
-            figures["pr"] = plot_pr_curve(recall=recall, precision=precision, aupr=aupr)
+            figures["pr"] = plot_pr_curve(recall=recall, precision=precision, aupr=aupr, config=config)
 
     return figures

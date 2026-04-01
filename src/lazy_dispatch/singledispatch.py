@@ -91,6 +91,8 @@ class Lazydispatch[T, **In, Out]:
         f = self._singledispatcher.dispatch(cls)
 
         if registry_meta_lookup is not None and f is self._singledispatcher.registry[object]:
+            # If no implementation was found via the normal dispatch mechanism,
+            # check if an instance-level registry registration applies.
             registry_meta_match: RegistryMeta | None = None
             for registry_meta_type in self.registry_meta_types:
                 if isinstance(registry_meta_lookup, registry_meta_type):

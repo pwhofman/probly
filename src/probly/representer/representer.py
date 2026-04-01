@@ -35,6 +35,10 @@ class Representer[**CtrIn, **In, Out](ABC):
         """Build a representation for a given input."""
         raise NotImplementedError
 
+    def predict(self, *args: In.args, **kwargs: In.kwargs) -> Out:
+        """Predict the representation for a given input."""
+        return self(*args, **kwargs)
+
 
 @lazydispatch
 def representer[**CtrIn, **In, Out](predictor: Predictor[In, Out]) -> Representer[CtrIn, In, Out]:

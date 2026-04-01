@@ -6,7 +6,7 @@ from typing import Any
 
 from torch import nn
 
-from .common import register
+from ._common import register
 
 
 def prepend_torch_dropout(

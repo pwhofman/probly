@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 from flax import nnx
 
-from . import common as sampler
+from ._common import CLEANUP_FUNCS, sampling_preparation_traverser
 
 if TYPE_CHECKING:
     from lazy_dispatch.isinstance import LazyType
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 def _enforce_train_mode(obj: nnx.Module, state: State) -> tuple[nnx.Module, State]:
     if getattr(obj, "deterministic", False):
         obj.deterministic = False  # ty: ignore[unresolved-attribute]
-        state[sampler.CLEANUP_FUNCS].add(lambda: setattr(obj, "deterministic", True))
+        state[CLEANUP_FUNCS].add(lambda: setattr(obj, "deterministic", True))
         return obj, state
     return obj, state
 
@@ -26,7 +26,7 @@ def register_forced_train_mode(cls: LazyType) -> None:
 
     This enables Monte Carlo sampling techniques like MC Dropout :cite:`galDropoutBayesian2016`.
     """
-    sampler.sampling_preparation_traverser.register(
+    sampling_preparation_traverser.register(
         cls,
         _enforce_train_mode,
     )

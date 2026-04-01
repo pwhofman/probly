@@ -18,6 +18,7 @@ EXCLUDED_ATTRS = frozenset(
     {
         "_subclass_registry",
         "_instance_registry",
+        "_negative_instance_registry",
         "_string_registry",
         "_structural_checking",
     }
@@ -53,6 +54,12 @@ def _lazy_subclass_hook[T](cls: RegistryMeta[T], subclass: type, /) -> bool:
     return NotImplemented
 
 
+@classmethod
+def _nop_instancehook[T](_cls: RegistryMeta[T], _instance: object, /) -> bool:
+    """A __instancehook__ that does nothing."""
+    return NotImplemented
+
+
 def _lazy_subclass_hook_with_pre_hook[T](
     pre_hook: Callable[[RegistryMeta[T], type], bool],
 ) -> Callable[[RegistryMeta[T], type], bool]:
@@ -65,7 +72,7 @@ def _lazy_subclass_hook_with_pre_hook[T](
         if pre_res is not NotImplemented:
             return pre_res
 
-        return _lazy_subclass_hook(cls, subclass)
+        return _lazy_subclass_hook.__func__(cls, subclass)
 
     return hook
 
@@ -75,6 +82,7 @@ class RegistryMeta[T: object](ABCMeta):
 
     _subclass_registry: WeakSet[type]
     _instance_registry: WeakSet[T]
+    _negative_instance_registry: WeakSet[object]
     _string_registry: set[str]
 
     def __init__(
@@ -89,6 +97,7 @@ class RegistryMeta[T: object](ABCMeta):
         super().__init__(name, bases, namespace, **kwargs)
         cls._subclass_registry: WeakSet[type] = WeakSet()
         cls._instance_registry: WeakSet[T] = WeakSet()
+        cls._negative_instance_registry: WeakSet[object] = WeakSet()
         cls._string_registry: set[str] = set()
 
         if not is_protocol(cls):
@@ -124,24 +133,40 @@ class RegistryMeta[T: object](ABCMeta):
             cls._register(t)
 
         cls._register_lazy(strings)
+        cls._negative_instance_registry = WeakSet()
 
         if isinstance(subclass, type):
             return subclass
         return cls
 
-    def register_instance[Q](cls: RegistryMeta[T], instance: Q) -> Q:
-        """Register an instance in the registry."""
-        if isinstance(instance, cls):
-            return instance
-
+    def _register_instance[Q](cls: RegistryMeta[T], instance: Q) -> Q:
         try:
             cls._instance_registry.add(instance)  # ty:ignore[invalid-argument-type]
+            cls._negative_instance_registry.discard(instance)
         except TypeError as err:
             raise RegistrationError(
                 registry=cls,
                 target=instance,
             ) from err
         return instance
+
+    def _negative_register_instance[Q](cls: RegistryMeta[T], instance: Q) -> Q:
+        try:
+            cls._negative_instance_registry.add(instance)
+            cls._instance_registry.discard(instance)  # ty:ignore[invalid-argument-type]
+        except TypeError as err:
+            raise RegistrationError(
+                registry=cls,
+                target=instance,
+            ) from err
+        return instance
+
+    def register_instance[Q](cls: RegistryMeta[T], instance: Q) -> Q:
+        """Register an instance in the registry."""
+        if isinstance(instance, cls):
+            return instance
+
+        return cls._register_instance(instance)
 
     def register_factory[**In, Q](cls: RegistryMeta[T], func: Callable[In, Q]) -> Callable[In, Q]:
         """Decorator to annotate the results of a function with the registry type."""
@@ -156,8 +181,24 @@ class RegistryMeta[T: object](ABCMeta):
         try:
             if instance in cls._instance_registry:
                 return True
+            if instance in cls._negative_instance_registry:
+                return False
         except TypeError:
             pass
+
+        instancehook = getattr(cls, "__instancehook__", None)
+        if instancehook is not None:
+            res = instancehook(instance)
+            if res is not NotImplemented:
+                try:
+                    if res:
+                        cls._register_instance(instance)
+                    else:
+                        cls._negative_register_instance(instance)
+                except RegistrationError:
+                    pass
+
+                return res
 
         for subclass in cls._subclass_registry:
             if isinstance(instance, subclass):
@@ -244,6 +285,11 @@ class ProtocolRegistryMeta[T](RegistryMeta[T], type(Protocol)):
 
         if protocol_attrs is not None:
             cls.__protocol_attrs__ = protocol_attrs - EXCLUDED_ATTRS
+
+        if hasattr(cls, "__instancehook__") and "__instancehook__" not in cls.__dict__:
+            # For Protocols, __instancehook__ should not be inherited to derived ProtocolRegistries.
+            # This mirrors the behavior of __subclasshook__ in Protocols.
+            cls.__instancehook__ = _nop_instancehook
 
     def _register_lazy(cls, subclass_strings: set[str]) -> None:
         if len(subclass_strings) > 0 and cls._structural_checking:

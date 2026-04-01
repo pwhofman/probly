@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from sklearn.base import BaseEstimator, clone
 
-from .common import ensemble_generator
+from ._common import ensemble_generator
 
 
 @ensemble_generator.register(BaseEstimator)

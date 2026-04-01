@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from probly.lazy_types import FLAX_MODULE, TORCH_MODULE
 
-from .common import SubensemblePredictor, subensemble, subensemble_generator
+from ._common import SubensemblePredictor, subensemble, subensemble_generator
 
 
 ## Torch

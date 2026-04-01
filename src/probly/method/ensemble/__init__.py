@@ -2,9 +2,16 @@
 
 from __future__ import annotations
 
-from probly.lazy_types import FLAX_MODULE, SKLEARN_MODULE, TORCH_MODULE
+from probly.lazy_types import FLAX_LIST, FLAX_MODULE, SKLEARN_MODULE, TORCH_MODULE, TORCH_MODULE_LIST
 
-from .common import EnsemblePredictor, ensemble, ensemble_generator
+from ._common import EnsemblePredictor, ensemble, ensemble_generator
+
+EnsemblePredictor.register(
+    (
+        TORCH_MODULE_LIST,
+        FLAX_LIST,
+    )
+)
 
 
 ## Torch

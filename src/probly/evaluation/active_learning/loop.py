@@ -35,7 +35,7 @@ def active_learning_loop(
 
     The initial labeled set is drawn randomly (``pool_size`` samples) from
     *x_train* / *y_train*; the remaining training samples form the unlabeled
-    pool.  At each iteration the model is retrained on the growing labeled
+    pool. At each iteration the model is retrained on the growing labeled
     set, uncertainty is scored on the pool, and the ``pool_size`` most
     uncertain samples are queried and moved to the labeled set.  Performance
     is measured on the fixed *x_test* / *y_test* split.
@@ -74,14 +74,11 @@ def active_learning_loop(
             tie-breaking.
 
     Returns:
-        x_labeled: Final labeled features after all queries, shape
-            ``(pool_size + n_iterations * pool_size, n_features)``.
+        x_labeled: Final labeled features, shape ``(pool_size + n_iterations * pool_size, n_features)``.
         y_labeled: Corresponding labels for the labeled set.
-        scores: Per-iteration performance on *x_test* / *y_test* in
-            higher-is-better convention (error metrics are negated).
-        normalized_auc: Area under the score curve divided by the area of the
-            ideal curve.  Equals ``1.0`` when the strategy performs at its
-            best level throughout; lower values indicate slower improvement.
+        scores: Per-iteration test-set performance in higher-is-better convention (error metrics are negated).
+        normalized_auc: Normalized AUC of scores; ``1.0`` = best performance throughout, lower = slower to improve.
+
     """
     x_train = to_numpy(x_train)
     y_train = to_numpy(y_train)

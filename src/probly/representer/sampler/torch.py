@@ -8,7 +8,7 @@ import torch.nn
 
 from probly.layers.torch import DropConnectLinear
 
-from .common import CLEANUP_FUNCS, sampling_preparation_traverser
+from ._common import CLEANUP_FUNCS, sampling_preparation_traverser
 
 if TYPE_CHECKING:
     from lazy_dispatch.isinstance import LazyType

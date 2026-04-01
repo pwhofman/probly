@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from .common import CredalEnsemblingPredictor, credal_ensembling
+from ._common import CredalEnsemblingPredictor, credal_ensembling
 
 __all__ = [
     "CredalEnsemblingPredictor",

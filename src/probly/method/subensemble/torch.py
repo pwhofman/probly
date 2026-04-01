@@ -8,7 +8,7 @@ from probly.method.ensemble import ensemble
 from probly.traverse_nn import nn_traverser
 from pytraverse import traverse
 
-from .common import subensemble_generator
+from ._common import subensemble_generator
 
 
 @subensemble_generator.register(nn.Module)

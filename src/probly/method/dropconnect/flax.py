@@ -6,7 +6,7 @@ from flax.nnx import Linear, Rngs, rnglib
 
 from probly.layers.flax import DropConnectLinear
 
-from .common import register
+from ._common import register
 
 
 def replace_flax_dropconnect(
