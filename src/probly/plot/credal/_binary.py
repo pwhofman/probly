@@ -20,13 +20,7 @@ if TYPE_CHECKING:
 
     from probly.plot.config import PlotConfig
 
-    type ArrayCredalSet = (
-        ArrayProbabilityIntervalsCredalSet
-        | ArrayDistanceBasedCredalSet
-        | ArrayConvexCredalSet
-        | ArrayDiscreteCredalSet
-        | ArraySingletonCredalSet
-    )
+    from ._dispatch import ArrayCredalSet
 
 _NUM_BINARY_CLASSES = 2
 _BINARY_Y_HEIGHT = 0.05
@@ -118,7 +112,7 @@ def _draw_singleton_binary(
     n_sets = arr.shape[0]
     for idx in range(n_sets):
         color = config.color(idx)
-        label = series_labels[idx] if series_labels else None
+        label = series_labels[idx] if series_labels is not None and idx < len(series_labels) else None
         ax.scatter(arr[idx, 1], 0, color=color, s=config.marker_size, zorder=3, label=label)
 
 
@@ -134,7 +128,7 @@ def _draw_intervals_binary(
     n_sets = lower_all.shape[0]
     for idx in range(n_sets):
         color = config.color(idx)
-        label = series_labels[idx] if series_labels else None
+        label = series_labels[idx] if series_labels is not None and idx < len(series_labels) else None
         low, high = lower_all[idx, 1], upper_all[idx, 1]
         if np.isclose(low, high):
             ax.scatter(low, 0, color=color, s=config.marker_size, zorder=3, label=label)
@@ -155,7 +149,7 @@ def _draw_distance_based_binary(
     n_sets = lower_all.shape[0]
     for idx in range(n_sets):
         color = config.color(idx)
-        label = series_labels[idx] if series_labels else None
+        label = series_labels[idx] if series_labels is not None and idx < len(series_labels) else None
         _draw_binary_interval(ax, lower_all[idx, 1], upper_all[idx, 1], color, config, label=label)
         ax.scatter(nominal_all[idx, 1], 0, color=color, s=config.marker_size, zorder=3)
 
@@ -171,7 +165,7 @@ def _draw_vertex_set_binary(
     n_sets = arr.shape[0]
     for idx in range(n_sets):
         color = config.color(idx)
-        label = series_labels[idx] if series_labels else None
+        label = series_labels[idx] if series_labels is not None and idx < len(series_labels) else None
         p2_values = arr[idx, :, 1]
         _draw_binary_interval(ax, float(p2_values.min()), float(p2_values.max()), color, config, label=label)
         ax.scatter(p2_values, np.zeros_like(p2_values), color=color, s=config.marker_size, zorder=3)

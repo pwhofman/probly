@@ -13,6 +13,10 @@ This role of this file is to describe common mistakes and confusion points that 
 ```bash
 rm -rf docs/source/api && uv run sphinx-build -b html docs/source docs/build/html
 ```
+Running docs building with errors on warning (to see if CI passes):
+```bash
+rm -rf docs/source/api && uv run sphinx-build -b html docs/source docs/build/html -W
+```
 
 ### Run Pre-commit (takes only 1s)
 ```bash
