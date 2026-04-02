@@ -75,13 +75,13 @@ def resolve_metric(metric: str | MetricFn | None) -> tuple[MetricFn, str | None]
 def default_query_fn(model: Estimator) -> QueryFn:
     """Return a default uncertainty query function inferred from *model*.
 
-    Uses :func:`~probly.quantification.classification.margin_sampling` for
+    Uses :func:`~probly.quantification.classification.margin` for
     models that expose ``predict_proba``, and
     :func:`~probly.quantification.regression.variance_conditional_expectation`
     otherwise.
     """
     if hasattr(model, "predict_proba"):
-        return qc_cls.margin_sampling
+        return qc_cls.margin
     return qc_reg.variance_conditional_expectation
 
 

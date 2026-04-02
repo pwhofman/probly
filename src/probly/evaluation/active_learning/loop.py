@@ -54,7 +54,7 @@ def active_learning_loop(
             ``(outputs: np.ndarray) -> np.ndarray`` where *outputs* has shape
             ``(n_instances, n_samples, n_outputs)`` and the return value has
             shape ``(n_instances,)``.  Defaults to
-            :func:`~probly.quantification.classification.margin_sampling` for
+            :func:`~probly.quantification.classification.margin` for
             classifiers (models with ``predict_proba``) and
             :func:`~probly.quantification.regression.variance_conditional_expectation`
             for regressors.

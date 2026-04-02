@@ -18,6 +18,7 @@ from sklearn.datasets import make_moons
 from sklearn.ensemble import GradientBoostingClassifier, GradientBoostingRegressor
 
 from probly.evaluation.active_learning import active_learning_loop
+import probly.quantification.classification as qc_cls
 
 # ---------------------------------------------------------------------------
 # Config
@@ -35,6 +36,16 @@ N_SEEDS = 10
 def random_query_fn(outputs: np.ndarray) -> np.ndarray:
     """Return uniform random scores — effectively random sampling."""
     return np.ones(outputs.shape[0])
+
+
+# ---------------------------------------------------------------------------
+# Strategy style registry
+# ---------------------------------------------------------------------------
+_STRATEGY_STYLES: dict[str, dict] = {
+    "margin": {"color": "C0", "label": "Margin sampling", "linestyle": "-"},
+    "entropy": {"color": "C2", "label": "Entropy sampling", "linestyle": "-."},
+    "random": {"color": "C1", "label": "Random sampling", "linestyle": "--"},
+}
 
 
 # ---------------------------------------------------------------------------
@@ -74,45 +85,39 @@ def run_seeds(
     make_dataset: Callable[..., tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]],
     make_model: Callable[[int], Any],
     metric: str,
+    strategies: dict[str, Any],
     n_seeds: int = N_SEEDS,
 ) -> dict[str, np.ndarray]:
-    """Return ``{"uncertainty": (n_seeds, n_iterations), "random": ...}`` score arrays."""
-    unc_runs: list[list[float]] = []
-    rnd_runs: list[list[float]] = []
+    """Return ``{strategy_name: (n_seeds, n_iterations)}`` score arrays.
+
+    Args:
+        make_dataset: Callable that returns (x_train, y_train, x_test, y_test) given a seed.
+        make_model: Callable that returns a fresh model given a seed.
+        metric: Metric name passed to ``active_learning_loop``.
+        strategies: Mapping from strategy name to query function.
+        n_seeds: Number of random seeds to average over.
+    """
+    runs: dict[str, list[list[float]]] = {name: [] for name in strategies}
 
     for seed in range(n_seeds):
         x_train, y_train, x_test, y_test = make_dataset(seed=seed)
 
-        _, _, unc_scores, _ = active_learning_loop(
-            make_model(seed),
-            x_train,
-            y_train,
-            x_test,
-            y_test,
-            metric=metric,
-            pool_size=POOL_SIZE,
-            n_iterations=N_ITERATIONS,
-            seed=seed,
-        )
-        _, _, rnd_scores, _ = active_learning_loop(
-            make_model(seed),
-            x_train,
-            y_train,
-            x_test,
-            y_test,
-            query_fn=random_query_fn,
-            metric=metric,
-            pool_size=POOL_SIZE,
-            n_iterations=N_ITERATIONS,
-            seed=seed,
-        )
-        unc_runs.append(unc_scores)
-        rnd_runs.append(rnd_scores)
+        for name, query_fn in strategies.items():
+            _, _, scores, _ = active_learning_loop(
+                make_model(seed),
+                x_train,
+                y_train,
+                x_test,
+                y_test,
+                query_fn=query_fn,
+                metric=metric,
+                pool_size=POOL_SIZE,
+                n_iterations=N_ITERATIONS,
+                seed=seed,
+            )
+            runs[name].append(scores)
 
-    return {
-        "uncertainty": np.array(unc_runs),
-        "random": np.array(rnd_runs),
-    }
+    return {name: np.array(v) for name, v in runs.items()}
 
 
 # ---------------------------------------------------------------------------
@@ -131,49 +136,40 @@ def plot_comparison(
     ylabel: str,
     title: str,
 ) -> None:
-    """Plot mean ± 95 % CI curves for uncertainty vs random sampling."""
-    iterations = np.arange(1, runs["uncertainty"].shape[1] + 1)
-    styles = {
-        "uncertainty": {"color": "C0", "label": "Uncertainty sampling"},
-        "random": {"color": "C1", "label": "Random sampling", "linestyle": "--"},
-    }
+    """Plot mean ± 95 % CI curves for all strategies."""
+    iterations = np.arange(1, next(iter(runs.values())).shape[1] + 1)
+    handles = []
 
-    for key, data in runs.items():
+    for name, data in runs.items():
+        style = _STRATEGY_STYLES.get(name, {"color": "grey", "label": name, "linestyle": "-"})
         mean = data.mean(axis=0)
         ci = _ci95(data)
-        kw = styles[key]
 
         ax.plot(
             iterations,
             mean,
-            color=kw.get("color", "C0"),
-            linestyle=kw.get("linestyle", "-"),
-            marker=kw.get("marker", "o"),
+            color=style["color"],
+            linestyle=style["linestyle"],
+            marker="o",
             markersize=3,
             linewidth=1.5,
         )
+        ax.fill_between(iterations, mean - ci, mean + ci, alpha=0.15, color=style["color"])
 
-        ax.fill_between(iterations, mean - ci, mean + ci, alpha=0.15, color=kw["color"])
-    # --- NAUC summary in legend labels ---
-    for key, data in runs.items():
         nauc_vals = [float(np.trapezoid(row, x=np.arange(len(row))) / max(len(row) - 1, 1)) for row in data]
-        mean_nauc = np.mean(nauc_vals)
-        styles[key]["label"] += f"  (NAUC={mean_nauc:.3f})"
-
-    # --- build legend handles safely ---
-    handles = [
-        plt.Line2D(
-            [0],
-            [0],
-            color=s["color"],
-            linestyle=s.get("linestyle", "-"),
-            marker=s.get("marker", "o"),
-            markersize=3,
-            linewidth=1.5,
-            label=s["label"],
+        label = style["label"] + f"  (NAUC={np.mean(nauc_vals):.3f})"
+        handles.append(
+            plt.Line2D(
+                [0],
+                [0],
+                color=style["color"],
+                linestyle=style["linestyle"],
+                marker="o",
+                markersize=3,
+                linewidth=1.5,
+                label=label,
+            )
         )
-        for s in styles.values()
-    ]
 
     ax.legend(handles=handles, fontsize=8)
     ax.set_xlabel("Iteration")
@@ -204,15 +200,22 @@ def plot_results(
 # ---------------------------------------------------------------------------
 def main(n_seeds: int = N_SEEDS) -> None:
     """Run active learning benchmark comparing uncertainty vs random sampling."""
+    clf_strategies = {
+        "margin": qc_cls.margin,
+        "entropy": qc_cls.total_entropy,
+        "random": random_query_fn,
+    }
+
     print(f"=== Two Moons Classification  ({n_seeds} seeds) ===")
     clf_runs = run_seeds(
         make_two_moons_classification,
         lambda seed: GradientBoostingClassifier(n_estimators=50, random_state=seed),
         metric="accuracy",
+        strategies=clf_strategies,
         n_seeds=n_seeds,
     )
-    for strategy, data in clf_runs.items():
-        print(f"  {strategy:>12}: mean accuracy @ last iter = {data[:, -1].mean():.4f}")
+    for name, data in clf_runs.items():
+        print(f"  {name:>10}: mean accuracy @ last iter = {data[:, -1].mean():.4f}")
 
     print()
     print(f"=== Sine Regression  ({n_seeds} seeds) ===")
@@ -220,10 +223,11 @@ def main(n_seeds: int = N_SEEDS) -> None:
         make_sine_regression,
         lambda seed: GradientBoostingRegressor(n_estimators=50, random_state=seed),
         metric="mae",
+        strategies={"random": random_query_fn},
         n_seeds=n_seeds,
     )
-    for strategy, data in reg_runs.items():
-        print(f"  {strategy:>12}: mean neg-MAE @ last iter = {data[:, -1].mean():.4f}")
+    for name, data in reg_runs.items():
+        print(f"  {name:>10}: mean neg-MAE @ last iter = {data[:, -1].mean():.4f}")
 
     plot_results(clf_runs, reg_runs, n_seeds)
 
