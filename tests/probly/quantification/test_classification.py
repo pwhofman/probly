@@ -25,6 +25,7 @@ from probly.quantification.classification import (
     generalized_hartley,
     lower_entropy,
     lower_entropy_convex_hull,
+    margin,
     mutual_information,
     total_entropy,
     total_uncertainty_distance,
@@ -112,6 +113,30 @@ def test_upper_entropy(simplex_vertices: np.ndarray, simplex_uniform: np.ndarray
 
     ue = upper_entropy(simplex_uniform)
     assert ue == pytest.approx(1.5849625007)
+
+
+def test_margin() -> None:
+    # Certain prediction: one class dominates -> margin = 1.0 -> negative margin = -1.0
+    certain = np.array([[[1.0, 0.0, 0.0]]])  # (1, 1, 3)
+    assert margin(certain) == pytest.approx(-1.0)
+
+    # Uniform: top two classes are equal -> margin = 0 -> negative margin = 0.0
+    uniform = np.array([[[1 / 3, 1 / 3, 1 / 3]]])
+    assert margin(uniform) == pytest.approx(0.0)
+
+    # More certain instance should have lower (more negative) value
+    less_certain = np.array([[[0.4, 0.35, 0.25]]])
+    more_certain = np.array([[[0.9, 0.05, 0.05]]])
+    assert margin(more_certain) < margin(less_certain)
+
+    # Shape and no NaN/Inf on random inputs
+    rng = np.random.default_rng(0)
+    probs = rng.dirichlet(np.ones(3), (10, 5))  # (10, 5, 3)
+    result = margin(probs)
+    assert result.shape == (10,)
+    assert not np.isnan(result).any()
+    assert not np.isinf(result).any()
+    assert (result <= 0).all()
 
 
 def test_evidential_uncertainty() -> None:
