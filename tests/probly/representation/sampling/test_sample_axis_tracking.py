@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from probly.representation.sample.array_axis_tracking import track_axis
+from probly.representation.sample.axis_tracking import track_axis
 
 
 class TestBasicIndexing:
@@ -50,6 +50,56 @@ class TestEllipsis:
 
     def test_ellipsis_with_trailing_newaxis_preserves_last_axis(self) -> None:
         idx = (Ellipsis, None)
+        assert track_axis(idx, 3, 4) == 3
+
+    def test_ellipsis_with_trailing_1d_integer_index(self) -> None:
+        idx = (Ellipsis, np.array([0, 2]))
+        assert track_axis(idx, 0, 3) == 0
+        assert track_axis(idx, 1, 3) == 1
+        assert track_axis(idx, 2, 3) == 2
+
+    def test_ellipsis_with_nd_integer_index_and_slice(self) -> None:
+        idx = (np.array([[0, 1], [1, 0]]), Ellipsis, slice(None))
+        assert track_axis(idx, 0, 3) is None
+        assert track_axis(idx, 1, 3) == 2
+        assert track_axis(idx, 2, 3) == 3
+
+    def test_ellipsis_with_nd_boolean_index(self) -> None:
+        idx = (np.array([[True, False, True], [False, True, False]]), Ellipsis)
+        assert track_axis(idx, 0, 3) == 0
+        assert track_axis(idx, 1, 3) == 0
+        assert track_axis(idx, 2, 3) == 1
+
+    def test_ellipsis_with_leading_newaxis_and_trailing_1d_integer_index(self) -> None:
+        idx = (None, Ellipsis, np.array([0, 2]))
+        assert track_axis(idx, 0, 3) == 1
+        assert track_axis(idx, 1, 3) == 2
+        assert track_axis(idx, 2, 3) == 3
+
+    def test_ellipsis_with_1d_integer_index_newaxis_and_slice(self) -> None:
+        idx = (np.array([0, 1]), Ellipsis, None, slice(None))
+        assert track_axis(idx, 0, 3) == 0
+        assert track_axis(idx, 1, 3) == 1
+        assert track_axis(idx, 2, 3) == 3
+
+    def test_ellipsis_with_slice_and_trailing_1d_boolean_index(self) -> None:
+        idx = (slice(None), Ellipsis, np.array([True, False, True, False]))
+        assert track_axis(idx, 0, 3) == 0
+        assert track_axis(idx, 1, 3) == 1
+        assert track_axis(idx, 2, 3) == 2
+
+    def test_trailing_scalar_boolean_with_ellipsis_keeps_last_axis_position(self) -> None:
+        idx = (Ellipsis, True)
+        assert track_axis(idx, 0, 4) == 0
+        assert track_axis(idx, 1, 4) == 1
+        assert track_axis(idx, 2, 4) == 2
+        assert track_axis(idx, 3, 4) == 3
+
+    def test_trailing_numpy_scalar_boolean_with_ellipsis_keeps_last_axis_position(self) -> None:
+        idx = (Ellipsis, np.array(True))
+        assert track_axis(idx, 0, 4) == 0
+        assert track_axis(idx, 1, 4) == 1
+        assert track_axis(idx, 2, 4) == 2
         assert track_axis(idx, 3, 4) == 3
 
 
@@ -98,6 +148,29 @@ class TestAdvancedIndexing:
         idx = ([[True], [False]], 7)
         assert track_axis(idx, 2, 3) is None
 
+    def test_scalar_boolean_index_adds_leading_axis(self) -> None:
+        assert track_axis(True, 0, 3) == 1
+        assert track_axis(True, 1, 3) == 2
+        assert track_axis(True, 2, 3) == 3
+
+    def test_scalar_numpy_boolean_index_adds_leading_axis(self) -> None:
+        idx = np.array(True)
+        assert track_axis(idx, 0, 3) == 1
+        assert track_axis(idx, 1, 3) == 2
+        assert track_axis(idx, 2, 3) == 3
+
+    def test_scalar_boolean_index_inside_tuple_adds_axis_in_place(self) -> None:
+        idx = (slice(None), True, slice(None))
+        assert track_axis(idx, 0, 3) == 0
+        assert track_axis(idx, 1, 3) == 2
+        assert track_axis(idx, 2, 3) == 3
+
+    def test_scalar_numpy_boolean_index_inside_tuple_adds_axis_in_place(self) -> None:
+        idx = (slice(None), np.array(True), slice(None))
+        assert track_axis(idx, 0, 3) == 0
+        assert track_axis(idx, 1, 3) == 2
+        assert track_axis(idx, 2, 3) == 3
+
     def test_noncontiguous_advanced_indices_place_indexed_axis_at_front(self) -> None:
         idx = (np.array([0, 2]), slice(None), np.array([0, 2]), slice(None))
         assert track_axis(idx, 0, 4) == 0
@@ -134,3 +207,40 @@ class TestMixedIndexing:
         assert track_axis(idx, 1, 4) is None
         assert track_axis(idx, 2, 4) is None
         assert track_axis(idx, 3, 4) == 5
+
+
+class TestIndexingModeSemantics:
+    def test_torch_indexing_flag_changes_mixed_int_and_advanced_behavior(self) -> None:
+        idx = (0, slice(None), np.array([0, 2]))
+
+        # NumPy/JAX behavior
+        assert track_axis(idx, special_axis=1, ndim=3, torch_indexing=False) == 1
+        assert track_axis(idx, special_axis=2, ndim=3, torch_indexing=False) == 0
+
+        # Torch behavior
+        assert track_axis(idx, special_axis=1, ndim=3, torch_indexing=True) == 0
+        assert track_axis(idx, special_axis=2, ndim=3, torch_indexing=True) == 1
+
+    def test_empty_ellipsis_changes_advanced_index_separation(self) -> None:
+        idx = (slice(None), np.array([0, 1]), Ellipsis, np.array([0, 1]))
+
+        # NumPy/JAX behavior (NumPy PR parity case): empty ellipsis still separates advanced indices.
+        assert track_axis(idx, special_axis=0, ndim=3, torch_indexing=False) == 1
+        assert track_axis(idx, special_axis=1, ndim=3, torch_indexing=False) == 0
+        assert track_axis(idx, special_axis=2, ndim=3, torch_indexing=False) == 0
+
+        # Torch behavior: empty ellipsis does not separate advanced indices.
+        assert track_axis(idx, special_axis=0, ndim=3, torch_indexing=True) == 0
+        assert track_axis(idx, special_axis=1, ndim=3, torch_indexing=True) == 1
+        assert track_axis(idx, special_axis=2, ndim=3, torch_indexing=True) == 1
+
+
+class TestBooleanScalarModeSemantics:
+    def test_python_bool_scalar_is_not_treated_as_integer(self) -> None:
+        assert track_axis(True, special_axis=0, ndim=2, torch_indexing=False) == 1
+        assert track_axis(True, special_axis=1, ndim=2, torch_indexing=False) == 2
+
+    def test_numpy_0d_bool_scalar_is_not_treated_as_integer(self) -> None:
+        idx = np.array(True)
+        assert track_axis(idx, special_axis=0, ndim=2, torch_indexing=False) == 1
+        assert track_axis(idx, special_axis=1, ndim=2, torch_indexing=False) == 2

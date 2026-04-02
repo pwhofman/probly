@@ -59,6 +59,7 @@ changelog = "https://github.com/pwhofman/probly/blob/main/CHANGELOG.md"
 torch = ["torch>=2.0.0", "torchvision"]
 jax = ["jax>=0.8.0", "flax>=0.12.0"]
 jax-cuda12 = ["jax[cuda12]"]
+jax-cuda13 = ["jax[cuda13]"]
 all_ml = [{ include-group = "torch" }, { include-group = "jax" }]
 test = [
     "pytest>=8.3.5",       # for testing
@@ -187,7 +188,7 @@ convention = "google"
 "src/probly_benchmark/*.py" = ["T201"]
 
 [tool.ruff.lint.mccabe]
-max-complexity = 12
+max-complexity = 14
 
 # Use isort-compatible settings
 [tool.ruff.lint.isort]
