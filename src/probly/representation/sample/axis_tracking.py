@@ -2,21 +2,17 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
 from dataclasses import dataclass
 from types import EllipsisType
+from typing import TYPE_CHECKING
 
 import numpy as np
-import numpy.typing as npt
 
 from lazy_dispatch import lazydispatch
 from probly.lazy_types import JAX_ARRAY, TORCH_TENSOR
 
-type IntSeq = Sequence[int | IntSeq]
-type BoolSeq = Sequence[bool | BoolSeq]
-
-type IndexElement = slice | int | np.integer | None | EllipsisType | IntSeq | BoolSeq | npt.ArrayLike
-type Index = IndexElement | tuple[IndexElement, ...]
+if TYPE_CHECKING:
+    from probly.representation.array_like import ToIndex, ToIndices
 
 
 @dataclass(frozen=True, slots=True)
@@ -33,7 +29,7 @@ type _InternalIndexElement = _BasicIndexElement | _AdvancedIndexElement
 
 
 @lazydispatch
-def convert_idx(idx: IndexElement) -> _InternalIndexElement:  # noqa: PLR0911
+def convert_idx(idx: ToIndex) -> _InternalIndexElement:  # noqa: PLR0911
     """Convert IndexElement to a _InternalIndexElement."""
     if isinstance(idx, slice) or idx is None or idx is Ellipsis:
         return idx
@@ -69,7 +65,7 @@ def _(_: type) -> None:
     from . import jax_axis_tracking  # noqa: F401, PLC0415
 
 
-def _normalize_index(index: Index, ndim: int, torch_indexing: bool = False) -> tuple[_InternalIndexElement, ...]:
+def _normalize_index(index: ToIndices, ndim: int, torch_indexing: bool = False) -> tuple[_InternalIndexElement, ...]:
     if not isinstance(index, tuple):
         normalized_index = (convert_idx(index),)
     else:
@@ -260,7 +256,7 @@ def _track_axis_advanced(  # noqa: C901, PLR0912, PLR0915
 
 
 def track_axis(
-    index: Index,
+    index: ToIndices,
     special_axis: int,
     ndim: int,
     torch_indexing: bool = False,

@@ -3,19 +3,25 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Literal, Self, override
+from typing import TYPE_CHECKING, Any, ClassVar, Self, cast, overload, override
 
 import numpy as np
 
+from probly.representation._protected_axis.array import ArrayAxisProtected
+from probly.representation.array_like import NumpyArrayLike
 from probly.representation.distribution._common import CategoricalDistribution
 from probly.representation.sample import ArraySample
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
+
     from numpy.typing import DTypeLike
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
 class ArrayCategoricalDistribution(
+    ArrayAxisProtected,
+    NumpyArrayLike[Any],
     CategoricalDistribution,
 ):
     """A categorical distribution stored as a numpy array.
@@ -25,6 +31,26 @@ class ArrayCategoricalDistribution(
     """
 
     probabilities: np.ndarray
+    protected_axes: ClassVar[int] = 1
+
+    @property
+    def _is_bernoulli(self) -> bool:
+        return self.probabilities.shape[-1] == 1
+
+    def _bernoulli_probability(self) -> np.ndarray:
+        return self.probabilities[..., 0]
+
+    def _normalized_probabilities(self) -> np.ndarray:
+        if self._is_bernoulli:
+            msg = "Bernoulli distributions do not use categorical normalization."
+            raise ValueError(msg)
+
+        sums = np.sum(self.probabilities, axis=-1, keepdims=True)
+        if np.any(sums <= 0):
+            msg = "Relative probabilities must have strictly positive sum along the last axis."
+            raise ValueError(msg)
+
+        return self.probabilities / sums
 
     def __post_init__(self) -> None:
         """Validate the concentration parameters."""
@@ -36,67 +62,42 @@ class ArrayCategoricalDistribution(
             msg = "probabilities must have at least one dimension."
             raise ValueError(msg)
 
-        if np.any(self.probabilities < 0) or np.any(self.probabilities > 1):
-            msg = "probabilities must be in the range [0, 1]."
+        if self._is_bernoulli:
+            if np.any(self.probabilities < 0) or np.any(self.probabilities > 1):
+                msg = "Bernoulli probabilities must be in the range [0, 1]."
+                raise ValueError(msg)
+        elif np.any(self.probabilities < 0):
+            msg = "Relative probabilities must be non-negative."
             raise ValueError(msg)
 
-        if not np.allclose(np.sum(self.probabilities, axis=-1), 1.0):
-            msg = "probabilities must sum to 1."
-            raise ValueError(msg)
+    @override
+    def with_protected_array(self, array: np.ndarray) -> Self:
+        return type(self)(array)
 
+    @override
     @property
     def num_classes(self) -> int:
         """Get the number of classes."""
+        if self._is_bernoulli:
+            return 2
         return self.probabilities.shape[-1]
 
-    def __len__(self) -> int:
-        """Return the length along the first dimension."""
-        if self.ndim == 0:
-            msg = "len() of unsized distribution"
-            raise TypeError(msg)
-        return len(self.probabilities)
-
-    def __array_namespace__(self) -> Any:  # noqa: ANN401
-        """Get the array namespace of the underlying array."""
-        return self.probabilities.__array_namespace__()
-
-    @property
-    def dtype(self) -> DTypeLike:
-        """The data type of the underlying array."""
-        return self.probabilities.dtype
-
-    @property
-    def device(self) -> str:
-        """The device of the underlying array."""
-        return self.probabilities.device
-
-    @property
-    def ndim(self) -> int:
-        """Number of batch dimensions (excluding category axis)."""
-        return self.probabilities.ndim - 1
-
-    @property
-    def shape(self) -> tuple[int, ...]:
-        """Batch shape (excluding category axis)."""
-        return self.probabilities.shape[:-1]
-
-    @property
-    def size(self) -> int:
-        """The total number of distributions."""
-        return int(np.prod(self.shape)) if self.shape else 1
-
-    @property
-    def T(self) -> Self:  # noqa: N802
-        """The transposed version of the distribution."""
-        return np.transpose(self)  # ty: ignore[invalid-return-type]
-
-    @property
     @override
+    @property
     def entropy(self) -> float:
         """Compute the entropy of the categorical distribution."""
-        p = self.probabilities
-        return -np.sum(p * np.log(p), axis=-1)
+        if self._is_bernoulli:
+            p = self._bernoulli_probability()
+            q = 1 - p
+            log_p = np.where(p > 0, np.log(p), 0.0)
+            log_q = np.where(q > 0, np.log(q), 0.0)
+            return -(p * log_p + q * log_q)
 
+        p = self._normalized_probabilities()
+        log_p = np.where(p > 0, np.log(p), 0.0)
+        return -np.sum(p * log_p, axis=-1)
+
+    @override
     def sample(
         self,
         num_samples: int = 1,
@@ -106,44 +107,40 @@ class ArrayCategoricalDistribution(
         if rng is None:
             rng = np.random.default_rng()
 
-        samples = rng.choice(
-            a=self.probabilities.shape[-1],
-            size=(*self.shape, num_samples),
-            p=self.probabilities,
-        )
+        if self._is_bernoulli:
+            probabilities = self._bernoulli_probability()
+            samples = rng.binomial(1, probabilities, size=(num_samples, *self.shape))
+            return ArraySample(array=cast("NumpyArrayLike[Any]", samples), sample_axis=0)
 
-        return ArraySample(array=samples, sample_axis=0)
+        flat_probabilities = self._normalized_probabilities().reshape((-1, self.num_classes))
+        flat_samples = np.empty((num_samples, flat_probabilities.shape[0]), dtype=np.int64)
 
-    def __setitem__(
-        self,
-        index: int | slice | tuple | np.ndarray,
-        value: Self | np.ndarray,
-    ) -> None:
-        """Set a subset of the distribution by index."""
-        if isinstance(value, ArrayCategoricalDistribution):
-            self.probabilities[index] = value.probabilities
-        else:
-            self.probabilities[index] = value
+        for i, probabilities in enumerate(flat_probabilities):
+            flat_samples[:, i] = rng.choice(a=self.num_classes, size=num_samples, p=probabilities)
 
+        samples = flat_samples.reshape((num_samples, *self.shape))
+        return ArraySample(array=samples, sample_axis=0)  # ty:ignore[invalid-argument-type]
+
+    @overload
+    def __array__(self) -> np.ndarray: ...
+
+    @overload
+    def __array__(self, dtype: DTypeLike) -> np.ndarray: ...
+
+    @override
     def __array__(
         self,
         dtype: DTypeLike | None = None,
+        /,
+        *,
         copy: bool | None = None,
     ) -> np.ndarray:
         """Get the underlying numpy array (probabilities)."""
-        if dtype is None and not copy:
-            return self.probabilities
         return np.asarray(self.probabilities, dtype=dtype, copy=copy)
 
-    def copy(self) -> Self:
-        """Create a copy of the distribution."""
-        return type(self)(probabilities=self.probabilities.copy())
-
-    def to_device(self, device: Literal["cpu"]) -> Self:
-        """Move the underlying array to the specified device."""
-        if device == self.device:
-            return self
-        return type(self)(probabilities=self.probabilities.to_device(device))
+    @override
+    def __iter__(self) -> Iterator[Any]:
+        return self.probabilities.__iter__()
 
     def __eq__(self, value: Any) -> Self:  # ty: ignore[invalid-method-override]  # noqa: ANN401, PYI032
         """Vectorized equality comparison."""

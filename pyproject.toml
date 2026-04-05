@@ -70,7 +70,7 @@ test = [
 lint = [
     "ruff>=0.15.8",                                         # for linting
     "prek>=0.3.8",                                          # for running the linters pre-commit hooks
-    "ty>=0.0.26",                                           # for static type checking
+    "ty>=0.0.28",                                           # for static type checking
     "sigx @ git+https://github.com/Cortys/sigx.git@master",
 ]
 docs = [

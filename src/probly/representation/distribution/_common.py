@@ -6,14 +6,12 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Literal
 
 if TYPE_CHECKING:
-    import numpy as np
-
     from probly.representation.sample._common import Sample
 
 type DistributionType = Literal["gaussian", "dirichlet", "categorical"]
 
 
-class Distribution(ABC):
+class Distribution[T](ABC):
     """Base class for distributions."""
 
     type: DistributionType
@@ -24,11 +22,11 @@ class Distribution(ABC):
         """Compute entropy."""
 
     @abstractmethod
-    def sample(self, num_samples: int) -> Sample[Any]:
+    def sample(self, num_samples: int) -> Sample[T]:
         """Draw samples from Distribution."""
 
 
-class CategoricalDistribution(Distribution):
+class CategoricalDistribution(Distribution[Any]):
     """Base class for categorical distributions."""
 
     type: Literal["categorical"] = "categorical"
@@ -39,28 +37,28 @@ class CategoricalDistribution(Distribution):
         """Get the number of classes."""
 
 
-class DirichletDistribution(Distribution):
+class DirichletDistribution[T](Distribution[T]):
     """Base class for Dirichlet distributions."""
 
     type: Literal["dirichlet"] = "dirichlet"
 
     @property
     @abstractmethod
-    def alphas(self) -> np.ndarray:
+    def alphas(self) -> Any:  # noqa: ANN401
         """Get the concentration parameters of the Dirichlet distribution."""
 
 
-class GaussianDistribution(Distribution):
+class GaussianDistribution[D](Distribution[D]):
     """Base class for Gaussian distributions."""
 
     type: Literal["gaussian"] = "gaussian"
 
     @property
     @abstractmethod
-    def mean(self) -> np.ndarray:
+    def mean(self) -> Any:  # noqa: ANN401
         """Get the mean parameters."""
 
     @property
     @abstractmethod
-    def var(self) -> np.ndarray:
+    def var(self) -> Any:  # noqa: ANN401
         """Get the var parameters."""

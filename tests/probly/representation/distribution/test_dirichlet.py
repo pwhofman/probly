@@ -88,14 +88,13 @@ def test_len_behaviour() -> None:
 
 def test_transpose_property() -> None:
     """Test the .T property."""
-    alphas = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], dtype=float)
+    alphas = np.arange(24, dtype=float).reshape((2, 4, 3)) + 1.0
     dist = ArrayDirichletDistribution(alphas=alphas)
 
     transposed = dist.T
 
-    # akzeptiere: entweder Objekt mit .alphas oder direkt ein Array
-    got = transposed.alphas if hasattr(transposed, "alphas") else np.asarray(transposed)
-    np.testing.assert_array_equal(got, alphas.T)
+    assert isinstance(transposed, ArrayDirichletDistribution)
+    np.testing.assert_array_equal(transposed.alphas, np.transpose(alphas, (1, 0, 2)))
 
 
 def test_operator_add_returns_distribution_and_keeps_positive() -> None:
@@ -195,3 +194,41 @@ def test_sample_statistics_dirichlet_var() -> None:
     empirical_var = samples.var(axis=0)
 
     np.testing.assert_allclose(empirical_var, expected_var, atol=0.01)
+
+
+def test_getitem_cannot_index_class_axis_directly() -> None:
+    alphas = np.arange(24, dtype=float).reshape((2, 3, 4)) + 1.0
+    dist = ArrayDirichletDistribution(alphas=alphas)
+
+    with pytest.raises(IndexError):
+        _ = dist[:, :, 0]
+
+
+def test_setitem_cannot_index_class_axis_directly() -> None:
+    alphas = np.arange(24, dtype=float).reshape((2, 3, 4)) + 1.0
+    dist = ArrayDirichletDistribution(alphas=alphas)
+
+    with pytest.raises(IndexError):
+        dist[:, :, 0] = np.array([1.0, 2.0, 3.0, 4.0])
+
+
+def test_expand_dims_last_inserts_before_class_axis() -> None:
+    alphas = np.arange(24, dtype=float).reshape((2, 3, 4)) + 1.0
+    dist = ArrayDirichletDistribution(alphas=alphas)
+
+    expanded = np.expand_dims(dist, axis=-1)
+
+    assert isinstance(expanded, ArrayDirichletDistribution)
+    assert expanded.shape == (2, 3, 1)
+    assert expanded.alphas.shape == (2, 3, 1, 4)
+
+
+def test_reshape_with_none_inserts_before_class_axis() -> None:
+    alphas = np.arange(24, dtype=float).reshape((2, 3, 4)) + 1.0
+    dist = ArrayDirichletDistribution(alphas=alphas)
+
+    reshaped = np.reshape(dist, (6, None))
+
+    assert isinstance(reshaped, ArrayDirichletDistribution)
+    assert reshaped.shape == (6, 1)
+    assert reshaped.alphas.shape == (6, 1, 4)

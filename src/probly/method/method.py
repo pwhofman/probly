@@ -34,7 +34,7 @@ class PredictorTransformationMethod[PIn: Predictor, **In, POut: Predictor](Proto
 
 
 @stub_transform_factory("probly.method._sigx_transforms:predictor_transformation_transform")
-def predictor_transformation[Pin: Predictor, **In, POut: Predictor](  # noqa: C901
+def predictor_transformation[Pin: Predictor, **In, POut: Predictor](
     permitted_predictor_types: Collection[type[Predictor]] | None,
     preserve_predictor_type: bool = True,
     auto_infer_predictor_type: bool = True,
