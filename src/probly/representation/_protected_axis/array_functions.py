@@ -9,27 +9,11 @@ from typing import TYPE_CHECKING, Any, Protocol, overload, runtime_checkable
 
 import numpy as np
 
+from probly.representation._protected_axis._common_functions import normalize_axes, normalize_axis
 from probly.utils import switchdispatch
 
 if TYPE_CHECKING:
     from collections.abc import Callable
-
-
-def _normalize_axis(axis: int, ndim: int, *, allow_endpoint: bool = False) -> int:
-    bound = ndim + (1 if allow_endpoint else 0)
-    normalized = axis + bound if axis < 0 else axis
-    if normalized < 0 or normalized >= bound:
-        msg = f"axis {axis} is out of bounds for batch dimensions with ndim {ndim}."
-        raise ValueError(msg)
-    return normalized
-
-
-def _normalize_axes(axes: tuple[int, ...], ndim: int, *, allow_endpoint: bool = False) -> tuple[int, ...]:
-    return tuple(_normalize_axis(axis, ndim, allow_endpoint=allow_endpoint) for axis in axes)
-
-
-def _coerce_axis_tuple(axis: int | tuple[int, ...] | list[int]) -> tuple[int, ...]:
-    return (axis,) if isinstance(axis, int) else tuple(axis)
 
 
 class ArrayAxisProtectedCreator(Protocol):
@@ -249,7 +233,7 @@ def protected_transpose_function(
         if not isinstance(axes, (tuple, list)) or not all(isinstance(axis, int) for axis in axes):
             msg = "transpose axes must be a tuple/list of integers."
             raise TypeError(msg)
-        batch_axes = _normalize_axes(tuple(axes), batch_ndim)
+        batch_axes = normalize_axes(tuple(axes), batch_ndim)
         if len(batch_axes) != batch_ndim:
             msg = "transpose axes must only refer to batch dimensions."
             raise ValueError(msg)
@@ -334,7 +318,7 @@ def protected_expand_dims_function(
         msg = "expand_dims axis must be an int or tuple/list of ints."
         raise TypeError(msg)
 
-    full_axes = _normalize_axes(axis_tuple, batch_ndim, allow_endpoint=True)
+    full_axes = normalize_axes(axis_tuple, batch_ndim, allow_endpoint=True)
     return create_protected(func(array, axis=full_axes))
 
 
@@ -362,7 +346,7 @@ def protected_squeeze_function(
             msg = "squeeze axis must be an int or tuple/list of ints."
             raise TypeError(msg)
 
-        squeeze_axes = _normalize_axes(axis_tuple, batch_ndim)
+        squeeze_axes = normalize_axes(axis_tuple, batch_ndim)
 
     return create_protected(func(array, axis=squeeze_axes))
 
@@ -384,8 +368,8 @@ def protected_swapaxes_function(
         raise TypeError(msg)
 
     batch_ndim = array.ndim - protected_axes
-    full_axis1 = _normalize_axis(axis1, batch_ndim)
-    full_axis2 = _normalize_axis(axis2, batch_ndim)
+    full_axis1 = normalize_axis(axis1, batch_ndim)
+    full_axis2 = normalize_axis(axis2, batch_ndim)
     return create_protected(func(array, full_axis1, full_axis2))
 
 
@@ -423,8 +407,8 @@ def protected_moveaxis_function(
         msg = "moveaxis destination must be an int or tuple/list of ints."
         raise TypeError(msg)
 
-    mapped_source = _normalize_axes(source_tuple, batch_ndim)
-    mapped_destination = _normalize_axes(destination_tuple, batch_ndim)
+    mapped_source = normalize_axes(source_tuple, batch_ndim)
+    mapped_destination = normalize_axes(destination_tuple, batch_ndim)
 
     source_arg: int | tuple[int, ...] = mapped_source[0] if source_was_int else mapped_source
     destination_arg: int | tuple[int, ...] = mapped_destination[0] if destination_was_int else mapped_destination

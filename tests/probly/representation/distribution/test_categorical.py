@@ -5,6 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
+from probly.representation.distribution import create_categorical_distribution
 from probly.representation.distribution.array_categorical import ArrayCategoricalDistribution
 from probly.representation.sample import ArraySample
 
@@ -16,6 +17,22 @@ def test_accepts_relative_non_negative_probabilities() -> None:
 
     assert dist.shape == (2,)
     assert dist.num_classes == 3
+
+
+def test_create_categorical_distribution_from_ndarray() -> None:
+    probabilities = np.array([[2.0, 3.0, 5.0]], dtype=float)
+
+    dist = create_categorical_distribution(probabilities)
+
+    assert isinstance(dist, ArrayCategoricalDistribution)
+    np.testing.assert_allclose(dist.probabilities, probabilities)
+
+
+def test_create_categorical_distribution_from_sequence() -> None:
+    dist = create_categorical_distribution([[0.1, 0.3, 0.6]])
+
+    assert isinstance(dist, ArrayCategoricalDistribution)
+    np.testing.assert_allclose(dist.probabilities, np.array([[0.1, 0.3, 0.6]], dtype=float))
 
 
 def test_rejects_negative_relative_probabilities() -> None:

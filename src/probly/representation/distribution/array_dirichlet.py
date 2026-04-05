@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, ClassVar, Self, overload, override
+from typing import TYPE_CHECKING, Any, ClassVar, Self, override
 
 import numpy as np
 from scipy import special
@@ -93,23 +93,6 @@ class ArrayDirichletDistribution(
         samples = gammas / np.sum(gammas, axis=-1, keepdims=True)
 
         return ArraySample(array=samples, sample_axis=0)
-
-    @overload
-    def __array__(self) -> np.ndarray: ...
-
-    @overload
-    def __array__(self, dtype: DTypeLike) -> np.ndarray: ...
-
-    @override
-    def __array__(
-        self,
-        dtype: DTypeLike | None = None,
-        /,
-        *,
-        copy: bool | None = None,
-    ) -> np.ndarray:
-        """Get the underlying numpy array (alphas)."""
-        return np.asarray(self.alphas, dtype=dtype, copy=copy)
 
     @override
     def _postprocess_ufunc_result(self, result: np.ndarray, *, ufunc: np.ufunc, method: str) -> np.ndarray:

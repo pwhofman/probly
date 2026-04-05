@@ -5,6 +5,8 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Literal
 
+from lazy_dispatch import lazydispatch
+
 if TYPE_CHECKING:
     from probly.representation.sample._common import Sample
 
@@ -62,3 +64,10 @@ class GaussianDistribution[D](Distribution[D]):
     @abstractmethod
     def var(self) -> Any:  # noqa: ANN401
         """Get the var parameters."""
+
+
+@lazydispatch
+def create_categorical_distribution[T](data: T) -> CategoricalDistribution:
+    """Create a categorical distribution from backend-specific probability data."""
+    msg = f"No categorical distribution factory registered for data type {type(data)}"
+    raise NotImplementedError(msg)

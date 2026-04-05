@@ -5,7 +5,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from operator import attrgetter
 from sys import modules
-from typing import TYPE_CHECKING, Annotated, Any, ClassVar, Self, get_args, get_origin, override
+from typing import TYPE_CHECKING, Annotated, Any, ClassVar, Self, get_args, get_origin, overload, override
 
 import numpy as np
 
@@ -15,6 +15,8 @@ from probly.representation.array_like import ArrayFlagsLike, NumpyArrayLike
 if TYPE_CHECKING:
     from collections.abc import Callable
     from types import ModuleType
+
+    from numpy.typing import DTypeLike
 
     from probly.representation.array_like import ToIndices
 
@@ -90,6 +92,23 @@ class ArrayAxisProtected[T](NumpyArrayLike[T], ABC):
     def __array_namespace__(self, /, *, api_version: str | None = None) -> ModuleType:
         """Get the array namespace of the underlying array."""
         return self.protected_array().__array_namespace__(api_version=api_version)  # ty:ignore[invalid-argument-type]
+
+    @overload
+    def __array__(self) -> np.ndarray: ...
+
+    @overload
+    def __array__(self, dtype: DTypeLike) -> np.ndarray: ...
+
+    @override
+    def __array__(
+        self,
+        dtype: DTypeLike | None = None,
+        /,
+        *,
+        copy: bool | None = None,
+    ) -> np.ndarray:
+        """Get the underlying numpy array (probabilities)."""
+        return np.asarray(self.protected_array(), dtype=dtype, copy=copy)
 
     @override
     @property

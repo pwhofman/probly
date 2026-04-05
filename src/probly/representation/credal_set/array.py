@@ -73,7 +73,7 @@ class ArrayDiscreteCredalSet(ArrayCategoricalCredalSet, DiscreteCredalSet[np.nda
         if distribution_axis < 0:
             distribution_axis += sample.ndim - 1
 
-        array = np.moveaxis(sample.samples, (0, distribution_axis + 1), (-2, -1))
+        array = np.moveaxis(sample.samples, (0, distribution_axis + 1), (-2, -1))  # ty:ignore[invalid-argument-type]
 
         return cls(array=array)
 
@@ -186,7 +186,7 @@ class ArrayConvexCredalSet(ArrayCategoricalCredalSet, ConvexCredalSet[np.ndarray
         if distribution_axis < 0:
             distribution_axis += sample.ndim - 1
 
-        array = np.moveaxis(sample.samples, (0, distribution_axis + 1), (-2, -1))
+        array = np.moveaxis(sample.samples, (0, distribution_axis + 1), (-2, -1))  # ty:ignore[invalid-argument-type]
 
         return cls(array=array)
 
@@ -432,7 +432,7 @@ class ArrayProbabilityIntervalsCredalSet(ArrayCategoricalCredalSet, ProbabilityI
             distribution_axis += sample.ndim - 1
 
         # Get all samples in shape (..., num_samples, num_classes)
-        samples_array = np.moveaxis(sample.samples, distribution_axis + 1, -1)
+        samples_array = np.moveaxis(sample.samples, distribution_axis + 1, -1)  # ty:ignore[invalid-argument-type]
 
         # Compute lower and upper bounds across samples
         lower_bounds = np.min(samples_array, axis=-2)

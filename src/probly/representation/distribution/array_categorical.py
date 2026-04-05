@@ -3,21 +3,20 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, ClassVar, Self, cast, overload, override
+from typing import TYPE_CHECKING, Any, ClassVar, Self, cast, override
 
 import numpy as np
 
 from probly.representation._protected_axis.array import ArrayAxisProtected
 from probly.representation.array_like import NumpyArrayLike
-from probly.representation.distribution._common import CategoricalDistribution
+from probly.representation.distribution._common import CategoricalDistribution, create_categorical_distribution
 from probly.representation.sample import ArraySample
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from numpy.typing import DTypeLike
 
-
+@create_categorical_distribution.register(np.ndarray)
 @dataclass(frozen=True, slots=True, weakref_slot=True)
 class ArrayCategoricalDistribution(
     ArrayAxisProtected,
@@ -121,23 +120,6 @@ class ArrayCategoricalDistribution(
         samples = flat_samples.reshape((num_samples, *self.shape))
         return ArraySample(array=samples, sample_axis=0)  # ty:ignore[invalid-argument-type]
 
-    @overload
-    def __array__(self) -> np.ndarray: ...
-
-    @overload
-    def __array__(self, dtype: DTypeLike) -> np.ndarray: ...
-
-    @override
-    def __array__(
-        self,
-        dtype: DTypeLike | None = None,
-        /,
-        *,
-        copy: bool | None = None,
-    ) -> np.ndarray:
-        """Get the underlying numpy array (probabilities)."""
-        return np.asarray(self.probabilities, dtype=dtype, copy=copy)
-
     @override
     def __iter__(self) -> Iterator[Any]:
         return self.probabilities.__iter__()
@@ -151,3 +133,17 @@ class ArrayCategoricalDistribution(
     def __hash__(self) -> int:
         """Compute the hash of the distribution."""
         return super().__hash__()
+
+
+@create_categorical_distribution.register((list, tuple))
+def _create_array_categorical_distribution_from_sequence(
+    data: list[Any] | tuple[Any, ...],
+) -> ArrayCategoricalDistribution:
+    return ArrayCategoricalDistribution(probabilities=np.asarray(data))
+
+
+@create_categorical_distribution.register(ArrayCategoricalDistribution)
+def _create_array_categorical_distribution_from_instance(
+    data: ArrayCategoricalDistribution,
+) -> ArrayCategoricalDistribution:
+    return data
