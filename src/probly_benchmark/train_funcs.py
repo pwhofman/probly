@@ -7,10 +7,13 @@ from typing import TYPE_CHECKING, Any
 
 import torch
 from torch import nn, optim
+from torch.amp import GradScaler, autocast
 
 from probly.method.bayesian import BayesianPredictor
 
 if TYPE_CHECKING:
+    from torch.utils.data import DataLoader
+
     from probly.predictor import Predictor
 
 
@@ -35,11 +38,70 @@ def _(
     targets: torch.Tensor,
     criterion: nn.Module,
     optimizer: optim.Optimizer,
+    grad_clip_norm: float | None = None,
+    amp_enabled: bool = False,
+    scaler: GradScaler | None = None,
 ) -> torch.Tensor | float:
     """Train a Bayesian predictor for one epoch."""
     optimizer.zero_grad()
-    outputs = model(inputs)  # ty: ignore
-    loss = criterion(outputs, targets)
-    loss.backward()
-    optimizer.step()
+    with autocast(inputs.device.type, enabled=amp_enabled):
+        outputs = model(inputs)  # ty: ignore
+        loss = criterion(outputs, targets)
+    if scaler is not None:
+        scaler.scale(loss).backward()
+        if grad_clip_norm is not None:
+            scaler.unscale_(optimizer)
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)  # ty: ignore[unresolved-attribute]
+        scaler.step(optimizer)
+        scaler.update()
+    else:
+        loss.backward()
+        if grad_clip_norm is not None:
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)  # ty: ignore[unresolved-attribute]
+        optimizer.step()
     return loss.item()
+
+
+@torch.no_grad()
+def validate(
+    model: nn.Module,
+    val_loader: DataLoader,
+    criterion: nn.Module,
+    device: torch.device,
+    amp_enabled: bool = False,
+) -> float:
+    """Validate a model."""
+    model.eval()
+    val_loss = 0.0
+    for inputs_, targets_ in val_loader:
+        inputs, targets = inputs_.to(device), targets_.to(device)
+        with autocast(device.type, enabled=amp_enabled):
+            outputs = model(inputs)
+            val_loss += criterion(outputs, targets).item()
+    val_loss /= len(val_loader)
+    return val_loss
+
+
+class EarlyStopping:
+    """Stop training when validation loss stops improving.
+
+    Args:
+        patience: Number of epochs to wait before stopping.
+        min_delta: Minimum change to qualify as an improvement.
+    """
+
+    def __init__(self, patience: int = 5, min_delta: float = 0.0) -> None:
+        """Initialize early stopping."""
+        self.patience = patience
+        self.min_delta = min_delta
+        self.counter = 0
+        self.best_loss = float("inf")
+
+    def should_stop(self, val_loss: float) -> bool:
+        """Check if training should stop."""
+        if val_loss < self.best_loss - self.min_delta:
+            self.best_loss = val_loss
+            self.counter = 0
+            return False
+        self.counter += 1
+        return self.counter >= self.patience

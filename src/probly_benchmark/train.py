@@ -12,11 +12,12 @@ import hydra
 from omegaconf import DictConfig, OmegaConf
 import torch
 from torch import nn, optim
+from torch.amp import GradScaler
 from tqdm import tqdm
 import wandb
 
 from probly_benchmark import data, utils
-from probly_benchmark.train_funcs import train_epoch
+from probly_benchmark.train_funcs import EarlyStopping, train_epoch, validate
 
 LOSSES = {
     "cross_entropy": nn.CrossEntropyLoss,
@@ -65,7 +66,7 @@ def main(cfg: DictConfig) -> None:
     utils.set_seed(cfg.seed) if cfg.seed else None
 
     # get data placeholder
-    train_loader, _ = data.load_mnist(cfg.dataset)
+    train_loader, val_loader = data.load_mnist(cfg.dataset)
 
     # get model placeholder
     model = nn.Sequential(
@@ -74,18 +75,41 @@ def main(cfg: DictConfig) -> None:
     criterion = get_loss(cfg.loss)
     optimizer = get_optimizer(cfg.optimizer, model.parameters())
 
-    for _ in tqdm(range(cfg.epochs)):
+    early_stopping = EarlyStopping(patience=cfg.early_stopping.patience) if cfg.early_stopping.patience else None
+
+    grad_clip_norm = cfg.get("grad_clip_norm", None)
+    amp_enabled = cfg.get("amp", False)
+    scaler = GradScaler(device.type) if amp_enabled else None
+
+    for epoch in tqdm(range(cfg.epochs)):
         model.train()
         running_loss = 0.0
         for inputs_, targets_ in train_loader:
             inputs, targets = inputs_.to(device), targets_.to(device)
-            running_loss += train_epoch(model, inputs, targets, criterion, optimizer)
+            running_loss += train_epoch(
+                model,
+                inputs,
+                targets,
+                criterion,
+                optimizer,
+                grad_clip_norm=grad_clip_norm,
+                amp_enabled=amp_enabled,
+                scaler=scaler,
+            )
         running_loss /= len(train_loader)
 
-        # add validation function
-        model.eval()
+        val_loss = validate(model, val_loader, criterion, device, amp_enabled)
 
-        run.log(data={"running_loss": running_loss})
+        run.log(
+            data={
+                "train_loss": running_loss,
+                "val_loss": val_loss,
+            }
+        )
+
+        if early_stopping is not None and early_stopping.should_stop(val_loss):
+            print(f"Early stopping at epoch {epoch}")
+            break
 
 
 if __name__ == "__main__":

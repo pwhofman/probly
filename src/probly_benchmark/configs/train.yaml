@@ -1,2 +1,12 @@
+method: "bnns"
 epochs: 10
 batch_size: 32
+loss: "cross_entropy"
+
+
+early_stopping:
+  enabled: false
+  patience: 5
+
+grad_clip_norm: 1.0
+amp: true
