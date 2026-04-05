@@ -729,220 +729,104 @@ class NormalInverseGammaLinear(nn.Module):
             init.uniform_(self.beta_bias, -bound, bound)
 
 
-# radial flows
-class BatchedRadialFlowLayer(nn.Module):
-    """Single radial flow transformation shared across all classes."""
+class RadialNormalizingFlow(nn.Module):
+    """Radial normalizing flow based on :cite:`rezendeVariationalFlows2015`."""
 
-    def __init__(self, latent_dim: int, num_classes: int) -> None:
-        """Initialize parameters for a radial flow transform."""
+    def __init__(self, dim: int, num_classes: int = 1) -> None:
+        """Initialize a radial normalizing flow.
+
+        Args:
+            dim: Dimensionality of the input and output of the flow.
+            num_classes: Number of classes for which to learn separate flow parameters. Default is 1 (shared flow).
+        """
         super().__init__()
-        self.num_classes = num_classes
-        self.latent_dim = latent_dim
+        self.dim = dim
 
-        self.x0 = nn.Parameter(torch.zeros(self.num_classes, self.latent_dim))
-        self.alpha_prime = nn.Parameter(torch.zeros(self.num_classes))
-        self.beta_prime = nn.Parameter(torch.zeros(self.num_classes))
+        self.z0 = nn.Parameter(torch.empty((num_classes, dim)))
+        self.alpha = nn.Parameter(torch.empty(num_classes))
+        self.beta = nn.Parameter(torch.empty(num_classes))
 
         self.reset_parameters()
 
     def reset_parameters(self) -> None:
-        """Reset learnable parameters with a small uniform init."""
-        stdv = 1.0 / math.sqrt(self.latent_dim)
-        self.x0.data.uniform_(-stdv, stdv)
-        self.alpha_prime.data.uniform_(-stdv, stdv)
-        self.beta_prime.data.uniform_(-stdv, stdv)
+        """Reset the parameters of the radial normalizing flow."""
+        bound = 1 / math.sqrt(self.dim)
+        init.uniform_(self.z0, -bound, bound)
+        init.uniform_(self.alpha, -bound, bound)
+        init.uniform_(self.beta, -bound, bound)
 
-    def forward(self, zc: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        """Apply the radial flow to latent inputs zc."""
-        alpha = torch.nn.functional.softplus(self.alpha_prime)
-        beta = -alpha + torch.nn.functional.softplus(self.beta_prime)
+    def forward(self, z: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        """Apply the radial normalizing flow transformation to the input tensor z.
 
-        x0 = self.x0.unsqueeze(1)
-        diff = zc - x0
-        r = diff.norm(dim=-1)
+        Args:
+            z: Input tensor of shape [B, D], where B is the batch size and D is the dimensionality of the flow.
 
-        h = 1.0 / (alpha.unsqueeze(1) + r)
+        Returns:
+            A tuple containing:
+            - z: Transformed tensor of shape [B, D] after applying the flow.
+            - log_det: Tensor of shape [B], the log-determinant of the Jacobian of the transformation applied to z.
+        """
+        alpha = F.softplus(self.alpha)
+        beta = -alpha + F.softplus(self.beta)
+        alpha = alpha.view(1, -1, 1)
+        beta = beta.view(1, -1, 1)
+        u = z - self.z0
+        r = torch.linalg.norm(u, dim=-1, keepdim=True)
+        h = 1.0 / (alpha + r)
+        z = z + beta * h * u
         h_prime = -h * h
-        beta_h = beta.unsqueeze(1) * h
-
-        z_new = zc + beta_h.unsqueeze(-1) * diff
-
-        term1 = (self.latent_dim - 1) * torch.log1p(beta_h)
-        term2 = torch.log1p(beta_h + beta.unsqueeze(1) * h_prime * r)
-        log_abs_det = term1 + term2
-
-        return z_new, log_abs_det
+        log_det = (self.dim - 1) * torch.log1p(beta * h) + torch.log1p(beta * h + beta * h_prime * r)
+        return z, log_det.squeeze(-1)
 
 
-class BatchedRadialFlowDensity(nn.Module):
-    """Radial-flow density estimator that computes P(z|c) for all classes."""
+class RadialNormalizingFlowStack(nn.Module):
+    """Stack of radial normalizing flows based on :cite:`rezendeVariationalFlows2015`."""
 
-    def __init__(self, latent_dim: int, num_classes: int, flow_length: int = 6) -> None:
-        """Create a sequence of radial flow layers and base distribution."""
+    def __init__(self, dim: int, num_flows: int, num_classes: int = 1) -> None:
+        """Initialize a stack of radial normalizing flows.
+
+        Args:
+            dim: Dimensionality of the input and output of the flow.
+            num_flows: Number of radial flow layers to stack.
+            num_classes: Number of classes for which to learn separate flow parameters. Default is 1 (shared flow).
+        """
         super().__init__()
-        self.latent_dim = latent_dim
         self.num_classes = num_classes
+        self.flows = nn.ModuleList([RadialNormalizingFlow(dim, num_classes) for _ in range(num_flows)])
 
-        self.layers = nn.ModuleList(
-            [BatchedRadialFlowLayer(latent_dim, num_classes) for _ in range(flow_length)],
-        )
-
-        self.log_base_const = -0.5 * self.latent_dim * math.log(2 * math.pi)
-
-    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        """Expand input x for all classes and apply flow layers."""
-        B = x.size(0)  # noqa: N806
-        zc = x.unsqueeze(0).expand(self.num_classes, B, self.latent_dim)
-        sum_log_jac = torch.zeros(self.num_classes, B, device=x.device)
-
-        for layer in self.layers:
-            zc, log_j = layer(zc)
-            sum_log_jac = sum_log_jac + log_j
-
-        return zc, sum_log_jac
-
-    def log_prob(self, x: torch.Tensor) -> torch.Tensor:
-        """Return class-conditional log densities log P(x|c)."""
-        zc, sum_log_jac = self.forward(x)  # zc: [C,B,D]
-
-        base_logp = self.log_base_const - 0.5 * (zc**2).sum(dim=-1)
-        logp = base_logp + sum_log_jac  # [C,B]
-
-        return logp.transpose(0, 1)  # [B,C]
-
-
-class RadialFlowLayer(nn.Module):
-    """Single radial flow layer for a latent vector z ∈ R^D."""
-
-    def __init__(self, latent_dim: int) -> None:  # noqa: D107
-        super().__init__()
-        self.latent_dim = latent_dim
-
-        # Learnable parameters:
-        # - x0: center of the radial transformation (vector in R^D)
-        # - alpha_prime, beta_prime: unconstrained scalars that we transform to valid alpha, beta
-        self.x0 = nn.Parameter(torch.zeros(latent_dim))
-        self.alpha_prime = nn.Parameter(torch.zeros(1))
-        self.beta_prime = nn.Parameter(torch.zeros(1))
-
-    def forward(self, features: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        """Apply the radial flow to latent inputs features.
+    def forward(self, z: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        """Apply the stack of radial normalizing flows to the input tensor z.
 
         Args:
-            features: Tensor of shape [B, D].
+            z: Input tensor of shape [B, D], where B is the batch size and D is the dimensionality of the flow.
 
         Returns:
-            features_new: Transformed latent tensor, shape [B, D].
-            log_abs_det: Log-absolute determinant of the Jacobian, shape [B].
+            A tuple containing:
+            - z: Transformed tensor of shape [B, D] after applying the flow.
+            - total_log_det: Tensor of shape [B], the total log-determinant of the Jacobian of
+              the transformation applied to z.
         """
-        # Ensure alpha > 0 and beta > -alpha for invertibility
-        alpha = torch.nn.functional.softplus(self.alpha_prime)  # scalar > 0
-        beta = -alpha + torch.nn.functional.softplus(self.beta_prime)  # scalar > -alpha
+        z = z.unsqueeze(1).expand(-1, self.num_classes, -1)
+        total_log_det = torch.zeros((z.shape[0], self.num_classes), device=z.device, dtype=z.dtype)
 
-        # z0 is the learnable center (broadcast to [B, D])
-        x0 = self.x0  # [D]
+        for flow in self.flows:
+            z, log_det = flow(z)
+            total_log_det += log_det
 
-        # Difference from the center
-        diff = features - x0  # [B, D]
-        r = diff.norm(dim=-1)  # Distance to center, shape [B]
+        return z, total_log_det
 
-        # Radial flow scalar functions h(r) and h'(r)
-        h = 1.0 / (alpha + r)  # [B]
-        h_prime = -h * h  # [B]
-        beta_h = beta * h  # [B]
-
-        # Apply the radial flow transformation:
-        features_new = features + beta_h.unsqueeze(-1) * diff  # [B, D]
-
-        # Log determinant of the Jacobian:
-        # formula derived in Rezende & Mohamed (2015)
-        term1 = (self.latent_dim - 1) * torch.log1p(beta_h)  # [B]
-        term2 = torch.log1p(beta_h + beta * h_prime * r)  # [B]
-        log_abs_det = term1 + term2  # [B]
-
-        return features_new, log_abs_det
-
-
-class EDLHead(nn.Module):
-    """outputs Dirichlet concentration parameters (alpha)."""
-
-    def __init__(self, latent_dim: int, num_classes: int = 10, hidden_dim: int = 128) -> None:
-        """Initialize the EDLHead.
+    def log_prob(self, z: torch.Tensor) -> torch.Tensor:
+        """Compute the log-probability of the input tensor z under the flow.
 
         Args:
-            latent_dim: Dimension of the input latent vector.
-            num_classes: Number of output classes. Defaults to 10.
-            hidden_dim: Dimension of the hidden layer. Defaults to 128.
-        """
-        super().__init__()
-        self.net = nn.Sequential(
-            nn.Linear(latent_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Linear(hidden_dim, num_classes),
-        )
-
-    def forward(self, features: torch.Tensor) -> torch.Tensor:
-        """Forward pass to compute Dirichlet concentration parameters (alpha).
-
-        Args:
-            features: Input latent tensor.
+            z: Input tensor of shape [B, D], where B is the batch size and D is the dimensionality of the flow.
 
         Returns:
-            torch.Tensor: Dirichlet concentration parameters (alpha).
+            log_prob: Tensor of shape [B, num_classes], the log-probability of z under the flow for each class.
         """
-        alpha = F.softplus(self.net(features)) + 1.0
-
-        return alpha
-
-
-class RadialFlowDensity(nn.Module):
-    """Normalizing flow density p(z) using a stack of radial flows."""
-
-    def __init__(self, latent_dim: int, flow_length: int = 4) -> None:  # noqa: D107
-        super().__init__()
-        self.latent_dim = latent_dim
-        self.layers = nn.ModuleList([RadialFlowLayer(latent_dim=latent_dim) for _ in range(flow_length)])
-
-        # Constant term for log N(z|0, I): -0.5 * D * log(2π)
-        self.log_base_const = -0.5 * self.latent_dim * math.log(2 * math.pi)
-
-    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        """Apply all flow layers to x.
-
-        Args:
-            x: Tensor of shape [B, D].
-
-        Returns:
-            features: Transformed latent tensor after all flows, shape [B, D].
-            sum_log_jac: Summed log-det Jacobian across flows, shape [B].
-        """
-        features = x
-        sum_log_jac = torch.zeros(features.size(0), device=features.device)
-
-        for layer in self.layers:
-            features, log_j = layer(features)
-            sum_log_jac = sum_log_jac + log_j
-
-        return features, sum_log_jac
-
-    def log_prob(self, x: torch.Tensor) -> torch.Tensor:
-        """Compute log p(x) under the flow-based density.
-
-        Args:
-            x: Tensor of shape [B, D].
-
-        Returns:
-            logp: Log-density log p(x), shape [B].
-        """
-        # Apply flow
-        features, sum_log_jac = self.forward(x)
-
-        # Base log-prob under N(0, I): -0.5 * (D * log(2π) + ||z||^2)
-        base_logp = self.log_base_const - 0.5 * (features**2).sum(dim=-1)  # [B]
-
-        # Add the log-determinant of the Jacobian
-        logp = base_logp + sum_log_jac  # [B]
-        return logp
+        z, total_log_det = self.forward(z)
+        log_base = -0.5 * z.shape[-1] * math.log(2 * math.pi) - 0.5 * (z**2).sum(dim=-1)
+        return log_base + total_log_det
 
 
 class RegressionHead(nn.Module):
@@ -1153,24 +1037,6 @@ class IRDHead(nn.Module):
         alpha = F.softplus(logits) + 1.0
 
         return alpha
-
-
-class PrNetHead(nn.Module):
-    """Head mapping latent features to Dirichlet concentration parameters."""
-
-    def __init__(self, latent_dim: int, num_classes: int, hidden_dim: int = 256) -> None:
-        """Initialize the Dirichlet classification head."""
-        super().__init__()
-
-        self.net = nn.Sequential(
-            nn.Linear(latent_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Linear(hidden_dim, num_classes),
-        )
-
-    def forward(self, features: torch.Tensor) -> torch.Tensor:
-        """Produce positive Dirichlet concentration parameters."""
-        return F.softplus(self.net(features)) + 1.0
 
 
 # ======================================================================================================================

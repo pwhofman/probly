@@ -519,11 +519,12 @@ def postnet_loss(
     alpha: Tensor,
     y: Tensor,
     entropy_weight: float = 1e-5,
+    reduction: str = "sum",
 ) -> torch.Tensor:
     """Posterior Networks (PostNet) classification loss.
 
     Implements the expected cross-entropy loss with an entropy regularizer
-    as proposed by Charpentier et al. (2020) for Posterior Networks.
+    as proposed by :cite:`charpentierPosteriorNetwork2020`.
 
     Reference:
         Charpentier et al., "Posterior Networks: Uncertainty Estimation without
@@ -533,20 +534,21 @@ def postnet_loss(
     Args:
         alpha: Dirichlet concentration parameters, shape (B, C).
         y: Ground-truth class labels, shape (B,).
-        entropy_weight: Weight of the entropy regularization term.
+        entropy_weight: Weight of the entropy regularization term. Defaults to 1e-5 as used in the original paper.
+        reduction: Specifies the reduction to apply to the output. Can be 'mean' or 'sum'. Defaults to 'sum'
+            to align with the implementation in the original paper.
 
     Returns:
         Scalar Posterior Networks loss averaged over the batch.
     """
     alpha0 = alpha.sum(dim=1)
-    digamma = torch.digamma
-    batch_idx = torch.arange(len(y), device=y.device)
-    expected_ce = digamma(alpha0) - digamma(alpha[batch_idx, y])
-
+    batch_idx = torch.arange(y.shape[0], device=y.device)
+    cross_entropy = digamma(alpha0) - digamma(alpha[batch_idx, y])
     entropy = Dirichlet(alpha).entropy()
-
-    loss = (expected_ce - entropy_weight * entropy).mean()
-
+    if reduction == "mean":
+        loss = (cross_entropy - entropy_weight * entropy).mean()
+    elif reduction == "sum":
+        loss = (cross_entropy - entropy_weight * entropy).sum()
     return loss
 
 

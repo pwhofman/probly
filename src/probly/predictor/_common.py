@@ -7,6 +7,7 @@ from typing import Protocol, runtime_checkable
 
 from lazy_dispatch import ProtocolRegistry, lazydispatch
 from probly.representation.credal_set._common import CredalSet
+from probly.representation.distribution import DirichletDistribution
 from probly.representation.distribution._common import Distribution
 
 
@@ -42,6 +43,11 @@ class DistributionPredictor[**In, Out: Distribution](Predictor[In, Out], Protoco
 @runtime_checkable
 class CredalPredictor[**In, Out: CredalSet](Predictor[In, Out], Protocol):
     """Protocol for predictors that return a set of distributions over outputs."""
+
+
+@runtime_checkable
+class EvidentialPredictor[**In, Out: DirichletDistribution](Predictor[In, Out], Protocol):
+    """Protocol for predictors that return a Dirichlet distribution over outputs."""
 
 
 @lazydispatch
