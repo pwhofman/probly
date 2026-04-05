@@ -13,7 +13,8 @@ from probly.evaluation.tasks import selective_prediction
 from probly.method.dropconnect import dropconnect
 from probly.quantification.classification import total_entropy
 from probly.representer.sampler import Sampler
-from probly_benchmark import data, utils
+from probly_benchmark import utils
+from probly_benchmark.method_scripts import data
 from probly_benchmark.models import LeNet
 
 if TYPE_CHECKING:
