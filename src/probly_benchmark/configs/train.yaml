@@ -7,9 +7,13 @@ batch_size: 32
 loss: "cross_entropy"
 wandb: true
 
+optimizer:
+    name: "adam"
+    params:
+        lr: 0.001
 
 scheduler:
-  name: "none"
+  name: "cosine"
   params: {}
 
 early_stopping:

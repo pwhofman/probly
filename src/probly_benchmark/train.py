@@ -89,11 +89,10 @@ def main(cfg: DictConfig) -> None:
     utils.set_seed(cfg.seed) if cfg.get("seed", None) else None
 
     # get data placeholder
-    train_loader, val_loader = data.load_mnist(cfg.dataset)
+    train_loader, val_loader = data.load_mnist()
 
     # get model placeholder
     num_classes = metadata.DATASETS[cfg.dataset].num_classes
-    print(cfg.pretrained)
     base = models.get_base_model(cfg.base_model, num_classes, cfg.pretrained)
 
     # place holder
@@ -101,7 +100,7 @@ def main(cfg: DictConfig) -> None:
         base,
     ).to(device)
     criterion = get_loss(cfg.loss)
-    optimizer = get_optimizer(cfg.optimizer, model.parameters())
+    optimizer = get_optimizer(cfg.optimizer.name, model.parameters())
 
     scheduler = get_scheduler(cfg.scheduler.name, optimizer, **cfg.scheduler.get("params", {}))
 
