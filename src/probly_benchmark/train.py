@@ -16,7 +16,7 @@ from torch.amp import GradScaler
 from tqdm import tqdm
 import wandb
 
-from probly_benchmark import data, utils
+from probly_benchmark import data, metadata, models, utils
 from probly_benchmark.train_funcs import EarlyStopping, train_epoch, validate
 
 LOSSES = {
@@ -78,22 +78,27 @@ def main(cfg: DictConfig) -> None:
     print(OmegaConf.to_yaml(cfg))
 
     run = wandb.init(
-        project="paul-hofman/test",
-        config=cfg.__dict__,
+        project="test",
+        config=OmegaConf.to_container(cfg, resolve=True, throw_on_missing=True),  # ty: ignore
         mode="online" if cfg.wandb else "disabled",
         save_code=True,
     )
 
     device = torch.device("mps")
 
-    utils.set_seed(cfg.seed) if cfg.seed else None
+    utils.set_seed(cfg.seed) if cfg.get("seed", None) else None
 
     # get data placeholder
     train_loader, val_loader = data.load_mnist(cfg.dataset)
 
     # get model placeholder
+    num_classes = metadata.DATASETS[cfg.dataset].num_classes
+    print(cfg.pretrained)
+    base = models.get_base_model(cfg.base_model, num_classes, cfg.pretrained)
+
+    # place holder
     model = nn.Sequential(
-        nn.Identity(),
+        base,
     ).to(device)
     criterion = get_loss(cfg.loss)
     optimizer = get_optimizer(cfg.optimizer, model.parameters())
@@ -139,8 +144,13 @@ def main(cfg: DictConfig) -> None:
         )
 
         if early_stopping is not None and early_stopping.should_stop(val_loss):
+            run.summary["early_stopped"] = True
             print(f"Early stopping at epoch {epoch}")
             break
+    else:
+        run.summary["early_stopped"] = False
+
+    run.finish()
 
 
 if __name__ == "__main__":

@@ -4,6 +4,19 @@ from __future__ import annotations
 
 import torch
 from torch import nn
+import torchvision.models as tm
+
+
+def get_base_model(name: str, num_classes: int, pretrained: bool = False) -> nn.Module:
+    """Get a base model."""
+    match name:
+        case "resnet18":
+            model = tm.resnet18(weights="DEFAULT" if pretrained else None)
+            model.fc = nn.Linear(512, num_classes)
+        case _:
+            msg = f"Model {name} not recognized"
+            raise ValueError(msg)
+    return model
 
 
 class LeNet(nn.Module):
