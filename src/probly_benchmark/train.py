@@ -4,13 +4,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from probly.method import bayesian
+
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
 
 import hydra
 from omegaconf import DictConfig, OmegaConf
-import torch
 from torch import nn, optim
 from torch.amp import GradScaler
 from tqdm import tqdm
@@ -84,7 +85,7 @@ def main(cfg: DictConfig) -> None:
         save_code=True,
     )
 
-    device = torch.device("mps")
+    device = utils.get_device(cfg.get("device", None))
 
     utils.set_seed(cfg.seed) if cfg.get("seed", None) else None
 
@@ -96,9 +97,7 @@ def main(cfg: DictConfig) -> None:
     base = models.get_base_model(cfg.base_model, num_classes, cfg.pretrained)
 
     # place holder
-    model = nn.Sequential(
-        base,
-    ).to(device)
+    model = bayesian(base).to(device)  # ty: ignore
     criterion = get_loss(cfg.loss)
     optimizer = get_optimizer(cfg.optimizer.name, model.parameters())
 
