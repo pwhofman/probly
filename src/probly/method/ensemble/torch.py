@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import torch
 from torch import nn
 
+from probly.predictor import predict
 from probly.traverse_nn import nn_compose, nn_traverser
 from pytraverse import CLONE, singledispatch_traverser, traverse
 
@@ -37,3 +39,9 @@ def generate_torch_ensemble(
     if reset_params:
         return nn.ModuleList([_reset_copy(obj) for _ in range(num_members)])
     return nn.ModuleList([_copy(obj) for _ in range(num_members)])
+
+
+@predict.register(nn.ModuleList)
+def predict_module_list[**In](predictor: nn.ModuleList, *args: In.args, **kwargs: In.kwargs) -> torch.Tensor:
+    """Predict for a torch module list ensemble."""
+    return torch.stack([p(*args, **kwargs) for p in predictor], dim=1)
