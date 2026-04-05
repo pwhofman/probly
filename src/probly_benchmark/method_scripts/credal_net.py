@@ -13,8 +13,7 @@ from probly.evaluation.tasks import selective_prediction
 from probly.method.credal_net import credal_net
 from probly.quantification.classification import upper_entropy
 from probly.representation.credal_set.torch import TorchProbabilityIntervalsCredalSet
-from probly_benchmark import utils
-from probly_benchmark.method_scripts import data
+from probly_benchmark import data, utils
 from probly_benchmark.models import LeNet
 
 if TYPE_CHECKING:

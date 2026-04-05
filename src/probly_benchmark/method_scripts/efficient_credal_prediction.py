@@ -15,8 +15,7 @@ from tqdm import tqdm
 from probly.evaluation.tasks import selective_prediction
 from probly.method import efficient_credal_prediction
 from probly.quantification.classification import upper_entropy
-from probly_benchmark import utils
-from probly_benchmark.method_scripts import data
+from probly_benchmark import data, utils
 from probly_benchmark.models import LeNet
 
 if TYPE_CHECKING:
