@@ -270,4 +270,11 @@ docs/source/generated/backreferences/
 **/.DS_Store
 .DS_Store
 
+# Claude
 .claude/settings.local.json
+
+# Weights and Biases
+wandb/
+
+# Hydra
+outputs/
