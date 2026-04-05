@@ -48,6 +48,29 @@ def get_optimizer(name: str, params: Iterable[nn.Parameter], **kwargs: Any) -> o
     return OPTIMIZERS[name](params, **kwargs)
 
 
+SCHEDULERS: dict[str, type[optim.lr_scheduler.LRScheduler] | None] = {
+    "cosine": optim.lr_scheduler.CosineAnnealingLR,
+    "step": optim.lr_scheduler.StepLR,
+    "plateau": optim.lr_scheduler.ReduceLROnPlateau,
+}
+
+
+def get_scheduler(
+    name: str,
+    optimizer: optim.Optimizer,
+    **kwargs: Any,  # noqa: ANN401
+) -> optim.lr_scheduler.LRScheduler | None:
+    """Get learning rate scheduler."""
+    name = name.lower()
+    if name not in SCHEDULERS:
+        msg = f"Unknown scheduler: {name}"
+        raise ValueError(msg)
+    cls = SCHEDULERS[name]
+    if cls is None:
+        return None
+    return cls(optimizer, **kwargs)
+
+
 @hydra.main(version_base=None, config_path="configs/", config_name="train")
 def main(cfg: DictConfig) -> None:
     """Run the training script."""
@@ -75,6 +98,8 @@ def main(cfg: DictConfig) -> None:
     criterion = get_loss(cfg.loss)
     optimizer = get_optimizer(cfg.optimizer, model.parameters())
 
+    scheduler = get_scheduler(cfg.scheduler.name, optimizer, **cfg.scheduler.get("params", {}))
+
     early_stopping = EarlyStopping(patience=cfg.early_stopping.patience) if cfg.early_stopping.patience else None
 
     grad_clip_norm = cfg.get("grad_clip_norm", None)
@@ -99,6 +124,12 @@ def main(cfg: DictConfig) -> None:
         running_loss /= len(train_loader)
 
         val_loss = validate(model, val_loader, criterion, device, amp_enabled)
+
+        if scheduler is not None:
+            if isinstance(scheduler, optim.lr_scheduler.ReduceLROnPlateau):
+                scheduler.step(val_loss)
+            else:
+                scheduler.step()
 
         run.log(
             data={

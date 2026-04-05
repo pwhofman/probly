@@ -4,6 +4,10 @@ batch_size: 32
 loss: "cross_entropy"
 
 
+scheduler:
+  name: "none"
+  params: {}
+
 early_stopping:
   enabled: false
   patience: 5
