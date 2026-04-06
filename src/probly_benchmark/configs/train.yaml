@@ -3,6 +3,7 @@ base_model: "resnet18"
 pretrained: True
 method:
     name: "bnn"
+    samples: 1
 epochs: 1
 batch_size: 512
 wandb: true

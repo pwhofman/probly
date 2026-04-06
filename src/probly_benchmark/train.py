@@ -99,6 +99,7 @@ def main(cfg: DictConfig) -> None:
     base = models.get_base_model(cfg.base_model, num_classes, cfg.pretrained)
 
     method_fn = get_method(cfg.method.name)
+    method_params = {k: v for k, v in cfg.method.items() if k != "name"}
     model = method_fn(base).to(device)
     optimizer = get_optimizer(cfg.optimizer.name, model.parameters())
 
@@ -123,10 +124,11 @@ def main(cfg: DictConfig) -> None:
                 grad_clip_norm=grad_clip_norm,
                 amp_enabled=amp_enabled,
                 scaler=scaler,
+                **method_params,
             )
         running_loss /= len(train_loader)
 
-        val_loss = validate(model, val_loader, device, amp_enabled)
+        val_loss = validate(model, val_loader, device, amp_enabled, **method_params)
 
         if scheduler is not None:
             if isinstance(scheduler, optim.lr_scheduler.ReduceLROnPlateau):
@@ -148,7 +150,7 @@ def main(cfg: DictConfig) -> None:
     else:
         run.summary["early_stopped"] = False
 
-    test_metrics = evaluate(model, test_loader, device, amp_enabled)
+    test_metrics = evaluate(model, test_loader, device, amp_enabled, **method_params)
     run.summary.update(test_metrics)
 
     run.finish()
