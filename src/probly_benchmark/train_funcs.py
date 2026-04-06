@@ -2,21 +2,22 @@
 
 from __future__ import annotations
 
-from functools import singledispatch
 from typing import TYPE_CHECKING, Any
 
 import torch
 from torch import nn, optim
 from torch.amp import GradScaler, autocast
-from torch.utils.data import DataLoader
 
+from lazy_dispatch import lazydispatch
 from probly.method.bayesian import BayesianPredictor
 
 if TYPE_CHECKING:
+    from torch.utils.data import DataLoader
+
     from probly.predictor import Predictor
 
 
-@singledispatch
+@lazydispatch
 def train_epoch(
     model: Predictor,
     inputs: torch.Tensor,
@@ -29,7 +30,7 @@ def train_epoch(
     raise NotImplementedError(msg)
 
 
-@train_epoch.register
+@train_epoch.register(BayesianPredictor)
 def _(
     model: BayesianPredictor,
     inputs: torch.Tensor,
@@ -60,7 +61,7 @@ def _(
     return loss.item()
 
 
-@singledispatch
+@lazydispatch
 def validate(
     model: Predictor,
     val_loader: DataLoader,
@@ -72,7 +73,7 @@ def validate(
     raise NotImplementedError(msg)
 
 
-@validate.register
+@validate.register(BayesianPredictor)
 @torch.no_grad()
 def _(
     model: BayesianPredictor,
