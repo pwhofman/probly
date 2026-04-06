@@ -7,9 +7,11 @@ from typing import TYPE_CHECKING, Any
 import torch
 from torch import nn, optim
 from torch.amp import GradScaler, autocast
+import torch.nn.functional as F
 
 from lazy_dispatch import lazydispatch
 from probly.method.bayesian import BayesianPredictor
+from probly.train.calibration.torch import ExpectedCalibrationError
 
 if TYPE_CHECKING:
     from torch.utils.data import DataLoader
@@ -92,6 +94,56 @@ def _(
             val_loss += criterion(outputs, targets).item()
     val_loss /= len(val_loader)
     return val_loss
+
+
+@lazydispatch
+def evaluate(
+    model: Predictor,
+    test_loader: DataLoader,
+    device: torch.device,
+    amp_enabled: bool = False,
+    n_bins: int = 10,
+) -> dict[str, float]:
+    """Evaluate model on test set, computing accuracy, NLL, and ECE."""
+    msg = f"No evaluate function for {type(model)}"
+    raise NotImplementedError(msg)
+
+
+@evaluate.register(BayesianPredictor)
+@torch.no_grad()
+def _(
+    model: BayesianPredictor,
+    test_loader: DataLoader,
+    device: torch.device,
+    amp_enabled: bool = False,
+    n_bins: int = 10,
+) -> dict[str, float]:
+    """Evaluate a Bayesian predictor on test set."""
+    model.eval()  # ty: ignore[unresolved-attribute]
+    logits_: list[torch.Tensor] = []
+    labels_: list[torch.Tensor] = []
+    for inputs_, targets_ in test_loader:
+        inputs, targets = inputs_.to(device), targets_.to(device)
+        with autocast(device.type, enabled=amp_enabled):
+            logits_.append(model(inputs))  # ty: ignore[call-non-callable]
+        labels_.append(targets)
+
+    logits = torch.cat(logits_)
+    labels = torch.cat(labels_)
+
+    return _compute_metrics(logits, labels, n_bins)
+
+
+def _compute_metrics(logits: torch.Tensor, labels: torch.Tensor, n_bins: int) -> dict[str, float]:
+    """Compute accuracy, NLL, and ECE from logits and labels."""
+    probs = F.softmax(logits, dim=1)
+    predictions = probs.argmax(dim=1)
+
+    accuracy = (predictions == labels).float().mean().item()
+    nll = F.cross_entropy(logits, labels).item()
+    ece = ExpectedCalibrationError(num_bins=n_bins)(probs, labels).item()
+
+    return {"accuracy": accuracy, "nll": nll, "ece": ece}
 
 
 class EarlyStopping:

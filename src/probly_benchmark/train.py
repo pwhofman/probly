@@ -18,7 +18,7 @@ from tqdm import tqdm
 import wandb
 
 from probly_benchmark import data, metadata, models, utils
-from probly_benchmark.train_funcs import EarlyStopping, train_epoch, validate
+from probly_benchmark.train_funcs import EarlyStopping, evaluate, train_epoch, validate
 
 METHODS = {
     "bnn": bayesian,
@@ -91,7 +91,7 @@ def main(cfg: DictConfig) -> None:
 
     utils.set_seed(cfg.seed) if cfg.get("seed", None) else None
 
-    train_loader, val_loader, _ = data.get_data_train(
+    train_loader, val_loader, test_loader = data.get_data_train(
         cfg.dataset, use_validation=cfg.validate, batch_size=cfg.batch_size
     )
 
@@ -148,7 +148,8 @@ def main(cfg: DictConfig) -> None:
     else:
         run.summary["early_stopped"] = False
 
-    # log accuracy, ECE, NLL, etc on test set
+    test_metrics = evaluate(model, test_loader, device, amp_enabled)
+    run.summary.update(test_metrics)
 
     run.finish()
 
