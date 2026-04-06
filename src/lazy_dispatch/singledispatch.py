@@ -41,11 +41,24 @@ def first_argument[T](x: T, *args: Any, **kwargs: Any) -> T:  # noqa: ANN401, AR
 class Lazydispatch[**In, Out]:
     """A lazy version of functools.singledispatch that also works with string types."""
 
+    __slots__ = (
+        "__dict__",
+        "__weakref__",
+        "_parse_annotations",
+        "_singledispatcher",
+        "delayed_registration_registry",
+        "dispatch_on",
+        "funcname",
+        "registry_meta_types",
+        "string_registry",
+    )
+
     def __init__(
         self,
         func: Callable[In, Out] | None = None,
         *,
         dispatch_on: Callable[In, Any] = first_argument,
+        parse_annotations: bool = True,
     ) -> None:
         """Initialize the lazy_singledispatch instance."""
         if func is None:
@@ -59,6 +72,7 @@ class Lazydispatch[**In, Out]:
         self.delayed_registration_registry: dict[str | type, RegistrationFunction] = {}
         self.registry_meta_types: set[RegistryMeta] = set()
         self.dispatch_on: Callable[In, Any] = dispatch_on
+        self._parse_annotations = parse_annotations
 
     def dispatch(  # noqa: C901, PLR0912
         self,
@@ -87,46 +101,63 @@ class Lazydispatch[**In, Out]:
                 real_type, string_type = closest
                 registration_func = string_registry.pop(string_type)
                 self.eager_register(real_type, registration_func)
+                if isinstance(real_type, RegistryMeta):
+                    self.registry_meta_types.add(real_type)
 
         f = self._singledispatcher.dispatch(cls)
 
         if registry_meta_lookup is not NotImplemented:
             # Check if an instance-level registry registration applies.
-            registry_meta_match: type | None = None
+            registry_meta_matches: set[type] = set()
             for registry_meta_type in self.registry_meta_types:
                 if isinstance(registry_meta_lookup, registry_meta_type):
-                    if registry_meta_match is not None:
-                        if issubclass(registry_meta_type, registry_meta_match):
-                            registry_meta_match = registry_meta_type
-                            continue
-                        if issubclass(registry_meta_match, registry_meta_type):
-                            continue
-                        msg = f"Ambiguous dispatch: {registry_meta_match!r} or {registry_meta_type!r}."
-                        raise RuntimeError(msg)
-                    registry_meta_match = registry_meta_type
+                    should_add = True
+                    if len(registry_meta_matches) > 0:
+                        for registry_meta_match in list(registry_meta_matches):
+                            if issubclass(registry_meta_type, registry_meta_match):
+                                registry_meta_matches.remove(registry_meta_match)
+                                continue
+                            if issubclass(registry_meta_match, registry_meta_type):
+                                should_add = False
+                                continue
+                    if should_add:
+                        registry_meta_matches.add(registry_meta_type)
 
-            if registry_meta_match is not None:
-                f_registered_type: type = object
+            if len(registry_meta_matches) > 0:
+                if len(registry_meta_matches) > 1:
+                    msg = f"Ambiguous dispatch: {registry_meta_matches!r}."
+                    raise RuntimeError(msg)
+
+                registry_meta_match = next(iter(registry_meta_matches))
+
+                non_parent_matches = []
                 for registered_type in self._singledispatcher.registry:
                     registered_func = self._singledispatcher.registry[registered_type]
-                    if registered_func is f and issubclass(registered_type, f_registered_type):
-                        f_registered_type = registered_type
+                    if registered_func is f:
+                        if issubclass(registered_type, registry_meta_match):
+                            return f
+                        if not issubclass(registry_meta_match, registered_type):
+                            non_parent_matches.append(registered_type)
 
-                if issubclass(f_registered_type, registry_meta_match):
-                    return f
-                if not issubclass(registry_meta_match, f_registered_type):
-                    msg = f"Ambiguous dispatch: {f_registered_type!r} or {registry_meta_match!r}."
-                    raise RuntimeError(msg)
+                for non_parent_match in non_parent_matches:
+                    if isinstance(registry_meta_lookup, non_parent_match):
+                        msg = f"Ambiguous dispatch: {non_parent_match!r} or {registry_meta_match!r}."
+                        raise RuntimeError(msg)  # noqa: TRY004
 
                 return self._singledispatcher.dispatch(registry_meta_match)
 
         return f
 
     def eager_register(self, cls: type | UnionType | Callable, func: Callable | None = None) -> Callable:
-        """Eagerly register a new implementation for the given type or union type."""
+        """Eagerly register a new implementation for the given type or union type.
+
+        This method simply delegates to the underlying functools.singledispatch instance.
+        Instance-based RegistryMeta types and lazy-string registrations are not supported.
+        To use the full functionality of lazydispatch, use the `register` method instead.
+        """
         return self._singledispatcher.register(cls, func)  # ty: ignore[no-matching-overload]
 
-    def register(self, cls: LazyType | Callable, func: Callable | None = None) -> Callable:
+    def register(self, cls: LazyType | Callable, func: Callable | None = None) -> Callable:  # noqa: PLR0912
         """Register a new implementation for the given type or string."""
         if is_valid_dispatch_type(cls):  # ty: ignore[invalid-argument-type]
             if func is None:
@@ -145,13 +176,19 @@ class Lazydispatch[**In, Out]:
                 raise TypeError(msg)
             func = cls  # ty: ignore[invalid-assignment]
 
-            argname, cls = next(iter(func.__annotations__.items()))
-            if not is_valid_dispatch_type(cls):
-                if _is_union_type(cls) or isinstance(cls, tuple):
-                    msg = f"Invalid annotation for {argname!r}. {cls!r} not all arguments are classes or strings."
+            if self._parse_annotations:
+                # Only parse and dereference string annotations when not in lazy dispatch mode.
+                from typing import get_type_hints  # noqa: PLC0415
+
+                argname, cls = next(iter(get_type_hints(func).items()))
+            else:
+                argname, cls = next(iter(func.__annotations__.items()))
+                if not is_valid_dispatch_type(cls):
+                    if _is_union_type(cls) or isinstance(cls, tuple):
+                        msg = f"Invalid annotation for {argname!r}. {cls!r} not all arguments are classes or strings."
+                        raise TypeError(msg)
+                    msg = f"Invalid annotation for {argname!r}. {cls!r} is not a class or string."
                     raise TypeError(msg)
-                msg = f"Invalid annotation for {argname!r}. {cls!r} is not a class or string."
-                raise TypeError(msg)
 
         types, strings = _split_lazy_type(cls)  # ty: ignore[invalid-argument-type]
 
@@ -206,13 +243,19 @@ class Lazydispatch[**In, Out]:
                 raise TypeError(msg)
             func = cls  # ty: ignore[invalid-assignment]
 
-            argname, cls = next(iter(func.__annotations__.items()))
-            if not is_valid_dispatch_type(cls):
-                if _is_union_type(cls) or isinstance(cls, tuple):
-                    msg = f"Invalid annotation for {argname!r}. {cls!r} not all arguments are classes or strings."
+            if self._parse_annotations:
+                # Only parse and dereference string annotations when not in lazy dispatch mode.
+                from typing import get_type_hints  # noqa: PLC0415
+
+                argname, cls = next(iter(get_type_hints(func).items()))
+            else:
+                argname, cls = next(iter(func.__annotations__.items()))
+                if not is_valid_dispatch_type(cls):
+                    if _is_union_type(cls) or isinstance(cls, tuple):
+                        msg = f"Invalid annotation for {argname!r}. {cls!r} not all arguments are classes or strings."
+                        raise TypeError(msg)
+                    msg = f"Invalid annotation for {argname!r}. {cls!r} is not a class or string."
                     raise TypeError(msg)
-                msg = f"Invalid annotation for {argname!r}. {cls!r} is not a class or string."
-                raise TypeError(msg)
 
         types, strings = _split_lazy_type(cls)  # ty: ignore[invalid-argument-type]
 
@@ -241,12 +284,15 @@ def lazydispatch[**In, Out](
     func: Callable[In, Out],
     *,
     dispatch_on: Callable = first_argument,
+    parse_annotations: bool = True,
 ) -> Lazydispatch[In, Out]: ...
 
 
 @overload
-def lazydispatch[T, **In, Out](
-    *, dispatch_on: Callable = first_argument
+def lazydispatch[**In, Out](
+    *,
+    dispatch_on: Callable = first_argument,
+    parse_annotations: bool = True,
 ) -> Callable[[Callable[In, Out]], Lazydispatch[In, Out]]: ...
 
 
@@ -254,13 +300,22 @@ def lazydispatch[**In, Out](
     func: Callable[In, Out] | None = None,
     *,
     dispatch_on: Callable = first_argument,
+    parse_annotations: bool = True,
 ) -> Lazydispatch[In, Out] | Callable[[Callable[In, Out]], Lazydispatch[In, Out]]:
     """Create a new lazy_singledispatch or return a decorator."""
     if func is None:
 
         def decorator(func: Callable[In, Out]) -> Lazydispatch[In, Out]:
-            return Lazydispatch(func, dispatch_on=dispatch_on)
+            return Lazydispatch(
+                func,
+                dispatch_on=dispatch_on,
+                parse_annotations=parse_annotations,
+            )
 
         return decorator
 
-    return Lazydispatch(func, dispatch_on=dispatch_on)
+    return Lazydispatch(
+        func,
+        dispatch_on=dispatch_on,
+        parse_annotations=parse_annotations,
+    )
