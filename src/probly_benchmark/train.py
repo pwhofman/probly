@@ -10,8 +10,12 @@ if TYPE_CHECKING:
     from collections.abc import Iterable
 
 
+import pathlib
+import tempfile
+
 import hydra
 from omegaconf import DictConfig, OmegaConf
+import torch
 from torch import nn, optim
 from torch.amp import GradScaler
 from tqdm import tqdm
@@ -75,7 +79,7 @@ def get_scheduler(
 
 
 @hydra.main(version_base=None, config_path="configs/", config_name="train")
-def main(cfg: DictConfig) -> None:
+def main(cfg: DictConfig) -> None:  # noqa: PLR0915, many statements are allowed in this case
     """Run the training script."""
     print("=== Training configuration ===")
     print(OmegaConf.to_yaml(cfg))
@@ -152,6 +156,37 @@ def main(cfg: DictConfig) -> None:
 
     test_metrics = evaluate(model, test_loader, device, amp_enabled, **method_params)
     run.summary.update(test_metrics)
+
+    checkpoint = {
+        "model_state_dict": model.state_dict(),
+        "config": OmegaConf.to_container(cfg, resolve=True, throw_on_missing=True),
+        "metrics": test_metrics,
+    }
+
+    name = "something"
+
+    if cfg.save_to_disk:
+        torch.save(checkpoint, f"{name}.pt")
+
+        artifact = wandb.Artifact(
+            name=name,
+            type="model",
+            metadata=OmegaConf.to_container(cfg, resolve=True, throw_on_missing=True),  # ty: ignore
+        )
+        artifact.add_file(f"{name}.pt")
+        wandb.log_artifact(artifact)
+    else:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp).joinpath(f"{name}.pt")
+            torch.save(checkpoint, path)
+
+            artifact = wandb.Artifact(
+                name=name,
+                type="model",
+                metadata=OmegaConf.to_container(cfg, resolve=True, throw_on_missing=True),  # ty: ignore
+            )
+            artifact.add_file(f"{name}.pt")
+            wandb.log_artifact(artifact)
 
     run.finish()
 
