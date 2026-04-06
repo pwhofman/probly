@@ -8,12 +8,11 @@ from typing import TYPE_CHECKING, Any
 import torch
 from torch import nn, optim
 from torch.amp import GradScaler, autocast
+from torch.utils.data import DataLoader
 
 from probly.method.bayesian import BayesianPredictor
 
 if TYPE_CHECKING:
-    from torch.utils.data import DataLoader
-
     from probly.predictor import Predictor
 
 
@@ -22,7 +21,6 @@ def train_epoch(
     model: Predictor,
     inputs: torch.Tensor,
     targets: torch.Tensor,
-    criterion: nn.Module,
     optimizer: optim.Optimizer,
     **kwargs: Any,  # noqa: ANN401
 ) -> torch.Tensor | float:
@@ -36,13 +34,13 @@ def _(
     model: BayesianPredictor,
     inputs: torch.Tensor,
     targets: torch.Tensor,
-    criterion: nn.Module,
     optimizer: optim.Optimizer,
     grad_clip_norm: float | None = None,
     amp_enabled: bool = False,
     scaler: GradScaler | None = None,
 ) -> torch.Tensor | float:
     """Train a Bayesian predictor for one epoch."""
+    criterion = nn.CrossEntropyLoss()
     optimizer.zero_grad()
     with autocast(inputs.device.type, enabled=amp_enabled):
         outputs = model(inputs)  # ty: ignore
@@ -62,21 +60,34 @@ def _(
     return loss.item()
 
 
-@torch.no_grad()
+@singledispatch
 def validate(
-    model: nn.Module,
+    model: Predictor,
     val_loader: DataLoader,
-    criterion: nn.Module,
     device: torch.device,
     amp_enabled: bool = False,
 ) -> float:
     """Validate a model."""
-    model.eval()
+    msg = f"No validation function for {type(model)}"
+    raise NotImplementedError(msg)
+
+
+@validate.register
+@torch.no_grad()
+def _(
+    model: BayesianPredictor,
+    val_loader: DataLoader,
+    device: torch.device,
+    amp_enabled: bool = False,
+) -> float:
+    """Validate a Bayesian predictor."""
+    criterion = nn.CrossEntropyLoss()
+    model.eval()  # ty: ignore[unresolved-attribute]
     val_loss = 0.0
     for inputs_, targets_ in val_loader:
         inputs, targets = inputs_.to(device), targets_.to(device)
         with autocast(device.type, enabled=amp_enabled):
-            outputs = model(inputs)
+            outputs = model(inputs)  # ty: ignore[call-non-callable]
             val_loss += criterion(outputs, targets).item()
     val_loss /= len(val_loader)
     return val_loss

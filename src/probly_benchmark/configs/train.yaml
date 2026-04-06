@@ -1,10 +1,10 @@
 dataset: "cifar10"
 base_model: "resnet18"
 pretrained: True
-method: "bnn"
+method:
+    name: "bnn"
 epochs: 10
 batch_size: 32
-loss: "cross_entropy"
 wandb: true
 
 optimizer:
@@ -13,7 +13,7 @@ optimizer:
         lr: 0.001
 
 scheduler:
-  name: "cosine"
+  name: "plateau"
   params: {}
 
 early_stopping:

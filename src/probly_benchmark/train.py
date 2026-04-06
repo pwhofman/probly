@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from probly.method import bayesian
+from probly.method import bayesian, dropconnect, dropout
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -20,18 +20,20 @@ import wandb
 from probly_benchmark import data, metadata, models, utils
 from probly_benchmark.train_funcs import EarlyStopping, train_epoch, validate
 
-LOSSES = {
-    "cross_entropy": nn.CrossEntropyLoss,
+METHODS = {
+    "bnn": bayesian,
+    "dropout": dropout,
+    "dropconnect": dropconnect,
 }
 
 
-def get_loss(name: str, **kwargs: Any) -> nn.Module:  # noqa: ANN401
-    """Get loss function."""
+def get_method(name: str):  # noqa: ANN201
+    """Get method transformation function."""
     name = name.lower()
-    if name not in LOSSES:
-        msg = f"Unknown loss: {name}"
+    if name not in METHODS:
+        msg = f"Unknown method: {name}"
         raise ValueError(msg)
-    return LOSSES[name](**kwargs)
+    return METHODS[name]
 
 
 OPTIMIZERS = {
@@ -96,9 +98,8 @@ def main(cfg: DictConfig) -> None:
     num_classes = metadata.DATASETS[cfg.dataset].num_classes
     base = models.get_base_model(cfg.base_model, num_classes, cfg.pretrained)
 
-    # place holder
-    model = bayesian(base).to(device)  # ty: ignore
-    criterion = get_loss(cfg.loss)
+    method_fn = get_method(cfg.method.name)
+    model = method_fn(base).to(device)
     optimizer = get_optimizer(cfg.optimizer.name, model.parameters())
 
     scheduler = get_scheduler(cfg.scheduler.name, optimizer, **cfg.scheduler.get("params", {}))
@@ -118,7 +119,6 @@ def main(cfg: DictConfig) -> None:
                 model,
                 inputs,
                 targets,
-                criterion,
                 optimizer,
                 grad_clip_norm=grad_clip_norm,
                 amp_enabled=amp_enabled,
@@ -126,7 +126,7 @@ def main(cfg: DictConfig) -> None:
             )
         running_loss /= len(train_loader)
 
-        val_loss = validate(model, val_loader, criterion, device, amp_enabled)
+        val_loss = validate(model, val_loader, device, amp_enabled)
 
         if scheduler is not None:
             if isinstance(scheduler, optim.lr_scheduler.ReduceLROnPlateau):
