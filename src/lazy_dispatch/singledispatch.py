@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+from contextlib import suppress
 from functools import reduce, singledispatch, update_wrapper
 import operator
 from typing import TYPE_CHECKING, Any, get_args, overload
+from weakref import WeakKeyDictionary
 
 from lazy_dispatch.isinstance import (
     LazyType,
@@ -17,7 +19,6 @@ from lazy_dispatch.registry_meta import RegistryMeta
 
 if TYPE_CHECKING:
     from collections.abc import Callable
-    from types import UnionType
 
 type RegistrationFunction = Callable[[type], Any]
 
@@ -44,8 +45,13 @@ class Lazydispatch[**In, Out]:
     __slots__ = (
         "__dict__",
         "__weakref__",
+        "_delayed_miss_cache",
+        "_delayed_registry_generation",
         "_parse_annotations",
         "_singledispatcher",
+        "_string_miss_cache",
+        "_string_registry_generation",
+        "_types_by_func",
         "delayed_registration_registry",
         "dispatch_on",
         "funcname",
@@ -73,8 +79,24 @@ class Lazydispatch[**In, Out]:
         self.registry_meta_types: set[RegistryMeta] = set()
         self.dispatch_on: Callable[In, Any] = dispatch_on
         self._parse_annotations = parse_annotations
+        self._delayed_registry_generation = 0
+        self._string_registry_generation = 0
+        self._delayed_miss_cache: WeakKeyDictionary[type, int] = WeakKeyDictionary()
+        self._string_miss_cache: WeakKeyDictionary[type, int] = WeakKeyDictionary()
+        self._types_by_func: dict[Callable, set[type]] = {}
+        for registered_type, registered_func in self._singledispatcher.registry.items():
+            with suppress(TypeError):
+                self._types_by_func.setdefault(registered_func, set()).add(registered_type)
 
-    def dispatch(  # noqa: C901, PLR0912
+    def _bump_delayed_registry_generation(self) -> None:
+        self._delayed_registry_generation += 1
+        self._delayed_miss_cache.clear()
+
+    def _bump_string_registry_generation(self) -> None:
+        self._string_registry_generation += 1
+        self._string_miss_cache.clear()
+
+    def dispatch(  # noqa: C901, PLR0912, PLR0915
         self,
         cls: type,
         *,
@@ -84,25 +106,39 @@ class Lazydispatch[**In, Out]:
         """Find the best available function for the given type or string."""
         delayed_registration_registry = self.delayed_registration_registry
         string_registry = self.string_registry
-        if delayed_register and len(delayed_registration_registry) > 0:
-            active_registrations: dict[str | type, RegistrationFunction] = {
-                t: registration_func
-                for t, registration_func in delayed_registration_registry.items()
-                if lazy_issubclass(cls, t)
-            }
+        if delayed_register and delayed_registration_registry:
+            delayed_generation = self._delayed_registry_generation
+            delayed_miss_generation = self._delayed_miss_cache.get(cls)
+            if delayed_miss_generation != delayed_generation:
+                active_registrations: dict[str | type, RegistrationFunction] = {
+                    t: registration_func
+                    for t, registration_func in delayed_registration_registry.items()
+                    if lazy_issubclass(cls, t)
+                }
 
-            for t, registration_func in active_registrations.items():
-                registration_func(cls)
-                del delayed_registration_registry[t]
+                if active_registrations:
+                    for registration_func in active_registrations.values():
+                        registration_func(cls)
 
-        if len(string_registry) > 0:
-            closest = _find_closest_string_type(cls, self.string_registry)
-            if closest is not None:
-                real_type, string_type = closest
-                registration_func = string_registry.pop(string_type)
-                self.eager_register(real_type, registration_func)
-                if isinstance(real_type, RegistryMeta):
-                    self.registry_meta_types.add(real_type)
+                    for t in active_registrations:
+                        delayed_registration_registry.pop(t, None)
+
+                    self._bump_delayed_registry_generation()
+                else:
+                    self._delayed_miss_cache[cls] = delayed_generation
+
+        if string_registry:
+            string_generation = self._string_registry_generation
+            string_miss_generation = self._string_miss_cache.get(cls)
+            if string_miss_generation != string_generation:
+                closest = _find_closest_string_type(cls, string_registry)
+                if closest is not None:
+                    real_type, string_type = closest
+                    registration_func = string_registry.pop(string_type)
+                    self._bump_string_registry_generation()
+                    self._eager_register((real_type,), registration_func)
+                else:
+                    self._string_miss_cache[cls] = string_generation
 
         f = self._singledispatcher.dispatch(cls)
 
@@ -130,34 +166,72 @@ class Lazydispatch[**In, Out]:
 
                 registry_meta_match = next(iter(registry_meta_matches))
 
-                non_parent_matches = []
-                for registered_type in self._singledispatcher.registry:
-                    registered_func = self._singledispatcher.registry[registered_type]
-                    if registered_func is f:
-                        if issubclass(registered_type, registry_meta_match):
-                            return f
-                        if not issubclass(registry_meta_match, registered_type):
-                            non_parent_matches.append(registered_type)
+                try:
+                    registered_types = self._types_by_func.get(f)
+                except TypeError:
+                    registered_types = None
 
-                for non_parent_match in non_parent_matches:
-                    if isinstance(registry_meta_lookup, non_parent_match):
-                        msg = f"Ambiguous dispatch: {non_parent_match!r} or {registry_meta_match!r}."
-                        raise RuntimeError(msg)  # noqa: TRY004
+                if registered_types is None:
+                    registry = self._singledispatcher.registry
+                    registered_types = {t for t, registered_func in registry.items() if registered_func is f}
+
+                first_non_parent_match: type | None = None
+                for registered_type in registered_types:
+                    if issubclass(registered_type, registry_meta_match):
+                        return f
+                    if (
+                        first_non_parent_match is None
+                        and not issubclass(registry_meta_match, registered_type)
+                        and isinstance(registry_meta_lookup, registered_type)
+                    ):
+                        first_non_parent_match = registered_type
+
+                if first_non_parent_match is not None:
+                    msg = f"Ambiguous dispatch: {first_non_parent_match!r} or {registry_meta_match!r}."
+                    raise RuntimeError(msg)
 
                 return self._singledispatcher.dispatch(registry_meta_match)
 
         return f
 
-    def eager_register(self, cls: type | UnionType | Callable, func: Callable | None = None) -> Callable:
+    def _eager_register(self, types: tuple[type], func: Callable) -> Callable:
         """Eagerly register a new implementation for the given type or union type.
 
         This method simply delegates to the underlying functools.singledispatch instance.
         Instance-based RegistryMeta types and lazy-string registrations are not supported.
         To use the full functionality of lazydispatch, use the `register` method instead.
         """
-        return self._singledispatcher.register(cls, func)  # ty: ignore[no-matching-overload]
+        registry = self._singledispatcher.registry
+        old_functions = {t: registry.get(t) for t in types}
 
-    def register(self, cls: LazyType | Callable, func: Callable | None = None) -> Callable:  # noqa: PLR0912
+        if len(types) == 1:
+            res = self._singledispatcher.register(types[0], func)
+        else:
+            res = self._singledispatcher.register(reduce(operator.or_, types), func)
+
+        for t in types:
+            if isinstance(t, RegistryMeta):
+                self.registry_meta_types.add(t)
+
+            old_function = old_functions[t]
+            if old_function is not None and old_function is not func:
+                try:
+                    old_bucket = self._types_by_func.get(old_function)
+                except TypeError:
+                    old_bucket = None
+
+                if old_bucket is not None:
+                    old_bucket.discard(t)
+                    if not old_bucket:
+                        with suppress(TypeError):
+                            del self._types_by_func[old_function]
+
+            with suppress(TypeError):
+                self._types_by_func.setdefault(func, set()).add(t)
+
+        return res
+
+    def register(self, cls: LazyType | Callable, func: Callable | None = None) -> Callable:
         """Register a new implementation for the given type or string."""
         if is_valid_dispatch_type(cls):  # ty: ignore[invalid-argument-type]
             if func is None:
@@ -194,17 +268,12 @@ class Lazydispatch[**In, Out]:
 
         if len(types) > 0:
             # Use reduce with operator.or_ to dynamically create a Union (PEP 604 style) and avoid private API usage.
-            union_type = reduce(operator.or_, types)
-
-            self.eager_register(union_type, func)
-
-            for t in types:
-                if isinstance(t, RegistryMeta):
-                    self.registry_meta_types.add(t)
+            self._eager_register(tuple(types), func)  # ty:ignore[invalid-argument-type]
 
         if len(strings) > 0:
             for s in strings:
                 self.string_registry[s] = func  # ty: ignore[invalid-assignment]
+            self._bump_string_registry_generation()
 
         return func  # ty: ignore[invalid-return-type]
 
@@ -264,6 +333,9 @@ class Lazydispatch[**In, Out]:
 
         for s in strings:
             self.delayed_registration_registry[s] = func  # ty: ignore[invalid-assignment]
+
+        if types or strings:
+            self._bump_delayed_registry_generation()
 
         return func  # ty: ignore[invalid-return-type]
 
