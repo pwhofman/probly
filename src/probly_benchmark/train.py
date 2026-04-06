@@ -91,10 +91,10 @@ def main(cfg: DictConfig) -> None:
 
     utils.set_seed(cfg.seed) if cfg.get("seed", None) else None
 
-    # get data placeholder
-    train_loader, val_loader = data.load_mnist()
+    train_loader, val_loader, _ = data.get_data_train(
+        cfg.dataset, use_validation=cfg.validate, batch_size=cfg.batch_size
+    )
 
-    # get model placeholder
     num_classes = metadata.DATASETS[cfg.dataset].num_classes
     base = models.get_base_model(cfg.base_model, num_classes, cfg.pretrained)
 
@@ -147,6 +147,8 @@ def main(cfg: DictConfig) -> None:
             break
     else:
         run.summary["early_stopped"] = False
+
+    # log accuracy, ECE, NLL, etc on test set
 
     run.finish()
 

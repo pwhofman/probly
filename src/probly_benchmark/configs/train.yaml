@@ -3,9 +3,10 @@ base_model: "resnet18"
 pretrained: True
 method:
     name: "bnn"
-epochs: 10
-batch_size: 32
+epochs: 1
+batch_size: 512
 wandb: true
+validate : true
 
 optimizer:
     name: "adam"
