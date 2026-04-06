@@ -151,7 +151,10 @@ def _(
 def _compute_metrics(probs: torch.Tensor, labels: torch.Tensor, n_bins: int) -> dict[str, float]:
     """Compute accuracy, NLL, and ECE from probabilities and labels."""
     accuracy = _accuracy(probs, labels)
-    nll = F.nll_loss(probs.log(), labels).item()
+    # compute the epsilon to be used for clamping to prevent log(0) in NLL calculation
+    eps = torch.finfo(probs.dtype).eps
+    logprobs = torch.log(probs.clamp(min=eps))
+    nll = F.nll_loss(logprobs, labels).item()
     ece = ExpectedCalibrationError(num_bins=n_bins)(probs, labels).item()
 
     return {"accuracy": accuracy, "nll": nll, "ece": ece}
