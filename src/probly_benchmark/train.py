@@ -24,6 +24,8 @@ import wandb
 from probly_benchmark import data, metadata, models, utils
 from probly_benchmark.train_funcs import EarlyStopping, evaluate, train_epoch, validate
 
+from .paths import CHECKPOINT_PATH
+
 METHODS = {
     "bnn": bayesian,
     "dropout": dropout,
@@ -163,10 +165,11 @@ def main(cfg: DictConfig) -> None:  # noqa: PLR0915, many statements are allowed
         "metrics": test_metrics,
     }
 
-    name = "something"
+    name = f"{cfg.method.name}_{cfg.base_model}_{cfg.dataset}"
 
     if cfg.save_to_disk:
-        torch.save(checkpoint, f"{name}.pt")
+        path = pathlib.Path(CHECKPOINT_PATH).joinpath(f"{name}.pt")
+        torch.save(checkpoint, path)
 
         artifact = wandb.Artifact(
             name=name,

@@ -9,7 +9,7 @@ batch_size: 512
 wandb: true
 validate : true
 # models will always be saved in wandb, but this option controls whether they are also saved to disk
-save_to_disk: true
+save_to_disk: false
 
 optimizer:
     name: "adam"
