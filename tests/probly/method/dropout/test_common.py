@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from probly.method import dropout
+from probly.method.dropout import dropout
 from probly.predictor import Predictor
 
 

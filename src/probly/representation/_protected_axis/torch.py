@@ -2,125 +2,158 @@
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
-from operator import attrgetter
-from sys import modules
-from typing import TYPE_CHECKING, Annotated, Any, ClassVar, Self, get_args, get_origin, overload, override
+from abc import ABC
+from dataclasses import replace
+from typing import TYPE_CHECKING, Any, ClassVar, Self, cast, overload, override
 
 import torch
 
+from probly.representation._protected_axis._common_functions import (
+    batch_shape,
+    protected_shape,
+    value_ndim,
+    value_shape,
+)
 from probly.representation._protected_axis.torch_functions import torch_function
-from probly.representation.torch_like import TorchTensorLike
+from probly.representation.torch_like import TorchTensorLike, TorchTensorLikeImplementation
 
 if TYPE_CHECKING:
     from collections.abc import Callable
     from types import ModuleType
 
     import numpy as np
+    from numpy.typing import DTypeLike, NDArray
 
     from probly.representation.array_like import ToIndices
 
 
-def _is_torch_tensor_annotation(annotation: object) -> bool:
-    origin = get_origin(annotation)
-
-    if annotation is torch.Tensor or origin is torch.Tensor:
-        return True
-
-    if origin is None:
-        return False
-
-    if origin is Annotated:
-        args = get_args(annotation)
-        return len(args) > 0 and _is_torch_tensor_annotation(args[0])
-
-    return False
+type TorchProtectedValue = TorchTensorLike[Any] | torch.Tensor
 
 
-class TorchAxisProtected[T](TorchTensorLike[T], ABC):
-    """ABC for tensor-backed representations with protected trailing axes."""
+def _validate_field_ndim(name: str, ndim: int, protected_axes: int) -> None:
+    if ndim < protected_axes:
+        msg = f"Protected field {name!r} has ndim {ndim}, expected >= {protected_axes}."
+        raise ValueError(msg)
 
-    protected_axes: ClassVar[int]
-    axis_protected_tensor_name: ClassVar[str]
-    axis_protected_tensor_getter: ClassVar[Callable[[Any], torch.Tensor]]
+
+class TorchAxisProtected[T: TorchTensorLike | torch.Tensor](TorchTensorLikeImplementation[T], ABC):
+    """ABC for representations with one or multiple protected tensor-like fields."""
+
+    protected_axes: ClassVar[dict[str, int]] = {}
 
     def __init_subclass__(cls, **kwargs: object) -> None:
-        """Resolve and cache the protected tensor attribute for subclasses."""
         super().__init_subclass__(**kwargs)
 
         if cls is TorchAxisProtected:
             return
 
-        protected_axes = getattr(cls, "protected_axes", None)
-        if not isinstance(protected_axes, int) or protected_axes < 1:
-            msg = f"{cls.__name__} must define protected_axes as an int >= 1."
+        axes = getattr(cls, "protected_axes", None)
+        if not isinstance(axes, dict) or len(axes) == 0:
+            msg = f"{cls.__name__} must define protected_axes as a non-empty dict[str, int]."
             raise TypeError(msg)
 
-        declared_annotations = cls.__dict__.get("__annotations__", {})
-        module_globals = vars(modules[cls.__module__])
+        for name, value in axes.items():
+            if not isinstance(name, str) or len(name) == 0:
+                msg = f"{cls.__name__}.protected_axes must use non-empty string keys."
+                raise TypeError(msg)
+            if not isinstance(value, int) or value < 0:
+                msg = f"{cls.__name__}.protected_axes[{name!r}] must be an int >= 0."
+                raise TypeError(msg)
+            if not hasattr(cls, "__annotations__") or name not in cls.__annotations__:
+                msg = f"{cls.__name__}.protected_axes refers to unknown field {name!r}."
+                raise TypeError(msg)
 
-        for name in declared_annotations:
-            annotation = declared_annotations[name]
-            if isinstance(annotation, str):
-                annotation = eval(annotation, module_globals, vars(cls))  # noqa: S307
+    @classmethod
+    def primary_protected_name(cls) -> str:
+        """Return the first protected field (dict order)."""
+        return next(iter(cls.protected_axes))
 
-            if _is_torch_tensor_annotation(annotation):
-                cls.axis_protected_tensor_name = name
-                cls.axis_protected_tensor_getter = attrgetter(name)
-                return
+    def protected_values(self) -> dict[str, TorchProtectedValue]:
+        """Return all protected field values as-is."""
+        values: dict[str, TorchProtectedValue] = {}
+        primary_name = type(self).primary_protected_name()
+        primary_batch: tuple[int, ...] | None = None
 
-        msg = f"{cls.__name__} must declare at least one annotated torch.Tensor attribute."
-        raise TypeError(msg)
+        for name, axes in type(self).protected_axes.items():
+            value = cast("TorchProtectedValue", getattr(self, name))
+            ndim = value_ndim(value)
+            shape = value_shape(value)
+            _validate_field_ndim(name, ndim, axes)
 
-    def protected_tensor(self) -> torch.Tensor:
-        """Return the tensor carrying the protected trailing axes."""
-        return self.__class__.axis_protected_tensor_getter(self)
+            current_batch = batch_shape(shape, axes)
+            if name == primary_name:
+                primary_batch = current_batch
+            elif primary_batch is not None and current_batch != primary_batch:
+                msg = "Protected fields do not share the same batch-shape."
+                raise ValueError(msg)
 
-    @abstractmethod
-    def with_protected_tensor(self, tensor: torch.Tensor) -> Self:
-        """Create a new object with a replaced protected tensor."""
+            values[name] = value
+
+        return values
+
+    def protected_value(self) -> TorchProtectedValue:
+        """Return the primary protected value."""
+        primary_name = type(self).primary_protected_name()
+        return self.protected_values()[primary_name]
+
+    def with_protected_values(self, values: dict[str, TorchProtectedValue]) -> Self:
+        """Return a copy with updated protected field values."""
+        current_values = self.protected_values()
+        updates: dict[str, object] = {}
+
+        for name in type(self).protected_axes:
+            updates[name] = values.get(name, current_values[name])
+
+        return cast("Self", replace(cast("Any", self), **updates))
+
+    def with_protected_value(self, value: TorchProtectedValue) -> Self:
+        """Return a copy with a replaced primary protected value."""
+        if len(type(self).protected_axes) != 1:
+            msg = "with_protected_value is only supported for single-field protected objects."
+            raise TypeError(msg)
+        return self.with_protected_values({type(self).primary_protected_name(): value})
 
     @override
     def __len__(self) -> int:
-        """Return the length along the first batch dimension."""
         if self.ndim == 0:
             msg = "len() of unsized distribution"
             raise TypeError(msg)
-        return len(self.protected_tensor())
+        return len(cast("Any", self.protected_value()))
 
     @override
     def __array_namespace__(self, /, *, api_version: str | None = None) -> ModuleType:
-        """Get the array namespace of the underlying tensor."""
-        return self.protected_tensor().__array_namespace__(api_version=api_version)  # ty:ignore[unresolved-attribute]
+        return cast("Any", self.protected_value()).__array_namespace__(api_version=api_version)
 
     @override
     @property
     def dtype(self) -> torch.dtype:
-        """The data type of the underlying tensor."""
-        return self.protected_tensor().dtype
+        return cast("torch.dtype", self.protected_value().dtype)
 
     @override
     @property
     def device(self) -> torch.device:
-        """The device of the underlying tensor."""
-        return self.protected_tensor().device
+        return cast("torch.device", self.protected_value().device)
 
     @override
     @property
     def ndim(self) -> int:
-        """Number of batch dimensions (excluding protected trailing axes)."""
-        return self.protected_tensor().ndim - self.protected_axes
+        primary_name = type(self).primary_protected_name()
+        axes = type(self).protected_axes[primary_name]
+        return len(batch_shape(value_shape(self.protected_value()), axes))
 
     @override
     @property
     def shape(self) -> tuple[int, ...]:
-        """Batch shape (excluding protected trailing axes)."""
-        return tuple(self.protected_tensor().shape[: -self.protected_axes])
+        primary_name = type(self).primary_protected_name()
+        axes = type(self).protected_axes[primary_name]
+        return batch_shape(value_shape(self.protected_value()), axes)
 
     @property
     def protected_shape(self) -> tuple[int, ...]:
-        """Shape of the protected trailing axes."""
-        return tuple(self.protected_tensor().shape[-self.protected_axes :])
+        """Protected trailing shape of the primary field."""
+        primary_name = type(self).primary_protected_name()
+        axes = type(self).protected_axes[primary_name]
+        return protected_shape(value_shape(self.protected_value()), axes)
 
     @overload
     def size(self, dim: int) -> int: ...
@@ -130,7 +163,6 @@ class TorchAxisProtected[T](TorchTensorLike[T], ABC):
 
     @override
     def size(self, dim: int | None = None) -> int | torch.Size:
-        """Return the size in batch-space semantics."""
         if dim is None:
             return torch.Size(self.shape)
 
@@ -144,88 +176,105 @@ class TorchAxisProtected[T](TorchTensorLike[T], ABC):
     @override
     @property
     def mT(self) -> Self:
-        """Matrix transpose in batch-space semantics."""
         if self.ndim < 2:
             msg = "mT requires at least 2 batch dimensions."
             raise ValueError(msg)
-
-        batch_axes = list(range(self.ndim))
-        batch_axes[-2], batch_axes[-1] = batch_axes[-1], batch_axes[-2]
-        full_axes = (*batch_axes, *range(self.ndim, self.ndim + self.protected_axes))
-
-        return self.with_protected_tensor(torch.permute(self.protected_tensor(), full_axes))
+        return cast("Self", torch.transpose(cast("Any", self), -2, -1))
 
     @override
     @property
     def mH(self) -> Self:
-        """Adjoint transpose in batch-space semantics."""
-        transposed = self.mT.protected_tensor()
-        if torch.is_complex(transposed):
-            transposed = torch.conj(transposed)
-
-        return self.with_protected_tensor(transposed)
-
-    def _validate_result_preserves_protected_axes(self, result: torch.Tensor) -> None:
-        if result.ndim < self.protected_axes:
-            msg = "Operation removed protected trailing axes."
+        if self.ndim < 2:
+            msg = "mH requires at least 2 batch dimensions."
             raise ValueError(msg)
-        if tuple(result.shape[-self.protected_axes :]) != self.protected_shape:
-            msg = "Operation modified protected trailing axes."
-            raise ValueError(msg)
+        return cast("Self", torch.adjoint(cast("Any", self)))
 
-    def _index_with_protected_axes(self, index: ToIndices) -> tuple[Any, ...]:
+    def _index_with_protected_axes(self, index: ToIndices, protected_axes_count: int) -> tuple[Any, ...]:
         index_tuple = index if isinstance(index, tuple) else (index,)
-        return (*index_tuple, *(slice(None),) * self.protected_axes)
+        return (*index_tuple, *(slice(None),) * protected_axes_count)
 
-    def _coerce_assignment_value(self, value: object) -> torch.Tensor:
-        value_tensor = (
-            value.protected_tensor() if isinstance(value, type(self)) else torch.as_tensor(value, device=self.device)
-        )
+    def _coerce_assignment_value(self, value: object) -> dict[str, object]:
+        field_names = tuple(type(self).protected_axes.keys())
 
-        if value_tensor.ndim < self.protected_axes:
-            msg = "Assigned value must include all protected trailing axes."
-            raise ValueError(msg)
+        if isinstance(value, type(self)):
+            candidate_values: dict[str, Any] = dict(value.protected_values())
+        elif isinstance(value, tuple):
+            if len(value) != len(field_names):
+                msg = f"Expected tuple with {len(field_names)} values for assignment."
+                raise TypeError(msg)
+            candidate_values = dict(zip(field_names, value, strict=True))
+        elif len(field_names) == 1:
+            candidate_values = {field_names[0]: value}
+        else:
+            msg = "Assignment to multi-field protected object requires matching instance or value tuple."
+            raise TypeError(msg)
 
-        if tuple(value_tensor.shape[-self.protected_axes :]) != self.protected_shape:
-            msg = "Assigned value modifies protected trailing axes."
-            raise ValueError(msg)
+        current_values = self.protected_values()
+        for name, axes in type(self).protected_axes.items():
+            candidate = candidate_values[name]
+            if axes == 0:
+                continue
 
-        return value_tensor
+            candidate_ndim = value_ndim(candidate)
+            candidate_shape = value_shape(candidate)
+            _validate_field_ndim(name, candidate_ndim, axes)
+
+            current_shape = value_shape(current_values[name])
+            if protected_shape(candidate_shape, axes) != protected_shape(current_shape, axes):
+                msg = f"Assigned value for field {name!r} modifies protected trailing axes."
+                raise ValueError(msg)
+
+        return candidate_values
 
     @override
     def __getitem__(self, index: ToIndices, /) -> Self | T:
-        """Return a subset while preserving protected trailing axes."""
-        full_index = self._index_with_protected_axes(index)
-        result = self.protected_tensor()[full_index]
+        values = self.protected_values()
+        indexed: dict[str, TorchProtectedValue] = {}
 
-        if not isinstance(result, torch.Tensor):
-            msg = "Indexing cannot remove protected trailing axes."
-            raise IndexError(msg)
+        for name, axes in type(self).protected_axes.items():
+            full_index = self._index_with_protected_axes(index, axes)
+            result = cast("Any", values[name])[full_index]
 
-        self._validate_result_preserves_protected_axes(result)
-        return self.with_protected_tensor(result)
+            if axes == 0 and not hasattr(result, "ndim"):
+                result = torch.as_tensor(result)
+
+            result_ndim = value_ndim(result)
+            result_shape = value_shape(result)
+            _validate_field_ndim(name, result_ndim, axes)
+
+            original_shape = value_shape(values[name])
+            if protected_shape(result_shape, axes) != protected_shape(original_shape, axes):
+                msg = f"Indexing field {name!r} modified protected trailing axes."
+                raise IndexError(msg)
+
+            indexed[name] = cast("TorchProtectedValue", result)
+
+        return self.with_protected_values(indexed)
 
     @override
     def __setitem__(self, index: ToIndices, value: object, /) -> None:
-        """Set a subset while preserving protected trailing axes."""
-        full_index = self._index_with_protected_axes(index)
+        values = self.protected_values()
+        candidate_values = self._coerce_assignment_value(value)
 
-        target = self.protected_tensor()[full_index]
-        if not isinstance(target, torch.Tensor):
-            msg = "Indexing cannot remove protected trailing axes."
-            raise IndexError(msg)
-
-        self._validate_result_preserves_protected_axes(target)
-        self.protected_tensor()[full_index] = self._coerce_assignment_value(value)
+        for name, axes in type(self).protected_axes.items():
+            full_index = self._index_with_protected_axes(index, axes)
+            cast("Any", values[name])[full_index] = candidate_values[name]
 
     @override
     def to(self, *args: Any, **kwargs: Any) -> Self:
-        """Move and/or cast the underlying tensor."""
-        tensor = self.protected_tensor().to(*args, **kwargs)
-        if tensor is self.protected_tensor():
+        values = self.protected_values()
+        updates: dict[str, TorchProtectedValue] = {}
+        changed = False
+
+        for name, value in values.items():
+            converted = cast("Any", value).to(*args, **kwargs)
+            updates[name] = cast("TorchProtectedValue", converted)
+            changed = changed or converted is not value
+
+        if not changed:
             return self
 
-        return self.with_protected_tensor(tensor)
+        return self.with_protected_values(updates)
 
     def __torch_like__(
         self,
@@ -234,8 +283,7 @@ class TorchAxisProtected[T](TorchTensorLike[T], ABC):
         *,
         device: torch.device | str | None = None,
         copy: bool = False,
-    ) -> TorchTensorLike[Any]:
-        """Convert to a TorchTensorLike."""
+    ) -> TorchTensorLikeImplementation[Any]:
         return self.to(dtype=dtype, device=device, copy=copy)
 
     @classmethod
@@ -246,16 +294,28 @@ class TorchAxisProtected[T](TorchTensorLike[T], ABC):
         args: tuple[Any, ...] = (),
         kwargs: dict[str, Any] | None = None,
     ) -> Any:  # noqa: ANN401
-        """Handle torch functions with protected-axis semantics."""
         del cls
         return torch_function(func, types, args, {} if kwargs is None else kwargs)
 
     @override
     def numpy(self, *, force: bool = False) -> np.ndarray:
-        """Convert to a numpy array."""
-        return self.protected_tensor().numpy(force=force)
+        if len(type(self).protected_axes) != 1:
+            msg = "Cannot convert multi-field protected object to a single numpy array."
+            raise TypeError(msg)
+        return cast("Any", self.protected_value()).numpy(force=force)
+
+    def __array__(self, dtype: DTypeLike | None = None, /, *, copy: bool | None = None) -> NDArray[Any]:  # ty: ignore[invalid-method-override]
+        array = self.numpy(force=dtype is not None or bool(copy))
+        if dtype is not None:
+            return array.astype(dtype, copy=bool(copy))
+        if copy:
+            return array.copy()
+        return array
 
     @override
     def detach(self) -> Self:
-        """Return a detached version of the array."""
-        return self.with_protected_tensor(self.protected_tensor().detach())
+        values = {
+            name: cast("TorchProtectedValue", cast("Any", value).detach())
+            for name, value in self.protected_values().items()
+        }
+        return self.with_protected_values(values)

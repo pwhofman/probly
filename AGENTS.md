@@ -5,6 +5,7 @@ This role of this file is to describe common mistakes and confusion points that 
 ## Common Mistakes to do right:
 - We use Google-Style docstrings in this project. When writing docstrings, do not write typing information this is inferred from code.
 - On Python 3.13, `functools.singledispatch` can crash with `RuntimeError: Inconsistent hierarchy` for classes that inherit from `typing.Protocol`-based mixins (for example `NumpyArrayLike`). Prefer explicit duck-typing helpers or project dispatch utilities instead of `singledispatch` for those objects.
+- `ty` may still fail to treat `np.ndarray` as a structural subtype of our `ArrayLike` protocol even after relaxing method requirements. Keep bounds as `ArrayLike | np.ndarray` where needed and use local `cast("Any", ...)` when dispatching ndarray-specific dunder methods.
 
 
 ## Useful Commands:

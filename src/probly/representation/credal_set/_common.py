@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from abc import ABC, ABCMeta, abstractmethod
+from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Literal, Protocol, Self
 
 from lazy_dispatch import lazydispatch
+from probly.representation.distribution import CategoricalDistribution
 from probly.representation.representation import Representation
 
 if TYPE_CHECKING:
@@ -15,25 +16,24 @@ if TYPE_CHECKING:
 type CredalSetType = Literal["categorical", "gaussian", "dirichlet"]
 
 
-class CredalSet(Representation, ABC):
+class CredalSet(Representation):
     """Base class for credal sets."""
 
     type: CredalSetType
 
 
-class CategoricalCredalSet[T](CredalSet, metaclass=ABCMeta):
+class CategoricalCredalSet[T: CategoricalDistribution](CredalSet, ABC):
     """Base class for credal sets."""
 
     type = "categorical"
 
     @classmethod
     @abstractmethod
-    def from_sample(cls, sample: Sample[T], distribution_axis: int = -1) -> Self:
+    def from_sample(cls, sample: Sample[T]) -> Self:
         """Create a credal set from a finite sample.
 
         Args:
             sample: The sample to create the credal set from.
-            distribution_axis: The axis containing the categorical probabilities.
 
         Returns:
             The created credal set.
@@ -41,50 +41,24 @@ class CategoricalCredalSet[T](CredalSet, metaclass=ABCMeta):
         msg = "from_sample method not implemented."
         raise NotImplementedError(msg)
 
-    @classmethod
-    @abstractmethod
-    def from_data(cls, data: T, distribution_axis: int = -1) -> Self:
-        """Create a credal set from data.
 
-        Args:
-            data: The data to create the credal set from.
-            distribution_axis: The axis containing the categorical probabilities.
-
-        Returns:
-            The created credal set.
-
-        """
-        msg = "from_data method not implemented."
-        raise NotImplementedError(msg)
-
-    def lower(self) -> T:
-        """Compute the lower envelope of the credal set."""
-        msg = "lower method not implemented."
-        raise NotImplementedError(msg)
-
-    def upper(self) -> T:
-        """Compute the upper envelope of the credal set."""
-        msg = "upper method not implemented."
-        raise NotImplementedError(msg)
-
-
-class DiscreteCredalSet[T](CategoricalCredalSet[T]):
+class DiscreteCredalSet[T: CategoricalDistribution](CategoricalCredalSet[T]):
     """A credal set over a finite set of distributions."""
 
 
-class ConvexCredalSet[T](CategoricalCredalSet[T]):
+class ConvexCredalSet[T: CategoricalDistribution](CategoricalCredalSet[T]):
     """A credal set defined by the convex hull of a set of distributions."""
 
 
-class DistanceBasedCredalSet[T](CategoricalCredalSet[T]):
+class DistanceBasedCredalSet[T: CategoricalDistribution](CategoricalCredalSet[T]):
     """A credal set defined by a distance metric around a central distribution."""
 
 
-class ProbabilityIntervalsCredalSet[T](CategoricalCredalSet[T]):
+class ProbabilityIntervalsCredalSet[T: CategoricalDistribution](CategoricalCredalSet[T]):
     """A credal set defined by probability intervals over outcomes."""
 
 
-class SingletonCredalSet[T](DiscreteCredalSet[T]):
+class SingletonCredalSet[T: CategoricalDistribution](DiscreteCredalSet[T]):
     """A credal set containing a single distribution."""
 
 
@@ -111,7 +85,7 @@ def create_probability_intervals(sample: Sample) -> ProbabilityIntervalsCredalSe
 
 
 @lazydispatch
-def create_convex_credal_set[T](data: T, distribution_axis: int = -1) -> ConvexCredalSet[T]:
+def create_convex_credal_set[T: CategoricalDistribution](data: T, distribution_axis: int = -1) -> ConvexCredalSet[T]:
     """Create a convex credal set from a sample."""
     msg = f"No convex credal set factory registered for data type {type(data)}"
     raise NotImplementedError(msg)

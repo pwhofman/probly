@@ -5,14 +5,14 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterator, Sequence
 from types import EllipsisType, ModuleType
-from typing import TYPE_CHECKING, Any, Literal, Protocol, Self, SupportsIndex, overload, override, runtime_checkable
+from typing import TYPE_CHECKING, Any, Literal, Protocol, Self, SupportsIndex, override, runtime_checkable
 
 import numpy as np
 
 from lazy_dispatch import lazydispatch
 
 if TYPE_CHECKING:
-    from numpy.typing import DTypeLike, NDArray
+    from numpy.typing import ArrayLike as NpArrayLike, DTypeLike, NDArray
 
 
 @runtime_checkable
@@ -123,31 +123,27 @@ class ArrayLike[DT](Protocol):
 
     Unlike `numpy.typing.ArrayLike`, this protocol does not only check
     whether an object can be converted to a numpy array, but rather
-    whether it supports the same indexing, copying, and device movement operations as a numpy array.
+    whether it supports core indexing and shape/metadata operations similar to a numpy array.
     This protocol is based in the Python array API standard: https://data-apis.org/array-api
     Unlike the official standard, this protocol does not require support for all numerical operations.
     """
 
-    @overload
-    def __array__(self) -> NDArray[Any]: ...
-
-    @overload
-    def __array__(self, dtype: DTypeLike) -> NDArray[Any]: ...
-
-    def __array__(self, dtype: DTypeLike | None = None, /, *, copy: bool | None = None) -> NDArray[Any]:
+    def __array__(self, dtype: DTypeLike | None = None, /, *, copy: bool | None = None) -> np.ndarray:
         """Convert to a numpy array."""
 
-    def __getitem__(self: Self, index: ToIndices, /) -> Self | DT:
-        """Return a new array containing the indexed values."""
+    def __getitem__(self, index: ToIndices, /) -> Any:  # noqa: ANN401
+        """Return values selected by index."""
 
-    def __setitem__(self, index: ToIndices, value: object, /) -> None:
-        """Set the values at the given indices to the given value."""
+    def __setitem__(self, index: ToIndices, value: NpArrayLike, /) -> None:
+        """Set values selected by index."""
 
-    def to_device(self, device: Any, /, *, stream: Any = None) -> Self:  # noqa: ANN401
-        """Move the array to a different device."""
-
-    def __array_namespace__(self, /, *, api_version: str | None = None) -> ModuleType:
+    def __array_namespace__(
+        self, /, *, api_version: Literal["2022.12", "2023.12", "2024.12"] | None = None
+    ) -> ModuleType:
         """Return the namespace of the array, e.g. 'numpy' or 'torch'."""
+
+    def to_device(self, device: Literal["cpu"], /, *, stream: int | Any | None = None) -> Self:  # noqa: ANN401
+        """Move the array to a device."""
 
     @property
     def ndim(self) -> int:
@@ -170,53 +166,18 @@ class ArrayLike[DT](Protocol):
         """Device of the array."""
 
     @property
-    def T(self) -> Self:  # noqa: N802
+    def T(self) -> Any:  # noqa: ANN401, N802
         """Transposed array."""
 
     @property
-    def mT(self) -> Self:  # noqa: N802
+    def mT(self) -> Any:  # noqa: ANN401, N802
         """Matrix transposed array."""
 
-    def __index__(self) -> int:
-        """Converts 0d integer array to a Python integer."""
-        msg = f"{type(self).__name__} does not support conversion to index."
-        raise NotImplementedError(msg)
-
-    def __int__(self) -> int:
-        """Converts 0d integer array to a Python integer."""
-        msg = f"{type(self).__name__} does not support conversion to int."
-        raise NotImplementedError(msg)
-
-    def __bool__(self) -> bool:
-        """Converts 0d boolean array to a Python boolean."""
-        msg = f"{type(self).__name__} does not support conversion to bool."
-        raise NotImplementedError(msg)
-
-    def __float__(self) -> float:
-        """Converts 0d float array to a Python float."""
-        msg = f"{type(self).__name__} does not support conversion to float."
-        raise NotImplementedError(msg)
-
-    def __complex__(self) -> complex:
-        """Converts 0d complex array to a Python complex."""
-        msg = f"{type(self).__name__} does not support conversion to complex."
-        raise NotImplementedError(msg)
-
     def __len__(self) -> int:
-        """Returns the length of the array along the first dimension.
-
-        This is not mandated by the array API standard, but numpy, torch and jax all support it.
-        """
-        msg = f"{type(self).__name__} does not support len()."
-        raise NotImplementedError(msg)
+        """Length along the first axis."""
 
     def __iter__(self) -> Iterator[Any]:
-        """Returns an iterator over the first dimension of the array.
-
-        This is not mandated by the array API standard, but numpy, torch and jax all support it.
-        """
-        msg = f"{type(self).__name__} does not support iteration."
-        raise NotImplementedError(msg)
+        """Iterator over the first axis."""
 
 
 @runtime_checkable
@@ -227,8 +188,69 @@ class NumpyArrayLikeConvertible[DT](ArrayLike[DT], Protocol):
         """Convert to a NumpyArrayLike."""
 
 
-class NumpyArrayLike[DT](ArrayLike[DT], np.lib.mixins.NDArrayOperatorsMixin, ABC):
-    """Protocol for array-like objects that behave like numpy arrays."""
+@runtime_checkable
+class NumpyArrayLike[DT](ArrayLike[DT], Protocol):
+    """Protocol for array-like objects that implement NumPy-specific APIs."""
+
+    @property
+    def dtype(self) -> np.dtype:
+        """Data type of the array."""
+
+    def __array_ufunc__(self, ufunc: np.ufunc, method: str, *inputs: Any, **kwargs: Any) -> Any:  # noqa: ANN401
+        """Handle numpy ufuncs."""
+
+    def __array_function__(
+        self,
+        func: Callable,
+        types: tuple[type[Any], ...],
+        args: tuple[Any, ...],
+        kwargs: dict[str, Any],
+    ) -> Any:  # noqa: ANN401
+        """Handle numpy array functions."""
+
+    @property
+    def mT(self) -> Self:  # noqa: N802
+        """Matrix-transposed view."""
+
+    @property
+    def T(self) -> Self:  # noqa: N802
+        """Transposed view."""
+
+    def transpose(self, *axes: int | None) -> Self:
+        """Return transposed array."""
+
+    def copy(self, order: Order = "C") -> Self:
+        """Return array copy."""
+
+    def astype(
+        self,
+        dtype: DTypeLike,
+        order: Order = "K",
+        casting: Literal["no", "equiv", "safe", "same_kind", "unsafe"] = "unsafe",
+        subok: bool = True,
+        copy: bool = True,
+    ) -> Self:
+        """Return cast array."""
+
+    @property
+    def flags(self) -> ArrayFlagsLike:
+        """The flags of the array."""
+
+
+class NumpyArrayLikeImplementation[DT: NumpyArrayLike | np.ndarray](
+    ArrayLike[DT], np.lib.mixins.NDArrayOperatorsMixin, ABC
+):
+    """ABC implementation for array-like objects that behave like NumPy arrays."""
+
+    def __getitem__(self: Self, index: ToIndices, /) -> NumpyArrayLikeImplementation[DT] | DT:
+        """Return a new array containing the indexed values."""
+        msg = f"{type(self).__name__} does not support indexing."
+        raise NotImplementedError(msg)
+
+    def __setitem__(self, index: ToIndices, value: object, /) -> None:
+        """Set the values at the given indices to the given value."""
+        msg = f"{type(self).__name__} does not support item assignment."
+        raise NotImplementedError(msg)
 
     @override
     @property
@@ -270,15 +292,13 @@ class NumpyArrayLike[DT](ArrayLike[DT], np.lib.mixins.NDArrayOperatorsMixin, ABC
             The result of applying the numpy function.
         """
 
-    @override
     @property
-    def mT(self) -> Self:
+    def mT(self) -> Self:  # noqa: N802
         """The transposed version of the underlying array."""
         return np.matrix_transpose(self)  # ty: ignore[invalid-return-type]
 
-    @override
     @property
-    def T(self) -> Self:
+    def T(self) -> Self:  # noqa: N802
         """The transposed version of the underlying array."""
         return np.transpose(self)  # ty: ignore[invalid-return-type]
 
@@ -324,6 +344,47 @@ class NumpyArrayLike[DT](ArrayLike[DT], np.lib.mixins.NDArrayOperatorsMixin, ABC
             copy=copy,
         )  # ty:ignore[no-matching-overload]
 
+    def __index__(self) -> int:
+        """Converts 0d integer array to a Python integer."""
+        msg = f"{type(self).__name__} does not support conversion to index."
+        raise NotImplementedError(msg)
+
+    def __int__(self) -> int:
+        """Converts 0d integer array to a Python integer."""
+        msg = f"{type(self).__name__} does not support conversion to int."
+        raise NotImplementedError(msg)
+
+    def __bool__(self) -> bool:
+        """Converts 0d boolean array to a Python boolean."""
+        msg = f"{type(self).__name__} does not support conversion to bool."
+        raise NotImplementedError(msg)
+
+    def __float__(self) -> float:
+        """Converts 0d float array to a Python float."""
+        msg = f"{type(self).__name__} does not support conversion to float."
+        raise NotImplementedError(msg)
+
+    def __complex__(self) -> complex:
+        """Converts 0d complex array to a Python complex."""
+        msg = f"{type(self).__name__} does not support conversion to complex."
+        raise NotImplementedError(msg)
+
+    def __len__(self) -> int:
+        """Returns the length of the array along the first dimension.
+
+        This is not mandated by the array API standard, but numpy, torch and jax all support it.
+        """
+        msg = f"{type(self).__name__} does not support len()."
+        raise NotImplementedError(msg)
+
+    def __iter__(self) -> Iterator[DT]:
+        """Returns an iterator over the first dimension of the array.
+
+        This is not mandated by the array API standard, but numpy, torch and jax all support it.
+        """
+        msg = f"{type(self).__name__} does not support iteration."
+        raise NotImplementedError(msg)
+
     @property
     @abstractmethod
     def flags(self) -> ArrayFlagsLike:
@@ -331,19 +392,20 @@ class NumpyArrayLike[DT](ArrayLike[DT], np.lib.mixins.NDArrayOperatorsMixin, ABC
 
     @override
     def to_device(self, device: Any, /, *, stream: Any = None) -> Self:
+        """Move the array to a device."""
         return self
 
 
-NumpyArrayLike.register(np.ndarray)
+NumpyArrayLikeImplementation.register(np.ndarray)
 
 
 @lazydispatch
 def to_numpy_array_like[DT](
-    array: ArrayLike[DT],
+    array: object,
     *,
     dtype: DTypeLike | None = None,
     copy: bool | None = None,
-) -> NumpyArrayLike[Any] | NDArray[Any]:
+) -> NumpyArrayLike[Any] | np.ndarray:
     """Convert an ArrayLike to a NumpyArrayLike.
 
     If possible, use the __array_like__ method to convert the array, otherwise use np.asanyarray.

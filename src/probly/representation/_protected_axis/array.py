@@ -2,15 +2,20 @@
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
-from operator import attrgetter
-from sys import modules
-from typing import TYPE_CHECKING, Annotated, Any, ClassVar, Self, get_args, get_origin, overload, override
+from abc import ABC
+from dataclasses import replace
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, Self, cast, override
 
 import numpy as np
 
+from probly.representation._protected_axis._common_functions import (
+    batch_shape,
+    protected_shape,
+    value_ndim,
+    value_shape,
+)
 from probly.representation._protected_axis.array_functions import array_function
-from probly.representation.array_like import ArrayFlagsLike, NumpyArrayLike
+from probly.representation.array_like import ArrayFlagsLike, NumpyArrayLike, NumpyArrayLikeImplementation, ToIndices
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -18,198 +23,230 @@ if TYPE_CHECKING:
 
     from numpy.typing import DTypeLike
 
-    from probly.representation.array_like import ToIndices
+
+type ArrayProtectedValue = NumpyArrayLike[Any] | np.ndarray
 
 
-def _is_ndarray_annotation(annotation: object) -> bool:
-    origin = get_origin(annotation)
-
-    if annotation is np.ndarray or origin is np.ndarray:
-        return True
-
-    if origin is None:
-        return False
-
-    if origin is Annotated:
-        args = get_args(annotation)
-        return len(args) > 0 and _is_ndarray_annotation(args[0])
-
-    return False
+def _validate_field_ndim(name: str, ndim: int, protected_axes: int) -> None:
+    if ndim < protected_axes:
+        msg = f"Protected field {name!r} has ndim {ndim}, expected >= {protected_axes}."
+        raise ValueError(msg)
 
 
-class ArrayAxisProtected[T](NumpyArrayLike[T], ABC):
-    """ABC for array-backed representations with protected trailing axes."""
+class ArrayAxisProtected[T: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplementation[T], ABC):
+    """ABC for representations with one or multiple protected array-like fields."""
 
-    protected_axes: ClassVar[int]
-    axis_protected_array_name: ClassVar[str]
-    axis_protected_array_getter: ClassVar[Callable[[Any], np.ndarray]]
+    protected_axes: ClassVar[dict[str, int]] = {}
 
     def __init_subclass__(cls, **kwargs: object) -> None:
-        """Resolve and cache the protected ndarray attribute for subclasses."""
         super().__init_subclass__(**kwargs)
 
         if cls is ArrayAxisProtected:
             return
 
-        protected_axes = getattr(cls, "protected_axes", None)
-        if not isinstance(protected_axes, int) or protected_axes < 1:
-            msg = f"{cls.__name__} must define protected_axes as an int >= 1."
+        axes = getattr(cls, "protected_axes", None)
+        if not isinstance(axes, dict) or len(axes) == 0:
+            msg = f"{cls.__name__} must define protected_axes as a non-empty dict[str, int]."
             raise TypeError(msg)
 
-        declared_annotations = cls.__dict__.get("__annotations__", {})
-        module_globals = vars(modules[cls.__module__])
+        for name, value in axes.items():
+            if not isinstance(name, str) or len(name) == 0:
+                msg = f"{cls.__name__}.protected_axes must use non-empty string keys."
+                raise TypeError(msg)
+            if not isinstance(value, int) or value < 0:
+                msg = f"{cls.__name__}.protected_axes[{name!r}] must be an int >= 0."
+                raise TypeError(msg)
+            if not hasattr(cls, "__annotations__") or name not in cls.__annotations__:
+                msg = f"{cls.__name__}.protected_axes refers to unknown field {name!r}."
+                raise TypeError(msg)
 
-        for name in declared_annotations:
-            annotation = declared_annotations[name]
-            if isinstance(annotation, str):
-                annotation = eval(annotation, module_globals, vars(cls))  # noqa: S307
+    @classmethod
+    def primary_protected_name(cls) -> str:
+        """Return the first protected field (dict order)."""
+        return next(iter(cls.protected_axes))
 
-            if _is_ndarray_annotation(annotation):
-                cls.axis_protected_array_name = name
-                cls.axis_protected_array_getter = attrgetter(name)
-                return
+    def protected_values(self) -> dict[str, ArrayProtectedValue]:
+        """Return all protected field values.
 
-        msg = f"{cls.__name__} must declare at least one annotated np.ndarray attribute."
-        raise TypeError(msg)
+        The values are preserved as-is and are not coerced to ``np.ndarray``.
+        """
+        values: dict[str, ArrayProtectedValue] = {}
+        primary_name = type(self).primary_protected_name()
+        primary_batch: tuple[int, ...] | None = None
 
-    def protected_array(self) -> np.ndarray:
-        """Return the ndarray carrying the protected trailing axes."""
-        return self.__class__.axis_protected_array_getter(self)
+        for name, axes in type(self).protected_axes.items():
+            value = cast("ArrayProtectedValue", getattr(self, name))
+            ndim = value_ndim(value)
+            shape = value_shape(value)
+            _validate_field_ndim(name, ndim, axes)
 
-    @abstractmethod
-    def with_protected_array(self, array: np.ndarray) -> Self:
-        """Create a new object with a replaced protected ndarray."""
+            current_batch = batch_shape(shape, axes)
+            if name == primary_name:
+                primary_batch = current_batch
+            elif primary_batch is not None and current_batch != primary_batch:
+                msg = "Protected fields do not share the same batch-shape."
+                raise ValueError(msg)
+
+            values[name] = value
+
+        return values
+
+    def protected_value(self) -> ArrayProtectedValue:
+        """Return the primary protected value."""
+        primary_name = type(self).primary_protected_name()
+        return self.protected_values()[primary_name]
+
+    def with_protected_values(self, values: dict[str, ArrayProtectedValue]) -> Self:
+        """Return a copy with updated protected field values."""
+        return replace(self, **values)  # ty:ignore[invalid-argument-type]
+
+    def with_protected_value(self, value: ArrayProtectedValue) -> Self:
+        """Return a copy with a replaced primary protected value."""
+        if len(type(self).protected_axes) != 1:
+            msg = "with_protected_value is only supported for single-field protected objects."
+            raise TypeError(msg)
+        return self.with_protected_values({type(self).primary_protected_name(): value})
 
     @override
     def __len__(self) -> int:
-        """Return the length along the first dimension."""
         if self.ndim == 0:
-            msg = "len() of unsized distribution"
+            msg = "len() of unsized representation"
             raise TypeError(msg)
-        return len(self.protected_array())
+        return len(cast("Any", self.protected_value()))
 
     @override
-    def __array_namespace__(self, /, *, api_version: str | None = None) -> ModuleType:
-        """Get the array namespace of the underlying array."""
-        return self.protected_array().__array_namespace__(api_version=api_version)  # ty:ignore[invalid-argument-type]
-
-    @overload
-    def __array__(self) -> np.ndarray: ...
-
-    @overload
-    def __array__(self, dtype: DTypeLike) -> np.ndarray: ...
+    def __array_namespace__(
+        self, /, *, api_version: Literal["2022.12", "2023.12", "2024.12"] | None = None
+    ) -> ModuleType:
+        return self.protected_value().__array_namespace__(api_version=api_version)
 
     @override
-    def __array__(
-        self,
-        dtype: DTypeLike | None = None,
-        /,
-        *,
-        copy: bool | None = None,
-    ) -> np.ndarray:
-        """Get the underlying numpy array (probabilities)."""
-        return np.asarray(self.protected_array(), dtype=dtype, copy=copy)
+    def __array__(self, dtype: DTypeLike | None = None, /, *, copy: bool | None = None) -> np.ndarray:
+        if len(type(self).protected_axes) != 1:
+            msg = "Cannot convert multi-field protected object to a single numpy array."
+            raise TypeError(msg)
+        return np.asarray(self.protected_value(), dtype=dtype, copy=copy)
 
     @override
     @property
     def dtype(self) -> np.dtype:
-        """The data type of the underlying array."""
-        return self.protected_array().dtype
+        return self.protected_value().dtype
 
     @override
     @property
     def device(self) -> str:
-        """The device of the underlying array."""
-        return self.protected_array().device
+        return self.protected_value().device
 
     @override
     @property
     def ndim(self) -> int:
-        """Number of batch dimensions (excluding category axis)."""
-        return self.protected_array().ndim - self.protected_axes
+        primary_name = type(self).primary_protected_name()
+        axes = type(self).protected_axes[primary_name]
+        return len(batch_shape(value_shape(self.protected_value()), axes))
 
     @override
     @property
     def shape(self) -> tuple[int, ...]:
-        """Batch shape (excluding category axis)."""
-        return self.protected_array().shape[: -self.protected_axes]
+        primary_name = type(self).primary_protected_name()
+        axes = type(self).protected_axes[primary_name]
+        return batch_shape(value_shape(self.protected_value()), axes)
 
     @property
     def protected_shape(self) -> tuple[int, ...]:
-        """Shape of the protected trailing axes."""
-        return self.protected_array().shape[-self.protected_axes :]
+        """Protected trailing shape of the primary field."""
+        primary_name = type(self).primary_protected_name()
+        axes = type(self).protected_axes[primary_name]
+        return protected_shape(value_shape(self.protected_value()), axes)
 
     @override
     @property
     def size(self) -> int:
-        """The total number of distributions."""
         return int(np.prod(self.shape)) if self.shape else 1
 
     @override
     @property
     def flags(self) -> ArrayFlagsLike:
-        return self.protected_array().flags
+        return self.protected_value().flags
 
-    def _validate_result_preserves_protected_axes(self, result: np.ndarray) -> None:
-        if result.ndim < self.protected_axes:
-            msg = "Operation removed protected trailing axes."
-            raise ValueError(msg)
-        if result.shape[-self.protected_axes :] != self.protected_shape:
-            msg = "Operation modified protected trailing axes."
-            raise ValueError(msg)
-
-    def _index_with_protected_axes(self, index: ToIndices) -> tuple[Any, ...]:
+    def _index_with_protected_axes(self, index: ToIndices, protected_axes_count: int) -> tuple[Any, ...]:
         index_tuple = index if isinstance(index, tuple) else (index,)
-        return (*index_tuple, *(slice(None),) * self.protected_axes)
+        return (*index_tuple, *(slice(None),) * protected_axes_count)
 
-    def _coerce_assignment_value(self, value: object) -> np.ndarray:
-        value_array = value.protected_array() if isinstance(value, type(self)) else np.asarray(value)
+    def _coerce_assignment_value(self, value: object) -> dict[str, object]:
+        field_names = tuple(type(self).protected_axes.keys())
 
-        if value_array.ndim < self.protected_axes:
-            msg = "Assigned value must include all protected trailing axes."
-            raise ValueError(msg)
+        if isinstance(value, type(self)):
+            candidate_values: dict[str, Any] = dict(value.protected_values())
+        elif isinstance(value, tuple):
+            if len(value) != len(field_names):
+                msg = f"Expected tuple with {len(field_names)} values for assignment."
+                raise TypeError(msg)
+            candidate_values = dict(zip(field_names, value, strict=True))
+        elif len(field_names) == 1:
+            candidate_values = {field_names[0]: value}
+        else:
+            msg = "Assignment to multi-field protected object requires matching instance or value tuple."
+            raise TypeError(msg)
 
-        if value_array.shape[-self.protected_axes :] != self.protected_shape:
-            msg = "Assigned value modifies protected trailing axes."
-            raise ValueError(msg)
+        current_values = self.protected_values()
+        for name, axes in type(self).protected_axes.items():
+            candidate = candidate_values[name]
+            if axes == 0:
+                continue
 
-        return value_array
+            candidate_ndim = value_ndim(candidate)
+            candidate_shape = value_shape(candidate)
+            _validate_field_ndim(name, candidate_ndim, axes)
+
+            current_shape = value_shape(current_values[name])
+            if protected_shape(candidate_shape, axes) != protected_shape(current_shape, axes):
+                msg = f"Assigned value for field {name!r} modifies protected trailing axes."
+                raise ValueError(msg)
+
+        return candidate_values
 
     def __getitem__(self, index: ToIndices, /) -> Self:
-        """Return a subset while preserving protected trailing axes."""
-        full_index = self._index_with_protected_axes(index)
-        result = self.protected_array()[full_index]
+        values = self.protected_values()
+        indexed: dict[str, ArrayProtectedValue] = {}
 
-        if not isinstance(result, np.ndarray):
-            msg = "Indexing cannot remove protected trailing axes."
-            raise IndexError(msg)
+        for name, axes in type(self).protected_axes.items():
+            full_index = self._index_with_protected_axes(index, axes)
+            result = cast("Any", values[name])[full_index]
 
-        self._validate_result_preserves_protected_axes(result)
-        return self.with_protected_array(result)
+            if axes == 0 and not hasattr(result, "ndim"):
+                result = np.asarray(result)
+
+            result_ndim = value_ndim(result)
+            result_shape = value_shape(result)
+            _validate_field_ndim(name, result_ndim, axes)
+
+            original_shape = value_shape(values[name])
+            if protected_shape(result_shape, axes) != protected_shape(original_shape, axes):
+                msg = f"Indexing field {name!r} modified protected trailing axes."
+                raise IndexError(msg)
+
+            indexed[name] = result
+
+        return self.with_protected_values(indexed)
 
     def __setitem__(self, index: ToIndices, value: object, /) -> None:
-        """Set a subset while preserving protected trailing axes."""
-        full_index = self._index_with_protected_axes(index)
+        values = self.protected_values()
+        candidate_values = self._coerce_assignment_value(value)
 
-        target = self.protected_array()[full_index]
-        if not isinstance(target, np.ndarray):
-            msg = "Indexing cannot remove protected trailing axes."
-            raise IndexError(msg)
+        for name, axes in type(self).protected_axes.items():
+            full_index = self._index_with_protected_axes(index, axes)
+            values[name][full_index] = candidate_values[name]  # ty:ignore[invalid-assignment]
 
-        self._validate_result_preserves_protected_axes(target)
-        self.protected_array()[full_index] = self._coerce_assignment_value(value)
-
-    def _postprocess_ufunc_result(self, result: np.ndarray, *, ufunc: np.ufunc, method: str) -> np.ndarray:
+    def _postprocess_ufunc_result(
+        self,
+        result: np.ndarray,
+        *,
+        ufunc: np.ufunc,
+        method: str,
+    ) -> np.ndarray:
+        """Optionally postprocess wrapped ufunc results."""
         del ufunc, method
         return result
-
-    def _wrap_ufunc_result(self, result: np.ndarray, *, ufunc: np.ufunc, method: str) -> Self | np.ndarray:
-        if result.ndim < self.protected_axes:
-            return result
-        if result.shape[-self.protected_axes :] != self.protected_shape:
-            return result
-        processed = self._postprocess_ufunc_result(result, ufunc=ufunc, method=method)
-        return self.with_protected_array(processed)
 
     def __array_ufunc__(
         self,
@@ -218,31 +255,40 @@ class ArrayAxisProtected[T](NumpyArrayLike[T], ABC):
         *inputs: object,
         **kwargs: object,
     ) -> object:
-        """Handle ufuncs while preserving protected trailing axes."""
+        if len(type(self).protected_axes) != 1:
+            msg = "__array_ufunc__ is undefined for multi-field protected objects by default."
+            raise TypeError(msg)
+
         if method != "__call__":
             return NotImplemented
 
         out = kwargs.get("out")
         if out is not None:
             outs = out if isinstance(out, tuple) else (out,)
-            kwargs["out"] = tuple(o.protected_array() if isinstance(o, type(self)) else o for o in outs)
+            kwargs["out"] = tuple(o.protected_value() if isinstance(o, type(self)) else o for o in outs)
 
-        converted_inputs = tuple(x.protected_array() if isinstance(x, type(self)) else x for x in inputs)
+        converted_inputs = tuple(x.protected_value() if isinstance(x, type(self)) else x for x in inputs)
         result = getattr(ufunc, method)(*converted_inputs, **kwargs)
 
         if out is not None:
             return out
 
-        if isinstance(result, tuple):
-            return tuple(
-                self._wrap_ufunc_result(r, ufunc=ufunc, method=method) if isinstance(r, np.ndarray) else r
-                for r in result
-            )
+        if not hasattr(result, "ndim"):
+            return result
+
+        primary_name = type(self).primary_protected_name()
+        axes = type(self).protected_axes[primary_name]
+        result_ndim = value_ndim(result)
+        result_shape = value_shape(result)
+        if result_ndim < axes:
+            return result
+        if protected_shape(result_shape, axes) != self.protected_shape:
+            return result
 
         if isinstance(result, np.ndarray):
-            return self._wrap_ufunc_result(result, ufunc=ufunc, method=method)
+            result = self._postprocess_ufunc_result(result, ufunc=ufunc, method=method)
 
-        return result
+        return self.with_protected_value(result)
 
     def __array_function__(
         self,
@@ -251,5 +297,4 @@ class ArrayAxisProtected[T](NumpyArrayLike[T], ABC):
         args: tuple[object, ...],
         kwargs: dict[str, object],
     ) -> object:
-        """Handle selected NumPy functions with protected-axis semantics."""
         return array_function(func, types, args, kwargs)

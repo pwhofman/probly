@@ -9,7 +9,7 @@ import numpy as np
 from scipy import special
 
 from probly.representation._protected_axis.array import ArrayAxisProtected
-from probly.representation.array_like import NumpyArrayLike
+from probly.representation.array_like import NumpyArrayLikeImplementation
 from probly.representation.distribution._common import DirichletDistribution
 from probly.representation.sample import ArraySample
 
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 @dataclass(frozen=True, slots=True, weakref_slot=True)
 class ArrayDirichletDistribution(
     ArrayAxisProtected,
-    NumpyArrayLike[Any],
+    NumpyArrayLikeImplementation[np.ndarray],
     DirichletDistribution,
 ):
     """A Dirichlet distribution stored as a numpy array.
@@ -32,7 +32,7 @@ class ArrayDirichletDistribution(
     """
 
     alphas: np.ndarray
-    protected_axes: ClassVar[int] = 1
+    protected_axes: ClassVar[dict[str, int]] = {"alphas": 1}
 
     def __post_init__(self) -> None:
         """Validate the concentration parameters."""
@@ -58,10 +58,6 @@ class ArrayDirichletDistribution(
         return cls(alphas=np.asarray(alphas, dtype=dtype))
 
     @override
-    def with_protected_array(self, array: np.ndarray) -> Self:
-        return type(self)(array)
-
-    @override
     @property
     def entropy(self) -> float:
         """Compute the entropy of the Dirichlet distribution."""
@@ -79,7 +75,7 @@ class ArrayDirichletDistribution(
         self,
         num_samples: int = 1,
         rng: np.random.Generator | None = None,
-    ) -> ArraySample:
+    ) -> ArraySample[np.ndarray]:
         """Sample from the Dirichlet distribution (NumPy backend)."""
         if rng is None:
             rng = np.random.default_rng()

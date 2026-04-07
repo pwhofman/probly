@@ -3,14 +3,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Self, Unpack, override
+from typing import TYPE_CHECKING, Any, Literal, Self, Unpack, cast, override
 
 import numpy as np
 
 from probly.representation.array_like import (
     ArrayFlagsLike,
-    ArrayLike,
     NumpyArrayLike,
+    NumpyArrayLikeConvertible,
+    NumpyArrayLikeImplementation,
     Order,
     ToIndices,
     to_numpy_array_like,
@@ -29,10 +30,13 @@ if TYPE_CHECKING:
     from types import ModuleType
 
     from numpy.typing import DTypeLike
+    import torch
+
+    from probly.representation.torch_like import TorchTensorLikeImplementation
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class ArraySample[D: NumpyArrayLike](NumpyArrayLike[D], Sample[NumpyArrayLike[D]]):
+class ArraySample[D: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplementation[D], Sample[D]):
     """A sample of predictions stored in a numpy array."""
 
     array: D
@@ -49,15 +53,15 @@ class ArraySample[D: NumpyArrayLike](NumpyArrayLike[D], Sample[NumpyArrayLike[D]
                 raise ValueError(msg)
             super(type(self), self).__setattr__("sample_axis", self.array.ndim + self.sample_axis)
 
-        if not isinstance(self.array, (np.ndarray, NumpyArrayLike)):
-            msg = "array must be Array API compliant."
+        if not isinstance(self.array, NumpyArrayLike):
+            msg = "array must be a NumpyArrayLike (or ndarray)."
             raise TypeError(msg)
 
     @override
     @classmethod
     def from_iterable(
         cls,
-        samples: Iterable[ArrayLike[D]],
+        samples: Iterable[D],
         sample_axis: SampleAxis = "auto",
         dtype: DTypeLike | None = None,
         **_kwargs: Unpack[SampleParams],
@@ -72,7 +76,7 @@ class ArraySample[D: NumpyArrayLike](NumpyArrayLike[D], Sample[NumpyArrayLike[D]
         Returns:
             The created ArraySample.
         """
-        if isinstance(samples, ArrayLike):
+        if isinstance(samples, NumpyArrayLike):
             sample_array = to_numpy_array_like(samples, dtype=dtype)
             if sample_axis == "auto":
                 if sample_array.ndim == 0:
@@ -90,16 +94,23 @@ class ArraySample[D: NumpyArrayLike](NumpyArrayLike[D], Sample[NumpyArrayLike[D]
                 sample_axis = -1
             samples = np.stack(samples, axis=sample_axis, dtype=dtype)  # ty:ignore[no-matching-overload]
 
-        return cls(array=samples, sample_axis=sample_axis)  # ty:ignore[invalid-argument-type]
+        return cls(array=samples, sample_axis=sample_axis)
 
     @override
     @classmethod
     def from_sample(cls, sample: Sample[D], sample_axis: SampleAxis = "auto", dtype: DTypeLike | None = None) -> Self:  # ty:ignore[invalid-method-override]
+        if isinstance(sample, NumpyArrayLikeConvertible):
+            array_sample = to_numpy_array_like(sample, dtype=dtype)
+            if not isinstance(array_sample, ArraySample):
+                msg = "Converted array must be an ArraySample."
+                raise TypeError(msg)
+            sample = array_sample
+
         if isinstance(sample, ArraySample):
             sample_array: D = sample.array  # ty:ignore[invalid-assignment]
 
             if dtype is not None:
-                sample_array = sample_array.astype(dtype)
+                sample_array = cast("Any", sample_array).astype(dtype)
 
             in_sample_axis = sample.sample_axis
             if sample_axis not in ("auto", in_sample_axis):
@@ -112,11 +123,13 @@ class ArraySample[D: NumpyArrayLike](NumpyArrayLike[D], Sample[NumpyArrayLike[D]
     @override
     def __len__(self) -> int:
         """Return the len of the array."""
-        return len(self.array)
+        return len(cast("Any", self.array))
 
-    def __array_namespace__(self, /, *, api_version: str | None = None) -> ModuleType:
+    def __array_namespace__(
+        self, /, *, api_version: Literal["2022.12", "2023.12", "2024.12"] | None = None
+    ) -> ModuleType:
         """Get the array namespace of the underlying array."""
-        return self.array.__array_namespace__(api_version=api_version)
+        return cast("Any", self.array).__array_namespace__(api_version=api_version)
 
     @property
     def dtype(self) -> DTypeLike:
@@ -154,29 +167,29 @@ class ArraySample[D: NumpyArrayLike](NumpyArrayLike[D], Sample[NumpyArrayLike[D]
         return self.array.shape[self.sample_axis]
 
     @property
-    def samples(self) -> NumpyArrayLike[D]:
+    def samples(self) -> D:
         """Return an iterator over the samples."""
         if self.sample_axis == 0:
             return self.array
         return np.moveaxis(self.array, self.sample_axis, 0)  # ty:ignore[invalid-argument-type]
 
     @override
-    def sample_mean(self) -> NumpyArrayLike[D]:
+    def sample_mean(self) -> D:
         """Compute the mean of the sample."""
         return np.mean(self.array, axis=self.sample_axis)
 
     @override
-    def sample_std(self, ddof: int = 1) -> NumpyArrayLike[D]:
+    def sample_std(self, ddof: int = 1) -> D:
         """Compute the standard deviation of the sample."""
         return np.std(self.array, axis=self.sample_axis, ddof=ddof)
 
     @override
-    def sample_var(self, ddof: int = 1) -> NumpyArrayLike[D]:
+    def sample_var(self, ddof: int = 1) -> D:
         """Compute the variance of the sample."""
         return np.var(self.array, axis=self.sample_axis, ddof=ddof)
 
     @override
-    def concat(self, other: Sample[NumpyArrayLike[D]]) -> Self:
+    def concat(self, other: Sample[D]) -> Self:
         if isinstance(other, ArraySample):
             other_array = np.moveaxis(other.array, other.sample_axis, self.sample_axis)  # ty:ignore[invalid-argument-type]
         else:
@@ -184,7 +197,7 @@ class ArraySample[D: NumpyArrayLike](NumpyArrayLike[D], Sample[NumpyArrayLike[D]
 
         concatenated = np.concatenate((self.array, other_array), axis=self.sample_axis)
 
-        return type(self)(array=concatenated, sample_axis=self.sample_axis)  # ty:ignore[invalid-argument-type]
+        return type(self)(array=concatenated, sample_axis=self.sample_axis)
 
     def move_sample_axis(self, new_sample_axis: int) -> ArraySample[D]:
         """Return a new ArraySample with the sample dimension moved to new_sample_axis.
@@ -198,7 +211,7 @@ class ArraySample[D: NumpyArrayLike](NumpyArrayLike[D], Sample[NumpyArrayLike[D]
         moved_array = np.moveaxis(self.array, self.sample_axis, new_sample_axis)  # ty:ignore[invalid-argument-type]
         return type(self)(array=moved_array, sample_axis=new_sample_axis)
 
-    def __getitem__(self, index: ToIndices) -> NumpyArrayLike[D] | D:
+    def __getitem__(self, index: ToIndices) -> NumpyArrayLikeImplementation[D] | D:
         """Get a sample by index.
 
         Args:
@@ -207,7 +220,7 @@ class ArraySample[D: NumpyArrayLike](NumpyArrayLike[D], Sample[NumpyArrayLike[D]
         Returns:
             The sample at the specified index.
         """
-        new_array = self.array[index]
+        new_array = cast("Any", self.array)[index]
 
         if not hasattr(new_array, "ndim"):
             return new_array
@@ -226,7 +239,7 @@ class ArraySample[D: NumpyArrayLike](NumpyArrayLike[D], Sample[NumpyArrayLike[D]
             index: The index of the sample to set.
             value: The value to set at the specified index.
         """
-        self.array[index] = value
+        cast("Any", self.array)[index] = value
 
     def __array__(self, dtype: DTypeLike | None = None, copy: bool | None = None) -> np.ndarray:
         """Get the underlying numpy array.
@@ -309,13 +322,14 @@ class ArraySample[D: NumpyArrayLike](NumpyArrayLike[D], Sample[NumpyArrayLike[D]
         )
 
     @override
-    def copy(self, order: Order = "C") -> Self:
+    def copy(self, order: Order = "C") -> ArraySample[D]:
         """Create a copy of the ArraySample.
 
         Returns:
             A copy of the ArraySample.
         """
-        return type(self)(array=self.array.copy(), sample_axis=self.sample_axis)
+        copied_array = cast("Any", self.array).copy(order=order)
+        return type(self)(array=copied_array, sample_axis=self.sample_axis)
 
     def __eq__(self, value: Any) -> Self:  # noqa: ANN401, PYI032  # ty:ignore[invalid-method-override]
         """Vectorized equality comparison."""
@@ -327,38 +341,50 @@ class ArraySample[D: NumpyArrayLike](NumpyArrayLike[D], Sample[NumpyArrayLike[D]
 
     @override
     def __index__(self) -> int:
-        return self.array.__index__()
+        return cast("Any", self.array).__index__()
 
     @override
     def __int__(self) -> int:
-        return self.array.__int__()
+        return cast("Any", self.array).__int__()
 
     @override
     def __bool__(self) -> bool:
-        return self.array.__bool__()
+        return cast("Any", self.array).__bool__()
 
     @override
     def __float__(self) -> float:
-        return self.array.__float__()
+        return cast("Any", self.array).__float__()
 
     @override
     def __complex__(self) -> complex:
-        return self.array.__complex__()
+        return cast("Any", self.array).__complex__()
 
     @override
-    def __iter__(self) -> Iterator[Any]:
+    def __iter__(self) -> Iterator[D]:
         """Return an iterator over the first dimension of the underlying array.
 
         For an iterator over the samples, use the :attr:`samples` property.
         """
-        return self.array.__iter__()
+        return cast("Any", self.array).__iter__()
 
-    def __array_like__(self, dtype: DTypeLike | None = None, /, *, copy: bool | None = None) -> Self:
+    def __array_like__(self, dtype: DTypeLike | None = None, /, *, copy: bool | None = None) -> ArraySample[D]:
         """Convert to a NumpyArrayLike."""
         if copy:
             return self.copy()
 
         return self
+
+    def __torch_like__(
+        self, dtype: torch.dtype | None = None, /, *, device: torch.device | str | None = None, copy: bool = False
+    ) -> TorchTensorLikeImplementation[Any]:
+        """Convert to a TorchTensorSample."""
+        from probly.representation.torch_like import to_torch_tensor_like  # noqa: PLC0415
+
+        from .torch import TorchTensorSample  # noqa: PLC0415
+
+        tensor = to_torch_tensor_like(self.array, dtype=dtype, device=device, copy=copy)
+
+        return TorchTensorSample(cast("Any", tensor), sample_dim=self.sample_axis)
 
 
 @array_sample_internals.register(ArraySample)
@@ -372,6 +398,6 @@ def _[D: NumpyArrayLike](array: ArraySample[D]) -> ArraySampleInternals[D]:
 
 
 create_sample.register(
-    np.number | np.ndarray | float | int | NumpyArrayLike,
+    np.number | np.ndarray | float | int | NumpyArrayLikeImplementation,
     ArraySample.from_iterable,
 )

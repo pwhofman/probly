@@ -4,8 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from probly.method import ensemble
-from probly.method.ensemble._common import ensemble_generator
+from probly.method.ensemble import ensemble, ensemble_generator
 from probly.predictor import Predictor
 
 pytest.importorskip("sklearn")

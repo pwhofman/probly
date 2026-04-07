@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
     import numpy as np
 
-    from probly.representation.torch_like import TorchTensorLike
+    from probly.representation.torch_like import TorchTensorLikeImplementation
 
 
 @create_categorical_distribution.register(torch.Tensor)
@@ -32,7 +32,7 @@ class TorchTensorCategoricalDistribution(
     """
 
     probabilities: torch.Tensor
-    protected_axes: ClassVar[int] = 1
+    protected_axes: ClassVar[dict[str, int]] = {"probabilities": 1}
 
     @property
     def _is_bernoulli(self) -> bool:
@@ -72,10 +72,6 @@ class TorchTensorCategoricalDistribution(
             raise ValueError(msg)
 
     @override
-    def with_protected_tensor(self, tensor: torch.Tensor) -> Self:
-        return type(self)(tensor)
-
-    @override
     @property
     def num_classes(self) -> int:
         if self._is_bernoulli:
@@ -107,12 +103,12 @@ class TorchTensorCategoricalDistribution(
             probabilities = self._bernoulli_probability()
             expanded = probabilities.expand((num_samples, *probabilities.shape))
             samples = torch.bernoulli(expanded, generator=rng).to(dtype=torch.int64)
-            return TorchTensorSample(tensor=cast("TorchTensorLike[Any]", samples), sample_dim=0)
+            return TorchTensorSample(tensor=cast("TorchTensorLikeImplementation[Any]", samples), sample_dim=0)
 
         flat_probabilities = self._normalized_probabilities().reshape((-1, self.num_classes))
         flat_samples = torch.multinomial(flat_probabilities, num_samples=num_samples, replacement=True, generator=rng)
         samples = flat_samples.transpose(0, 1).reshape((num_samples, *self.shape))
-        return TorchTensorSample(tensor=cast("TorchTensorLike[Any]", samples), sample_dim=0)
+        return TorchTensorSample(tensor=cast("TorchTensorLikeImplementation[Any]", samples), sample_dim=0)
 
     @override
     def numpy(self, *, force: bool = False) -> np.ndarray:

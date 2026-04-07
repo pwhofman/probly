@@ -19,7 +19,9 @@ from probly.representer._representer import Representer, representer
 
 
 @lazydispatch(dispatch_on=first_element)
-def compute_representative_set[T](probs: Iterable[T], alpha: float, distance: str) -> Iterable[T]:
+def compute_representative_set[T: CategoricalDistribution](
+    probs: Iterable[T], alpha: float, distance: str
+) -> Iterable[T]:
     """Compute the credal set from the ensemble predictions."""
     msg = f"compute_representative_set method not implemented for type {type(probs)}."
     raise NotImplementedError(msg)

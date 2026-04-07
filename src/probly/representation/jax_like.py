@@ -10,8 +10,8 @@ import jax
 from probly.representation.array_like import ArrayLike
 
 
-class JaxArrayLike(ArrayLike[Any], ABC):
+class JaxArrayLikeImplementation(ArrayLike[Any], ABC):
     """Protocol for array-like objects that behave like JAX arrays."""
 
 
-JaxArrayLike.register(jax.Array)
+JaxArrayLikeImplementation.register(jax.Array)

@@ -94,8 +94,7 @@ def predictor_transformation[Pin: Predictor, **In, POut: Predictor](
             **kwargs: Any,  # noqa: ANN401
         ) -> POut:
             cur_base, cur_type = current_predictor_type.get()
-            if base is cur_base:
-                inferred_type = cur_type
+            inferred_type = cur_type if base is cur_base else None
             if permitted_predictor_types is not None:
                 if len(permitted_predictor_types) == 1 and auto_infer_predictor_type:
                     inferred_type = next(iter(permitted_predictor_types))

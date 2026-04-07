@@ -7,12 +7,12 @@ from typing import TYPE_CHECKING, Any, Self, cast, overload, override
 
 import torch
 
-from probly.representation.array_like import ToIndices, to_numpy_array_like
+from probly.representation.array_like import ArrayLike, ToIndices, to_numpy_array_like
 from probly.representation.sample._common import Sample, SampleAxis, create_sample
 from probly.representation.sample.array import ArraySample
 from probly.representation.sample.axis_tracking import track_axis
 from probly.representation.sample.torch_functions import TorchSampleInternals, torch_function, torch_sample_internals
-from probly.representation.torch_like import TorchTensorLike, to_torch_tensor_like
+from probly.representation.torch_like import TorchTensorLike, TorchTensorLikeImplementation, to_torch_tensor_like
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
@@ -21,11 +21,9 @@ if TYPE_CHECKING:
     import numpy.typing as npt
     from numpy.typing import NDArray
 
-    from probly.representation.array_like import NumpyArrayLike
-
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class TorchTensorSample[D: TorchTensorLike | torch.Tensor](TorchTensorLike[D], Sample[TorchTensorLike[D]]):
+class TorchTensorSample[D: TorchTensorLike](TorchTensorLikeImplementation[D], Sample[TorchTensorLikeImplementation[D]]):
     """A sample implementation for torch tensors."""
 
     tensor: D
@@ -42,15 +40,15 @@ class TorchTensorSample[D: TorchTensorLike | torch.Tensor](TorchTensorLike[D], S
                 raise ValueError(msg)
             super(type(self), self).__setattr__("sample_dim", self.tensor.ndim + self.sample_dim)
 
-        if not isinstance(self.tensor, torch.Tensor):
-            msg = "tensor must be a torch tensor."
+        if not isinstance(self.tensor, TorchTensorLikeImplementation):
+            msg = "tensor must be a TorchTensorLike object."
             raise TypeError(msg)
 
     @override
     @classmethod
     def from_iterable(
         cls,
-        samples: Iterable[TorchTensorLike[D]],
+        samples: Iterable[ArrayLike[D]],
         sample_dim: SampleAxis | None = None,
         sample_axis: SampleAxis | None = "auto",
         dtype: torch.dtype | None = None,
@@ -75,7 +73,7 @@ class TorchTensorSample[D: TorchTensorLike | torch.Tensor](TorchTensorLike[D], S
             msg = "Cannot specify both sample_dim and sample_axis."
             raise ValueError(msg)
 
-        if isinstance(samples, TorchTensorLike):
+        if isinstance(samples, TorchTensorLikeImplementation):
             if sample_dim == "auto":
                 if samples.ndim == 0:
                     msg = "Cannot infer sample_dim for 0-dimensional array."
@@ -89,7 +87,7 @@ class TorchTensorSample[D: TorchTensorLike | torch.Tensor](TorchTensorLike[D], S
                 if len(samples) == 0:  # ty:ignore[invalid-argument-type]
                     msg = "Cannot infer sample_dim for empty samples."
                     raise ValueError(msg)
-                sample_axis = -1
+                sample_dim = -1
             samples = torch.stack(samples, dim=sample_dim)  # ty: ignore[invalid-argument-type]
 
         if dtype is not None:
@@ -135,7 +133,49 @@ class TorchTensorSample[D: TorchTensorLike | torch.Tensor](TorchTensorLike[D], S
     @override
     def size(self, dim: int | None = None) -> int | torch.Size:
         """The total number of elements in the underlying array."""
-        return self.tensor.size(dim)  # ty:ignore[no-matching-overload]
+        return self.tensor.size(dim)
+
+    @override
+    @property
+    def mT(self) -> Self:
+        """The transposed view over the last two dimensions."""
+        if self.ndim < 2:
+            msg = "mT requires at least 2 dimensions."
+            raise ValueError(msg)
+
+        dim0 = self.ndim - 2
+        dim1 = self.ndim - 1
+        transposed = torch.transpose(cast("Any", self.tensor), dim0, dim1)
+
+        if self.sample_dim == dim0:
+            sample_dim = dim1
+        elif self.sample_dim == dim1:
+            sample_dim = dim0
+        else:
+            sample_dim = self.sample_dim
+
+        return type(self)(tensor=cast("Any", transposed), sample_dim=sample_dim)
+
+    @override
+    @property
+    def mH(self) -> Self:
+        """The adjoint view over the last two dimensions."""
+        if self.ndim < 2:
+            msg = "mH requires at least 2 dimensions."
+            raise ValueError(msg)
+
+        dim0 = self.ndim - 2
+        dim1 = self.ndim - 1
+        adjoint = torch.adjoint(cast("Any", self.tensor))
+
+        if self.sample_dim == dim0:
+            sample_dim = dim1
+        elif self.sample_dim == dim1:
+            sample_dim = dim0
+        else:
+            sample_dim = self.sample_dim
+
+        return type(self)(tensor=cast("Any", adjoint), sample_dim=sample_dim)
 
     @property
     def sample_size(self) -> int:
@@ -150,22 +190,22 @@ class TorchTensorSample[D: TorchTensorLike | torch.Tensor](TorchTensorLike[D], S
         return torch.moveaxis(self.tensor, self.sample_dim, 0)  # ty:ignore[no-matching-overload]
 
     @override
-    def sample_mean(self) -> TorchTensorLike[D]:
+    def sample_mean(self) -> TorchTensorLikeImplementation[D]:
         """Compute the mean of the sample."""
         return torch.mean(self.tensor, dim=self.sample_dim)  # ty:ignore[no-matching-overload]
 
     @override
-    def sample_std(self, ddof: int = 1) -> TorchTensorLike[D]:
+    def sample_std(self, ddof: int = 1) -> TorchTensorLikeImplementation[D]:
         """Compute the standard deviation of the sample."""
         return torch.std(self.tensor, dim=self.sample_dim, correction=ddof)  # ty:ignore[no-matching-overload]
 
     @override
-    def sample_var(self, ddof: int = 1) -> TorchTensorLike[D]:
+    def sample_var(self, ddof: int = 1) -> TorchTensorLikeImplementation[D]:
         """Compute the variance of the sample."""
         return torch.var(self.tensor, dim=self.sample_dim, correction=ddof)  # ty:ignore[no-matching-overload]
 
     @override
-    def concat(self, other: Sample[TorchTensorLike[D]]) -> Self:
+    def concat(self, other: Sample[TorchTensorLikeImplementation[D]]) -> Self:
         if isinstance(other, TorchTensorSample):
             other_tensor = torch.moveaxis(other.tensor, other.sample_dim, self.sample_dim)  # ty:ignore[no-matching-overload]
         else:
@@ -190,9 +230,9 @@ class TorchTensorSample[D: TorchTensorLike | torch.Tensor](TorchTensorLike[D], S
         """Alias for :meth:`TorchTensorSample.move_sample_dim`."""
         return self.move_sample_dim(new_sample_axis)
 
-    def __getitem__(self, index: ToIndices) -> TorchTensorLike[D]:
+    def __getitem__(self, index: ToIndices) -> TorchTensorLikeImplementation[D]:
         """Get a sample by index."""
-        new_tensor = self.tensor[index]  # ty:ignore[invalid-argument-type]
+        new_tensor = self.tensor[index]
 
         if not hasattr(new_tensor, "ndim"):
             return new_tensor
@@ -200,13 +240,13 @@ class TorchTensorSample[D: TorchTensorLike | torch.Tensor](TorchTensorLike[D], S
         new_sample_dim = track_axis(index, self.sample_dim, self.tensor.ndim, torch_indexing=True)
 
         if new_sample_dim is None:
-            return new_tensor  # ty:ignore[invalid-return-type]
+            return new_tensor
 
         return type(self)(tensor=new_tensor, sample_dim=new_sample_dim)
 
     def __setitem__(self, index: ToIndices, value: object) -> None:
         """Set a sample by index."""
-        self.tensor[index] = value  # ty:ignore[invalid-assignment]
+        cast("Any", self.tensor)[index] = value
 
     @override
     def __array_namespace__(self, /, *, api_version: str | None = None) -> ModuleType:
@@ -214,13 +254,18 @@ class TorchTensorSample[D: TorchTensorLike | torch.Tensor](TorchTensorLike[D], S
 
     def __array_like__(self, dtype: npt.DTypeLike | None = None, /, *, copy: bool | None = None) -> ArraySample[Any]:
         """Convert to a NumpyArrayLike."""
-        array = to_numpy_array_like(self.tensor, dtype=dtype, copy=copy)  # ty:ignore[invalid-argument-type]
-        return ArraySample(array=cast("NumpyArrayLike[Any]", array), sample_axis=self.sample_dim)
+        array = to_numpy_array_like(self.tensor, dtype=dtype, copy=copy)
+        return ArraySample(array=array, sample_axis=self.sample_dim)
 
     @override
     def numpy(self, *, force: bool = False) -> NDArray[Any]:
         """Convert to a numpy array."""
-        return self.tensor.numpy(force=force)  # ty:ignore[invalid-argument-type]
+        return self.tensor.numpy(force=force)
+
+    @override
+    def detach(self) -> Self:
+        """Return a detached copy of the sample tensor wrapper."""
+        return type(self)(tensor=cast("Any", self.tensor).detach(), sample_dim=self.sample_dim)
 
     @classmethod
     def __torch_function__(
@@ -244,7 +289,7 @@ class TorchTensorSample[D: TorchTensorLike | torch.Tensor](TorchTensorLike[D], S
         Returns:
             A copy of the TorchTensorSample.
         """
-        tensor = self.tensor.to(*args, **kwargs)  # ty:ignore[no-matching-overload]
+        tensor = self.tensor.to(*args, **kwargs)
 
         if tensor is self.tensor:
             return self
@@ -258,7 +303,7 @@ class TorchTensorSample[D: TorchTensorLike | torch.Tensor](TorchTensorLike[D], S
         *,
         device: torch.device | str | None = None,
         copy: bool = False,
-    ) -> TorchTensorLike[Any]:
+    ) -> TorchTensorLikeImplementation[Any]:
         """Convert to a TorchTensorLike."""
         return self.to(dtype=dtype, device=device, copy=copy)
 

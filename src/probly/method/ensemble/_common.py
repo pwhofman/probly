@@ -62,8 +62,11 @@ def ensemble_generator[**In, Out](
     raise NotImplementedError(msg)
 
 
-def register_ensemble_members(ensemble: EnsemblePredictor, t: type[Predictor]) -> EnsemblePredictor:
+def register_ensemble_members(ensemble: EnsemblePredictor, t: type[Predictor] | None) -> EnsemblePredictor:
     """Register the members of an ensemble predictor."""
+    if t is None:
+        return ensemble
+
     for member in ensemble:
         t.register_instance(member)
 
@@ -72,7 +75,7 @@ def register_ensemble_members(ensemble: EnsemblePredictor, t: type[Predictor]) -
 
 @predictor_transformation(
     permitted_predictor_types=None,
-    post_transform=register_ensemble_members,  # ty:ignore[invalid-argument-type]
+    post_transform=register_ensemble_members,
 )
 @EnsemblePredictor.register_factory
 def ensemble[**In, Out](

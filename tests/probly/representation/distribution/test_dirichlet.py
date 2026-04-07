@@ -79,7 +79,7 @@ def test_array_properties_batched() -> None:
 def test_len_behaviour() -> None:
     """Test __len__ behaviour (like "unsized vs sized" containers)."""
     dist_single = ArrayDirichletDistribution.from_array([1.0, 2.0, 3.0])
-    with pytest.raises(TypeError, match="len\\(\\) of unsized distribution"):
+    with pytest.raises(TypeError, match="len\\(\\) of unsized representation"):
         _ = len(dist_single)
 
     dist_batch = ArrayDirichletDistribution.from_array(np.ones((5, 3)))

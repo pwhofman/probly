@@ -10,7 +10,7 @@ import jax  # noqa: E402
 import jax.numpy as jnp  # noqa: E402
 
 from probly.layers.flax import DropConnectLinear  # noqa: E402
-from probly.method import dropconnect  # noqa: E402
+from probly.method.dropconnect import dropconnect  # noqa: E402
 from tests.probly.flax_utils import count_layers  # noqa: E402
 
 

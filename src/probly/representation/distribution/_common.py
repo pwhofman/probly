@@ -40,7 +40,7 @@ class CategoricalDistribution(Distribution[Any]):
         """Get the number of classes."""
 
 
-class DirichletDistribution[T](Distribution[T]):
+class DirichletDistribution[T: CategoricalDistribution](Distribution[T]):
     """Base class for Dirichlet distributions."""
 
     type: Literal["dirichlet"] = "dirichlet"
@@ -58,12 +58,12 @@ class GaussianDistribution[D](Distribution[D], ABC):
 
     @property
     @abstractmethod
-    def mean(self) -> Any:  # noqa: ANN401
+    def mean(self) -> D:
         """Get the mean parameters."""
 
     @property
     @abstractmethod
-    def var(self) -> Any:  # noqa: ANN401
+    def var(self) -> D:
         """Get the var parameters."""
 
 

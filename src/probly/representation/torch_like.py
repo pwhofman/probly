@@ -32,8 +32,73 @@ class TorchTensorLikeConvertible[DT](ArrayLike[DT], Protocol):
         """Convert to a TorchTensorLike."""
 
 
-class TorchTensorLike[DT](ArrayLike[DT], ABC):
-    """Protocol for array-like objects that behave like Torch tensors."""
+@runtime_checkable
+class TorchTensorLike[DT](ArrayLike[DT], Protocol):
+    """Protocol for array-like objects that implement torch-specific APIs."""
+
+    @property
+    def mT(self) -> Self:  # noqa: N802
+        """The transposed version of the underlying array."""
+
+    @property
+    def mH(self) -> Self:  # noqa: N802
+        """The adjoint (conjugate) transposed version of the underlying array."""
+
+    @overload
+    def size(self, dim: int) -> int: ...
+
+    @overload
+    def size(self, dim: None = ...) -> torch.Size: ...
+
+    def size(self, dim: int | None = None) -> int | torch.Size:
+        """Return the size of the array along the given dimension."""
+
+    @overload
+    def to(
+        self,
+        dtype: torch.dtype,
+        non_blocking: bool = False,
+        copy: bool = False,
+        *,
+        memory_format: torch.memory_format = torch.preserve_format,
+    ) -> Self: ...
+
+    @overload
+    def to(
+        self,
+        device: torch.device | str | None = None,
+        dtype: torch.dtype | None = None,
+        non_blocking: bool = False,
+        copy: bool = False,
+        *,
+        memory_format: torch.memory_format = torch.preserve_format,
+    ) -> Self: ...
+
+    @overload
+    def to(
+        self,
+        other: torch.Tensor,
+        non_blocking: bool = False,
+        copy: bool = False,
+    ) -> Self: ...
+
+    def to(self, *args: Any, **kwargs: Any) -> Self:
+        """Move and/or cast the tensor, mirroring ``torch.Tensor.to``."""
+
+    def __torch_function__(
+        self, func: Callable, types: tuple[type[Any], ...], args: tuple[Any, ...], kwargs: dict[str, Any]
+    ) -> Any:  # noqa: ANN401
+        """Handle torch functions."""
+
+    def numpy(self, *, force: bool = False) -> NDArray[Any]:
+        """Convert to a numpy array."""
+
+    def detach(self) -> Self:
+        """Return a detached version of the array."""
+
+
+class TorchTensorLikeImplementation[DT](ArrayLike[DT], ABC):
+    """ABC implementation for array-like objects that behave like torch tensors."""
 
     @property
     @abstractmethod
@@ -154,7 +219,9 @@ class TorchTensorLike[DT](ArrayLike[DT], ABC):
     def __array__(self, dtype: DTypeLike) -> NDArray[Any]: ...
 
     @override
-    def __array__(self, dtype: DTypeLike | None = None, /, *, copy: bool | None = None) -> NDArray[Any]:
+    def __array__(  # ty: ignore[invalid-method-override]
+        self, dtype: DTypeLike | None = None, /, *, copy: bool | None = None
+    ) -> NDArray[Any]:
         """Convert to a numpy array."""
         if has_torch_function_unary(self):
             return handle_torch_function(torch.Tensor.__array__, (type(self),), self, dtype=dtype)  # type: ignore[no-any-return]
@@ -175,14 +242,14 @@ class TorchTensorLike[DT](ArrayLike[DT], ABC):
         return torch.resolve_neg(self)  # ty:ignore[invalid-return-type, invalid-argument-type]
 
 
-TorchTensorLike.register(torch.Tensor)
+TorchTensorLikeImplementation.register(torch.Tensor)
 
 
 @lazydispatch
 def to_torch_tensor_like[DT](
-    data: ArrayLike[DT],
-    dtype: torch.dtype | None = None,
+    data: object,
     /,
+    dtype: torch.dtype | None = None,
     *,
     device: torch.device | str | None = None,
     copy: bool = False,
@@ -209,10 +276,10 @@ def to_torch_tensor_like[DT](
 
 
 @to_torch_tensor_like.register(TorchTensorLikeConvertible)
-def _to_numpy_array_like_convertible[DT](
+def _[DT](
     data: TorchTensorLikeConvertible[DT],
-    dtype: torch.dtype | None = None,
     /,
+    dtype: torch.dtype | None = None,
     *,
     device: torch.device | str | None = None,
     copy: bool = False,
