@@ -22,9 +22,8 @@ from tqdm import tqdm
 import wandb
 
 from probly_benchmark import data, metadata, models, utils
+from probly_benchmark.paths import CHECKPOINT_PATH
 from probly_benchmark.train_funcs import EarlyStopping, evaluate, train_epoch, validate
-
-from .paths import CHECKPOINT_PATH
 
 METHODS = {
     "bnn": bayesian,
@@ -98,7 +97,13 @@ def main(cfg: DictConfig) -> None:  # noqa: PLR0915, many statements are allowed
     utils.set_seed(cfg.seed) if cfg.get("seed", None) else None
 
     train_loader, val_loader, test_loader = data.get_data_train(
-        cfg.dataset, use_validation=cfg.validate, batch_size=cfg.batch_size
+        cfg.dataset,
+        use_validation=cfg.validate,
+        batch_size=cfg.batch_size,
+        num_workers=cfg.num_workers,
+        pin_memory=cfg.pin_memory,
+        persistent_workers=cfg.persistent_workers,
+        shuffle=True,
     )
 
     num_classes = metadata.DATASETS[cfg.dataset].num_classes
@@ -107,6 +112,8 @@ def main(cfg: DictConfig) -> None:  # noqa: PLR0915, many statements are allowed
     method_fn = get_method(cfg.method.name)
     method_params = {k: v for k, v in cfg.method.items() if k != "name"}
     model = method_fn(base).to(device)
+    model.forward = torch.compile(model.forward)
+
     optimizer = get_optimizer(cfg.optimizer.name, model.parameters())
 
     scheduler = get_scheduler(cfg.scheduler.name, optimizer, **cfg.scheduler.get("params", {}))
@@ -117,11 +124,11 @@ def main(cfg: DictConfig) -> None:  # noqa: PLR0915, many statements are allowed
     amp_enabled = cfg.get("amp", False)
     scaler = GradScaler(device.type) if amp_enabled else None
 
-    for epoch in tqdm(range(cfg.epochs)):
+    for epoch in tqdm(range(cfg.epochs), desc="Epoch"):
         model.train()
         running_loss = 0.0
-        for inputs_, targets_ in train_loader:
-            inputs, targets = inputs_.to(device), targets_.to(device)
+        for inputs_, targets_ in tqdm(train_loader):
+            inputs, targets = inputs_.to(device, non_blocking=True), targets_.to(device, non_blocking=True)
             running_loss += train_epoch(
                 model,
                 inputs,

@@ -9,9 +9,9 @@ import torch
 from torch.utils.data import DataLoader
 import torchvision
 from torchvision import datasets, transforms
-import torchvision.transforms as T
+import torchvision.transforms.v2 as T
 
-from .paths import DATA_PATH
+from probly_benchmark.paths import DATA_PATH
 
 VAL_SPLIT = 0.2
 
@@ -34,15 +34,29 @@ def get_data_train(
             )
             train = torchvision.datasets.CIFAR10(root=DATA_PATH, train=True, download=True, transform=transforms_train)
             test = torchvision.datasets.CIFAR10(root=DATA_PATH, train=False, download=True, transform=transforms_test)
+        case "imagenet":
+            transforms_train = transforms_test = T.Compose(
+                [
+                    T.Resize((224, 224)),
+                    T.ToTensor(),
+                    T.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
+                ]
+            )
+            train = torchvision.datasets.ImageNet(
+                root="/home/scratch/timopaul/datasets/imagenet", split="train", transform=transforms_train
+            )
+            test = torchvision.datasets.ImageNet(
+                root="/home/scratch/timopaul/datasets/imagenet", split="val", transform=transforms_test
+            )
         case _:
             msg = f"Dataset {name} not recognized"
             raise ValueError(msg)
 
     if use_validation:
         generator = torch.Generator().manual_seed(seed) if seed is not None else torch.Generator()
-        train, val = torch.utils.data.random_split(
-            train, [int((1 - VAL_SPLIT) * len(train)), int(VAL_SPLIT * len(train))], generator=generator
-        )
+        val_len = int(len(train) * VAL_SPLIT)
+        train_len = len(train) - val_len
+        train, val = torch.utils.data.random_split(train, [train_len, val_len], generator=generator)
         val_loader = torch.utils.data.DataLoader(val, **kwargs)
     else:
         val_loader = None

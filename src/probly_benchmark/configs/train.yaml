@@ -1,4 +1,4 @@
-dataset: "cifar10"
+dataset: "imagenet"
 base_model: "resnet18"
 pretrained: True
 method:
@@ -6,6 +6,9 @@ method:
     samples: 1
 epochs: 10
 batch_size: 512
+num_workers: 4
+pin_memory: true
+persistent_workers: true
 wandb: true
 validate : true
 # models will always be saved in wandb, but this option controls whether they are also saved to disk
