@@ -215,7 +215,7 @@ class MondrianConformalClassifier(GroupedConformalBase, ConformalClassifier):
 
         if self.use_accretive:
             if probs is None:
-                probs_raw: npt.NDArray[np.floating] = predict_probs(self.model, x_test)
+                probs_raw: npt.NDArray[np.floating] = predict_probs(self.model, x_test)  # ty:ignore[invalid-assignment]
                 probs_np = self.to_numpy(probs_raw)
             else:
                 probs_np = probs

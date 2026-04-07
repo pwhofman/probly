@@ -40,7 +40,7 @@ class switchdispatch[T, **In, Out]:  # noqa: N801
     def __init__(self, func: Callable[Concatenate[T, In], Out]) -> None:
         """Initialize the switchdispatch with the default function."""
         self._func = func
-        self._registry: dict[object, Callable[Concatenate[T, *In], Out]] = {}
+        self._registry: dict[object, Callable[Concatenate[T, In], Out]] = {}
         update_wrapper(self, func, updated=())
 
     @overload

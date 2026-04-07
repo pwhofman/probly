@@ -1,4 +1,4 @@
-"""Credal set plotting (binary interval and ternary simplex)."""
+"""Credal set plotting (binary interval, ternary simplex, and spider/radar)."""
 
 from .plot import plot_credal_set
 

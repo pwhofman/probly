@@ -40,6 +40,22 @@ class CategoricalCredalSet[T](CredalSet, metaclass=ABCMeta):
         msg = "from_sample method not implemented."
         raise NotImplementedError(msg)
 
+    @classmethod
+    @abstractmethod
+    def from_data(cls, data: T, distribution_axis: int = -1) -> Self:
+        """Create a credal set from data.
+
+        Args:
+            data: The data to create the credal set from.
+            distribution_axis: The axis containing the categorical probabilities.
+
+        Returns:
+            The created credal set.
+
+        """
+        msg = "from_data method not implemented."
+        raise NotImplementedError(msg)
+
     def lower(self) -> T:
         """Compute the lower envelope of the credal set."""
         msg = "lower method not implemented."
@@ -90,4 +106,11 @@ def dispatch_on_sample(sample: Sample, **_kwargs: object) -> object:
 def create_probability_intervals(sample: Sample) -> ProbabilityIntervalsCredalSet:
     """Create a probability-interval credal set from a sample."""
     msg = f"No probability intervals factory registered for sample type {type(sample)}"
+    raise NotImplementedError(msg)
+
+
+@lazydispatch
+def create_convex_credal_set[T](data: T, distribution_axis: int = -1) -> ConvexCredalSet[T]:
+    """Create a convex credal set from a sample."""
+    msg = f"No convex credal set factory registered for data type {type(data)}"
     raise NotImplementedError(msg)

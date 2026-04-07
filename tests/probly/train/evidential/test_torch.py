@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from probly.layers.torch import BatchedRadialFlowDensity
+from probly.layers.torch import RadialNormalizingFlowStack
 from probly.method import evidential_regression
 from probly.predictor import Predictor
 from probly.train.evidential.torch import (
@@ -243,10 +243,10 @@ def test_postnet_loss(
     latent_dim = 16  # Standard latent dimension
 
     # Create flow density model
-    flow = BatchedRadialFlowDensity(
+    flow = RadialNormalizingFlowStack(
         num_classes=num_classes,
         dim=latent_dim,
-        flow_length=6,
+        num_flows=6,
     )
 
     # Create simulated network outputs (z): (batch_size, latent_dim)
