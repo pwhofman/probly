@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, override
 
+from probly.method.credal_relative_likelihood import CredalRelativeLikelihoodPredictor
 from probly.method.credal_wrapper import CredalWrapperPredictor
 from probly.representation.credal_set import create_convex_credal_set, create_probability_intervals
 from probly.representation.sample import create_sample
@@ -47,6 +48,23 @@ class CredalEnsemblingRepresenter[**In, Out, C: ConvexCredalSet](Representer[Any
 @representer.register(CredalWrapperPredictor)
 class CredalWrapperRepresenter[**In, Out, C: ProbabilityIntervalsCredalSet](Representer[Any, In, C]):
     def __init__(self, predictor: CredalWrapperPredictor) -> None:
+        super().__init__(predictor)
+
+    def _predict(self, *args: In.args, **kwargs: In.kwargs) -> Iterable[Out]:
+        """Predict the outputs from the ensemble predictor."""
+        return predict(self.predictor, *args, **kwargs)
+
+    @override
+    def __call__(self, *args: In.args, **kwargs: In.kwargs) -> C:
+        pred = self._predict(*args, **kwargs)
+        sample = create_sample(pred)
+        cset = create_probability_intervals(sample)
+        return cset  # ty:ignore[invalid-return-type]
+
+
+@representer.register(CredalRelativeLikelihoodPredictor)
+class CredalRelativeLikelihoodRepresenter[**In, Out, C: ProbabilityIntervalsCredalSet](Representer[Any, In, C]):
+    def __init__(self, predictor: CredalRelativeLikelihoodPredictor) -> None:
         super().__init__(predictor)
 
     def _predict(self, *args: In.args, **kwargs: In.kwargs) -> Iterable[Out]:
