@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
+
+if TYPE_CHECKING:
+    from flax.nnx import rnglib
 
 from lazy_dispatch import lazydispatch
 from probly.method.method import predictor_transformation
@@ -81,7 +84,11 @@ def register_ensemble_members(ensemble: EnsemblePredictor, t: type[Predictor] | 
 )
 @EnsemblePredictor.register_factory
 def ensemble[**In, Out](
-    base: Predictor[In, Out], num_members: int, reset_params: bool = True
+    base: Predictor[In, Out],
+    num_members: int,
+    reset_params: bool = True,
+    seed: int = 1,
+    rngs: rnglib.Rngs | None = None,
 ) -> EnsemblePredictor[In, Out]:
     """Create an ensemble predictor from a base predictor based on :cite:`lakshminarayananSimpleScalable2017`.
 
@@ -89,11 +96,13 @@ def ensemble[**In, Out](
         base: Predictor, The base model to be used for the ensemble.
         num_members: The number of members in the ensemble.
         reset_params: Whether to reset the parameters of each member.
+        seed: int, seed to be used for deterministic member reset.
+        rngs: nnx.Rngs used for flax member re-initialization, overwrites seed.
 
     Returns:
         Predictor, The ensemble predictor.
     """
-    return ensemble_generator(base, num_members=num_members, reset_params=reset_params)
+    return ensemble_generator(base, num_members=num_members, reset_params=reset_params, seed=seed, rngs=rngs)  # ty:ignore[unknown-argument]
 
 
 @predict_raw.register(EnsemblePredictor)
