@@ -6,8 +6,14 @@ from collections.abc import Callable, Iterable
 from typing import Any, Literal, Protocol, runtime_checkable
 
 from lazy_dispatch import ProtocolRegistry, lazydispatch
+from probly.representation import Representation
 from probly.representation.credal_set import CredalSet, ProbabilityIntervalsCredalSet
-from probly.representation.distribution import CategoricalDistribution, DirichletDistribution, Distribution
+from probly.representation.distribution import (
+    CategoricalDistribution,
+    DirichletDistribution,
+    Distribution,
+    create_categorical_distribution,
+)
 from probly.utils.switchdispatch import switch
 
 type PredictorName = Literal[
@@ -49,7 +55,12 @@ class IterablePredictor[**In, Out](Predictor[In, Iterable[Out]], Protocol):
 
 
 @runtime_checkable
-class DistributionPredictor[**In, Out: Distribution](Predictor[In, Out], Protocol):
+class RepresentationPredictor[**In, Out: Representation](Predictor[In, Out], Protocol):
+    """Protocol for predictors that return a distribution over outputs."""
+
+
+@runtime_checkable
+class DistributionPredictor[**In, Out: Distribution](RepresentationPredictor[In, Out], Protocol):
     """Protocol for predictors that return a distribution over outputs."""
 
 
@@ -71,7 +82,7 @@ class DirichletDistributionPredictor[**In, Out: DirichletDistribution](Distribut
 
 
 @runtime_checkable
-class CredalPredictor[**In, Out: CredalSet](Predictor[In, Out], Protocol):
+class CredalPredictor[**In, Out: CredalSet](RepresentationPredictor[In, Out], Protocol):
     """Protocol for predictors that return a set of distributions over outputs."""
 
 
@@ -107,3 +118,11 @@ def predict[**In, Out](predictor: Predictor[In, Out], /, *args: In.args, **kwarg
     this function will attempt to convert the output to the correct type using registered conversion functions.
     """
     return predict_raw(predictor, *args, **kwargs)
+
+
+@predict.register(CategoricalDistributionPredictor)
+def predict_categorical_distribution[**In, Out: CategoricalDistribution](
+    predictor: CategoricalDistributionPredictor[In, Out], *args: In.args, **kwargs: In.kwargs
+) -> Out:
+    """Predict for a categorical distribution predictor."""
+    return create_categorical_distribution(predict_raw(predictor, *args, **kwargs))  # ty:ignore[invalid-return-type]

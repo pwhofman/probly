@@ -159,3 +159,43 @@ class TestTorchTensorSample:
         assert isinstance(result_concatenate, TorchTensorSample)
         assert result_concat.sample_dim == torch_tensor_sample_2d.sample_dim
         assert result_concatenate.sample_dim == torch_tensor_sample_2d.sample_dim
+
+    def test_torch_function_stack_shifts_sample_dim_when_dim_is_before(
+        self, torch_tensor_sample_2d: TorchTensorSample
+    ) -> None:
+        result = torch.stack((torch_tensor_sample_2d, torch_tensor_sample_2d), dim=0)
+
+        assert isinstance(result, TorchTensorSample)
+        assert result.sample_dim == torch_tensor_sample_2d.sample_dim + 1
+        assert torch.equal(
+            result.tensor, torch.stack((torch_tensor_sample_2d.tensor, torch_tensor_sample_2d.tensor), dim=0)
+        )
+
+    def test_torch_function_stack_keeps_sample_dim_when_dim_is_after(
+        self, torch_tensor_sample_2d: TorchTensorSample
+    ) -> None:
+        result = torch.stack((torch_tensor_sample_2d, torch_tensor_sample_2d), dim=2)
+
+        assert isinstance(result, TorchTensorSample)
+        assert result.sample_dim == torch_tensor_sample_2d.sample_dim
+        assert torch.equal(
+            result.tensor, torch.stack((torch_tensor_sample_2d.tensor, torch_tensor_sample_2d.tensor), dim=2)
+        )
+
+    def test_torch_function_stack_drops_type_for_mismatched_sample_dim(
+        self, torch_tensor_sample_2d: TorchTensorSample
+    ) -> None:
+        other = TorchTensorSample(torch.arange(12, 24).reshape((3, 4)), sample_dim=0)
+        result = torch.stack((torch_tensor_sample_2d, other), dim=0)
+
+        assert isinstance(result, torch.Tensor)
+
+    def test_torch_function_stack_with_sample_out_returns_out(self, torch_tensor_sample_2d: TorchTensorSample) -> None:
+        out = TorchTensorSample(torch.empty((2, 3, 4), dtype=torch_tensor_sample_2d.dtype), sample_dim=0)
+
+        result = torch.stack((torch_tensor_sample_2d, torch_tensor_sample_2d), dim=0, out=out)
+
+        assert result is out
+        assert torch.equal(
+            out.tensor, torch.stack((torch_tensor_sample_2d.tensor, torch_tensor_sample_2d.tensor), dim=0)
+        )

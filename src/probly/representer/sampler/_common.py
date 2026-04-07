@@ -60,7 +60,7 @@ def sampler_factory[**In, Out](
 
 
 @representer.register(IterablePredictor)
-class IterableSampler[**In, Out, S: Sample](Representer[Any, In, S]):
+class IterableSampler[**In, Out, S: Sample](Representer[Any, In, Out, S]):
     """A sampler that creates representations from ensemble predictions."""
 
     sample_factory: SampleFactory[Out, S]
@@ -69,7 +69,7 @@ class IterableSampler[**In, Out, S: Sample](Representer[Any, In, S]):
     def __init__(
         self,
         predictor: IterablePredictor[In, Out],
-        sample_factory: SampleFactory[Out, S] = create_sample,
+        sample_factory: SampleFactory[Out, S] = create_sample,  # ty:ignore[invalid-parameter-default]
         sample_axis: int = 1,
     ) -> None:
         """Initialize the ensemble sampler.
@@ -108,7 +108,7 @@ class Sampler[**In, Out, S: Sample](IterableSampler[In, Out, S]):
         predictor: RandomPredictor[In, Out],
         num_samples: int,
         sampling_strategy: SamplingStrategy = "sequential",
-        sample_factory: SampleFactory[Out, S] = create_sample,
+        sample_factory: SampleFactory[Out, S] = create_sample,  # ty:ignore[invalid-parameter-default]
         sample_axis: int = 1,
     ) -> None:
         """Initialize the sampler.

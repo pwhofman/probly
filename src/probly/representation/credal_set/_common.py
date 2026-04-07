@@ -6,6 +6,7 @@ from abc import ABC, ABCMeta, abstractmethod
 from typing import TYPE_CHECKING, Literal, Protocol, Self
 
 from lazy_dispatch import lazydispatch
+from probly.representation.representation import Representation
 
 if TYPE_CHECKING:
     from probly.representation.sample._common import Sample
@@ -14,7 +15,7 @@ if TYPE_CHECKING:
 type CredalSetType = Literal["categorical", "gaussian", "dirichlet"]
 
 
-class CredalSet(ABC):
+class CredalSet(Representation, ABC):
     """Base class for credal sets."""
 
     type: CredalSetType

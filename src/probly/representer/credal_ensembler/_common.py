@@ -5,6 +5,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, override
 
 from probly.representation.credal_set import create_convex_credal_set
+from probly.representation.distribution import CategoricalDistribution
+from probly.utils.iterable import first_element
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -16,7 +18,7 @@ from probly.representation.credal_set._common import ConvexCredalSet
 from probly.representer._representer import Representer, representer
 
 
-@lazydispatch
+@lazydispatch(dispatch_on=first_element)
 def compute_representative_set[T](probs: Iterable[T], alpha: float, distance: str) -> Iterable[T]:
     """Compute the credal set from the ensemble predictions."""
     msg = f"compute_representative_set method not implemented for type {type(probs)}."
@@ -24,8 +26,10 @@ def compute_representative_set[T](probs: Iterable[T], alpha: float, distance: st
 
 
 @representer.register(CredalEnsemblingPredictor)
-class CredalEnsemblingRepresenter[**In, Out, C: ConvexCredalSet](Representer[Any, In, C]):
-    def __init__(self, predictor: CredalEnsemblingPredictor, alpha: float = 0.0, distance: str = "euclidean") -> None:
+class CredalEnsemblingRepresenter[**In, Out: CategoricalDistribution, C: ConvexCredalSet](Representer[Any, In, Out, C]):
+    def __init__(
+        self, predictor: CredalEnsemblingPredictor[In, Out], alpha: float = 0.0, distance: str = "euclidean"
+    ) -> None:
         super().__init__(predictor)
         self.alpha = alpha
         self.distance = distance
@@ -35,7 +39,7 @@ class CredalEnsemblingRepresenter[**In, Out, C: ConvexCredalSet](Representer[Any
         return predict(self.predictor, *args, **kwargs)
 
     @override
-    def __call__(self, *args: In.args, **kwargs: In.kwargs) -> C:
+    def represent(self, *args: In.args, **kwargs: In.kwargs) -> C:
         pred = self._predict(*args, **kwargs)
         distributions = compute_representative_set(pred, alpha=self.alpha, distance=self.distance)
         cset = create_convex_credal_set(distributions)

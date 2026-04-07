@@ -5,7 +5,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, ClassVar, Self, cast, override
 
-import numpy as np
 import torch
 
 from probly.representation._protected_axis.torch import TorchAxisProtected
@@ -15,7 +14,7 @@ from probly.representation.sample.torch import TorchTensorSample
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    import numpy.typing as npt
+    import numpy as np
 
     from probly.representation.torch_like import TorchTensorLike
 
@@ -116,14 +115,9 @@ class TorchTensorCategoricalDistribution(
         return TorchTensorSample(tensor=cast("TorchTensorLike[Any]", samples), sample_dim=0)
 
     @override
-    def __array__(
-        self,
-        dtype: npt.DTypeLike | None = None,
-        copy: bool | None = None,
-    ) -> np.ndarray:
-        """Get the underlying numpy array (probabilities)."""
-        array = self.probabilities.detach().cpu().numpy()
-        return np.asarray(array, dtype=dtype, copy=copy)
+    def numpy(self, *, force: bool = False) -> np.ndarray:
+        """Convert to a numpy array."""
+        return self.probabilities.numpy(force=force)
 
     @override
     def __iter__(self) -> Iterator[Any]:

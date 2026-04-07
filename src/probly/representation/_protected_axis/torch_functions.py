@@ -200,6 +200,37 @@ def torch_internals_override(
     return decorator
 
 
+def _extract_protected_tensor_sequence_internals(
+    tensors: tuple[Any, ...],
+) -> tuple[list[Any], bool, TorchAxisProtectedCreator | None, int | None, int | None]:
+    """Extract internals from a sequence of tensors or protected-axis tensors."""
+    cast_tensors: list[Any] = []
+    has_protected_tensors = False
+    protected_axes_values: set[int] = set()
+    create_protected: TorchAxisProtectedCreator | None = None
+    protected_ndim: int | None = None
+
+    for tensor in tensors:
+        internals = torch_axis_protected_internals(tensor)
+
+        if internals is None:
+            cast_tensors.append(tensor)
+            continue
+
+        has_protected_tensors = True
+        cast_tensors.append(internals.tensor)
+        protected_axes_values.add(internals.protected_axes)
+
+        if create_protected is None:
+            create_protected = internals.create
+            protected_ndim = internals.tensor.ndim
+
+    if len(protected_axes_values) == 1:
+        return cast_tensors, has_protected_tensors, create_protected, next(iter(protected_axes_values)), protected_ndim
+
+    return cast_tensors, has_protected_tensors, None, None, None
+
+
 @torch_function.register(torch.clone)
 @torch_internals_override(torch_param_pos=0)
 def protected_clone_function(
@@ -420,4 +451,122 @@ def protected_movedim_function(
     source_arg: int | tuple[int, ...] = mapped_source[0] if source_was_int else mapped_source
     destination_arg: int | tuple[int, ...] = mapped_destination[0] if destination_was_int else mapped_destination
     result = func(tensor, source=source_arg, destination=destination_arg)
+    return create_protected(result)
+
+
+@torch_function.multi_register([torch.cat, torch.concat, torch.concatenate])
+@torch_function_override
+def protected_cat_function(
+    func: Callable,
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
+) -> Any:  # noqa: ANN401
+    """Implementation of ``torch.cat`` and aliases for protected-axis tensors."""
+    mutable_kwargs = dict(kwargs)
+    mutable_args = list(args)
+
+    tensors = tuple(mutable_args[0]) if len(mutable_args) > 0 else tuple(mutable_kwargs["tensors"])
+    dim = mutable_kwargs.get("dim", mutable_args[1] if len(mutable_args) > 1 else 0)
+    out = mutable_kwargs.get("out")
+    out_internals = torch_axis_protected_internals(out)
+
+    cast_tensors, has_protected_tensors, create_protected, protected_axes, protected_ndim = (
+        _extract_protected_tensor_sequence_internals(tensors)
+    )
+
+    if not has_protected_tensors and out_internals is None:
+        return NotImplemented
+
+    if not isinstance(dim, int):
+        return NotImplemented
+
+    if len(mutable_args) > 0:
+        mutable_args[0] = cast_tensors
+    else:
+        mutable_kwargs["tensors"] = cast_tensors
+
+    if out_internals is not None:
+        mutable_kwargs["out"] = out_internals.tensor
+
+    effective_ndim: int | None = protected_ndim
+    effective_protected_axes: int | None = protected_axes
+    if out_internals is not None and (effective_ndim is None or effective_protected_axes is None):
+        effective_ndim = out_internals.tensor.ndim
+        effective_protected_axes = out_internals.protected_axes
+
+    if effective_ndim is not None and effective_protected_axes is not None:
+        batch_ndim = effective_ndim - effective_protected_axes
+        mapped_dim = normalize_axis(dim, batch_ndim)
+        if len(mutable_args) > 1:
+            mutable_args[1] = mapped_dim
+        else:
+            mutable_kwargs["dim"] = mapped_dim
+
+    result = func(*tuple(mutable_args), **mutable_kwargs)
+
+    if out is not None:
+        return out
+
+    if create_protected is None or protected_axes is None:
+        return result
+
+    return create_protected(result)
+
+
+@torch_function.register(torch.stack)
+@torch_function_override
+def protected_stack_function(
+    func: Callable,
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
+) -> Any:  # noqa: ANN401
+    """Implementation of ``torch.stack`` for protected-axis tensors."""
+    mutable_kwargs = dict(kwargs)
+    mutable_args = list(args)
+
+    tensors = tuple(mutable_args[0]) if len(mutable_args) > 0 else tuple(mutable_kwargs["tensors"])
+    dim = mutable_kwargs.get("dim", mutable_args[1] if len(mutable_args) > 1 else 0)
+    out = mutable_kwargs.get("out")
+    out_internals = torch_axis_protected_internals(out)
+
+    cast_tensors, has_protected_tensors, create_protected, protected_axes, protected_ndim = (
+        _extract_protected_tensor_sequence_internals(tensors)
+    )
+
+    if not has_protected_tensors and out_internals is None:
+        return NotImplemented
+
+    if not isinstance(dim, int):
+        return NotImplemented
+
+    if len(mutable_args) > 0:
+        mutable_args[0] = cast_tensors
+    else:
+        mutable_kwargs["tensors"] = cast_tensors
+
+    if out_internals is not None:
+        mutable_kwargs["out"] = out_internals.tensor
+
+    effective_ndim: int | None = protected_ndim
+    effective_protected_axes: int | None = protected_axes
+    if out_internals is not None and (effective_ndim is None or effective_protected_axes is None):
+        effective_ndim = out_internals.tensor.ndim
+        effective_protected_axes = out_internals.protected_axes
+
+    if effective_ndim is not None and effective_protected_axes is not None:
+        batch_ndim = effective_ndim - effective_protected_axes
+        mapped_dim = normalize_axis(dim, batch_ndim, allow_endpoint=True)
+        if len(mutable_args) > 1:
+            mutable_args[1] = mapped_dim
+        else:
+            mutable_kwargs["dim"] = mapped_dim
+
+    result = func(*tuple(mutable_args), **mutable_kwargs)
+
+    if out is not None:
+        return out
+
+    if create_protected is None or protected_axes is None:
+        return result
+
     return create_protected(result)

@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Literal
 
 from lazy_dispatch import lazydispatch
+from probly.representation.representation import Representation
 
 if TYPE_CHECKING:
     from probly.representation.sample._common import Sample
@@ -13,7 +14,7 @@ if TYPE_CHECKING:
 type DistributionType = Literal["gaussian", "dirichlet", "categorical"]
 
 
-class Distribution[T](ABC):
+class Distribution[T](Representation, ABC):
     """Base class for distributions."""
 
     type: DistributionType
@@ -50,7 +51,7 @@ class DirichletDistribution[T](Distribution[T]):
         """Get the concentration parameters of the Dirichlet distribution."""
 
 
-class GaussianDistribution[D](Distribution[D]):
+class GaussianDistribution[D](Distribution[D], ABC):
     """Base class for Gaussian distributions."""
 
     type: Literal["gaussian"] = "gaussian"
@@ -71,3 +72,9 @@ def create_categorical_distribution[T](data: T) -> CategoricalDistribution:
     """Create a categorical distribution from backend-specific probability data."""
     msg = f"No categorical distribution factory registered for data type {type(data)}"
     raise NotImplementedError(msg)
+
+
+@create_categorical_distribution.register(CategoricalDistribution)
+def _(data: CategoricalDistribution) -> CategoricalDistribution:
+    """Create a categorical distribution from an instance of CategoricalDistribution."""
+    return data

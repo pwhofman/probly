@@ -177,6 +177,37 @@ def array_internals_override(
     return decorator
 
 
+def _extract_protected_array_sequence_internals(
+    arrays: tuple[Any, ...],
+) -> tuple[list[Any], bool, ArrayAxisProtectedCreator | None, int | None, int | None]:
+    """Extract internals from a sequence of arrays or protected-axis arrays."""
+    cast_arrays: list[Any] = []
+    has_protected_arrays = False
+    protected_axes_values: set[int] = set()
+    create_protected: ArrayAxisProtectedCreator | None = None
+    protected_ndim: int | None = None
+
+    for array in arrays:
+        internals = array_axis_protected_internals(array)
+
+        if internals is None:
+            cast_arrays.append(array)
+            continue
+
+        has_protected_arrays = True
+        cast_arrays.append(internals.array)
+        protected_axes_values.add(internals.protected_axes)
+
+        if create_protected is None:
+            create_protected = internals.create
+            protected_ndim = internals.array.ndim
+
+    if len(protected_axes_values) == 1:
+        return cast_arrays, has_protected_arrays, create_protected, next(iter(protected_axes_values)), protected_ndim
+
+    return cast_arrays, has_protected_arrays, None, None, None
+
+
 @array_function.register(np.copy)
 @array_internals_override("a")
 def protected_copy_function(
@@ -414,3 +445,101 @@ def protected_moveaxis_function(
     destination_arg: int | tuple[int, ...] = mapped_destination[0] if destination_was_int else mapped_destination
 
     return create_protected(func(array, source=source_arg, destination=destination_arg))
+
+
+@array_function.multi_register([np.concatenate, np.concat])
+@array_function_override
+def protected_concatenate_function(
+    func: Callable,
+    params: BoundArguments,
+) -> Any:  # noqa: ANN401
+    """Implementation of ``np.concatenate`` and ``np.concat`` for protected-axis arrays."""
+    arrays = tuple(params.arguments["arrays"])
+    axis = params.arguments.get("axis", 0)
+    out = params.arguments.get("out", None)
+    out_internals = array_axis_protected_internals(out)
+
+    cast_arrays, has_protected_arrays, create_protected, protected_axes, protected_ndim = (
+        _extract_protected_array_sequence_internals(arrays)
+    )
+
+    if not has_protected_arrays and out_internals is None:
+        return NotImplemented
+
+    params.arguments["arrays"] = cast_arrays
+
+    if out_internals is not None:
+        params.arguments["out"] = out_internals.array
+
+    effective_ndim: int | None = protected_ndim
+    effective_protected_axes: int | None = protected_axes
+    if out_internals is not None and (effective_ndim is None or effective_protected_axes is None):
+        effective_ndim = out_internals.array.ndim
+        effective_protected_axes = out_internals.protected_axes
+
+    if axis is not None and effective_ndim is not None and effective_protected_axes is not None:
+        if not isinstance(axis, int):
+            msg = "concatenate axis must be an int or None."
+            raise TypeError(msg)
+
+        batch_ndim = effective_ndim - effective_protected_axes
+        params.arguments["axis"] = normalize_axis(axis, batch_ndim)
+
+    result = func(*params.args, **params.kwargs)
+
+    if out is not None:
+        return out
+
+    if create_protected is None or protected_axes is None or axis is None:
+        return result
+
+    return create_protected(result)
+
+
+@array_function.register(np.stack)
+@array_function_override
+def protected_stack_function(
+    func: Callable,
+    params: BoundArguments,
+) -> Any:  # noqa: ANN401
+    """Implementation of ``np.stack`` for protected-axis arrays."""
+    arrays = tuple(params.arguments["arrays"])
+    axis = params.arguments.get("axis", 0)
+    out = params.arguments.get("out", None)
+    out_internals = array_axis_protected_internals(out)
+
+    cast_arrays, has_protected_arrays, create_protected, protected_axes, protected_ndim = (
+        _extract_protected_array_sequence_internals(arrays)
+    )
+
+    if not has_protected_arrays and out_internals is None:
+        return NotImplemented
+
+    if not isinstance(axis, int):
+        msg = "stack axis must be an int."
+        raise TypeError(msg)
+
+    params.arguments["arrays"] = cast_arrays
+
+    if out_internals is not None:
+        params.arguments["out"] = out_internals.array
+
+    effective_ndim: int | None = protected_ndim
+    effective_protected_axes: int | None = protected_axes
+    if out_internals is not None and (effective_ndim is None or effective_protected_axes is None):
+        effective_ndim = out_internals.array.ndim
+        effective_protected_axes = out_internals.protected_axes
+
+    if effective_ndim is not None and effective_protected_axes is not None:
+        batch_ndim = effective_ndim - effective_protected_axes
+        params.arguments["axis"] = normalize_axis(axis, batch_ndim, allow_endpoint=True)
+
+    result = func(*params.args, **params.kwargs)
+
+    if out is not None:
+        return out
+
+    if create_protected is None or protected_axes is None:
+        return result
+
+    return create_protected(result)

@@ -227,7 +227,7 @@ class NumpyArrayLikeConvertible[DT](ArrayLike[DT], Protocol):
         """Convert to a NumpyArrayLike."""
 
 
-class NumpyArrayLike[DT](np.lib.mixins.NDArrayOperatorsMixin, ArrayLike[DT], ABC):
+class NumpyArrayLike[DT](ArrayLike[DT], np.lib.mixins.NDArrayOperatorsMixin, ABC):
     """Protocol for array-like objects that behave like numpy arrays."""
 
     @override

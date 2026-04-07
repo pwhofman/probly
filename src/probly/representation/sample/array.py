@@ -32,10 +32,10 @@ if TYPE_CHECKING:
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class ArraySample[D](NumpyArrayLike[D], Sample[NumpyArrayLike[D]]):
+class ArraySample[D: NumpyArrayLike](NumpyArrayLike[D], Sample[NumpyArrayLike[D]]):
     """A sample of predictions stored in a numpy array."""
 
-    array: NumpyArrayLike[D]
+    array: D
     sample_axis: int
 
     def __post_init__(self) -> None:
@@ -96,7 +96,7 @@ class ArraySample[D](NumpyArrayLike[D], Sample[NumpyArrayLike[D]]):
     @classmethod
     def from_sample(cls, sample: Sample[D], sample_axis: SampleAxis = "auto", dtype: DTypeLike | None = None) -> Self:  # ty:ignore[invalid-method-override]
         if isinstance(sample, ArraySample):
-            sample_array = sample.array
+            sample_array: D = sample.array  # ty:ignore[invalid-assignment]
 
             if dtype is not None:
                 sample_array = sample_array.astype(dtype)
@@ -362,7 +362,7 @@ class ArraySample[D](NumpyArrayLike[D], Sample[NumpyArrayLike[D]]):
 
 
 @array_sample_internals.register(ArraySample)
-def _[D](array: ArraySample[D]) -> ArraySampleInternals[D]:
+def _[D: NumpyArrayLike](array: ArraySample[D]) -> ArraySampleInternals[D]:
     """Get the sample dimension of an ArraySample."""
     return ArraySampleInternals(
         create=type(array),

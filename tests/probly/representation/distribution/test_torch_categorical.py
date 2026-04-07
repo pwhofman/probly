@@ -129,3 +129,38 @@ def test_reshape_inserts_before_class_axis() -> None:
     assert isinstance(reshaped, TorchTensorCategoricalDistribution)
     assert reshaped.shape == (6, 1)
     assert reshaped.probabilities.shape == (6, 1, 4)
+
+
+def test_cat_preserves_distribution_type() -> None:
+    probabilities = torch.arange(24, dtype=torch.float64).reshape((2, 3, 4)) + 1.0
+    dist = TorchTensorCategoricalDistribution(probabilities=probabilities)
+
+    concatenated = torch.cat((dist, dist), dim=-1)
+
+    assert isinstance(concatenated, TorchTensorCategoricalDistribution)
+    assert concatenated.shape == (2, 6)
+    assert tuple(concatenated.probabilities.shape) == (2, 6, 4)
+
+
+def test_cat_aliases_preserve_distribution_type() -> None:
+    probabilities = torch.arange(24, dtype=torch.float64).reshape((2, 3, 4)) + 1.0
+    dist = TorchTensorCategoricalDistribution(probabilities=probabilities)
+
+    concatenated_concat = torch.concat((dist, dist), dim=-1)
+    concatenated_concatenate = torch.concatenate((dist, dist), dim=-1)
+
+    assert isinstance(concatenated_concat, TorchTensorCategoricalDistribution)
+    assert isinstance(concatenated_concatenate, TorchTensorCategoricalDistribution)
+    assert concatenated_concat.shape == (2, 6)
+    assert concatenated_concatenate.shape == (2, 6)
+
+
+def test_stack_preserves_distribution_type() -> None:
+    probabilities = torch.arange(24, dtype=torch.float64).reshape((2, 3, 4)) + 1.0
+    dist = TorchTensorCategoricalDistribution(probabilities=probabilities)
+
+    stacked = torch.stack((dist, dist), dim=0)
+
+    assert isinstance(stacked, TorchTensorCategoricalDistribution)
+    assert stacked.shape == (2, 2, 3)
+    assert tuple(stacked.probabilities.shape) == (2, 2, 3, 4)

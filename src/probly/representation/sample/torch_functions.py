@@ -16,19 +16,19 @@ if TYPE_CHECKING:
     from probly.representation.torch_like import TorchTensorLike
 
 
-class TorchSampleCreator[D](Protocol):
+class TorchSampleCreator[D: TorchTensorLike](Protocol):
     """Protocol for creating sample tensors."""
 
-    def __call__(self, tensor: TorchTensorLike[D], sample_dim: int) -> Any:  # noqa: ANN401
+    def __call__(self, tensor: D, sample_dim: int) -> Any:  # noqa: ANN401
         """Create a sample tensor from a torch tensor and a sample dimension."""
 
 
 @dataclass(frozen=True, slots=True)
-class TorchSampleInternals[D]:
+class TorchSampleInternals[D: TorchTensorLike]:
     """Internal information about a sample tensor."""
 
     create: TorchSampleCreator[D]
-    tensor: TorchTensorLike[D]
+    tensor: D
     sample_dim: int
 
 
@@ -59,7 +59,7 @@ class _BoundTorchFunction(Protocol):
         ...
 
 
-class _BoundTorchFunctionWithInternals[D](Protocol):
+class _BoundTorchFunctionWithInternals[D: TorchTensorLike](Protocol):
     def __call__(
         self,
         func: Callable,
@@ -175,12 +175,13 @@ def torch_internals_override(
 
 def _extract_sample_tensor_sequence_internals(
     tensors: tuple[Any, ...],
-) -> tuple[list[Any], bool, TorchSampleCreator | None, int | None]:
+) -> tuple[list[Any], bool, TorchSampleCreator | None, int | None, int | None]:
     """Extract internals from a sequence of tensors or sample tensors."""
     cast_tensors: list[Any] = []
     has_sample_tensors = False
     sample_dims: set[int] = set()
     create_sample: TorchSampleCreator | None = None
+    sample_ndim: int | None = None
 
     for tensor in tensors:
         internals = torch_sample_internals(tensor)
@@ -195,11 +196,12 @@ def _extract_sample_tensor_sequence_internals(
 
         if create_sample is None:
             create_sample = internals.create
+            sample_ndim = internals.tensor.ndim
 
     if len(sample_dims) == 1:
-        return cast_tensors, has_sample_tensors, create_sample, next(iter(sample_dims))
+        return cast_tensors, has_sample_tensors, create_sample, next(iter(sample_dims)), sample_ndim
 
-    return cast_tensors, has_sample_tensors, None, None
+    return cast_tensors, has_sample_tensors, None, None, None
 
 
 @torch_function.register(torch.transpose)
@@ -310,7 +312,7 @@ def torch_cat_function(
 
     out = mutable_kwargs.get("out")
     out_internals = torch_sample_internals(out)
-    cast_tensors, has_sample_tensors, create_sample, sample_dim = _extract_sample_tensor_sequence_internals(tensors)
+    cast_tensors, has_sample_tensors, create_sample, sample_dim, _ = _extract_sample_tensor_sequence_internals(tensors)
 
     if not has_sample_tensors and out_internals is None:
         return NotImplemented
@@ -332,3 +334,55 @@ def torch_cat_function(
         return res
 
     return create_sample(res, sample_dim=sample_dim)
+
+
+@torch_function.register(torch.stack)
+@torch_function_override
+def torch_stack_function(
+    func: Callable,
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
+) -> Any:  # noqa: ANN401
+    """Implementation of torch.stack for sample tensors."""
+    mutable_kwargs = dict(kwargs)
+    mutable_args = list(args)
+
+    tensors = tuple(mutable_args[0]) if len(mutable_args) > 0 else tuple(mutable_kwargs["tensors"])
+    dim = mutable_kwargs.get("dim", mutable_args[1] if len(mutable_args) > 1 else 0)
+
+    if not isinstance(dim, int):
+        return NotImplemented
+
+    out = mutable_kwargs.get("out")
+    out_internals = torch_sample_internals(out)
+    cast_tensors, has_sample_tensors, create_sample, sample_dim, sample_ndim = (
+        _extract_sample_tensor_sequence_internals(tensors)
+    )
+
+    if not has_sample_tensors and out_internals is None:
+        return NotImplemented
+
+    if len(mutable_args) > 0:
+        mutable_args[0] = cast_tensors
+    else:
+        mutable_kwargs["tensors"] = cast_tensors
+
+    if out_internals is not None:
+        mutable_kwargs["out"] = out_internals.tensor
+
+    res = func(*tuple(mutable_args), **mutable_kwargs)
+
+    if out is not None:
+        return out
+
+    if create_sample is None or sample_dim is None:
+        return res
+
+    input_ndim = sample_ndim
+    if input_ndim is None:
+        return res
+
+    axis = dim if dim >= 0 else input_ndim + dim + 1
+    new_sample_dim = sample_dim + 1 if axis <= sample_dim else sample_dim
+
+    return create_sample(res, sample_dim=new_sample_dim)

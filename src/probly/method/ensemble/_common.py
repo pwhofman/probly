@@ -7,8 +7,15 @@ from typing import Protocol, runtime_checkable
 
 from lazy_dispatch import lazydispatch
 from probly.method.method import predictor_transformation
-from probly.predictor import Predictor, predict, predict_raw
-from probly.predictor._common import IterablePredictor
+from probly.predictor import (
+    CategoricalDistributionPredictor,
+    DirichletDistributionPredictor,
+    IterablePredictor,
+    Predictor,
+    predict,
+    predict_raw,
+)
+from probly.representation.distribution import CategoricalDistribution, DirichletDistribution
 
 
 @runtime_checkable
@@ -22,6 +29,30 @@ class EnsemblePredictor[**In, Out](IterablePredictor[In, Out], Iterable[Predicto
         return NotImplemented
 
 
+@runtime_checkable
+class EnsembleCategoricalDistributionPredictor[**In, Out: CategoricalDistribution](
+    EnsemblePredictor[In, Out], Protocol
+):
+    """Protocol for ensemble predictors that return a categorical distribution."""
+
+    @classmethod
+    def __instancehook__(cls, instance: object) -> bool:
+        if isinstance(instance, Iterable) and all(isinstance(p, CategoricalDistributionPredictor) for p in instance):
+            return True
+        return NotImplemented
+
+
+@runtime_checkable
+class EnsembleDirichletDistributionPredictor[**In, Out: DirichletDistribution](EnsemblePredictor[In, Out], Protocol):
+    """Protocol for ensemble predictors that return a categorical distribution."""
+
+    @classmethod
+    def __instancehook__(cls, instance: object) -> bool:
+        if isinstance(instance, Iterable) and all(isinstance(p, DirichletDistributionPredictor) for p in instance):
+            return True
+        return NotImplemented
+
+
 @lazydispatch
 def ensemble_generator[**In, Out](
     base: Predictor[In, Out], num_members: int, reset_params: bool = True
@@ -31,7 +62,18 @@ def ensemble_generator[**In, Out](
     raise NotImplementedError(msg)
 
 
-@predictor_transformation(permitted_predictor_types=None)
+def register_ensemble_members(ensemble: EnsemblePredictor, t: type[Predictor]) -> EnsemblePredictor:
+    """Register the members of an ensemble predictor."""
+    for member in ensemble:
+        t.register_instance(member)
+
+    return ensemble
+
+
+@predictor_transformation(
+    permitted_predictor_types=None,
+    post_transform=register_ensemble_members,  # ty:ignore[invalid-argument-type]
+)
 @EnsemblePredictor.register_factory
 def ensemble[**In, Out](
     base: Predictor[In, Out], num_members: int, reset_params: bool = True

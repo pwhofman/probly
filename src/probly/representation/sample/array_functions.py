@@ -17,19 +17,19 @@ if TYPE_CHECKING:
     from probly.representation.array_like import NumpyArrayLike, Order
 
 
-class ArraySampleCreator(Protocol):
+class ArraySampleCreator[D: NumpyArrayLike](Protocol):
     """Protocol for creating sample arrays."""
 
-    def __call__(self, array: NumpyArrayLike, sample_axis: int) -> Any:  # noqa: ANN401
+    def __call__(self, array: D, sample_axis: int) -> Any:  # noqa: ANN401
         """Create a sample array from a numpy array and a sample axis."""
 
 
 @dataclass(frozen=True, slots=True)
-class ArraySampleInternals[D]:
+class ArraySampleInternals[D: NumpyArrayLike]:
     """Internal information about a sample array."""
 
-    create: ArraySampleCreator
-    array: NumpyArrayLike[D]
+    create: ArraySampleCreator[D]
+    array: D
     sample_axis: int
 
 
@@ -332,7 +332,7 @@ def array_sample_axis_preserving_function(
 
 @array_function.register(np.reshape)
 @array_internals_override("a")
-def array_reshape_function(  # noqa: C901, PLR0912
+def array_reshape_function(  # noqa: PLR0912
     func: Callable,
     params: BoundArguments,
     create_sample: ArraySampleCreator,

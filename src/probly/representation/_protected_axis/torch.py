@@ -7,7 +7,6 @@ from operator import attrgetter
 from sys import modules
 from typing import TYPE_CHECKING, Annotated, Any, ClassVar, Self, get_args, get_origin, overload, override
 
-import numpy as np
 import torch
 
 from probly.representation._protected_axis.torch_functions import torch_function
@@ -17,7 +16,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from types import ModuleType
 
-    import numpy.typing as npt
+    import numpy as np
 
     from probly.representation.array_like import ToIndices
 
@@ -251,17 +250,12 @@ class TorchAxisProtected[T](TorchTensorLike[T], ABC):
         del cls
         return torch_function(func, types, args, {} if kwargs is None else kwargs)
 
-    @overload
-    def __array__(self) -> npt.NDArray[Any]: ...
-
-    @overload
-    def __array__(self, dtype: npt.DTypeLike) -> npt.NDArray[Any]: ...
+    @override
+    def numpy(self, *, force: bool = False) -> np.ndarray:
+        """Convert to a numpy array."""
+        return self.protected_tensor().numpy(force=force)
 
     @override
-    def __array__(
-        self,
-        dtype: npt.DTypeLike | None = None,
-        copy: bool | None = None,
-    ) -> npt.NDArray[Any]:
-        """Convert to a numpy array for interoperability."""
-        return np.asarray(self.protected_tensor().detach().cpu().numpy(), dtype=dtype, copy=copy)
+    def detach(self) -> Self:
+        """Return a detached version of the array."""
+        return self.with_protected_tensor(self.protected_tensor().detach())

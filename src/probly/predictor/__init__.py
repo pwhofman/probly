@@ -7,12 +7,14 @@ from probly.lazy_types import FLAX_MODULE, TORCH_MODULE
 from ._common import (
     CategoricalDistributionPredictor,
     CredalPredictor,
+    DirichletDistributionPredictor,
     DistributionPredictor,
     IterablePredictor,
     LogitDistributionPredictor,
     Predictor,
     PredictorName,
     RandomPredictor,
+    RepresentationPredictor,
     predict,
     predict_raw,
     predictor_registry,
@@ -32,6 +34,7 @@ Predictor.register(
 
 __all__ = [
     "CredalPredictor",
+    "DirichletDistributionPredictor",
     "DistributionPredictor",
     "IterablePredictor",
     "LogitClassifier",
@@ -39,6 +42,7 @@ __all__ = [
     "PredictorName",
     "ProbabilisticClassifier",
     "RandomPredictor",
+    "RepresentationPredictor",
     "predict",
     "predict_raw",
     "predictor_registry",

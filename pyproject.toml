@@ -70,7 +70,7 @@ test = [
 lint = [
     "ruff>=0.15.8",                                         # for linting
     "prek>=0.3.8",                                          # for running the linters pre-commit hooks
-    "ty>=0.0.28",                                           # for static type checking
+    "ty>=0.0.29",                                           # for static type checking
     "sigx @ git+https://github.com/Cortys/sigx.git@master",
 ]
 docs = [
@@ -188,7 +188,7 @@ convention = "google"
 "src/probly_benchmark/*.py" = ["T201"]
 
 [tool.ruff.lint.mccabe]
-max-complexity = 14
+max-complexity = 15
 
 # Use isort-compatible settings
 [tool.ruff.lint.isort]

@@ -152,3 +152,36 @@ def test_reshape_with_none_inserts_before_class_axis() -> None:
     assert isinstance(reshaped, ArrayCategoricalDistribution)
     assert reshaped.shape == (6, 1)
     assert reshaped.probabilities.shape == (6, 1, 4)
+
+
+def test_concatenate_preserves_distribution_type() -> None:
+    probabilities = np.arange(24, dtype=float).reshape((2, 3, 4)) + 1.0
+    dist = ArrayCategoricalDistribution(probabilities=probabilities)
+
+    concatenated = np.concatenate((dist, dist), axis=-1)
+
+    assert isinstance(concatenated, ArrayCategoricalDistribution)
+    assert concatenated.shape == (2, 6)
+    assert concatenated.probabilities.shape == (2, 6, 4)
+
+
+def test_concat_alias_preserves_distribution_type() -> None:
+    probabilities = np.arange(24, dtype=float).reshape((2, 3, 4)) + 1.0
+    dist = ArrayCategoricalDistribution(probabilities=probabilities)
+
+    concatenated = np.concat((dist, dist), axis=-1)
+
+    assert isinstance(concatenated, ArrayCategoricalDistribution)
+    assert concatenated.shape == (2, 6)
+    assert concatenated.probabilities.shape == (2, 6, 4)
+
+
+def test_stack_preserves_distribution_type() -> None:
+    probabilities = np.arange(24, dtype=float).reshape((2, 3, 4)) + 1.0
+    dist = ArrayCategoricalDistribution(probabilities=probabilities)
+
+    stacked = np.stack((dist, dist), axis=0)
+
+    assert isinstance(stacked, ArrayCategoricalDistribution)
+    assert stacked.shape == (2, 2, 3)
+    assert stacked.probabilities.shape == (2, 2, 3, 4)
