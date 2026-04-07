@@ -199,6 +199,30 @@ class TorchProbabilityIntervalsCredalSet(TorchCategoricalCredalSet, ProbabilityI
 
         return cls(lower_bounds=lower_bounds, upper_bounds=upper_bounds)
 
+    @override
+    @classmethod
+    def from_data(cls, data: torch.Tensor, distribution_axis: int = -1) -> Self:
+        """Create a credal set from data.
+
+        Args:
+            data: The data to create the credal set from.
+            distribution_axis: The axis containing the categorical probabilities.
+
+        Returns:
+            The created credal set.
+
+        """
+        if distribution_axis < 0:
+            distribution_axis += data.ndim - 1
+
+        tensor = torch.moveaxis(data, distribution_axis, -2)
+
+        # Compute lower and upper bounds across samples
+        lower_bounds = torch.min(tensor, dim=-2)[0]
+        upper_bounds = torch.max(tensor, dim=-2)[0]
+
+        return cls(lower_bounds=lower_bounds, upper_bounds=upper_bounds)
+
     @property
     def device(self) -> str | torch.device:
         """Return the device where the bounds are stored."""
