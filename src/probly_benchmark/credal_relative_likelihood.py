@@ -1,4 +1,4 @@
-"""Benchmarking for the credal wrapper method."""
+"""Benchmarking for the credal relative likelihood method."""
 
 from __future__ import annotations
 
