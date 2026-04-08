@@ -269,3 +269,6 @@ docs/source/generated/backreferences/
 # macOS
 **/.DS_Store
 .DS_Store
+
+# sigx
+.sigx_cache

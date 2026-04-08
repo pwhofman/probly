@@ -3305,7 +3305,7 @@ wheels = [
 [[package]]
 name = "sigx"
 version = "0.1.0"
-source = { git = "https://github.com/Cortys/sigx.git?rev=master#3162bcb1236ecc0440b9ea12e94a3b4c3c7d093c" }
+source = { git = "https://github.com/Cortys/sigx.git?rev=master#2b317f3e231c5c6a7c5418281b1186d48fbcfa91" }
 dependencies = [
     { name = "basedpyright" },
     { name = "libcst" },
