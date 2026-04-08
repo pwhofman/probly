@@ -14,7 +14,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 model = LeNet(n_classes=5)
-cep = credal_ensembling(model, num_members=10)
+cep = credal_ensembling(model, num_members=10, predictor_type="probabilistic_classifier")
 rep = representer(cep)
 logger.info(rep)
 inputs = torch.randn(3, 1, 28, 28)

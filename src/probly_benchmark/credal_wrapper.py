@@ -7,7 +7,7 @@ import logging
 import torch
 from torch import nn
 
-from probly.method import credal_wrapper
+from probly.method.credal_wrapper import credal_wrapper
 from probly.representer.sampler import IterableSampler
 
 logging.basicConfig(level=logging.INFO)

@@ -30,7 +30,7 @@ def build_command(src_root: Path, out_root: Path) -> list[str]:
         "--out-root",
         str(out_root),
         "--fail-on-errors",
-        "--prune-unplanned",
+        # "--prune-unplanned",
     ]
     for include in INCLUDES:
         command.extend(["--include", include])
@@ -74,8 +74,9 @@ def main() -> int:
 
     repo_root = Path(__file__).resolve().parents[1]
     src_root = (repo_root / "src").resolve()
+    stub_root = (repo_root / "stubs").resolve()
 
-    command = build_command(src_root, src_root)
+    command = build_command(src_root, stub_root)
 
     try:
         subprocess.run(command, cwd=repo_root, check=True)  # noqa: S603
