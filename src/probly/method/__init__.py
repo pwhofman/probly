@@ -2,6 +2,7 @@
 
 from probly.method.batchensemble import batchensemble
 from probly.method.bayesian import bayesian
+from probly.method.conformalized_credal_set import conformalized_credal_set
 from probly.method.credal_wrapper import credal_wrapper
 from probly.method.dropconnect import dropconnect
 from probly.method.dropout import dropout
@@ -14,6 +15,7 @@ from probly.method.subensemble import subensemble
 __all__ = [
     "batchensemble",
     "bayesian",
+    "conformalized_credal_set",
     "credal_bnn",
     "credal_ensembling",
     "credal_relative_likelihood",

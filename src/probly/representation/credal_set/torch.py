@@ -173,6 +173,35 @@ class TorchProbabilityIntervalsCredalSet(TorchCategoricalCredalSet, ProbabilityI
 
     @override
     @classmethod
+    def from_data(cls, data: torch.Tensor, distribution_axis: int = -1) -> Self:
+        """Create probability intervals from a stacked tensor.
+
+        Args:
+            data: Tensor of shape ``(..., 2, num_classes)`` where ``data[..., 0, :]``
+                contains lower bounds and ``data[..., 1, :]`` contains upper bounds.
+                The bounds axis is selected by ``distribution_axis``.
+            distribution_axis: Axis that holds the ``[lower, upper]`` pair.
+                Defaults to the second-to-last axis (``-2`` with implicit class axis at
+                ``-1``).
+
+        Returns:
+            A new :class:`TorchProbabilityIntervalsCredalSet` instance.
+
+        """
+        # Normalise negative axis before moving
+        if distribution_axis < 0:
+            distribution_axis += data.ndim
+
+        # Bring the bounds axis to position -2 so data has shape (..., 2, num_classes)
+        data = torch.moveaxis(data, distribution_axis, -2)
+
+        lower_bounds = data[..., 0, :]
+        upper_bounds = data[..., 1, :]
+
+        return cls(lower_bounds=lower_bounds, upper_bounds=upper_bounds)
+
+    @override
+    @classmethod
     def from_torch_sample(
         cls,
         sample: TorchTensorSample,
