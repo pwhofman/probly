@@ -1,4 +1,4 @@
-"""Tests for TorchConformalizaedCredalSetPredictor."""
+"""Tests for TorchConformalizedCredalSetPredictor."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from torch import nn  # noqa: E402
 
 from probly.method.conformalized_credal_set import conformalized_credal_set  # noqa: E402
 from probly.method.conformalized_credal_set.torch import (  # noqa: E402
-    TorchConformalizaedCredalSetPredictor,
+    TorchConformalizedCredalSetPredictor,
 )
 from probly.representation.credal_set.torch import TorchProbabilityIntervalsCredalSet  # noqa: E402
 
@@ -50,9 +50,9 @@ class TestFactoryFunction:
     """Tests for the conformalized_credal_set factory."""
 
     def test_returns_torch_predictor(self, simple_model: nn.Module) -> None:
-        """Factory should return a TorchConformalizaedCredalSetPredictor for nn.Module."""
+        """Factory should return a TorchConformalizedCredalSetPredictor for nn.Module."""
         predictor = conformalized_credal_set(simple_model)
-        assert isinstance(predictor, TorchConformalizaedCredalSetPredictor)
+        assert isinstance(predictor, TorchConformalizedCredalSetPredictor)
 
     def test_predictor_wraps_model(self, simple_model: nn.Module) -> None:
         """Returned predictor should reference the original model."""

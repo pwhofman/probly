@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
 
-class TorchConformalizaedCredalSetPredictor:
+class TorchConformalizedCredalSetPredictor:
     """Conformalized credal set predictor for PyTorch models.
 
     Wraps a :class:`torch.nn.Module` classifier and exposes a two-step interface:
@@ -141,11 +141,11 @@ class TorchConformalizaedCredalSetPredictor:
         model_name = self.model.__class__.__name__
         status = "calibrated" if self.is_calibrated else "not calibrated"
         threshold_str = f", threshold={self.threshold:.6f}" if self.threshold is not None else ""
-        return f"TorchConformalizaedCredalSetPredictor(model={model_name}, {status}{threshold_str})"
+        return f"TorchConformalizedCredalSetPredictor(model={model_name}, {status}{threshold_str})"
 
 
-def _create_torch_predictor(model: nn.Module) -> TorchConformalizaedCredalSetPredictor:
-    return TorchConformalizaedCredalSetPredictor(model=model)
+def _create_torch_predictor(model: nn.Module) -> TorchConformalizedCredalSetPredictor:
+    return TorchConformalizedCredalSetPredictor(model=model)
 
 
 register(nn.Module, _create_torch_predictor)
