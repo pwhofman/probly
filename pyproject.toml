@@ -57,7 +57,7 @@ changelog = "https://github.com/pwhofman/probly/blob/main/CHANGELOG.md"
 
 [dependency-groups]
 torch = ["torch>=2.0.0", "torchvision"]
-jax = ["jax>=0.8.0", "flax>=0.12.0"]
+jax = ["jax>=0.8.0", "flax>=0.12.6"]
 jax-cuda12 = ["jax[cuda12]"]
 jax-cuda13 = ["jax[cuda13]"]
 all_ml = [{ include-group = "torch" }, { include-group = "jax" }]
