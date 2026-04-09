@@ -13,6 +13,7 @@ from probly.representation.distribution import (
     DirichletDistribution,
     Distribution,
     create_categorical_distribution,
+    create_categorical_distribution_from_logits,
 )
 from probly.utils.switchdispatch import switch
 
@@ -131,3 +132,11 @@ def predict_categorical_distribution[**In, Out: CategoricalDistribution](
 ) -> Out:
     """Predict for a categorical distribution predictor."""
     return create_categorical_distribution(predict_raw(predictor, *args, **kwargs))  # ty:ignore[invalid-return-type]
+
+
+@predict.register(LogitDistributionPredictor)
+def predict_categorical_distribution_from_logit[**In, Out: CategoricalDistribution](
+    predictor: CategoricalDistributionPredictor[In, Out], *args: In.args, **kwargs: In.kwargs
+) -> Out:
+    """Predict for a categorical distribution predictor."""
+    return create_categorical_distribution_from_logits(predict_raw(predictor, *args, **kwargs))  # ty:ignore[invalid-return-type]

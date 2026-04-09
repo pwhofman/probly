@@ -78,3 +78,10 @@ def create_categorical_distribution[T](data: T) -> CategoricalDistribution:
 def _(data: CategoricalDistribution) -> CategoricalDistribution:
     """Create a categorical distribution from an instance of CategoricalDistribution."""
     return data
+
+
+@lazydispatch
+def create_categorical_distribution_from_logits[T](data: T) -> CategoricalDistribution:
+    """Create a categorical distribution from backend-specific logit data."""
+    msg = f"No categorical distribution factory from logits registered for data type {type(data)}"
+    raise NotImplementedError(msg)

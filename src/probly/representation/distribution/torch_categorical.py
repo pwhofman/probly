@@ -8,7 +8,11 @@ from typing import TYPE_CHECKING, Any, ClassVar, Self, override
 import torch
 
 from probly.representation._protected_axis.torch import TorchAxisProtected
-from probly.representation.distribution._common import CategoricalDistribution, create_categorical_distribution
+from probly.representation.distribution._common import (
+    CategoricalDistribution,
+    create_categorical_distribution,
+    create_categorical_distribution_from_logits,
+)
 from probly.representation.sample.torch import TorchTensorSample
 
 if TYPE_CHECKING:
@@ -138,3 +142,10 @@ def _create_torch_categorical_distribution_from_instance(
     data: TorchTensorCategoricalDistribution,
 ) -> TorchTensorCategoricalDistribution:
     return data
+
+
+@create_categorical_distribution_from_logits.register(torch.Tensor)
+def _create_torch_categorical_distribution_from_logits(
+    data: torch.Tensor,
+) -> TorchTensorCategoricalDistribution:
+    return TorchTensorCategoricalDistribution(probabilities=torch.softmax(data, dim=-1))
