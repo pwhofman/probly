@@ -132,7 +132,7 @@ def main(seed: int = 0) -> None:
     class_counts = np.unique_counts(train_loader.dataset.targets.tolist()).counts.tolist()  # ty: ignore
 
     print("Building Dropout...")
-    postnet_model = posterior_network(encoder, dim=LATENT_DIM, num_classes=10, class_counts=class_counts).to(DEVICE)  # ty: ignore
+    postnet_model = posterior_network(encoder, dim=LATENT_DIM, num_classes=10, class_counts=class_counts).to(DEVICE)
 
     print("Training...")
     train(postnet_model, train_loader)

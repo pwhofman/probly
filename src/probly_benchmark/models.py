@@ -5,6 +5,31 @@ from __future__ import annotations
 import torch
 from torch import nn
 from torch.nn import functional as F
+import torchvision.models as tm
+
+
+def get_base_model(name: str, num_classes: int, pretrained: bool = False) -> nn.Module:
+    """Get a base model.
+
+    Args:
+        name: Name of the model
+        num_classes: Number of classes in the dataset
+        pretrained: Whether or not to use pretrained model. Defaults to False.
+
+    Returns:
+        The base model as a PyTorch module.
+    """
+    match name:
+        case "resnet18":
+            model = tm.resnet18(weights="DEFAULT" if pretrained else None)
+            model.fc = nn.Linear(512, num_classes)
+        case "resnet18_encoder":
+            model = tm.resnet18(weights="DEFAULT" if pretrained else None)
+            model.fc = nn.Identity()
+        case _:
+            msg = f"Model {name} not recognized"
+            raise ValueError(msg)
+    return model
 
 
 class LeNet(nn.Module):
