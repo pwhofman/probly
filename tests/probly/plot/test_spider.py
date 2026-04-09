@@ -16,6 +16,7 @@ from probly.representation.credal_set.array import (
     ArrayProbabilityIntervalsCredalSet,
     ArraySingletonCredalSet,
 )
+from probly.representation.distribution.array_categorical import ArrayCategoricalDistribution
 
 mpl.use("Agg")
 
@@ -32,7 +33,7 @@ def _close_figures():
 class TestSpiderPlot:
     def test_singleton(self):
         data = ArraySingletonCredalSet(
-            array=np.array([[0.3, 0.2, 0.1, 0.15, 0.25]]),
+            array=ArrayCategoricalDistribution(np.array([[0.3, 0.2, 0.1, 0.15, 0.25]])),
         )
         ax = plot_credal_set(data, title="Singleton Spider")
         assert f"radar_{NUM_CLASSES}" in ax.name
@@ -48,7 +49,7 @@ class TestSpiderPlot:
     def test_distance_based(self):
         data = ArrayDistanceBasedCredalSet(
             nominal=np.array([[0.3, 0.2, 0.2, 0.15, 0.15]]),
-            radius=0.05,
+            radius=np.array([0.05]),
         )
         ax = plot_credal_set(data, title="Distance-Based Spider")
         assert f"radar_{NUM_CLASSES}" in ax.name
@@ -163,7 +164,7 @@ class TestGroundTruthOverlay:
 
     def test_ground_truth_ternary(self):
         data = ArraySingletonCredalSet(array=np.array([[0.5, 0.3, 0.2]]))
-        gt = ArraySingletonCredalSet(array=np.array([[0.0, 1.0, 0.0]]))
+        gt = ArraySingletonCredalSet(array=np.array([0.0, 1.0, 0.0]))
         ax = plot_credal_set(data, ground_truth=gt)
         assert ax is not None
 

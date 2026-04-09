@@ -6,18 +6,41 @@ from typing import TYPE_CHECKING
 
 from matplotlib import pyplot as plt
 import numpy as np
+from scipy.stats import entropy
 import torch
 from torch import nn
 
 from probly.evaluation.tasks import selective_prediction
 from probly.method.dropout import dropout
-from probly.quantification.classification import total_entropy
 from probly.representer.sampler import Sampler
 from probly_benchmark import data, utils
 from probly_benchmark.models import LeNet
 
 if TYPE_CHECKING:
     from torch.utils.data import DataLoader
+
+# ---------------------------------------------------------------------------
+# Metrics
+# ---------------------------------------------------------------------------
+
+
+def total_entropy(probs: np.ndarray, base: float = 2) -> np.ndarray:
+    """Compute the total entropy as the total uncertainty.
+
+    The computation is based on samples from a second-order distribution.
+    Based on :cite:`depewegDecompositionUncertainty2018`.
+
+    Args:
+        probs: Probability distributions of shape (n_instances, n_samples, n_classes).
+        base: Base of the logarithm.
+
+    Returns:
+        Total entropy values of shape (n_instances,).
+
+    """
+    te = entropy(probs.mean(axis=1), axis=1, base=base)
+    return te
+
 
 # ---------------------------------------------------------------------------
 # Config

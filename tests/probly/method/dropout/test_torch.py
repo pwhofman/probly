@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from probly.method import dropout
+from probly.method.dropout import dropout
 from tests.probly.torch_utils import count_layers
 
 torch = pytest.importorskip("torch")

@@ -8,6 +8,7 @@ import numpy as np
 
 from lazy_dispatch import lazydispatch
 from probly.representation.credal_set.array import (
+    ArrayCategoricalCredalSet,
     ArrayConvexCredalSet,
     ArrayDiscreteCredalSet,
     ArrayDistanceBasedCredalSet,
@@ -21,8 +22,6 @@ if TYPE_CHECKING:
     from mpltern import TernaryAxes
 
     from probly.plot.config import PlotConfig
-
-    from ._dispatch import ArrayCredalSet
 
 _NUM_TERNARY_CLASSES = 3
 
@@ -51,7 +50,7 @@ def _draw_polygon(
 
 @lazydispatch
 def _draw_credal_set_ternary(
-    data: ArrayCredalSet,
+    data: ArrayCategoricalCredalSet,
     ternary_ax: TernaryAxes,
     config: PlotConfig,
     series_labels: list[str] | None = None,
@@ -78,8 +77,8 @@ def _draw_singleton(
     config: PlotConfig,
     series_labels: list[str] | None = None,
 ) -> None:
-    arr = data.array
-    pts = arr.reshape(-1, _NUM_TERNARY_CLASSES)
+    data = data.reshape(-1)
+    pts = data.array.probabilities
     n_sets = pts.shape[0]
 
     for idx in range(n_sets):

@@ -7,7 +7,7 @@ import logging
 import torch
 from torch import nn
 
-from probly.method import bayesian
+from probly.method.bayesian import bayesian
 from probly.representer.sampler import Sampler
 
 logging.basicConfig(level=logging.INFO)

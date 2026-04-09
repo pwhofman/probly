@@ -35,7 +35,7 @@ class ScalerFlax(nnx.Module, ABC):
         Returns:
             scaled_logits: The scaled logits based on the input.
         """
-        logits = self.base(x)  # ty:ignore[call-non-callable]
+        logits = self.base(x)
         return self._scale_logits(logits)
 
     @abstractmethod
@@ -67,7 +67,7 @@ class ScalerFlax(nnx.Module, ABC):
             x = jax.device_put(inputs)
             y = jax.device_put(targets)
 
-            logits = model(x)  # ty:ignore[call-non-callable]
+            logits = model(x)
             logits_list.append(logits)
             labels_list.append(y)
 

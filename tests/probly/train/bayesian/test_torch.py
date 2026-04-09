@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from probly.method import bayesian
+from probly.method.bayesian import bayesian
 from probly.train.bayesian.torch import ELBOLoss, collect_kl_divergence
 from tests.probly.torch_utils import validate_loss
 

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal, cast
+from typing import TYPE_CHECKING, Literal
 
 from matplotlib.colors import Colormap  # noqa: TC002
 import matplotlib.pyplot as plt
@@ -51,7 +51,7 @@ def _2_cluster_to_y(cluster1: np.ndarray, cluster2: np.ndarray) -> np.ndarray:
             np.ones(len(input2), dtype=int),
         )
     )
-    return cast("np.ndarray", y)
+    return y
 
 
 def _2_cluster_to_x(cluster1: np.ndarray, cluster2: np.ndarray) -> np.ndarray:

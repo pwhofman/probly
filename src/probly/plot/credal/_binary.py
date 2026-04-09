@@ -8,6 +8,7 @@ import numpy as np
 
 from lazy_dispatch import lazydispatch
 from probly.representation.credal_set.array import (
+    ArrayCategoricalCredalSet,
     ArrayConvexCredalSet,
     ArrayDiscreteCredalSet,
     ArrayDistanceBasedCredalSet,
@@ -19,8 +20,6 @@ if TYPE_CHECKING:
     from matplotlib.axes import Axes
 
     from probly.plot.config import PlotConfig
-
-    from ._dispatch import ArrayCredalSet
 
 _NUM_BINARY_CLASSES = 2
 _BINARY_Y_HEIGHT = 0.05
@@ -81,7 +80,7 @@ def _draw_binary_interval(
 
 @lazydispatch
 def _draw_credal_set_binary(
-    data: ArrayCredalSet,
+    data: ArrayCategoricalCredalSet,
     ax: Axes,
     config: PlotConfig,
     series_labels: list[str] | None = None,
@@ -108,7 +107,8 @@ def _draw_singleton_binary(
     config: PlotConfig,
     series_labels: list[str] | None = None,
 ) -> None:
-    arr = data.array.reshape(-1, _NUM_BINARY_CLASSES)
+    data = data.reshape(-1)
+    arr = data.array.probabilities
     n_sets = arr.shape[0]
     for idx in range(n_sets):
         color = config.color(idx)
@@ -123,8 +123,9 @@ def _draw_intervals_binary(
     config: PlotConfig,
     series_labels: list[str] | None = None,
 ) -> None:
-    lower_all = data.lower_bounds.reshape(-1, _NUM_BINARY_CLASSES)
-    upper_all = data.upper_bounds.reshape(-1, _NUM_BINARY_CLASSES)
+    data = data.reshape(-1)
+    lower_all = data.lower_bounds
+    upper_all = data.upper_bounds
     n_sets = lower_all.shape[0]
     for idx in range(n_sets):
         color = config.color(idx)
@@ -143,9 +144,10 @@ def _draw_distance_based_binary(
     config: PlotConfig,
     series_labels: list[str] | None = None,
 ) -> None:
-    lower_all = data.lower().reshape(-1, _NUM_BINARY_CLASSES)
-    upper_all = data.upper().reshape(-1, _NUM_BINARY_CLASSES)
-    nominal_all = data.nominal.reshape(-1, _NUM_BINARY_CLASSES)
+    data = data.reshape(-1)
+    lower_all = data.lower()
+    upper_all = data.upper()
+    nominal_all = data.nominal
     n_sets = lower_all.shape[0]
     for idx in range(n_sets):
         color = config.color(idx)
@@ -161,7 +163,7 @@ def _draw_vertex_set_binary(
     config: PlotConfig,
     series_labels: list[str] | None = None,
 ) -> None:
-    arr = data.array.reshape(-1, data.array.shape[-2], _NUM_BINARY_CLASSES)
+    arr = data.reshape(-1).array.probabilities
     n_sets = arr.shape[0]
     for idx in range(n_sets):
         color = config.color(idx)

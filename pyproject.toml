@@ -59,6 +59,7 @@ changelog = "https://github.com/pwhofman/probly/blob/main/CHANGELOG.md"
 torch = ["torch>=2.0.0", "torchvision"]
 jax = ["jax>=0.8.0", "flax>=0.12.0"]
 jax-cuda12 = ["jax[cuda12]"]
+jax-cuda13 = ["jax[cuda13]"]
 all_ml = [{ include-group = "torch" }, { include-group = "jax" }]
 test = [
     "pytest>=8.3.5",       # for testing
@@ -67,9 +68,10 @@ test = [
     "packaging",           # for version parsing
 ]
 lint = [
-    "ruff>=0.14.1",      # for linting
-    "pre-commit>=4.3.0", # for running the linters pre-commit hooks
-    "ty==0.0.25",        # for static type checking
+    "ruff>=0.15.8",                                         # for linting
+    "prek>=0.3.8",                                          # for running the linters pre-commit hooks
+    "ty>=0.0.29",                                           # for static type checking
+    "sigx @ git+https://github.com/Cortys/sigx.git@master",
 ]
 docs = [
     "sphinx>=9.0.0",
@@ -96,7 +98,6 @@ dev = [
     { include-group = "docs" },
     { include-group = "all_ml" },
     { include-group = "benchmark" },
-    "prek>=0.3.8",
 ]
 
 
@@ -136,6 +137,7 @@ exclude = [
     "docs/build",
     "supporting_files",
     "examples",
+    "*.pyi",
 ]
 
 
@@ -191,7 +193,7 @@ convention = "google"
 "src/probly_benchmark/*.py" = ["T201"]
 
 [tool.ruff.lint.mccabe]
-max-complexity = 12
+max-complexity = 15
 
 # Use isort-compatible settings
 [tool.ruff.lint.isort]
@@ -220,3 +222,6 @@ exclude_lines = ["if TYPE_CHECKING"]
 
 [tool.ty.src]
 exclude = ["notebooks", "docs", "tests", "supporting_files", "examples"]
+
+[tool.ty.environment]
+extra-paths = ["./stubs"]

@@ -4,8 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from probly.method import ensemble
-from probly.method.ensemble._common import ensemble_generator
+from probly.method.ensemble import ensemble, ensemble_generator
 from probly.predictor import Predictor
 
 pytest.importorskip("sklearn")
@@ -46,7 +45,7 @@ class TestModelGeneration:
             NotImplementedError,
             match=f"No ensemble generator is registered for type {type(base)}",
         ):
-            ensemble_generator(dummy_predictor)
+            ensemble_generator(dummy_predictor, num_members=4)
 
     @pytest.mark.parametrize(
         "model_fixture",

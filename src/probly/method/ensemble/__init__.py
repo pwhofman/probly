@@ -4,7 +4,13 @@ from __future__ import annotations
 
 from probly.lazy_types import FLAX_LIST, FLAX_MODULE, SKLEARN_MODULE, TORCH_MODULE, TORCH_MODULE_LIST
 
-from ._common import EnsemblePredictor, ensemble, ensemble_generator
+from ._common import (
+    EnsembleCategoricalDistributionPredictor,
+    EnsembleDirichletDistributionPredictor,
+    EnsemblePredictor,
+    ensemble,
+    ensemble_generator,
+)
 
 EnsemblePredictor.register(
     (
@@ -15,6 +21,11 @@ EnsemblePredictor.register(
 
 
 ## Torch
+@ensemble_generator.delayed_register(TORCH_MODULE)
+def _(_: type) -> None:
+    from . import torch as torch  # noqa: PLC0415
+
+
 @ensemble_generator.delayed_register(TORCH_MODULE)
 def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415
@@ -33,6 +44,8 @@ def _(_: type) -> None:
 
 
 __all__ = [
+    "EnsembleCategoricalDistributionPredictor",
+    "EnsembleDirichletDistributionPredictor",
     "EnsemblePredictor",
     "ensemble",
     "ensemble_generator",

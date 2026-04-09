@@ -2,31 +2,38 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
-from probly.method.ensemble import EnsemblePredictor
+from probly.method.ensemble import EnsembleCategoricalDistributionPredictor
 from probly.method.ensemble._common import ensemble
+from probly.method.method import predictor_transformation
+from probly.predictor import ProbabilisticClassifier
+from probly.representation.distribution import CategoricalDistribution
 
 if TYPE_CHECKING:
     from probly.predictor import Predictor
 
 
-class CredalEnsemblingPredictor[**In, Out](EnsemblePredictor[In, Out], Protocol):
+@runtime_checkable
+class CredalEnsemblingPredictor[**In, Out: CategoricalDistribution](
+    EnsembleCategoricalDistributionPredictor[In, Out], Protocol
+):
     """A predictor that applies the credal ensembling representer."""
 
 
+@predictor_transformation(permitted_predictor_types=(ProbabilisticClassifier,), preserve_predictor_type=False)
 @CredalEnsemblingPredictor.register_factory
-def credal_ensembling[**In, Out](
+def credal_ensembling[**In, Out: CategoricalDistribution](
     base: Predictor[In, Out], num_members: int, reset_params: bool = True
 ) -> CredalEnsemblingPredictor[In, Out]:
     """Create a credal ensembling predictor from a base predictor based on :cite:`nguyenCredalEnsembling2025`.
 
     Args:
-        base: Predictor, The base model to be used for the credal ensembling ensemble.
+        base: The base model to be used for the credal ensembling ensemble.
         num_members: The number of members in the credal ensembling ensemble.
         reset_params: Whether to reset the parameters of each member.
 
     Returns:
-        EnsemblePredictor, The credal ensembling ensemble predictor.
+        The credal ensembling ensemble predictor.
     """
     return ensemble(base, num_members=num_members, reset_params=reset_params)

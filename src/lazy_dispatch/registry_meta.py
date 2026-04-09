@@ -293,7 +293,7 @@ class ProtocolRegistryMeta[T](RegistryMeta[T], type(Protocol)):
 
     def _register_lazy(cls, subclass_strings: set[str]) -> None:
         if len(subclass_strings) > 0 and cls._structural_checking:
-            msg = "Lazy subclass registration not supported for ProtocolRegistries with structural_checking=True."
+            msg = "Lazy subclass registration not supported for ProtocolRegistry with structural_checking=True."
             raise RuntimeError(msg)
         cls._string_registry.update(subclass_strings)
 
