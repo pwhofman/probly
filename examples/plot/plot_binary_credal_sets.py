@@ -66,7 +66,7 @@ plt.show()
 
 distance_based = ArrayDistanceBasedCredalSet(
     nominal=np.array([[0.4, 0.6], [0.7, 0.3]]),
-    radius=0.15,
+    radius=np.array([0.15, 0.15]),
 )
 plot_credal_set(distance_based, title="Distance-Based (binary)")
 plt.show()

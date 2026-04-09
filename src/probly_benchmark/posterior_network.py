@@ -11,12 +11,30 @@ from torch import nn
 
 from probly.evaluation.tasks import selective_prediction
 from probly.method.posterior_network import posterior_network
-from probly.quantification.classification import evidential_uncertainty
 from probly.train.evidential.torch import postnet_loss
 from probly_benchmark import data, utils
 
 if TYPE_CHECKING:
     from torch.utils.data import DataLoader
+
+
+def evidential_uncertainty(evidences: np.ndarray) -> np.ndarray:
+    """Compute the evidential uncertainty given the evidences.
+
+    Based on :cite:`sensoyEvidentialDeep2018`.
+
+    Args:
+        evidences: Evidence values of shape (n_instances, n_classes).
+
+    Returns:
+        Evidential uncertainty values of shape (n_instances,).
+
+    """
+    strengths = np.sum(evidences + 1.0, axis=1)
+    k = np.full(evidences.shape[0], evidences.shape[1])
+    eu = k / strengths
+    return eu
+
 
 # ---------------------------------------------------------------------------
 # Config
