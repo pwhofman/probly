@@ -7,14 +7,52 @@ from typing import Literal, Protocol, Self, cast
 
 import numpy as np
 
-import probly.quantification.classification as qc_cls
-import probly.quantification.regression as qc_reg
 from probly.representer import Sampler
 
 type MetricFn = Callable[[np.ndarray, np.ndarray], float]
 type QueryFn = Callable[[np.ndarray], np.ndarray]
 
 _METRIC_NAMES = Literal["mse", "mae", "accuracy", "auc"]
+
+
+def margin_sampling(probs: np.ndarray) -> np.ndarray:
+    """Compute negative margin as an uncertainty measure for active learning.
+
+    The margin is the difference between the two highest class probabilities
+    averaged over samples.  A small margin means the model is uncertain between
+    its top two classes.  The sign is flipped so that higher values correspond
+    to higher uncertainty, matching the convention used by other query functions.
+
+    Args:
+        probs: numpy.ndarray of shape (n_instances, n_samples, n_classes)
+
+    Returns:
+        numpy.ndarray of shape (n_instances,) — negative margin, higher is
+        more uncertain.
+    """
+    mean_probs = probs.mean(axis=1)  # (n_instances, n_classes)
+    sorted_probs = np.sort(mean_probs, axis=1)  # ascending
+    margin = sorted_probs[:, -1] - sorted_probs[:, -2]
+    return -margin
+
+
+def variance_conditional_expectation(probs: np.ndarray) -> np.ndarray:
+    """Compute variance of conditional expectation as the epistemic uncertainty.
+
+    Assume that the input is from a distribution over parameters of
+    a normal distribution. The first element of the parameter vector is the mean
+    and the second element is the variance.
+    The epistemic uncertainty is the variance of the mean of the samples.
+
+    Args:
+        probs: Parameter distributions of shape (n_instances, n_samples, 2).
+
+    Returns:
+        Variance of conditional expectation values of shape (n_instances,).
+
+    """
+    vce = np.var(probs[:, :, 0], axis=1)
+    return vce
 
 
 class Estimator(Protocol):
@@ -81,8 +119,8 @@ def default_query_fn(model: Estimator) -> QueryFn:
     otherwise.
     """
     if hasattr(model, "predict_proba"):
-        return qc_cls.margin
-    return qc_reg.variance_conditional_expectation
+        return margin_sampling
+    return variance_conditional_expectation
 
 
 def get_outputs(model: Estimator, x: np.ndarray, num_samples: int) -> np.ndarray:

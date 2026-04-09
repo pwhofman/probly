@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from probly.method import dropconnect
+from probly.method.dropconnect import dropconnect
 from probly.predictor import Predictor
 
 

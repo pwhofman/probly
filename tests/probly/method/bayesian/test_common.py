@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from probly.method import bayesian
+from probly.method.bayesian import bayesian
 from probly.predictor import Predictor
 
 

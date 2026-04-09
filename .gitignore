@@ -270,5 +270,9 @@ docs/source/generated/backreferences/
 **/.DS_Store
 .DS_Store
 
+# sigx
+.sigx_cache
+
+# Claude
 .claude/settings.local.json
 .claude/worktrees/

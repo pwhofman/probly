@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from probly.method.bayesian._common import bayesian
 from probly.method.ensemble import EnsemblePredictor
+from probly.method.method import predictor_transformation
+from probly.predictor import ProbabilisticClassifier
 from pytraverse import GlobalVariable
 
 if TYPE_CHECKING:
@@ -40,6 +42,7 @@ def _resolve_param(
     return list(value)
 
 
+@predictor_transformation(permitted_predictor_types=(ProbabilisticClassifier,))
 @CredalBNNPredictor.register_factory
 def credal_bnn[**In, Out](
     base: Predictor[In, Out],

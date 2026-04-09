@@ -87,9 +87,9 @@ def _register_flax_models() -> None:
                 x = jnp.asarray(x)
 
             if callable(model):
-                logits = model(x)  # ty:ignore[call-top-callable]
+                logits = model(x)
             elif hasattr(model, "apply"):
-                logits = model.apply(x)  # ty: ignore[call-non-callable]
+                logits = model.apply(x)
             else:
                 msg = "Model must be callable or expose apply()."
                 raise TypeError(msg)
