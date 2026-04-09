@@ -162,12 +162,14 @@ class TestForwardPass:
     def test_output_shape_mlp(self, mlp_model: SimpleMLP, test_input: torch.Tensor) -> None:
         """Transformed MLP should produce logits of correct shape."""
         out = ddu(mlp_model)
-        logits = out(test_input)
+        logits, densities = out(test_input)
         assert logits.shape == (test_input.shape[0], NUM_CLASSES)
+        assert densities.shape == (test_input.shape[0], NUM_CLASSES)
 
     def test_output_shape_downsample(self, downsample_model: DownsampleNet) -> None:
         """Transformed DownsampleNet should produce logits of correct shape."""
         out = ddu(downsample_model)
         x = torch.randn(2, 3, 8, 8)
-        logits = out(x)
+        logits, densities = out(x)
         assert logits.shape == (2, NUM_CLASSES)
+        assert densities.shape == (2, NUM_CLASSES)
