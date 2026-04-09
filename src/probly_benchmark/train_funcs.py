@@ -11,6 +11,8 @@ import torch.nn.functional as F
 
 from lazy_dispatch import lazydispatch
 from probly.method.bayesian import BayesianPredictor
+from probly.method.dropconnect import DropConnectPredictor
+from probly.method.dropout import DropoutPredictor
 from probly.train.bayesian.torch import ELBOLoss, collect_kl_divergence
 from probly.train.calibration.torch import ExpectedCalibrationError
 
@@ -66,6 +68,38 @@ def _(
     return loss.item()
 
 
+@train_epoch.register((DropConnectPredictor, DropoutPredictor))
+def _(
+    model: Predictor,
+    inputs: torch.Tensor,
+    targets: torch.Tensor,
+    optimizer: optim.Optimizer,
+    grad_clip_norm: float | None = None,
+    amp_enabled: bool = False,
+    scaler: GradScaler | None = None,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> torch.Tensor | float:
+    """Train a stochastic NN (dropout/dropconnect) for one epoch with cross-entropy."""
+    criterion = nn.CrossEntropyLoss()
+    optimizer.zero_grad()
+    with autocast(inputs.device.type, enabled=amp_enabled):
+        outputs = model(inputs)  # ty: ignore[call-non-callable]
+        loss = criterion(outputs, targets)
+    if scaler is not None:
+        scaler.scale(loss).backward()
+        if grad_clip_norm is not None:
+            scaler.unscale_(optimizer)
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)  # ty: ignore[unresolved-attribute]
+        scaler.step(optimizer)
+        scaler.update()
+    else:
+        loss.backward()
+        if grad_clip_norm is not None:
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)  # ty: ignore[unresolved-attribute]
+        optimizer.step()
+    return loss.item()
+
+
 @lazydispatch
 def validate(
     model: Predictor,
@@ -102,6 +136,28 @@ def _(
     return val_loss
 
 
+@validate.register((DropConnectPredictor, DropoutPredictor))
+@torch.no_grad()
+def _(
+    model: Predictor,
+    val_loader: DataLoader,
+    device: torch.device,
+    amp_enabled: bool = False,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> float:
+    """Validate a dropout/dropconnect predictor with cross-entropy loss."""
+    criterion = nn.CrossEntropyLoss()
+    model.eval()  # ty: ignore[unresolved-attribute]
+    val_loss = 0.0
+    for inputs_, targets_ in val_loader:
+        inputs, targets = inputs_.to(device), targets_.to(device)
+        with autocast(device.type, enabled=amp_enabled):
+            outputs = model(inputs)  # ty: ignore[call-non-callable]
+            val_loss += criterion(outputs, targets).item()
+    val_loss /= len(val_loader)
+    return val_loss
+
+
 @lazydispatch
 def evaluate(
     model: Predictor,
@@ -131,6 +187,40 @@ def _(
     Averages softmax probabilities over samples stochastic forward passes.
     """
     model.eval()  # ty: ignore[unresolved-attribute]
+    all_probs: list[torch.Tensor] = []
+    all_labels: list[torch.Tensor] = []
+    for inputs_, targets_ in test_loader:
+        inputs, targets = inputs_.to(device), targets_.to(device)
+        with autocast(device.type, enabled=amp_enabled):
+            sample_probs = torch.stack(
+                [F.softmax(model(inputs), dim=1) for _ in range(samples)]  # ty: ignore[call-non-callable]
+            )
+        all_probs.append(sample_probs.mean(dim=0))
+        all_labels.append(targets)
+
+    probs = torch.cat(all_probs)
+    labels = torch.cat(all_labels)
+
+    return _compute_metrics(probs, labels, n_bins)
+
+
+@evaluate.register((DropConnectPredictor, DropoutPredictor))
+@torch.no_grad()
+def _(
+    model: Predictor,
+    test_loader: DataLoader,
+    device: torch.device,
+    amp_enabled: bool = False,
+    n_bins: int = 10,
+    samples: int = 1,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> dict[str, float]:
+    """Evaluate a dropout/dropconnect predictor on test set.
+
+    Keeps the model in train mode so dropout/dropconnect layers stay active, then
+    averages softmax probabilities over ``samples`` stochastic forward passes.
+    """
+    model.train()  # ty: ignore[unresolved-attribute]
     all_probs: list[torch.Tensor] = []
     all_labels: list[torch.Tensor] = []
     for inputs_, targets_ in test_loader:
