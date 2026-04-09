@@ -88,7 +88,7 @@ plt.show()
 
 distance_based = ArrayDistanceBasedCredalSet(
     nominal=np.array([[0.30, 0.20, 0.15, 0.10, 0.08, 0.07, 0.05, 0.05]]),
-    radius=0.05,
+    radius=np.array([0.05]),
 )
 plot_credal_set(distance_based, title="Distance-Based", labels=CLASS_LABELS)
 plt.show()
