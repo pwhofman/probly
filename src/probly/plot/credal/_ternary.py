@@ -123,7 +123,7 @@ def _draw_distance_based(
 ) -> None:
     lower_all = data.lower().reshape(-1, _NUM_TERNARY_CLASSES)
     upper_all = data.upper().reshape(-1, _NUM_TERNARY_CLASSES)
-    nominal_all = data.nominal.reshape(-1, _NUM_TERNARY_CLASSES)
+    nominal_all = data.nominal.probabilities.reshape(-1, _NUM_TERNARY_CLASSES)
     n_sets = lower_all.shape[0]
 
     for idx in range(n_sets):
@@ -149,7 +149,7 @@ def _draw_discrete_set(
     config: PlotConfig,
     series_labels: list[str] | None = None,
 ) -> None:
-    arr = data.array.reshape(-1, data.array.shape[-2], _NUM_TERNARY_CLASSES)
+    arr = data.reshape(-1).array.probabilities
     n_sets = arr.shape[0]
 
     for idx in range(n_sets):
@@ -166,7 +166,7 @@ def _draw_convex_set(
     config: PlotConfig,
     series_labels: list[str] | None = None,
 ) -> None:
-    arr = data.array.reshape(-1, data.array.shape[-2], _NUM_TERNARY_CLASSES)
+    arr = data.reshape(-1).array.probabilities
     n_sets = arr.shape[0]
 
     for idx in range(n_sets):
