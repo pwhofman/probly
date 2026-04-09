@@ -6,13 +6,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from probly.evaluation._metrics import (
-    auc,
-    average_precision_score,
-    precision_recall_curve,
-    roc_auc_score,
-    roc_curve,
-)
+from probly.metrics import auc, average_precision_score, precision_recall_curve, roc_auc_score, roc_curve
 from probly.plot.ood import plot_histogram, plot_pr_curve, plot_roc_curve
 
 if TYPE_CHECKING:

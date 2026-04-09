@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import matplotlib.pyplot as plt
 import numpy as np
-from probly.evaluation._metrics import auc, precision_recall_curve, roc_curve
+from probly.metrics import auc, precision_recall_curve, roc_curve
 
 from probly.plot import PlotConfig, plot_histogram, plot_pr_curve, plot_roc_curve
 
