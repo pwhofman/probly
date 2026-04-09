@@ -19,9 +19,7 @@ repos:
       - id: check-yaml
       - id: check-toml
       - id: end-of-file-fixer
-        exclude: ^stubs
       - id: trailing-whitespace
-        exclude: ^stubs
       - id: mixed-line-ending
       - id: check-merge-conflict
   - repo: https://github.com/astral-sh/ruff-pre-commit
@@ -38,12 +36,11 @@ repos:
     -   id: sigx-generate
         name: sigx-generate
         language: system
-        entry: .venv/bin/python scripts/generate_method_stubs.py
+        entry: uv run python scripts/generate_method_stubs.py
         pass_filenames: false
         files: ^src/probly/method(?:/[^/]+/_common\.py|/method\.py|/_sigx_transforms\.py)$
     -   id: ty-check
         name: ty-check
         language: system
-        entry: .venv/bin/ty check src/probly/method src/probly/predictor scripts/generate_method_stubs.py
+        entry: uv run python scripts/run_ty_check.py
         pass_filenames: false
-        args: [ --verbose, --output-format=full ]
