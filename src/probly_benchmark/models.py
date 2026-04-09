@@ -13,6 +13,9 @@ def get_base_model(name: str, num_classes: int, pretrained: bool = False) -> nn.
         case "resnet18":
             model = tm.resnet18(weights="DEFAULT" if pretrained else None)
             model.fc = nn.Linear(512, num_classes)
+        case "resnet18_encoder":
+            model = tm.resnet18(weights="DEFAULT" if pretrained else None)
+            model.fc = nn.Identity()
         case _:
             msg = f"Model {name} not recognized"
             raise ValueError(msg)

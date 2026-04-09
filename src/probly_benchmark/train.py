@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from probly.method import bayesian, dropconnect, dropout, posterior_network
-
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
@@ -21,26 +19,10 @@ from torch.amp import GradScaler
 from tqdm import tqdm
 import wandb
 
-from probly_benchmark import data, metadata, models, utils
+from probly_benchmark import data, metadata, utils
+from probly_benchmark.builders import BuildContext, build_model
 from probly_benchmark.paths import CHECKPOINT_PATH
 from probly_benchmark.train_funcs import EarlyStopping, evaluate, train_epoch, validate
-
-METHODS = {
-    "bayesian": bayesian,
-    "dropout": dropout,
-    "dropconnect": dropconnect,
-    "posterior_network": posterior_network,
-}
-
-
-def get_method(name: str):  # noqa: ANN201
-    """Get method transformation function."""
-    name = name.lower()
-    if name not in METHODS:
-        msg = f"Unknown method: {name}"
-        raise ValueError(msg)
-    return METHODS[name]
-
 
 OPTIMIZERS = {
     "adam": optim.Adam,
@@ -119,12 +101,17 @@ def main(cfg: DictConfig) -> None:  # noqa: PLR0912, PLR0915
     )
 
     num_classes = metadata.DATASETS[cfg.dataset].num_classes
-    base = models.get_base_model(cfg.base_model, num_classes, cfg.pretrained)
 
-    method_fn = get_method(cfg.method.name)
-    method_kwargs: dict[str, Any] = OmegaConf.to_container(cfg.method.params, resolve=True)  # ty: ignore[invalid-assignment]
-    train_kwargs: dict[str, Any] = OmegaConf.to_container(cfg.method.train, resolve=True)  # ty: ignore[invalid-assignment]
-    model = method_fn(base, **method_kwargs).to(device)
+    method_kwargs: dict[str, Any] = OmegaConf.to_container(cfg.method.params, resolve=True) or {}  # ty: ignore[invalid-assignment]
+    train_kwargs: dict[str, Any] = OmegaConf.to_container(cfg.method.train, resolve=True) or {}  # ty: ignore[invalid-assignment]
+
+    context = BuildContext(
+        base_model_name=cfg.base_model,
+        num_classes=num_classes,
+        pretrained=cfg.pretrained,
+        train_loader=train_loader,
+    )
+    model = build_model(cfg.method.name, method_kwargs, context).to(device)
     model.forward = torch.compile(model.forward)  # can only
 
     optimizer = get_optimizer(cfg.optimizer.name, model.parameters())
