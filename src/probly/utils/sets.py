@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterable
 
 
-def powerset(iterable: Iterable[int]) -> list[tuple[()]]:
+def powerset(iterable: Iterable[int]) -> list[tuple[int, ...]]:
     """Generate the power set of a given iterable.
 
     Args:

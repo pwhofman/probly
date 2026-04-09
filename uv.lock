@@ -2640,13 +2640,13 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 all-ml = [
-    { name = "flax", specifier = ">=0.12.0" },
+    { name = "flax", specifier = ">=0.12.6" },
     { name = "jax", specifier = ">=0.8.0" },
     { name = "torch", specifier = ">=2.0.0" },
     { name = "torchvision" },
 ]
 dev = [
-    { name = "flax", specifier = ">=0.12.0" },
+    { name = "flax", specifier = ">=0.12.6" },
     { name = "furo" },
     { name = "ipykernel", specifier = ">=6.29.5" },
     { name = "ipython" },
@@ -2685,7 +2685,7 @@ docs = [
     { name = "sphinxcontrib-bibtex" },
 ]
 jax = [
-    { name = "flax", specifier = ">=0.12.0" },
+    { name = "flax", specifier = ">=0.12.6" },
     { name = "jax", specifier = ">=0.8.0" },
 ]
 jax-cuda12 = [{ name = "jax", extras = ["cuda12"] }]
