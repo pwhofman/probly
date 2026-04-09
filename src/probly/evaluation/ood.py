@@ -5,9 +5,14 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import numpy as np
-import sklearn.metrics as sm
-from sklearn.metrics import precision_recall_curve, roc_curve
 
+from probly.evaluation._metrics import (
+    auc,
+    average_precision_score,
+    precision_recall_curve,
+    roc_auc_score,
+    roc_curve,
+)
 from probly.plot.ood import plot_histogram, plot_pr_curve, plot_roc_curve
 
 if TYPE_CHECKING:
@@ -33,7 +38,7 @@ def out_of_distribution_detection_auroc(in_distribution: np.ndarray, out_distrib
     """
     preds = np.concatenate((in_distribution, out_distribution))
     labels = np.concatenate((np.zeros(len(in_distribution)), np.ones(len(out_distribution))))
-    auroc = sm.roc_auc_score(labels, preds)
+    auroc = roc_auc_score(labels, preds)
     return float(auroc)
 
 
@@ -53,7 +58,7 @@ def out_of_distribution_detection_aupr(in_distribution: np.ndarray, out_distribu
     """
     preds = np.concatenate((in_distribution, out_distribution))
     labels = np.concatenate((np.zeros(len(in_distribution)), np.ones(len(out_distribution))))
-    aupr = sm.average_precision_score(labels, preds)
+    aupr = average_precision_score(labels, preds)
     return float(aupr)
 
 
@@ -92,7 +97,7 @@ def out_of_distribution_detection_fpr_at_x_tpr(
         (np.zeros(len(in_distribution)), np.ones(len(out_distribution))),
     )
 
-    fpr, tpr, _ = sm.roc_curve(labels, preds)
+    fpr, tpr, _ = roc_curve(labels, preds)
 
     idxs = np.where(tpr >= tpr_target)[0]
     if len(idxs) == 0:
@@ -124,7 +129,7 @@ def out_of_distribution_detection_fnr_at_x_tpr(
     """
     preds = np.concatenate((in_distribution, out_distribution))
     labels = np.concatenate((np.zeros(len(in_distribution)), np.ones(len(out_distribution))))
-    _, tpr, _ = sm.roc_curve(labels, preds)
+    _, tpr, _ = roc_curve(labels, preds)
     idx = np.where(tpr >= tpr_target)[0]
     return float(1.0 - tpr[idx[0]]) if len(idx) else 1.0
 
@@ -305,14 +310,14 @@ def visualize_ood(
 
         if "roc" in requested_plots:
             fpr, tpr, _ = roc_curve(labels, preds)
-            auroc = sm.auc(fpr, tpr)
+            auroc = auc(fpr, tpr)
             idx_95 = np.where(tpr >= 0.95)[0]
             fpr95 = fpr[idx_95[0]] if len(idx_95) > 0 else None
             figures["roc"] = plot_roc_curve(fpr=fpr, tpr=tpr, auroc=auroc, fpr95=fpr95, config=config)
 
         if "pr" in requested_plots:
             precision, recall, _ = precision_recall_curve(labels, preds)
-            aupr = sm.auc(recall, precision)
+            aupr = auc(recall, precision)
             figures["pr"] = plot_pr_curve(recall=recall, precision=precision, aupr=aupr, config=config)
 
     return figures
