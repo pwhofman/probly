@@ -11,6 +11,11 @@ import numpy as np
 from probly.representation._protected_axis.array import ArrayAxisProtected
 from probly.representation.credal_set._common import (
     CategoricalCredalSet,
+    ConvexCredalSet,
+    DiscreteCredalSet,
+    DistanceBasedCredalSet,
+    ProbabilityIntervalsCredalSet,
+    SingletonCredalSet,
     create_convex_credal_set,
     create_probability_intervals,
 )
@@ -75,10 +80,11 @@ class ArrayCategoricalCredalSet(CategoricalCredalSet, ABC):
         """Return the upper probabilities of the credal set."""
 
 
-@dataclass(frozen=True, slots=True, weakref_slot=True)
+@dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
 class ArrayDiscreteCredalSet(
     ArrayAxisProtected[ArrayCategoricalDistribution],
     ArrayCategoricalCredalSet,
+    DiscreteCredalSet,
 ):
     """A finite set of categorical distributions."""
 
@@ -117,10 +123,11 @@ class ArrayDiscreteCredalSet(
         return np.max(self.array.probabilities, axis=0)
 
 
-@dataclass(frozen=True, slots=True, weakref_slot=True)
+@dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
 class ArrayConvexCredalSet(
     ArrayAxisProtected[ArrayCategoricalDistribution],
     ArrayCategoricalCredalSet,
+    ConvexCredalSet,
 ):
     """A convex hull over a finite set of categorical distributions."""
 
@@ -159,10 +166,11 @@ class ArrayConvexCredalSet(
         return np.max(self.array.probabilities, axis=0)
 
 
-@dataclass(frozen=True, slots=True, weakref_slot=True)
+@dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
 class ArrayDistanceBasedCredalSet(
     ArrayAxisProtected[ArrayCategoricalDistribution],
     ArrayCategoricalCredalSet,
+    DistanceBasedCredalSet,
 ):
     """Distance-based credal set around a nominal categorical distribution."""
 
@@ -231,10 +239,11 @@ class ArrayDistanceBasedCredalSet(
         return np.clip(nominal + r, 0.0, 1.0)
 
 
-@dataclass(frozen=True, slots=True, weakref_slot=True)
+@dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
 class ArrayProbabilityIntervalsCredalSet(
     ArrayAxisProtected[ArrayCategoricalDistribution],
     ArrayCategoricalCredalSet,
+    ProbabilityIntervalsCredalSet,
 ):
     """Credal set represented by lower/upper categorical bounds."""
 
@@ -294,10 +303,11 @@ class ArrayProbabilityIntervalsCredalSet(
         return self.upper_bounds
 
 
-@dataclass(frozen=True, slots=True, weakref_slot=True)
+@dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
 class ArraySingletonCredalSet(
     ArrayAxisProtected[ArrayCategoricalDistribution],
     ArrayCategoricalCredalSet,
+    SingletonCredalSet,
 ):
     """A singleton credal set with one precise categorical distribution."""
 

@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 @dataclass(frozen=True, slots=True, weakref_slot=True)
 class TorchTensorCategoricalDistribution(
     TorchAxisProtected[Any],
-    CategoricalDistribution,
+    CategoricalDistribution[torch.Tensor],
 ):
     """A categorical distribution stored as a torch tensor.
 

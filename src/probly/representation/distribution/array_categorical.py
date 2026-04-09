@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING, Any, ClassVar, Self, override
 import numpy as np
 
 from probly.representation._protected_axis.array import ArrayAxisProtected
-from probly.representation.array_like import NumpyArrayLikeImplementation
 from probly.representation.distribution._common import CategoricalDistribution, create_categorical_distribution
 from probly.representation.sample import ArraySample
 
@@ -20,7 +19,6 @@ if TYPE_CHECKING:
 @dataclass(frozen=True, slots=True, weakref_slot=True)
 class ArrayCategoricalDistribution(
     ArrayAxisProtected[np.ndarray],
-    NumpyArrayLikeImplementation[np.ndarray],
     CategoricalDistribution,
 ):
     """A categorical distribution stored as a numpy array.

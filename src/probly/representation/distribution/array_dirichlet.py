@@ -9,8 +9,8 @@ import numpy as np
 from scipy import special
 
 from probly.representation._protected_axis.array import ArrayAxisProtected
-from probly.representation.array_like import NumpyArrayLikeImplementation
 from probly.representation.distribution._common import DirichletDistribution
+from probly.representation.distribution.array_categorical import ArrayCategoricalDistribution
 from probly.representation.sample import ArraySample
 
 if TYPE_CHECKING:
@@ -21,9 +21,8 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
 class ArrayDirichletDistribution(
-    ArrayAxisProtected,
-    NumpyArrayLikeImplementation[np.ndarray],
-    DirichletDistribution,
+    ArrayAxisProtected[np.ndarray],
+    DirichletDistribution[ArrayCategoricalDistribution],
 ):
     """A Dirichlet distribution stored as a numpy array.
 
@@ -75,7 +74,7 @@ class ArrayDirichletDistribution(
         self,
         num_samples: int = 1,
         rng: np.random.Generator | None = None,
-    ) -> ArraySample[np.ndarray]:
+    ) -> ArraySample[ArrayCategoricalDistribution]:
         """Sample from the Dirichlet distribution (NumPy backend)."""
         if rng is None:
             rng = np.random.default_rng()
@@ -88,7 +87,7 @@ class ArrayDirichletDistribution(
 
         samples = gammas / np.sum(gammas, axis=-1, keepdims=True)
 
-        return ArraySample(array=samples, sample_axis=0)
+        return ArraySample(array=ArrayCategoricalDistribution(samples), sample_axis=0)
 
     @override
     def _postprocess_ufunc_result(self, result: np.ndarray, *, ufunc: np.ufunc, method: str) -> np.ndarray:

@@ -11,6 +11,8 @@ import torch
 from probly.representation._protected_axis.torch import TorchAxisProtected
 from probly.representation.credal_set._common import (
     CategoricalCredalSet,
+    ConvexCredalSet,
+    ProbabilityIntervalsCredalSet,
     create_convex_credal_set,
     create_probability_intervals,
 )
@@ -67,10 +69,11 @@ class TorchCategoricalCredalSet(CategoricalCredalSet, ABC):
         """Create a credal set from categorical distribution samples."""
 
 
-@dataclass(frozen=True, slots=True, weakref_slot=True)
+@dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
 class TorchConvexCredalSet(
     TorchAxisProtected[Any],
     TorchCategoricalCredalSet,
+    ConvexCredalSet,
 ):
     """A convex hull over a finite set of categorical distributions."""
 
@@ -99,10 +102,11 @@ class TorchConvexCredalSet(
         return self.tensor.num_classes
 
 
-@dataclass(frozen=True, slots=True, weakref_slot=True)
+@dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
 class TorchProbabilityIntervalsCredalSet(
     TorchAxisProtected[Any],
     TorchCategoricalCredalSet,
+    ProbabilityIntervalsCredalSet,
 ):
     """Credal set represented by lower/upper categorical bounds."""
 
