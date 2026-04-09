@@ -483,15 +483,16 @@ def protected_moveaxis_function(
     return _apply_unary(internals, op)
 
 
-@array_function.multi_register([np.concatenate, np.concat])
-@array_function_override
+@array_function.register(np.concatenate)
 def protected_concatenate_function(
     func: Callable,
-    params: BoundArguments,
+    types: tuple[type[Any], ...],  # noqa: ARG001
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
 ) -> Any:  # noqa: ANN401
-    values = tuple(params.arguments["arrays"])
-    axis = params.arguments.get("axis", 0)
-    out = params.arguments.get("out", None)
+    values = tuple(args[0])
+    axis = kwargs.get("axis", 0)
+    out = kwargs.get("out")
 
     out_internals = array_axis_protected_internals(out)
     sequence = _extract_protected_value_sequence_internals(values)
