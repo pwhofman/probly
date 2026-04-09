@@ -12,7 +12,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
-from probly.method import dropout
+from probly.method.dropout import dropout
 
 # %%
 # Define a base model

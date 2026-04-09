@@ -147,7 +147,7 @@ def _draw_distance_based_binary(
     data = data.reshape(-1)
     lower_all = data.lower()
     upper_all = data.upper()
-    nominal_all = data.nominal
+    nominal_all = data.nominal.probabilities
     n_sets = lower_all.shape[0]
     for idx in range(n_sets):
         color = config.color(idx)
