@@ -143,3 +143,8 @@ create_sample: Lazydispatch[Any, Sample] = lazydispatch(
     ListSample.from_iterable,
     dispatch_on=first_element,
 )
+
+
+@create_sample.register(Sample)
+def _(sample: Sample) -> Sample:
+    return sample

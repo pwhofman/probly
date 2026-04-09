@@ -70,7 +70,7 @@ class IterableSampler[**In, Out, S: Sample](Representer[Any, In, Out, S]):
         self,
         predictor: IterablePredictor[In, Out],
         sample_factory: SampleFactory[Out, S] = create_sample,  # ty:ignore[invalid-parameter-default]
-        sample_axis: int = 1,
+        sample_axis: int = -1,
     ) -> None:
         """Initialize the ensemble sampler.
 
@@ -109,7 +109,7 @@ class Sampler[**In, Out, S: Sample](IterableSampler[In, Out, S]):
         num_samples: int,
         sampling_strategy: SamplingStrategy = "sequential",
         sample_factory: SampleFactory[Out, S] = create_sample,  # ty:ignore[invalid-parameter-default]
-        sample_axis: int = 1,
+        sample_axis: int = -1,
     ) -> None:
         """Initialize the sampler.
 

@@ -100,8 +100,8 @@ class TorchProbabilityIntervalsCredalSet(
 ):
     """Credal set represented by lower/upper categorical bounds."""
 
-    lower_bounds: TorchTensorCategoricalDistribution
-    upper_bounds: TorchTensorCategoricalDistribution
+    lower_bounds: torch.Tensor
+    upper_bounds: torch.Tensor
     protected_axes: ClassVar[dict[str, int]] = {"lower_bounds": 1, "upper_bounds": 1}
 
     def __post_init__(self) -> None:
@@ -120,13 +120,13 @@ class TorchProbabilityIntervalsCredalSet(
         lower_bounds = torch.min(probabilities, dim=0).values
         upper_bounds = torch.max(probabilities, dim=0).values
         return cls(
-            lower_bounds=TorchTensorCategoricalDistribution(probabilities=lower_bounds),
-            upper_bounds=TorchTensorCategoricalDistribution(probabilities=upper_bounds),
+            lower_bounds=lower_bounds,
+            upper_bounds=upper_bounds,
         )
 
     @override
     def numpy(self, *, force: bool = False) -> NDArray[Any]:
-        stacked = torch.stack([self.lower_bounds.probabilities, self.upper_bounds.probabilities], dim=-2)
+        stacked = torch.stack([self.lower_bounds, self.upper_bounds], dim=-2)
         array = stacked.numpy(force=True)
         if force:
             return array.copy()
@@ -134,13 +134,11 @@ class TorchProbabilityIntervalsCredalSet(
 
     def width(self) -> torch.Tensor:
         """Compute interval width for each class."""
-        return self.upper_bounds.probabilities - self.lower_bounds.probabilities
+        return self.upper_bounds - self.lower_bounds
 
     def contains(self, probabilities: torch.Tensor) -> torch.Tensor:
         """Check whether probabilities are inside the intervals."""
-        within_bounds = (probabilities >= self.lower_bounds.probabilities) & (
-            probabilities <= self.upper_bounds.probabilities
-        )
+        within_bounds = (probabilities >= self.lower_bounds) & (probabilities <= self.upper_bounds)
         return torch.all(within_bounds, dim=-1)
 
 

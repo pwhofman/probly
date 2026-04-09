@@ -164,8 +164,8 @@ class ArrayProbabilityIntervalsCredalSet(
 ):
     """Credal set represented by lower/upper categorical bounds."""
 
-    lower_bounds: ArrayCategoricalDistribution
-    upper_bounds: ArrayCategoricalDistribution
+    lower_bounds: np.ndarray
+    upper_bounds: np.ndarray
     protected_axes: ClassVar[dict[str, int]] = {"lower_bounds": 1, "upper_bounds": 1}
 
     def __post_init__(self) -> None:
@@ -184,24 +184,22 @@ class ArrayProbabilityIntervalsCredalSet(
         lower_bounds = np.min(probabilities, axis=0)
         upper_bounds = np.max(probabilities, axis=0)
         return cls(
-            lower_bounds=ArrayCategoricalDistribution(probabilities=lower_bounds),
-            upper_bounds=ArrayCategoricalDistribution(probabilities=upper_bounds),
+            lower_bounds=lower_bounds,
+            upper_bounds=upper_bounds,
         )
 
     @override
     def __array__(self, dtype: DTypeLike | None = None, copy: bool | None = None) -> np.ndarray:
-        stacked = np.stack([self.lower_bounds.probabilities, self.upper_bounds.probabilities], axis=-2)
+        stacked = np.stack([self.lower_bounds, self.upper_bounds], axis=-2)
         return np.asarray(stacked, dtype=dtype, copy=copy)
 
     def width(self) -> np.ndarray:
         """Compute interval width for each class."""
-        return self.upper_bounds.probabilities - self.lower_bounds.probabilities
+        return self.upper_bounds - self.lower_bounds
 
     def contains(self, probabilities: np.ndarray) -> np.ndarray:
         """Check whether probabilities are inside the intervals."""
-        within_bounds = (probabilities >= self.lower_bounds.probabilities) & (
-            probabilities <= self.upper_bounds.probabilities
-        )
+        within_bounds = (probabilities >= self.lower_bounds) & (probabilities <= self.upper_bounds)
         return np.all(within_bounds, axis=-1)
 
 

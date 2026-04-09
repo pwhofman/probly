@@ -78,7 +78,7 @@ def dispatch_on_sample(sample: Sample, **_kwargs: object) -> object:
 
 
 @lazydispatch(dispatch_on=dispatch_on_sample)
-def create_probability_intervals(sample: Sample) -> ProbabilityIntervalsCredalSet:
+def create_probability_intervals[T: CategoricalDistribution](sample: Sample[T]) -> ProbabilityIntervalsCredalSet:
     """Create a probability-interval credal set from a sample."""
     msg = f"No probability intervals factory registered for sample type {type(sample)}"
     raise NotImplementedError(msg)

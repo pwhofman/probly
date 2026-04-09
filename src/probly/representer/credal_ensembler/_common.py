@@ -9,19 +9,18 @@ from probly.representation.distribution import CategoricalDistribution
 from probly.utils.iterable import first_element
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from probly.representation.sample import Sample
 
 from lazy_dispatch import lazydispatch
 from probly.method.credal_ensembling import CredalEnsemblingPredictor
 from probly.predictor import predict
 from probly.representation.credal_set._common import ConvexCredalSet
+from probly.representation.sample import create_sample
 from probly.representer._representer import Representer, representer
 
 
 @lazydispatch(dispatch_on=first_element)
-def compute_representative_set[T: CategoricalDistribution](
-    probs: Iterable[T], alpha: float, distance: str
-) -> Iterable[T]:
+def compute_representative_set[T: CategoricalDistribution](probs: Sample[T], alpha: float, distance: str) -> Sample[T]:
     """Compute the credal set from the ensemble predictions."""
     msg = f"compute_representative_set method not implemented for type {type(probs)}."
     raise NotImplementedError(msg)
@@ -36,9 +35,10 @@ class CredalEnsemblingRepresenter[**In, Out: CategoricalDistribution, C: ConvexC
         self.alpha = alpha
         self.distance = distance
 
-    def _predict(self, *args: In.args, **kwargs: In.kwargs) -> Iterable[Out]:
+    def _predict(self, *args: In.args, **kwargs: In.kwargs) -> Sample[Out]:
         """Predict the outputs from the ensemble predictor."""
-        return predict(self.predictor, *args, **kwargs)
+        ensemble_prediction = predict(self.predictor, *args, **kwargs)
+        return create_sample(ensemble_prediction)
 
     @override
     def represent(self, *args: In.args, **kwargs: In.kwargs) -> C:

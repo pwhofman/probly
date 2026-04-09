@@ -318,4 +318,7 @@ def _[D: TorchTensorLike](sample: TorchTensorSample[D]) -> TorchSampleInternals[
     )
 
 
-create_sample.register(torch.Tensor, TorchTensorSample.from_iterable)
+create_sample.register(
+    torch.Tensor | TorchTensorLikeImplementation,
+    TorchTensorSample.from_iterable,
+)

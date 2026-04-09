@@ -24,7 +24,7 @@ class EnsemblePredictor[**In, Out](IterablePredictor[In, Out], Iterable[Predicto
 
     @classmethod
     def __instancehook__(cls, instance: object) -> bool:
-        if isinstance(instance, Iterable) and all(isinstance(p, Predictor) for p in instance):
+        if isinstance(instance, list | tuple) and all(isinstance(p, Predictor) for p in instance):
             return True
         return NotImplemented
 
@@ -37,7 +37,9 @@ class EnsembleCategoricalDistributionPredictor[**In, Out: CategoricalDistributio
 
     @classmethod
     def __instancehook__(cls, instance: object) -> bool:
-        if isinstance(instance, Iterable) and all(isinstance(p, CategoricalDistributionPredictor) for p in instance):
+        if isinstance(instance, list | tuple) and all(
+            isinstance(p, CategoricalDistributionPredictor) for p in instance
+        ):
             return True
         return NotImplemented
 

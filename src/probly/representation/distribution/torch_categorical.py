@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, ClassVar, Self, cast, override
+from typing import TYPE_CHECKING, Any, ClassVar, Self, override
 
 import torch
 
@@ -15,8 +15,6 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
     import numpy as np
-
-    from probly.representation.torch_like import TorchTensorLikeImplementation
 
 
 @create_categorical_distribution.register(torch.Tensor)
@@ -103,12 +101,12 @@ class TorchTensorCategoricalDistribution(
             probabilities = self._bernoulli_probability()
             expanded = probabilities.expand((num_samples, *probabilities.shape))
             samples = torch.bernoulli(expanded, generator=rng).to(dtype=torch.int64)
-            return TorchTensorSample(tensor=cast("TorchTensorLikeImplementation[Any]", samples), sample_dim=0)
+            return TorchTensorSample(tensor=samples, sample_dim=0)  # ty:ignore[invalid-argument-type]
 
         flat_probabilities = self._normalized_probabilities().reshape((-1, self.num_classes))
         flat_samples = torch.multinomial(flat_probabilities, num_samples=num_samples, replacement=True, generator=rng)
         samples = flat_samples.transpose(0, 1).reshape((num_samples, *self.shape))
-        return TorchTensorSample(tensor=cast("TorchTensorLikeImplementation[Any]", samples), sample_dim=0)
+        return TorchTensorSample(tensor=samples, sample_dim=0)  # ty:ignore[invalid-argument-type]
 
     @override
     def numpy(self, *, force: bool = False) -> np.ndarray:

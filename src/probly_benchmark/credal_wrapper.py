@@ -29,6 +29,7 @@ class SimpleNN(nn.Module):
         out = self.fc1(x)
         out = self.relu(out)
         out = self.fc2(out)
+        out = self.relu(out)
         return out
 
 
