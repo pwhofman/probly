@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 from lazy_dispatch import lazydispatch
 from probly.predictor import Predictor
 
 
+@runtime_checkable
 class DDUPredictor[**In, Out](Predictor[In, Out], Protocol):
     """A predictor that applies the credal wrapper representer."""
 

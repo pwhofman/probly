@@ -152,7 +152,7 @@ def _(obj: nn.ReLU6, state: State) -> tuple[nn.Module, State]:  # noqa: ARG001
     return nn.LeakyReLU(negative_slope=0.01, inplace=False), state
 
 
-@ddu_generator.register
+@ddu_generator.register(nn.Module)
 def generate_torch_ddu(model: nn.Module, sn_coeff: float = 3.0) -> nn.Module:
     """Build a torch DDU model based on :cite:`mukhotiDeepDeterministicUncertainty2023`.
 
