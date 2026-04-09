@@ -211,6 +211,9 @@ addopts = [
     "--import-mode=importlib", # to avoid issues with lazy imports
 ]
 
+[tool.coverage.run]
+source = ["probly"]
+
 [tool.coverage.report]
 exclude_also = [
     "def __repr__",
