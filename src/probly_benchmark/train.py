@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from probly.method import bayesian, dropconnect, dropout
+from probly.method import bayesian, dropconnect, dropout, posterior_network
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -26,9 +26,10 @@ from probly_benchmark.paths import CHECKPOINT_PATH
 from probly_benchmark.train_funcs import EarlyStopping, evaluate, train_epoch, validate
 
 METHODS = {
-    "bnn": bayesian,
+    "bayesian": bayesian,
     "dropout": dropout,
     "dropconnect": dropconnect,
+    "posterior_network": posterior_network,
 }
 
 

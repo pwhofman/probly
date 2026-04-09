@@ -1,0 +1,6 @@
+# @package method
+name: "posterior_network"
+params:
+    num_flows: 6
+train:
+    entropy_weight: 1e-5

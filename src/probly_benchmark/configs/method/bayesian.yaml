@@ -1,5 +1,5 @@
 # @package method
-name: "bnn"
+name: "bayesian"
 params:
   posterior_std: 0.05
   prior_mean: 0.0

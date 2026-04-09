@@ -13,8 +13,10 @@ from lazy_dispatch import lazydispatch
 from probly.method.bayesian import BayesianPredictor
 from probly.method.dropconnect import DropConnectPredictor
 from probly.method.dropout import DropoutPredictor
+from probly.method.posterior_network import PosteriorNetworkPredictor
 from probly.train.bayesian.torch import ELBOLoss, collect_kl_divergence
 from probly.train.calibration.torch import ExpectedCalibrationError
+from probly.train.evidential.torch import postnet_loss
 
 if TYPE_CHECKING:
     from torch.utils.data import DataLoader
@@ -100,6 +102,38 @@ def _(
     return loss.item()
 
 
+@train_epoch.register(PosteriorNetworkPredictor)
+def _(
+    model: PosteriorNetworkPredictor,
+    inputs: torch.Tensor,
+    targets: torch.Tensor,
+    optimizer: optim.Optimizer,
+    grad_clip_norm: float | None = None,
+    amp_enabled: bool = False,
+    scaler: GradScaler | None = None,
+    entropy_weight: float = 1e-5,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> torch.Tensor | float:
+    """Train a posterior network for one epoch with the PostNet loss."""
+    optimizer.zero_grad()
+    with autocast(inputs.device.type, enabled=amp_enabled):
+        alpha = model(inputs)  # ty: ignore[call-non-callable]
+        loss = postnet_loss(alpha, targets, entropy_weight=entropy_weight)
+    if scaler is not None:
+        scaler.scale(loss).backward()
+        if grad_clip_norm is not None:
+            scaler.unscale_(optimizer)
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)  # ty: ignore[unresolved-attribute]
+        scaler.step(optimizer)
+        scaler.update()
+    else:
+        loss.backward()
+        if grad_clip_norm is not None:
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)  # ty: ignore[unresolved-attribute]
+        optimizer.step()
+    return loss.item()
+
+
 @lazydispatch
 def validate(
     model: Predictor,
@@ -154,6 +188,28 @@ def _(
         with autocast(device.type, enabled=amp_enabled):
             outputs = model(inputs)  # ty: ignore[call-non-callable]
             val_loss += criterion(outputs, targets).item()
+    val_loss /= len(val_loader)
+    return val_loss
+
+
+@validate.register(PosteriorNetworkPredictor)
+@torch.no_grad()
+def _(
+    model: PosteriorNetworkPredictor,
+    val_loader: DataLoader,
+    device: torch.device,
+    amp_enabled: bool = False,
+    entropy_weight: float = 1e-5,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> float:
+    """Validate a posterior network with the PostNet loss."""
+    model.eval()  # ty: ignore[unresolved-attribute]
+    val_loss = 0.0
+    for inputs_, targets_ in val_loader:
+        inputs, targets = inputs_.to(device), targets_.to(device)
+        with autocast(device.type, enabled=amp_enabled):
+            alpha = model(inputs)  # ty: ignore[call-non-callable]
+            val_loss += postnet_loss(alpha, targets, entropy_weight=entropy_weight).item()
     val_loss /= len(val_loader)
     return val_loss
 
@@ -230,6 +286,37 @@ def _(
                 [F.softmax(model(inputs), dim=1) for _ in range(samples)]  # ty: ignore[call-non-callable]
             )
         all_probs.append(sample_probs.mean(dim=0))
+        all_labels.append(targets)
+
+    probs = torch.cat(all_probs)
+    labels = torch.cat(all_labels)
+
+    return _compute_metrics(probs, labels, n_bins)
+
+
+@evaluate.register(PosteriorNetworkPredictor)
+@torch.no_grad()
+def _(
+    model: PosteriorNetworkPredictor,
+    test_loader: DataLoader,
+    device: torch.device,
+    amp_enabled: bool = False,
+    n_bins: int = 10,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> dict[str, float]:
+    """Evaluate a posterior network on test set.
+
+    Uses the mean of the predicted Dirichlet (alpha / alpha.sum) as the class probabilities.
+    """
+    model.eval()  # ty: ignore[unresolved-attribute]
+    all_probs: list[torch.Tensor] = []
+    all_labels: list[torch.Tensor] = []
+    for inputs_, targets_ in test_loader:
+        inputs, targets = inputs_.to(device), targets_.to(device)
+        with autocast(device.type, enabled=amp_enabled):
+            alpha = model(inputs)  # ty: ignore[call-non-callable]
+            probs_ = alpha / alpha.sum(dim=1, keepdim=True)
+        all_probs.append(probs_)
         all_labels.append(targets)
 
     probs = torch.cat(all_probs)
