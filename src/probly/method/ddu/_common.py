@@ -5,23 +5,35 @@ from __future__ import annotations
 from typing import Protocol, runtime_checkable
 
 from lazy_dispatch import lazydispatch
-from probly.predictor import Predictor
+from probly.method.method import predictor_transformation
+from probly.predictor import Predictor, ProbabilisticClassifier
 
 
 @runtime_checkable
 class DDUPredictor[**In, Out](Predictor[In, Out], Protocol):
     """A predictor that applies the credal wrapper representer."""
 
+    encoder: Predictor[In, Out]
+    classification_head: Predictor[In, Out]
+    density_head: Predictor[In, Out]
+
 
 @lazydispatch
-def ddu_generator[**In, Out](base: Predictor[In, Out], sn_coeff: float) -> DDUPredictor[In, Out]:
+def ddu_generator[**In, Out](
+    base: Predictor[In, Out],
+    sn_coeff: float,
+) -> DDUPredictor[In, Out]:
     """Generate a DDU model from a base model."""
     msg = f"No DDU generator is registered for type {type(base)}"
     raise NotImplementedError(msg)
 
 
+@predictor_transformation(permitted_predictor_types=(ProbabilisticClassifier,), preserve_predictor_type=False)
 @DDUPredictor.register_factory
-def ddu[**In, Out](base: Predictor[In, Out], sn_coeff: float = 3.0) -> DDUPredictor[In, Out]:
+def ddu[**In, Out](
+    base: Predictor[In, Out],
+    sn_coeff: float = 3.0,
+) -> DDUPredictor[In, Out]:
     """Transform a model for Deep Deterministic Uncertainty based on :cite:`mukhotiDeepDeterministicUncertainty2023`.
 
     Applies spectral normalization to all Conv2d and Linear layers except the
