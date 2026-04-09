@@ -3,6 +3,7 @@
 from probly.method.batchensemble import batchensemble
 from probly.method.bayesian import bayesian
 from probly.method.credal_wrapper import credal_wrapper
+from probly.method.ddu import ddu
 from probly.method.dropconnect import dropconnect
 from probly.method.dropout import dropout
 from probly.method.efficient_credal_prediction import efficient_credal_prediction
@@ -18,6 +19,7 @@ __all__ = [
     "credal_ensembling",
     "credal_relative_likelihood",
     "credal_wrapper",
+    "ddu",
     "dropconnect",
     "dropout",
     "efficient_credal_prediction",
