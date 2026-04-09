@@ -66,3 +66,65 @@ class TestArraySample:
         assert isinstance(result, np.ndarray)
         expected_array = np.add.reduce(array_sample_2d.array, axis=-1)
         assert np.array_equal(result, expected_array)
+
+    def test_array_function_concatenate_preserves_sample_axis(self, array_sample_2d: ArraySample[int]) -> None:
+        other = ArraySample(np.arange(12, 24).reshape((3, 4)), sample_axis=1)
+
+        result = np.concatenate((array_sample_2d, other), axis=1)
+
+        assert isinstance(result, ArraySample)
+        assert result.sample_axis == 1
+        assert np.array_equal(result.array, np.concatenate((array_sample_2d.array, other.array), axis=1))
+
+    def test_array_function_concatenate_drops_type_on_sample_axis_mismatch(
+        self, array_sample_2d: ArraySample[int]
+    ) -> None:
+        other = ArraySample(np.arange(12, 24).reshape((3, 4)), sample_axis=0)
+
+        result = np.concatenate((array_sample_2d, other), axis=0)
+
+        assert isinstance(result, np.ndarray)
+
+    def test_array_function_concatenate_axis_none_drops_type(self, array_sample_2d: ArraySample[int]) -> None:
+        result = np.concatenate((array_sample_2d, array_sample_2d), axis=None)
+
+        assert isinstance(result, np.ndarray)
+
+    def test_array_function_concatenate_with_sample_out_returns_out(self, array_sample_2d: ArraySample[int]) -> None:
+        out = ArraySample(np.empty((3, 8), dtype=array_sample_2d.dtype), sample_axis=0)
+
+        result = np.concatenate((array_sample_2d, array_sample_2d), axis=1, out=out)
+
+        assert result is out
+        assert np.array_equal(out.array, np.concatenate((array_sample_2d.array, array_sample_2d.array), axis=1))
+
+    def test_array_function_stack_shifts_sample_axis_when_axis_is_before(
+        self, array_sample_2d: ArraySample[int]
+    ) -> None:
+        result = np.stack((array_sample_2d, array_sample_2d), axis=0)
+
+        assert isinstance(result, ArraySample)
+        assert result.sample_axis == array_sample_2d.sample_axis + 1
+        assert np.array_equal(result.array, np.stack((array_sample_2d.array, array_sample_2d.array), axis=0))
+
+    def test_array_function_stack_keeps_sample_axis_when_axis_is_after(self, array_sample_2d: ArraySample[int]) -> None:
+        result = np.stack((array_sample_2d, array_sample_2d), axis=2)
+
+        assert isinstance(result, ArraySample)
+        assert result.sample_axis == array_sample_2d.sample_axis
+        assert np.array_equal(result.array, np.stack((array_sample_2d.array, array_sample_2d.array), axis=2))
+
+    def test_array_function_stack_drops_type_on_sample_axis_mismatch(self, array_sample_2d: ArraySample[int]) -> None:
+        other = ArraySample(np.arange(12, 24).reshape((3, 4)), sample_axis=0)
+
+        result = np.stack((array_sample_2d, other), axis=0)
+
+        assert isinstance(result, np.ndarray)
+
+    def test_array_function_stack_with_sample_out_returns_out(self, array_sample_2d: ArraySample[int]) -> None:
+        out = ArraySample(np.empty((2, 3, 4), dtype=array_sample_2d.dtype), sample_axis=0)
+
+        result = np.stack((array_sample_2d, array_sample_2d), axis=0, out=out)
+
+        assert result is out
+        assert np.array_equal(out.array, np.stack((array_sample_2d.array, array_sample_2d.array), axis=0))

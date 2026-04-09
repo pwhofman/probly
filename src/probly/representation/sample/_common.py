@@ -6,6 +6,8 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Literal, Protocol, Self, TypedDict, Unpack
 
 from lazy_dispatch import Lazydispatch, lazydispatch
+from probly.representation.representation import Representation
+from probly.utils.iterable import first_element
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
@@ -35,7 +37,7 @@ class SampleFactory[T, S: Sample](Protocol):
         """
 
 
-class Sample[T](ABC):
+class Sample[T](Representation, ABC):
     """Abstract base class for samples."""
 
     @classmethod
@@ -137,23 +139,12 @@ class ListSample[T](list[T], Sample[T]):
         return type(self)(self + list(other.samples))
 
 
-def first_dispatchable_sample(samples: Iterable, **_kwargs: Unpack[SampleParams]) -> Any:  # noqa: ANN401
-    """Get the first dispatchable sample from an iterable of samples.
-
-    Args:
-        samples: The predictions to create the sample from.
-        kwargs: Parameters for sample creation.
-
-    Returns:
-        The first dispatchable sample.
-    """
-    try:
-        return samples[0]  # ty:ignore[not-subscriptable]
-    except Exception:  # noqa: BLE001
-        return next(iter(samples))
-
-
-create_sample: Lazydispatch[Any, Any] = lazydispatch(
+create_sample: Lazydispatch[Any, Sample] = lazydispatch(
     ListSample.from_iterable,
-    dispatch_on=first_dispatchable_sample,
+    dispatch_on=first_element,
 )
+
+
+@create_sample.register(Sample)
+def _(sample: Sample) -> Sample:
+    return sample

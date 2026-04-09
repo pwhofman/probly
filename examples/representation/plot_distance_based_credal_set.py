@@ -27,7 +27,7 @@ distance_based = ArrayDistanceBasedCredalSet(
             [0.2, 0.6, 0.2],
         ]
     ),
-    radius=0.1,
+    radius=np.array([0.1, 0.1]),
 )
 
 print("Shape (batch dims):", distance_based.shape)

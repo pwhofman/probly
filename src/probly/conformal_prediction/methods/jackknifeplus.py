@@ -195,7 +195,7 @@ class JackknifePlusRegressor(JackknifeCVBase, ConformalRegressor):
     def predict_fold(self, model: ConformalModel, x: npt.NDArray) -> npt.NDArray[np.floating]:
         """Predict using the given model on the provided data."""
         prediction = model(x.tolist())
-        return cast("npt.NDArray[np.floating]", self.to_numpy(prediction))
+        return self.to_numpy(prediction)
 
     def compute_scores(self, y_true: npt.NDArray, y_pred: npt.NDArray) -> npt.NDArray[np.floating]:
         """Compute nonconformity scores based on true and predicted values."""
@@ -268,7 +268,7 @@ class JackknifePlusClassifier(JackknifeCVBase, ConformalClassifier):
 
     def predict_fold(self, model: ConformalModel, x: npt.NDArray) -> npt.NDArray[np.floating]:
         """Predict using the given model on the provided data."""
-        return cast("npt.NDArray[np.floating]", self.to_numpy(predict_probs(model, x)))
+        return self.to_numpy(predict_probs(model, x))
 
     def compute_scores(self, y_true: npt.NDArray, y_pred: npt.NDArray) -> npt.NDArray[np.floating]:
         """Compute nonconformity scores based on true and predicted values."""
