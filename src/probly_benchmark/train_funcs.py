@@ -52,20 +52,20 @@ def _(
     criterion = ELBOLoss()
     optimizer.zero_grad()
     with autocast(inputs.device.type, enabled=amp_enabled):
-        outputs = model(inputs)  # ty: ignore
+        outputs = model(inputs)
         kl = collect_kl_divergence(model)
         loss = criterion(outputs, targets, kl)
     if scaler is not None:
         scaler.scale(loss).backward()
         if grad_clip_norm is not None:
             scaler.unscale_(optimizer)
-            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)  # ty: ignore[unresolved-attribute]
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)
         scaler.step(optimizer)
         scaler.update()
     else:
         loss.backward()
         if grad_clip_norm is not None:
-            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)  # ty: ignore[unresolved-attribute]
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)
         optimizer.step()
     return loss.item()
 
@@ -117,19 +117,19 @@ def _(
     """Train a posterior network for one epoch with the PostNet loss."""
     optimizer.zero_grad()
     with autocast(inputs.device.type, enabled=amp_enabled):
-        alpha = model(inputs)  # ty: ignore[call-non-callable]
+        alpha = model(inputs)
         loss = postnet_loss(alpha, targets, entropy_weight=entropy_weight)
     if scaler is not None:
         scaler.scale(loss).backward()
         if grad_clip_norm is not None:
             scaler.unscale_(optimizer)
-            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)  # ty: ignore[unresolved-attribute]
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)
         scaler.step(optimizer)
         scaler.update()
     else:
         loss.backward()
         if grad_clip_norm is not None:
-            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)  # ty: ignore[unresolved-attribute]
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)
         optimizer.step()
     return loss.item()
 
@@ -158,12 +158,12 @@ def _(
 ) -> float:
     """Validate a Bayesian predictor."""
     criterion = ELBOLoss()
-    model.eval()  # ty: ignore[unresolved-attribute]
+    model.eval()
     val_loss = 0.0
     for inputs_, targets_ in val_loader:
         inputs, targets = inputs_.to(device), targets_.to(device)
         with autocast(device.type, enabled=amp_enabled):
-            outputs = model(inputs)  # ty: ignore[call-non-callable]
+            outputs = model(inputs)
             kl = collect_kl_divergence(model)
             val_loss += criterion(outputs, targets, kl).item()
     val_loss /= len(val_loader)
@@ -203,12 +203,12 @@ def _(
     **kwargs: Any,  # noqa: ANN401, ARG001
 ) -> float:
     """Validate a posterior network with the PostNet loss."""
-    model.eval()  # ty: ignore[unresolved-attribute]
+    model.eval()
     val_loss = 0.0
     for inputs_, targets_ in val_loader:
         inputs, targets = inputs_.to(device), targets_.to(device)
         with autocast(device.type, enabled=amp_enabled):
-            alpha = model(inputs)  # ty: ignore[call-non-callable]
+            alpha = model(inputs)
             val_loss += postnet_loss(alpha, targets, entropy_weight=entropy_weight).item()
     val_loss /= len(val_loader)
     return val_loss
@@ -242,15 +242,13 @@ def _(
 
     Averages softmax probabilities over samples stochastic forward passes.
     """
-    model.eval()  # ty: ignore[unresolved-attribute]
+    model.eval()
     all_probs: list[torch.Tensor] = []
     all_labels: list[torch.Tensor] = []
     for inputs_, targets_ in test_loader:
         inputs, targets = inputs_.to(device), targets_.to(device)
         with autocast(device.type, enabled=amp_enabled):
-            sample_probs = torch.stack(
-                [F.softmax(model(inputs), dim=1) for _ in range(samples)]  # ty: ignore[call-non-callable]
-            )
+            sample_probs = torch.stack([F.softmax(model(inputs), dim=1) for _ in range(samples)])
         all_probs.append(sample_probs.mean(dim=0))
         all_labels.append(targets)
 
@@ -282,9 +280,7 @@ def _(
     for inputs_, targets_ in test_loader:
         inputs, targets = inputs_.to(device), targets_.to(device)
         with autocast(device.type, enabled=amp_enabled):
-            sample_probs = torch.stack(
-                [F.softmax(model(inputs), dim=1) for _ in range(samples)]  # ty: ignore[call-non-callable]
-            )
+            sample_probs = torch.stack([F.softmax(model(inputs), dim=1) for _ in range(samples)])  # ty: ignore
         all_probs.append(sample_probs.mean(dim=0))
         all_labels.append(targets)
 
@@ -308,13 +304,13 @@ def _(
 
     Uses the mean of the predicted Dirichlet (alpha / alpha.sum) as the class probabilities.
     """
-    model.eval()  # ty: ignore[unresolved-attribute]
+    model.eval()
     all_probs: list[torch.Tensor] = []
     all_labels: list[torch.Tensor] = []
     for inputs_, targets_ in test_loader:
         inputs, targets = inputs_.to(device), targets_.to(device)
         with autocast(device.type, enabled=amp_enabled):
-            alpha = model(inputs)  # ty: ignore[call-non-callable]
+            alpha = model(inputs)
             probs_ = alpha / alpha.sum(dim=1, keepdim=True)
         all_probs.append(probs_)
         all_labels.append(targets)

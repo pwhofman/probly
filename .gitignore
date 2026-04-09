@@ -270,8 +270,8 @@ docs/source/generated/backreferences/
 **/.DS_Store
 .DS_Store
 
-# sigx
-.sigx_cache
+# stubs
+stubs/
 
 # Claude
 .claude/settings.local.json

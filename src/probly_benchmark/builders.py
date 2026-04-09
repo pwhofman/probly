@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     from torch.utils.data import DataLoader
 
 
-METHODS: dict[str, Callable[..., nn.Module]] = {
+METHODS = {
     "bayesian": bayesian,
     "dropout": dropout,
     "dropconnect": dropconnect,
@@ -48,7 +48,7 @@ def get_method(name: str) -> Callable[..., nn.Module]:
     if key not in METHODS:
         msg = f"Unknown method: {name}"
         raise ValueError(msg)
-    return METHODS[key]
+    return METHODS[key]  # ty: ignore
 
 
 @dataclass

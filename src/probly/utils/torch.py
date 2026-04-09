@@ -27,7 +27,7 @@ def _(obj: nn.Linear, _current: int) -> tuple[nn.Linear, dict[str, int]]:
 )
 def _(obj: nn.Module, _current: int) -> tuple[nn.Module, dict[str, int]]:
     """Record the output channel count of a torch convolutional layer."""
-    return obj, {"_current": obj.out_channels}  # ty: ignore[unresolved-attribute]
+    return obj, {"_current": obj.out_channels}  # ty: ignore
 
 
 @torch.no_grad()

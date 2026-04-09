@@ -105,6 +105,8 @@ def predict_raw[**In, Out](predictor: Predictor[In, Out], /, *args: In.args, **k
     without any conversion to a specific type. For most use cases, the `predict` function should be used instead,
     which will attempt to convert the output to the correct type using registered conversion functions.
     """
+    if isinstance(predictor, CategoricalDistributionPredictor) and hasattr(predictor, "predict_proba"):
+        return predictor.predict_proba(*args, **kwargs)  # ty:ignore[call-non-callable]
     if hasattr(predictor, "predict"):
         return predictor.predict(*args, **kwargs)  # ty: ignore[call-non-callable]
     if callable(predictor):
