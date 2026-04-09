@@ -66,9 +66,18 @@ SCHEDULERS: dict[str, type[optim.lr_scheduler.LRScheduler] | None] = {
 def get_scheduler(
     name: str,
     optimizer: optim.Optimizer,
+    epochs: int,
     **kwargs: Any,  # noqa: ANN401
 ) -> optim.lr_scheduler.LRScheduler | None:
-    """Get learning rate scheduler."""
+    """Get learning rate scheduler.
+
+    Args:
+        name: Scheduler name.
+        optimizer: Optimizer to schedule.
+        epochs: Total number of training epochs. Used as default ``T_max`` for cosine.
+        **kwargs: Additional scheduler-specific kwargs. An explicit ``T_max`` here
+            overrides the ``epochs`` default for cosine.
+    """
     name = name.lower()
     if name not in SCHEDULERS:
         msg = f"Unknown scheduler: {name}"
@@ -76,11 +85,13 @@ def get_scheduler(
     cls = SCHEDULERS[name]
     if cls is None:
         return None
+    if name == "cosine":
+        kwargs.setdefault("T_max", epochs)
     return cls(optimizer, **kwargs)
 
 
 @hydra.main(version_base=None, config_path="configs/", config_name="train")
-def main(cfg: DictConfig) -> None:  # noqa: PLR0915, many statements are allowed in this case
+def main(cfg: DictConfig) -> None:  # noqa: PLR0912, PLR0915
     """Run the training script."""
     print("=== Training configuration ===")
     print(OmegaConf.to_yaml(cfg))
@@ -110,15 +121,24 @@ def main(cfg: DictConfig) -> None:  # noqa: PLR0915, many statements are allowed
     base = models.get_base_model(cfg.base_model, num_classes, cfg.pretrained)
 
     method_fn = get_method(cfg.method.name)
-    method_params = {k: v for k, v in cfg.method.items() if k != "name"}
-    model = method_fn(base).to(device)
-    model.forward = torch.compile(model.forward)
+    method_kwargs: dict[str, Any] = OmegaConf.to_container(cfg.method.params, resolve=True)  # ty: ignore[invalid-assignment]
+    train_kwargs: dict[str, Any] = OmegaConf.to_container(cfg.method.train, resolve=True)  # ty: ignore[invalid-assignment]
+    model = method_fn(base, **method_kwargs).to(device)
+    model.forward = torch.compile(model.forward)  # can only
 
     optimizer = get_optimizer(cfg.optimizer.name, model.parameters())
 
-    scheduler = get_scheduler(cfg.scheduler.name, optimizer, **cfg.scheduler.get("params", {}))
+    scheduler = get_scheduler(cfg.scheduler.name, optimizer, cfg.epochs, **cfg.scheduler.get("params", {}))
 
     early_stopping = EarlyStopping(patience=cfg.early_stopping.patience) if cfg.early_stopping.patience else None
+
+    if not cfg.validate:
+        if cfg.scheduler.name.lower() == "plateau":
+            msg = "ReduceLROnPlateau scheduler requires `validate: true` in the config."
+            raise ValueError(msg)
+        if early_stopping is not None:
+            msg = "Early stopping requires `validate: true` in the config. Disable early stopping or enable validation."
+            raise ValueError(msg)
 
     grad_clip_norm = cfg.get("grad_clip_norm", None)
     amp_enabled = cfg.get("amp", False)
@@ -137,33 +157,34 @@ def main(cfg: DictConfig) -> None:  # noqa: PLR0915, many statements are allowed
                 grad_clip_norm=grad_clip_norm,
                 amp_enabled=amp_enabled,
                 scaler=scaler,
-                **method_params,
+                **train_kwargs,
             )
         running_loss /= len(train_loader)
 
-        val_loss = validate(model, val_loader, device, amp_enabled, **method_params)
+        val_loss: float | None = None
+        if val_loader:
+            val_loss = validate(model, val_loader, device, amp_enabled, **train_kwargs)
 
         if scheduler is not None:
             if isinstance(scheduler, optim.lr_scheduler.ReduceLROnPlateau):
-                scheduler.step(val_loss)
+                # val_loss is guaranteed non-None by upfront validate/scheduler check
+                scheduler.step(val_loss)  # ty: ignore[invalid-argument-type]
             else:
                 scheduler.step()
 
-        run.log(
-            data={
-                "train_loss": running_loss,
-                "val_loss": val_loss,
-            }
-        )
+        log_data = {"train_loss": running_loss}
+        if val_loss is not None:
+            log_data["val_loss"] = val_loss
+        run.log(data=log_data)
 
-        if early_stopping is not None and early_stopping.should_stop(val_loss):
+        if early_stopping is not None and val_loss is not None and early_stopping.should_stop(val_loss):
             run.summary["early_stopped"] = True
             print(f"Early stopping at epoch {epoch}")
             break
     else:
         run.summary["early_stopped"] = False
 
-    test_metrics = evaluate(model, test_loader, device, amp_enabled, **method_params)
+    test_metrics = evaluate(model, test_loader, device, amp_enabled, **train_kwargs)
     run.summary.update(test_metrics)
 
     checkpoint = {
