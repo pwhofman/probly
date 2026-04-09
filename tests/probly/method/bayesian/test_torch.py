@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from probly.layers.torch import BayesConv2d, BayesLinear
-from probly.method import bayesian
+from probly.method.bayesian import bayesian
 from tests.probly.torch_utils import count_layers
 
 torch = pytest.importorskip("torch")

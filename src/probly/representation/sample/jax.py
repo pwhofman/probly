@@ -10,6 +10,7 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 
+from probly.representation.jax_like import JaxArrayLikeImplementation
 from probly.representation.sample._common import Sample, SampleAxis, create_sample
 
 if TYPE_CHECKING:
@@ -198,7 +199,7 @@ class JaxArraySample(Sample[jax.Array]):
         moved_array = jnp.moveaxis(self.array, self.sample_axis, new_sample_axis)
         return type(self)(array=moved_array, sample_axis=new_sample_axis)
 
-    def __array__(self, dtype: npt.DTypeLike = None, copy: bool | None = None) -> np.ndarray:
+    def __array__(self, dtype: npt.DTypeLike | None = None, copy: bool | None = None) -> np.ndarray:
         """Get the underlying numpy array.
 
         Args:
@@ -243,4 +244,7 @@ class JaxArraySample(Sample[jax.Array]):
         return type(self)(array=self.array.to_device(device), sample_axis=self.sample_axis)
 
 
-create_sample.register(jax.Array, JaxArraySample.from_iterable)
+create_sample.register(
+    jax.Array | JaxArrayLikeImplementation,
+    JaxArraySample.from_iterable,
+)

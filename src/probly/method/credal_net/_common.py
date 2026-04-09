@@ -5,6 +5,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from lazy_dispatch import lazydispatch
+from probly.method.method import predictor_transformation
+from probly.predictor import ProbabilisticClassifier
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -25,6 +27,7 @@ def register(cls: LazyType, generator: Callable) -> None:
     credal_net_generator.register(cls=cls, func=generator)
 
 
+@predictor_transformation(permitted_predictor_types=(ProbabilisticClassifier,))
 def credal_net[T: Predictor](base: T) -> T:
     """Create a credal net predictor from a base predictor based on :cite:`wang2024credalnet`.
 

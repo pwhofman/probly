@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
+from probly.method.method import predictor_transformation
 from probly.predictor import RandomPredictor
 from probly.traverse_nn import is_first_layer, nn_compose
 from pytraverse import CLONE, GlobalVariable, lazydispatch_traverser, traverse
@@ -41,6 +42,7 @@ def register(cls: LazyType, traverser: RegisteredLooseTraverser) -> None:
     )
 
 
+@predictor_transformation(permitted_predictor_types=None)
 @DropoutPredictor.register_factory
 def dropout[T: Predictor](
     base: T, p: float = 0.25, rng_collection: str = "dropout", rngs: Rngs | RngStream | int = 1
