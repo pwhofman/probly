@@ -21,6 +21,8 @@ type PredictorName = Literal[
     "probabilistic_classifier",
     "logit_distribution_predictor",
     "logit_classifier",
+    "dirichlet_distribution_predictor",
+    "evidential_classifier",
 ]
 
 
@@ -76,6 +78,7 @@ class LogitDistributionPredictor[**In, Out: CategoricalDistribution](Distributio
     """Protocol for predictors that return a categorical distribution over outputs expressed as logits."""
 
 
+@predictor_registry.multi_register(["dirichlet_distribution_predictor", "evidential_classifier"])
 @runtime_checkable
 class DirichletDistributionPredictor[**In, Out: DirichletDistribution](DistributionPredictor[In, Out], Protocol):
     """Protocol for predictors that return a Dirichlet distribution over outputs."""

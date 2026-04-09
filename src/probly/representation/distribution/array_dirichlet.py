@@ -106,5 +106,10 @@ class ArrayDirichletDistribution(
         return np.equal(self.alphas, value)
 
     def __hash__(self) -> int:
-        """Compute the hash of the distribution."""
-        return super().__hash__()
+        """Return an identity-based hash.
+
+        We intentionally bypass ``super()`` here because protocol-heavy MROs can
+        produce invalid ``super(type, obj)`` bindings at runtime. ``object``'s
+        hash gives per-instance identity semantics.
+        """
+        return object.__hash__(self)

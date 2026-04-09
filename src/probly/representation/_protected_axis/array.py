@@ -298,3 +298,10 @@ class ArrayAxisProtected[T: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplement
         kwargs: dict[str, object],
     ) -> object:
         return array_function(func, types, args, kwargs)
+
+    def reshape(self, *shape: int | tuple[int, ...], order: str = "C", copy: bool | None = None) -> Self:
+        """Return a copy with reshaped protected values."""
+        if len(shape) == 1 and isinstance(shape[0], tuple):
+            shape = shape[0]
+
+        return np.reshape(self, shape, order=order, copy=copy)  # ty:ignore[no-matching-overload]

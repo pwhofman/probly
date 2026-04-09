@@ -41,6 +41,13 @@ class CategoricalCredalSet[T: CategoricalDistribution](CredalSet, ABC):
         msg = "from_sample method not implemented."
         raise NotImplementedError(msg)
 
+    @property
+    @abstractmethod
+    def num_classes(self) -> int:
+        """Return the number of classes in the credal set."""
+        msg = "num_classes property not implemented."
+        raise NotImplementedError(msg)
+
 
 class DiscreteCredalSet[T: CategoricalDistribution](CategoricalCredalSet[T]):
     """A credal set over a finite set of distributions."""

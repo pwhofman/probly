@@ -337,7 +337,7 @@ class ArraySample[D: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplementation[D
 
     def __hash__(self) -> int:
         """Compute the hash of the ArraySample."""
-        return super().__hash__()
+        return object.__hash__(self)
 
     @override
     def __index__(self) -> int:

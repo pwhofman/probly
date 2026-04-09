@@ -185,3 +185,12 @@ def test_stack_preserves_distribution_type() -> None:
     assert isinstance(stacked, ArrayCategoricalDistribution)
     assert stacked.shape == (2, 2, 3)
     assert stacked.probabilities.shape == (2, 2, 3, 4)
+
+
+def test_hash_is_identity_based_and_distinguishes_instances() -> None:
+    probabilities = np.array([[0.2, 0.8]], dtype=float)
+    dist_a = ArrayCategoricalDistribution(probabilities=probabilities.copy())
+    dist_b = ArrayCategoricalDistribution(probabilities=probabilities.copy())
+
+    assert hash(dist_a) == hash(dist_a)
+    assert hash(dist_a) != hash(dist_b)

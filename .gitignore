@@ -272,3 +272,7 @@ docs/source/generated/backreferences/
 
 # sigx
 .sigx_cache
+
+# Claude
+.claude/settings.local.json
+.claude/worktrees/

@@ -75,7 +75,7 @@ class TorchConvexCredalSet(
     """A convex hull over a finite set of categorical distributions."""
 
     tensor: TorchTensorCategoricalDistribution
-    protected_axes: ClassVar[dict[str, int]] = {"tensor": 2}
+    protected_axes: ClassVar[dict[str, int]] = {"tensor": 1}
 
     def __post_init__(self) -> None:
         """Validate that the tensor contains valid categorical distributions."""
@@ -91,6 +91,12 @@ class TorchConvexCredalSet(
         probabilities = _sample_probabilities(sample, distribution_axis)
         vertices = torch.moveaxis(probabilities, 0, -2)
         return cls(tensor=TorchTensorCategoricalDistribution(probabilities=vertices))
+
+    @override
+    @property
+    def num_classes(self) -> int:
+        """Get the number of classes."""
+        return self.tensor.num_classes
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
@@ -123,6 +129,12 @@ class TorchProbabilityIntervalsCredalSet(
             lower_bounds=lower_bounds,
             upper_bounds=upper_bounds,
         )
+
+    @override
+    @property
+    def num_classes(self) -> int:
+        """Get the number of classes."""
+        return self.lower_bounds.shape[-1]
 
     @override
     def numpy(self, *, force: bool = False) -> NDArray[Any]:

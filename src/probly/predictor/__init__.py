@@ -23,6 +23,7 @@ from ._common import (
 # Aliases for common predictor types
 ProbabilisticClassifier = CategoricalDistributionPredictor
 LogitClassifier = LogitDistributionPredictor
+EvidentialPredictor = DirichletDistributionPredictor
 
 # Register common module types as predictors
 Predictor.register(
@@ -33,11 +34,14 @@ Predictor.register(
 )
 
 __all__ = [
+    "CategoricalDistributionPredictor",
     "CredalPredictor",
     "DirichletDistributionPredictor",
     "DistributionPredictor",
+    "EvidentialPredictor",
     "IterablePredictor",
     "LogitClassifier",
+    "LogitDistributionPredictor",
     "Predictor",
     "PredictorName",
     "ProbabilisticClassifier",

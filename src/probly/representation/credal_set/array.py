@@ -66,6 +66,14 @@ class ArrayCategoricalCredalSet(CategoricalCredalSet, ABC):
     ) -> Self:
         """Create a credal set from categorical distribution samples."""
 
+    @abstractmethod
+    def lower(self) -> np.ndarray:
+        """Return the lower probabilities of the credal set."""
+
+    @abstractmethod
+    def upper(self) -> np.ndarray:
+        """Return the upper probabilities of the credal set."""
+
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
 class ArrayDiscreteCredalSet(
@@ -75,7 +83,7 @@ class ArrayDiscreteCredalSet(
     """A finite set of categorical distributions."""
 
     array: ArrayCategoricalDistribution
-    protected_axes: ClassVar[dict[str, int]] = {"array": 2}
+    protected_axes: ClassVar[dict[str, int]] = {"array": 1}
 
     def __post_init__(self) -> None:
         """Validate that the array contains valid categorical distributions."""
@@ -92,6 +100,22 @@ class ArrayDiscreteCredalSet(
         members = np.moveaxis(probabilities, 0, -2)
         return cls(array=ArrayCategoricalDistribution(probabilities=members))
 
+    @override
+    @property
+    def num_classes(self) -> int:
+        """Return the number of classes in the credal set."""
+        return self.array.num_classes
+
+    @override
+    def lower(self) -> np.ndarray:
+        """Return the lower probabilities of the credal set."""
+        return np.min(self.array.probabilities, axis=0)
+
+    @override
+    def upper(self) -> np.ndarray:
+        """Return the upper probabilities of the credal set."""
+        return np.max(self.array.probabilities, axis=0)
+
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
 class ArrayConvexCredalSet(
@@ -101,7 +125,7 @@ class ArrayConvexCredalSet(
     """A convex hull over a finite set of categorical distributions."""
 
     array: ArrayCategoricalDistribution
-    protected_axes: ClassVar[dict[str, int]] = {"array": 2}
+    protected_axes: ClassVar[dict[str, int]] = {"array": 1}
 
     def __post_init__(self) -> None:
         """Validate that the array contains valid categorical distributions."""
@@ -118,6 +142,22 @@ class ArrayConvexCredalSet(
         vertices = np.moveaxis(probabilities, 0, -2)
         return cls(array=ArrayCategoricalDistribution(probabilities=vertices))
 
+    @override
+    @property
+    def num_classes(self) -> int:
+        """Return the number of classes in the credal set."""
+        return self.array.num_classes
+
+    @override
+    def lower(self) -> np.ndarray:
+        """Return the lower probabilities of the credal set."""
+        return np.min(self.array.probabilities, axis=0)
+
+    @override
+    def upper(self) -> np.ndarray:
+        """Return the upper probabilities of the credal set."""
+        return np.max(self.array.probabilities, axis=0)
+
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
 class ArrayDistanceBasedCredalSet(
@@ -128,7 +168,7 @@ class ArrayDistanceBasedCredalSet(
 
     nominal: ArrayCategoricalDistribution
     radius: np.ndarray
-    protected_axes: ClassVar[dict[str, int]] = {"nominal": 1, "radius": 0}
+    protected_axes: ClassVar[dict[str, int]] = {"nominal": 0, "radius": 0}
 
     def __post_init__(self) -> None:
         """Validate that nominal is a valid categorical distribution and radius is non-negative."""
@@ -156,6 +196,40 @@ class ArrayDistanceBasedCredalSet(
     def __array__(self, dtype: DTypeLike | None = None, copy: bool | None = None) -> np.ndarray:
         return np.asarray(self.nominal.probabilities, dtype=dtype, copy=copy)
 
+    @override
+    @property
+    def num_classes(self) -> int:
+        """Return the number of classes in the credal set."""
+        return self.nominal.num_classes
+
+    @override
+    def lower(self) -> np.ndarray:
+        """Compute the lower envelope of the credal set.
+
+        For L1/TV distance, the tightest element-wise lower bound is max(0, nominal - radius).
+        """
+        # Ensure radius is broadcastable to nominal (add last dim if needed)
+        nominal = self.nominal.probabilities
+        r = self.radius
+        if isinstance(r, np.ndarray) and r.ndim == nominal.ndim - 1:
+            r = np.expand_dims(r, axis=-1)
+
+        return np.clip(nominal - r, 0.0, 1.0)
+
+    @override
+    def upper(self) -> np.ndarray:
+        """Compute the upper envelope of the credal set.
+
+        For L1/TV distance, the tightest element-wise upper bound is min(1, nominal + radius).
+        """
+        # Ensure radius is broadcastable to nominal (add last dim if needed)
+        nominal = self.nominal.probabilities
+        r = self.radius
+        if isinstance(r, np.ndarray) and r.ndim == nominal.ndim - 1:
+            r = np.expand_dims(r, axis=-1)
+
+        return np.clip(nominal + r, 0.0, 1.0)
+
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
 class ArrayProbabilityIntervalsCredalSet(
@@ -170,8 +244,9 @@ class ArrayProbabilityIntervalsCredalSet(
 
     def __post_init__(self) -> None:
         """Validate that lower and upper bounds have the same shape and are valid distributions."""
-        object.__setattr__(self, "lower_bounds", _ensure_array_categorical_distribution(self.lower_bounds))
-        object.__setattr__(self, "upper_bounds", _ensure_array_categorical_distribution(self.upper_bounds))
+        if self.lower_bounds.shape != self.upper_bounds.shape:
+            msg = "Lower and upper bounds must have the same shape."
+            raise ValueError(msg)
 
     @override
     @classmethod
@@ -202,6 +277,22 @@ class ArrayProbabilityIntervalsCredalSet(
         within_bounds = (probabilities >= self.lower_bounds) & (probabilities <= self.upper_bounds)
         return np.all(within_bounds, axis=-1)
 
+    @override
+    @property
+    def num_classes(self) -> int:
+        """Return the number of classes in the credal set."""
+        return self.lower_bounds.shape[-1]
+
+    @override
+    def lower(self) -> np.ndarray:
+        """Return the lower probabilities of the credal set."""
+        return self.lower_bounds
+
+    @override
+    def upper(self) -> np.ndarray:
+        """Return the upper probabilities of the credal set."""
+        return self.upper_bounds
+
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
 class ArraySingletonCredalSet(
@@ -211,7 +302,7 @@ class ArraySingletonCredalSet(
     """A singleton credal set with one precise categorical distribution."""
 
     array: ArrayCategoricalDistribution
-    protected_axes: ClassVar[dict[str, int]] = {"array": 1}
+    protected_axes: ClassVar[dict[str, int]] = {"array": 0}
 
     def __post_init__(self) -> None:
         """Validate that the array contains a valid categorical distribution."""
@@ -226,6 +317,22 @@ class ArraySingletonCredalSet(
     ) -> Self:
         probabilities = _sample_probabilities(sample, distribution_axis)
         return cls(array=ArrayCategoricalDistribution(probabilities=np.mean(probabilities, axis=0)))
+
+    @override
+    @property
+    def num_classes(self) -> int:
+        """Return the number of classes in the credal set."""
+        return self.array.num_classes
+
+    @override
+    def lower(self) -> np.ndarray:
+        """Return the lower probabilities of the credal set."""
+        return self.array.probabilities
+
+    @override
+    def upper(self) -> np.ndarray:
+        """Return the upper probabilities of the credal set."""
+        return self.array.probabilities
 
 
 create_probability_intervals.register(ArrayCategoricalDistribution, ArrayProbabilityIntervalsCredalSet.from_sample)

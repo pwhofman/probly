@@ -39,7 +39,6 @@ version = probly.__version__
 extensions = [
     "sphinx.ext.autodoc",  # generates API documentation from docstrings
     "sphinx.ext.autosummary",  # generates .rst files for each module
-    "sphinx.ext.viewcode",  # adds [source] links to code that link to the source code in the docs.
     "sphinx.ext.napoleon",  # for Google-style docstrings
     "sphinx.ext.duration",  # show the duration of the build
     "sphinx_gallery.gen_gallery",  # for rendering example galleries from Python scripts
@@ -52,14 +51,12 @@ extensions = [
     "sphinxcontrib.bibtex",  # for bibliography support
 ]
 
-suppress_warnings = [
-    # "ref.python",  # Ambiguous cross-references from re-exported symbols
-    "py.domain",  # Duplicate object descriptions from autosummary recursive
-]
+suppress_warnings = []
 
 # --- Autosummary settings ----------------------------------------------------s
 autosummary_generate = True
 autosummary_generate_overwrite = True
+autosummary_imported_members = False
 
 # --- Autodoc settings --------------------------------------------------------
 autoclass_content = "both"  # class docstring AND __init__ docstring

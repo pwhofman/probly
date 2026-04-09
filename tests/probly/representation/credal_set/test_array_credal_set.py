@@ -46,5 +46,5 @@ def test_probability_intervals_array_and_shape_ops() -> None:
 
     expanded = np.expand_dims(cset, axis=0)
     assert isinstance(expanded, ArrayProbabilityIntervalsCredalSet)
-    assert expanded.lower_bounds.probabilities.shape == (1, 2, 2)
-    assert expanded.upper_bounds.probabilities.shape == (1, 2, 2)
+    assert expanded.lower_bounds.shape == (1, 2, 2)
+    assert expanded.upper_bounds.shape == (1, 2, 2)
