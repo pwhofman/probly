@@ -204,7 +204,7 @@ def main(cfg: DictConfig) -> None:  # noqa: PLR0912, PLR0915
             type="model",
             metadata=OmegaConf.to_container(cfg, resolve=True, throw_on_missing=True),  # ty: ignore
         )
-        artifact.add_file(f"{name}.pt")
+        artifact.add_file(str(path))
         wandb.log_artifact(artifact)
     else:
         with tempfile.TemporaryDirectory() as tmp:
@@ -216,7 +216,7 @@ def main(cfg: DictConfig) -> None:  # noqa: PLR0912, PLR0915
                 type="model",
                 metadata=OmegaConf.to_container(cfg, resolve=True, throw_on_missing=True),  # ty: ignore
             )
-            artifact.add_file(f"{name}.pt")
+            artifact.add_file(str(path))
             wandb.log_artifact(artifact)
 
     run.finish()
