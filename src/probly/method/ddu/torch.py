@@ -243,29 +243,24 @@ class GaussianMixtureHead(nn.Module):
         self.log_pi.copy_(log_pi)
 
     def forward(self, features: torch.Tensor) -> torch.Tensor:
-        """Compute the marginal GMM log-density for each sample.
+        """Compute per-class log-densities for each sample.
 
-        Evaluates ``log q(z) = log sum_c pi_c * N(z; mu_c, Sigma_c)`` via
-        log-sum-exp over the per-class log-likelihoods.  The constant
-        ``-(D/2) * log(2*pi)`` is identical for every sample and does not
-        affect the OoD ranking, so it is retained here for a correct
-        log-likelihood value.
+        Returns ``log(pi_c * N(z; mu_c, Sigma_c))`` for every class *c*,
+        i.e. the class-prior-weighted Gaussian log-likelihood.
 
         Args:
             features: Feature vectors of shape (N, feature_dim).
 
         Returns:
-            Marginal log-density scores of shape (N,).
-            Higher scores indicate that the sample is more likely in-distribution.
+            Per-class log-density scores of shape (N, num_classes).
         """
         dist = torch.distributions.MultivariateNormal(loc=self.means, scale_tril=self.scale_tril, validate_args=False)
         # log_prob broadcasts (N, 1, D) against batch shape (C,) -> (N, C)
-        per_class = self.log_pi + dist.log_prob(features.unsqueeze(1))
-        return torch.logsumexp(per_class, dim=-1)  # (N,)
+        return self.log_pi + dist.log_prob(features.unsqueeze(1))
 
 
 @ddu_generator.register(nn.Module)
-class TorchDDUPredictor(nn.Module, DDUPredictor):
+class TorchDDUPredictor(nn.Module, DDUPredictor[[torch.Tensor], torch.Tensor]):
     """Torch version of DDU predictor.
 
     The traversal replaces the last ``nn.Linear`` (the classification head) with
