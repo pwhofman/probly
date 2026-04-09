@@ -103,9 +103,9 @@ def resolve_metric(metric: str | MetricFn | None) -> tuple[MetricFn, str | None]
     if metric == "accuracy":
         return lambda y_true, y_pred: float(np.mean(y_pred == y_true)), "accuracy"
     if metric == "auc":
-        from sklearn.metrics import roc_auc_score  # noqa: PLC0415
+        from probly.evaluation._metrics import roc_auc_score as _roc_auc_score  # noqa: PLC0415
 
-        return lambda y_true, y_pred: float(roc_auc_score(y_true, y_pred)), "auc"
+        return lambda y_true, y_pred: float(_roc_auc_score(y_true, y_pred)), "auc"
     msg = f"Unknown metric {metric!r}. Choose from 'mse', 'mae', 'accuracy', 'auc', or pass a callable."
     raise ValueError(msg)
 

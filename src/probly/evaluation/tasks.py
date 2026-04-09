@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import numpy as np
-import sklearn.metrics as sm
 
 
 def selective_prediction(criterion: np.ndarray, losses: np.ndarray, n_bins: int = 50) -> tuple[float, np.ndarray]:
@@ -38,5 +37,5 @@ def selective_prediction(criterion: np.ndarray, losses: np.ndarray, n_bins: int 
         bin_losses[i] = np.mean(losses_sorted[(i * bin_len) :])
 
     # Also compute the area under the loss curve based on the bin losses.
-    auroc = sm.auc(np.linspace(0, 1, n_bins), bin_losses)
+    auroc = float(np.trapezoid(bin_losses, np.linspace(0, 1, n_bins)))
     return float(auroc), bin_losses
