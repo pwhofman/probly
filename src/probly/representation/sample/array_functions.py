@@ -541,15 +541,16 @@ def _extract_sample_array_sequence_internals(
 
 
 @array_function.register(np.concatenate)
-@array_function_override
 def array_concatenate_function(
     func: Callable,
-    params: BoundArguments,
+    types: tuple[type[Any], ...],  # noqa: ARG001
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
 ) -> Any:  # noqa: ANN401
     """Implementation of np.concatenate for sample arrays."""
-    arrays = tuple(params.arguments["arrays"])
-    axis = params.arguments.get("axis", 0)
-    out = params.arguments.get("out", None)
+    arrays = tuple(args[0])
+    axis = kwargs.get("axis", 0)
+    out = kwargs.get("out")
     out_internals = array_sample_internals(out)
 
     cast_arrays, has_sample_arrays, create_sample, sample_axis, _ = _extract_sample_array_sequence_internals(arrays)
@@ -557,12 +558,10 @@ def array_concatenate_function(
     if not has_sample_arrays and out_internals is None:
         return NotImplemented
 
-    params.arguments["arrays"] = cast_arrays
-
     if out_internals is not None:
-        params.arguments["out"] = out_internals.array
+        kwargs["out"] = out_internals.array
 
-    res = func(*params.args, **params.kwargs)
+    res = func(cast_arrays, **kwargs)
 
     if out is not None:
         return out
