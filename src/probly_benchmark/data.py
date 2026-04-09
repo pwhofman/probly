@@ -42,12 +42,8 @@ def get_data_train(
                     T.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
                 ]
             )
-            train = torchvision.datasets.ImageNet(
-                root="/home/scratch/timopaul/datasets/imagenet", split="train", transform=transforms_train
-            )
-            test = torchvision.datasets.ImageNet(
-                root="/home/scratch/timopaul/datasets/imagenet", split="val", transform=transforms_test
-            )
+            train = torchvision.datasets.ImageNet(root=DATA_PATH, split="train", transform=transforms_train)
+            test = torchvision.datasets.ImageNet(root=DATA_PATH, split="val", transform=transforms_test)
         case _:
             msg = f"Dataset {name} not recognized"
             raise ValueError(msg)
