@@ -22,7 +22,17 @@ def get_data_train(
     seed: int | None = None,
     **kwargs: Any,  # noqa: ANN401
 ) -> tuple[DataLoader, DataLoader | None, DataLoader]:
-    """Get data loaders for a dataset."""
+    """Get data loaders for a dataset.
+
+    Args:
+        name: The name of the dataset.
+        use_validation: Whether to use validation or test set. Defaults to False.
+        seed: Seed for the random number generator. Defaults to None.
+        **kwargs: Additional arguments passed to the data loader.
+
+    Returns:
+        A tuple of (train_loader, val_loader, test_loader). If use_validation is False, val_loader will be None.
+    """
     name = name.lower()
     match name:
         case "cifar10":

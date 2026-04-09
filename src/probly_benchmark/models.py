@@ -8,7 +8,16 @@ import torchvision.models as tm
 
 
 def get_base_model(name: str, num_classes: int, pretrained: bool = False) -> nn.Module:
-    """Get a base model."""
+    """Get a base model.
+
+    Args:
+        name: Name of the model
+        num_classes: Number of classes in the dataset
+        pretrained: Whether or not to use pretrained model. Defaults to False.
+
+    Returns:
+        The base model as a PyTorch module.
+    """
     match name:
         case "resnet18":
             model = tm.resnet18(weights="DEFAULT" if pretrained else None)
