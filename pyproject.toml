@@ -65,6 +65,11 @@ test = [
     "pytest-cov>=6.0.0",   # for coverage
     "pytest-xdist>=3.6.1", # for parallel testing
     "packaging",           # for version parsing
+    # TODO: sklearn is only needed by tests until the calibration and conformal
+    # modules stop importing it directly, and until probly.metrics no longer
+    # needs sklearn as a reference oracle. Remove this include once those
+    # migrations are done.
+    { include-group = "sklearn" },
 ]
 lint = [
     "ruff>=0.15.8",                                         # for linting
