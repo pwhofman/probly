@@ -11,4 +11,4 @@ from ._common import average_precision_score, precision_recall_curve
 def average_precision_score_torch(y_true: torch.Tensor, y_score: torch.Tensor) -> torch.Tensor:
     """Compute average precision for PyTorch tensors."""
     precision, recall, _ = precision_recall_curve(y_true, y_score)
-    return -torch.sum(torch.diff(recall, dim=-1) * precision[..., :-1], dim=-1)
+    return -torch.sum(torch.diff(recall, dim=-1) * precision[..., :-1], dim=-1)  # ty:ignore[invalid-argument-type, not-subscriptable]

@@ -11,4 +11,4 @@ from probly.metrics import auc, roc_auc_score, roc_curve
 def roc_auc_score_torch(y_true: torch.Tensor, y_score: torch.Tensor) -> torch.Tensor:
     """Compute area under the ROC curve for PyTorch tensors."""
     fpr, tpr, _ = roc_curve(y_true, y_score)
-    return auc(fpr, tpr)
+    return auc(fpr, tpr)  # ty:ignore[invalid-return-type]

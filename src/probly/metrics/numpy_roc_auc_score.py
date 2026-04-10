@@ -11,4 +11,4 @@ from ._common import auc, roc_auc_score, roc_curve
 def roc_auc_score_numpy(y_true: np.ndarray, y_score: np.ndarray) -> np.ndarray:
     """Compute area under the ROC curve for NumPy arrays."""
     fpr, tpr, _ = roc_curve(y_true, y_score)
-    return auc(fpr, tpr)
+    return auc(fpr, tpr)  # ty:ignore[invalid-return-type]

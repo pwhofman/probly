@@ -105,7 +105,7 @@ def resolve_metric(metric: str | MetricFn | None) -> tuple[MetricFn, str | None]
     if metric == "auc":
         from probly.metrics import roc_auc_score as _roc_auc_score  # noqa: PLC0415
 
-        return lambda y_true, y_pred: float(_roc_auc_score(y_true, y_pred)), "auc"
+        return lambda y_true, y_pred: float(_roc_auc_score(y_true, y_pred)), "auc"  # ty:ignore[invalid-argument-type]
     msg = f"Unknown metric {metric!r}. Choose from 'mse', 'mae', 'accuracy', 'auc', or pass a callable."
     raise ValueError(msg)
 

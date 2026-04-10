@@ -33,7 +33,7 @@ def out_of_distribution_detection_auroc(in_distribution: np.ndarray, out_distrib
     preds = np.concatenate((in_distribution, out_distribution))
     labels = np.concatenate((np.zeros(len(in_distribution)), np.ones(len(out_distribution))))
     auroc = roc_auc_score(labels, preds)
-    return float(auroc)
+    return float(auroc)  # ty:ignore[invalid-argument-type]
 
 
 def out_of_distribution_detection_aupr(in_distribution: np.ndarray, out_distribution: np.ndarray) -> float:
@@ -53,7 +53,7 @@ def out_of_distribution_detection_aupr(in_distribution: np.ndarray, out_distribu
     preds = np.concatenate((in_distribution, out_distribution))
     labels = np.concatenate((np.zeros(len(in_distribution)), np.ones(len(out_distribution))))
     aupr = average_precision_score(labels, preds)
-    return float(aupr)
+    return float(aupr)  # ty:ignore[invalid-argument-type]
 
 
 def out_of_distribution_detection_fpr_at_x_tpr(
@@ -93,13 +93,13 @@ def out_of_distribution_detection_fpr_at_x_tpr(
 
     fpr, tpr, _ = roc_curve(labels, preds)
 
-    idxs = np.where(tpr >= tpr_target)[0]
+    idxs = np.where(tpr >= tpr_target)[0]  # ty:ignore[unsupported-operator]
     if len(idxs) == 0:
         msg = f"Could not achieve TPR >= {tpr_target:.3f} with given scores."
         raise ValueError(msg)
 
     first_idx = idxs[0]
-    fpr_at_target = fpr[first_idx]
+    fpr_at_target = fpr[first_idx]  # ty:ignore[not-subscriptable]
     return float(fpr_at_target)
 
 
@@ -124,8 +124,8 @@ def out_of_distribution_detection_fnr_at_x_tpr(
     preds = np.concatenate((in_distribution, out_distribution))
     labels = np.concatenate((np.zeros(len(in_distribution)), np.ones(len(out_distribution))))
     _, tpr, _ = roc_curve(labels, preds)
-    idx = np.where(tpr >= tpr_target)[0]
-    return float(1.0 - tpr[idx[0]]) if len(idx) else 1.0
+    idx = np.where(tpr >= tpr_target)[0]  # ty:ignore[unsupported-operator]
+    return float(1.0 - tpr[idx[0]]) if len(idx) else 1.0  # ty:ignore[not-subscriptable]
 
 
 STATIC_METRICS: dict[str, Callable[[np.ndarray, np.ndarray], float]] = {
@@ -305,13 +305,13 @@ def visualize_ood(
         if "roc" in requested_plots:
             fpr, tpr, _ = roc_curve(labels, preds)
             auroc = auc(fpr, tpr)
-            idx_95 = np.where(tpr >= 0.95)[0]
-            fpr95 = fpr[idx_95[0]] if len(idx_95) > 0 else None
-            figures["roc"] = plot_roc_curve(fpr=fpr, tpr=tpr, auroc=auroc, fpr95=fpr95, config=config)
+            idx_95 = np.where(tpr >= 0.95)[0]  # ty:ignore[unsupported-operator]
+            fpr95 = fpr[idx_95[0]] if len(idx_95) > 0 else None  # ty:ignore[not-subscriptable]
+            figures["roc"] = plot_roc_curve(fpr=fpr, tpr=tpr, auroc=auroc, fpr95=fpr95, config=config)  # ty:ignore[invalid-argument-type]
 
         if "pr" in requested_plots:
             precision, recall, _ = precision_recall_curve(labels, preds)
             aupr = auc(recall, precision)
-            figures["pr"] = plot_pr_curve(recall=recall, precision=precision, aupr=aupr, config=config)
+            figures["pr"] = plot_pr_curve(recall=recall, precision=precision, aupr=aupr, config=config)  # ty:ignore[invalid-argument-type]
 
     return figures
