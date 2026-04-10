@@ -332,22 +332,40 @@ def evaluate_ensemble(
     n_bins: int = 10,
     **kwargs: Any,  # noqa: ANN401, ARG001
 ) -> dict[str, float]:
-    """Evaluate an ensemble by averaging member softmax outputs."""
-    for member in model:
+    """Evaluate an ensemble by averaging member softmax outputs.
+
+    Returns ensemble-level metrics and per-member metrics keyed as
+    ``member_<i>/accuracy``, ``member_<i>/nll``, ``member_<i>/ece``.
+    """
+    members = list(model)
+    for member in members:
         member.eval()
-    all_probs: list[torch.Tensor] = []
+
+    all_member_probs: list[list[torch.Tensor]] = [[] for _ in members]
     all_labels: list[torch.Tensor] = []
     for inputs_, targets_ in test_loader:
         inputs, targets = inputs_.to(device), targets_.to(device)
         with autocast(device.type, enabled=amp_enabled):
-            member_probs = torch.stack([F.softmax(member(inputs), dim=1) for member in model])
-        all_probs.append(member_probs.mean(dim=0))
+            for j, member in enumerate(members):
+                all_member_probs[j].append(F.softmax(member(inputs), dim=1))
         all_labels.append(targets)
 
-    probs = torch.cat(all_probs)
     labels = torch.cat(all_labels)
 
-    return _compute_metrics(probs, labels, n_bins)
+    # Per-member metrics
+    metrics: dict[str, float] = {}
+    member_probs_cat: list[torch.Tensor] = []
+    for j, member_batches in enumerate(all_member_probs):
+        probs_j = torch.cat(member_batches)
+        member_probs_cat.append(probs_j)
+        for key, value in _compute_metrics(probs_j, labels, n_bins).items():
+            metrics[f"member_{j}/{key}"] = value
+
+    # Ensemble metrics (average of member probabilities)
+    ensemble_probs = torch.stack(member_probs_cat).mean(dim=0)
+    metrics.update(_compute_metrics(ensemble_probs, labels, n_bins))
+
+    return metrics
 
 
 def _compute_metrics(probs: torch.Tensor, labels: torch.Tensor, n_bins: int) -> dict[str, float]:

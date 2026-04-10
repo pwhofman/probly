@@ -305,6 +305,7 @@ def main(cfg: DictConfig) -> None:
 
     test_metrics = evaluate(model, test_loader, device, cfg.get("amp", False), **train_kwargs)
     run.summary.update(test_metrics)
+    run.log(data=test_metrics)
 
     checkpoint = {
         "model_state_dict": model.state_dict(),
