@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Protocol
 
+from lazy_dispatch import lazydispatch
 from probly.method.ensemble import EnsemblePredictor
-from probly.method.ensemble._common import ensemble
 from probly.method.method import predictor_transformation
 from probly.predictor import ProbabilisticClassifier
 
@@ -15,6 +15,15 @@ if TYPE_CHECKING:
 
 class CredalRelativeLikelihoodPredictor[**In, Out](EnsemblePredictor[In, Out], Protocol):
     """A predictor that applies the credal relative likelihood transformation."""
+
+
+@lazydispatch
+def initialize_credal_relative_likelihood_model[**In, Out](
+    base: Predictor[In, Out], reset_params: bool
+) -> Predictor[In, Out]:
+    """Initialize a credal relative likelihood model."""
+    msg = f"No credal relative likelihood model is registered for type {type(base)}"
+    raise NotImplementedError(msg)
 
 
 @predictor_transformation(permitted_predictor_types=(ProbabilisticClassifier,), preserve_predictor_type=False)
@@ -32,4 +41,5 @@ def credal_relative_likelihood[**In, Out](
     Returns:
         The credal relative likelihood ensemble predictor.
     """
-    return ensemble(base, num_members=num_members, reset_params=reset_params)
+    members = [initialize_credal_relative_likelihood_model(base, reset_params=reset_params) for _ in range(num_members)]
+    return members  # ty:ignore[invalid-return-type]
