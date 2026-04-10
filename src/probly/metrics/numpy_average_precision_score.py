@@ -11,4 +11,4 @@ from ._common import average_precision_score, precision_recall_curve
 def average_precision_score_numpy(y_true: np.ndarray, y_score: np.ndarray) -> np.ndarray:
     """Compute average precision for NumPy arrays."""
     precision, recall, _ = precision_recall_curve(y_true, y_score)
-    return -np.sum(np.diff(recall, axis=-1) * precision[..., :-1], axis=-1)
+    return -np.sum(np.diff(recall, axis=-1) * precision[..., :-1], axis=-1)  # ty:ignore[no-matching-overload, not-subscriptable]
