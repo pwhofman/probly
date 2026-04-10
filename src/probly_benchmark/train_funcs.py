@@ -11,10 +11,13 @@ import torch.nn.functional as F
 
 from lazy_dispatch import lazydispatch
 from probly.method.bayesian import BayesianPredictor
+from probly.method.credal_ensembling import CredalEnsemblingPredictor
+from probly.method.credal_wrapper import CredalWrapperPredictor
 from probly.method.dropconnect import DropConnectPredictor
 from probly.method.dropout import DropoutPredictor
 from probly.method.ensemble import EnsemblePredictor
 from probly.method.posterior_network import PosteriorNetworkPredictor
+from probly.method.subensemble import SubensemblePredictor
 from probly.train.bayesian.torch import ELBOLoss, collect_kl_divergence
 from probly.train.calibration.torch import ExpectedCalibrationError
 from probly.train.evidential.torch import postnet_loss
@@ -322,7 +325,7 @@ def _(
     return _compute_metrics(probs, labels, n_bins)
 
 
-@evaluate.register(EnsemblePredictor)
+@evaluate.register((EnsemblePredictor, CredalEnsemblingPredictor, CredalWrapperPredictor, SubensemblePredictor))
 @torch.no_grad()
 def evaluate_ensemble(
     model: EnsemblePredictor,

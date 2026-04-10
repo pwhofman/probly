@@ -23,7 +23,9 @@ import wandb
 
 from lazy_dispatch import lazydispatch
 from probly.method.credal_ensembling import CredalEnsemblingPredictor
+from probly.method.credal_wrapper import CredalWrapperPredictor
 from probly.method.ensemble import EnsemblePredictor
+from probly.method.subensemble import SubensemblePredictor
 from probly_benchmark import data, metadata, utils
 from probly_benchmark.builders import BuildContext, build_model
 from probly_benchmark.paths import CHECKPOINT_PATH
@@ -197,7 +199,7 @@ def train_model(
     )
 
 
-@train_model.register(EnsemblePredictor)
+@train_model.register((EnsemblePredictor, CredalEnsemblingPredictor, CredalWrapperPredictor, SubensemblePredictor))
 def _(
     model: EnsemblePredictor,
     train_loader: DataLoader,
@@ -207,33 +209,7 @@ def _(
     run: Any,  # noqa: ANN401
     train_kwargs: dict[str, Any],
 ) -> None:
-    """Train a deep ensemble by training each member independently."""
-    for i, member in enumerate(model):
-        _training_loop(
-            member,
-            train_loader,
-            val_loader,
-            cfg,
-            device,
-            run,
-            train_kwargs,
-            train_fn=train_epoch_cross_entropy,
-            val_fn=validate_cross_entropy,
-            log_prefix=f"member_{i}/",
-        )
-
-
-@train_model.register(CredalEnsemblingPredictor)
-def _(
-    model: CredalEnsemblingPredictor,
-    train_loader: DataLoader,
-    val_loader: DataLoader | None,
-    cfg: DictConfig,
-    device: torch.device,
-    run: Any,  # noqa: ANN401
-    train_kwargs: dict[str, Any],
-) -> None:
-    """Train a credal ensemble by training each member independently."""
+    """Train an ensemble by training each member independently."""
     for i, member in enumerate(model):
         _training_loop(
             member,
