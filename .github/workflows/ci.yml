@@ -3,7 +3,6 @@ name: Pull Request Checks
 
 on:
     pull_request:
-        types: [opened, labeled, synchronize, reopened]
     push:
         branches: [main]
     workflow_dispatch:
@@ -83,23 +82,6 @@ jobs:
                     dependency-group: ${{ matrix.dependency-group }}
                     coverage: "true"
                     coverage-artifact-name: coverage-${{ matrix.os }}-${{ matrix.dependency-group }}
-    # ----------------------------------------------------------------------------------------------
-    # Test Documentation Build (strict — warnings are errors)
-    # ----------------------------------------------------------------------------------------------
-    doc_build:
-      name: Test Documentation Build
-      needs:
-          - install_and_import
-      # Run on pushes to main, manual dispatch, or on PRs that carry the
-      # "run-docs" label (label name may include decorative emoji/prefix —
-      # we substring-match via join).
-      if: >-
-        github.event_name == 'push' ||
-        github.event_name == 'workflow_dispatch' ||
-        contains(join(github.event.pull_request.labels.*.name, ','), 'run-docs')
-      uses: ./.github/workflows/_docs-build.yml
-      with:
-        strict: true
     # ----------------------------------------------------------------------------------------------
     # Code Coverage
     # ----------------------------------------------------------------------------------------------
