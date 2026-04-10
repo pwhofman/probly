@@ -89,9 +89,7 @@ docs = [
     "sphinx-gallery",               # for the example gallery
     "furo",                         # theme
     "sphinx-copybutton",            # adds copy buttons to code blocks
-    "sphinx-autodoc-typehints",     # show type hints in API docs
     "sphinxcontrib-bibtex>=2.0.0",  # for bibliography support
-    "pandas>=2.1.0",                # for code execution in some examples
 ]
 benchmark = [
     "wandb>=0.25.1",
