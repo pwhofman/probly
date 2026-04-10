@@ -2,6 +2,8 @@ name: Lower Bounds CI
 
 on:
   workflow_dispatch:
+  pull_request:
+    types: [opened, labeled, synchronize, reopened]
 
 permissions:
   contents: read
@@ -9,6 +11,11 @@ permissions:
 jobs:
   lower_bounds_tests:
     name: Lower Bounds (${{ matrix.dependency-group }})
+    # Run on manual dispatch, or on PRs that carry the "run-lower-bounds" label
+    # (label name may include decorative emoji/prefix — we substring-match via join).
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      contains(join(github.event.pull_request.labels.*.name, ','), 'run-lower-bounds')
     strategy:
       fail-fast: false
       matrix:
