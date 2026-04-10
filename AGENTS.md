@@ -31,5 +31,10 @@ uv run prek run --all-files
 ty check <path-to-file-or-directory>
 ```
 
+### Run tests (with pytest)
+```bash
+uv run pytest <path-to-file-or-directory>
+```
+
 ## Example files to look at:
 Examples of how to use probly lives in the examples directory. You can find tutorials on how to use the pytraverser lazydispatch and so forth.
