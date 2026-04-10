@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   lower_bounds_tests:
-    name: Lower Bounds (${{ matrix.dependency-group }})
+    name: Test Lower Bounds (${{ matrix.dependency-group }}, ${{ matrix.os }})
     # Run on manual dispatch, or on PRs that carry the "run-lower-bounds" label
     # (label name may include decorative emoji/prefix — we substring-match via join).
     if: >-
