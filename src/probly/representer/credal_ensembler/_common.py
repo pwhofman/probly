@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, override
 
+from probly.method.credal_bnn import CredalBNNPredictor
+from probly.method.credal_net import CredalNetPredictor
 from probly.method.credal_relative_likelihood import CredalRelativeLikelihoodPredictor
 from probly.method.credal_wrapper import CredalWrapperPredictor
 from probly.representation.credal_set import create_convex_credal_set, create_probability_intervals
@@ -11,8 +13,6 @@ from probly.representation.sample import create_sample
 from probly.utils.iterable import first_element
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
-
     from probly.representation.sample import Sample
 
 from lazy_dispatch import lazydispatch
@@ -24,9 +24,9 @@ from probly.representer._representer import Representer, representer
 
 
 @lazydispatch(dispatch_on=first_element)
-def compute_representative_set[T: CategoricalDistribution](probs: Sample[T], alpha: float, distance: str) -> Sample[T]:
+def compute_representative_set[T: CategoricalDistribution](sample: Sample[T], alpha: float, distance: str) -> Sample[T]:
     """Compute the credal set from the ensemble predictions."""
-    msg = f"compute_representative_set method not implemented for type {type(probs)}."
+    msg = f"compute_representative_set method not implemented for type {type(sample)}."
     raise NotImplementedError(msg)
 
 
@@ -46,41 +46,82 @@ class CredalEnsemblingRepresenter[**In, Out: CategoricalDistribution, C: ConvexC
 
     @override
     def represent(self, *args: In.args, **kwargs: In.kwargs) -> C:
-        pred = self._predict(*args, **kwargs)
-        distributions = compute_representative_set(pred, alpha=self.alpha, distance=self.distance)
-        cset = create_convex_credal_set(distributions)
+        sample = compute_representative_set(
+            self._predict(*args, **kwargs),
+            alpha=self.alpha,
+            distance=self.distance,
+        )
+        cset = create_convex_credal_set(sample)
         return cset  # ty:ignore[invalid-return-type]
 
 
 @representer.register(CredalWrapperPredictor)
-class CredalWrapperRepresenter[**In, Out, C: ProbabilityIntervalsCredalSet](Representer[Any, In, Out, C]):
+class CredalWrapperRepresenter[**In, Out: CategoricalDistribution, C: ProbabilityIntervalsCredalSet](
+    Representer[Any, In, Out, C]
+):
     def __init__(self, predictor: CredalWrapperPredictor) -> None:
         super().__init__(predictor)
 
-    def _predict(self, *args: In.args, **kwargs: In.kwargs) -> Iterable[Out]:
+    def _predict(self, *args: In.args, **kwargs: In.kwargs) -> Sample[Out]:
         """Predict the outputs from the ensemble predictor."""
-        return predict(self.predictor, *args, **kwargs)
+        ensemble_prediction = predict(self.predictor, *args, **kwargs)
+        return create_sample(ensemble_prediction)
 
     @override
-    def __call__(self, *args: In.args, **kwargs: In.kwargs) -> C:
-        pred = self._predict(*args, **kwargs)
-        sample = create_sample(pred)
+    def represent(self, *args: In.args, **kwargs: In.kwargs) -> C:
+        sample = self._predict(*args, **kwargs)
         cset = create_probability_intervals(sample)
         return cset  # ty:ignore[invalid-return-type]
 
 
 @representer.register(CredalRelativeLikelihoodPredictor)
-class CredalRelativeLikelihoodRepresenter[**In, Out, C: ProbabilityIntervalsCredalSet](Representer[Any, In, Out, C]):
+class CredalRelativeLikelihoodRepresenter[**In, Out: CategoricalDistribution, C: ProbabilityIntervalsCredalSet](
+    Representer[Any, In, Out, C]
+):
     def __init__(self, predictor: CredalRelativeLikelihoodPredictor) -> None:
         super().__init__(predictor)
 
-    def _predict(self, *args: In.args, **kwargs: In.kwargs) -> Iterable[Out]:
+    def _predict(self, *args: In.args, **kwargs: In.kwargs) -> Sample[Out]:
         """Predict the outputs from the ensemble predictor."""
-        return predict(self.predictor, *args, **kwargs)
+        ensemble_prediction = predict(self.predictor, *args, **kwargs)
+        return create_sample(ensemble_prediction)
 
     @override
-    def __call__(self, *args: In.args, **kwargs: In.kwargs) -> C:
-        pred = self._predict(*args, **kwargs)
-        sample = create_sample(pred)
+    def represent(self, *args: In.args, **kwargs: In.kwargs) -> C:
+        sample = self._predict(*args, **kwargs)
         cset = create_probability_intervals(sample)
+        return cset  # ty:ignore[invalid-return-type]
+
+
+@representer.register(CredalBNNPredictor)
+class CredalBNNRepresenter[**In, Out: CategoricalDistribution, C: ConvexCredalSet](Representer[Any, In, Out, C]):
+    def __init__(self, predictor: CredalBNNPredictor) -> None:
+        super().__init__(predictor)
+
+    def _predict(self, *args: In.args, **kwargs: In.kwargs) -> Sample[Out]:
+        """Predict the outputs from the ensemble predictor."""
+        ensemble_prediction = predict(self.predictor, *args, **kwargs)
+        return create_sample(ensemble_prediction)
+
+    @override
+    def represent(self, *args: In.args, **kwargs: In.kwargs) -> C:
+        sample = self._predict(*args, **kwargs)
+        cset = create_convex_credal_set(sample)
+        return cset  # ty:ignore[invalid-return-type]
+
+
+@representer.register(CredalNetPredictor)
+class CredalNetRepresenter[**In, Out: CategoricalDistribution, C: ConvexCredalSet](Representer[Any, In, Out, C]):
+    def __init__(self, predictor: CredalBNNPredictor) -> None:
+        super().__init__(predictor)
+
+    def _predict(self, *args: In.args, **kwargs: In.kwargs) -> Sample[Out]:
+        """Predict the outputs from the ensemble predictor."""
+        ensemble_prediction = predict(self.predictor, *args, **kwargs)
+        return create_sample(ensemble_prediction)
+
+    @override
+    def represent(self, *args: In.args, **kwargs: In.kwargs) -> C:
+        sample = self._predict(*args, **kwargs)
+        cset = create_convex_credal_set(sample)
         return cset  # ty:ignore[invalid-return-type]

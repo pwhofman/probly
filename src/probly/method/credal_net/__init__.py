@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from probly.lazy_types import TORCH_MODULE
 
-from ._common import credal_net, credal_net_generator, register
+from ._common import CredalNetPredictor, credal_net, credal_net_generator
 
 
 ## Torch
@@ -14,6 +14,6 @@ def _(_: type) -> None:
 
 
 __all__ = [
+    "CredalNetPredictor",
     "credal_net",
-    "register",
 ]

@@ -8,7 +8,7 @@ from probly.layers.torch import IntSoftmax
 from probly.traverse_nn import nn_compose
 from pytraverse import TRAVERSE_REVERSED, GlobalVariable, State, singledispatch_traverser, traverse
 
-from ._common import register
+from ._common import credal_net_generator
 
 REPLACED = GlobalVariable[bool]("REPLACED", default=False)
 
@@ -36,6 +36,7 @@ def _(obj: nn.Linear, state: State) -> tuple[nn.Module, State]:
     return new_head, state
 
 
+@credal_net_generator.register(cls=nn.Module)
 def generate_torch_credal_net(model: nn.Module) -> nn.Module:
     """Build a torch credal net based on :cite:`wang2024credalnet`.
 
@@ -44,6 +45,3 @@ def generate_torch_credal_net(model: nn.Module) -> nn.Module:
     """
     model = traverse(model, nn_compose(torch_credal_net_traverser), init={TRAVERSE_REVERSED: True})
     return model
-
-
-register(nn.Module, generate_torch_credal_net)

@@ -93,8 +93,8 @@ def create_probability_intervals[T: CategoricalDistribution](sample: Sample[T]) 
 
 @lazydispatch
 def create_convex_credal_set[T: CategoricalDistribution](
-    data: Sample[T], distribution_axis: int = -1
+    sample: Sample[T], distribution_axis: int = -1
 ) -> ConvexCredalSet[T]:
     """Create a convex credal set from a sample."""
-    msg = f"No convex credal set factory registered for data type {type(data)}"
+    msg = f"No convex credal set factory registered for sample type {type(sample)}"
     raise NotImplementedError(msg)

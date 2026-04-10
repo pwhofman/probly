@@ -2,33 +2,32 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import Protocol, runtime_checkable
 
 from lazy_dispatch import lazydispatch
 from probly.method.method import predictor_transformation
-from probly.predictor import ProbabilisticClassifier
+from probly.predictor import Predictor, ProbabilisticClassifier, RepresentationPredictor
+from probly.representation.distribution import CategoricalDistribution
 
-if TYPE_CHECKING:
-    from collections.abc import Callable
 
-    from lazy_dispatch.isinstance import LazyType
-    from probly.predictor import Predictor
+@runtime_checkable
+class CredalNetPredictor[**In, Out: CategoricalDistribution](RepresentationPredictor[In, Out], Protocol):
+    """A predictor that applies the Credal Bayesian Neural Network transformation."""
 
 
 @lazydispatch
-def credal_net_generator[T: Predictor](base: T) -> T:
+def credal_net_generator[**In, Out: CategoricalDistribution](base: Predictor[In, Out]) -> CredalNetPredictor[In, Out]:
     """Generate a credal net from a base model."""
     msg = f"No credal net generator is registered for type {type(base)}"
     raise NotImplementedError(msg)
 
 
-def register(cls: LazyType, generator: Callable) -> None:
-    """Register a class which can be used as a base for a credal net."""
-    credal_net_generator.register(cls=cls, func=generator)
-
-
-@predictor_transformation(permitted_predictor_types=(ProbabilisticClassifier,))
-def credal_net[T: Predictor](base: T) -> T:
+@predictor_transformation(
+    permitted_predictor_types=(ProbabilisticClassifier,),
+    preserve_predictor_type=False,
+)  # ty:ignore[invalid-argument-type]
+@CredalNetPredictor.register_factory
+def credal_net[**In, Out: CategoricalDistribution](base: Predictor[In, Out]) -> CredalNetPredictor[In, Out]:
     """Create a credal net predictor from a base predictor based on :cite:`wang2024credalnet`.
 
     Args:
