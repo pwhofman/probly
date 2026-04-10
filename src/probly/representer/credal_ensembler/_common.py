@@ -129,11 +129,10 @@ class CredalNetRepresenter[**In, Out: CategoricalDistribution, C: ProbabilityInt
     def _predict(self, *args: In.args, **kwargs: In.kwargs) -> Sample[Out]:
         """Predict the outputs from the ensemble predictor."""
         pred = predict(self.predictor, *args, **kwargs)
-        pred = compute_credal_net_set(pred)
         return create_sample(pred)
 
     @override
     def represent(self, *args: In.args, **kwargs: In.kwargs) -> C:
-        sample = self._predict(*args, **kwargs)
+        sample = compute_credal_net_set(self._predict(*args, **kwargs))
         cset = create_probability_intervals(sample)
         return cset  # ty:ignore[invalid-return-type]
