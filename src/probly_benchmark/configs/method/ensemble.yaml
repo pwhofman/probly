@@ -1,0 +1,6 @@
+# @package method
+name: "ensemble"
+params:
+  num_members: 5
+  reset_params: true
+train:

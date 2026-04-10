@@ -13,6 +13,7 @@ from lazy_dispatch import lazydispatch
 from probly.method.bayesian import BayesianPredictor
 from probly.method.dropconnect import DropConnectPredictor
 from probly.method.dropout import DropoutPredictor
+from probly.method.ensemble import EnsemblePredictor
 from probly.method.posterior_network import PosteriorNetworkPredictor
 from probly.train.bayesian.torch import ELBOLoss, collect_kl_divergence
 from probly.train.calibration.torch import ExpectedCalibrationError
@@ -71,7 +72,7 @@ def _(
 
 
 @train_epoch.register((DropConnectPredictor, DropoutPredictor))
-def _(
+def train_epoch_cross_entropy(
     model: Predictor,
     inputs: torch.Tensor,
     targets: torch.Tensor,
@@ -172,7 +173,7 @@ def _(
 
 @validate.register((DropConnectPredictor, DropoutPredictor))
 @torch.no_grad()
-def _(
+def validate_cross_entropy(
     model: Predictor,
     val_loader: DataLoader,
     device: torch.device,
@@ -313,6 +314,34 @@ def _(
             alpha = model(inputs)
             probs_ = alpha / alpha.sum(dim=1, keepdim=True)
         all_probs.append(probs_)
+        all_labels.append(targets)
+
+    probs = torch.cat(all_probs)
+    labels = torch.cat(all_labels)
+
+    return _compute_metrics(probs, labels, n_bins)
+
+
+@evaluate.register(EnsemblePredictor)
+@torch.no_grad()
+def evaluate_ensemble(
+    model: EnsemblePredictor,
+    test_loader: DataLoader,
+    device: torch.device,
+    amp_enabled: bool = False,
+    n_bins: int = 10,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> dict[str, float]:
+    """Evaluate an ensemble by averaging member softmax outputs."""
+    for member in model:
+        member.eval()
+    all_probs: list[torch.Tensor] = []
+    all_labels: list[torch.Tensor] = []
+    for inputs_, targets_ in test_loader:
+        inputs, targets = inputs_.to(device), targets_.to(device)
+        with autocast(device.type, enabled=amp_enabled):
+            member_probs = torch.stack([F.softmax(member(inputs), dim=1) for member in model])
+        all_probs.append(member_probs.mean(dim=0))
         all_labels.append(targets)
 
     probs = torch.cat(all_probs)
