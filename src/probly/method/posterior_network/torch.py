@@ -6,7 +6,7 @@ import torch
 from torch import nn
 
 from probly.layers.torch import RadialNormalizingFlowStack
-from probly.utils import get_output_dim
+from probly.traverse_nn.utils import get_output_dim
 
 from ._common import posterior_network_generator
 

@@ -5,7 +5,7 @@ defaults:
 dataset: "cifar10"
 base_model: "resnet18"
 pretrained: False
-epochs: 2
+epochs: 5
 batch_size: 512
 num_workers: 4
 pin_memory: true
