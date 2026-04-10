@@ -278,8 +278,12 @@ def main(cfg: DictConfig) -> None:
 
     num_classes = metadata.DATASETS[cfg.dataset].num_classes
 
-    method_kwargs: dict[str, Any] = OmegaConf.to_container(cfg.method.params, resolve=True) or {}  # ty: ignore[invalid-assignment]
-    train_kwargs: dict[str, Any] = OmegaConf.to_container(cfg.method.train, resolve=True) or {}  # ty: ignore[invalid-assignment]
+    method_kwargs: dict[str, Any] = (
+        OmegaConf.to_container(cfg.method.params, resolve=True) if cfg.method.get("params") else {}
+    )  # ty: ignore[invalid-assignment]
+    train_kwargs: dict[str, Any] = (
+        OmegaConf.to_container(cfg.method.train, resolve=True) if cfg.method.get("train") else {}
+    )  # ty: ignore[invalid-assignment]
 
     context = BuildContext(
         base_model_name=cfg.base_model,
