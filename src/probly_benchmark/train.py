@@ -232,9 +232,10 @@ def main(cfg: DictConfig) -> None:
     print(OmegaConf.to_yaml(cfg))
 
     run = wandb.init(
-        project="test",
+        entity=cfg.wandb.get("entity", None),
+        project=cfg.wandb.project,
         config=OmegaConf.to_container(cfg, resolve=True, throw_on_missing=True),  # ty: ignore
-        mode="online" if cfg.wandb else "disabled",
+        mode="online" if cfg.wandb.enabled else "disabled",
         save_code=True,
     )
 
