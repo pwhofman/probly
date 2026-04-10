@@ -8,6 +8,7 @@ import numpy as np
 
 from lazy_dispatch import lazydispatch
 from probly.representation.credal_set.array import (
+    ArrayCategoricalCredalSet,
     ArrayConvexCredalSet,
     ArrayDiscreteCredalSet,
     ArrayDistanceBasedCredalSet,
@@ -19,8 +20,6 @@ if TYPE_CHECKING:
     from matplotlib.axes import Axes
 
     from probly.plot.config import PlotConfig
-
-    from ._dispatch import ArrayCredalSet
 
 
 def _setup_spider_axes(
@@ -332,11 +331,10 @@ def _draw_intervals_on_spokes(
 
 @lazydispatch
 def _draw_credal_set_spider(
-    data: ArrayCredalSet,
+    data: ArrayCategoricalCredalSet,
     ax: Axes,
     config: PlotConfig,
     series_labels: list[str] | None,
-    num_classes: int,
 ) -> None:
     """Draw a credal set on spider (radar) axes.
 
@@ -345,7 +343,6 @@ def _draw_credal_set_spider(
         ax: A RadarAxes instance.
         config: Plot configuration.
         series_labels: Optional per-series legend labels.
-        num_classes: Number of classes.
 
     Raises:
         NotImplementedError: If no handler is registered for the given type.
@@ -360,15 +357,14 @@ def _draw_singleton_spider(
     ax: Axes,
     config: PlotConfig,
     series_labels: list[str] | None,
-    num_classes: int,
 ) -> None:
-    theta = _get_theta(num_classes)
-    arr = data.array.reshape(-1, num_classes)
+    theta = _get_theta(data.num_classes)
+    arr = data.array.reshape(-1)
     n_sets = arr.shape[0]
     for idx in range(n_sets):
         color = config.color(idx)
         label = series_labels[idx] if series_labels is not None and idx < len(series_labels) else None
-        values = arr[idx]
+        values = arr[idx].probabilities
         ax.plot(theta, values, color=color, linewidth=config.line_width, label=label, zorder=3)
         ax.scatter(theta, values, color=color, s=config.marker_size, zorder=4)
 
@@ -379,11 +375,11 @@ def _draw_intervals_spider(
     ax: Axes,
     config: PlotConfig,
     series_labels: list[str] | None,
-    num_classes: int,
 ) -> None:
-    theta = _get_theta(num_classes)
-    lower_all = data.lower_bounds.reshape(-1, num_classes)
-    upper_all = data.upper_bounds.reshape(-1, num_classes)
+    data = data.reshape(-1)
+    theta = _get_theta(data.num_classes)
+    lower_all = data.lower()
+    upper_all = data.upper()
     n_sets = lower_all.shape[0]
     for idx in range(n_sets):
         color = config.color(idx)
@@ -403,12 +399,12 @@ def _draw_distance_based_spider(
     ax: Axes,
     config: PlotConfig,
     series_labels: list[str] | None,
-    num_classes: int,
 ) -> None:
-    theta = _get_theta(num_classes)
-    lower_all = data.lower().reshape(-1, num_classes)
-    upper_all = data.upper().reshape(-1, num_classes)
-    nominal_all = data.nominal.reshape(-1, num_classes)
+    data = data.reshape(-1)
+    theta = _get_theta(data.num_classes)
+    lower_all = data.lower()
+    upper_all = data.upper()
+    nominal_all = data.nominal.probabilities
     n_sets = lower_all.shape[0]
     for idx in range(n_sets):
         color = config.color(idx)
@@ -423,15 +419,14 @@ def _draw_convex_set_spider(
     ax: Axes,
     config: PlotConfig,
     series_labels: list[str] | None,
-    num_classes: int,
 ) -> None:
-    theta = _get_theta(num_classes)
-    arr = data.array.reshape(-1, data.array.shape[-2], num_classes)
+    theta = _get_theta(data.num_classes)
+    arr = data.reshape(-1)
     n_sets = arr.shape[0]
     for idx in range(n_sets):
         color = config.color(idx)
         label = series_labels[idx] if series_labels is not None and idx < len(series_labels) else None
-        pts = arr[idx]
+        pts = arr[idx].array.probabilities
 
         for member in pts:
             ax.plot(theta, member, color=color, linewidth=config.line_width, alpha=0.6, zorder=3)
@@ -448,14 +443,13 @@ def _draw_discrete_set_spider(
     ax: Axes,
     config: PlotConfig,
     series_labels: list[str] | None,
-    num_classes: int,
 ) -> None:
-    theta = _get_theta(num_classes)
-    arr = data.array.reshape(-1, data.array.shape[-2], num_classes)
+    theta = _get_theta(data.num_classes)
+    arr = data.reshape(-1)
     n_sets = arr.shape[0]
     for idx in range(n_sets):
         label = series_labels[idx] if series_labels is not None and idx < len(series_labels) else None
-        pts = arr[idx]
+        pts = arr[idx].array.probabilities
 
         for m_idx, member in enumerate(pts):
             # Each member gets a unique color (unlike convex sets which use one color per batch element)

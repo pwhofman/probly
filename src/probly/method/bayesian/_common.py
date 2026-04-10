@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Protocol
 
+from probly.method.method import predictor_transformation
 from probly.predictor import RandomPredictor
 from probly.traverse_nn import nn_compose
 from pytraverse import CLONE, GlobalVariable, lazydispatch_traverser, traverse
@@ -40,6 +41,7 @@ def register(cls: LazyType, traverser: RegisteredLooseTraverser) -> None:
     )
 
 
+@predictor_transformation(permitted_predictor_types=None)  # ty: ignore[invalid-argument-type]
 @BayesianPredictor.register_factory
 def bayesian[**In, Out](
     base: Predictor[In, Out],

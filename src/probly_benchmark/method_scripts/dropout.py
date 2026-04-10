@@ -1,4 +1,4 @@
-"""Benchmarking a posterior network implementation on a simple model."""
+"""Dropout benchmark on MNIST using selective prediction."""
 
 from __future__ import annotations
 
@@ -6,43 +6,69 @@ from typing import TYPE_CHECKING
 
 from matplotlib import pyplot as plt
 import numpy as np
+from scipy.stats import entropy
 import torch
 from torch import nn
 
 from probly.evaluation.tasks import selective_prediction
-from probly.method.posterior_network import posterior_network
-from probly.quantification.classification import evidential_uncertainty
-from probly.train.evidential.torch import postnet_loss
+from probly.method.dropout import dropout
+from probly.representer.sampler import Sampler
 from probly_benchmark import data, utils
+from probly_benchmark.models import LeNet
 
 if TYPE_CHECKING:
     from torch.utils.data import DataLoader
 
 # ---------------------------------------------------------------------------
+# Metrics
+# ---------------------------------------------------------------------------
+
+
+def total_entropy(probs: np.ndarray, base: float = 2) -> np.ndarray:
+    """Compute the total entropy as the total uncertainty.
+
+    The computation is based on samples from a second-order distribution.
+    Based on :cite:`depewegDecompositionUncertainty2018`.
+
+    Args:
+        probs: Probability distributions of shape (n_instances, n_samples, n_classes).
+        base: Base of the logarithm.
+
+    Returns:
+        Total entropy values of shape (n_instances,).
+
+    """
+    te = entropy(probs.mean(axis=1), axis=1, base=base)
+    return te
+
+
+# ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
 BATCH_SIZE = 128
-NUM_EPOCHS = 10
+NUM_EPOCHS = 5
 LR = 1e-3
+DROPOUT_P = 0.25
+NUM_SAMPLES = 50
 N_BINS = 50
-LATENT_DIM = 16
-DEVICE = utils.get_device()
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 # ---------------------------------------------------------------------------
 # Training
 # ---------------------------------------------------------------------------
 def train(model: nn.Module, loader: DataLoader, epochs: int = NUM_EPOCHS, lr: float = LR) -> None:
-    """Train model with ... loss."""
+    """Train model with NLL loss (works with Softmax output)."""
     model.to(DEVICE).train()
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-    criterion = postnet_loss
+    criterion = nn.NLLLoss()
 
     for epoch in range(1, epochs + 1):
         total_loss = 0.0
         for x, y in loader:
             optimizer.zero_grad()
-            loss = criterion(model(x.to(DEVICE)), y.to(DEVICE))
+            # log of softmax output for NLLLoss
+            loss = criterion(model(x.to(DEVICE)).log(), y.to(DEVICE))
             loss.backward()
             optimizer.step()
             total_loss += loss.item() * len(y.to(DEVICE))
@@ -64,9 +90,7 @@ def plot_arc(
     rejection_rates = np.linspace(0, 1, n_bins)
 
     fig, ax = plt.subplots(figsize=(6, 4))
-    ax.plot(
-        rejection_rates, accs, marker="o", markersize=3, linewidth=1.5, label=f"Posterior Network (AUROC={auroc:.3f})"
-    )
+    ax.plot(rejection_rates, accs, marker="o", markersize=3, linewidth=1.5, label=f"MC Dropout (AUROC={auroc:.3f})")
     ax.plot(
         rejection_rates,
         random_accs,
@@ -77,7 +101,7 @@ def plot_arc(
     )
     ax.set_xlabel("Rejection rate")
     ax.set_ylabel("Accuracy")
-    ax.set_title("Accuracy-rejection curve (MNIST, Posterior Network)")
+    ax.set_title("Accuracy-rejection curve (MNIST, MC Dropout)")
     ax.legend()
     ax.grid(True, alpha=0.3)
     fig.tight_layout()
@@ -95,45 +119,32 @@ def main(seed: int = 0) -> None:
     train_loader, test_loader = data.load_mnist(BATCH_SIZE)
 
     print("Building model...")
-    encoder = nn.Sequential(
-        nn.Conv2d(1, 6, kernel_size=5),  # (1,28,28) -> (6,24,24)
-        nn.Tanh(),
-        nn.AvgPool2d(2),  # -> (6,12,12)
-        nn.Conv2d(6, 16, kernel_size=5),  # -> (16,8,8)
-        nn.Tanh(),
-        nn.AvgPool2d(2),  # -> (16,4,4)
-        nn.Flatten(),
-        nn.Linear(16 * 4 * 4, 120),
-        nn.Tanh(),
-        nn.Linear(120, 84),
-        nn.Tanh(),
-        nn.Linear(84, LATENT_DIM),
-    ).to(DEVICE)
-
-    # compute the counts per class in the MNIST training set
-    class_counts = np.unique_counts(train_loader.dataset.targets.tolist()).counts.tolist()  # ty: ignore
+    base_model = LeNet().to(DEVICE)
 
     print("Building Dropout...")
-    postnet_model = posterior_network(encoder, dim=LATENT_DIM, num_classes=10, class_counts=class_counts).to(DEVICE)  # ty: ignore
+    dropout_model = dropout(base_model, p=DROPOUT_P)
 
     print("Training...")
-    train(postnet_model, train_loader)
+    train(dropout_model, train_loader)
 
     print("Predicting...")
-    all_alphas: list[np.ndarray] = []
+    sampler = Sampler(dropout_model, num_samples=NUM_SAMPLES)
+    all_probs: list[np.ndarray] = []
     all_labels: list[np.ndarray] = []
     with torch.no_grad():
         for x, y in test_loader:
-            alpha = postnet_model(x.to(DEVICE))
-            all_alphas.append(alpha.detach().cpu().numpy())
+            sample = sampler.predict(x.to(DEVICE))
+            # sample.tensor shape: (batch, num_samples, n_classes)
+            all_probs.append(sample.tensor.cpu().numpy())
             all_labels.append(y.numpy())
-    alphas = np.concatenate(all_alphas, axis=0)
-    labels = np.concatenate(all_labels, axis=0)
-    print(f"Sample tensor shape: {alphas.shape}")
+    probs = np.concatenate(all_probs)
+    labels = np.concatenate(all_labels)
+    print(f"Sample tensor shape: {probs.shape}")
 
     print("Evaluating selective prediction...")
-    criterion = evidential_uncertainty(alphas)
-    accs = (alphas.argmax(axis=1) == labels).astype(float)
+    criterion = total_entropy(probs)
+    mean_probs = probs.mean(axis=1)
+    accs = (mean_probs.argmax(axis=1) == labels).astype(float)
     auroc, bin_losses = selective_prediction(criterion, accs, n_bins=N_BINS)
     random_criterion = np.random.default_rng(seed).permutation(len(accs)).astype(float)
     random_auroc, random_bin_losses = selective_prediction(random_criterion, accs, n_bins=N_BINS)

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from probly.method import ensemble
+from probly.method.ensemble import ensemble
 
 pytest.importorskip("torch")
 import torch

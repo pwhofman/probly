@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from probly.method.method import predictor_transformation
 from probly.traverse_nn import nn_compose
 from pytraverse import CLONE, GlobalVariable, lazydispatch_traverser, traverse
 
@@ -44,6 +45,7 @@ def register(cls: LazyType, traverser: RegisteredLooseTraverser) -> None:
     )
 
 
+@predictor_transformation(permitted_predictor_types=None)
 def batchensemble[T: Predictor](
     base: T,
     num_members: int = NUM_MEMBERS.default,

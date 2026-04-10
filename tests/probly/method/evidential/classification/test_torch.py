@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from torch import nn
 
-from probly.method.evidential.classification.common import (
+from probly.method.evidential.classification import (
     evidential_classification,
 )
 from tests.probly.torch_utils import count_layers

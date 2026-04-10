@@ -11,7 +11,6 @@ import numpy as np
 from probly.plot.config import PlotConfig
 
 from ._binary import _draw_credal_set_binary, _setup_binary_axes
-from ._dispatch import _get_num_classes
 from ._radar_axes import _get_radar_axes
 from ._spider import _draw_credal_set_spider, _setup_spider_axes
 from ._ternary import _draw_credal_set_ternary
@@ -20,9 +19,7 @@ if TYPE_CHECKING:
     from matplotlib.axes import Axes
     from mpltern import TernaryAxes
 
-    from probly.representation.credal_set.array import ArraySingletonCredalSet
-
-    from ._dispatch import ArrayCredalSet
+    from probly.representation.credal_set.array import ArrayCategoricalCredalSet, ArraySingletonCredalSet
 
 __all__ = ["plot_credal_set"]
 
@@ -41,7 +38,7 @@ def _draw_overlay_binary(
     """Draw ground_truth overlay on binary axes."""
     if ground_truth is None:
         return
-    gt = ground_truth.array.reshape(-1, _NUM_BINARY_CLASSES)
+    gt = ground_truth.reshape(-1).array.probabilities
     for idx in range(gt.shape[0]):
         ax.scatter(
             gt[idx, 1],
@@ -63,7 +60,7 @@ def _draw_overlay_ternary(
     if ground_truth is None:
         return
     ternary_ax = cast("TernaryAxes", ax)
-    gt = ground_truth.array.reshape(-1, _NUM_TERNARY_CLASSES)
+    gt = ground_truth.reshape(-1).array.probabilities
     for idx in range(gt.shape[0]):
         # Slices (not scalars) are needed for mpltern's scatter API
         ternary_ax.scatter(
@@ -82,13 +79,12 @@ def _draw_overlay_spider(
     ax: Axes,
     theta: np.ndarray,
     config: PlotConfig,
-    num_classes: int,
     ground_truth: ArraySingletonCredalSet | None,
 ) -> None:
     """Draw ground_truth overlay on spider axes."""
     if ground_truth is None:
         return
-    gt = ground_truth.array.reshape(-1, num_classes)
+    gt = ground_truth.reshape(-1).array.probabilities
     for idx in range(gt.shape[0]):
         values = gt[idx]
         ax.plot(
@@ -118,7 +114,7 @@ def _has_legend(
 
 
 def _plot_binary(
-    data: ArrayCredalSet,
+    data: ArrayCategoricalCredalSet,
     labels: list[str],
     config: PlotConfig,
     series_labels: list[str] | None,
@@ -139,7 +135,7 @@ def _plot_binary(
 
 
 def _plot_ternary(
-    data: ArrayCredalSet,
+    data: ArrayCategoricalCredalSet,
     labels: list[str],
     config: PlotConfig,
     series_labels: list[str] | None,
@@ -172,24 +168,23 @@ def _plot_ternary(
 
 
 def _plot_spider(
-    data: ArrayCredalSet,
+    data: ArrayCategoricalCredalSet,
     labels: list[str],
-    num_classes: int,
     config: PlotConfig,
     series_labels: list[str] | None,
     title: str | None,
     gridlines: bool,
     ground_truth: ArraySingletonCredalSet | None,
 ) -> Axes:
-    radar_cls = _get_radar_axes(num_classes)
+    radar_cls = _get_radar_axes(data.num_classes)
     fig = plt.figure(figsize=config.figure_size, dpi=config.dpi)
     ax = fig.add_subplot(projection=radar_cls.name)
 
     _setup_spider_axes(ax, labels, config, gridlines=gridlines)
-    _draw_credal_set_spider(data, ax, config, series_labels, num_classes)
+    _draw_credal_set_spider(data, ax, config, series_labels)
 
-    theta = np.linspace(0, 2 * np.pi, num_classes, endpoint=False)
-    _draw_overlay_spider(ax, theta, config, num_classes, ground_truth)
+    theta = np.linspace(0, 2 * np.pi, data.num_classes, endpoint=False)
+    _draw_overlay_spider(ax, theta, config, ground_truth)
 
     if _has_legend(series_labels, ground_truth):
         ax.legend(loc="upper right", bbox_to_anchor=(1.3, 1.1))
@@ -200,7 +195,7 @@ def _plot_spider(
 
 
 def plot_credal_set(
-    data: ArrayCredalSet,
+    data: ArrayCategoricalCredalSet,
     *,
     title: str | None = None,
     labels: list[str] | None = None,
@@ -257,7 +252,7 @@ def plot_credal_set(
         ValueError: If labels length does not match the number of classes.
         NotImplementedError: If ``data`` is not a supported Array credal set type.
     """
-    num_classes = _get_num_classes(data)
+    num_classes = data.num_classes
     config = config or PlotConfig()
 
     if num_classes == _NUM_BINARY_CLASSES:
@@ -282,7 +277,6 @@ def plot_credal_set(
         ax = _plot_spider(
             data,
             labels,
-            num_classes,
             config,
             series_labels,
             title,

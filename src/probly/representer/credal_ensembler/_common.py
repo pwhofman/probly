@@ -8,37 +8,44 @@ from probly.method.credal_relative_likelihood import CredalRelativeLikelihoodPre
 from probly.method.credal_wrapper import CredalWrapperPredictor
 from probly.representation.credal_set import create_convex_credal_set, create_probability_intervals
 from probly.representation.sample import create_sample
+from probly.utils.iterable import first_element
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
+
+    from probly.representation.sample import Sample
 
 from lazy_dispatch import lazydispatch
 from probly.method.credal_ensembling import CredalEnsemblingPredictor
 from probly.predictor import predict
 from probly.representation.credal_set._common import ConvexCredalSet, ProbabilityIntervalsCredalSet
+from probly.representation.distribution import CategoricalDistribution
 from probly.representer._representer import Representer, representer
 
 
-@lazydispatch
-def compute_representative_set[T](probs: Iterable[T], alpha: float, distance: str) -> Iterable[T]:
+@lazydispatch(dispatch_on=first_element)
+def compute_representative_set[T: CategoricalDistribution](probs: Sample[T], alpha: float, distance: str) -> Sample[T]:
     """Compute the credal set from the ensemble predictions."""
     msg = f"compute_representative_set method not implemented for type {type(probs)}."
     raise NotImplementedError(msg)
 
 
 @representer.register(CredalEnsemblingPredictor)
-class CredalEnsemblingRepresenter[**In, Out, C: ConvexCredalSet](Representer[Any, In, C]):
-    def __init__(self, predictor: CredalEnsemblingPredictor, alpha: float = 0.0, distance: str = "euclidean") -> None:
+class CredalEnsemblingRepresenter[**In, Out: CategoricalDistribution, C: ConvexCredalSet](Representer[Any, In, Out, C]):
+    def __init__(
+        self, predictor: CredalEnsemblingPredictor[In, Out], alpha: float = 0.0, distance: str = "euclidean"
+    ) -> None:
         super().__init__(predictor)
         self.alpha = alpha
         self.distance = distance
 
-    def _predict(self, *args: In.args, **kwargs: In.kwargs) -> Iterable[Out]:
+    def _predict(self, *args: In.args, **kwargs: In.kwargs) -> Sample[Out]:
         """Predict the outputs from the ensemble predictor."""
-        return predict(self.predictor, *args, **kwargs)
+        ensemble_prediction = predict(self.predictor, *args, **kwargs)
+        return create_sample(ensemble_prediction)
 
     @override
-    def __call__(self, *args: In.args, **kwargs: In.kwargs) -> C:
+    def represent(self, *args: In.args, **kwargs: In.kwargs) -> C:
         pred = self._predict(*args, **kwargs)
         distributions = compute_representative_set(pred, alpha=self.alpha, distance=self.distance)
         cset = create_convex_credal_set(distributions)
@@ -46,7 +53,7 @@ class CredalEnsemblingRepresenter[**In, Out, C: ConvexCredalSet](Representer[Any
 
 
 @representer.register(CredalWrapperPredictor)
-class CredalWrapperRepresenter[**In, Out, C: ProbabilityIntervalsCredalSet](Representer[Any, In, C]):
+class CredalWrapperRepresenter[**In, Out, C: ProbabilityIntervalsCredalSet](Representer[Any, In, Out, C]):
     def __init__(self, predictor: CredalWrapperPredictor) -> None:
         super().__init__(predictor)
 
@@ -63,7 +70,7 @@ class CredalWrapperRepresenter[**In, Out, C: ProbabilityIntervalsCredalSet](Repr
 
 
 @representer.register(CredalRelativeLikelihoodPredictor)
-class CredalRelativeLikelihoodRepresenter[**In, Out, C: ProbabilityIntervalsCredalSet](Representer[Any, In, C]):
+class CredalRelativeLikelihoodRepresenter[**In, Out, C: ProbabilityIntervalsCredalSet](Representer[Any, In, Out, C]):
     def __init__(self, predictor: CredalRelativeLikelihoodPredictor) -> None:
         super().__init__(predictor)
 

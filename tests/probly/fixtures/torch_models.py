@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from probly.method import evidential_classification
+from probly.method.evidential import evidential_classification
 from probly.predictor import Predictor
 
 torch = pytest.importorskip("torch")

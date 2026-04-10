@@ -1,366 +1,160 @@
-"""Classes representing credal sets."""
+"""Torch-backed categorical credal set representations."""
 
 from __future__ import annotations
 
-from abc import ABCMeta, abstractmethod
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Self, override
+from typing import TYPE_CHECKING, Any, ClassVar, Self, cast, override
 
-import numpy as np
 import torch
 
-from probly.representation.credal_set import create_convex_credal_set
+from probly.representation._protected_axis.torch import TorchAxisProtected
 from probly.representation.credal_set._common import (
     CategoricalCredalSet,
-    ConvexCredalSet,
-    ProbabilityIntervalsCredalSet,
+    create_convex_credal_set,
+    create_probability_intervals,
 )
+from probly.representation.distribution.torch_categorical import TorchTensorCategoricalDistribution
 from probly.representation.sample.torch import TorchTensorSample
 
-from ._common import create_probability_intervals
-
 if TYPE_CHECKING:
-    from numpy.typing import DTypeLike
+    from numpy.typing import NDArray
 
     from probly.representation.sample._common import Sample
 
 
-class TorchCategoricalCredalSet(CategoricalCredalSet[torch.Tensor], metaclass=ABCMeta):
-    """A credal set of predictions stored in a numpy array."""
+def _ensure_torch_categorical_distribution(value: object) -> TorchTensorCategoricalDistribution:
+    if isinstance(value, TorchTensorCategoricalDistribution):
+        return value
+    return TorchTensorCategoricalDistribution(probabilities=torch.as_tensor(value))
+
+
+def _sample_probabilities(
+    sample: TorchTensorSample[TorchTensorCategoricalDistribution],
+    distribution_axis: int = -1,
+) -> torch.Tensor:
+    sample_values = sample.samples
+    if not isinstance(sample_values, TorchTensorCategoricalDistribution):
+        msg = "Torch categorical credal sets require samples of TorchTensorCategoricalDistribution."
+        raise TypeError(msg)
+
+    if distribution_axis != -1:
+        msg = "distribution_axis is only supported as -1 for distribution-backed samples."
+        raise ValueError(msg)
+
+    return sample_values.probabilities
+
+
+class TorchCategoricalCredalSet(CategoricalCredalSet, ABC):
+    """Base class for torch-backed categorical credal sets."""
 
     @override
     @classmethod
-    def from_sample(cls, sample: Sample[torch.Tensor], distribution_axis: int = -1) -> Self:
-        array_sample = TorchTensorSample.from_sample(sample)
-        return cls.from_torch_sample(array_sample, distribution_axis=distribution_axis)
+    def from_sample(cls, sample: Sample[TorchTensorCategoricalDistribution]) -> Self:
+        torch_sample = TorchTensorSample.from_iterable(sample.samples, sample_dim=0)
+        if not isinstance(torch_sample.tensor, TorchTensorCategoricalDistribution):
+            msg = "Expected TorchTensorSample[TorchTensorCategoricalDistribution] for categorical credal sets."
+            raise TypeError(msg)
+        return cls.from_torch_sample(cast("TorchTensorSample[TorchTensorCategoricalDistribution]", torch_sample))
 
     @classmethod
     @abstractmethod
     def from_torch_sample(
         cls,
-        sample: TorchTensorSample,
+        sample: TorchTensorSample[TorchTensorCategoricalDistribution],
         distribution_axis: int = -1,
     ) -> Self:
-        """Create a credal set from an ArraySample.
-
-        Args:
-            sample: The sample to create the credal set from.
-            distribution_axis: The axis in each sample containing the categorical probabilities.
-
-        Returns:
-            The created credal set.
-        """
-        msg = "from_array_sample method not implemented."
-        raise NotImplementedError(msg)
+        """Create a credal set from categorical distribution samples."""
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class TorchConvexCredalSet(TorchCategoricalCredalSet, ConvexCredalSet[torch.Tensor]):
-    """A convex credal set defined by the convex hull of distributions stored in a torch tensor.
+class TorchConvexCredalSet(
+    TorchAxisProtected[Any],
+    TorchCategoricalCredalSet,
+):
+    """A convex hull over a finite set of categorical distributions."""
 
-    Internally, this is represented exactly like a discrete credal set:
-    an array of shape (..., num_vertices, num_classes), where the distributions
-    are the extreme points (vertices) of the polytope.
-    """
+    tensor: TorchTensorCategoricalDistribution
+    protected_axes: ClassVar[dict[str, int]] = {"tensor": 1}
 
-    tensor: torch.Tensor
+    def __post_init__(self) -> None:
+        """Validate that the tensor contains valid categorical distributions."""
+        object.__setattr__(self, "tensor", _ensure_torch_categorical_distribution(self.tensor))
 
     @override
     @classmethod
     def from_torch_sample(
         cls,
-        sample: TorchTensorSample,
+        sample: TorchTensorSample[TorchTensorCategoricalDistribution],
         distribution_axis: int = -1,
     ) -> Self:
-        if distribution_axis < 0:
-            distribution_axis += sample.ndim - 1
-
-        tensor = torch.moveaxis(sample.samples, (0, distribution_axis + 1), (-2, -1))
-
-        return cls(tensor=tensor)
+        probabilities = _sample_probabilities(sample, distribution_axis)
+        vertices = torch.moveaxis(probabilities, 0, -2)
+        return cls(tensor=TorchTensorCategoricalDistribution(probabilities=vertices))
 
     @override
-    @classmethod
-    def from_data(cls, data: torch.Tensor, distribution_axis: int = -1) -> Self:
-        if distribution_axis < 0:
-            distribution_axis += data.ndim - 1
-
-        tensor = torch.moveaxis(data, distribution_axis, -2)
-
-        return cls(tensor=tensor)
-
     @property
-    def device(self) -> str | torch.device:
-        """Return the device of the credal set array."""
-        return self.tensor.device
-
-    @property
-    def dtype(self) -> torch.dtype:
-        """Return the data type of the credal set array."""
-        return self.tensor.dtype
-
-    @property
-    def ndim(self) -> int:
-        """Return the number of dimensions of the credal set array."""
-        return self.tensor.ndim - 2
-
-    @property
-    def shape(self) -> tuple[int, ...]:
-        """Return the shape of the credal set array."""
-        return self.tensor.shape[:-2]
-
-    def __len__(self) -> int:
-        """Return the number of vertices defining the convex set."""
-        shape = self.shape
-
-        if len(shape) == 0:
-            msg = "len() of unsized credal set"
-            raise TypeError(msg)
-
-        return shape[0]
-
-    def __array__(self, dtype: DTypeLike = None, copy: bool | None = None) -> np.ndarray:
-        """Get the underlying numpy array of vertices."""
-        if dtype is None and not copy:
-            return self.tensor.numpy()
-
-        return np.asarray(self.tensor, dtype=dtype, copy=copy)
-
-    def lower(self) -> torch.Tensor:
-        """Compute the lower envelope of the convex credal set.
-
-        For a convex hull, the lower envelope is the element-wise minimum of its vertices.
-        """
-        return torch.min(self.tensor, dim=-2)[0]
-
-    def upper(self) -> torch.Tensor:
-        """Compute the upper envelope of the convex credal set.
-
-        For a convex hull, the upper envelope is the element-wise maximum of its vertices.
-        """
-        return torch.max(self.tensor, dim=-2)[0]
-
-    def copy(self) -> Self:
-        """Create a copy of the credal set."""
-        return type(self)(tensor=self.tensor.clone())
-
-    def to(self, device: str | torch.device) -> Self:
-        """Move the underlying array to the specified device."""
-        if device == self.device:
-            return self
-
-        return type(self)(tensor=self.tensor.to(device))
-
-    def __eq__(self, value: Any) -> Self:  # ty: ignore[invalid-method-override]  # noqa: ANN401, PYI032
-        """Vectorized equality comparison."""
-        return torch.equal(self.tensor, value)  # ty: ignore[invalid-return-type]
-
-    def __hash__(self) -> int:
-        """Compute the hash of the credal set."""
-        return super().__hash__()
+    def num_classes(self) -> int:
+        """Get the number of classes."""
+        return self.tensor.num_classes
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class TorchProbabilityIntervalsCredalSet(TorchCategoricalCredalSet, ProbabilityIntervalsCredalSet[torch.Tensor]):
-    """A credal set defined by probability intervals over outcomes.
-
-    This represents uncertainty through lower and upper probability bounds for each class.
-    Each bound is stored as a seperate numpy array of shape (..., num_classes).
-    """
+class TorchProbabilityIntervalsCredalSet(
+    TorchAxisProtected[Any],
+    TorchCategoricalCredalSet,
+):
+    """Credal set represented by lower/upper categorical bounds."""
 
     lower_bounds: torch.Tensor
     upper_bounds: torch.Tensor
+    protected_axes: ClassVar[dict[str, int]] = {"lower_bounds": 1, "upper_bounds": 1}
+
+    def __post_init__(self) -> None:
+        """Validate that lower and upper bounds have the same shape and are valid distributions."""
+        object.__setattr__(self, "lower_bounds", _ensure_torch_categorical_distribution(self.lower_bounds))
+        object.__setattr__(self, "upper_bounds", _ensure_torch_categorical_distribution(self.upper_bounds))
 
     @override
     @classmethod
     def from_torch_sample(
         cls,
-        sample: TorchTensorSample,
+        sample: TorchTensorSample[TorchTensorCategoricalDistribution],
         distribution_axis: int = -1,
     ) -> Self:
-        """Create probability intervals from a sample by computing min/max bounds.
-
-        Args:
-            sample: The sample to extract intervals from.
-            distribution_axis: Which axis contains the categorical probabilities.
-
-        Returns:
-            A new ArrayProbabilityIntervals instance.
-        """
-        if distribution_axis < 0:
-            distribution_axis += sample.ndim - 1
-
-        # Get all samples in shape (..., num_samples, num_classes)
-        samples_array = torch.moveaxis(sample.samples, distribution_axis + 1, -1)
-
-        # Compute lower and upper bounds across samples
-        lower_bounds = torch.min(samples_array, dim=-2)[0]
-        upper_bounds = torch.max(samples_array, dim=-2)[0]
-
-        return cls(lower_bounds=lower_bounds, upper_bounds=upper_bounds)
+        probabilities = _sample_probabilities(sample, distribution_axis)
+        lower_bounds = torch.min(probabilities, dim=0).values
+        upper_bounds = torch.max(probabilities, dim=0).values
+        return cls(
+            lower_bounds=lower_bounds,
+            upper_bounds=upper_bounds,
+        )
 
     @override
-    @classmethod
-    def from_data(cls, data: torch.Tensor, distribution_axis: int = -1) -> Self:
-        """Create a credal set from data.
-
-        Args:
-            data: The data to create the credal set from.
-            distribution_axis: The axis containing the categorical probabilities.
-
-        Returns:
-            The created credal set.
-
-        """
-        if distribution_axis < 0:
-            distribution_axis += data.ndim - 1
-
-        tensor = torch.moveaxis(data, distribution_axis, -2)
-
-        # Compute lower and upper bounds across samples
-        lower_bounds = torch.min(tensor, dim=-2)[0]
-        upper_bounds = torch.max(tensor, dim=-2)[0]
-
-        return cls(lower_bounds=lower_bounds, upper_bounds=upper_bounds)
-
-    @property
-    def device(self) -> str | torch.device:
-        """Return the device where the bounds are stored."""
-        return self.lower_bounds.device
-
-    @property
-    def dtype(self) -> torch.dtype:
-        """Return the data type of the bounds."""
-        return self.lower_bounds.dtype
-
-    @property
-    def ndim(self) -> int:
-        """Return the number of dimensions (excluding the class dimensions)."""
-        return self.lower_bounds.ndim - 1
-
-    @property
-    def shape(self) -> tuple[int, ...]:
-        """Return the shape (excluding the class dimensions)."""
-        return self.lower_bounds.shape[:-1]
-
     @property
     def num_classes(self) -> int:
-        """Return the number of classes."""
+        """Get the number of classes."""
         return self.lower_bounds.shape[-1]
 
-    def __len__(self) -> int:
-        """Return the length of the first dimension."""
-        shape = self.shape
-
-        if len(shape) == 0:
-            msg = "len() of unsized credal set"
-            raise TypeError(msg)
-
-        return shape[0]
-
-    def to_torch(self, dtype: torch.dtype | None = None, copy: bool | None = None) -> torch.Tensor:
-        """Get the intervals as a stacked array with shape (..., 2, num_classes).
-
-        Args:
-            dtype: Desired data type.
-            copy: Whether to return a copy.
-
-        Returns:
-            Stacked array of [lower_bounds, upper_bounds].
-        """
+    @override
+    def numpy(self, *, force: bool = False) -> NDArray[Any]:
         stacked = torch.stack([self.lower_bounds, self.upper_bounds], dim=-2)
-
-        if dtype is None and not copy:
-            return stacked
-
-        if copy:
-            return torch.tensor(stacked, dtype=dtype).clone()
-
-        return torch.tensor(stacked, dtype=dtype)
-
-    def __array__(self, dtype: np.dtype | None = None) -> torch.Tensor:
-        """Get the intervals as a stacked array with shape (..., 2, num_classes).
-
-        Args:
-            dtype: Desired data type.
-            copy: Whether to return a copy.
-
-        Returns:
-            Stacked array of [lower_bounds, upper_bounds].
-        """
-        stacked = np.stack([self.lower_bounds.numpy(), self.upper_bounds.numpy()], axis=-2)
-
-        if dtype is None:
-            return stacked
-
-        return stacked.as_type(dtype)
-
-    @override
-    def lower(self) -> torch.Tensor:
-        """Get the lower probability bounds for each class."""
-        return self.lower_bounds
-
-    @override
-    def upper(self) -> torch.Tensor:
-        """Get the upper probability bounds for each class."""
-        return self.upper_bounds
+        array = stacked.numpy(force=True)
+        if force:
+            return array.copy()
+        return array
 
     def width(self) -> torch.Tensor:
-        """Compute the width of each probability interval.
-
-        Returns:
-            Array of interval widths for each class.
-        """
+        """Compute interval width for each class."""
         return self.upper_bounds - self.lower_bounds
 
     def contains(self, probabilities: torch.Tensor) -> torch.Tensor:
-        """Check if given probabilities fall within the intervals.
-
-        Args:
-            probabilities: Probability distributions to check, shape (..., num_classes).
-
-        Returns:
-            Boolean array indicating whether each probability is contained.
-        """
+        """Check whether probabilities are inside the intervals."""
         within_bounds = (probabilities >= self.lower_bounds) & (probabilities <= self.upper_bounds)
         return torch.all(within_bounds, dim=-1)
 
-    def clone(self) -> Self:
-        """Create a copy of the intervals.
 
-        Returns:
-            A new ArrayProbabilityIntervals with copied data.
-        """
-        return type(self)(
-            lower_bounds=self.lower_bounds.clone(),
-            upper_bounds=self.upper_bounds.clone(),
-        )
-
-    def to(self, device: str | torch.device) -> Self:
-        """Move the intervals to a specified device.
-
-        Args:
-            device: Target device.
-
-        Returns:
-            A new ArrayProbabilityIntervals on the specified device.
-        """
-        if device == self.device:
-            return self
-
-        return type(self)(
-            lower_bounds=self.lower_bounds.to(device),
-            upper_bounds=self.upper_bounds.to(device),
-        )
-
-    def __eq__(self, value: Any) -> Self:  # ty: ignore[invalid-method-override]  # noqa: ANN401, PYI032
-        """Vectorized equality comparison."""
-        return torch.equal(self, value)  # ty: ignore[invalid-return-type, invalid-argument-type]
-
-    def __hash__(self) -> int:
-        """Compute the hash of the intervals."""
-        return super().__hash__()
-
-
-create_probability_intervals.register(torch.Tensor, TorchProbabilityIntervalsCredalSet.from_sample)
-create_convex_credal_set.register(torch.Tensor, TorchConvexCredalSet.from_data)
+create_probability_intervals.register(
+    TorchTensorCategoricalDistribution, TorchProbabilityIntervalsCredalSet.from_sample
+)
+create_convex_credal_set.register(TorchTensorSample, TorchConvexCredalSet.from_torch_sample)

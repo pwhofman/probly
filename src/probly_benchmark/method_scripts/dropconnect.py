@@ -1,4 +1,4 @@
-"""Dropout benchmark on MNIST using selective prediction."""
+"""Dropconnect benchmark on MNIST using selective prediction."""
 
 from __future__ import annotations
 
@@ -6,12 +6,12 @@ from typing import TYPE_CHECKING
 
 from matplotlib import pyplot as plt
 import numpy as np
+from scipy.stats import entropy
 import torch
 from torch import nn
 
 from probly.evaluation.tasks import selective_prediction
-from probly.method.dropout import dropout
-from probly.quantification.classification import total_entropy
+from probly.method.dropconnect import dropconnect
 from probly.representer.sampler import Sampler
 from probly_benchmark import data, utils
 from probly_benchmark.models import LeNet
@@ -20,12 +20,35 @@ if TYPE_CHECKING:
     from torch.utils.data import DataLoader
 
 # ---------------------------------------------------------------------------
+# Metrics
+# ---------------------------------------------------------------------------
+
+
+def total_entropy(probs: np.ndarray, base: float = 2) -> np.ndarray:
+    """Compute the total entropy as the total uncertainty.
+
+    The computation is based on samples from a second-order distribution.
+    Based on :cite:`depewegDecompositionUncertainty2018`.
+
+    Args:
+        probs: Probability distributions of shape (n_instances, n_samples, n_classes).
+        base: Base of the logarithm.
+
+    Returns:
+        Total entropy values of shape (n_instances,).
+
+    """
+    te = entropy(probs.mean(axis=1), axis=1, base=base)
+    return te
+
+
+# ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
 BATCH_SIZE = 128
 NUM_EPOCHS = 5
 LR = 1e-3
-DROPOUT_P = 0.25
+DROPCONNECT_P = 0.25
 NUM_SAMPLES = 50
 N_BINS = 50
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -67,7 +90,7 @@ def plot_arc(
     rejection_rates = np.linspace(0, 1, n_bins)
 
     fig, ax = plt.subplots(figsize=(6, 4))
-    ax.plot(rejection_rates, accs, marker="o", markersize=3, linewidth=1.5, label=f"MC Dropout (AUROC={auroc:.3f})")
+    ax.plot(rejection_rates, accs, marker="o", markersize=3, linewidth=1.5, label=f"DropConnect (AUROC={auroc:.3f})")
     ax.plot(
         rejection_rates,
         random_accs,
@@ -78,7 +101,7 @@ def plot_arc(
     )
     ax.set_xlabel("Rejection rate")
     ax.set_ylabel("Accuracy")
-    ax.set_title("Accuracy-rejection curve (MNIST, MC Dropout)")
+    ax.set_title("Accuracy-rejection curve (MNIST, DropConnect)")
     ax.legend()
     ax.grid(True, alpha=0.3)
     fig.tight_layout()
@@ -98,20 +121,19 @@ def main(seed: int = 0) -> None:
     print("Building model...")
     base_model = LeNet().to(DEVICE)
 
-    print("Building Dropout...")
-    dropout_model = dropout(base_model, p=DROPOUT_P)
+    print("Building DropConnect...")
+    dropconnect_model = dropconnect(base_model, p=DROPCONNECT_P)
 
     print("Training...")
-    train(dropout_model, train_loader)
+    train(dropconnect_model, train_loader)
 
     print("Predicting...")
-    sampler = Sampler(dropout_model, num_samples=NUM_SAMPLES)
+    sampler = Sampler(dropconnect_model, num_samples=NUM_SAMPLES)
     all_probs: list[np.ndarray] = []
     all_labels: list[np.ndarray] = []
     with torch.no_grad():
         for x, y in test_loader:
             sample = sampler.predict(x.to(DEVICE))
-            # sample.tensor shape: (batch, num_samples, n_classes)
             all_probs.append(sample.tensor.cpu().numpy())
             all_labels.append(y.numpy())
     probs = np.concatenate(all_probs)

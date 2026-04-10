@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 from probly.layers.torch import RadialNormalizingFlowStack
-from probly.method import evidential_regression
+from probly.method.evidential import evidential_regression
 from probly.predictor import Predictor
 from probly.train.evidential.torch import (
     der_loss,

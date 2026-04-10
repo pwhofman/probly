@@ -9,7 +9,11 @@ import torch
 
 
 def set_seed(seed: int) -> None:
-    """Set seed for reproducibility."""
+    """Set seed for reproducibility.
+
+    Args:
+        seed: Seed for reproducibility.
+    """
     random.seed(seed)
     np.random.seed(seed)  # noqa: NPY002
     np.random.default_rng(seed)

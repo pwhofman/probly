@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any, cast
 
-from probly.method.evidential.classification.common import (
+from probly.method.evidential.classification import (
     evidential_classification,
     register,
 )

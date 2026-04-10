@@ -1,21 +1,20 @@
-"""Classes representing credal sets."""
+"""NumPy-backed categorical credal set representations."""
 
 from __future__ import annotations
 
-from abc import ABCMeta, abstractmethod
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Literal, Self, override
+from typing import TYPE_CHECKING, ClassVar, Self, override
 
 import numpy as np
 
+from probly.representation._protected_axis.array import ArrayAxisProtected
 from probly.representation.credal_set._common import (
     CategoricalCredalSet,
-    ConvexCredalSet,
-    DiscreteCredalSet,
-    DistanceBasedCredalSet,
-    ProbabilityIntervalsCredalSet,
-    SingletonCredalSet,
+    create_convex_credal_set,
+    create_probability_intervals,
 )
+from probly.representation.distribution import ArrayCategoricalDistribution
 from probly.representation.sample import ArraySample
 
 if TYPE_CHECKING:
@@ -24,642 +23,317 @@ if TYPE_CHECKING:
     from probly.representation.sample._common import Sample
 
 
-class ArrayCategoricalCredalSet(CategoricalCredalSet[np.ndarray], metaclass=ABCMeta):
-    """A credal set of predictions stored in a numpy array."""
+def _ensure_array_categorical_distribution(value: object) -> ArrayCategoricalDistribution:
+    if isinstance(value, ArrayCategoricalDistribution):
+        return value
+    return ArrayCategoricalDistribution(probabilities=np.asarray(value))
 
-    @override
+
+def _sample_probabilities(
+    sample: ArraySample[ArrayCategoricalDistribution],
+    distribution_axis: int = -1,
+) -> np.ndarray:
+    sample_values = sample.samples
+    if not isinstance(sample_values, ArrayCategoricalDistribution):
+        msg = "Array categorical credal sets require samples of ArrayCategoricalDistribution."
+        raise TypeError(msg)
+
+    if distribution_axis != -1:
+        msg = "distribution_axis is only supported as -1 for distribution-backed samples."
+        raise ValueError(msg)
+
+    return sample_values.probabilities
+
+
+class ArrayCategoricalCredalSet(CategoricalCredalSet, ABC):
+    """Base class for NumPy-backed categorical credal sets."""
+
     @classmethod
-    def from_sample(cls, sample: Sample[np.ndarray], distribution_axis: int = -1) -> Self:
+    def from_sample(cls, sample: Sample[ArrayCategoricalDistribution]) -> Self:
+        """Create a credal set from a sample of categorical distributions."""
         array_sample = ArraySample.from_sample(sample)
-        return cls.from_array_sample(array_sample, distribution_axis=distribution_axis)
+        if not isinstance(array_sample.array, ArrayCategoricalDistribution):
+            msg = "Expected ArraySample[ArrayCategoricalDistribution] for categorical credal sets."
+            raise TypeError(msg)
+        return cls.from_array_sample(array_sample)
 
     @classmethod
     @abstractmethod
     def from_array_sample(
         cls,
-        sample: ArraySample[np.ndarray],
+        sample: ArraySample[ArrayCategoricalDistribution],
         distribution_axis: int = -1,
     ) -> Self:
-        """Create a credal set from an ArraySample.
+        """Create a credal set from categorical distribution samples."""
 
-        Args:
-            sample: The sample to create the credal set from.
-            distribution_axis: The axis in each sample containing the categorical probabilities.
+    @abstractmethod
+    def lower(self) -> np.ndarray:
+        """Return the lower probabilities of the credal set."""
 
-        Returns:
-            The created credal set.
-        """
-        msg = "from_array_sample method not implemented."
-        raise NotImplementedError(msg)
+    @abstractmethod
+    def upper(self) -> np.ndarray:
+        """Return the upper probabilities of the credal set."""
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class ArrayDiscreteCredalSet(ArrayCategoricalCredalSet, DiscreteCredalSet[np.ndarray]):
-    """A discrete credal set over a finite set of distributions stored in a numpy array.
+class ArrayDiscreteCredalSet(
+    ArrayAxisProtected[ArrayCategoricalDistribution],
+    ArrayCategoricalCredalSet,
+):
+    """A finite set of categorical distributions."""
 
-    Internall, a discrete credal set is represented as a numpy array of shape
-    (..., num_members, num_classes)
-    """
+    array: ArrayCategoricalDistribution
+    protected_axes: ClassVar[dict[str, int]] = {"array": 1}
 
-    array: np.ndarray
+    def __post_init__(self) -> None:
+        """Validate that the array contains valid categorical distributions."""
+        object.__setattr__(self, "array", _ensure_array_categorical_distribution(self.array))
 
     @override
     @classmethod
     def from_array_sample(
         cls,
-        sample: ArraySample[np.ndarray],
+        sample: ArraySample[ArrayCategoricalDistribution],
         distribution_axis: int = -1,
     ) -> Self:
-        if distribution_axis < 0:
-            distribution_axis += sample.ndim - 1
+        probabilities = _sample_probabilities(sample, distribution_axis)
+        members = np.moveaxis(probabilities, 0, -2)
+        return cls(array=ArrayCategoricalDistribution(probabilities=members))
 
-        array = np.moveaxis(sample.samples, (0, distribution_axis + 1), (-2, -1))
-
-        return cls(array=array)
-
-    def __array_namespace__(self) -> Any:  # noqa: ANN401
-        """Get the array namespace of the underlying array."""
-        return self.array.__array_namespace__()
-
+    @override
     @property
-    def device(self) -> str:
-        """Return the device of the credal set array."""
-        return self.array.device
+    def num_classes(self) -> int:
+        """Return the number of classes in the credal set."""
+        return self.array.num_classes
 
-    @property
-    def dtype(self) -> np.dtype:
-        """Return the data type of the credal set array."""
-        return self.array.dtype
-
-    @property
-    def ndim(self) -> int:
-        """Return the number of dimensions of the credal set array."""
-        return self.array.ndim - 2
-
-    @property
-    def shape(self) -> tuple[int, ...]:
-        """Return the shape of the credal set array."""
-        return self.array.shape[:-2]
-
-    def __len__(self) -> int:
-        """Return the number of members in the credal set."""
-        shape = self.shape
-
-        if len(shape) == 0:
-            msg = "len() of unsized credal set"
-            raise TypeError(msg)
-
-        return shape[0]
-
-    def __array__(self, dtype: DTypeLike = None, copy: bool | None = None) -> np.ndarray:
-        """Get the underlying numpy array.
-
-        Args:
-            dtype: Desired data type of the array.
-            copy: Whether to return a copy of the array.
-
-        Returns:
-            The underlying numpy array.
-        """
-        if dtype is None and not copy:
-            return self.array
-
-        return np.asarray(self.array, dtype=dtype, copy=copy)
-
+    @override
     def lower(self) -> np.ndarray:
-        """Compute the lower envelope of the credal set."""
-        return np.min(self.array, axis=-2)
+        """Return the lower probabilities of the credal set."""
+        return np.min(self.array.probabilities, axis=0)
 
+    @override
     def upper(self) -> np.ndarray:
-        """Compute the upper envelope of the credal set."""
-        return np.max(self.array, axis=-2)
-
-    def copy(self) -> Self:
-        """Create a copy of the ArraySample.
-
-        Returns:
-            A copy of the ArraySample.
-        """
-        return type(self)(array=self.array.copy())
-
-    def to_device(self, device: Literal["cpu"]) -> Self:
-        """Move the underlying array to the specified device.
-
-        Args:
-            device: The target device.
-
-        Returns:
-            A new ArrayDiscreteCredalSet on the specified device.
-        """
-        if device == self.device:
-            return self
-
-        return type(self)(array=self.array.to_device(device))
-
-    def __eq__(self, value: Any) -> Self:  # ty: ignore[invalid-method-override]  # noqa: ANN401, PYI032
-        """Vectorized equality comparison."""
-        return np.equal(self, value)  # ty: ignore[invalid-return-type]
-
-    def __hash__(self) -> int:
-        """Compute the hash of the ArraySample."""
-        return super().__hash__()
+        """Return the upper probabilities of the credal set."""
+        return np.max(self.array.probabilities, axis=0)
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class ArrayConvexCredalSet(ArrayCategoricalCredalSet, ConvexCredalSet[np.ndarray]):
-    """A convex credal set defined by the convex hull of distributions stored in a numpy array.
+class ArrayConvexCredalSet(
+    ArrayAxisProtected[ArrayCategoricalDistribution],
+    ArrayCategoricalCredalSet,
+):
+    """A convex hull over a finite set of categorical distributions."""
 
-    Internally, this is represented exactly like a discrete credal set:
-    an array of shape (..., num_vertices, num_classes), where the distributions
-    are the extreme points (vertices) of the polytope.
-    """
+    array: ArrayCategoricalDistribution
+    protected_axes: ClassVar[dict[str, int]] = {"array": 1}
 
-    array: np.ndarray
+    def __post_init__(self) -> None:
+        """Validate that the array contains valid categorical distributions."""
+        object.__setattr__(self, "array", _ensure_array_categorical_distribution(self.array))
 
     @override
     @classmethod
     def from_array_sample(
         cls,
-        sample: ArraySample[np.ndarray],
+        sample: ArraySample[ArrayCategoricalDistribution],
         distribution_axis: int = -1,
     ) -> Self:
-        if distribution_axis < 0:
-            distribution_axis += sample.ndim - 1
+        probabilities = _sample_probabilities(sample, distribution_axis)
+        vertices = np.moveaxis(probabilities, 0, -2)
+        return cls(array=ArrayCategoricalDistribution(probabilities=vertices))
 
-        array = np.moveaxis(sample.samples, (0, distribution_axis + 1), (-2, -1))
-
-        return cls(array=array)
-
-    def __array_namespace__(self) -> Any:  # noqa: ANN401
-        """Get the array namespace of the underlying array."""
-        return self.array.__array_namespace__()
-
+    @override
     @property
-    def device(self) -> str:
-        """Return the device of the credal set array."""
-        return self.array.device
+    def num_classes(self) -> int:
+        """Return the number of classes in the credal set."""
+        return self.array.num_classes
 
-    @property
-    def dtype(self) -> np.dtype:
-        """Return the data type of the credal set array."""
-        return self.array.dtype
-
-    @property
-    def ndim(self) -> int:
-        """Return the number of dimensions of the credal set array."""
-        return self.array.ndim - 2
-
-    @property
-    def shape(self) -> tuple[int, ...]:
-        """Return the shape of the credal set array."""
-        return self.array.shape[:-2]
-
-    def __len__(self) -> int:
-        """Return the number of vertices defining the convex set."""
-        shape = self.shape
-
-        if len(shape) == 0:
-            msg = "len() of unsized credal set"
-            raise TypeError(msg)
-
-        return shape[0]
-
-    def __array__(self, dtype: DTypeLike = None, copy: bool | None = None) -> np.ndarray:
-        """Get the underlying numpy array of vertices."""
-        if dtype is None and not copy:
-            return self.array
-
-        return np.asarray(self.array, dtype=dtype, copy=copy)
-
+    @override
     def lower(self) -> np.ndarray:
-        """Compute the lower envelope of the convex credal set.
+        """Return the lower probabilities of the credal set."""
+        return np.min(self.array.probabilities, axis=0)
 
-        For a convex hull, the lower envelope is the element-wise minimum of its vertices.
-        """
-        return np.min(self.array, axis=-2)
-
+    @override
     def upper(self) -> np.ndarray:
-        """Compute the upper envelope of the convex credal set.
-
-        For a convex hull, the upper envelope is the element-wise maximum of its vertices.
-        """
-        return np.max(self.array, axis=-2)
-
-    def copy(self) -> Self:
-        """Create a copy of the credal set."""
-        return type(self)(array=self.array.copy())
-
-    def to_device(self, device: Literal["cpu"]) -> Self:
-        """Move the underlying array to the specified device."""
-        if device == self.device:
-            return self
-
-        return type(self)(array=self.array.to_device(device))
-
-    def __eq__(self, value: Any) -> Self:  # ty: ignore[invalid-method-override]  # noqa: ANN401, PYI032
-        """Vectorized equality comparison."""
-        return np.equal(self, value)  # ty: ignore[invalid-return-type]
-
-    def __hash__(self) -> int:
-        """Compute the hash of the credal set."""
-        return super().__hash__()
+        """Return the upper probabilities of the credal set."""
+        return np.max(self.array.probabilities, axis=0)
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
 class ArrayDistanceBasedCredalSet(
+    ArrayAxisProtected[ArrayCategoricalDistribution],
     ArrayCategoricalCredalSet,
-    DistanceBasedCredalSet[np.ndarray],
 ):
-    """A credal set defined by a nominal distribution and a distance radius (L1/Total Variation).
+    """Distance-based credal set around a nominal categorical distribution."""
 
-    The set contains all distributions P such that distance(P, nominal) <= radius.
-    Internally, the nominal distribution is stored as a numpy array of shape (..., num_classes).
-    The radius is stored as a float or numpy array.
-    """
+    nominal: ArrayCategoricalDistribution
+    radius: np.ndarray
+    protected_axes: ClassVar[dict[str, int]] = {"nominal": 0, "radius": 0}
 
-    nominal: np.ndarray
-    radius: float | np.ndarray
+    def __post_init__(self) -> None:
+        """Validate that nominal is a valid categorical distribution and radius is non-negative."""
+        object.__setattr__(self, "nominal", _ensure_array_categorical_distribution(self.nominal))
+        object.__setattr__(self, "radius", np.asarray(self.radius))
 
     @override
     @classmethod
     def from_array_sample(
         cls,
-        sample: ArraySample[np.ndarray],
+        sample: ArraySample[ArrayCategoricalDistribution],
         distribution_axis: int = -1,
     ) -> Self:
-        """Create a DistanceBasedCredalSet from an ArraySample.
-
-        This calculates the mean of the samples as the nominal distribution.
-        The radius is set to the maximum Total Variation distance between any sample
-        and the mean, ensuring the credal set covers all observed samples.
-        """
-        averaged_array = np.mean(sample.samples, axis=0)
-
-        calc_dist_axis = distribution_axis + averaged_array.ndim if distribution_axis < 0 else distribution_axis
-
-        diff = np.abs(sample.samples - averaged_array)
-        tv_dists = 0.5 * np.sum(diff, axis=calc_dist_axis + 1)
+        probabilities = _sample_probabilities(sample, distribution_axis)
+        nominal = np.mean(probabilities, axis=0)
+        diff = np.abs(probabilities - nominal)
+        tv_dists = 0.5 * np.sum(diff, axis=-1)
         radius = np.max(tv_dists, axis=0)
-        nominal = np.moveaxis(averaged_array, calc_dist_axis, -1)
+        return cls(
+            nominal=ArrayCategoricalDistribution(probabilities=nominal),
+            radius=np.asarray(radius),
+        )
 
-        return cls(nominal=nominal, radius=radius)
+    @override
+    def __array__(self, dtype: DTypeLike | None = None, copy: bool | None = None) -> np.ndarray:
+        return np.asarray(self.nominal.probabilities, dtype=dtype, copy=copy)
 
-    def __array_namespace__(self) -> Any:  # noqa: ANN401
-        """Get the array namespace of the underlying array."""
-        return self.nominal.__array_namespace__()
-
+    @override
     @property
-    def device(self) -> str:
-        """Return the device of the nominal array."""
-        return self.nominal.device
+    def num_classes(self) -> int:
+        """Return the number of classes in the credal set."""
+        return self.nominal.num_classes
 
-    @property
-    def dtype(self) -> np.dtype:
-        """Return the data type of the nominal array."""
-        return self.nominal.dtype
-
-    @property
-    def ndim(self) -> int:
-        """Return the number of dimensions of the credal set array."""
-        return self.nominal.ndim - 1
-
-    @property
-    def shape(self) -> tuple[int, ...]:
-        """Return the shape of the credal set array (batch dimensions)."""
-        return self.nominal.shape[:-1]
-
-    def __len__(self) -> int:
-        """Return the size of the first dimension (usually batch size)."""
-        shape = self.shape
-
-        if len(shape) == 0:
-            msg = "len() of unsized credal set"
-            raise TypeError(msg)
-
-        return shape[0]
-
-    def __array__(self, dtype: DTypeLike = None, copy: bool | None = None) -> np.ndarray:
-        """Get the underlying nominal numpy array.
-
-        To get the full set representation (center + radius), access .nominal and .radius directly.
-        """
-        if dtype is None and not copy:
-            return self.nominal
-
-        return np.asarray(self.nominal, dtype=dtype, copy=copy)
-
+    @override
     def lower(self) -> np.ndarray:
         """Compute the lower envelope of the credal set.
 
         For L1/TV distance, the tightest element-wise lower bound is max(0, nominal - radius).
         """
         # Ensure radius is broadcastable to nominal (add last dim if needed)
+        nominal = self.nominal.probabilities
         r = self.radius
-        if isinstance(r, np.ndarray) and r.ndim == self.nominal.ndim - 1:
+        if isinstance(r, np.ndarray) and r.ndim == nominal.ndim - 1:
             r = np.expand_dims(r, axis=-1)
 
-        return np.clip(self.nominal - r, 0.0, 1.0)
+        return np.clip(nominal - r, 0.0, 1.0)
 
+    @override
     def upper(self) -> np.ndarray:
         """Compute the upper envelope of the credal set.
 
         For L1/TV distance, the tightest element-wise upper bound is min(1, nominal + radius).
         """
         # Ensure radius is broadcastable to nominal (add last dim if needed)
+        nominal = self.nominal.probabilities
         r = self.radius
-        if isinstance(r, np.ndarray) and r.ndim == self.nominal.ndim - 1:
+        if isinstance(r, np.ndarray) and r.ndim == nominal.ndim - 1:
             r = np.expand_dims(r, axis=-1)
 
-        return np.clip(self.nominal + r, 0.0, 1.0)
-
-    def copy(self) -> Self:
-        """Create a copy of the ArrayDistanceBasedCredalSet."""
-        r_copy = self.radius.copy() if isinstance(self.radius, np.ndarray) else self.radius
-        return type(self)(nominal=self.nominal.copy(), radius=r_copy)
-
-    def to_device(self, device: Literal["cpu"]) -> Self:
-        """Move the underlying array to the specified device."""
-        if device == self.device:
-            return self
-
-        new_nominal = self.nominal.to_device(device)
-        new_radius = (
-            self.radius.to_device(device)
-            if isinstance(self.radius, np.ndarray) and hasattr(self.radius, "to_device")
-            else self.radius
-        )
-        return type(self)(nominal=new_nominal, radius=new_radius)
-
-    def __eq__(self, value: Any) -> Self:  # ty: ignore[invalid-method-override]  # noqa: ANN401, PYI032
-        """Vectorized equality comparison."""
-        if not isinstance(value, type(self)):
-            return NotImplemented
-        return np.equal(self.nominal, value.nominal) & (self.radius == value.radius)
-
-    def __hash__(self) -> int:
-        """Compute the hash of the credal set."""
-        return super().__hash__()
+        return np.clip(nominal + r, 0.0, 1.0)
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class ArrayProbabilityIntervalsCredalSet(ArrayCategoricalCredalSet, ProbabilityIntervalsCredalSet[np.ndarray]):
-    """A credal set defined by probability intervals over outcomes.
-
-    This represents uncertainty through lower and upper probability bounds for each class.
-    Each bound is stored as a seperate numpy array of shape (..., num_classes).
-    """
+class ArrayProbabilityIntervalsCredalSet(
+    ArrayAxisProtected[ArrayCategoricalDistribution],
+    ArrayCategoricalCredalSet,
+):
+    """Credal set represented by lower/upper categorical bounds."""
 
     lower_bounds: np.ndarray
     upper_bounds: np.ndarray
+    protected_axes: ClassVar[dict[str, int]] = {"lower_bounds": 1, "upper_bounds": 1}
+
+    def __post_init__(self) -> None:
+        """Validate that lower and upper bounds have the same shape and are valid distributions."""
+        if self.lower_bounds.shape != self.upper_bounds.shape:
+            msg = "Lower and upper bounds must have the same shape."
+            raise ValueError(msg)
 
     @override
     @classmethod
     def from_array_sample(
         cls,
-        sample: ArraySample[np.ndarray],
+        sample: ArraySample[ArrayCategoricalDistribution],
         distribution_axis: int = -1,
     ) -> Self:
-        """Create probability intervals from a sample by computing min/max bounds.
+        probabilities = _sample_probabilities(sample, distribution_axis)
+        lower_bounds = np.min(probabilities, axis=0)
+        upper_bounds = np.max(probabilities, axis=0)
+        return cls(
+            lower_bounds=lower_bounds,
+            upper_bounds=upper_bounds,
+        )
 
-        Args:
-            sample: The sample to extract intervals from.
-            distribution_axis: Which axis contains the categorical probabilities.
+    @override
+    def __array__(self, dtype: DTypeLike | None = None, copy: bool | None = None) -> np.ndarray:
+        stacked = np.stack([self.lower_bounds, self.upper_bounds], axis=-2)
+        return np.asarray(stacked, dtype=dtype, copy=copy)
 
-        Returns:
-            A new ArrayProbabilityIntervals instance.
-        """
-        if distribution_axis < 0:
-            distribution_axis += sample.ndim - 1
+    def width(self) -> np.ndarray:
+        """Compute interval width for each class."""
+        return self.upper_bounds - self.lower_bounds
 
-        # Get all samples in shape (..., num_samples, num_classes)
-        samples_array = np.moveaxis(sample.samples, distribution_axis + 1, -1)
+    def contains(self, probabilities: np.ndarray) -> np.ndarray:
+        """Check whether probabilities are inside the intervals."""
+        within_bounds = (probabilities >= self.lower_bounds) & (probabilities <= self.upper_bounds)
+        return np.all(within_bounds, axis=-1)
 
-        # Compute lower and upper bounds across samples
-        lower_bounds = np.min(samples_array, axis=-2)
-        upper_bounds = np.max(samples_array, axis=-2)
-
-        return cls(lower_bounds=lower_bounds, upper_bounds=upper_bounds)
-
-    def __array_namespace__(self) -> Any:  # noqa: ANN401
-        """Get the array namespace of the lower bounds."""
-        return self.lower_bounds.__array_namespace__()
-
-    @property
-    def device(self) -> str:
-        """Return the device where the bounds are stored."""
-        return self.lower_bounds.device
-
-    @property
-    def dtype(self) -> np.dtype:
-        """Return the data type of the bounds."""
-        return self.lower_bounds.dtype
-
-    @property
-    def ndim(self) -> int:
-        """Return the number of dimensions (excluding the class dimensions)."""
-        return self.lower_bounds.ndim - 1
-
-    @property
-    def shape(self) -> tuple[int, ...]:
-        """Return the shape (excluding the class dimensions)."""
-        return self.lower_bounds.shape[:-1]
-
+    @override
     @property
     def num_classes(self) -> int:
-        """Return the number of classes."""
+        """Return the number of classes in the credal set."""
         return self.lower_bounds.shape[-1]
-
-    def __len__(self) -> int:
-        """Return the length of the first dimension."""
-        shape = self.shape
-
-        if len(shape) == 0:
-            msg = "len() of unsized credal set"
-            raise TypeError(msg)
-
-        return shape[0]
-
-    def __array__(self, dtype: DTypeLike = None, copy: bool | None = None) -> np.ndarray:
-        """Get the intervals as a stacked array with shape (..., 2, num_classes).
-
-        Args:
-            dtype: Desired data type.
-            copy: Whether to return a copy.
-
-        Returns:
-            Stacked array of [lower_bounds, upper_bounds].
-        """
-        stacked = np.stack([self.lower_bounds, self.upper_bounds], axis=-2)
-
-        if dtype is None and not copy:
-            return stacked
-
-        return np.asarray(stacked, dtype=dtype, copy=copy)
 
     @override
     def lower(self) -> np.ndarray:
-        """Get the lower probability bounds for each class."""
+        """Return the lower probabilities of the credal set."""
         return self.lower_bounds
 
     @override
     def upper(self) -> np.ndarray:
-        """Get the upper probability bounds for each class."""
+        """Return the upper probabilities of the credal set."""
         return self.upper_bounds
-
-    def width(self) -> np.ndarray:
-        """Compute the width of each probability interval.
-
-        Returns:
-            Array of interval widths for each class.
-        """
-        return self.upper_bounds - self.lower_bounds
-
-    def contains(self, probabilities: np.ndarray) -> np.ndarray:
-        """Check if given probabilities fall within the intervals.
-
-        Args:
-            probabilities: Probability distributions to check, shape (..., num_classes).
-
-        Returns:
-            Boolean array indicating whether each probability is contained.
-        """
-        within_bounds = (probabilities >= self.lower_bounds) & (probabilities <= self.upper_bounds)
-        return np.all(within_bounds, axis=-1)
-
-    def copy(self) -> Self:
-        """Create a copy of the intervals.
-
-        Returns:
-            A new ArrayProbabilityIntervals with copied data.
-        """
-        return type(self)(
-            lower_bounds=self.lower_bounds.copy(),
-            upper_bounds=self.upper_bounds.copy(),
-        )
-
-    def to_device(self, device: Literal["cpu"]) -> Self:
-        """Move the intervals to a specified device.
-
-        Args:
-            device: Target device.
-
-        Returns:
-            A new ArrayProbabilityIntervals on the specified device.
-        """
-        if device == self.device:
-            return self
-
-        return type(self)(
-            lower_bounds=self.lower_bounds.to_device(device),
-            upper_bounds=self.upper_bounds.to_device(device),
-        )
-
-    def __eq__(self, value: Any) -> Self:  # ty: ignore[invalid-method-override]  # noqa: ANN401, PYI032
-        """Vectorized equality comparison."""
-        return np.equal(self, value)  # ty: ignore[invalid-return-type]
-
-    def __hash__(self) -> int:
-        """Compute the hash of the intervals."""
-        return super().__hash__()
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class ArraySingletonCredalSet(ArrayCategoricalCredalSet, SingletonCredalSet[np.ndarray]):
-    """A singleton credal set containing exactly one distribution stored in a numpy array.
+class ArraySingletonCredalSet(
+    ArrayAxisProtected[ArrayCategoricalDistribution],
+    ArrayCategoricalCredalSet,
+):
+    """A singleton credal set with one precise categorical distribution."""
 
-    Internally, this is represented as a numpy array of shape (..., num_classes).
-    Unlike DiscreteCredalSet, it does not have a 'members' dimension.
-    """
+    array: ArrayCategoricalDistribution
+    protected_axes: ClassVar[dict[str, int]] = {"array": 0}
 
-    array: np.ndarray
+    def __post_init__(self) -> None:
+        """Validate that the array contains a valid categorical distribution."""
+        object.__setattr__(self, "array", _ensure_array_categorical_distribution(self.array))
 
     @override
     @classmethod
     def from_array_sample(
         cls,
-        sample: ArraySample[np.ndarray],
+        sample: ArraySample[ArrayCategoricalDistribution],
         distribution_axis: int = -1,
     ) -> Self:
-        """Create a SingletonCredalSet from an ArraySample by averaging the samples.
+        probabilities = _sample_probabilities(sample, distribution_axis)
+        return cls(array=ArrayCategoricalDistribution(probabilities=np.mean(probabilities, axis=0)))
 
-        This method calculates the mean of the samples to produce a single
-        precise distribution (singleton).
-        """
-        sample = np.moveaxis(sample, distribution_axis, -1)  # ty:ignore[invalid-assignment, invalid-argument-type]
-        averaged_array = sample.sample_mean()
-
-        return cls(array=averaged_array)
-
-    def __array_namespace__(self) -> Any:  # noqa: ANN401
-        """Get the array namespace of the underlying array."""
-        return self.array.__array_namespace__()
-
+    @override
     @property
-    def device(self) -> str:
-        """Return the device of the credal set array."""
-        return self.array.device
+    def num_classes(self) -> int:
+        """Return the number of classes in the credal set."""
+        return self.array.num_classes
 
-    @property
-    def dtype(self) -> np.dtype:
-        """Return the data type of the credal set array."""
-        return self.array.dtype
-
-    @property
-    def ndim(self) -> int:
-        """Return the number of dimensions of the credal set array."""
-        return self.array.ndim - 1
-
-    @property
-    def shape(self) -> tuple[int, ...]:
-        """Return the shape of the credal set array (batch dimensions)."""
-        return self.array.shape[:-1]
-
-    def __len__(self) -> int:
-        """Return the size of the first dimension (usually batch size)."""
-        shape = self.shape
-
-        if len(shape) == 0:
-            msg = "len() of unsized credal set"
-            raise TypeError(msg)
-
-        return shape[0]
-
-    def __array__(self, dtype: DTypeLike = None, copy: bool | None = None) -> np.ndarray:
-        """Get the underlying numpy array."""
-        if dtype is None and not copy:
-            return self.array
-
-        return np.asarray(self.array, dtype=dtype, copy=copy)
-
+    @override
     def lower(self) -> np.ndarray:
-        """Compute the lower envelope of the credal set.
+        """Return the lower probabilities of the credal set."""
+        return self.array.probabilities
 
-        For a singleton set {P}, lower(P) = P.
-        """
-        return self.array
-
+    @override
     def upper(self) -> np.ndarray:
-        """Compute the upper envelope of the credal set.
+        """Return the upper probabilities of the credal set."""
+        return self.array.probabilities
 
-        For a singleton set {P}, upper(P) = P.
-        """
-        return self.array
 
-    def copy(self) -> Self:
-        """Create a copy of the ArraySingletonCredalSet."""
-        return type(self)(array=self.array.copy())
-
-    def to_device(self, device: Literal["cpu"]) -> Self:
-        """Move the underlying array to the specified device."""
-        if device == self.device:
-            return self
-
-        return type(self)(array=self.array.to_device(device))
-
-    def __eq__(self, value: Any) -> Self:  # ty: ignore[invalid-method-override]  # noqa: ANN401, PYI032
-        """Vectorized equality comparison."""
-        return np.equal(self, value)  # ty: ignore[invalid-return-type]
-
-    def __hash__(self) -> int:
-        """Compute the hash of the credal set."""
-        return super().__hash__()
+create_probability_intervals.register(ArrayCategoricalDistribution, ArrayProbabilityIntervalsCredalSet.from_sample)
+create_convex_credal_set.register(ArraySample, ArrayConvexCredalSet.from_array_sample)
