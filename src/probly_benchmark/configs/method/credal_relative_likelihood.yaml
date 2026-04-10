@@ -4,5 +4,5 @@ params:
   num_members: 5
   reset_params: true
 train:
-    alpha: 0.5
+    alpha: 0.6
     batch_check: false # determines whether likelihood constraint is checked after batch (if true) or epoch (if false)

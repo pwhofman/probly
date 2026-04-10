@@ -12,6 +12,7 @@ import torch.nn.functional as F
 from lazy_dispatch import lazydispatch
 from probly.method.bayesian import BayesianPredictor
 from probly.method.credal_ensembling import CredalEnsemblingPredictor
+from probly.method.credal_relative_likelihood import CredalRelativeLikelihoodPredictor
 from probly.method.credal_wrapper import CredalWrapperPredictor
 from probly.method.dropconnect import DropConnectPredictor
 from probly.method.dropout import DropoutPredictor
@@ -325,7 +326,15 @@ def _(
     return _compute_metrics(probs, labels, n_bins)
 
 
-@evaluate.register((EnsemblePredictor, CredalEnsemblingPredictor, CredalWrapperPredictor, SubensemblePredictor))
+@evaluate.register(
+    (
+        EnsemblePredictor,
+        CredalEnsemblingPredictor,
+        CredalRelativeLikelihoodPredictor,
+        CredalWrapperPredictor,
+        SubensemblePredictor,
+    )
+)
 @torch.no_grad()
 def evaluate_ensemble(
     model: EnsemblePredictor,
