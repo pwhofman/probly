@@ -2667,6 +2667,7 @@ test = [
     { name = "pytest" },
     { name = "pytest-cov" },
     { name = "pytest-xdist" },
+    { name = "scikit-learn" },
 ]
 torch = [
     { name = "torch" },
@@ -2752,6 +2753,7 @@ test = [
     { name = "pytest", specifier = ">=8.3.5" },
     { name = "pytest-cov", specifier = ">=6.0.0" },
     { name = "pytest-xdist", specifier = ">=3.6.1" },
+    { name = "scikit-learn", specifier = ">=1.3.0" },
 ]
 torch = [
     { name = "torch", specifier = ">=2.0.0" },

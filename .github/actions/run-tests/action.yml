@@ -33,9 +33,13 @@ runs:
     - name: Install test dependencies
       shell: bash
       env:
-        UV_RESOLUTION: ${{ inputs.resolution }}
+        INPUT_RESOLUTION: ${{ inputs.resolution }}
         DEPENDENCY_GROUP: ${{ inputs.dependency-group }}
-      run: uv sync --no-dev --group test --group "$DEPENDENCY_GROUP"
+      run: |
+        if [ -n "$INPUT_RESOLUTION" ]; then
+          export UV_RESOLUTION="$INPUT_RESOLUTION"
+        fi
+        uv sync --no-dev --group test --group "$DEPENDENCY_GROUP"
 
     - name: Run tests with coverage
       if: inputs.coverage == 'true'
