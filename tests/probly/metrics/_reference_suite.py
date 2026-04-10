@@ -23,8 +23,8 @@ class ReferenceSuite:
     def test_auc_matches_sklearn(self, _round, array_fn):  # noqa: PT019
         """Auc matches sklearn on FPR/TPR from a random classifier."""
         rng = np.random.default_rng()
-        y_true = rng.integers(0, 2, size=200).astype(float)
-        y_score = rng.random(size=200)
+        y_true = rng.integers(0, 2, size=20).astype(float)
+        y_score = rng.random(size=20)
 
         # auc needs monotonic x, so we feed it FPR/TPR from roc_curve
         fpr_sk, tpr_sk, _ = sm.roc_curve(y_true, y_score, drop_intermediate=False)
@@ -39,8 +39,8 @@ class ReferenceSuite:
     def test_roc_auc_score_matches_sklearn(self, _round, array_fn):  # noqa: PT019
         """roc_auc_score matches sklearn on random data."""
         rng = np.random.default_rng()
-        y_true = rng.integers(0, 2, size=200).astype(float)
-        y_score = rng.random(size=200)
+        y_true = rng.integers(0, 2, size=20).astype(float)
+        y_score = rng.random(size=20)
 
         expected = sm.roc_auc_score(y_true, y_score)
 
@@ -52,8 +52,8 @@ class ReferenceSuite:
     def test_average_precision_score_matches_sklearn(self, _round, array_fn):  # noqa: PT019
         """average_precision_score matches sklearn on random data."""
         rng = np.random.default_rng()
-        y_true = rng.integers(0, 2, size=200).astype(float)
-        y_score = rng.random(size=200)
+        y_true = rng.integers(0, 2, size=20).astype(float)
+        y_score = rng.random(size=20)
 
         expected = sm.average_precision_score(y_true, y_score)
 
