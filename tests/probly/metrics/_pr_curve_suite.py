@@ -92,3 +92,27 @@ class PRCurveSuite:
         _, recall, _ = precision_recall_curve(y_true, y_score)
         recall = np.asarray(recall)
         np.testing.assert_allclose(recall, 0.0)
+
+    def test_higher_rank_equivalence(self, array_fn):
+        """Higher-rank inputs are treated as additional leading batch dims.
+
+        The metric's contract is that scores live on the last axis and every other
+        axis is a batch dim. Running precision_recall_curve on a (3, 2, n) input
+        must produce the same per-row result as running it on the equivalent flat
+        (6, n) input. This locks in the any-leading-dims contract and guards
+        against a regression back to an ``ndim == 2`` special case that hardcodes
+        the batch dim.
+        """
+        rng = np.random.default_rng(0)
+        y_true_flat = rng.integers(0, 2, size=(6, 8)).astype(float)
+        y_score_flat = rng.random(size=(6, 8))
+        y_true_nested = y_true_flat.reshape(3, 2, 8)
+        y_score_nested = y_score_flat.reshape(3, 2, 8)
+
+        flat = precision_recall_curve(array_fn(y_true_flat, dtype=float), array_fn(y_score_flat, dtype=float))
+        nested = precision_recall_curve(array_fn(y_true_nested, dtype=float), array_fn(y_score_nested, dtype=float))
+
+        for out_flat, out_nested in zip(flat, nested, strict=True):
+            flat_arr = np.asarray(out_flat)
+            nested_arr = np.asarray(out_nested)
+            np.testing.assert_allclose(nested_arr.reshape(flat_arr.shape), flat_arr)
