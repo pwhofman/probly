@@ -235,7 +235,6 @@ def _compute_log_likelihood(
 ) -> float:
     """Compute average log-likelihood of ``model`` on ``loader``."""
     criterion = nn.CrossEntropyLoss(reduction="sum")
-    model.eval()
     total_loss = 0.0
     total_samples = 0
     for inputs_, targets_ in loader:
@@ -261,7 +260,7 @@ def _training_loop_relative_likelihood(
     batch_check: bool = False,
     log_prefix: str = "",
 ) -> None:
-    """Training loop that stops when the relative likelihood drops to ``alpha``."""
+    """Training loop that stops when the relative likelihood reaches ``alpha``."""
     model.forward = torch.compile(model.forward)
 
     optimizer = get_optimizer(cfg.optimizer.name, model.parameters())
@@ -296,7 +295,9 @@ def _training_loop_relative_likelihood(
             )
 
             if batch_check:
+                model.eval()
                 current_ll = _compute_log_likelihood(model, train_loader, device, amp_enabled)
+                model.train()
                 relative_likelihood = torch.exp(torch.tensor(current_ll - max_ll)).item()
                 if relative_likelihood >= alpha:
                     stopped = True
@@ -305,6 +306,7 @@ def _training_loop_relative_likelihood(
         running_loss /= len(train_loader)
 
         if not stopped:
+            model.eval()
             current_ll = _compute_log_likelihood(model, train_loader, device, amp_enabled)
             relative_likelihood = torch.exp(torch.tensor(current_ll - max_ll)).item()
 
@@ -367,12 +369,13 @@ def _(
 
     # Compute reference log-likelihood from the fully trained first member
     amp_enabled = cfg.get("amp", False)
+    members[0].eval()
     max_ll = _compute_log_likelihood(members[0], train_loader, device, amp_enabled)
     run.summary["max_ll"] = max_ll
 
     # Thresholds from alpha to 1.0 (exclusive), one per remaining member
     thresholds = torch.linspace(alpha, 1.0, num_remaining + 1)[:-1].tolist()
-    print(thresholds)
+    print(f"Thresholds: {thresholds}")
 
     # Train remaining members with per-member relative likelihood thresholds
     for i, (member, threshold) in enumerate(zip(members[1:], thresholds, strict=True), start=1):
