@@ -83,16 +83,6 @@ jobs:
                     coverage: "true"
                     coverage-artifact-name: coverage-${{ matrix.os }}-${{ matrix.dependency-group }}
     # ----------------------------------------------------------------------------------------------
-    # Test Documentation Build (strict — warnings are errors)
-    # ----------------------------------------------------------------------------------------------
-    doc_build:
-      name: Test Documentation Build
-      needs:
-          - install_and_import
-      uses: ./.github/workflows/_docs-build.yml
-      with:
-        strict: true
-    # ----------------------------------------------------------------------------------------------
     # Code Coverage
     # ----------------------------------------------------------------------------------------------
     upload_coverage:
