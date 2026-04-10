@@ -24,9 +24,18 @@ from probly.representer._representer import Representer, representer
 
 
 @lazydispatch(dispatch_on=first_element)
-def compute_representative_set[T: CategoricalDistribution](sample: Sample[T], alpha: float, distance: str) -> Sample[T]:
+def compute_credal_ensembling_set[T: CategoricalDistribution](
+    sample: Sample[T], alpha: float, distance: str
+) -> Sample[T]:
     """Compute the credal set from the ensemble predictions."""
     msg = f"compute_representative_set method not implemented for type {type(sample)}."
+    raise NotImplementedError(msg)
+
+
+@lazydispatch(dispatch_on=first_element)
+def compute_credal_net_set[T: CategoricalDistribution](sample: Sample[T]) -> Sample[T]:
+    """Compute the credal set from the ensemble predictions."""
+    msg = f"compute_credal_net_set method not implemented for type {type(sample)}."
     raise NotImplementedError(msg)
 
 
@@ -46,7 +55,7 @@ class CredalEnsemblingRepresenter[**In, Out: CategoricalDistribution, C: ConvexC
 
     @override
     def represent(self, *args: In.args, **kwargs: In.kwargs) -> C:
-        sample = compute_representative_set(
+        sample = compute_credal_ensembling_set(
             self._predict(*args, **kwargs),
             alpha=self.alpha,
             distance=self.distance,
@@ -111,17 +120,20 @@ class CredalBNNRepresenter[**In, Out: CategoricalDistribution, C: ConvexCredalSe
 
 
 @representer.register(CredalNetPredictor)
-class CredalNetRepresenter[**In, Out: CategoricalDistribution, C: ConvexCredalSet](Representer[Any, In, Out, C]):
+class CredalNetRepresenter[**In, Out: CategoricalDistribution, C: ProbabilityIntervalsCredalSet](
+    Representer[Any, In, Out, C]
+):
     def __init__(self, predictor: CredalBNNPredictor) -> None:
         super().__init__(predictor)
 
     def _predict(self, *args: In.args, **kwargs: In.kwargs) -> Sample[Out]:
         """Predict the outputs from the ensemble predictor."""
-        ensemble_prediction = predict(self.predictor, *args, **kwargs)
-        return create_sample(ensemble_prediction)
+        pred = predict(self.predictor, *args, **kwargs)
+        pred = compute_credal_net_set(pred)
+        return create_sample(pred)
 
     @override
     def represent(self, *args: In.args, **kwargs: In.kwargs) -> C:
         sample = self._predict(*args, **kwargs)
-        cset = create_convex_credal_set(sample)
+        cset = create_probability_intervals(sample)
         return cset  # ty:ignore[invalid-return-type]

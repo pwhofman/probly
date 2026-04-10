@@ -31,16 +31,11 @@ def _ensure_torch_categorical_distribution(value: object) -> TorchTensorCategori
 
 def _sample_probabilities(
     sample: TorchTensorSample[TorchTensorCategoricalDistribution],
-    distribution_axis: int = -1,
 ) -> torch.Tensor:
     sample_values = sample.samples
     if not isinstance(sample_values, TorchTensorCategoricalDistribution):
         msg = "Torch categorical credal sets require samples of TorchTensorCategoricalDistribution."
         raise TypeError(msg)
-
-    if distribution_axis != -1:
-        msg = "distribution_axis is only supported as -1 for distribution-backed samples."
-        raise ValueError(msg)
 
     return sample_values.probabilities
 
@@ -62,7 +57,6 @@ class TorchCategoricalCredalSet(CategoricalCredalSet, ABC):
     def from_torch_sample(
         cls,
         sample: TorchTensorSample[TorchTensorCategoricalDistribution],
-        distribution_axis: int = -1,
     ) -> Self:
         """Create a credal set from categorical distribution samples."""
 
@@ -83,12 +77,8 @@ class TorchConvexCredalSet(
 
     @override
     @classmethod
-    def from_torch_sample(
-        cls,
-        sample: TorchTensorSample[TorchTensorCategoricalDistribution],
-        distribution_axis: int = -1,
-    ) -> Self:
-        probabilities = _sample_probabilities(sample, distribution_axis)
+    def from_torch_sample(cls, sample: TorchTensorSample[TorchTensorCategoricalDistribution]) -> Self:
+        probabilities = _sample_probabilities(sample)
         vertices = torch.moveaxis(probabilities, 0, -2)
         return cls(tensor=TorchTensorCategoricalDistribution(probabilities=vertices))
 
@@ -110,19 +100,13 @@ class TorchProbabilityIntervalsCredalSet(
     upper_bounds: torch.Tensor
     protected_axes: ClassVar[dict[str, int]] = {"lower_bounds": 1, "upper_bounds": 1}
 
-    def __post_init__(self) -> None:
-        """Validate that lower and upper bounds have the same shape and are valid distributions."""
-        object.__setattr__(self, "lower_bounds", _ensure_torch_categorical_distribution(self.lower_bounds))
-        object.__setattr__(self, "upper_bounds", _ensure_torch_categorical_distribution(self.upper_bounds))
-
     @override
     @classmethod
     def from_torch_sample(
         cls,
         sample: TorchTensorSample[TorchTensorCategoricalDistribution],
-        distribution_axis: int = -1,
     ) -> Self:
-        probabilities = _sample_probabilities(sample, distribution_axis)
+        probabilities = _sample_probabilities(sample)
         lower_bounds = torch.min(probabilities, dim=0).values
         upper_bounds = torch.max(probabilities, dim=0).values
         return cls(

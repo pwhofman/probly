@@ -6,10 +6,10 @@ import torch
 
 from probly.representation.distribution.torch_categorical import TorchTensorCategoricalDistribution
 from probly.representation.sample.torch import TorchTensorSample
-from probly.representer.credal_ensembler._common import compute_representative_set
+from probly.representer.credal_ensembler._common import compute_credal_ensembling_set
 
 
-@compute_representative_set.register(TorchTensorSample)
+@compute_credal_ensembling_set.register(TorchTensorSample)
 def torch_compute_representative_set(
     sample: TorchTensorSample[TorchTensorCategoricalDistribution],
     alpha: float,
