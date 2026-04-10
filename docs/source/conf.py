@@ -122,11 +122,6 @@ intersphinx_mapping = {
     "torch": ("https://pytorch.org/docs/stable/", None),
 }
 
-nitpick = True
-nitpick_ignore_regex = [
-    (r"py:.*", r"^(T|S|C|D|F|V|Q|In|Out|type)$"),
-]
-
 # Workaround for https://github.com/sphinx-doc/sphinx/issues/10568  --------------------------------
 #
 # Several bare names in signatures cause "more than one target found for
