@@ -72,7 +72,7 @@ class SingletonCredalSet[T: CategoricalDistribution](DiscreteCredalSet[T]):
 class ProbabilityIntervalsFactory[S: Sample, C: ProbabilityIntervalsCredalSet](Protocol):
     """Factory protocol for probability-interval credal sets."""
 
-    def __call__(self, sample: S, distribution_axis: int = -1) -> C:
+    def __call__(self, sample: S) -> C:
         """Create a probability-interval credal set from a sample."""
 
 
@@ -92,9 +92,7 @@ def create_probability_intervals[T: CategoricalDistribution](sample: Sample[T]) 
 
 
 @lazydispatch
-def create_convex_credal_set[T: CategoricalDistribution](
-    sample: Sample[T], distribution_axis: int = -1
-) -> ConvexCredalSet[T]:
+def create_convex_credal_set[T: CategoricalDistribution](sample: Sample[T]) -> ConvexCredalSet[T]:
     """Create a convex credal set from a sample."""
     msg = f"No convex credal set factory registered for sample type {type(sample)}"
     raise NotImplementedError(msg)
