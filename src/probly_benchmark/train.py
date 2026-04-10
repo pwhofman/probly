@@ -193,7 +193,7 @@ def train_model(
         run,
         train_kwargs,
         train_fn=train_epoch,  # ty: ignore[invalid-argument-type]
-        val_fn=validate,  # ty: ignore[invalid-argument-type]
+        val_fn=validate,
     )
 
 
