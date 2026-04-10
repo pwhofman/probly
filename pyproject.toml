@@ -9,12 +9,12 @@ description = "Uncertainty Representation and Quantification for Machine Learnin
 license = "MIT"
 requires-python = ">=3.13.0,<3.15"
 dependencies = [
-    "scipy",
-    "matplotlib>=3.8.0",
-    "mpltern",
-    "numpy>=2.0.0",
-    "tqdm",
-    "joblib",
+    "scipy>=1.14.1",
+    "matplotlib>=3.9.2",
+    "mpltern>=1.0.4",
+    "numpy>=2.1.0",
+    "tqdm>=4.1.0",
+    "joblib>=1.2.0",
 ]
 authors = [
     { name = "Paul Hofman", email = "paul.hofman@ifi.lmu.de" },
@@ -55,11 +55,11 @@ changelog = "https://github.com/pwhofman/probly/blob/main/CHANGELOG.md"
 
 
 [dependency-groups]
-torch = ["torch>=2.0.0", "torchvision"]
+torch = ["torch>=2.5.0", "torchvision>=0.20.0"]
 jax = ["jax>=0.8.0", "flax>=0.12.6"]
 jax-cuda12 = ["jax[cuda12]"]
 jax-cuda13 = ["jax[cuda13]"]
-sklearn = ["scikit-learn>=1.3.0"]
+sklearn = ["scikit-learn>=1.5.2"]
 all_ml = [{ include-group = "torch" }, { include-group = "jax" }, { include-group = "sklearn" }]
 test = [
     "pytest>=8.3.5",       # for testing
@@ -86,7 +86,7 @@ docs = [
     "matplotlib",               # Used by Sphinx-Gallery examples for plots
     "sphinx-copybutton",        # Optional: Adds copy buttons to code blocks
     "sphinx-autodoc-typehints", # Optional: Show type hints in your API docs
-    "sphinxcontrib-bibtex",     # Optional: For bibliography support
+    "sphinxcontrib-bibtex>=2.0.0",  # Optional: For bibliography support
     "ipython",                  # for code execution in notebooks
     "pandas>=2.3.3",            # for code execution in some examples
 ]
