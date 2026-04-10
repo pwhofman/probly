@@ -1,4 +1,4 @@
-"""Generic, backend-agnostic helpers for inspecting model structure."""
+"""Generic utils for traverse_nn."""
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ registered in the corresponding backend util module."""
 
 @output_dim_traverser.delayed_register(TORCH_MODULE)
 def _(_: type) -> None:
-    from . import torch  # noqa: F401, PLC0415
+    from . import torch_utils  # noqa: F401, PLC0415
 
 
 def get_output_dim(model: object) -> int:
