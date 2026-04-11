@@ -12,8 +12,8 @@ from probly.representation.credal_set.torch import (
     TorchConvexCredalSet,
     TorchProbabilityIntervalsCredalSet,
 )
-from probly.representation.distribution.torch_categorical import TorchTensorCategoricalDistribution
-from probly.representation.sample.torch import TorchTensorSample
+from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
+from probly.representation.sample.torch import TorchSample
 
 
 def test_torch_convex_credal_set_from_distribution_sample() -> None:
@@ -25,14 +25,14 @@ def test_torch_convex_credal_set_from_distribution_sample() -> None:
         ],
         dtype=torch.float64,
     )
-    sample = TorchTensorSample(
-        tensor=TorchTensorCategoricalDistribution(probabilities=probs),
+    sample = TorchSample(
+        tensor=TorchCategoricalDistribution(probs),
         sample_dim=0,
     )
 
     cset = TorchConvexCredalSet.from_torch_sample(sample)
 
-    assert isinstance(cset.tensor, TorchTensorCategoricalDistribution)
+    assert isinstance(cset.tensor, TorchCategoricalDistribution)
     assert tuple(cset.tensor.probabilities.shape) == (2, 3, 2)
 
 
@@ -44,8 +44,8 @@ def test_torch_probability_intervals_numpy_and_shape_ops() -> None:
         ],
         dtype=torch.float64,
     )
-    sample = TorchTensorSample(
-        tensor=TorchTensorCategoricalDistribution(probabilities=probs),
+    sample = TorchSample(
+        tensor=TorchCategoricalDistribution(probs),
         sample_dim=0,
     )
 

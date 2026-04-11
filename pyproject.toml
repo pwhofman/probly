@@ -229,7 +229,13 @@ exclude_also = [
 exclude_lines = ["if TYPE_CHECKING"]
 
 [tool.ty.src]
-exclude = ["notebooks", "docs", "tests", "supporting_files", "examples", "stubs"]
+exclude = ["notebooks", "docs", "supporting_files", "examples", "stubs"]
 
 [tool.ty.environment]
 extra-paths = ["./stubs"]
+
+[[tool.ty.overrides]]
+include = ["tests/probly/**"]
+
+[tool.ty.overrides.rules]
+unresolved-import = "ignore"

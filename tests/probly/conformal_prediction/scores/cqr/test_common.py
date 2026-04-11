@@ -21,7 +21,7 @@ class MockQuantileModel:
 
     def predict(self, x: object) -> npt.NDArray[np.float64]:
         """Return fixed intervals repeated for input size."""
-        n = len(x) if hasattr(x, "__len__") else 1
+        n = len(x) if hasattr(x, "__len__") else 1  # ty:ignore[invalid-argument-type]
         # If we have a single interval pair, repeat it for all samples
         if self.intervals.shape[0] == 1 and n > 1:
             return np.repeat(self.intervals, n, axis=0)

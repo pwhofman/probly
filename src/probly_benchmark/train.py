@@ -21,6 +21,7 @@ from torch import nn, optim
 from torch.amp import GradScaler
 from tqdm import tqdm
 import wandb
+import wandb.util
 
 from lazy_dispatch import lazydispatch
 from probly.method.credal_ensembling import CredalEnsemblingPredictor

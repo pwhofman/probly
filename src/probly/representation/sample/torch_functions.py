@@ -13,10 +13,10 @@ from probly.utils import switchdispatch
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from probly.representation.torch_like import TorchTensorLike
+    from probly.representation.torch_like import TorchLike
 
 
-class TorchSampleCreator[D: TorchTensorLike](Protocol):
+class TorchSampleCreator[D: TorchLike](Protocol):
     """Protocol for creating sample tensors."""
 
     def __call__(self, tensor: D, sample_dim: int) -> Any:  # noqa: ANN401
@@ -24,7 +24,7 @@ class TorchSampleCreator[D: TorchTensorLike](Protocol):
 
 
 @dataclass(frozen=True, slots=True)
-class TorchSampleInternals[D: TorchTensorLike]:
+class TorchSampleInternals[D: TorchLike]:
     """Internal information about a sample tensor."""
 
     create: TorchSampleCreator[D]
@@ -59,14 +59,14 @@ class _BoundTorchFunction(Protocol):
         ...
 
 
-class _BoundTorchFunctionWithInternals[D: TorchTensorLike](Protocol):
+class _BoundTorchFunctionWithInternals[D: TorchLike](Protocol):
     def __call__(
         self,
         func: Callable,
         args: tuple[Any, ...],
         kwargs: dict[str, Any],
         create_sample: TorchSampleCreator[D],
-        tensor: TorchTensorLike[D],
+        tensor: TorchLike[D],
         sample_dim: int,
     ) -> Any:  # noqa: ANN401
         ...
@@ -211,7 +211,7 @@ def torch_transpose_function(
     args: tuple[Any, ...],
     kwargs: dict[str, Any],
     create_sample: TorchSampleCreator,
-    tensor: TorchTensorLike,
+    tensor: TorchLike,
     sample_dim: int,
 ) -> Any:  # noqa: ANN401
     """Implementation of torch.transpose for sample tensors."""
@@ -248,7 +248,7 @@ def torch_permute_function(
     args: tuple[Any, ...],
     kwargs: dict[str, Any],
     create_sample: TorchSampleCreator,
-    tensor: TorchTensorLike,
+    tensor: TorchLike,
     sample_dim: int,
 ) -> Any:  # noqa: ANN401
     """Implementation of torch.permute for sample tensors."""
@@ -275,7 +275,7 @@ def torch_adjoint_function(
     args: tuple[Any, ...],
     kwargs: dict[str, Any],
     create_sample: TorchSampleCreator,
-    tensor: TorchTensorLike,
+    tensor: TorchLike,
     sample_dim: int,
 ) -> Any:  # noqa: ANN401
     """Implementation of torch.adjoint for sample tensors."""

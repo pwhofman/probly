@@ -21,7 +21,7 @@ def test_convex_credal_set_from_distribution_sample() -> None:
         ],
         dtype=float,
     )
-    sample = ArraySample(array=ArrayCategoricalDistribution(probabilities=probs), sample_axis=0)
+    sample = ArraySample(array=ArrayCategoricalDistribution(probs), sample_axis=0)
 
     cset = ArrayConvexCredalSet.from_array_sample(sample)
 
@@ -37,7 +37,7 @@ def test_probability_intervals_array_and_shape_ops() -> None:
         ],
         dtype=float,
     )
-    sample = ArraySample(array=ArrayCategoricalDistribution(probabilities=probs), sample_axis=0)
+    sample = ArraySample(array=ArrayCategoricalDistribution(probs), sample_axis=0)
 
     cset = ArrayProbabilityIntervalsCredalSet.from_array_sample(sample)
     arr = np.asarray(cset)

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 import pytest
 
 flax = pytest.importorskip("flax")
@@ -28,21 +30,24 @@ class TestBatchEnsembleLayerAttributes:
         s_std = 0.02
         r_mean = 0.99
         r_std = 0.02
-        batchensemble_linear = batchensemble(
-            base=linear_layer,
-            num_members=num_members,
-            use_base_weights=use_base_weights,
-            s_mean=s_mean,
-            s_std=s_std,
-            r_mean=r_mean,
-            r_std=r_std,
-            rngs=rngs,
+        batchensemble_linear = cast(
+            "BatchEnsembleLinear",
+            batchensemble(
+                base=linear_layer,
+                num_members=num_members,
+                use_base_weights=use_base_weights,
+                s_mean=s_mean,
+                s_std=s_std,
+                r_mean=r_mean,
+                r_std=r_std,
+                rngs=rngs,
+            ),
         )
 
         assert not jnp.equal(
             batchensemble_linear.kernel.value, linear_layer.kernel.value
         ).all()  # use_base_weights = False
-        assert jnp.equal(batchensemble_linear.bias, linear_layer.bias).all()
+        assert jnp.equal(batchensemble_linear.bias, linear_layer.bias).all()  # ty:ignore[invalid-argument-type]
         assert batchensemble_linear.in_features == linear_layer.in_features
         assert batchensemble_linear.out_features == linear_layer.out_features
         assert batchensemble_linear.use_bias == linear_layer.use_bias
@@ -91,20 +96,23 @@ class TestBatchEnsembleLayerAttributes:
         s_std = 0.02
         r_mean = 0.99
         r_std = 0.02
-        batchensemble_conv = batchensemble(
-            base=conv_layer,
-            num_members=num_members,
-            use_base_weights=use_base_weights,
-            s_mean=s_mean,
-            s_std=s_std,
-            r_mean=r_mean,
-            r_std=r_std,
-            rngs=rngs,
+        batchensemble_conv = cast(
+            "BatchEnsembleConv",
+            batchensemble(
+                base=conv_layer,
+                num_members=num_members,
+                use_base_weights=use_base_weights,
+                s_mean=s_mean,
+                s_std=s_std,
+                r_mean=r_mean,
+                r_std=r_std,
+                rngs=rngs,
+            ),
         )
 
         assert batchensemble_conv.kernel_shape == conv_layer.kernel_shape
         assert not jnp.equal(batchensemble_conv.kernel.value, conv_layer.kernel.value).all()  # use_base_weights = False
-        assert jnp.equal(batchensemble_conv.bias, conv_layer.bias).all()
+        assert jnp.equal(batchensemble_conv.bias, conv_layer.bias).all()  # ty:ignore[invalid-argument-type]
         assert batchensemble_conv.in_features == conv_layer.in_features
         assert batchensemble_conv.out_features == conv_layer.out_features
         assert batchensemble_conv.kernel_size == conv_layer.kernel_size

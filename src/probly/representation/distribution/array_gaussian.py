@@ -14,7 +14,7 @@ from probly.representation.sample.array import ArraySample
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from numpy.typing import ArrayLike, DTypeLike
+    from numpy.typing import DTypeLike
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
@@ -47,24 +47,6 @@ class ArrayGaussianDistribution(ArrayAxisProtected[np.ndarray], GaussianDistribu
 
         object.__setattr__(self, "mean", mean)
         object.__setattr__(self, "var", var)
-
-    @classmethod
-    def from_parameters(
-        cls,
-        mean: ArrayLike,
-        var: ArrayLike,
-        dtype: DTypeLike | None = None,
-    ) -> ArrayGaussianDistribution:
-        """Create a Gaussian distribution from mean and variance arrays."""
-        mean_arr = np.asarray(mean, dtype=dtype if dtype is not None else float)
-        var_arr = np.asarray(var, dtype=mean_arr.dtype)
-        return cls(mean=mean_arr, var=var_arr)
-
-    @override
-    @property
-    def entropy(self) -> np.ndarray:
-        """Return the total differential entropy of the Gaussian distribution."""
-        return 0.5 * np.log(2 * np.e * np.pi * self.var)
 
     @override
     def sample(
@@ -148,11 +130,12 @@ class ArrayGaussianDistribution(ArrayAxisProtected[np.ndarray], GaussianDistribu
     def __iter__(self) -> Iterator[Any]:
         return self.mean.__iter__()
 
-    def __eq__(self, other: object) -> bool:
+    @override
+    def __eq__(self, other: Any) -> np.ndarray:  # ty: ignore[invalid-method-override]  # noqa: PYI032
         """Compare two Gaussians by their parameters."""
-        if not isinstance(other, type(self)):
+        if not isinstance(other, ArrayGaussianDistribution):
             return NotImplemented
-        return np.array_equal(self.mean, other.mean) and np.array_equal(self.var, other.var) and self.type == other.type
+        return np.equal(self.mean, other.mean) & np.equal(self.var, other.var)
 
     def __hash__(self) -> int:
         """Return an identity-based hash.

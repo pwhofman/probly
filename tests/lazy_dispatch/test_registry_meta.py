@@ -222,7 +222,7 @@ class TestProtocolRegistryMeta:
 
         @runtime_checkable
         class PlainProtocol(Protocol):
-            x = 1
+            x: int = 1
 
             def f(self) -> None:
                 return None
@@ -232,7 +232,7 @@ class TestProtocolRegistryMeta:
         with pytest.raises(TypeError) as registry_error:
             issubclass(Candidate, RegistryProtocol)
         with pytest.raises(TypeError) as protocol_error:
-            issubclass(Candidate, PlainProtocol)
+            issubclass(Candidate, PlainProtocol)  # ty:ignore[isinstance-against-protocol]
 
         assert str(registry_error.value) == str(protocol_error.value)
 
@@ -264,7 +264,7 @@ class TestProtocolRegistryMeta:
                 return None
 
         @runtime_checkable
-        class SubProtocol(BaseProtocol, Protocol):
+        class SubProtocol(BaseProtocol, Protocol):  # ty:ignore[invalid-protocol]
             pass
 
         class HasF:
@@ -331,10 +331,10 @@ class TestProtocolRegistryMeta:
         assert PredictorProtocol._structural_checking is False  # noqa: SLF001
         assert EnsemblePredictorProtocol._structural_checking is False  # noqa: SLF001
         assert RandomPredictorProtocol._structural_checking is False  # noqa: SLF001
-        assert not issubclass(HasPredict, EnsemblePredictorProtocol)
-        assert not isinstance(HasPredict(), EnsemblePredictorProtocol)
-        assert not issubclass(HasPredict, RandomPredictorProtocol)
-        assert not isinstance(HasPredict(), RandomPredictorProtocol)
+        assert not issubclass(HasPredict, EnsemblePredictorProtocol)  # ty:ignore[isinstance-against-protocol]
+        assert not isinstance(HasPredict(), EnsemblePredictorProtocol)  # ty:ignore[isinstance-against-protocol]
+        assert not issubclass(HasPredict, RandomPredictorProtocol)  # ty:ignore[isinstance-against-protocol]
+        assert not isinstance(HasPredict(), RandomPredictorProtocol)  # ty:ignore[isinstance-against-protocol]
 
     def test_structural_checking_can_be_overridden_in_subclasses(self) -> None:
         """Subclasses should be able to override inherited non-structural checking."""
@@ -373,8 +373,8 @@ class TestProtocolRegistryMeta:
         child = ConcreteChild()
 
         assert ConcreteChild._structural_checking is False  # noqa: SLF001
-        assert issubclass(ConcreteChild, BaseProtocol)
-        assert isinstance(child, BaseProtocol)
+        assert issubclass(ConcreteChild, BaseProtocol)  # ty:ignore[isinstance-against-protocol]
+        assert isinstance(child, BaseProtocol)  # ty:ignore[isinstance-against-protocol]
         assert not issubclass(HasF, ConcreteChild)
         assert not isinstance(HasF(), ConcreteChild)
 
@@ -408,8 +408,8 @@ class TestProtocolRegistryMeta:
                 return value
 
         assert DirectProtocol._structural_checking is False  # noqa: SLF001
-        assert not issubclass(StructuralButNotNominal, DirectProtocol)
-        assert not isinstance(StructuralButNotNominal(), DirectProtocol)
+        assert not issubclass(StructuralButNotNominal, DirectProtocol)  # ty:ignore[isinstance-against-protocol]
+        assert not isinstance(StructuralButNotNominal(), DirectProtocol)  # ty:ignore[isinstance-against-protocol]
 
     def test_structural_checking_false_with_non_method_member_uses_nominal_checks(self) -> None:
         """Non-method members should not force Protocol TypeErrors when structural checks are disabled."""
@@ -524,20 +524,20 @@ class TestProtocolRegistryMeta:
         concrete_instance = Concrete()
         another_concrete_instance = Concrete()
 
-        assert not issubclass(Virtual, DirectProtocol)
-        assert not isinstance(virtual_instance, DirectProtocol)
-        assert not isinstance(concrete_instance, DirectProtocol)
-        assert not isinstance(another_concrete_instance, DirectProtocol)
+        assert not issubclass(Virtual, DirectProtocol)  # ty:ignore[isinstance-against-protocol]
+        assert not isinstance(virtual_instance, DirectProtocol)  # ty:ignore[isinstance-against-protocol]
+        assert not isinstance(concrete_instance, DirectProtocol)  # ty:ignore[isinstance-against-protocol]
+        assert not isinstance(another_concrete_instance, DirectProtocol)  # ty:ignore[isinstance-against-protocol]
 
         registered = DirectProtocol.register(Virtual)
         assert registered is Virtual
-        assert issubclass(Virtual, DirectProtocol)
-        assert isinstance(virtual_instance, DirectProtocol)
+        assert issubclass(Virtual, DirectProtocol)  # ty:ignore[isinstance-against-protocol]
+        assert isinstance(virtual_instance, DirectProtocol)  # ty:ignore[isinstance-against-protocol]
 
         returned_instance = DirectProtocol.register_instance(concrete_instance)
         assert returned_instance is concrete_instance
-        assert isinstance(concrete_instance, DirectProtocol)
-        assert not isinstance(another_concrete_instance, DirectProtocol)
+        assert isinstance(concrete_instance, DirectProtocol)  # ty:ignore[isinstance-against-protocol]
+        assert not isinstance(another_concrete_instance, DirectProtocol)  # ty:ignore[isinstance-against-protocol]
 
     def test_regular_subclass_relationships_work_for_protocol_registry_meta(self) -> None:
         """Regular inheritance should still satisfy issubclass and isinstance."""
@@ -551,9 +551,9 @@ class TestProtocolRegistryMeta:
 
         child = Child()
 
-        assert issubclass(Child, DirectProtocol)
+        assert issubclass(Child, DirectProtocol)  # ty:ignore[isinstance-against-protocol]
         assert isinstance(child, Child)
-        assert isinstance(child, DirectProtocol)
+        assert isinstance(child, DirectProtocol)  # ty:ignore[isinstance-against-protocol]
 
     def test_protocol_subclasshook_must_be_declared_per_subclass(self) -> None:
         """Protocol subclass hooks should not be inherited implicitly."""
@@ -574,9 +574,9 @@ class TestProtocolRegistryMeta:
         class Candidate:
             pass
 
-        assert issubclass(Candidate, BaseProtocol)
-        assert not issubclass(Candidate, DerivedProtocol)
-        assert issubclass(Candidate, DerivedProtocolWithHook)
+        assert issubclass(Candidate, BaseProtocol)  # ty:ignore[isinstance-against-protocol]
+        assert not issubclass(Candidate, DerivedProtocol)  # ty:ignore[isinstance-against-protocol]
+        assert issubclass(Candidate, DerivedProtocolWithHook)  # ty:ignore[isinstance-against-protocol]
 
     def test_protocol_instancehook_must_be_declared_per_subclass(self) -> None:
         """Protocol instance hooks should mirror Protocol's subclass-hook inheritance behavior."""
@@ -597,6 +597,6 @@ class TestProtocolRegistryMeta:
         class Candidate:
             pass
 
-        assert isinstance(Candidate(), BaseProtocol)
-        assert not isinstance(Candidate(), DerivedProtocol)
-        assert isinstance(Candidate(), DerivedProtocolWithHook)
+        assert isinstance(Candidate(), BaseProtocol)  # ty:ignore[isinstance-against-protocol]
+        assert not isinstance(Candidate(), DerivedProtocol)  # ty:ignore[isinstance-against-protocol]
+        assert isinstance(Candidate(), DerivedProtocolWithHook)  # ty:ignore[isinstance-against-protocol]
