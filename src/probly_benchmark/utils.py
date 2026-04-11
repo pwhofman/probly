@@ -41,6 +41,7 @@ def get_device(device_id: int | None = None) -> torch.device:
             us = [torch.cuda.utilization(i) for i in range(torch.cuda.device_count())]
             return torch.device(f"cuda:{us.index(min(us))}")
         except ModuleNotFoundError:
+            print("Warning: 'torch.cuda.utilization' is not available. Defaulting to 'cuda:0'.")
             return torch.device("cuda:0")
     elif torch.backends.mps.is_available():
         return torch.device("mps")

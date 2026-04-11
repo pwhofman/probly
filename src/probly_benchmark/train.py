@@ -402,22 +402,25 @@ def main(cfg: DictConfig) -> None:
     print("=== Training configuration ===")
     print(OmegaConf.to_yaml(cfg))
 
+    run_id = wandb.util.generate_id()
+    seed = cfg.get("seed", None)
+    if seed is None:
+        seed = secrets.randbelow(2**32)
+    utils.set_seed(seed)
+
     run = wandb.init(
+        id=run_id,
+        name=f"{cfg.method.name}_{cfg.base_model}_{cfg.dataset}_{run_id}",
         entity=cfg.wandb.get("entity", None),
         project=cfg.wandb.project,
         config=OmegaConf.to_container(cfg, resolve=True, throw_on_missing=True),  # ty: ignore
         mode="online" if cfg.wandb.enabled else "disabled",
         save_code=True,
     )
+    run.config.update({"seed": seed})
 
     device = utils.get_device(cfg.get("device", None))
     print(f"Running on device: {device}")
-    seed = cfg.get("seed", None)
-    if seed is None:
-        seed = secrets.randbelow(2**32)
-    utils.set_seed(seed)
-    run.config.update({"seed": seed})
-    run.name = f"{cfg.method.name}_{cfg.base_model}_{cfg.dataset}_{run.id}"
 
     train_loader, val_loader, test_loader = data.get_data_train(
         cfg.dataset,
