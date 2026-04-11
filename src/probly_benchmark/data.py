@@ -39,7 +39,8 @@ def _get_imagenet_sharded(
     transform = T.Compose(
         [
             T.Resize((224, 224)),
-            T.ToTensor(),
+            T.ToImage(),
+            T.ToDtype(torch.float32, scale=True),
             T.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
         ]
     )
@@ -54,15 +55,15 @@ def _get_imagenet_sharded(
         msg = f"No val shards found in {IMAGENET_SHARD_PATH}"
         raise FileNotFoundError(msg)
 
-    def _make_loader(shards: list[str], shuffle_buf: int, num_samples: int) -> DataLoader:
-        ds = wds.WebDataset(shards)  # ty: ignore[unresolved-attribute]
+    def _make_loader(shards: list[str], shuffle_buf: int, num_samples: int, shardshuffle: bool = False) -> DataLoader:
+        ds = wds.WebDataset(shards, shardshuffle=shardshuffle)  # ty: ignore[unresolved-attribute]
         if shuffle_buf > 0:
             ds = ds.shuffle(shuffle_buf)
         ds = ds.decode("pil").to_tuple("jpg", "txt").map_tuple(transform, int)
         loader = wds.WebLoader(ds, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory)  # ty: ignore[unresolved-attribute]
         return loader.with_length(num_samples // batch_size)  # ty: ignore[return-type]
 
-    train_loader = _make_loader(train_shards, shuffle_buf=5000, num_samples=IMAGENET_TRAIN_SIZE)
+    train_loader = _make_loader(train_shards, shuffle_buf=5000, num_samples=IMAGENET_TRAIN_SIZE, shardshuffle=True)
     val_loader = _make_loader(val_shards, shuffle_buf=0, num_samples=IMAGENET_VAL_SIZE) if use_validation else None
     test_loader = _make_loader(val_shards, shuffle_buf=0, num_samples=IMAGENET_VAL_SIZE)
 
