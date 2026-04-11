@@ -1,1 +1,1 @@
-"""Script to tune the hyperparameters of the models."""
+"""Script to tune the hyperparameters of the methods."""
