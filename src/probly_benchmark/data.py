@@ -61,7 +61,7 @@ def _get_imagenet_sharded(
             ds = ds.shuffle(shuffle_buf)
         ds = ds.decode("pil").to_tuple("jpg", "txt").map_tuple(transform, int)
         loader = wds.WebLoader(ds, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory)  # ty: ignore[unresolved-attribute]
-        return loader.with_length(num_samples // batch_size)  # ty: ignore[return-type]
+        return loader.with_length(num_samples // batch_size)
 
     train_loader = _make_loader(train_shards, shuffle_buf=5000, num_samples=IMAGENET_TRAIN_SIZE, shardshuffle=True)
     val_loader = _make_loader(val_shards, shuffle_buf=0, num_samples=IMAGENET_VAL_SIZE) if use_validation else None

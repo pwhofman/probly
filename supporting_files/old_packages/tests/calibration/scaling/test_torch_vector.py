@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 import torch
-from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
 
 from probly.calibration.scaling.torch_vector import TorchVector
 
 
-def test_forward(torch_setup_multiclass: nn.Module) -> None:
+def test_forward(torch_setup_multiclass) -> None:
     base, inputs, _ = torch_setup_multiclass
 
     vector_model = TorchVector(base, num_classes=3)
@@ -26,7 +25,7 @@ def test_forward(torch_setup_multiclass: nn.Module) -> None:
     assert torch.allclose(logits_scaled, logits_expected, atol=1e-5)
 
 
-def test_fit(torch_setup_multiclass: nn.Module) -> None:
+def test_fit(torch_setup_multiclass) -> None:
     base, inputs, labels = torch_setup_multiclass
 
     vector_model = TorchVector(base, num_classes=3)
@@ -41,7 +40,7 @@ def test_fit(torch_setup_multiclass: nn.Module) -> None:
     assert vector_model.b.values != b_unoptimized
 
 
-def test_predict(torch_setup_multiclass: nn.Module) -> None:
+def test_predict(torch_setup_multiclass) -> None:
     base, inputs, _ = torch_setup_multiclass
     vector_model = TorchVector(base, num_classes=3)
 

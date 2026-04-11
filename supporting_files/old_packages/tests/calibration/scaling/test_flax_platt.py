@@ -8,7 +8,7 @@ import jax.numpy as jnp
 from probly.calibration.scaling.flax_platt import FlaxPlatt
 
 
-def test_forward(flax_setup_binary: nnx.Module) -> None:
+def test_forward(flax_setup_binary) -> None:
     base, inputs, _ = flax_setup_binary
     platt_model = FlaxPlatt(base)
 
@@ -24,7 +24,7 @@ def test_forward(flax_setup_binary: nnx.Module) -> None:
     assert jnp.allclose(logits_scaled, logits_expected, atol=1e-5)
 
 
-def test_fit(flax_setup_binary: nnx.Module) -> None:
+def test_fit(flax_setup_binary) -> None:
     base, inputs, labels = flax_setup_binary
     platt_model = FlaxPlatt(base)
 
@@ -38,7 +38,7 @@ def test_fit(flax_setup_binary: nnx.Module) -> None:
     assert not jnp.allclose(platt_model.b, b_unoptimized)
 
 
-def test_predict(flax_setup_binary: nnx.Module) -> None:
+def test_predict(flax_setup_binary) -> None:
     base, inputs, _ = flax_setup_binary
     platt_model = FlaxPlatt(base)
 

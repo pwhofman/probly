@@ -11,10 +11,9 @@ from flax import nnx
 import jax
 import torch
 from torch import nn
-from torch.utils.data import DataLoader as TorchDataLoader
 
 FlaxSetupReturnType = tuple[nnx.Module, jax.Array, jax.Array]
-TorchSetupReturnType = tuple[nn.Module, TorchDataLoader, TorchDataLoader]
+TorchSetupReturnType = tuple[nn.Module, torch.Tensor, torch.Tensor]
 
 
 @pytest.fixture

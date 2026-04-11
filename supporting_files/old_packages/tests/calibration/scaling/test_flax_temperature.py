@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-from flax import nnx
 import jax.numpy as jnp
 
 from probly.calibration.scaling.flax_temperature import FlaxTemperature
 
 
-def test_forward(flax_setup_multiclass: nnx.Module) -> None:
+def test_forward(flax_setup_multiclass) -> None:
     base, inputs, _ = flax_setup_multiclass
     temperature_model = FlaxTemperature(base, num_classes=3)
 
@@ -19,7 +18,7 @@ def test_forward(flax_setup_multiclass: nnx.Module) -> None:
     assert jnp.allclose(logits_scaled, logits_expected, atol=1e-5)
 
 
-def test_fit(flax_setup_multiclass: nnx.Module) -> None:
+def test_fit(flax_setup_multiclass) -> None:
     base, inputs, labels = flax_setup_multiclass
     temperature_model = FlaxTemperature(base, num_classes=3)
 
@@ -31,7 +30,7 @@ def test_fit(flax_setup_multiclass: nnx.Module) -> None:
     assert not jnp.allclose(temperature_model.temperature, temperature_unoptimized)
 
 
-def test_predict(flax_setup_multiclass: nnx.Module) -> None:
+def test_predict(flax_setup_multiclass) -> None:
     base, inputs, _ = flax_setup_multiclass
     temperature_model = FlaxTemperature(base, num_classes=3)
 
