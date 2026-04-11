@@ -417,6 +417,7 @@ def main(cfg: DictConfig) -> None:
         seed = secrets.randbelow(2**32)
     utils.set_seed(seed)
     run.config.update({"seed": seed})
+    run.name = f"{cfg.method.name}_{cfg.base_model}_{cfg.dataset}_{run.id}"
 
     train_loader, val_loader, test_loader = data.get_data_train(
         cfg.dataset,
@@ -465,14 +466,14 @@ def main(cfg: DictConfig) -> None:
         "metrics": test_metrics,
     }
 
-    name = f"{cfg.method.name}_{cfg.base_model}_{cfg.dataset}"
+    artifact_name = f"{cfg.method.name}_{cfg.base_model}_{cfg.dataset}_{seed}"
 
     if cfg.save_to_disk:
-        path = pathlib.Path(CHECKPOINT_PATH).joinpath(f"{name}.pt")
+        path = pathlib.Path(CHECKPOINT_PATH).joinpath(f"{artifact_name}.pt")
         torch.save(checkpoint, path)
 
         artifact = wandb.Artifact(
-            name=name,
+            name=artifact_name,
             type="model",
             metadata=OmegaConf.to_container(cfg, resolve=True, throw_on_missing=True),  # ty: ignore
         )
@@ -480,11 +481,11 @@ def main(cfg: DictConfig) -> None:
         wandb.log_artifact(artifact)
     else:
         with tempfile.TemporaryDirectory() as tmp:
-            path = pathlib.Path(tmp).joinpath(f"{name}.pt")
+            path = pathlib.Path(tmp).joinpath(f"{artifact_name}.pt")
             torch.save(checkpoint, path)
 
             artifact = wandb.Artifact(
-                name=name,
+                name=artifact_name,
                 type="model",
                 metadata=OmegaConf.to_container(cfg, resolve=True, throw_on_missing=True),  # ty: ignore
             )
