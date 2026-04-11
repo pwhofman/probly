@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, ClassVar, Self, override
+from typing import TYPE_CHECKING, Any, ClassVar, override
 
 import numpy as np
 
 from probly.representation._protected_axis.array import ArrayAxisProtected
-from probly.representation.distribution._common import CategoricalDistribution, create_categorical_distribution
+from probly.representation.distribution._common import (
+    CategoricalDistribution,
+    CategoricalDistributionSample,
+    create_categorical_distribution,
+)
 from probly.representation.sample import ArraySample
 
 if TYPE_CHECKING:
@@ -27,45 +31,45 @@ class ArrayCategoricalDistribution(
     The last axis represents the category dimension.
     """
 
-    probabilities: np.ndarray
-    protected_axes: ClassVar[dict[str, int]] = {"probabilities": 1}
-
-    @property
-    def _is_bernoulli(self) -> bool:
-        return self.probabilities.shape[-1] == 1
-
-    def _bernoulli_probability(self) -> np.ndarray:
-        return self.probabilities[..., 0]
-
-    def _normalized_probabilities(self) -> np.ndarray:
-        if self._is_bernoulli:
-            msg = "Bernoulli distributions do not use categorical normalization."
-            raise ValueError(msg)
-
-        sums = np.sum(self.probabilities, axis=-1, keepdims=True)
-        if np.any(sums <= 0):
-            msg = "Relative probabilities must have strictly positive sum along the last axis."
-            raise ValueError(msg)
-
-        return self.probabilities / sums
+    unnormalized_probabilities: np.ndarray
+    protected_axes: ClassVar[dict[str, int]] = {"unnormalized_probabilities": 1}
 
     def __post_init__(self) -> None:
         """Validate the concentration parameters."""
-        if not isinstance(self.probabilities, np.ndarray):
+        if not isinstance(self.unnormalized_probabilities, np.ndarray):
             msg = "probabilities must be a numpy ndarray."
             raise TypeError(msg)
 
-        if self.probabilities.ndim < 1:
+        if self.unnormalized_probabilities.ndim < 1:
             msg = "probabilities must have at least one dimension."
             raise ValueError(msg)
 
         if self._is_bernoulli:
-            if np.any(self.probabilities < 0) or np.any(self.probabilities > 1):
+            if np.any(self.unnormalized_probabilities < 0) or np.any(self.unnormalized_probabilities > 1):
                 msg = "Bernoulli probabilities must be in the range [0, 1]."
                 raise ValueError(msg)
-        elif np.any(self.probabilities < 0):
+        elif np.any(self.unnormalized_probabilities < 0):
             msg = "Relative probabilities must be non-negative."
             raise ValueError(msg)
+
+    @property
+    def _is_bernoulli(self) -> bool:
+        return self.unnormalized_probabilities.shape[-1] == 1
+
+    def _bernoulli_probability(self) -> np.ndarray:
+        return self.unnormalized_probabilities[..., 0]
+
+    @override
+    @property
+    def probabilities(self) -> np.ndarray:
+        if self._is_bernoulli:
+            p = self._bernoulli_probability()
+            q = 1 - p
+            return np.stack((p, q), axis=-1)
+
+        sums = np.sum(self.unnormalized_probabilities, axis=-1, keepdims=True)
+
+        return self.unnormalized_probabilities / sums
 
     @override
     @property
@@ -73,29 +77,14 @@ class ArrayCategoricalDistribution(
         """Get the number of classes."""
         if self._is_bernoulli:
             return 2
-        return self.probabilities.shape[-1]
-
-    @override
-    @property
-    def entropy(self) -> float:
-        """Compute the entropy of the categorical distribution."""
-        if self._is_bernoulli:
-            p = self._bernoulli_probability()
-            q = 1 - p
-            log_p = np.where(p > 0, np.log(p), 0.0)
-            log_q = np.where(q > 0, np.log(q), 0.0)
-            return -(p * log_p + q * log_q)
-
-        p = self._normalized_probabilities()
-        log_p = np.where(p > 0, np.log(p), 0.0)
-        return -np.sum(p * log_p, axis=-1)
+        return self.unnormalized_probabilities.shape[-1]
 
     @override
     def sample(
         self,
         num_samples: int = 1,
         rng: np.random.Generator | None = None,
-    ) -> ArraySample:
+    ) -> ArraySample[np.ndarray]:
         """Sample from the categorical distribution (NumPy backend)."""
         if rng is None:
             rng = np.random.default_rng()
@@ -105,7 +94,7 @@ class ArrayCategoricalDistribution(
             samples = rng.binomial(1, probabilities, size=(num_samples, *self.shape))
             return ArraySample(array=samples, sample_axis=0)
 
-        flat_probabilities = self._normalized_probabilities().reshape((-1, self.num_classes))
+        flat_probabilities = self.probabilities.reshape((-1, self.num_classes))
         flat_samples = np.empty((num_samples, flat_probabilities.shape[0]), dtype=np.int64)
 
         for i, probabilities in enumerate(flat_probabilities):
@@ -116,13 +105,16 @@ class ArrayCategoricalDistribution(
 
     @override
     def __iter__(self) -> Iterator[Any]:
-        return self.probabilities.__iter__()
+        return self.unnormalized_probabilities.__iter__()
 
-    def __eq__(self, value: Any) -> Self:  # ty: ignore[invalid-method-override]  # noqa: ANN401, PYI032
+    @override
+    def __eq__(self, value: Any) -> np.ndarray:  # ty: ignore[invalid-method-override]  # noqa: PYI032
         """Vectorized equality comparison."""
         if isinstance(value, ArrayCategoricalDistribution):
-            return np.equal(self.probabilities, value.probabilities)  # ty: ignore[invalid-return-type]
-        return np.equal(self.probabilities, value)
+            eq = np.equal(self.probabilities, value.probabilities)
+        else:
+            eq = np.equal(self.unnormalized_probabilities, value)
+        return np.all(eq, axis=-1)
 
     def __hash__(self) -> int:
         """Return an identity-based hash.
@@ -134,11 +126,25 @@ class ArrayCategoricalDistribution(
         return object.__hash__(self)
 
 
+class ArrayCategoricalDistributionSample(  # ty:ignore[conflicting-metaclass]
+    CategoricalDistributionSample[ArrayCategoricalDistribution],
+    ArraySample[ArrayCategoricalDistribution],
+):
+    """Sample type for empirical second-order categorical distributions."""
+
+    sample_space: ClassVar[type[CategoricalDistribution]] = ArrayCategoricalDistribution
+
+    @override
+    @classmethod
+    def __instancehook__(cls, instance: object) -> bool:
+        return super().__instancehook__(instance)
+
+
 @create_categorical_distribution.register((list, tuple))
 def _create_array_categorical_distribution_from_sequence(
     data: list[Any] | tuple[Any, ...],
 ) -> ArrayCategoricalDistribution:
-    return ArrayCategoricalDistribution(probabilities=np.asarray(data))
+    return ArrayCategoricalDistribution(np.asarray(data))
 
 
 @create_categorical_distribution.register(ArrayCategoricalDistribution)

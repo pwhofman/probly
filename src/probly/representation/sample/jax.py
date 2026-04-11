@@ -10,7 +10,7 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 
-from probly.representation.jax_like import JaxArrayLikeImplementation
+from probly.representation.jax_like import JaxLikeImplementation
 from probly.representation.sample._common import Sample, SampleAxis, create_sample
 
 if TYPE_CHECKING:
@@ -245,6 +245,6 @@ class JaxArraySample(Sample[jax.Array]):
 
 
 create_sample.register(
-    jax.Array | JaxArrayLikeImplementation,
+    jax.Array | JaxLikeImplementation,
     JaxArraySample.from_iterable,
 )

@@ -16,7 +16,7 @@ def test_elbo_loss(
     torch_conv_linear_model: nn.Module,
 ) -> None:
     inputs, targets = sample_classification_data
-    model: nn.Module = bayesian(torch_conv_linear_model)
+    model = bayesian(torch_conv_linear_model)
     outputs = model(inputs)
 
     criterion = ELBOLoss()

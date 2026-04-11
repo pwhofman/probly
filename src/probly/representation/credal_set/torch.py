@@ -16,8 +16,8 @@ from probly.representation.credal_set._common import (
     create_convex_credal_set,
     create_probability_intervals,
 )
-from probly.representation.distribution.torch_categorical import TorchTensorCategoricalDistribution
-from probly.representation.sample.torch import TorchTensorSample
+from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
+from probly.representation.sample.torch import TorchSample
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
@@ -25,26 +25,21 @@ if TYPE_CHECKING:
     from probly.representation.sample._common import Sample
 
 
-def _ensure_torch_categorical_distribution(value: object) -> TorchTensorCategoricalDistribution:
-    if isinstance(value, TorchTensorCategoricalDistribution):
+def _ensure_torch_categorical_distribution(value: object) -> TorchCategoricalDistribution:
+    if isinstance(value, TorchCategoricalDistribution):
         return value
-    return TorchTensorCategoricalDistribution(probabilities=torch.as_tensor(value))
+    return TorchCategoricalDistribution(torch.as_tensor(value))
 
 
 def _sample_probabilities(
-    sample: TorchTensorSample[TorchTensorCategoricalDistribution],
-    distribution_axis: int = -1,
+    sample: TorchSample[TorchCategoricalDistribution],
 ) -> torch.Tensor:
     sample_values = sample.samples
-    if not isinstance(sample_values, TorchTensorCategoricalDistribution):
-        msg = "Torch categorical credal sets require samples of TorchTensorCategoricalDistribution."
+    if not isinstance(sample_values, TorchCategoricalDistribution):
+        msg = "Torch categorical credal sets require samples of TorchCategoricalDistribution."
         raise TypeError(msg)
 
-    if distribution_axis != -1:
-        msg = "distribution_axis is only supported as -1 for distribution-backed samples."
-        raise ValueError(msg)
-
-    return sample_values.probabilities
+    return sample_values.unnormalized_probabilities
 
 
 class TorchCategoricalCredalSet(CategoricalCredalSet, ABC):
@@ -52,19 +47,18 @@ class TorchCategoricalCredalSet(CategoricalCredalSet, ABC):
 
     @override
     @classmethod
-    def from_sample(cls, sample: Sample[TorchTensorCategoricalDistribution]) -> Self:
-        torch_sample = TorchTensorSample.from_iterable(sample.samples, sample_dim=0)
-        if not isinstance(torch_sample.tensor, TorchTensorCategoricalDistribution):
-            msg = "Expected TorchTensorSample[TorchTensorCategoricalDistribution] for categorical credal sets."
+    def from_sample(cls, sample: Sample[TorchCategoricalDistribution]) -> Self:
+        torch_sample = TorchSample.from_iterable(sample.samples, sample_dim=0)
+        if not isinstance(torch_sample.tensor, TorchCategoricalDistribution):
+            msg = "Expected TorchSample[TorchCategoricalDistribution] for categorical credal sets."
             raise TypeError(msg)
-        return cls.from_torch_sample(cast("TorchTensorSample[TorchTensorCategoricalDistribution]", torch_sample))
+        return cls.from_torch_sample(cast("TorchSample[TorchCategoricalDistribution]", torch_sample))
 
     @classmethod
     @abstractmethod
     def from_torch_sample(
         cls,
-        sample: TorchTensorSample[TorchTensorCategoricalDistribution],
-        distribution_axis: int = -1,
+        sample: TorchSample[TorchCategoricalDistribution],
     ) -> Self:
         """Create a credal set from categorical distribution samples."""
 
@@ -77,7 +71,7 @@ class TorchConvexCredalSet(
 ):
     """A convex hull over a finite set of categorical distributions."""
 
-    tensor: TorchTensorCategoricalDistribution
+    tensor: TorchCategoricalDistribution
     protected_axes: ClassVar[dict[str, int]] = {"tensor": 1}
 
     def __post_init__(self) -> None:
@@ -88,12 +82,11 @@ class TorchConvexCredalSet(
     @classmethod
     def from_torch_sample(
         cls,
-        sample: TorchTensorSample[TorchTensorCategoricalDistribution],
-        distribution_axis: int = -1,
+        sample: TorchSample[TorchCategoricalDistribution],
     ) -> Self:
-        probabilities = _sample_probabilities(sample, distribution_axis)
+        probabilities = _sample_probabilities(sample)
         vertices = torch.moveaxis(probabilities, 0, -2)
-        return cls(tensor=TorchTensorCategoricalDistribution(probabilities=vertices))
+        return cls(tensor=TorchCategoricalDistribution(vertices))
 
     @override
     @property
@@ -123,10 +116,9 @@ class TorchProbabilityIntervalsCredalSet(
     @classmethod
     def from_torch_sample(
         cls,
-        sample: TorchTensorSample[TorchTensorCategoricalDistribution],
-        distribution_axis: int = -1,
+        sample: TorchSample[TorchCategoricalDistribution],
     ) -> Self:
-        probabilities = _sample_probabilities(sample, distribution_axis)
+        probabilities = _sample_probabilities(sample)
         lower_bounds = torch.min(probabilities, dim=0).values
         upper_bounds = torch.max(probabilities, dim=0).values
         return cls(
@@ -158,7 +150,5 @@ class TorchProbabilityIntervalsCredalSet(
         return torch.all(within_bounds, dim=-1)
 
 
-create_probability_intervals.register(
-    TorchTensorCategoricalDistribution, TorchProbabilityIntervalsCredalSet.from_sample
-)
-create_convex_credal_set.register(TorchTensorSample, TorchConvexCredalSet.from_torch_sample)
+create_probability_intervals.register(TorchCategoricalDistribution, TorchProbabilityIntervalsCredalSet.from_sample)
+create_convex_credal_set.register(TorchSample, TorchConvexCredalSet.from_torch_sample)

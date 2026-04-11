@@ -10,11 +10,11 @@ if TYPE_CHECKING:
     from probly.representation.representation import Representation
 
 
-class Quantification(Protocol):
+class QuantificationResult(Protocol):
     """Protocol for uncertainty quantifications."""
 
 
-class Quantifier[R: Representation, Q: Quantification](Protocol):
+class Quantifier[R: Representation, Q: QuantificationResult](Protocol):
     """Protocol for uncertainty quantification methods."""
 
     def __call__(self, representation: R) -> Q:
@@ -22,7 +22,7 @@ class Quantifier[R: Representation, Q: Quantification](Protocol):
 
 
 @lazydispatch
-def quantify(representation: Representation) -> Quantification:
+def quantify(representation: Representation) -> QuantificationResult:
     """Generic quantify function."""
     msg = f"No quantify function registered for type {type(representation)}"
     raise NotImplementedError(msg)

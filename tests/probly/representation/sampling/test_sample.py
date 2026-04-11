@@ -12,7 +12,7 @@ import torch
 
 from probly.representation.sample import ArraySample, create_sample
 from probly.representation.sample.jax import JaxArraySample
-from probly.representation.sample.torch import TorchTensorSample
+from probly.representation.sample.torch import TorchSample
 
 
 class TestSampleDispatching:
@@ -33,7 +33,7 @@ class TestSampleDispatching:
     def test_create_array_sample_torch(self) -> None:
         x = torch.arange(12).reshape((3, 4))
         sample = create_sample(x, sample_axis=0)
-        assert isinstance(sample, TorchTensorSample)
+        assert isinstance(sample, TorchSample)
         assert sample.shape == (3, 4)
         assert sample.sample_dim == 0
         assert x is sample.tensor

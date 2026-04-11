@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Iterator, Mapping
-from typing import override
+from typing import Protocol, override
 
-from probly.quantification._quantification import Quantification, Quantifier
+from probly.quantification._quantification import Quantifier
 from probly.quantification.notion import (
     AleatoricUncertainty,
     EpistemicUncertainty,
@@ -19,7 +19,7 @@ from probly.quantification.notion import (
 from probly.representation.representation import Representation
 
 
-class Decomposition(Quantification, Mapping[NotionKey, Notion], ABC):
+class Decomposition(Mapping[NotionKey, Notion], ABC):
     """Protocol for uncertainty decompositions."""
 
     @property
@@ -167,13 +167,5 @@ class AdditiveDecomposition(AleatoricEpistemicTotalDecomposition, CachingDecompo
         return self.total - self.aleatoric  # ty:ignore[unsupported-operator]
 
 
-class DecomposingQuantifier[R: Representation, D: Decomposition](Quantifier[R, D], ABC):
+class Decomposer[R: Representation, D: Decomposition](Quantifier[R, D], Protocol):
     """Protocol for uncertainty quantification methods that also decompose the uncertainty."""
-
-    @abstractmethod
-    def decompose(self, representation: R) -> D:
-        """Decompose the uncertainty of a given representation."""
-
-    def __call__(self, representation: R) -> D:
-        """Quantify the uncertainty of a given representation."""
-        return self.decompose(representation)

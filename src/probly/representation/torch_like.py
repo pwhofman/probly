@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 
 @runtime_checkable
-class TorchTensorLikeConvertible[DT](ArrayLike[DT], Protocol):
+class TorchLikeConvertible[DT](ArrayLike[DT], Protocol):
     """Protocol for array-like objects that can be converted to torch tensors."""
 
     def __torch_like__(
@@ -28,12 +28,12 @@ class TorchTensorLikeConvertible[DT](ArrayLike[DT], Protocol):
         *,
         device: torch.device | str | None = None,
         copy: bool = False,
-    ) -> TorchTensorLike[Any]:
-        """Convert to a TorchTensorLike."""
+    ) -> TorchLike[Any]:
+        """Convert to a TorchLike."""
 
 
 @runtime_checkable
-class TorchTensorLike[DT](ArrayLike[DT], Protocol):
+class TorchLike[DT](ArrayLike[DT], Protocol):
     """Protocol for array-like objects that implement torch-specific APIs."""
 
     @property
@@ -97,7 +97,7 @@ class TorchTensorLike[DT](ArrayLike[DT], Protocol):
         """Return a detached version of the array."""
 
 
-class TorchTensorLikeImplementation[DT](ArrayLike[DT], ABC):
+class TorchLikeImplementation[DT](ArrayLike[DT], ABC):
     """ABC implementation for array-like objects that behave like torch tensors."""
 
     @property
@@ -242,19 +242,19 @@ class TorchTensorLikeImplementation[DT](ArrayLike[DT], ABC):
         return torch.resolve_neg(self)  # ty:ignore[invalid-return-type, invalid-argument-type]
 
 
-TorchTensorLikeImplementation.register(torch.Tensor)
+TorchLikeImplementation.register(torch.Tensor)
 
 
 @lazydispatch
-def to_torch_tensor_like[DT](
+def to_torch_like[DT](
     data: object,
     /,
     dtype: torch.dtype | None = None,
     *,
     device: torch.device | str | None = None,
     copy: bool = False,
-) -> TorchTensorLike[Any] | torch.Tensor:
-    """Convert an ArrayLike to a TorchTensorLike.
+) -> TorchLike[Any] | torch.Tensor:
+    """Convert an ArrayLike to a TorchLike.
 
     If possible, use the __torch_like__ method to convert the array, otherwise use torch.as_tensor.
 
@@ -275,13 +275,13 @@ def to_torch_tensor_like[DT](
     return res
 
 
-@to_torch_tensor_like.register(TorchTensorLikeConvertible)
+@to_torch_like.register(TorchLikeConvertible)
 def _[DT](
-    data: TorchTensorLikeConvertible[DT],
+    data: TorchLikeConvertible[DT],
     /,
     dtype: torch.dtype | None = None,
     *,
     device: torch.device | str | None = None,
     copy: bool = False,
-) -> TorchTensorLike[Any] | torch.Tensor:
+) -> TorchLike[Any] | torch.Tensor:
     return data.__torch_like__(dtype, device=device, copy=copy)

@@ -1,6 +1,6 @@
 """Quantification methods for uncertainty."""
 
-from ._quantification import Quantification, Quantifier, quantify
+from ._quantification import QuantificationResult, Quantifier, quantify
 from .decomposition import (
     AdditiveDecomposition,
     AleatoricEpistemicDecomposition,
@@ -24,7 +24,7 @@ __all__ = [
     "Decomposition",
     "EpistemicUncertainty",
     "Notion",
-    "Quantification",
+    "QuantificationResult",
     "Quantifier",
     "TotalUncertainty",
     "notion_registry",

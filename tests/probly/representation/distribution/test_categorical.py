@@ -13,7 +13,7 @@ from probly.representation.sample import ArraySample
 def test_accepts_relative_non_negative_probabilities() -> None:
     probabilities = np.array([[2.0, 3.0, 5.0], [1.0, 1.0, 1.0]], dtype=float)
 
-    dist = ArrayCategoricalDistribution(probabilities=probabilities)
+    dist = ArrayCategoricalDistribution(probabilities)
 
     assert dist.shape == (2,)
     assert dist.num_classes == 3
@@ -25,7 +25,7 @@ def test_create_categorical_distribution_from_ndarray() -> None:
     dist = create_categorical_distribution(probabilities)
 
     assert isinstance(dist, ArrayCategoricalDistribution)
-    np.testing.assert_allclose(dist.probabilities, probabilities)
+    np.testing.assert_allclose(dist.unnormalized_probabilities, probabilities)
 
 
 def test_create_categorical_distribution_from_sequence() -> None:
@@ -39,55 +39,51 @@ def test_rejects_negative_relative_probabilities() -> None:
     probabilities = np.array([1.0, -1.0, 2.0], dtype=float)
 
     with pytest.raises(ValueError, match="non-negative"):
-        ArrayCategoricalDistribution(probabilities=probabilities)
+        ArrayCategoricalDistribution(probabilities)
 
 
-def test_zero_sum_relative_probabilities_raise_when_normalization_needed() -> None:
-    dist = ArrayCategoricalDistribution(probabilities=np.array([[0.0, 0.0, 0.0]], dtype=float))
+def test_zero_sum_relative_probabilities_return_nan() -> None:
+    dist = ArrayCategoricalDistribution(np.array([0.0, 0.0, 0.0], dtype=float))
 
-    with pytest.raises(ValueError, match="strictly positive sum"):
-        _ = dist.entropy
-
-    with pytest.raises(ValueError, match="strictly positive sum"):
-        dist.sample(10)
+    assert np.isnan(dist.probabilities)
 
 
 def test_bernoulli_validation_uses_unit_interval() -> None:
-    ArrayCategoricalDistribution(probabilities=np.array([[0.0], [0.5], [1.0]], dtype=float))
+    ArrayCategoricalDistribution(np.array([[0.0], [0.5], [1.0]], dtype=float))
 
     with pytest.raises(ValueError, match="Bernoulli probabilities"):
-        ArrayCategoricalDistribution(probabilities=np.array([[1.1]], dtype=float))
+        ArrayCategoricalDistribution(np.array([[1.1]], dtype=float))
 
 
 def test_bernoulli_reports_two_classes() -> None:
-    dist = ArrayCategoricalDistribution(probabilities=np.array([[0.2], [0.8]], dtype=float))
+    dist = ArrayCategoricalDistribution(np.array([[0.2], [0.8]], dtype=float))
 
     assert dist.num_classes == 2
 
 
 def test_entropy_normalizes_relative_probabilities() -> None:
     probabilities = np.array([[2.0, 3.0, 5.0]], dtype=float)
-    dist = ArrayCategoricalDistribution(probabilities=probabilities)
+    dist = ArrayCategoricalDistribution(probabilities)
 
     normalized = probabilities / probabilities.sum(axis=-1, keepdims=True)
     expected = -np.sum(normalized * np.log(normalized), axis=-1)
 
-    np.testing.assert_allclose(dist.entropy, expected)
+    np.testing.assert_allclose(dist.entropy(), expected)
 
 
 def test_entropy_bernoulli_formula() -> None:
     probabilities = np.array([[0.25], [0.5], [0.75]], dtype=float)
-    dist = ArrayCategoricalDistribution(probabilities=probabilities)
+    dist = ArrayCategoricalDistribution(probabilities)
 
     p = probabilities[:, 0]
     expected = -(p * np.log(p) + (1 - p) * np.log(1 - p))
 
-    np.testing.assert_allclose(dist.entropy, expected)
+    np.testing.assert_allclose(dist.entropy(), expected)
 
 
 def test_sampling_relative_probabilities_matches_normalized_distribution() -> None:
     probabilities = np.array([[2.0, 3.0, 5.0]], dtype=float)
-    dist = ArrayCategoricalDistribution(probabilities=probabilities)
+    dist = ArrayCategoricalDistribution(probabilities)
 
     sample = dist.sample(num_samples=30_000, rng=np.random.default_rng(0))
 
@@ -106,7 +102,7 @@ def test_sampling_relative_probabilities_matches_normalized_distribution() -> No
 
 def test_sampling_bernoulli_produces_binary_samples_with_correct_mean() -> None:
     p = np.array([[0.3]], dtype=float)
-    dist = ArrayCategoricalDistribution(probabilities=p)
+    dist = ArrayCategoricalDistribution(p)
 
     sample = dist.sample(num_samples=40_000, rng=np.random.default_rng(1))
 
@@ -118,7 +114,7 @@ def test_sampling_bernoulli_produces_binary_samples_with_correct_mean() -> None:
 
 def test_getitem_cannot_index_class_axis_directly() -> None:
     probabilities = np.arange(24, dtype=float).reshape((2, 3, 4)) + 1.0
-    dist = ArrayCategoricalDistribution(probabilities=probabilities)
+    dist = ArrayCategoricalDistribution(probabilities)
 
     with pytest.raises(IndexError):
         _ = dist[:, :, 0]
@@ -126,7 +122,7 @@ def test_getitem_cannot_index_class_axis_directly() -> None:
 
 def test_setitem_cannot_index_class_axis_directly() -> None:
     probabilities = np.arange(24, dtype=float).reshape((2, 3, 4)) + 1.0
-    dist = ArrayCategoricalDistribution(probabilities=probabilities)
+    dist = ArrayCategoricalDistribution(probabilities)
 
     with pytest.raises(IndexError):
         dist[:, :, 0] = np.array([1.0, 2.0, 3.0, 4.0])
@@ -134,7 +130,7 @@ def test_setitem_cannot_index_class_axis_directly() -> None:
 
 def test_expand_dims_last_inserts_before_class_axis() -> None:
     probabilities = np.arange(24, dtype=float).reshape((2, 3, 4)) + 1.0
-    dist = ArrayCategoricalDistribution(probabilities=probabilities)
+    dist = ArrayCategoricalDistribution(probabilities)
 
     expanded = np.expand_dims(dist, axis=-1)
 
@@ -145,9 +141,9 @@ def test_expand_dims_last_inserts_before_class_axis() -> None:
 
 def test_reshape_with_none_inserts_before_class_axis() -> None:
     probabilities = np.arange(24, dtype=float).reshape((2, 3, 4)) + 1.0
-    dist = ArrayCategoricalDistribution(probabilities=probabilities)
+    dist = ArrayCategoricalDistribution(probabilities)
 
-    reshaped = np.reshape(dist, (6, None))
+    reshaped = dist.reshape((6, None))
 
     assert isinstance(reshaped, ArrayCategoricalDistribution)
     assert reshaped.shape == (6, 1)
@@ -156,7 +152,7 @@ def test_reshape_with_none_inserts_before_class_axis() -> None:
 
 def test_concatenate_preserves_distribution_type() -> None:
     probabilities = np.arange(24, dtype=float).reshape((2, 3, 4)) + 1.0
-    dist = ArrayCategoricalDistribution(probabilities=probabilities)
+    dist = ArrayCategoricalDistribution(probabilities)
 
     concatenated = np.concatenate((dist, dist), axis=-1)
 
@@ -167,7 +163,7 @@ def test_concatenate_preserves_distribution_type() -> None:
 
 def test_concat_alias_preserves_distribution_type() -> None:
     probabilities = np.arange(24, dtype=float).reshape((2, 3, 4)) + 1.0
-    dist = ArrayCategoricalDistribution(probabilities=probabilities)
+    dist = ArrayCategoricalDistribution(probabilities)
 
     concatenated = np.concat((dist, dist), axis=-1)
 
@@ -178,7 +174,7 @@ def test_concat_alias_preserves_distribution_type() -> None:
 
 def test_stack_preserves_distribution_type() -> None:
     probabilities = np.arange(24, dtype=float).reshape((2, 3, 4)) + 1.0
-    dist = ArrayCategoricalDistribution(probabilities=probabilities)
+    dist = ArrayCategoricalDistribution(probabilities)
 
     stacked = np.stack((dist, dist), axis=0)
 
@@ -189,8 +185,8 @@ def test_stack_preserves_distribution_type() -> None:
 
 def test_hash_is_identity_based_and_distinguishes_instances() -> None:
     probabilities = np.array([[0.2, 0.8]], dtype=float)
-    dist_a = ArrayCategoricalDistribution(probabilities=probabilities.copy())
-    dist_b = ArrayCategoricalDistribution(probabilities=probabilities.copy())
+    dist_a = ArrayCategoricalDistribution(probabilities.copy())
+    dist_b = ArrayCategoricalDistribution(probabilities.copy())
 
     assert hash(dist_a) == hash(dist_a)
     assert hash(dist_a) != hash(dist_b)

@@ -113,12 +113,14 @@ def test_nested_multi_field_value_delegates_without_array_casts() -> None:
     assert values["inner"] is inner
 
     expanded = np.expand_dims(outer, axis=0)
+    assert isinstance(expanded, OuterNested)
     assert isinstance(expanded.inner, InnerPair)
     assert expanded.inner.left.shape == (1, 2, 3, 4)
     assert expanded.inner.right.shape == (1, 2, 3, 4)
     assert expanded.aux.shape == (1, 2, 5)
 
     stacked = np.stack((outer, outer), axis=0)
+    assert isinstance(stacked, OuterNested)
     assert isinstance(stacked.inner, InnerPair)
     assert stacked.inner.left.shape == (2, 2, 3, 4)
     assert stacked.inner.right.shape == (2, 2, 3, 4)

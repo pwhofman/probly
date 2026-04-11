@@ -48,7 +48,7 @@ def test_from_parameters_creates_instance() -> None:
     mean_list = [1.0, 2.0]
     var_list = [0.5, 0.5]
 
-    dist = ArrayGaussianDistribution.from_parameters(mean=mean_list, var=var_list)
+    dist = ArrayGaussianDistribution(mean=mean_list, var=var_list)
 
     assert isinstance(dist, ArrayGaussianDistribution)
 
@@ -132,7 +132,7 @@ def test_entropy() -> None:
     dist = ArrayGaussianDistribution(mean=mean, var=var)
 
     expected = 0.5 * np.log(2 * np.pi * np.e * var)
-    assert dist.entropy == pytest.approx(expected)
+    assert dist.entropy() == pytest.approx(expected)
 
 
 def test_slice() -> None:

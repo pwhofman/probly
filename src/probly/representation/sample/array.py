@@ -32,7 +32,7 @@ if TYPE_CHECKING:
     from numpy.typing import DTypeLike
     import torch
 
-    from probly.representation.torch_like import TorchTensorLikeImplementation
+    from probly.representation.torch_like import TorchLikeImplementation
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
@@ -376,15 +376,15 @@ class ArraySample[D: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplementation[D
 
     def __torch_like__(
         self, dtype: torch.dtype | None = None, /, *, device: torch.device | str | None = None, copy: bool = False
-    ) -> TorchTensorLikeImplementation[Any]:
-        """Convert to a TorchTensorSample."""
-        from probly.representation.torch_like import to_torch_tensor_like  # noqa: PLC0415
+    ) -> TorchLikeImplementation[Any]:
+        """Convert to a TorchSample."""
+        from probly.representation.torch_like import to_torch_like  # noqa: PLC0415
 
-        from .torch import TorchTensorSample  # noqa: PLC0415
+        from .torch import TorchSample  # noqa: PLC0415
 
-        tensor = to_torch_tensor_like(self.array, dtype=dtype, device=device, copy=copy)
+        tensor = to_torch_like(self.array, dtype=dtype, device=device, copy=copy)
 
-        return TorchTensorSample(cast("Any", tensor), sample_dim=self.sample_axis)
+        return TorchSample(cast("Any", tensor), sample_dim=self.sample_axis)
 
 
 @array_sample_internals.register(ArraySample)

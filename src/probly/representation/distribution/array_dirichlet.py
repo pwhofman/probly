@@ -6,7 +6,6 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, ClassVar, Self, override
 
 import numpy as np
-from scipy import special
 
 from probly.representation._protected_axis.array import ArrayAxisProtected
 from probly.representation.distribution._common import DirichletDistribution
@@ -57,19 +56,6 @@ class ArrayDirichletDistribution(
         return cls(alphas=np.asarray(alphas, dtype=dtype))
 
     @override
-    @property
-    def entropy(self) -> float:
-        """Compute the entropy of the Dirichlet distribution."""
-        alpha_0 = np.sum(self.alphas, axis=-1)
-        K = self.alphas.shape[-1]  # noqa: N806
-
-        log_beta = np.sum(special.gammaln(self.alphas), axis=-1) - special.gammaln(alpha_0)
-        digamma_sum = (alpha_0 - K) * special.digamma(alpha_0)
-        digamma_individual = np.sum((self.alphas - 1) * special.digamma(self.alphas), axis=-1)
-
-        return log_beta + digamma_sum - digamma_individual
-
-    @override
     def sample(
         self,
         num_samples: int = 1,
@@ -98,11 +84,14 @@ class ArrayDirichletDistribution(
     def __iter__(self) -> Iterator[Any]:
         return self.alphas.__iter__()
 
-    def __eq__(self, value: Any) -> Self:  # ty: ignore[invalid-method-override]  # noqa: ANN401, PYI032
+    @override
+    def __eq__(self, value: Any) -> np.ndarray:  # ty: ignore[invalid-method-override]  # noqa: PYI032
         """Vectorized equality comparison."""
         if isinstance(value, ArrayDirichletDistribution):
-            return np.equal(self.alphas, value.alphas)  # ty: ignore[invalid-return-type]
-        return np.equal(self.alphas, value)
+            eq = np.equal(self.alphas, value.alphas)
+        else:
+            eq = np.equal(self.alphas, value)
+        return np.all(eq, axis=-1)
 
     def __hash__(self) -> int:
         """Return an identity-based hash.
