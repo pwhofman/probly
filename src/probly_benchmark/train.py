@@ -11,6 +11,7 @@ if TYPE_CHECKING:
 
 
 import pathlib
+import secrets
 import tempfile
 
 import hydra
@@ -411,7 +412,11 @@ def main(cfg: DictConfig) -> None:
 
     device = utils.get_device(cfg.get("device", None))
     print(f"Running on device: {device}")
-    utils.set_seed(cfg.seed) if cfg.get("seed", None) else None
+    seed = cfg.get("seed", None)
+    if seed is None:
+        seed = secrets.randbelow(2**32)
+    utils.set_seed(seed)
+    run.config.update({"seed": seed})
 
     train_loader, val_loader, test_loader = data.get_data_train(
         cfg.dataset,
