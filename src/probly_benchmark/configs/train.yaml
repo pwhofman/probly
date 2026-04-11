@@ -2,7 +2,7 @@ defaults:
   - _self_
   - method: ??? # user must specify a method.
 
-dataset: "imagenet"
+dataset: "imagenet_shards"
 base_model: "resnet50"
 pretrained: False
 epochs: 50
