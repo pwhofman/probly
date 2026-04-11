@@ -1,0 +1,13 @@
+[project]
+name = "probly-web-backend"
+version = "0.0.0"
+description = "FastAPI backend for the probly Gemma chat UI (skeleton)."
+requires-python = ">=3.13,<3.15"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
+    "pydantic>=2.8.0",
+    "transformers>=4.45.0",
+    "torch>=2.6.0",
+    "accelerate>=0.34.0",
+]

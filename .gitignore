@@ -282,3 +282,10 @@ wandb/
 
 # Hydra
 outputs/
+
+# Experiments scratch env
+experiments/uv.lock
+experiments/**/model_cache/
+
+# Local data / model caches
+data/
