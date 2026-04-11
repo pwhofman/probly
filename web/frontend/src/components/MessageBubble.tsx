@@ -1,44 +1,44 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import type { ConceptSpan, ConfidencePayload, Message } from '../types';
+import type { ConceptSpan, Message, UncertaintyPayload } from '../types';
 
 interface Props {
   message: Message;
 }
 
 type Feedback = 'up' | 'down' | null;
-type ConfidenceMode = 'full' | 'concept' | 'word';
+type UncertaintyMode = 'full' | 'concept' | 'word';
 
-const CONFIDENCE_MODES: { key: ConfidenceMode; label: string }[] = [
+const UNCERTAINTY_MODES: { key: UncertaintyMode; label: string }[] = [
   { key: 'full', label: 'Full Response' },
   { key: 'concept', label: 'Concept Level' },
   { key: 'word', label: 'Word Level' },
 ];
 
-// SHAP red (#ff0d57). We use only this hue: low confidence → opaque red,
-// high confidence → transparent, so "problem" tokens are the only thing
+// SHAP red (#ff0d57). We use only this hue: high uncertainty → opaque red,
+// low uncertainty → transparent, so "problem" tokens are the only thing
 // that visually jumps out of an otherwise neutral bubble.
 const SHAP_RED_RGB = '255, 13, 87';
 
 /**
- * Map a [0, 1] confidence to a background color string. Uses a gamma=2
- * curve so very-low confidences pop while mid-range values stay subtle.
+ * Map a [0, 1] uncertainty to a background color string. Uses a gamma=2
+ * curve so very-high uncertainties pop while mid-range values stay subtle.
  */
-function confidenceToRgba(confidence: number): string {
-  const clamped = Math.min(1, Math.max(0, confidence));
-  const alpha = (1 - clamped) ** 2;
+function uncertaintyToRgba(uncertainty: number): string {
+  const clamped = Math.min(1, Math.max(0, uncertainty));
+  const alpha = clamped ** 2;
   return `rgba(${SHAP_RED_RGB}, ${alpha.toFixed(3)})`;
 }
 
 /**
- * Return a text color override when the confidence tint is dark enough
+ * Return a text color override when the uncertainty tint is dark enough
  * that default ink-on-red would be hard to read. Matches the alpha curve
- * used by ``confidenceToRgba``.
+ * used by ``uncertaintyToRgba``.
  */
-function confidenceTextColor(confidence: number): string | undefined {
-  const clamped = Math.min(1, Math.max(0, confidence));
-  const alpha = (1 - clamped) ** 2;
+function uncertaintyTextColor(uncertainty: number): string | undefined {
+  const clamped = Math.min(1, Math.max(0, uncertainty));
+  const alpha = clamped ** 2;
   return alpha > 0.6 ? '#ffffff' : undefined;
 }
 
@@ -76,36 +76,36 @@ function buildConceptIndex(
 }
 
 /**
- * Render the assistant reply with per-mode confidence tints.
+ * Render the assistant reply with per-mode uncertainty tints.
  *
  * Every word is rendered as an outer ``<span>`` that wraps the word's
  * full chunk (glyph + trailing whitespace). Only the background tint
  * differs between modes:
  *
  *   - **word**    — inner span around the glyph is tinted with the
- *                   word's confidence; trailing whitespace stays
+ *                   word's uncertainty; trailing whitespace stays
  *                   transparent.
  *   - **concept** — if the word is inside a concept span, the outer
- *                   chunk span is tinted with the concept's confidence
+ *                   chunk span is tinted with the concept's uncertainty
  *                   (so consecutive concept words form a continuous
  *                   band through the inter-word whitespace). The last
  *                   word of a span only tints its inner glyph, so the
  *                   band ends cleanly at the last letter.
  *   - **full**    — outer chunk span is tinted with the single
- *                   whole-response confidence (whitespace included), so
+ *                   whole-response uncertainty (whitespace included), so
  *                   every visual line ends up with the same uniform
  *                   tint.
  */
 function WordBody({
-  confidence,
+  uncertainty,
   mode,
   active,
 }: {
-  confidence: ConfidencePayload;
-  mode: ConfidenceMode;
+  uncertainty: UncertaintyPayload;
+  mode: UncertaintyMode;
   active: boolean;
 }) {
-  const { words, concepts, full } = confidence;
+  const { words, concepts, full } = uncertainty;
   const conceptIndex = buildConceptIndex(words.length, concepts);
 
   return (
@@ -121,9 +121,9 @@ function WordBody({
             const trailing = match ? match[2] : '';
             const innerStyle: CSSProperties = {
               transition: HIGHLIGHT_TRANSITION,
-              backgroundColor: confidenceToRgba(w.confidence),
+              backgroundColor: uncertaintyToRgba(w.uncertainty),
             };
-            const textColor = confidenceTextColor(w.confidence);
+            const textColor = uncertaintyTextColor(w.uncertainty);
             if (textColor) innerStyle.color = textColor;
             const tintedGlyph = <span style={innerStyle}>{glyph}</span>;
             // Only show the dotted-underline + hover tooltip affordance in
@@ -158,9 +158,9 @@ function WordBody({
                 const trailing = match ? match[2] : '';
                 const innerStyle: CSSProperties = {
                   transition: HIGHLIGHT_TRANSITION,
-                  backgroundColor: confidenceToRgba(info.concept.confidence),
+                  backgroundColor: uncertaintyToRgba(info.concept.uncertainty),
                 };
-                const textColor = confidenceTextColor(info.concept.confidence);
+                const textColor = uncertaintyTextColor(info.concept.uncertainty);
                 if (textColor) innerStyle.color = textColor;
                 innerContent = (
                   <>
@@ -169,17 +169,17 @@ function WordBody({
                   </>
                 );
               } else {
-                outerStyle.backgroundColor = confidenceToRgba(info.concept.confidence);
-                const textColor = confidenceTextColor(info.concept.confidence);
+                outerStyle.backgroundColor = uncertaintyToRgba(info.concept.uncertainty);
+                const textColor = uncertaintyTextColor(info.concept.uncertainty);
                 if (textColor) outerStyle.color = textColor;
               }
             }
           } else {
-            // full mode — single whole-response confidence, applied
+            // full mode — single whole-response uncertainty, applied
             // uniformly to every word chunk (glyph + trailing
             // whitespace), so every visual line paints the same tint.
-            outerStyle.backgroundColor = confidenceToRgba(full);
-            const textColor = confidenceTextColor(full);
+            outerStyle.backgroundColor = uncertaintyToRgba(full);
+            const textColor = uncertaintyTextColor(full);
             if (textColor) outerStyle.color = textColor;
           }
         }
@@ -196,12 +196,12 @@ function WordBody({
 
 /**
  * Pick the right render path for the assistant's message body. While a
- * message is still streaming (or came from a backend with no confidence
- * data, like real Gemma), ``message.confidence`` is undefined and we
- * fall through to the plain Markdown renderer — the confidence toggle
+ * message is still streaming (or came from a backend with no uncertainty
+ * data, like real Gemma), ``message.uncertainty`` is undefined and we
+ * fall through to the plain Markdown renderer — the uncertainty toggle
  * stays greyed out in that state.
  *
- * Once ``confidence`` arrives, ``WordBody`` takes over and renders one
+ * Once ``uncertainty`` arrives, ``WordBody`` takes over and renders one
  * outer span per word so all three display modes can tint their spans
  * independently without reflowing the text.
  */
@@ -211,17 +211,17 @@ function AssistantContent({
   active,
 }: {
   message: Message;
-  mode: ConfidenceMode;
+  mode: UncertaintyMode;
   active: boolean;
 }) {
-  if (!message.confidence) {
+  if (!message.uncertainty) {
     return (
       <ReactMarkdown remarkPlugins={[remarkGfm]}>
         {message.content}
       </ReactMarkdown>
     );
   }
-  return <WordBody confidence={message.confidence} mode={mode} active={active} />;
+  return <WordBody uncertainty={message.uncertainty} mode={mode} active={active} />;
 }
 
 /**
@@ -255,7 +255,7 @@ function WithTooltip({ label, children }: { label: string; children: ReactNode }
 
 /**
  * Floating tooltip showing a vertical list of alternative words on hover.
- * Rendered in Word-Level confidence mode over words that the backend
+ * Rendered in Word-Level uncertainty mode over words that the backend
  * seeded with an ``alternatives`` list. Visually mirrors ``WithTooltip``
  * (same dark pill + triangle) but renders a stacked list instead of a
  * single label, and uses an ``inline`` wrapper so it can sit in the
@@ -291,22 +291,22 @@ function AlternativesTooltip({
 
 interface MessageActionsProps {
   content: string;
-  mode: ConfidenceMode;
-  onModeChange: (mode: ConfidenceMode) => void;
+  mode: UncertaintyMode;
+  onModeChange: (mode: UncertaintyMode) => void;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   /**
-   * When true the confidence toggle + mode switch are visible but
+   * When true the uncertainty toggle + mode switch are visible but
    * non-interactive (greyed out). Used while generation is still
-   * streaming, or when the backend produced no confidence data.
+   * streaming, or when the backend produced no uncertainty data.
    */
-  confidenceDisabled: boolean;
+  uncertaintyDisabled: boolean;
   /**
-   * When true the backend has flagged this response as low confidence,
-   * and the Confidence button should draw a blinking-then-solid red
+   * When true the backend has flagged this response as high uncertainty,
+   * and the Uncertainty button should draw a blinking-then-solid red
    * underline to surface the warning in the action row.
    */
-  lowConfidence: boolean;
+  highUncertainty: boolean;
 }
 
 function MessageActions({
@@ -315,24 +315,24 @@ function MessageActions({
   onModeChange,
   open,
   onOpenChange,
-  confidenceDisabled,
-  lowConfidence,
+  uncertaintyDisabled,
+  highUncertainty,
 }: MessageActionsProps) {
   const [copied, setCopied] = useState(false);
   const [feedback, setFeedback] = useState<Feedback>(null);
-  // The underline blinks briefly when the low-confidence flag first
-  // arrives (i.e. when the confidence frame lands, after generation
+  // The underline blinks briefly when the high-uncertainty flag first
+  // arrives (i.e. when the uncertainty frame lands, after generation
   // finishes), then settles into a solid red marker.
-  const [lowConfBlinking, setLowConfBlinking] = useState(false);
+  const [highUncBlinking, setHighUncBlinking] = useState(false);
   useEffect(() => {
-    if (!lowConfidence) {
-      setLowConfBlinking(false);
+    if (!highUncertainty) {
+      setHighUncBlinking(false);
       return;
     }
-    setLowConfBlinking(true);
-    const timer = window.setTimeout(() => setLowConfBlinking(false), 2400);
+    setHighUncBlinking(true);
+    const timer = window.setTimeout(() => setHighUncBlinking(false), 2400);
     return () => window.clearTimeout(timer);
-  }, [lowConfidence]);
+  }, [highUncertainty]);
 
   const handleCopy = async () => {
     try {
@@ -347,9 +347,9 @@ function MessageActions({
   const baseBtn =
     'flex h-7 w-7 items-center justify-center rounded-md text-muted transition-colors hover:bg-panel hover:text-ink';
 
-  const confidenceTooltipLabel = confidenceDisabled
-    ? 'Confidence available after generation finishes'
-    : 'Display model confidence';
+  const uncertaintyTooltipLabel = uncertaintyDisabled
+    ? 'Uncertainty available after generation finishes'
+    : 'Display model uncertainty';
 
   return (
     <div className="mt-2 flex items-center gap-1">
@@ -398,70 +398,72 @@ function MessageActions({
           </svg>
         </button>
       </WithTooltip>
-      <WithTooltip label={confidenceTooltipLabel}>
+      <WithTooltip label={uncertaintyTooltipLabel}>
         <button
           type="button"
           onClick={() => {
-            if (confidenceDisabled) return;
+            if (uncertaintyDisabled) return;
             onOpenChange(!open);
           }}
-          disabled={confidenceDisabled}
+          disabled={uncertaintyDisabled}
           className={`flex h-7 items-center gap-1.5 rounded-md px-2 text-xs transition-colors ${
-            confidenceDisabled
+            uncertaintyDisabled
               ? 'cursor-not-allowed text-muted/50'
               : `text-muted hover:bg-panel hover:text-ink ${open ? 'bg-panel text-ink' : ''}`
           }`}
           aria-label={
-            lowConfidence
-              ? 'Show confidence (low confidence response)'
-              : 'Show confidence'
+            highUncertainty
+              ? 'Show uncertainty (high uncertainty response)'
+              : 'Show uncertainty'
           }
           aria-expanded={open}
-          aria-disabled={confidenceDisabled}
+          aria-disabled={uncertaintyDisabled}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <line x1="6" y1="20" x2="6" y2="14" />
             <line x1="12" y1="20" x2="12" y2="10" />
             <line x1="18" y1="20" x2="18" y2="4" />
           </svg>
-          <span>Confidence</span>
+          <span className="relative inline-block">
+            Uncertainty
+            {highUncertainty && (
+              <span
+                aria-hidden
+                className="pointer-events-none absolute inset-x-0 -bottom-0.5 h-px"
+                style={{
+                  backgroundColor: `rgba(${SHAP_RED_RGB}, 0.45)`,
+                  animation: highUncBlinking
+                    ? 'highUncBlink 600ms steps(1) infinite'
+                    : undefined,
+                }}
+              />
+            )}
+          </span>
         </button>
-        {lowConfidence && (
-          <span
-            aria-hidden
-            className="pointer-events-none absolute inset-x-1 -bottom-0.5 h-0.5 rounded-full"
-            style={{
-              backgroundColor: `rgb(${SHAP_RED_RGB})`,
-              animation: lowConfBlinking
-                ? 'lowConfBlink 600ms steps(1) infinite'
-                : undefined,
-            }}
-          />
-        )}
       </WithTooltip>
       <div
         className={`overflow-hidden transition-all duration-300 ease-out ${
-          open && !confidenceDisabled ? 'ml-2 max-w-md opacity-100' : 'ml-0 max-w-0 opacity-0'
+          open && !uncertaintyDisabled ? 'ml-2 max-w-md opacity-100' : 'ml-0 max-w-0 opacity-0'
         }`}
-        aria-hidden={!open || confidenceDisabled}
+        aria-hidden={!open || uncertaintyDisabled}
       >
         <div className="relative flex rounded-full border border-rule bg-white/60 p-1 shadow-sm">
           <div
             className="pointer-events-none absolute bottom-1 left-1 top-1 w-28 rounded-full bg-ink shadow-sm transition-transform duration-300 ease-out"
             style={{
               transform: `translateX(${
-                CONFIDENCE_MODES.findIndex((m) => m.key === mode) * 100
+                UNCERTAINTY_MODES.findIndex((m) => m.key === mode) * 100
               }%)`,
             }}
             aria-hidden
           />
-          {CONFIDENCE_MODES.map(({ key, label }) => (
+          {UNCERTAINTY_MODES.map(({ key, label }) => (
             <button
               key={key}
               type="button"
               onClick={() => onModeChange(key)}
               aria-pressed={mode === key}
-              tabIndex={open && !confidenceDisabled ? 0 : -1}
+              tabIndex={open && !uncertaintyDisabled ? 0 : -1}
               className={`relative z-10 w-28 whitespace-nowrap rounded-full px-3 py-1 text-center text-xs transition-colors duration-300 ease-out ${
                 mode === key
                   ? 'text-white'
@@ -505,13 +507,13 @@ function AssistantBubble({ message }: { message: Message }) {
   // State is lifted out of MessageActions so the selected mode can drive
   // the body renderer (word / concept / full tint) in addition to the
   // toggle UI in the action row.
-  const [confidenceOpen, setConfidenceOpen] = useState(false);
-  const [confidenceMode, setConfidenceMode] = useState<ConfidenceMode>('full');
+  const [uncertaintyOpen, setUncertaintyOpen] = useState(false);
+  const [uncertaintyMode, setUncertaintyMode] = useState<UncertaintyMode>('full');
 
-  const confidenceAvailable = message.confidence !== undefined;
-  const confidenceActive = confidenceOpen && confidenceAvailable;
-  const lowConfidence =
-    confidenceAvailable && message.confidence?.lowConfidence === true;
+  const uncertaintyAvailable = message.uncertainty !== undefined;
+  const uncertaintyActive = uncertaintyOpen && uncertaintyAvailable;
+  const highUncertainty =
+    uncertaintyAvailable && message.uncertainty?.highUncertainty === true;
 
   return (
     <div className="flex justify-start">
@@ -554,8 +556,8 @@ function AssistantBubble({ message }: { message: Message }) {
                 {message.content ? (
                   <AssistantContent
                     message={message}
-                    mode={confidenceMode}
-                    active={confidenceActive}
+                    mode={uncertaintyMode}
+                    active={uncertaintyActive}
                   />
                 ) : (
                   // Streaming placeholder while waiting for the first chunk.
@@ -565,12 +567,12 @@ function AssistantBubble({ message }: { message: Message }) {
               {message.content && (
                 <MessageActions
                   content={message.content}
-                  mode={confidenceMode}
-                  onModeChange={setConfidenceMode}
-                  open={confidenceOpen}
-                  onOpenChange={setConfidenceOpen}
-                  confidenceDisabled={!confidenceAvailable}
-                  lowConfidence={lowConfidence}
+                  mode={uncertaintyMode}
+                  onModeChange={setUncertaintyMode}
+                  open={uncertaintyOpen}
+                  onOpenChange={setUncertaintyOpen}
+                  uncertaintyDisabled={!uncertaintyAvailable}
+                  highUncertainty={highUncertainty}
                 />
               )}
             </>

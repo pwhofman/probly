@@ -2,10 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Used by the low-confidence underline under the Confidence button in
+/* Used by the high-uncertainty underline under the Uncertainty button in
    MessageBubble.tsx. Square-wave blink (steps(1)) so the marker pops
    rather than fades while it's drawing attention. */
-@keyframes lowConfBlink {
+@keyframes highUncBlink {
   0%, 49% { opacity: 1; }
   50%, 100% { opacity: 0; }
 }

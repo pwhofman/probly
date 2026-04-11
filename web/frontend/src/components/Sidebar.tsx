@@ -110,9 +110,15 @@ export default function Sidebar({ onNewChat, pastChats }: SidebarProps) {
         <div className="flex flex-col gap-0.5">
           {pastChats?.map((c) => <RecentItem key={c.id} title={c.title} />)}
           <RecentItem title="Uncertainty on token logits" />
+          <RecentItem title="Finish PhD in one weekend?" />
           <RecentItem title="Streaming TextStreamer wiring" />
+          <RecentItem title="Advisor ghosted me again" />
           <RecentItem title="System prompt experiments" />
+          <RecentItem title="Cool hackathons near me" />
           <RecentItem title="Calibration ideas for Gemma" />
+          <RecentItem title="Ethical to self-cite 14x?" />
+          <RecentItem title="RLHF vs democracy" />
+          <RecentItem title="Align LLMs to vibes" />
         </div>
       </div>
 

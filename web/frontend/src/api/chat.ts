@@ -1,4 +1,4 @@
-import type { ConceptSpan, ConfidencePayload, Message, Role, Word } from '../types';
+import type { ConceptSpan, Message, Role, UncertaintyPayload, Word } from '../types';
 
 interface ApiChatMessage {
   role: Role;
@@ -25,31 +25,44 @@ export async function sendChat(messages: Message[]): Promise<ApiChatMessage> {
   return data.message;
 }
 
-// Backend-side concept span shape (snake_case on the wire).
+// Backend-side word shape (snake_case on the wire). The backend still
+// calls its numeric field ``confidence``; the frontend reinterprets it as
+// uncertainty at decode time.
+interface WireWord {
+  text: string;
+  confidence: number;
+  alternatives?: string[];
+}
+
 interface WireConceptSpan {
   first_word: number;
   last_word: number;
   confidence: number;
 }
 
-interface WireConfidencePayload {
-  words: Word[];
+interface WireUncertaintyPayload {
+  words: WireWord[];
   concepts: WireConceptSpan[];
   full: number;
   low_confidence?: boolean;
 }
 
-function decodeConfidence(payload: WireConfidencePayload): ConfidencePayload {
+function decodeUncertainty(payload: WireUncertaintyPayload): UncertaintyPayload {
+  const words: Word[] = payload.words.map((w) => ({
+    text: w.text,
+    uncertainty: w.confidence,
+    ...(w.alternatives !== undefined ? { alternatives: w.alternatives } : {}),
+  }));
   const concepts: ConceptSpan[] = payload.concepts.map((c) => ({
     firstWord: c.first_word,
     lastWord: c.last_word,
-    confidence: c.confidence,
+    uncertainty: c.confidence,
   }));
   return {
-    words: payload.words,
+    words,
     concepts,
     full: payload.full,
-    lowConfidence: payload.low_confidence,
+    highUncertainty: payload.low_confidence,
   };
 }
 
@@ -62,10 +75,10 @@ function decodeConfidence(payload: WireConfidencePayload): ConfidencePayload {
  *
  * When generation finishes, the server emits a single
  * ``{confidence: {...}}`` frame with word-, concept-, and line-level
- * confidences (all backend-authored, frontend does no computation),
+ * uncertainties (all backend-authored, frontend does no computation),
  * followed by ``{done: true}``. If the backing chat object has no
- * confidence data to report (real Gemma case), the ``confidence`` frame
- * is omitted entirely and ``onConfidence`` is never called.
+ * uncertainty data to report (real Gemma case), the ``confidence`` frame
+ * is omitted entirely and ``onUncertainty`` is never called.
  *
  * Resolves when the stream ends; rejects on HTTP error or when the
  * backend emits an ``{error: ...}`` line mid-stream.
@@ -73,7 +86,7 @@ function decodeConfidence(payload: WireConfidencePayload): ConfidencePayload {
 export async function sendChatStream(
   messages: Message[],
   onDelta: (chunk: string) => void,
-  onConfidence: (payload: ConfidencePayload) => void,
+  onUncertainty: (payload: UncertaintyPayload) => void,
 ): Promise<void> {
   const body = {
     messages: messages.map(({ role, content }) => ({ role, content })),
@@ -102,7 +115,7 @@ export async function sendChatStream(
       if (line) {
         const parsed = JSON.parse(line) as {
           delta?: string;
-          confidence?: WireConfidencePayload;
+          confidence?: WireUncertaintyPayload;
           done?: boolean;
           error?: string;
         };
@@ -111,7 +124,7 @@ export async function sendChatStream(
           onDelta(parsed.delta);
         }
         if (parsed.confidence !== undefined) {
-          onConfidence(decodeConfidence(parsed.confidence));
+          onUncertainty(decodeUncertainty(parsed.confidence));
         }
       }
       newlineIdx = buffer.indexOf('\n');

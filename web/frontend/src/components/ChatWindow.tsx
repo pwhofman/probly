@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { ConfidencePayload, Message } from '../types';
+import type { Message, UncertaintyPayload } from '../types';
 import { sendChatStream } from '../api/chat';
 import MessageList from './MessageList';
 import ChatInput from './ChatInput';
@@ -99,16 +99,16 @@ export default function ChatWindow({ onFirstMessage }: Props) {
       );
     };
 
-    const handleConfidence = (payload: ConfidencePayload) => {
+    const handleUncertainty = (payload: UncertaintyPayload) => {
       setMessages((prev) =>
         prev.map((m) =>
-          m.id === assistantId ? { ...m, confidence: payload } : m,
+          m.id === assistantId ? { ...m, uncertainty: payload } : m,
         ),
       );
     };
 
     try {
-      await sendChatStream(withUser, handleDelta, handleConfidence);
+      await sendChatStream(withUser, handleDelta, handleUncertainty);
     } catch (err) {
       if (thinkingTimer !== null) window.clearTimeout(thinkingTimer);
       const detail = err instanceof Error ? err.message : String(err);
@@ -172,7 +172,7 @@ export default function ChatWindow({ onFirstMessage }: Props) {
             placeholder="Reply..."
           />
           <p className="mt-2 text-center text-xs text-muted">
-            AI models can make mistakes. Check low-confidence outputs.
+            AI models can make mistakes. Check high-uncertainty outputs.
           </p>
         </div>
       </div>
