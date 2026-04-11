@@ -9,13 +9,13 @@ from probly.representation.distribution.torch_categorical import (
     TorchCategoricalDistributionSample,
 )
 
-from ._common import conditional_entropy, entropy, entropy_of_expected_value, mutual_information
+from ._common import LogBase, conditional_entropy, entropy, entropy_of_expected_value, mutual_information
 
 # Entropy
 
 
 @entropy.register(TorchCategoricalDistribution)
-def torch_categorical_entropy(distribution: TorchCategoricalDistribution) -> torch.Tensor:
+def torch_categorical_entropy(distribution: TorchCategoricalDistribution, base: LogBase = None) -> torch.Tensor:
     """Compute the entropy of a categorical distribution represented as a PyTorch tensor."""
     if isinstance(distribution, TorchCategoricalDistribution):
         p = distribution.probabilities
@@ -23,32 +23,42 @@ def torch_categorical_entropy(distribution: TorchCategoricalDistribution) -> tor
     else:
         p = distribution
     log_p = torch.where(p > 0, torch.log(p), torch.zeros_like(p))
-    return -torch.sum(p * log_p, dim=-1)
+    entropy = -torch.sum(p * log_p, dim=-1)
+    if base is None or base == torch.e:
+        return entropy
+    if base == "normalize":
+        base = float(p.shape[-1])
+
+    return entropy / torch.log(torch.tensor(base))
 
 
 # Entropy of expected value
 
 
 @entropy_of_expected_value.register(TorchCategoricalDistributionSample)
-def torch_categorical_sample_entropy_of_expected_value(sample: TorchCategoricalDistributionSample) -> torch.Tensor:
+def torch_categorical_sample_entropy_of_expected_value(
+    sample: TorchCategoricalDistributionSample, base: LogBase = None
+) -> torch.Tensor:
     """Compute the entropy of the expected value of a sample from a categorical distribution."""
     p = sample.tensor.probabilities
     axis = sample.sample_axis
     del sample  # Avoid keeping a reference to the sample for memory efficiency
     expected_value = torch.mean(p, dim=axis)
-    return torch_categorical_entropy(expected_value)
+    return torch_categorical_entropy(expected_value, base=base)
 
 
 # Conditional entropy
 
 
 @conditional_entropy.register(TorchCategoricalDistributionSample)
-def torch_categorical_sample_conditional_entropy(sample: TorchCategoricalDistributionSample) -> torch.Tensor:
+def torch_categorical_sample_conditional_entropy(
+    sample: TorchCategoricalDistributionSample, base: LogBase = None
+) -> torch.Tensor:
     """Compute the conditional entropy of a sample from a categorical distribution."""
     p = sample.tensor.probabilities
     axis = sample.sample_axis
     del sample  # Avoid keeping a reference to the sample for memory efficiency
-    entropies = torch_categorical_entropy(p)
+    entropies = torch_categorical_entropy(p, base=base)
     return torch.mean(entropies, dim=axis)
 
 
@@ -56,11 +66,13 @@ def torch_categorical_sample_conditional_entropy(sample: TorchCategoricalDistrib
 
 
 @mutual_information.register(TorchCategoricalDistributionSample)
-def torch_categorical_sample_mutual_information(sample: TorchCategoricalDistributionSample) -> torch.Tensor:
+def torch_categorical_sample_mutual_information(
+    sample: TorchCategoricalDistributionSample, base: LogBase = None
+) -> torch.Tensor:
     """Compute the mutual information of a sample from a categorical distribution."""
     p = sample.tensor.probabilities
     axis = sample.sample_axis
     del sample  # Avoid keeping a reference to the sample for memory efficiency
-    expected_value_entropy = torch_categorical_entropy(torch.mean(p, dim=axis))
-    conditional_entropy_value = torch.mean(torch_categorical_entropy(p), dim=axis)
+    expected_value_entropy = torch_categorical_entropy(torch.mean(p, dim=axis), base=base)
+    conditional_entropy_value = torch.mean(torch_categorical_entropy(p, base=base), dim=axis)
     return expected_value_entropy - conditional_entropy_value

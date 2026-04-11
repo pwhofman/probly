@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
 
 from lazy_dispatch import lazydispatch
 
@@ -22,7 +22,7 @@ class Quantifier[R: Representation, Q: QuantificationResult](Protocol):
 
 
 @lazydispatch
-def quantify(representation: Representation) -> QuantificationResult:
+def quantify(representation: Representation, *args: Any, **kwargs: Any) -> QuantificationResult:  # noqa: ANN401
     """Generic quantify function."""
     msg = f"No quantify function registered for type {type(representation)}"
     raise NotImplementedError(msg)
