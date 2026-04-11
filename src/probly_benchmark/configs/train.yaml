@@ -2,10 +2,10 @@ defaults:
   - _self_
   - method: ??? # user must specify a method.
 
-dataset: "cifar10"
-base_model: "resnet18"
+dataset: "imagenet_shards"
+base_model: "resnet50"
 pretrained: False
-epochs: 5
+epochs: 50
 batch_size: 512
 num_workers: 4
 pin_memory: true

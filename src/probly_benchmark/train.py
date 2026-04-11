@@ -11,6 +11,7 @@ if TYPE_CHECKING:
 
 
 import pathlib
+import secrets
 import tempfile
 
 import hydra
@@ -401,17 +402,25 @@ def main(cfg: DictConfig) -> None:
     print("=== Training configuration ===")
     print(OmegaConf.to_yaml(cfg))
 
+    run_id = wandb.util.generate_id()
+    seed = cfg.get("seed", None)
+    if seed is None:
+        seed = secrets.randbelow(2**32)
+    utils.set_seed(seed)
+
     run = wandb.init(
+        id=run_id,
+        name=f"{cfg.method.name}_{cfg.base_model}_{cfg.dataset}_{run_id}",
         entity=cfg.wandb.get("entity", None),
         project=cfg.wandb.project,
         config=OmegaConf.to_container(cfg, resolve=True, throw_on_missing=True),  # ty: ignore
         mode="online" if cfg.wandb.enabled else "disabled",
         save_code=True,
     )
+    run.config.update({"seed": seed})
 
     device = utils.get_device(cfg.get("device", None))
     print(f"Running on device: {device}")
-    utils.set_seed(cfg.seed) if cfg.get("seed", None) else None
 
     train_loader, val_loader, test_loader = data.get_data_train(
         cfg.dataset,
@@ -460,14 +469,14 @@ def main(cfg: DictConfig) -> None:
         "metrics": test_metrics,
     }
 
-    name = f"{cfg.method.name}_{cfg.base_model}_{cfg.dataset}"
+    artifact_name = f"{cfg.method.name}_{cfg.base_model}_{cfg.dataset}_{seed}"
 
     if cfg.save_to_disk:
-        path = pathlib.Path(CHECKPOINT_PATH).joinpath(f"{name}.pt")
+        path = pathlib.Path(CHECKPOINT_PATH).joinpath(f"{artifact_name}.pt")
         torch.save(checkpoint, path)
 
         artifact = wandb.Artifact(
-            name=name,
+            name=artifact_name,
             type="model",
             metadata=OmegaConf.to_container(cfg, resolve=True, throw_on_missing=True),  # ty: ignore
         )
@@ -475,11 +484,11 @@ def main(cfg: DictConfig) -> None:
         wandb.log_artifact(artifact)
     else:
         with tempfile.TemporaryDirectory() as tmp:
-            path = pathlib.Path(tmp).joinpath(f"{name}.pt")
+            path = pathlib.Path(tmp).joinpath(f"{artifact_name}.pt")
             torch.save(checkpoint, path)
 
             artifact = wandb.Artifact(
-                name=name,
+                name=artifact_name,
                 type="model",
                 metadata=OmegaConf.to_container(cfg, resolve=True, throw_on_missing=True),  # ty: ignore
             )
