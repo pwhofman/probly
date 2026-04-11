@@ -100,22 +100,15 @@ class GemmaChat:
         decoded: str = self.tokenizer.decode(outputs[0][prompt_len:], skip_special_tokens=True)
         return decoded.strip()
 
-    def reply_stream(
-        self,
-        messages: list[dict[str, str]],
-    ) -> Iterator[tuple[str, float]]:
-        """Yield ``(text, confidence)`` pairs as the model produces each token.
+    def reply_stream(self, messages: list[dict[str, str]]) -> Iterator[str]:
+        """Yield decoded text one token at a time as the model produces it.
 
-        Runs a manual greedy decoding loop instead of ``model.generate`` so
-        we can read the top-1 softmax probability at every step and use it
-        as a per-token confidence score. KV caching via ``past_key_values``
-        keeps this roughly comparable in speed to the previous
-        ``TextIteratorStreamer`` path — we just also get the logits.
-
-        Under ``do_sample=False`` (greedy), the reported confidence is the
-        probability the model assigned to the token it actually picked,
-        which is a cheap but sensible "how sure was it here?" signal for
-        the frontend's highlighting UI.
+        Runs a manual greedy decoding loop with KV caching. This used to
+        also yield a top-1 softmax probability per token, but confidence
+        computation has been moved entirely to :meth:`reply_confidence`
+        on the mock backend (real Gemma has no concept- or line-level
+        signal to offer, so the route simply omits the confidence frame
+        in that mode — see :meth:`reply_confidence`).
         """
         inputs = self._prepare_inputs(messages)
         input_ids = inputs["input_ids"]
@@ -134,9 +127,7 @@ class GemmaChat:
                 )
                 past = outputs.past_key_values
                 logits = outputs.logits[:, -1, :]
-                probs = torch.softmax(logits, dim=-1)
-                next_id = int(torch.argmax(probs, dim=-1).item())
-                confidence = float(probs[0, next_id].item())
+                next_id = int(torch.argmax(logits, dim=-1).item())
                 if eos_id is not None and next_id == eos_id:
                     break
                 text = self.tokenizer.decode([next_id], skip_special_tokens=True)
@@ -150,4 +141,17 @@ class GemmaChat:
                         dim=-1,
                     )
                 if text:
-                    yield text, confidence
+                    yield text
+
+    def reply_confidence(self, messages: list[dict[str, str]]) -> dict[str, Any] | None:  # noqa: ARG002
+        """Return the final confidence payload for the generated reply.
+
+        Real Gemma does not compute any per-word, per-concept, or
+        per-visual-line confidence on the backend (that lives only in
+        the mock for the demo). Returning ``None`` tells the route
+        handler to omit the ``{"confidence": ...}`` frame entirely, so
+        the frontend falls through to its "no confidence available"
+        rendering path and keeps the confidence toggle permanently
+        disabled.
+        """
+        return None

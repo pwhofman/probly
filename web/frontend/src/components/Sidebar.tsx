@@ -47,11 +47,22 @@ function RecentItem({ title }: { title: string }) {
   );
 }
 
-interface SidebarProps {
-  onNewChat?: () => void;
+interface PastChat {
+  id: string;
+  title: string;
 }
 
-export default function Sidebar({ onNewChat }: SidebarProps) {
+interface SidebarProps {
+  onNewChat?: () => void;
+  /**
+   * Dynamic list of chats the user has already walked through,
+   * newest first. Rendered above the hardcoded decorative recents.
+   * Clicking an entry is a no-op — these are purely visual history.
+   */
+  pastChats?: PastChat[];
+}
+
+export default function Sidebar({ onNewChat, pastChats }: SidebarProps) {
   return (
     <aside className="flex h-full w-64 shrink-0 flex-col border-r border-rule bg-panel">
       <div className="flex items-center gap-2 px-4 py-4">
@@ -97,6 +108,7 @@ export default function Sidebar({ onNewChat }: SidebarProps) {
       <div className="mt-2 flex-1 overflow-y-auto px-2 pb-4">
         <SectionLabel>Recents</SectionLabel>
         <div className="flex flex-col gap-0.5">
+          {pastChats?.map((c) => <RecentItem key={c.id} title={c.title} />)}
           <RecentItem title="Uncertainty on token logits" />
           <RecentItem title="Streaming TextStreamer wiring" />
           <RecentItem title="System prompt experiments" />

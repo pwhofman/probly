@@ -36,15 +36,25 @@ def post_chat_stream(request: ChatRequest, http_request: Request) -> StreamingRe
 
     Each line is one JSON object:
 
-    - ``{"delta": "...", "confidence": 0.83}`` — a new piece of assistant
-      text together with the model's per-token confidence (top-1 softmax
-      probability for real Gemma; hand-authored floats for the mock).
-    - ``{"done": true}``  — generation finished cleanly
-    - ``{"error": "..."}`` — generation failed mid-stream
+    - ``{"delta": "..."}`` — a new piece of assistant text. Deltas carry
+      text only; per-word, per-concept, and per-line confidences are
+      deferred to the final payload below so the frontend never has to
+      compute anything itself.
+    - ``{"confidence": {...}}`` — the single final confidence payload for
+      the whole reply. Emitted exactly once, after the last ``delta`` and
+      before ``done``. Omitted entirely if the backing chat object
+      returns ``None`` from ``reply_confidence`` (real Gemma case), so
+      the frontend knows to keep its confidence toggle disabled.
+      Shape: ``{"words": [{"text", "confidence"}], "concepts":
+      [{"first_word", "last_word", "confidence"}], "full": float}``
+      — ``full`` is the single "whole response" confidence the frontend
+      paints across every visual line in full mode.
+    - ``{"done": true}`` — generation finished cleanly.
+    - ``{"error": "..."}`` — generation failed mid-stream.
 
-    The duck-typed ``reply_stream`` contract on the backing chat object
-    yields ``(text, confidence)`` tuples, so both ``MockChat`` and
-    ``GemmaChat`` use the same wire format.
+    Both ``MockChat`` and ``GemmaChat`` implement the duck-typed pair
+    ``reply_stream(messages) -> Iterator[str]`` plus
+    ``reply_confidence(messages) -> dict | None``.
     """
     _require_user_message(request)
     gemma = http_request.app.state.gemma
@@ -52,8 +62,11 @@ def post_chat_stream(request: ChatRequest, http_request: Request) -> StreamingRe
 
     def iter_ndjson() -> Iterator[str]:
         try:
-            for chunk, confidence in gemma.reply_stream(messages):
-                yield json.dumps({"delta": chunk, "confidence": confidence}) + "\n"
+            for chunk in gemma.reply_stream(messages):
+                yield json.dumps({"delta": chunk}) + "\n"
+            payload = gemma.reply_confidence(messages)
+            if payload is not None:
+                yield json.dumps({"confidence": payload}) + "\n"
             yield json.dumps({"done": True}) + "\n"
         except Exception as exc:  # noqa: BLE001 - surface any generation error to the client
             yield json.dumps({"error": str(exc)}) + "\n"

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Message, TokenConfidence } from '../types';
+import type { ConfidencePayload, Message } from '../types';
 import { sendChatStream } from '../api/chat';
 import MessageList from './MessageList';
 import ChatInput from './ChatInput';
@@ -15,11 +15,26 @@ const QUICK_PROMPTS = [
   { label: 'Code', icon: '\u003C\u002F\u003E' },
 ];
 
-export default function ChatWindow() {
+interface Props {
+  /**
+   * Called once with the first user message sent in this chat mount.
+   * ``App`` uses this to snapshot a title for the sidebar's growing
+   * "past chats" list when the user clicks "New chat" later.
+   */
+  onFirstMessage?: (text: string) => void;
+}
+
+export default function ChatWindow({ onFirstMessage }: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isSending, setIsSending] = useState(false);
 
   const handleSend = async (text: string) => {
+    // Report the first user message upstream so App can remember it as
+    // the title of this chat. One-shot by construction: every new chat
+    // is a fresh ``ChatWindow`` mount with empty ``messages``.
+    if (messages.length === 0) {
+      onFirstMessage?.(text);
+    }
     const userMessage: Message = { id: makeId(), role: 'user', content: text };
     const assistantId = makeId();
     const withUser = [...messages, userMessage];
@@ -44,23 +59,20 @@ export default function ChatWindow() {
 
     // Hold back streamed deltas for `thinkingMs` so the bubble shows a
     // "Thinking..." state, then flips to "Thought for <Xs>" once the pause
-    // is over. On the first turn we skip the simulation entirely. Deltas
-    // (text + confidence pairs) accumulate in ``bufferedTokens`` during the
-    // thinking window and flush into ``message.tokens`` when the timer fires.
+    // is over. On the first turn we skip the simulation entirely. Text
+    // accumulates in ``bufferedText`` during the thinking window and
+    // flushes into ``message.content`` when the timer fires.
     const thinkingState: {
       active: boolean;
       bufferedText: string;
-      bufferedTokens: TokenConfidence[];
-    } = { active: !isFirstTurn, bufferedText: '', bufferedTokens: [] };
+    } = { active: !isFirstTurn, bufferedText: '' };
 
     const thinkingTimer = isFirstTurn
       ? null
       : window.setTimeout(() => {
           thinkingState.active = false;
           const flushedText = thinkingState.bufferedText;
-          const flushedTokens = thinkingState.bufferedTokens;
           thinkingState.bufferedText = '';
-          thinkingState.bufferedTokens = [];
           setMessages((prev) =>
             prev.map((m) =>
               m.id === assistantId
@@ -69,32 +81,34 @@ export default function ChatWindow() {
                     thinking: 'done',
                     thoughtLabel,
                     content: m.content + flushedText,
-                    tokens: [...(m.tokens ?? []), ...flushedTokens],
                   }
                 : m,
             ),
           );
         }, thinkingMs);
 
+    const handleDelta = (delta: string) => {
+      if (thinkingState.active) {
+        thinkingState.bufferedText += delta;
+        return;
+      }
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === assistantId ? { ...m, content: m.content + delta } : m,
+        ),
+      );
+    };
+
+    const handleConfidence = (payload: ConfidencePayload) => {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === assistantId ? { ...m, confidence: payload } : m,
+        ),
+      );
+    };
+
     try {
-      await sendChatStream(withUser, (delta, confidence) => {
-        if (thinkingState.active) {
-          thinkingState.bufferedText += delta;
-          thinkingState.bufferedTokens.push({ text: delta, confidence });
-          return;
-        }
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === assistantId
-              ? {
-                  ...m,
-                  content: m.content + delta,
-                  tokens: [...(m.tokens ?? []), { text: delta, confidence }],
-                }
-              : m,
-          ),
-        );
-      });
+      await sendChatStream(withUser, handleDelta, handleConfidence);
     } catch (err) {
       if (thinkingTimer !== null) window.clearTimeout(thinkingTimer);
       const detail = err instanceof Error ? err.message : String(err);

@@ -1,4 +1,4 @@
-import type { Message, Role } from '../types';
+import type { ConceptSpan, ConfidencePayload, Message, Role, Word } from '../types';
 
 interface ApiChatMessage {
   role: Role;
@@ -25,16 +25,55 @@ export async function sendChat(messages: Message[]): Promise<ApiChatMessage> {
   return data.message;
 }
 
+// Backend-side concept span shape (snake_case on the wire).
+interface WireConceptSpan {
+  first_word: number;
+  last_word: number;
+  confidence: number;
+}
+
+interface WireConfidencePayload {
+  words: Word[];
+  concepts: WireConceptSpan[];
+  full: number;
+  low_confidence?: boolean;
+}
+
+function decodeConfidence(payload: WireConfidencePayload): ConfidencePayload {
+  const concepts: ConceptSpan[] = payload.concepts.map((c) => ({
+    firstWord: c.first_word,
+    lastWord: c.last_word,
+    confidence: c.confidence,
+  }));
+  return {
+    words: payload.words,
+    concepts,
+    full: payload.full,
+    lowConfidence: payload.low_confidence,
+  };
+}
+
 /**
- * Stream an assistant reply from the backend. ``onDelta`` is called once per
- * chunk as the model produces text, receiving both the text and the model's
- * per-token confidence (top-1 softmax probability for real Gemma, hand-authored
- * floats for MockChat). Resolves when the stream ends; rejects on HTTP error
- * or when the backend emits an ``{"error": ...}`` line mid-stream.
+ * Stream an assistant reply from the backend.
+ *
+ * During generation the server sends a sequence of ``{delta: string}``
+ * frames with raw text only; the frontend just appends them to the
+ * message body so the typing animation feels the same as before.
+ *
+ * When generation finishes, the server emits a single
+ * ``{confidence: {...}}`` frame with word-, concept-, and line-level
+ * confidences (all backend-authored, frontend does no computation),
+ * followed by ``{done: true}``. If the backing chat object has no
+ * confidence data to report (real Gemma case), the ``confidence`` frame
+ * is omitted entirely and ``onConfidence`` is never called.
+ *
+ * Resolves when the stream ends; rejects on HTTP error or when the
+ * backend emits an ``{error: ...}`` line mid-stream.
  */
 export async function sendChatStream(
   messages: Message[],
-  onDelta: (chunk: string, confidence: number) => void,
+  onDelta: (chunk: string) => void,
+  onConfidence: (payload: ConfidencePayload) => void,
 ): Promise<void> {
   const body = {
     messages: messages.map(({ role, content }) => ({ role, content })),
@@ -63,16 +102,16 @@ export async function sendChatStream(
       if (line) {
         const parsed = JSON.parse(line) as {
           delta?: string;
-          confidence?: number;
+          confidence?: WireConfidencePayload;
           done?: boolean;
           error?: string;
         };
         if (parsed.error) throw new Error(parsed.error);
         if (parsed.delta !== undefined) {
-          // Missing confidence is tolerated so older servers (or partial
-          // replay fixtures) don't crash the demo; fall back to 1.0 which
-          // renders as "no tint" in the highlight modes.
-          onDelta(parsed.delta, parsed.confidence ?? 1.0);
+          onDelta(parsed.delta);
+        }
+        if (parsed.confidence !== undefined) {
+          onConfidence(decodeConfidence(parsed.confidence));
         }
       }
       newlineIdx = buffer.indexOf('\n');

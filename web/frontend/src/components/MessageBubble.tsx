@@ -1,7 +1,7 @@
-import { useState, type CSSProperties } from 'react';
+import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import type { Message, TokenConfidence } from '../types';
+import type { ConceptSpan, ConfidencePayload, Message } from '../types';
 
 interface Props {
   message: Message;
@@ -24,13 +24,10 @@ const SHAP_RED_RGB = '255, 13, 87';
 /**
  * Map a [0, 1] confidence to a background color string. Uses a gamma=2
  * curve so very-low confidences pop while mid-range values stay subtle.
- * The optional ``maxAlpha`` override lets callers (e.g. the per-line
- * summary bar) render at full opacity even when in-text tints follow the
- * soft ramp.
  */
-function confidenceToRgba(confidence: number, maxAlpha = 1): string {
+function confidenceToRgba(confidence: number): string {
   const clamped = Math.min(1, Math.max(0, confidence));
-  const alpha = (1 - clamped) ** 2 * maxAlpha;
+  const alpha = (1 - clamped) ** 2;
   return `rgba(${SHAP_RED_RGB}, ${alpha.toFixed(3)})`;
 }
 
@@ -45,68 +42,151 @@ function confidenceTextColor(confidence: number): string | undefined {
   return alpha > 0.6 ? '#ffffff' : undefined;
 }
 
-/**
- * Length-weighted mean confidence across a list of tokens. Weighting by
- * character length prevents a stray `","` from dominating an otherwise
- * high-confidence line — and conversely, makes a long unsure word pull
- * the line's score down more than a one-letter conjunction.
- */
-function weightedMean(tokens: TokenConfidence[]): number {
-  let totalLen = 0;
-  let weighted = 0;
-  for (const t of tokens) {
-    const len = t.text.length;
-    totalLen += len;
-    weighted += t.confidence * len;
-  }
-  return totalLen === 0 ? 1 : weighted / totalLen;
-}
-
 // Every tinted span transitions its background and text color with this
 // easing so switching modes (or toggling the panel) fades rather than
-// pops. Kept in one constant so the bubble background and per-token
+// pops. Kept in one constant so the bubble background and per-word
 // spans stay in sync.
 const HIGHLIGHT_TRANSITION =
   'background-color 240ms cubic-bezier(0.4, 0, 0.2, 1), color 240ms cubic-bezier(0.4, 0, 0.2, 1)';
 
 /**
- * Render the assistant reply as one span per token, always with identical
- * geometry (zero padding, no border radius), so that switching between
- * word, concept, full, and panel-closed states never causes the text to
- * reflow. The ``getTint`` callback decides which tint (if any) each token
- * receives in the current mode — returning ``null`` leaves the span
- * transparent, which lets `transition` animate it smoothly toward or away
- * from a colored state on the next render.
- *
- * Each token is split into its non-whitespace core and the trailing
- * whitespace that ``_chunk_reply`` glued onto it. Only the core gets the
- * tinted background, so highlights hug the word/punctuation and don't
- * bleed across the inter-word gaps.
+ * Information about which concept (if any) a given word participates in.
+ * ``isLast`` flags the final word of the span so we can leave its
+ * trailing whitespace untinted — making the concept band end cleanly at
+ * the last glyph instead of bleeding into the next word's gap.
  */
-function TokenizedBody({
-  tokens,
-  getTint,
+interface ConceptInfo {
+  concept: ConceptSpan;
+  isLast: boolean;
+}
+
+function buildConceptIndex(
+  wordCount: number,
+  concepts: readonly ConceptSpan[],
+): (ConceptInfo | null)[] {
+  const out: (ConceptInfo | null)[] = new Array(wordCount).fill(null);
+  for (const span of concepts) {
+    for (let i = span.firstWord; i <= span.lastWord; i++) {
+      if (i >= 0 && i < wordCount) {
+        out[i] = { concept: span, isLast: i === span.lastWord };
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * Render the assistant reply with per-mode confidence tints.
+ *
+ * Every word is rendered as an outer ``<span>`` that wraps the word's
+ * full chunk (glyph + trailing whitespace). Only the background tint
+ * differs between modes:
+ *
+ *   - **word**    — inner span around the glyph is tinted with the
+ *                   word's confidence; trailing whitespace stays
+ *                   transparent.
+ *   - **concept** — if the word is inside a concept span, the outer
+ *                   chunk span is tinted with the concept's confidence
+ *                   (so consecutive concept words form a continuous
+ *                   band through the inter-word whitespace). The last
+ *                   word of a span only tints its inner glyph, so the
+ *                   band ends cleanly at the last letter.
+ *   - **full**    — outer chunk span is tinted with the single
+ *                   whole-response confidence (whitespace included), so
+ *                   every visual line ends up with the same uniform
+ *                   tint.
+ */
+function WordBody({
+  confidence,
+  mode,
+  active,
 }: {
-  tokens: TokenConfidence[];
-  getTint: (index: number) => number | null;
+  confidence: ConfidencePayload;
+  mode: ConfidenceMode;
+  active: boolean;
 }) {
+  const { words, concepts, full } = confidence;
+  const conceptIndex = buildConceptIndex(words.length, concepts);
+
   return (
     <p className="my-0 whitespace-pre-wrap leading-6">
-      {tokens.map((t, i) => {
-        const conf = getTint(i);
-        const style: CSSProperties = { transition: HIGHLIGHT_TRANSITION };
-        if (conf !== null) {
-          style.backgroundColor = confidenceToRgba(conf);
-          const textColor = confidenceTextColor(conf);
-          if (textColor) style.color = textColor;
+      {words.map((w, i) => {
+        const outerStyle: CSSProperties = { transition: HIGHLIGHT_TRANSITION };
+        let innerContent: ReactNode = w.text;
+
+        if (active) {
+          if (mode === 'word') {
+            const match = w.text.match(/^(\S*)(\s*)$/);
+            const glyph = match ? match[1] : w.text;
+            const trailing = match ? match[2] : '';
+            const innerStyle: CSSProperties = {
+              transition: HIGHLIGHT_TRANSITION,
+              backgroundColor: confidenceToRgba(w.confidence),
+            };
+            const textColor = confidenceTextColor(w.confidence);
+            if (textColor) innerStyle.color = textColor;
+            const tintedGlyph = <span style={innerStyle}>{glyph}</span>;
+            // Only show the dotted-underline + hover tooltip affordance in
+            // word mode and only on words the backend actually seeded with
+            // alternatives — keep the hint rare so it reads as a
+            // spotlight, not noise on every hedged word.
+            const alternatives = w.alternatives;
+            const decoratedGlyph =
+              alternatives && alternatives.length > 0 ? (
+                <AlternativesTooltip alternatives={alternatives}>
+                  <span className="underline decoration-dotted decoration-muted/60 underline-offset-2">
+                    {tintedGlyph}
+                  </span>
+                </AlternativesTooltip>
+              ) : (
+                tintedGlyph
+              );
+            innerContent = (
+              <>
+                {decoratedGlyph}
+                {trailing}
+              </>
+            );
+          } else if (mode === 'concept') {
+            const info = conceptIndex[i];
+            if (info) {
+              if (info.isLast) {
+                // Tint only the glyph of the last concept word so the
+                // band stops cleanly at the last letter.
+                const match = w.text.match(/^(\S*)(\s*)$/);
+                const glyph = match ? match[1] : w.text;
+                const trailing = match ? match[2] : '';
+                const innerStyle: CSSProperties = {
+                  transition: HIGHLIGHT_TRANSITION,
+                  backgroundColor: confidenceToRgba(info.concept.confidence),
+                };
+                const textColor = confidenceTextColor(info.concept.confidence);
+                if (textColor) innerStyle.color = textColor;
+                innerContent = (
+                  <>
+                    <span style={innerStyle}>{glyph}</span>
+                    {trailing}
+                  </>
+                );
+              } else {
+                outerStyle.backgroundColor = confidenceToRgba(info.concept.confidence);
+                const textColor = confidenceTextColor(info.concept.confidence);
+                if (textColor) outerStyle.color = textColor;
+              }
+            }
+          } else {
+            // full mode — single whole-response confidence, applied
+            // uniformly to every word chunk (glyph + trailing
+            // whitespace), so every visual line paints the same tint.
+            outerStyle.backgroundColor = confidenceToRgba(full);
+            const textColor = confidenceTextColor(full);
+            if (textColor) outerStyle.color = textColor;
+          }
         }
-        const match = t.text.match(/^(\S*)(\s*)$/);
-        const word = match ? match[1] : t.text;
-        const trailing = match ? match[2] : '';
+
         return (
-          <span key={i}>
-            <span style={style}>{word}</span>
-            {trailing}
+          <span key={i} style={outerStyle}>
+            {innerContent}
           </span>
         );
       })}
@@ -115,15 +195,15 @@ function TokenizedBody({
 }
 
 /**
- * Pick the right render path for the assistant's message body. Messages
- * without streamed ``tokens`` (no deltas yet, or a plain-text pipeline
- * without confidence) fall through to the existing Markdown renderer —
- * highlighting requires token-level data.
+ * Pick the right render path for the assistant's message body. While a
+ * message is still streaming (or came from a backend with no confidence
+ * data, like real Gemma), ``message.confidence`` is undefined and we
+ * fall through to the plain Markdown renderer — the confidence toggle
+ * stays greyed out in that state.
  *
- * Once tokens are present, every mode (and the panel-closed state) goes
- * through ``TokenizedBody`` so the DOM layout is identical in all four
- * cases — only the per-span background color changes. That is what lets
- * switching modes animate smoothly without shifting the text.
+ * Once ``confidence`` arrives, ``WordBody`` takes over and renders one
+ * outer span per word so all three display modes can tint their spans
+ * independently without reflowing the text.
  */
 function AssistantContent({
   message,
@@ -134,34 +214,79 @@ function AssistantContent({
   mode: ConfidenceMode;
   active: boolean;
 }) {
-  if (!message.tokens || message.tokens.length === 0) {
+  if (!message.confidence) {
     return (
       <ReactMarkdown remarkPlugins={[remarkGfm]}>
         {message.content}
       </ReactMarkdown>
     );
   }
-  const tokens = message.tokens;
+  return <WordBody confidence={message.confidence} mode={mode} active={active} />;
+}
 
-  // Map the current (mode, active) state to a per-token tint lookup.
-  // ``null`` means "no tint" and produces a fully transparent span, which
-  // is what we want for the panel-closed state.
-  let getTint: (index: number) => number | null;
-  if (!active) {
-    getTint = () => null;
-  } else if (mode === 'full') {
-    // Full mode tints every token with the same length-weighted mean score,
-    // so the highlight lives on the text itself rather than on the
-    // surrounding bubble.
-    const fullScore = weightedMean(tokens);
-    getTint = () => fullScore;
-  } else {
-    // Concept mode falls back to word-level tints (concept spans were
-    // removed from the wire format for the real-time confidence demo).
-    getTint = (i) => tokens[i].confidence;
-  }
+/**
+ * Wrap a single control in a little floating tooltip bubble that shows
+ * ``label`` on hover or keyboard focus. The wrapper is an
+ * ``inline-flex`` so it doesn't disrupt the action row's flexbox layout,
+ * and the tooltip itself is ``pointer-events-none`` + absolutely
+ * positioned so it never blocks clicks or shifts surrounding elements.
+ * A downward-pointing CSS triangle (border trick) glues the bubble to
+ * the control below it. Uses Tailwind's ``group`` / ``group-hover`` +
+ * ``group-focus-within`` so no extra React state is needed to drive the
+ * fade.
+ */
+function WithTooltip({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <span className="group relative inline-flex">
+      {children}
+      <span
+        role="tooltip"
+        className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 -translate-x-1/2 whitespace-nowrap rounded-md bg-ink px-2 py-1 text-[11px] font-medium text-white opacity-0 shadow-md transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100"
+      >
+        {label}
+        <span
+          aria-hidden
+          className="absolute bottom-full left-1/2 h-0 w-0 -translate-x-1/2 border-4 border-transparent border-b-ink"
+        />
+      </span>
+    </span>
+  );
+}
 
-  return <TokenizedBody tokens={tokens} getTint={getTint} />;
+/**
+ * Floating tooltip showing a vertical list of alternative words on hover.
+ * Rendered in Word-Level confidence mode over words that the backend
+ * seeded with an ``alternatives`` list. Visually mirrors ``WithTooltip``
+ * (same dark pill + triangle) but renders a stacked list instead of a
+ * single label, and uses an ``inline`` wrapper so it can sit in the
+ * middle of a flowing ``<p>`` without breaking line wrap. The tooltip
+ * itself is ``pointer-events-none`` so it never eats clicks on
+ * neighbouring words.
+ */
+function AlternativesTooltip({
+  alternatives,
+  children,
+}: {
+  alternatives: readonly string[];
+  children: ReactNode;
+}) {
+  return (
+    <span className="group relative inline cursor-help">
+      {children}
+      <span
+        role="tooltip"
+        className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 -translate-x-1/2 flex flex-col gap-0.5 whitespace-nowrap rounded-md bg-ink px-2 py-1.5 text-[11px] font-medium text-white opacity-0 shadow-md transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100"
+      >
+        {alternatives.map((alt) => (
+          <span key={alt}>{alt}</span>
+        ))}
+        <span
+          aria-hidden
+          className="absolute bottom-full left-1/2 h-0 w-0 -translate-x-1/2 border-4 border-transparent border-b-ink"
+        />
+      </span>
+    </span>
+  );
 }
 
 interface MessageActionsProps {
@@ -170,6 +295,18 @@ interface MessageActionsProps {
   onModeChange: (mode: ConfidenceMode) => void;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /**
+   * When true the confidence toggle + mode switch are visible but
+   * non-interactive (greyed out). Used while generation is still
+   * streaming, or when the backend produced no confidence data.
+   */
+  confidenceDisabled: boolean;
+  /**
+   * When true the backend has flagged this response as low confidence,
+   * and the Confidence button should draw a blinking-then-solid red
+   * underline to surface the warning in the action row.
+   */
+  lowConfidence: boolean;
 }
 
 function MessageActions({
@@ -178,9 +315,24 @@ function MessageActions({
   onModeChange,
   open,
   onOpenChange,
+  confidenceDisabled,
+  lowConfidence,
 }: MessageActionsProps) {
   const [copied, setCopied] = useState(false);
   const [feedback, setFeedback] = useState<Feedback>(null);
+  // The underline blinks briefly when the low-confidence flag first
+  // arrives (i.e. when the confidence frame lands, after generation
+  // finishes), then settles into a solid red marker.
+  const [lowConfBlinking, setLowConfBlinking] = useState(false);
+  useEffect(() => {
+    if (!lowConfidence) {
+      setLowConfBlinking(false);
+      return;
+    }
+    setLowConfBlinking(true);
+    const timer = window.setTimeout(() => setLowConfBlinking(false), 2400);
+    return () => window.clearTimeout(timer);
+  }, [lowConfidence]);
 
   const handleCopy = async () => {
     try {
@@ -195,72 +347,103 @@ function MessageActions({
   const baseBtn =
     'flex h-7 w-7 items-center justify-center rounded-md text-muted transition-colors hover:bg-panel hover:text-ink';
 
+  const confidenceTooltipLabel = confidenceDisabled
+    ? 'Confidence available after generation finishes'
+    : 'Display model confidence';
+
   return (
     <div className="mt-2 flex items-center gap-1">
-      <button
-        type="button"
-        onClick={handleCopy}
-        className={baseBtn}
-        aria-label="Copy message"
-        title={copied ? 'Copied' : 'Copy'}
-      >
-        {copied ? (
+      <WithTooltip label={copied ? 'Copied' : 'Copy'}>
+        <button
+          type="button"
+          onClick={handleCopy}
+          className={baseBtn}
+          aria-label="Copy message"
+        >
+          {copied ? (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 6L9 17l-5-5" />
+            </svg>
+          ) : (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+              <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+            </svg>
+          )}
+        </button>
+      </WithTooltip>
+      <WithTooltip label="Positive feedback">
+        <button
+          type="button"
+          onClick={() => setFeedback((f) => (f === 'up' ? null : 'up'))}
+          className={`${baseBtn} ${feedback === 'up' ? 'bg-panel text-ink' : ''}`}
+          aria-label="Good response"
+          aria-pressed={feedback === 'up'}
+        >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M20 6L9 17l-5-5" />
+            <path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3zM7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3" />
           </svg>
-        ) : (
+        </button>
+      </WithTooltip>
+      <WithTooltip label="Negative feedback">
+        <button
+          type="button"
+          onClick={() => setFeedback((f) => (f === 'down' ? null : 'down'))}
+          className={`${baseBtn} ${feedback === 'down' ? 'bg-panel text-ink' : ''}`}
+          aria-label="Bad response"
+          aria-pressed={feedback === 'down'}
+        >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-            <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+            <path d="M10 15v4a3 3 0 003 3l4-9V2H5.72a2 2 0 00-2 1.7l-1.38 9a2 2 0 002 2.3zM17 2h3a2 2 0 012 2v7a2 2 0 01-2 2h-3" />
           </svg>
+        </button>
+      </WithTooltip>
+      <WithTooltip label={confidenceTooltipLabel}>
+        <button
+          type="button"
+          onClick={() => {
+            if (confidenceDisabled) return;
+            onOpenChange(!open);
+          }}
+          disabled={confidenceDisabled}
+          className={`flex h-7 items-center gap-1.5 rounded-md px-2 text-xs transition-colors ${
+            confidenceDisabled
+              ? 'cursor-not-allowed text-muted/50'
+              : `text-muted hover:bg-panel hover:text-ink ${open ? 'bg-panel text-ink' : ''}`
+          }`}
+          aria-label={
+            lowConfidence
+              ? 'Show confidence (low confidence response)'
+              : 'Show confidence'
+          }
+          aria-expanded={open}
+          aria-disabled={confidenceDisabled}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="6" y1="20" x2="6" y2="14" />
+            <line x1="12" y1="20" x2="12" y2="10" />
+            <line x1="18" y1="20" x2="18" y2="4" />
+          </svg>
+          <span>Confidence</span>
+        </button>
+        {lowConfidence && (
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-x-1 -bottom-0.5 h-0.5 rounded-full"
+            style={{
+              backgroundColor: `rgb(${SHAP_RED_RGB})`,
+              animation: lowConfBlinking
+                ? 'lowConfBlink 600ms steps(1) infinite'
+                : undefined,
+            }}
+          />
         )}
-      </button>
-      <button
-        type="button"
-        onClick={() => setFeedback((f) => (f === 'up' ? null : 'up'))}
-        className={`${baseBtn} ${feedback === 'up' ? 'bg-panel text-ink' : ''}`}
-        aria-label="Good response"
-        aria-pressed={feedback === 'up'}
-        title="Good response"
-      >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3zM7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3" />
-        </svg>
-      </button>
-      <button
-        type="button"
-        onClick={() => setFeedback((f) => (f === 'down' ? null : 'down'))}
-        className={`${baseBtn} ${feedback === 'down' ? 'bg-panel text-ink' : ''}`}
-        aria-label="Bad response"
-        aria-pressed={feedback === 'down'}
-        title="Bad response"
-      >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M10 15v4a3 3 0 003 3l4-9V2H5.72a2 2 0 00-2 1.7l-1.38 9a2 2 0 002 2.3zM17 2h3a2 2 0 012 2v7a2 2 0 01-2 2h-3" />
-        </svg>
-      </button>
-      <button
-        type="button"
-        onClick={() => onOpenChange(!open)}
-        className={`flex h-7 items-center gap-1.5 rounded-md px-2 text-xs text-muted transition-colors hover:bg-panel hover:text-ink ${
-          open ? 'bg-panel text-ink' : ''
-        }`}
-        aria-label="Show confidence"
-        aria-expanded={open}
-        title="Confidence"
-      >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <line x1="6" y1="20" x2="6" y2="14" />
-          <line x1="12" y1="20" x2="12" y2="10" />
-          <line x1="18" y1="20" x2="18" y2="4" />
-        </svg>
-        <span>Confidence</span>
-      </button>
+      </WithTooltip>
       <div
         className={`overflow-hidden transition-all duration-300 ease-out ${
-          open ? 'ml-2 max-w-md opacity-100' : 'ml-0 max-w-0 opacity-0'
+          open && !confidenceDisabled ? 'ml-2 max-w-md opacity-100' : 'ml-0 max-w-0 opacity-0'
         }`}
-        aria-hidden={!open}
+        aria-hidden={!open || confidenceDisabled}
       >
         <div className="relative flex rounded-full border border-rule bg-white/60 p-1 shadow-sm">
           <div
@@ -278,7 +461,7 @@ function MessageActions({
               type="button"
               onClick={() => onModeChange(key)}
               aria-pressed={mode === key}
-              tabIndex={open ? 0 : -1}
+              tabIndex={open && !confidenceDisabled ? 0 : -1}
               className={`relative z-10 w-28 whitespace-nowrap rounded-full px-3 py-1 text-center text-xs transition-colors duration-300 ease-out ${
                 mode === key
                   ? 'text-white'
@@ -325,6 +508,11 @@ function AssistantBubble({ message }: { message: Message }) {
   const [confidenceOpen, setConfidenceOpen] = useState(false);
   const [confidenceMode, setConfidenceMode] = useState<ConfidenceMode>('full');
 
+  const confidenceAvailable = message.confidence !== undefined;
+  const confidenceActive = confidenceOpen && confidenceAvailable;
+  const lowConfidence =
+    confidenceAvailable && message.confidence?.lowConfidence === true;
+
   return (
     <div className="flex justify-start">
       <div className="flex max-w-[92%] flex-col">
@@ -367,7 +555,7 @@ function AssistantBubble({ message }: { message: Message }) {
                   <AssistantContent
                     message={message}
                     mode={confidenceMode}
-                    active={confidenceOpen}
+                    active={confidenceActive}
                   />
                 ) : (
                   // Streaming placeholder while waiting for the first chunk.
@@ -381,6 +569,8 @@ function AssistantBubble({ message }: { message: Message }) {
                   onModeChange={setConfidenceMode}
                   open={confidenceOpen}
                   onOpenChange={setConfidenceOpen}
+                  confidenceDisabled={!confidenceAvailable}
+                  lowConfidence={lowConfidence}
                 />
               )}
             </>
