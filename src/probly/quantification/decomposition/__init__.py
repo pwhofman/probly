@@ -7,6 +7,7 @@ from .decomposition import (
     CachingDecomposition,
     Decomposition,
 )
+from .entropy import SecondOrderEntropyDecomposition
 
 __all__ = [
     "AdditiveDecomposition",
@@ -14,4 +15,5 @@ __all__ = [
     "AleatoricEpistemicTotalDecomposition",
     "CachingDecomposition",
     "Decomposition",
+    "SecondOrderEntropyDecomposition",
 ]

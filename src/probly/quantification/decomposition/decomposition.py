@@ -76,7 +76,7 @@ class CachingDecomposition(Decomposition, ABC):
         return self._cache[notion]  # ty:ignore[invalid-return-type]
 
 
-class AleatoricEpistemicDecomposition(Decomposition, ABC):
+class AleatoricEpistemicDecomposition[AU: AleatoricUncertainty, EU: EpistemicUncertainty](Decomposition, ABC):  # ty:ignore[inconsistent-mro]
     """Protocol for decompositions into aleatoric and epistemic uncertainty."""
 
     @property
@@ -90,32 +90,34 @@ class AleatoricEpistemicDecomposition(Decomposition, ABC):
         if notion is AleatoricUncertainty:
             return self._aleatoric
         if notion is EpistemicUncertainty:
-            return self.epistemic
+            return self._epistemic
         msg = f"Notion {notion} is not a component of the decomposition."
         raise KeyError(msg)
 
     @property
     @abstractmethod
-    def _aleatoric(self) -> AleatoricUncertainty:
+    def _aleatoric(self) -> AU:
         """The aleatoric uncertainty of the decomposition."""
 
     @property
     @abstractmethod
-    def _epistemic(self) -> EpistemicUncertainty:
+    def _epistemic(self) -> EU:
         """The epistemic uncertainty of the decomposition."""
 
     @property
-    def aleatoric(self) -> AleatoricUncertainty:
+    def aleatoric(self) -> AU:
         """The aleatoric uncertainty of the decomposition."""
         return self.get_notion(AleatoricUncertainty)
 
     @property
-    def epistemic(self) -> EpistemicUncertainty:
+    def epistemic(self) -> EU:
         """The epistemic uncertainty of the decomposition."""
         return self.get_notion(EpistemicUncertainty)
 
 
-class AleatoricEpistemicTotalDecomposition(AleatoricEpistemicDecomposition, ABC):
+class AleatoricEpistemicTotalDecomposition[AU: AleatoricUncertainty, EU: EpistemicUncertainty, TU: TotalUncertainty](
+    AleatoricEpistemicDecomposition[AU, EU], ABC
+):
     """Protocol for decompositions into aleatoric, epistemic and total uncertainty."""
 
     @property
@@ -132,16 +134,18 @@ class AleatoricEpistemicTotalDecomposition(AleatoricEpistemicDecomposition, ABC)
 
     @property
     @abstractmethod
-    def _total(self) -> TotalUncertainty:
+    def _total(self) -> TU:
         """The total uncertainty of the decomposition."""
 
     @property
-    def total(self) -> TotalUncertainty:
+    def total(self) -> TU:
         """The total uncertainty of the decomposition."""
         return self.get_notion(TotalUncertainty)
 
 
-class AdditiveDecomposition(AleatoricEpistemicTotalDecomposition, CachingDecomposition, ABC):
+class AdditiveDecomposition[AU: AleatoricUncertainty, EU: EpistemicUncertainty, TU: TotalUncertainty](
+    AleatoricEpistemicTotalDecomposition[AU, EU, TU], CachingDecomposition, ABC
+):  # ty:ignore[inconsistent-mro]
     """Protocol for decompositions where AU and EU sum up to the total uncertainty.
 
     At least two of the three components (_total, _aleatoric, _epistemic) must be implemented,
@@ -150,21 +154,21 @@ class AdditiveDecomposition(AleatoricEpistemicTotalDecomposition, CachingDecompo
 
     @override
     @property
-    def _total(self) -> TotalUncertainty:
+    def _total(self) -> TU:
         """The total uncertainty of the decomposition."""
-        return self.aleatoric + self.epistemic  # ty:ignore[unsupported-operator]
+        return self.aleatoric + self.epistemic
 
     @override
     @property
-    def _aleatoric(self) -> AleatoricUncertainty:
+    def _aleatoric(self) -> AU:
         """The aleatoric uncertainty of the decomposition."""
-        return self.total - self.epistemic  # ty:ignore[unsupported-operator]
+        return self.total - self.epistemic
 
     @override
     @property
-    def _epistemic(self) -> EpistemicUncertainty:
+    def _epistemic(self) -> EU:
         """The epistemic uncertainty of the decomposition."""
-        return self.total - self.aleatoric  # ty:ignore[unsupported-operator]
+        return self.total - self.aleatoric
 
 
 class Decomposer[R: Representation, D: Decomposition](Quantifier[R, D], Protocol):
