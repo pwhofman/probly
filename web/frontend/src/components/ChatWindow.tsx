@@ -18,10 +18,6 @@ const QUICK_PROMPTS = [
 export default function ChatWindow() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isSending, setIsSending] = useState(false);
-  // Tracks which assistant bubble is actively receiving deltas so the
-  // per-line confidence summary can suppress the still-writing line until
-  // the stream finishes (or a new wrapped line appears below it).
-  const [streamingId, setStreamingId] = useState<string | null>(null);
 
   const handleSend = async (text: string) => {
     const userMessage: Message = { id: makeId(), role: 'user', content: text };
@@ -45,7 +41,6 @@ export default function ChatWindow() {
       },
     ]);
     setIsSending(true);
-    setStreamingId(assistantId);
 
     // Hold back streamed deltas for `thinkingMs` so the bubble shows a
     // "Thinking..." state, then flips to "Thought for <Xs>" once the pause
@@ -109,7 +104,6 @@ export default function ChatWindow() {
       ]);
     } finally {
       setIsSending(false);
-      setStreamingId(null);
     }
   };
 
@@ -153,7 +147,7 @@ export default function ChatWindow() {
     <div className="flex h-full flex-col">
       <div className="flex-1 overflow-y-auto">
         <div className="mx-auto w-full max-w-4xl">
-          <MessageList messages={messages} streamingId={streamingId} />
+          <MessageList messages={messages} />
         </div>
       </div>
       <div className="border-t border-rule/60 bg-canvas px-6 py-4">
@@ -162,7 +156,6 @@ export default function ChatWindow() {
             onSend={handleSend}
             disabled={isSending}
             placeholder="Reply..."
-            modelLabel="Gemma 4 (probly harness)"
           />
           <p className="mt-2 text-center text-xs text-muted">
             AI models can make mistakes. Check low-confidence outputs.

@@ -58,7 +58,7 @@ export default function ChatInput({
             type="button"
             className="flex items-center gap-1 rounded-md px-2 py-1 text-sm text-muted hover:text-ink"
           >
-            <span>{modelLabel ?? 'Gemma 4'}</span>
+            <span>{modelLabel ?? 'Gemma 4 (probly harness)'}</span>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M6 9l6 6 6-6" />
             </svg>

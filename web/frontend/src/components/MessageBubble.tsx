@@ -1,17 +1,10 @@
-import {
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-  type CSSProperties,
-} from 'react';
+import { useState, type CSSProperties } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { Message, TokenConfidence } from '../types';
 
 interface Props {
   message: Message;
-  isStreaming?: boolean;
 }
 
 type Feedback = 'up' | 'down' | null;
@@ -76,16 +69,6 @@ function weightedMean(tokens: TokenConfidence[]): number {
 const HIGHLIGHT_TRANSITION =
   'background-color 240ms cubic-bezier(0.4, 0, 0.2, 1), color 240ms cubic-bezier(0.4, 0, 0.2, 1)';
 
-/** One visually-wrapped row of tokens, measured from the DOM. */
-interface LineGeometry {
-  /** Indices (into ``message.tokens``) of tokens on this wrapped line. */
-  tokenIndices: number[];
-  /** Top offset of the line relative to the bubble card, in px. */
-  top: number;
-  /** Bottom offset of the line relative to the bubble card, in px. */
-  bottom: number;
-}
-
 /**
  * Render the assistant reply as one span per token, always with identical
  * geometry (zero padding, no border radius), so that switching between
@@ -98,17 +81,14 @@ interface LineGeometry {
  * Each token is split into its non-whitespace core and the trailing
  * whitespace that ``_chunk_reply`` glued onto it. Only the core gets the
  * tinted background, so highlights hug the word/punctuation and don't
- * bleed across the inter-word gaps. The core span also receives a ref so
- * the parent can measure where each token landed after text wrapping.
+ * bleed across the inter-word gaps.
  */
 function TokenizedBody({
   tokens,
   getTint,
-  tokenRefs,
 }: {
   tokens: TokenConfidence[];
   getTint: (index: number) => number | null;
-  tokenRefs: React.MutableRefObject<Array<HTMLSpanElement | null>>;
 }) {
   return (
     <p className="my-0 whitespace-pre-wrap leading-6">
@@ -125,14 +105,7 @@ function TokenizedBody({
         const trailing = match ? match[2] : '';
         return (
           <span key={i}>
-            <span
-              ref={(el) => {
-                tokenRefs.current[i] = el;
-              }}
-              style={style}
-            >
-              {word}
-            </span>
+            <span style={style}>{word}</span>
             {trailing}
           </span>
         );
@@ -145,7 +118,7 @@ function TokenizedBody({
  * Pick the right render path for the assistant's message body. Messages
  * without streamed ``tokens`` (no deltas yet, or a plain-text pipeline
  * without confidence) fall through to the existing Markdown renderer —
- * highlighting and the per-line summary both require token-level data.
+ * highlighting requires token-level data.
  *
  * Once tokens are present, every mode (and the panel-closed state) goes
  * through ``TokenizedBody`` so the DOM layout is identical in all four
@@ -156,12 +129,10 @@ function AssistantContent({
   message,
   mode,
   active,
-  tokenRefs,
 }: {
   message: Message;
   mode: ConfidenceMode;
   active: boolean;
-  tokenRefs: React.MutableRefObject<Array<HTMLSpanElement | null>>;
 }) {
   if (!message.tokens || message.tokens.length === 0) {
     return (
@@ -190,68 +161,7 @@ function AssistantContent({
     getTint = (i) => tokens[i].confidence;
   }
 
-  return (
-    <TokenizedBody tokens={tokens} getTint={getTint} tokenRefs={tokenRefs} />
-  );
-}
-
-/**
- * Column of per-line confidence summaries rendered to the left of the
- * bubble. Each completed line gets a short numeric score and a thin
- * vertical bar tinted by that score's position on the SHAP-red ramp.
- * ``streaming`` suppresses the very last line until a new one starts
- * below it, so the summary feels "earned" as text finishes wrapping.
- */
-function LineSummary({
-  lines,
-  tokens,
-  streaming,
-}: {
-  lines: LineGeometry[];
-  tokens: TokenConfidence[];
-  streaming: boolean;
-}) {
-  // Only completed lines (i.e. everything except the still-writing last
-  // line while streaming) get a summary. Once the stream ends, every
-  // line counts as completed — that's what makes the last bar land at
-  // the moment the "Thought for ..." indicator flips off.
-  const completedCount = streaming ? Math.max(0, lines.length - 1) : lines.length;
-
-  return (
-    // Absolute-positioned so the bubble's flow width is never reduced —
-    // ``right: 100%`` anchors this column just outside the bubble's left
-    // edge, with the right-side margin providing a small gap between the
-    // bar and the bubble.
-    <div
-      className="pointer-events-none absolute top-0 w-14 pr-2"
-      style={{ right: '100%' }}
-      aria-hidden
-    >
-      {lines.slice(0, completedCount).map((line, i) => {
-        const conf = weightedMean(line.tokenIndices.map((idx) => tokens[idx]));
-        return (
-          <div
-            key={i}
-            className="absolute right-0 flex items-center gap-1.5 pr-2"
-            style={{
-              top: line.top,
-              height: Math.max(12, line.bottom - line.top),
-              transition: 'top 200ms ease-out, opacity 200ms ease-out',
-              opacity: 1,
-            }}
-          >
-            <span className="text-[10px] tabular-nums text-muted">
-              {conf.toFixed(2)}
-            </span>
-            <span
-              className="h-full w-1 rounded-full"
-              style={{ backgroundColor: confidenceToRgba(conf, 1) }}
-            />
-          </div>
-        );
-      })}
-    </div>
-  );
+  return <TokenizedBody tokens={tokens} getTint={getTint} />;
 }
 
 interface MessageActionsProps {
@@ -384,7 +294,7 @@ function MessageActions({
   );
 }
 
-export default function MessageBubble({ message, isStreaming = false }: Props) {
+export default function MessageBubble({ message }: Props) {
   if (message.role === 'user') {
     return (
       <div className="flex justify-end">
@@ -405,98 +315,19 @@ export default function MessageBubble({ message, isStreaming = false }: Props) {
     );
   }
 
-  return <AssistantBubble message={message} isStreaming={isStreaming} />;
+  return <AssistantBubble message={message} />;
 }
 
-function AssistantBubble({
-  message,
-  isStreaming,
-}: {
-  message: Message;
-  isStreaming: boolean;
-}) {
+function AssistantBubble({ message }: { message: Message }) {
   // State is lifted out of MessageActions so the selected mode can drive
-  // the body renderer (WordHighlighted / ConceptHighlighted / full tint)
-  // in addition to the toggle UI in the action row.
+  // the body renderer (word / concept / full tint) in addition to the
+  // toggle UI in the action row.
   const [confidenceOpen, setConfidenceOpen] = useState(false);
   const [confidenceMode, setConfidenceMode] = useState<ConfidenceMode>('full');
-
-  // Refs + measured lines for the per-line confidence summary column.
-  // ``tokenRefs`` is populated by ``TokenizedBody`` as it renders spans;
-  // ``bubbleRef`` is the card whose top-left we measure relative to.
-  const tokenRefs = useRef<Array<HTMLSpanElement | null>>([]);
-  const bubbleRef = useRef<HTMLDivElement | null>(null);
-  const [lines, setLines] = useState<LineGeometry[]>([]);
-
-  const tokens = message.tokens;
-
-  // Keep the refs array's length in sync with the token list so stale
-  // entries from a previous render can't survive into the measurement.
-  if (tokens && tokenRefs.current.length !== tokens.length) {
-    tokenRefs.current.length = tokens.length;
-  }
-
-  const measureLines = useMemo(
-    () => () => {
-      const bubble = bubbleRef.current;
-      if (!bubble || !tokens || tokens.length === 0) {
-        setLines([]);
-        return;
-      }
-      const bubbleTop = bubble.getBoundingClientRect().top;
-      // Group tokens that share a wrapped row by rounding their top to
-      // the nearest pixel — this collapses sub-pixel jitter from font
-      // metrics without falsely merging actually-different rows.
-      const rowMap = new Map<
-        number,
-        { tokenIndices: number[]; top: number; bottom: number }
-      >();
-      tokenRefs.current.forEach((el, i) => {
-        if (!el) return;
-        const rect = el.getBoundingClientRect();
-        if (rect.width === 0 && rect.height === 0) return;
-        const key = Math.round(rect.top);
-        const entry = rowMap.get(key) ?? {
-          tokenIndices: [],
-          top: rect.top - bubbleTop,
-          bottom: rect.bottom - bubbleTop,
-        };
-        entry.tokenIndices.push(i);
-        entry.bottom = Math.max(entry.bottom, rect.bottom - bubbleTop);
-        rowMap.set(key, entry);
-      });
-      const measured = [...rowMap.values()].sort((a, b) => a.top - b.top);
-      setLines(measured);
-    },
-    [tokens],
-  );
-
-  // Re-measure whenever the token list grows (new delta arrived) or the
-  // bubble's width changes (window resize, sidebar collapse, etc.). Both
-  // hooks depend on ``measureLines`` which itself captures ``tokens``, so
-  // the latest token array is always the one being measured.
-  useLayoutEffect(() => {
-    measureLines();
-  }, [measureLines]);
-
-  useLayoutEffect(() => {
-    const bubble = bubbleRef.current;
-    if (!bubble) return;
-    const observer = new ResizeObserver(() => measureLines());
-    observer.observe(bubble);
-    return () => observer.disconnect();
-  }, [measureLines]);
 
   return (
     <div className="flex justify-start">
       <div className="flex max-w-[92%] flex-col">
-        {/*
-          Gemma logo is stacked above the bubble so the bubble's left edge
-          can stay flush with the thinking header and action row below.
-          The LineSummary column is positioned absolutely off to the left
-          of the bubble (via right: 100%), so it needs empty space next to
-          the bubble — the old inline avatar would have collided with it.
-        */}
         <img
           src="/gemma-color.png"
           alt="Gemma"
@@ -531,35 +362,17 @@ function AssistantBubble({
                   Thought for {message.thoughtLabel ?? '<1s'}
                 </div>
               )}
-              {/*
-                The bubble sits directly in the prose column so its left
-                edge lines up with the thinking header above and the
-                action row below. LineSummary hangs off the left via
-                right: 100% so it takes no space in flow — the bubble
-                never shifts when summaries appear.
-              */}
-              <div className="relative">
-                <LineSummary
-                  lines={lines}
-                  tokens={tokens ?? []}
-                  streaming={isStreaming}
-                />
-                <div
-                  ref={bubbleRef}
-                  className="rounded-2xl border border-rule/70 bg-white/50 px-4 py-2 shadow-sm"
-                >
-                  {message.content ? (
-                    <AssistantContent
-                      message={message}
-                      mode={confidenceMode}
-                      active={confidenceOpen}
-                      tokenRefs={tokenRefs}
-                    />
-                  ) : (
-                    // Streaming placeholder while waiting for the first chunk.
-                    <span className="inline-block h-4 w-2 animate-pulse bg-muted align-middle" />
-                  )}
-                </div>
+              <div className="rounded-2xl border border-rule/70 bg-white/50 px-4 py-2 shadow-sm">
+                {message.content ? (
+                  <AssistantContent
+                    message={message}
+                    mode={confidenceMode}
+                    active={confidenceOpen}
+                  />
+                ) : (
+                  // Streaming placeholder while waiting for the first chunk.
+                  <span className="inline-block h-4 w-2 animate-pulse bg-muted align-middle" />
+                )}
               </div>
               {message.content && (
                 <MessageActions
