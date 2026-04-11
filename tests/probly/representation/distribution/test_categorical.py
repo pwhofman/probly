@@ -45,7 +45,7 @@ def test_rejects_negative_relative_probabilities() -> None:
 def test_zero_sum_relative_probabilities_return_nan() -> None:
     dist = ArrayCategoricalDistribution(np.array([0.0, 0.0, 0.0], dtype=float))
 
-    assert np.isnan(dist.probabilities)
+    assert np.isnan(dist.probabilities).all()
 
 
 def test_bernoulli_validation_uses_unit_interval() -> None:

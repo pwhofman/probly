@@ -276,3 +276,9 @@ stubs/
 # Claude
 .claude/settings.local.json
 .claude/worktrees/
+
+# Weights and Biases
+wandb/
+
+# Hydra
+outputs/
