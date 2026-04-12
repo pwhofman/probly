@@ -3,11 +3,11 @@ defaults:
   - method: ??? # user must specify a method.
 
 seed: 1
-dataset: "imagenet"
+dataset: "imagenet_shards"
 base_model: "regnet_y_400mf"
 pretrained: True
 epochs: 5
-batch_size: 512
+batch_size: 1024
 num_workers: 8
 pin_memory: true
 persistent_workers: true
@@ -26,6 +26,7 @@ optimizer:
         lr: 0.01
         momentum: 0.9
         weight_decay: 2e-5
+        fused: true
 
 scheduler:
   name: "cosine"
