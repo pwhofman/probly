@@ -16,6 +16,28 @@
 [![License](https://img.shields.io/badge/License-MIT-brightgreen.svg)](https://opensource.org/licenses/MIT)
 </div>
 
+## Gemma 4 Demo
+
+The `web/` directory on the [`gemma4`](https://github.com/pwhofman/probly/tree/gemma4) branch
+contains a prototype that pairs `probly` with Gemma 4 to surface
+uncertainty directly in a chat interface. Note for running it yourself: We are dealing with a real local Gemma Model on your machine with full access. You have to perfrom the following:
+
+```sh
+git checkout gemma4
+
+# backend
+cd web/backend
+uv sync
+uv run uvicorn app.main:app --reload --port 8000
+
+# frontend (in a second terminal)
+cd web/frontend
+npm install
+npm run dev
+```
+
+Then open http://localhost:5173.
+
 ## 🛠️ Install
 `probly` is intended to work with **Python 3.12 and above**. Installation can be done via `pip` and
 or `uv`:
@@ -51,13 +73,6 @@ eu_ood = probly.quantification.classification.mutual_information(sample_ood)
 
 auroc = probly.evaluation.tasks.out_of_distribution_detection(eu, eu_ood)  # evaluate model's uncertainty
 ```
-
-## Web Demo
-
-The `web/` directory on the [`gemma4`](https://github.com/pwhofman/probly/tree/gemma4) branch
-contains a hackathon prototype that pairs probly with Gemma 4 to surface
-uncertainty directly in a chat interface. It is **not** part of the
-released library and may change or be removed without notice.
 
 ## 📜 License
 This project is licensed under the [MIT License](https://github.com/pwhofman/probly/blob/main/LICENSE).
