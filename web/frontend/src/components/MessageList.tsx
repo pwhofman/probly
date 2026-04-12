@@ -4,9 +4,10 @@ import MessageBubble from './MessageBubble';
 
 interface Props {
   messages: Message[];
+  mode: 'probly' | 'gemma';
 }
 
-export default function MessageList({ messages }: Props) {
+export default function MessageList({ messages, mode }: Props) {
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -16,7 +17,7 @@ export default function MessageList({ messages }: Props) {
   return (
     <div className="flex flex-col gap-6 px-6 py-8">
       {messages.map((m) => (
-        <MessageBubble key={m.id} message={m} />
+        <MessageBubble key={m.id} message={m} hideUncertainty={mode === 'gemma'} />
       ))}
       <div ref={bottomRef} />
     </div>

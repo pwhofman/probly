@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
-import os
 from typing import TYPE_CHECKING
 
 from fastapi import FastAPI
@@ -16,29 +15,20 @@ from app.routes import chat
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
 
-_MOCK_ENV_VALUES = {"1", "true", "yes"}
-
-
-def _mock_mode_enabled() -> bool:
-    return os.environ.get("MOCK_MODE", "").strip().lower() in _MOCK_ENV_VALUES
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    """Load the chat backend once at startup and attach it to the app state.
+    """Load both chat backends at startup.
 
-    When ``MOCK_MODE`` is set to a truthy value, a scripted :class:`MockChat`
-    is used instead of the real Gemma model. If mock mode is disabled but
-    the local Gemma cache is unavailable, startup falls back to a fixed
-    "Model not available." mock response.
+    ``app.state.mock`` is always available (scripted demo responses).
+    ``app.state.gemma`` is the real Gemma model when the local cache
+    exists, or ``None`` if the cache is missing.
     """
-    if _mock_mode_enabled():
-        app.state.gemma = MockChat()
-    else:
-        try:
-            app.state.gemma = GemmaChat()
-        except FileNotFoundError:
-            app.state.gemma = MockChat(model_unavailable=True)
+    app.state.mock = MockChat()
+    try:
+        app.state.gemma = GemmaChat()
+    except FileNotFoundError:
+        app.state.gemma = None
     yield
 
 

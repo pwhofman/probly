@@ -1,5 +1,7 @@
 export type Role = 'user' | 'assistant' | 'system';
 
+export type ChatMode = 'probly' | 'gemma';
+
 /** One word (plus any trailing whitespace) with its backend-authored uncertainty. */
 export interface Word {
   text: string;

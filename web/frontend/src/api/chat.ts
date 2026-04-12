@@ -89,9 +89,11 @@ export async function sendChatStream(
   messages: Message[],
   onDelta: (chunk: string) => void,
   onUncertainty: (payload: UncertaintyPayload) => void,
+  mode: 'probly' | 'gemma' = 'probly',
 ): Promise<void> {
   const body = {
     messages: messages.map(({ role, content }) => ({ role, content })),
+    mode,
   };
   const res = await fetch('/api/chat/stream', {
     method: 'POST',

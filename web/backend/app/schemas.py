@@ -16,6 +16,7 @@ class ChatMessage(BaseModel):
 
 class ChatRequest(BaseModel):
     messages: list[ChatMessage]
+    mode: Literal["probly", "gemma"] = "probly"
 
 
 class ChatResponse(BaseModel):

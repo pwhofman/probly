@@ -21,12 +21,25 @@ def _require_user_message(request: ChatRequest) -> None:
         raise HTTPException(status_code=400, detail="At least one user message is required.")
 
 
+def _get_chat_backend(request: ChatRequest, http_request: Request):
+    """Return the appropriate chat backend based on the request mode."""
+    if request.mode == "gemma":
+        gemma = http_request.app.state.gemma
+        if gemma is None:
+            raise HTTPException(
+                status_code=503,
+                detail="Gemma model not available. The model cache was not found at startup.",
+            )
+        return gemma
+    return http_request.app.state.mock
+
+
 @router.post("/chat", response_model=ChatResponse)
 def post_chat(request: ChatRequest, http_request: Request) -> ChatResponse:
     """Run the user's chat history through Gemma and return the full reply."""
     _require_user_message(request)
-    gemma = http_request.app.state.gemma
-    reply = gemma.reply([m.model_dump() for m in request.messages])
+    backend = _get_chat_backend(request, http_request)
+    reply = backend.reply([m.model_dump() for m in request.messages])
     return ChatResponse(message=ChatMessage(role="assistant", content=reply))
 
 
@@ -57,14 +70,14 @@ def post_chat_stream(request: ChatRequest, http_request: Request) -> StreamingRe
     ``reply_confidence(messages) -> dict | None``.
     """
     _require_user_message(request)
-    gemma = http_request.app.state.gemma
+    backend = _get_chat_backend(request, http_request)
     messages = [m.model_dump() for m in request.messages]
 
     def iter_ndjson() -> Iterator[str]:
         try:
-            for chunk in gemma.reply_stream(messages):
+            for chunk in backend.reply_stream(messages):
                 yield json.dumps({"delta": chunk}) + "\n"
-            payload = gemma.reply_confidence(messages)
+            payload = backend.reply_confidence(messages)
             if payload is not None:
                 yield json.dumps({"confidence": payload}) + "\n"
             yield json.dumps({"done": True}) + "\n"

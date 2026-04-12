@@ -5,6 +5,7 @@ import type { ConceptSpan, Message, UncertaintyPayload } from '../types';
 
 interface Props {
   message: Message;
+  hideUncertainty?: boolean;
 }
 
 type Feedback = 'up' | 'down' | null;
@@ -401,6 +402,7 @@ interface MessageActionsProps {
   /** Current state of the regenerate toggle (original vs alternative). */
   showRegenerate: boolean;
   onToggleRegenerate: () => void;
+  hideUncertainty?: boolean;
 }
 
 function MessageActions({
@@ -414,6 +416,7 @@ function MessageActions({
   hasRegenerate,
   showRegenerate,
   onToggleRegenerate,
+  hideUncertainty,
 }: MessageActionsProps) {
   const [copied, setCopied] = useState(false);
   const [feedback, setFeedback] = useState<Feedback>(null);
@@ -495,150 +498,154 @@ function MessageActions({
           </svg>
         </button>
       </WithTooltip>
-      <WithTooltip label={uncertaintyTooltipLabel}>
-        <button
-          type="button"
-          onClick={() => {
-            if (uncertaintyDisabled) return;
-            onOpenChange(!open);
-          }}
-          disabled={uncertaintyDisabled}
-          className={`flex h-7 items-center gap-1.5 rounded-md px-2 text-xs transition-colors ${
-            uncertaintyDisabled
-              ? 'cursor-not-allowed text-muted/50'
-              : `text-muted hover:bg-panel hover:text-ink ${open ? 'bg-panel text-ink' : ''}`
-          }`}
-          aria-label={
-            highUncertainty
-              ? 'Show uncertainty (high uncertainty response)'
-              : 'Show uncertainty'
-          }
-          aria-expanded={open}
-          aria-disabled={uncertaintyDisabled}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="6" y1="20" x2="6" y2="14" />
-            <line x1="12" y1="20" x2="12" y2="10" />
-            <line x1="18" y1="20" x2="18" y2="4" />
-          </svg>
-          <span className="relative inline-block">
-            Uncertainty
-            {highUncertainty && (
-              <span
-                aria-hidden
-                className="pointer-events-none absolute inset-x-0 -bottom-0.5 h-px"
-                style={{
-                  backgroundColor: `rgba(${SHAP_RED_RGB}, 0.45)`,
-                  animation: highUncBlinking
-                    ? 'highUncBlink 600ms steps(1) infinite'
-                    : undefined,
-                }}
-              />
-            )}
-          </span>
-        </button>
-      </WithTooltip>
-      <div
-        className={`overflow-hidden transition-all duration-300 ease-out ${
-          open && !uncertaintyDisabled ? 'ml-2 max-w-md opacity-100' : 'ml-0 max-w-0 opacity-0'
-        }`}
-        aria-hidden={!open || uncertaintyDisabled}
-      >
-        <div className="relative flex rounded-full border border-rule bg-white/60 p-1 shadow-sm">
-          <div
-            className="pointer-events-none absolute bottom-1 left-1 top-1 w-28 rounded-full bg-ink shadow-sm transition-transform duration-300 ease-out"
-            style={{
-              transform: `translateX(${
-                UNCERTAINTY_MODES.findIndex((m) => m.key === mode) * 100
-              }%)`,
-            }}
-            aria-hidden
-          />
-          {UNCERTAINTY_MODES.map(({ key, label }) => (
+      {!hideUncertainty && (
+        <>
+          <WithTooltip label={uncertaintyTooltipLabel}>
             <button
-              key={key}
               type="button"
-              onClick={() => onModeChange(key)}
-              aria-pressed={mode === key}
-              tabIndex={open && !uncertaintyDisabled ? 0 : -1}
-              className={`relative z-10 w-28 whitespace-nowrap rounded-full px-3 py-1 text-center text-xs transition-colors duration-300 ease-out ${
-                mode === key
-                  ? 'text-white'
-                  : 'text-muted hover:text-ink'
+              onClick={() => {
+                if (uncertaintyDisabled) return;
+                onOpenChange(!open);
+              }}
+              disabled={uncertaintyDisabled}
+              className={`flex h-7 items-center gap-1.5 rounded-md px-2 text-xs transition-colors ${
+                uncertaintyDisabled
+                  ? 'cursor-not-allowed text-muted/50'
+                  : `text-muted hover:bg-panel hover:text-ink ${open ? 'bg-panel text-ink' : ''}`
               }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
-      {/*
-        Regenerate pill. Visually this is part of the Uncertainty cluster
-        (it's a form of uncertainty-level intervention), so it lives
-        inside its own expanding wrapper that opens in sync with the
-        Uncertainty mode selector. The wrapper only takes layout space
-        when (a) the uncertainty panel is open and (b) this message
-        actually carries a regenerate alternative — otherwise it stays
-        collapsed at ``max-w-0 opacity-0`` and contributes nothing.
-      */}
-      <div
-        className={`overflow-hidden transition-all duration-300 ease-out ${
-          open && !uncertaintyDisabled && hasRegenerate
-            ? 'ml-2 max-w-xs opacity-100'
-            : 'ml-0 max-w-0 opacity-0'
-        }`}
-        aria-hidden={!open || uncertaintyDisabled || !hasRegenerate}
-      >
-        {/*
-          Outer pill container mirrors the mode-selector's wrapper
-          (``rounded-full border border-rule bg-white/60 p-1 shadow-sm``)
-          so the regenerate control visually reads as another segment of
-          the same uncertainty control strip. The inner button matches
-          the mode pills' ``rounded-full px-3 py-1 text-xs`` sizing, but
-          is icon-only and square-ish so it sits at the same height.
-        */}
-        <div className="flex rounded-full border border-rule bg-white/60 p-1 shadow-sm">
-          <WithTooltip
-            label={showRegenerate ? 'Show original response' : 'Show regenerated response'}
-          >
-            <button
-              type="button"
-              onClick={onToggleRegenerate}
-              tabIndex={open && !uncertaintyDisabled && hasRegenerate ? 0 : -1}
-              aria-pressed={showRegenerate}
               aria-label={
-                showRegenerate ? 'Show original response' : 'Show regenerated response'
+                highUncertainty
+                  ? 'Show uncertainty (high uncertainty response)'
+                  : 'Show uncertainty'
               }
-              className={`flex h-6 items-center justify-center rounded-full px-3 text-xs transition-colors duration-300 ease-out ${
-                showRegenerate
-                  ? 'bg-ink text-white shadow-sm'
-                  : 'text-muted hover:text-ink'
-              }`}
+              aria-expanded={open}
+              aria-disabled={uncertaintyDisabled}
             >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <polyline points="23 4 23 10 17 10" />
-                <polyline points="1 20 1 14 7 14" />
-                <path d="M3.51 9a9 9 0 0114.85-3.36L23 10" />
-                <path d="M20.49 15a9 9 0 01-14.85 3.36L1 14" />
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="6" y1="20" x2="6" y2="14" />
+                <line x1="12" y1="20" x2="12" y2="10" />
+                <line x1="18" y1="20" x2="18" y2="4" />
               </svg>
+              <span className="relative inline-block">
+                Uncertainty
+                {highUncertainty && (
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute inset-x-0 -bottom-0.5 h-px"
+                    style={{
+                      backgroundColor: `rgba(${SHAP_RED_RGB}, 0.45)`,
+                      animation: highUncBlinking
+                        ? 'highUncBlink 600ms steps(1) infinite'
+                        : undefined,
+                    }}
+                  />
+                )}
+              </span>
             </button>
           </WithTooltip>
-        </div>
-      </div>
+          <div
+            className={`overflow-hidden transition-all duration-300 ease-out ${
+              open && !uncertaintyDisabled ? 'ml-2 max-w-md opacity-100' : 'ml-0 max-w-0 opacity-0'
+            }`}
+            aria-hidden={!open || uncertaintyDisabled}
+          >
+            <div className="relative flex rounded-full border border-rule bg-white/60 p-1 shadow-sm">
+              <div
+                className="pointer-events-none absolute bottom-1 left-1 top-1 w-28 rounded-full bg-ink shadow-sm transition-transform duration-300 ease-out"
+                style={{
+                  transform: `translateX(${
+                    UNCERTAINTY_MODES.findIndex((m) => m.key === mode) * 100
+                  }%)`,
+                }}
+                aria-hidden
+              />
+              {UNCERTAINTY_MODES.map(({ key, label }) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => onModeChange(key)}
+                  aria-pressed={mode === key}
+                  tabIndex={open && !uncertaintyDisabled ? 0 : -1}
+                  className={`relative z-10 w-28 whitespace-nowrap rounded-full px-3 py-1 text-center text-xs transition-colors duration-300 ease-out ${
+                    mode === key
+                      ? 'text-white'
+                      : 'text-muted hover:text-ink'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+          {/*
+            Regenerate pill. Visually this is part of the Uncertainty cluster
+            (it's a form of uncertainty-level intervention), so it lives
+            inside its own expanding wrapper that opens in sync with the
+            Uncertainty mode selector. The wrapper only takes layout space
+            when (a) the uncertainty panel is open and (b) this message
+            actually carries a regenerate alternative — otherwise it stays
+            collapsed at ``max-w-0 opacity-0`` and contributes nothing.
+          */}
+          <div
+            className={`overflow-hidden transition-all duration-300 ease-out ${
+              open && !uncertaintyDisabled && hasRegenerate
+                ? 'ml-2 max-w-xs opacity-100'
+                : 'ml-0 max-w-0 opacity-0'
+            }`}
+            aria-hidden={!open || uncertaintyDisabled || !hasRegenerate}
+          >
+            {/*
+              Outer pill container mirrors the mode-selector's wrapper
+              (``rounded-full border border-rule bg-white/60 p-1 shadow-sm``)
+              so the regenerate control visually reads as another segment of
+              the same uncertainty control strip. The inner button matches
+              the mode pills' ``rounded-full px-3 py-1 text-xs`` sizing, but
+              is icon-only and square-ish so it sits at the same height.
+            */}
+            <div className="flex rounded-full border border-rule bg-white/60 p-1 shadow-sm">
+              <WithTooltip
+                label={showRegenerate ? 'Show original response' : 'Show regenerated response'}
+              >
+                <button
+                  type="button"
+                  onClick={onToggleRegenerate}
+                  tabIndex={open && !uncertaintyDisabled && hasRegenerate ? 0 : -1}
+                  aria-pressed={showRegenerate}
+                  aria-label={
+                    showRegenerate ? 'Show original response' : 'Show regenerated response'
+                  }
+                  className={`flex h-6 items-center justify-center rounded-full px-3 text-xs transition-colors duration-300 ease-out ${
+                    showRegenerate
+                      ? 'bg-ink text-white shadow-sm'
+                      : 'text-muted hover:text-ink'
+                  }`}
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polyline points="23 4 23 10 17 10" />
+                    <polyline points="1 20 1 14 7 14" />
+                    <path d="M3.51 9a9 9 0 0114.85-3.36L23 10" />
+                    <path d="M20.49 15a9 9 0 01-14.85 3.36L1 14" />
+                  </svg>
+                </button>
+              </WithTooltip>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
 
-export default function MessageBubble({ message }: Props) {
+export default function MessageBubble({ message, hideUncertainty }: Props) {
   if (message.role === 'user') {
     return (
       <div className="flex justify-end">
@@ -659,10 +666,10 @@ export default function MessageBubble({ message }: Props) {
     );
   }
 
-  return <AssistantBubble message={message} />;
+  return <AssistantBubble message={message} hideUncertainty={hideUncertainty} />;
 }
 
-function AssistantBubble({ message }: { message: Message }) {
+function AssistantBubble({ message, hideUncertainty }: { message: Message; hideUncertainty?: boolean }) {
   // State is lifted out of MessageActions so the selected mode can drive
   // the body renderer (word / concept / full tint) in addition to the
   // toggle UI in the action row.
@@ -769,6 +776,7 @@ function AssistantBubble({ message }: { message: Message }) {
                   hasRegenerate={hasRegenerate}
                   showRegenerate={viewingRegenerate}
                   onToggleRegenerate={() => setShowRegenerate((v) => !v)}
+                  hideUncertainty={hideUncertainty}
                 />
               )}
             </>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Message, UncertaintyPayload } from '../types';
+import type { ChatMode, Message, UncertaintyPayload } from '../types';
 import { sendChatStream } from '../api/chat';
 import MessageList from './MessageList';
 import ChatInput from './ChatInput';
@@ -27,6 +27,13 @@ interface Props {
 export default function ChatWindow({ onFirstMessage }: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isSending, setIsSending] = useState(false);
+  const [mode, setMode] = useState<ChatMode>('probly');
+
+  const handleModeChange = (newMode: ChatMode) => {
+    if (newMode === mode) return;
+    setMode(newMode);
+    setMessages([]);
+  };
 
   const handleSend = async (text: string) => {
     // Report the first user message upstream so App can remember it as
@@ -108,7 +115,7 @@ export default function ChatWindow({ onFirstMessage }: Props) {
     };
 
     try {
-      await sendChatStream(withUser, handleDelta, handleUncertainty);
+      await sendChatStream(withUser, handleDelta, handleUncertainty, mode);
     } catch (err) {
       if (thinkingTimer !== null) window.clearTimeout(thinkingTimer);
       const detail = err instanceof Error ? err.message : String(err);
@@ -138,7 +145,7 @@ export default function ChatWindow({ onFirstMessage }: Props) {
             </div>
 
             <div className="w-full">
-              <ChatInput onSend={handleSend} disabled={isSending} />
+              <ChatInput onSend={handleSend} disabled={isSending} mode={mode} onModeChange={handleModeChange} />
             </div>
 
             <div className="mt-6 flex flex-wrap justify-center gap-2">
@@ -164,7 +171,7 @@ export default function ChatWindow({ onFirstMessage }: Props) {
     <div className="flex h-full flex-col">
       <div className="flex-1 overflow-y-auto">
         <div className="mx-auto w-full max-w-4xl">
-          <MessageList messages={messages} />
+          <MessageList messages={messages} mode={mode} />
         </div>
       </div>
       <div className="border-t border-rule/60 bg-canvas px-6 py-4">
@@ -173,6 +180,8 @@ export default function ChatWindow({ onFirstMessage }: Props) {
             onSend={handleSend}
             disabled={isSending}
             placeholder="Reply..."
+            mode={mode}
+            onModeChange={handleModeChange}
           />
           <p className="mt-2 text-center text-xs text-muted">
             AI models can make mistakes. Check high-uncertainty outputs.
