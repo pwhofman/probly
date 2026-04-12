@@ -538,37 +538,6 @@ function MessageActions({
           </span>
         </button>
       </WithTooltip>
-      {hasRegenerate && (
-        <WithTooltip
-          label={showRegenerate ? 'Show original response' : 'Show regenerated response'}
-        >
-          <button
-            type="button"
-            onClick={onToggleRegenerate}
-            className={`${baseBtn} ${showRegenerate ? 'bg-panel text-ink' : ''}`}
-            aria-label={
-              showRegenerate ? 'Show original response' : 'Show regenerated response'
-            }
-            aria-pressed={showRegenerate}
-          >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <polyline points="23 4 23 10 17 10" />
-              <polyline points="1 20 1 14 7 14" />
-              <path d="M3.51 9a9 9 0 0114.85-3.36L23 10" />
-              <path d="M20.49 15a9 9 0 01-14.85 3.36L1 14" />
-            </svg>
-          </button>
-        </WithTooltip>
-      )}
       <div
         className={`overflow-hidden transition-all duration-300 ease-out ${
           open && !uncertaintyDisabled ? 'ml-2 max-w-md opacity-100' : 'ml-0 max-w-0 opacity-0'
@@ -601,6 +570,68 @@ function MessageActions({
               {label}
             </button>
           ))}
+        </div>
+      </div>
+      {/*
+        Regenerate pill. Visually this is part of the Uncertainty cluster
+        (it's a form of uncertainty-level intervention), so it lives
+        inside its own expanding wrapper that opens in sync with the
+        Uncertainty mode selector. The wrapper only takes layout space
+        when (a) the uncertainty panel is open and (b) this message
+        actually carries a regenerate alternative — otherwise it stays
+        collapsed at ``max-w-0 opacity-0`` and contributes nothing.
+      */}
+      <div
+        className={`overflow-hidden transition-all duration-300 ease-out ${
+          open && !uncertaintyDisabled && hasRegenerate
+            ? 'ml-2 max-w-xs opacity-100'
+            : 'ml-0 max-w-0 opacity-0'
+        }`}
+        aria-hidden={!open || uncertaintyDisabled || !hasRegenerate}
+      >
+        {/*
+          Outer pill container mirrors the mode-selector's wrapper
+          (``rounded-full border border-rule bg-white/60 p-1 shadow-sm``)
+          so the regenerate control visually reads as another segment of
+          the same uncertainty control strip. The inner button matches
+          the mode pills' ``rounded-full px-3 py-1 text-xs`` sizing, but
+          is icon-only and square-ish so it sits at the same height.
+        */}
+        <div className="flex rounded-full border border-rule bg-white/60 p-1 shadow-sm">
+          <WithTooltip
+            label={showRegenerate ? 'Show original response' : 'Show regenerated response'}
+          >
+            <button
+              type="button"
+              onClick={onToggleRegenerate}
+              tabIndex={open && !uncertaintyDisabled && hasRegenerate ? 0 : -1}
+              aria-pressed={showRegenerate}
+              aria-label={
+                showRegenerate ? 'Show original response' : 'Show regenerated response'
+              }
+              className={`flex h-6 items-center justify-center rounded-full px-3 text-xs transition-colors duration-300 ease-out ${
+                showRegenerate
+                  ? 'bg-ink text-white shadow-sm'
+                  : 'text-muted hover:text-ink'
+              }`}
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="23 4 23 10 17 10" />
+                <polyline points="1 20 1 14 7 14" />
+                <path d="M3.51 9a9 9 0 0114.85-3.36L23 10" />
+                <path d="M20.49 15a9 9 0 01-14.85 3.36L1 14" />
+              </svg>
+            </button>
+          </WithTooltip>
         </div>
       </div>
     </div>

@@ -128,10 +128,13 @@ export default function ChatWindow({ onFirstMessage }: Props) {
       <div className="flex h-full flex-col">
         <div className="flex flex-1 items-center justify-center px-6">
           <div className="flex w-full max-w-2xl flex-col items-center">
-            <div className="mb-8 flex items-center gap-4">
+            <div className="mb-8 flex flex-col items-center gap-2">
               <h1 className="font-serif text-4xl font-normal text-ink">
                 Chat with Gemma
               </h1>
+              <p className="font-serif text-base italic text-muted">
+                it knows what it does not know...
+              </p>
             </div>
 
             <div className="w-full">
