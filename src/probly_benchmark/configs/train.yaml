@@ -3,12 +3,12 @@ defaults:
   - method: ??? # user must specify a method.
 
 seed: 1
-dataset: "imagenet_shards"
-base_model: "resnet50"
-pretrained: False
-epochs: 50
+dataset: "imagenet"
+base_model: "regnet_y_400mf"
+pretrained: True
+epochs: 5
 batch_size: 512
-num_workers: 16
+num_workers: 8
 pin_memory: true
 persistent_workers: true
 prefetch_factor: 4
