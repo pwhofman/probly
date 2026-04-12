@@ -6,14 +6,39 @@ from typing import Any
 
 import hydra
 from omegaconf import DictConfig, OmegaConf
-from scipy.stats import entropy
 import torch
 import wandb
 
 from probly.evaluation.tasks import selective_prediction
+from probly.quantification import quantify
+from probly.representation.distribution.torch_categorical import (
+    TorchCategoricalDistribution,
+    TorchCategoricalDistributionSample,
+)
 from probly.representer import representer
 from probly_benchmark import data, utils
 from probly_benchmark.utils import load_model_from_wandb, resolve_artifact_name
+
+
+def compute_total_uncertainty(outputs: list[Any]) -> torch.Tensor:
+    """Compute total uncertainty (predictive entropy) from sampler outputs."""
+    all_uncertainties = []
+    for out in outputs:
+        probs = torch.softmax(out.samples, dim=-1)  # (num_samples, batch, n_classes)
+        dist = TorchCategoricalDistribution(probs)
+        dist_sample = TorchCategoricalDistributionSample(tensor=dist, sample_dim=0)
+        decomposition = quantify(dist_sample)
+        all_uncertainties.append(decomposition.total.cpu())  # ty: ignore[unresolved-attribute]
+    return torch.cat(all_uncertainties)
+
+
+def compute_mean_probs(outputs: list[Any]) -> torch.Tensor:
+    """Compute the mean softmax probabilities across samples from sampler outputs."""
+    all_mean_probs = []
+    for out in outputs:
+        probs = torch.softmax(out.samples, dim=-1)  # (num_samples, batch, n_classes)
+        all_mean_probs.append(probs.mean(dim=0).cpu())
+    return torch.cat(all_mean_probs)
 
 
 @hydra.main(version_base=None, config_path="configs/", config_name="selective_prediction")
@@ -55,12 +80,10 @@ def main(cfg: DictConfig) -> None:
         cfg.get("amp", False),
     )
 
-    mean_probs = torch.cat(
-        [torch.softmax(out.tensor, dim=-2).mean(dim=out.sample_dim).cpu() for out in outputs]
-    ).numpy()
+    mean_probs = compute_mean_probs(outputs).numpy()
+    uncertainties = compute_total_uncertainty(outputs).numpy()
     labels = targets.numpy()
     loss = (mean_probs.argmax(axis=1) != labels).astype(float)
-    uncertainties = entropy(mean_probs, axis=1)
     auroc, bin_losses = selective_prediction(uncertainties, loss, n_bins=cfg.n_bins)
     print(f"Selective prediction AUROC: {auroc:.4f}")
 
