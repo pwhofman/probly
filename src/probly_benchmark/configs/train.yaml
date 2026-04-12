@@ -21,9 +21,11 @@ validate : true
 save_to_disk: false
 
 optimizer:
-    name: "adam"
+    name: "sgd"
     params:
-        lr: 0.001
+        lr: 0.01
+        momentum: 0.9
+        weight_decay: 2e-5
 
 scheduler:
   name: "cosine"
