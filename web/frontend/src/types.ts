@@ -45,6 +45,11 @@ export interface UncertaintyPayload {
    *  blinking-then-solid red underline under the Uncertainty button.
    *  Absent / false means "no warning". Real Gemma never sets this. */
   highUncertainty?: boolean;
+  /** Mock-only alternative reply text. When present, the action row
+   *  shows a small toggle button next to the Uncertainty button that
+   *  swaps the rendered message body between the original content and
+   *  this alternative. Real Gemma never sets this. */
+  regenerate?: string;
 }
 
 export interface Message {

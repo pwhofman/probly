@@ -28,10 +28,17 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Load the chat backend once at startup and attach it to the app state.
 
     When ``MOCK_MODE`` is set to a truthy value, a scripted :class:`MockChat`
-    is used instead of the real Gemma model — useful for demos without the
-    model cache on disk.
+    is used instead of the real Gemma model. If mock mode is disabled but
+    the local Gemma cache is unavailable, startup falls back to a fixed
+    "Model not available." mock response.
     """
-    app.state.gemma = MockChat() if _mock_mode_enabled() else GemmaChat()
+    if _mock_mode_enabled():
+        app.state.gemma = MockChat()
+    else:
+        try:
+            app.state.gemma = GemmaChat()
+        except FileNotFoundError:
+            app.state.gemma = MockChat(model_unavailable=True)
     yield
 
 

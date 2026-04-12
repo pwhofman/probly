@@ -40,6 +40,7 @@ _INITIAL_DELAY_SECONDS = 2.2
 # the UI's typing animation is visible word-by-word, matching the feel
 # of Gemma's TextIteratorStreamer in real mode.
 _CHUNK_DELAY_SECONDS = 0.08
+_MODEL_UNAVAILABLE_MESSAGE = "Model not available."
 
 
 def _chunk_reply(text: str) -> list[str]:
@@ -80,6 +81,11 @@ class _Reply:
     full_confidence: float
     word_alternatives: list[list[str] | None]
     low_confidence: bool
+    # Mock-only alternative reply text. When set, the frontend's action
+    # row surfaces a small toggle button next to the Uncertainty button
+    # that swaps the rendered message body between ``text`` and this
+    # string. Real Gemma never produces this field.
+    regenerate: str | None
 
 
 class _ConfidenceShapeError(ValueError):
@@ -180,6 +186,10 @@ def _load_demos() -> list[list[_Reply]]:
             concepts_raw = reply["concepts"]
             full_confidence = reply["full_confidence"]
             low_confidence = reply["low_confidence"]
+            regenerate = reply.get("regenerate")
+            if regenerate is not None and not (isinstance(regenerate, str) and regenerate):
+                msg = f"demo {d} reply {r}: regenerate must be a non-empty string or omitted"
+                raise _ConfidenceShapeError(msg)
 
             _validate_reply(
                 d,
@@ -208,6 +218,7 @@ def _load_demos() -> list[list[_Reply]]:
                     full_confidence=full_confidence,
                     word_alternatives=list(word_alternatives),
                     low_confidence=low_confidence,
+                    regenerate=regenerate,
                 )
             )
         demos.append(replies)
@@ -234,8 +245,9 @@ class MockChat:
     guarded by a ``threading.Lock``.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, *, model_unavailable: bool = False) -> None:
         """Start the cursor at demo 0 with no reply served yet."""
+        self._model_unavailable = model_unavailable
         self._demo_index = 0
         self._demo_started = False
         self._lock = threading.Lock()
@@ -278,6 +290,8 @@ class MockChat:
 
     def reply(self, messages: list[dict[str, str]]) -> str:
         """Return the full scripted reply for the current chat history."""
+        if self._model_unavailable:
+            return _MODEL_UNAVAILABLE_MESSAGE
         return self._select(messages).text
 
     def reply_stream(self, messages: list[dict[str, str]]) -> Iterator[str]:
@@ -295,13 +309,16 @@ class MockChat:
         full-response confidences for this turn are returned separately
         by :meth:`reply_confidence` once generation has finished.
         """
+        if self._model_unavailable:
+            yield _MODEL_UNAVAILABLE_MESSAGE
+            return
         chosen = self._select(messages)
         chunks = _chunk_reply(chosen.text)
         for i, chunk in enumerate(chunks):
             time.sleep(_INITIAL_DELAY_SECONDS if i == 0 else _CHUNK_DELAY_SECONDS)
             yield chunk
 
-    def reply_confidence(self, messages: list[dict[str, str]]) -> dict[str, Any]:
+    def reply_confidence(self, messages: list[dict[str, str]]) -> dict[str, Any] | None:
         """Return the final confidence payload for the selected turn.
 
         Called by the route handler after :meth:`reply_stream` has been
@@ -309,6 +326,8 @@ class MockChat:
         ``{"confidence": ...}`` NDJSON frame just before ``{"done": true}``,
         and is what drives all three display modes on the frontend.
         """
+        if self._model_unavailable:
+            return None
         chosen = self._select(messages)
         chunks = _chunk_reply(chosen.text)
         words: list[dict[str, Any]] = []
@@ -325,7 +344,7 @@ class MockChat:
             if alts is not None:
                 word["alternatives"] = alts
             words.append(word)
-        return {
+        payload: dict[str, Any] = {
             "words": words,
             "concepts": [
                 {
@@ -338,3 +357,9 @@ class MockChat:
             "full": chosen.full_confidence,
             "low_confidence": chosen.low_confidence,
         }
+        # Only include the field when this reply actually carries an
+        # alternative, so the common-case wire payload stays minimal and
+        # the frontend can treat a missing key as "no regenerate".
+        if chosen.regenerate is not None:
+            payload["regenerate"] = chosen.regenerate
+        return payload

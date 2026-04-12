@@ -100,10 +100,14 @@ function WordBody({
   uncertainty,
   mode,
   active,
+  replacements,
+  onReplaceWord,
 }: {
   uncertainty: UncertaintyPayload;
   mode: UncertaintyMode;
   active: boolean;
+  replacements: Map<number, string>;
+  onReplaceWord: (wordIndex: number, newGlyph: string) => void;
 }) {
   const { words, concepts, full } = uncertainty;
   const conceptIndex = buildConceptIndex(words.length, concepts);
@@ -112,20 +116,24 @@ function WordBody({
     <p className="my-0 whitespace-pre-wrap leading-6">
       {words.map((w, i) => {
         const outerStyle: CSSProperties = { transition: HIGHLIGHT_TRANSITION };
-        let innerContent: ReactNode = w.text;
+        // Split every word into its non-whitespace glyph + trailing
+        // whitespace so we can swap the glyph for a user-picked
+        // alternative while leaving punctuation / spacing untouched.
+        const rawMatch = w.text.match(/^(\S*)(\s*)$/);
+        const originalGlyph = rawMatch ? rawMatch[1] : w.text;
+        const trailing = rawMatch ? rawMatch[2] : '';
+        const displayGlyph = replacements.get(i) ?? originalGlyph;
+        let innerContent: ReactNode = displayGlyph + trailing;
 
         if (active) {
           if (mode === 'word') {
-            const match = w.text.match(/^(\S*)(\s*)$/);
-            const glyph = match ? match[1] : w.text;
-            const trailing = match ? match[2] : '';
             const innerStyle: CSSProperties = {
               transition: HIGHLIGHT_TRANSITION,
               backgroundColor: uncertaintyToRgba(w.uncertainty),
             };
             const textColor = uncertaintyTextColor(w.uncertainty);
             if (textColor) innerStyle.color = textColor;
-            const tintedGlyph = <span style={innerStyle}>{glyph}</span>;
+            const tintedGlyph = <span style={innerStyle}>{displayGlyph}</span>;
             // Only show the dotted-underline + hover tooltip affordance in
             // word mode and only on words the backend actually seeded with
             // alternatives — keep the hint rare so it reads as a
@@ -133,8 +141,14 @@ function WordBody({
             const alternatives = w.alternatives;
             const decoratedGlyph =
               alternatives && alternatives.length > 0 ? (
-                <AlternativesTooltip alternatives={alternatives}>
-                  <span className="underline decoration-dotted decoration-muted/60 underline-offset-2">
+                <AlternativesTooltip
+                  alternatives={alternatives}
+                  onSelect={(alt) => onReplaceWord(i, alt)}
+                >
+                  <span
+                    tabIndex={0}
+                    className="underline decoration-dotted decoration-muted/60 underline-offset-2 focus:outline-none focus-visible:rounded focus-visible:ring-2 focus-visible:ring-ink/40"
+                  >
                     {tintedGlyph}
                   </span>
                 </AlternativesTooltip>
@@ -153,9 +167,6 @@ function WordBody({
               if (info.isLast) {
                 // Tint only the glyph of the last concept word so the
                 // band stops cleanly at the last letter.
-                const match = w.text.match(/^(\S*)(\s*)$/);
-                const glyph = match ? match[1] : w.text;
-                const trailing = match ? match[2] : '';
                 const innerStyle: CSSProperties = {
                   transition: HIGHLIGHT_TRANSITION,
                   backgroundColor: uncertaintyToRgba(info.concept.uncertainty),
@@ -164,7 +175,7 @@ function WordBody({
                 if (textColor) innerStyle.color = textColor;
                 innerContent = (
                   <>
-                    <span style={innerStyle}>{glyph}</span>
+                    <span style={innerStyle}>{displayGlyph}</span>
                     {trailing}
                   </>
                 );
@@ -209,10 +220,14 @@ function AssistantContent({
   message,
   mode,
   active,
+  replacements,
+  onReplaceWord,
 }: {
   message: Message;
   mode: UncertaintyMode;
   active: boolean;
+  replacements: Map<number, string>;
+  onReplaceWord: (wordIndex: number, newGlyph: string) => void;
 }) {
   if (!message.uncertainty) {
     return (
@@ -221,7 +236,15 @@ function AssistantContent({
       </ReactMarkdown>
     );
   }
-  return <WordBody uncertainty={message.uncertainty} mode={mode} active={active} />;
+  return (
+    <WordBody
+      uncertainty={message.uncertainty}
+      mode={mode}
+      active={active}
+      replacements={replacements}
+      onReplaceWord={onReplaceWord}
+    />
+  );
 }
 
 /**
@@ -254,36 +277,97 @@ function WithTooltip({ label, children }: { label: string; children: ReactNode }
 }
 
 /**
- * Floating tooltip showing a vertical list of alternative words on hover.
- * Rendered in Word-Level uncertainty mode over words that the backend
- * seeded with an ``alternatives`` list. Visually mirrors ``WithTooltip``
- * (same dark pill + triangle) but renders a stacked list instead of a
- * single label, and uses an ``inline`` wrapper so it can sit in the
- * middle of a flowing ``<p>`` without breaking line wrap. The tooltip
- * itself is ``pointer-events-none`` so it never eats clicks on
- * neighbouring words.
+ * Floating picker showing a vertical list of alternative words above the
+ * hovered word. Rendered in Word-Level uncertainty mode over words that
+ * the backend seeded with an ``alternatives`` list.
+ *
+ * Visually distinct from the dark ``WithTooltip`` pill used by the
+ * action row: this one is a light card with an ink border, so it reads
+ * as an interactive picker rather than a passive hint.
+ *
+ * Each alternative is a real ``<button>``: clicking commits a
+ * replacement via ``onSelect`` and closes the picker. The card animates
+ * up from the word with a slide+scale, and each alternative fades in on
+ * a staggered ``transitionDelay`` so the list cascades rather than
+ * popping.
+ *
+ * The positioned wrapper uses invisible ``pb-2`` as a hover bridge so
+ * the cursor can cross the gap between the word and the card without
+ * triggering ``pointerleave``. Pointer events on the wrapper are gated
+ * on ``open`` so the padding doesn't trap clicks when the picker is
+ * hidden.
  */
 function AlternativesTooltip({
   alternatives,
+  onSelect,
   children,
 }: {
   alternatives: readonly string[];
+  onSelect: (alternative: string) => void;
   children: ReactNode;
 }) {
+  const [open, setOpen] = useState(false);
+
+  const handleSelect = (alt: string) => {
+    onSelect(alt);
+    setOpen(false);
+  };
+
   return (
-    <span className="group relative inline cursor-help">
+    <span
+      className="relative inline cursor-help"
+      onPointerEnter={() => setOpen(true)}
+      onPointerLeave={() => setOpen(false)}
+      onFocus={() => setOpen(true)}
+      onBlur={() => setOpen(false)}
+    >
       {children}
       <span
         role="tooltip"
-        className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 -translate-x-1/2 flex flex-col gap-0.5 whitespace-nowrap rounded-md bg-ink px-2 py-1.5 text-[11px] font-medium text-white opacity-0 shadow-md transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100"
+        className="absolute left-1/2 bottom-full z-20 -translate-x-1/2 pb-2"
+        style={{ pointerEvents: open ? 'auto' : 'none' }}
       >
-        {alternatives.map((alt) => (
-          <span key={alt}>{alt}</span>
-        ))}
         <span
-          aria-hidden
-          className="absolute bottom-full left-1/2 h-0 w-0 -translate-x-1/2 border-4 border-transparent border-b-ink"
-        />
+          className="relative flex flex-col gap-0.5 whitespace-nowrap rounded-lg border border-ink/15 bg-white px-1.5 py-1.5 text-[11px] font-medium text-ink shadow-lg ring-1 ring-ink/5"
+          style={{
+            opacity: open ? 1 : 0,
+            transform: open
+              ? 'translateY(0) scale(1)'
+              : 'translateY(6px) scale(0.96)',
+            transition:
+              'opacity 180ms ease-out, transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1)',
+            transformOrigin: 'bottom center',
+          }}
+        >
+          {/* Downward-pointing triangle glued to the bottom edge of the
+              card so it aligns visually with the word below. */}
+          <span
+            aria-hidden
+            className="absolute top-full left-1/2 h-0 w-0 -translate-x-1/2 border-4 border-transparent border-t-white"
+          />
+          <span
+            aria-hidden
+            className="absolute top-full left-1/2 h-0 w-0 -translate-x-1/2 border-4 border-transparent"
+            style={{ borderTopColor: 'rgba(31, 30, 26, 0.15)', marginTop: 1 }}
+          />
+          {alternatives.map((alt, i) => (
+            <button
+              key={alt}
+              type="button"
+              onClick={() => handleSelect(alt)}
+              className="rounded px-1.5 py-0.5 text-left transition-colors duration-150 hover:bg-panel focus:bg-panel focus:outline-none"
+              style={{
+                opacity: open ? 1 : 0,
+                transform: open ? 'translateY(0)' : 'translateY(4px)',
+                transition:
+                  'opacity 160ms ease-out, transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1)',
+                transitionDelay: open ? `${i * 40}ms` : '0ms',
+              }}
+            >
+              {alt}
+            </button>
+          ))}
+        </span>
       </span>
     </span>
   );
@@ -307,6 +391,16 @@ interface MessageActionsProps {
    * underline to surface the warning in the action row.
    */
   highUncertainty: boolean;
+  /**
+   * When true this message carries a mock-only alternative reply text,
+   * so the action row should expose a small toggle button next to the
+   * Uncertainty button. When false the regenerate button is not
+   * rendered at all (it takes no layout space).
+   */
+  hasRegenerate: boolean;
+  /** Current state of the regenerate toggle (original vs alternative). */
+  showRegenerate: boolean;
+  onToggleRegenerate: () => void;
 }
 
 function MessageActions({
@@ -317,6 +411,9 @@ function MessageActions({
   onOpenChange,
   uncertaintyDisabled,
   highUncertainty,
+  hasRegenerate,
+  showRegenerate,
+  onToggleRegenerate,
 }: MessageActionsProps) {
   const [copied, setCopied] = useState(false);
   const [feedback, setFeedback] = useState<Feedback>(null);
@@ -475,6 +572,68 @@ function MessageActions({
           ))}
         </div>
       </div>
+      {/*
+        Regenerate pill. Visually this is part of the Uncertainty cluster
+        (it's a form of uncertainty-level intervention), so it lives
+        inside its own expanding wrapper that opens in sync with the
+        Uncertainty mode selector. The wrapper only takes layout space
+        when (a) the uncertainty panel is open and (b) this message
+        actually carries a regenerate alternative — otherwise it stays
+        collapsed at ``max-w-0 opacity-0`` and contributes nothing.
+      */}
+      <div
+        className={`overflow-hidden transition-all duration-300 ease-out ${
+          open && !uncertaintyDisabled && hasRegenerate
+            ? 'ml-2 max-w-xs opacity-100'
+            : 'ml-0 max-w-0 opacity-0'
+        }`}
+        aria-hidden={!open || uncertaintyDisabled || !hasRegenerate}
+      >
+        {/*
+          Outer pill container mirrors the mode-selector's wrapper
+          (``rounded-full border border-rule bg-white/60 p-1 shadow-sm``)
+          so the regenerate control visually reads as another segment of
+          the same uncertainty control strip. The inner button matches
+          the mode pills' ``rounded-full px-3 py-1 text-xs`` sizing, but
+          is icon-only and square-ish so it sits at the same height.
+        */}
+        <div className="flex rounded-full border border-rule bg-white/60 p-1 shadow-sm">
+          <WithTooltip
+            label={showRegenerate ? 'Show original response' : 'Show regenerated response'}
+          >
+            <button
+              type="button"
+              onClick={onToggleRegenerate}
+              tabIndex={open && !uncertaintyDisabled && hasRegenerate ? 0 : -1}
+              aria-pressed={showRegenerate}
+              aria-label={
+                showRegenerate ? 'Show original response' : 'Show regenerated response'
+              }
+              className={`flex h-6 items-center justify-center rounded-full px-3 text-xs transition-colors duration-300 ease-out ${
+                showRegenerate
+                  ? 'bg-ink text-white shadow-sm'
+                  : 'text-muted hover:text-ink'
+              }`}
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="23 4 23 10 17 10" />
+                <polyline points="1 20 1 14 7 14" />
+                <path d="M3.51 9a9 9 0 0114.85-3.36L23 10" />
+                <path d="M20.49 15a9 9 0 01-14.85 3.36L1 14" />
+              </svg>
+            </button>
+          </WithTooltip>
+        </div>
+      </div>
     </div>
   );
 }
@@ -509,11 +668,34 @@ function AssistantBubble({ message }: { message: Message }) {
   // toggle UI in the action row.
   const [uncertaintyOpen, setUncertaintyOpen] = useState(false);
   const [uncertaintyMode, setUncertaintyMode] = useState<UncertaintyMode>('full');
+  const [showRegenerate, setShowRegenerate] = useState(false);
+  // Per-word glyph overrides picked by the user from the alternatives
+  // tooltip. Keyed by index into ``message.uncertainty.words``; only the
+  // non-whitespace glyph is replaced, trailing punctuation/whitespace is
+  // preserved at render time in ``WordBody``.
+  const [replacements, setReplacements] = useState<Map<number, string>>(
+    () => new Map(),
+  );
+  const handleReplaceWord = (wordIndex: number, newGlyph: string) => {
+    setReplacements((prev) => {
+      const next = new Map(prev);
+      next.set(wordIndex, newGlyph);
+      return next;
+    });
+  };
 
   const uncertaintyAvailable = message.uncertainty !== undefined;
-  const uncertaintyActive = uncertaintyOpen && uncertaintyAvailable;
   const highUncertainty =
     uncertaintyAvailable && message.uncertainty?.highUncertainty === true;
+  const regenerateText = message.uncertainty?.regenerate;
+  const hasRegenerate = typeof regenerateText === 'string' && regenerateText.length > 0;
+  // When the user is viewing the regenerate alternative, the per-word
+  // uncertainty indices no longer line up with the rendered text, so we
+  // fall back to plain (untinted) rendering for that view. The toggle
+  // itself still works; only the body tinting is suppressed.
+  const viewingRegenerate = showRegenerate && hasRegenerate;
+  const uncertaintyActive = uncertaintyOpen && uncertaintyAvailable && !viewingRegenerate;
+  const effectiveContent = viewingRegenerate ? (regenerateText as string) : message.content;
 
   return (
     <div className="flex justify-start">
@@ -554,11 +736,22 @@ function AssistantBubble({ message }: { message: Message }) {
               )}
               <div className="rounded-2xl border border-rule/70 bg-white/50 px-4 py-2 shadow-sm">
                 {message.content ? (
-                  <AssistantContent
-                    message={message}
-                    mode={uncertaintyMode}
-                    active={uncertaintyActive}
-                  />
+                  viewingRegenerate ? (
+                    // Regenerate alternative has no per-word uncertainty
+                    // data of its own, so we render it as plain Markdown
+                    // rather than going through ``WordBody``.
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {effectiveContent}
+                    </ReactMarkdown>
+                  ) : (
+                    <AssistantContent
+                      message={message}
+                      mode={uncertaintyMode}
+                      active={uncertaintyActive}
+                      replacements={replacements}
+                      onReplaceWord={handleReplaceWord}
+                    />
+                  )
                 ) : (
                   // Streaming placeholder while waiting for the first chunk.
                   <span className="inline-block h-4 w-2 animate-pulse bg-muted align-middle" />
@@ -566,13 +759,16 @@ function AssistantBubble({ message }: { message: Message }) {
               </div>
               {message.content && (
                 <MessageActions
-                  content={message.content}
+                  content={effectiveContent}
                   mode={uncertaintyMode}
                   onModeChange={setUncertaintyMode}
                   open={uncertaintyOpen}
                   onOpenChange={setUncertaintyOpen}
                   uncertaintyDisabled={!uncertaintyAvailable}
                   highUncertainty={highUncertainty}
+                  hasRegenerate={hasRegenerate}
+                  showRegenerate={viewingRegenerate}
+                  onToggleRegenerate={() => setShowRegenerate((v) => !v)}
                 />
               )}
             </>

@@ -71,7 +71,7 @@ export default function Sidebar({ onNewChat, pastChats }: SidebarProps) {
           alt="Gemma"
           className="h-7 w-7 shrink-0 rounded-md object-contain"
         />
-        <span className="text-sm font-semibold text-ink">Gemma Chat</span>
+        <span className="text-sm font-semibold text-ink">probly chat</span>
       </div>
 
       <div className="flex flex-col gap-0.5 px-2">
