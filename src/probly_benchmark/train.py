@@ -41,6 +41,9 @@ from probly_benchmark.train_funcs import (
     validate_cross_entropy,
 )
 
+torch.set_float32_matmul_precision("high")
+
+
 OPTIMIZERS = {
     "adam": optim.Adam,
     "sgd": optim.SGD,
@@ -117,7 +120,7 @@ def _training_loop(
         val_fn: Validation function.
         log_prefix: Prefix for W&B log keys (e.g. ``"member_0/"``).
     """
-    model.forward = torch.compile(model.forward)
+    model.forward = torch.compile(model.forward, mode="max-autotune")
 
     optimizer = get_optimizer(cfg.optimizer.name, model.parameters())
     scheduler = get_scheduler(
@@ -136,13 +139,8 @@ def _training_loop(
         model.train()
         running_loss = 0.0
         for inputs_, targets_ in tqdm(train_loader):
-            inputs, targets = (
-                inputs_.to(device, non_blocking=True),
-                targets_.to(
-                    device,
-                    non_blocking=True,
-                ),
-            )
+            inputs = inputs_.to(device, non_blocking=True).contiguous(memory_format=torch.channels_last)
+            targets = targets_.to(device, non_blocking=True)
             running_loss += train_fn(
                 model,
                 inputs,
@@ -263,7 +261,7 @@ def _training_loop_relative_likelihood(
     log_prefix: str = "",
 ) -> None:
     """Training loop that stops when the relative likelihood reaches ``alpha``."""
-    model.forward = torch.compile(model.forward)
+    model.forward = torch.compile(model.forward, mode="max-autotune")
 
     optimizer = get_optimizer(cfg.optimizer.name, model.parameters())
     scheduler = get_scheduler(
@@ -282,10 +280,8 @@ def _training_loop_relative_likelihood(
         model.train()
         running_loss = 0.0
         for inputs_, targets_ in tqdm(train_loader):
-            inputs, targets = (
-                inputs_.to(device, non_blocking=True),
-                targets_.to(device, non_blocking=True),
-            )
+            inputs = inputs_.to(device, non_blocking=True).contiguous(memory_format=torch.channels_last)
+            targets = targets_.to(device, non_blocking=True)
             running_loss += train_fn(
                 model,
                 inputs,
@@ -430,6 +426,7 @@ def main(cfg: DictConfig) -> None:
         num_workers=cfg.num_workers,
         pin_memory=cfg.pin_memory,
         persistent_workers=cfg.persistent_workers,
+        prefetch_factor=cfg.get("prefetch_factor", 4),
         shuffle=True,
     )
 
@@ -449,6 +446,8 @@ def main(cfg: DictConfig) -> None:
         train_loader=train_loader,
     )
     model = build_model(cfg.method.name, method_kwargs, context).to(device)
+    # channels_last layout gives a large speedup for conv nets on recent NVIDIA GPUs.
+    model = model.to(memory_format=torch.channels_last)  # ty: ignore[no-matching-overload]
 
     if not cfg.validate:
         if cfg.scheduler.name.lower() == "plateau":
