@@ -1,0 +1,18 @@
+"""Conformal Prediction APS score implementation."""
+
+from ._common import aps_score_func, APSScore
+from probly.lazy_types import JAX_ARRAY, TORCH_TENSOR
+
+
+# Lazy registration - these will only be imported when needed
+@aps_score_func.delayed_register(TORCH_TENSOR)
+def _(_: type) -> None:
+    from . import torch as torch # noqa: PLC0415,F401
+
+
+@aps_score_func.delayed_register(JAX_ARRAY)
+def _(_: type) -> None:
+    from . import flax as flax  # noqa: PLC0415,F401
+
+
+__all__ = ["aps_score_func"]
