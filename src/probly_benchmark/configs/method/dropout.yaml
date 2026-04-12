@@ -6,3 +6,5 @@ train:
   samples: 1
 selective_prediction:
   num_samples: 50
+ood_detection:
+  num_samples: 50
