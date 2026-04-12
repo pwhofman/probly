@@ -80,6 +80,11 @@ class _Reply:
     full_confidence: float
     word_alternatives: list[list[str] | None]
     low_confidence: bool
+    # Mock-only alternative reply text. When set, the frontend's action
+    # row surfaces a small toggle button next to the Uncertainty button
+    # that swaps the rendered message body between ``text`` and this
+    # string. Real Gemma never produces this field.
+    regenerate: str | None
 
 
 class _ConfidenceShapeError(ValueError):
@@ -180,6 +185,10 @@ def _load_demos() -> list[list[_Reply]]:
             concepts_raw = reply["concepts"]
             full_confidence = reply["full_confidence"]
             low_confidence = reply["low_confidence"]
+            regenerate = reply.get("regenerate")
+            if regenerate is not None and not (isinstance(regenerate, str) and regenerate):
+                msg = f"demo {d} reply {r}: regenerate must be a non-empty string or omitted"
+                raise _ConfidenceShapeError(msg)
 
             _validate_reply(
                 d,
@@ -208,6 +217,7 @@ def _load_demos() -> list[list[_Reply]]:
                     full_confidence=full_confidence,
                     word_alternatives=list(word_alternatives),
                     low_confidence=low_confidence,
+                    regenerate=regenerate,
                 )
             )
         demos.append(replies)
@@ -325,7 +335,7 @@ class MockChat:
             if alts is not None:
                 word["alternatives"] = alts
             words.append(word)
-        return {
+        payload: dict[str, Any] = {
             "words": words,
             "concepts": [
                 {
@@ -338,3 +348,9 @@ class MockChat:
             "full": chosen.full_confidence,
             "low_confidence": chosen.low_confidence,
         }
+        # Only include the field when this reply actually carries an
+        # alternative, so the common-case wire payload stays minimal and
+        # the frontend can treat a missing key as "no regenerate".
+        if chosen.regenerate is not None:
+            payload["regenerate"] = chosen.regenerate
+        return payload

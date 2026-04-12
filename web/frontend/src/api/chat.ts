@@ -45,6 +45,7 @@ interface WireUncertaintyPayload {
   concepts: WireConceptSpan[];
   full: number;
   low_confidence?: boolean;
+  regenerate?: string;
 }
 
 function decodeUncertainty(payload: WireUncertaintyPayload): UncertaintyPayload {
@@ -63,6 +64,7 @@ function decodeUncertainty(payload: WireUncertaintyPayload): UncertaintyPayload 
     concepts,
     full: payload.full,
     highUncertainty: payload.low_confidence,
+    ...(payload.regenerate !== undefined ? { regenerate: payload.regenerate } : {}),
   };
 }
 

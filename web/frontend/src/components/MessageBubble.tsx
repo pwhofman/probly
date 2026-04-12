@@ -391,6 +391,16 @@ interface MessageActionsProps {
    * underline to surface the warning in the action row.
    */
   highUncertainty: boolean;
+  /**
+   * When true this message carries a mock-only alternative reply text,
+   * so the action row should expose a small toggle button next to the
+   * Uncertainty button. When false the regenerate button is not
+   * rendered at all (it takes no layout space).
+   */
+  hasRegenerate: boolean;
+  /** Current state of the regenerate toggle (original vs alternative). */
+  showRegenerate: boolean;
+  onToggleRegenerate: () => void;
 }
 
 function MessageActions({
@@ -401,6 +411,9 @@ function MessageActions({
   onOpenChange,
   uncertaintyDisabled,
   highUncertainty,
+  hasRegenerate,
+  showRegenerate,
+  onToggleRegenerate,
 }: MessageActionsProps) {
   const [copied, setCopied] = useState(false);
   const [feedback, setFeedback] = useState<Feedback>(null);
@@ -525,6 +538,37 @@ function MessageActions({
           </span>
         </button>
       </WithTooltip>
+      {hasRegenerate && (
+        <WithTooltip
+          label={showRegenerate ? 'Show original response' : 'Show regenerated response'}
+        >
+          <button
+            type="button"
+            onClick={onToggleRegenerate}
+            className={`${baseBtn} ${showRegenerate ? 'bg-panel text-ink' : ''}`}
+            aria-label={
+              showRegenerate ? 'Show original response' : 'Show regenerated response'
+            }
+            aria-pressed={showRegenerate}
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polyline points="23 4 23 10 17 10" />
+              <polyline points="1 20 1 14 7 14" />
+              <path d="M3.51 9a9 9 0 0114.85-3.36L23 10" />
+              <path d="M20.49 15a9 9 0 01-14.85 3.36L1 14" />
+            </svg>
+          </button>
+        </WithTooltip>
+      )}
       <div
         className={`overflow-hidden transition-all duration-300 ease-out ${
           open && !uncertaintyDisabled ? 'ml-2 max-w-md opacity-100' : 'ml-0 max-w-0 opacity-0'
@@ -593,6 +637,7 @@ function AssistantBubble({ message }: { message: Message }) {
   // toggle UI in the action row.
   const [uncertaintyOpen, setUncertaintyOpen] = useState(false);
   const [uncertaintyMode, setUncertaintyMode] = useState<UncertaintyMode>('full');
+  const [showRegenerate, setShowRegenerate] = useState(false);
   // Per-word glyph overrides picked by the user from the alternatives
   // tooltip. Keyed by index into ``message.uncertainty.words``; only the
   // non-whitespace glyph is replaced, trailing punctuation/whitespace is
@@ -609,9 +654,17 @@ function AssistantBubble({ message }: { message: Message }) {
   };
 
   const uncertaintyAvailable = message.uncertainty !== undefined;
-  const uncertaintyActive = uncertaintyOpen && uncertaintyAvailable;
   const highUncertainty =
     uncertaintyAvailable && message.uncertainty?.highUncertainty === true;
+  const regenerateText = message.uncertainty?.regenerate;
+  const hasRegenerate = typeof regenerateText === 'string' && regenerateText.length > 0;
+  // When the user is viewing the regenerate alternative, the per-word
+  // uncertainty indices no longer line up with the rendered text, so we
+  // fall back to plain (untinted) rendering for that view. The toggle
+  // itself still works; only the body tinting is suppressed.
+  const viewingRegenerate = showRegenerate && hasRegenerate;
+  const uncertaintyActive = uncertaintyOpen && uncertaintyAvailable && !viewingRegenerate;
+  const effectiveContent = viewingRegenerate ? (regenerateText as string) : message.content;
 
   return (
     <div className="flex justify-start">
@@ -652,13 +705,22 @@ function AssistantBubble({ message }: { message: Message }) {
               )}
               <div className="rounded-2xl border border-rule/70 bg-white/50 px-4 py-2 shadow-sm">
                 {message.content ? (
-                  <AssistantContent
-                    message={message}
-                    mode={uncertaintyMode}
-                    active={uncertaintyActive}
-                    replacements={replacements}
-                    onReplaceWord={handleReplaceWord}
-                  />
+                  viewingRegenerate ? (
+                    // Regenerate alternative has no per-word uncertainty
+                    // data of its own, so we render it as plain Markdown
+                    // rather than going through ``WordBody``.
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {effectiveContent}
+                    </ReactMarkdown>
+                  ) : (
+                    <AssistantContent
+                      message={message}
+                      mode={uncertaintyMode}
+                      active={uncertaintyActive}
+                      replacements={replacements}
+                      onReplaceWord={handleReplaceWord}
+                    />
+                  )
                 ) : (
                   // Streaming placeholder while waiting for the first chunk.
                   <span className="inline-block h-4 w-2 animate-pulse bg-muted align-middle" />
@@ -666,13 +728,16 @@ function AssistantBubble({ message }: { message: Message }) {
               </div>
               {message.content && (
                 <MessageActions
-                  content={message.content}
+                  content={effectiveContent}
                   mode={uncertaintyMode}
                   onModeChange={setUncertaintyMode}
                   open={uncertaintyOpen}
                   onOpenChange={setUncertaintyOpen}
                   uncertaintyDisabled={!uncertaintyAvailable}
                   highUncertainty={highUncertainty}
+                  hasRegenerate={hasRegenerate}
+                  showRegenerate={viewingRegenerate}
+                  onToggleRegenerate={() => setShowRegenerate((v) => !v)}
                 />
               )}
             </>
