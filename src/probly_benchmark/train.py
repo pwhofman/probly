@@ -122,7 +122,11 @@ def _training_loop(
     """
     model.forward = torch.compile(model.forward)
 
-    optimizer = get_optimizer(cfg.optimizer.name, model.parameters())
+    optimizer = get_optimizer(
+        cfg.optimizer.name,
+        model.parameters(),
+        **cfg.optimizer.get("params", {}),
+    )
     scheduler = get_scheduler(
         cfg.scheduler.name,
         optimizer,
@@ -263,7 +267,11 @@ def _training_loop_relative_likelihood(
     """Training loop that stops when the relative likelihood reaches ``alpha``."""
     model.forward = torch.compile(model.forward)
 
-    optimizer = get_optimizer(cfg.optimizer.name, model.parameters())
+    optimizer = get_optimizer(
+        cfg.optimizer.name,
+        model.parameters(),
+        **cfg.optimizer.get("params", {}),
+    )
     scheduler = get_scheduler(
         cfg.scheduler.name,
         optimizer,
