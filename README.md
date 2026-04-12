@@ -6,7 +6,9 @@
   <img src="docs/source/_static/logo/logo_light.png" alt="probly logo" width="300" />
 </picture>
 
-[![Demo Video](https://drive.google.com/thumbnail?id=1gpQStxaR7VYS2GWcGmko8z-yMFSa2Gc6&sz=w640)](https://drive.google.com/file/d/1gpQStxaR7VYS2GWcGmko8z-yMFSa2Gc6/view?usp=share_link)
+[![Watch the demo](https://drive.google.com/thumbnail?id=1gpQStxaR7VYS2GWcGmko8z-yMFSa2Gc6&sz=w640)](https://drive.google.com/file/d/1gpQStxaR7VYS2GWcGmko8z-yMFSa2Gc6/view?usp=share_link)
+
+*Click the image above to watch the demo video*
 
 [![PyPI version](https://badge.fury.io/py/probly.svg)](https://badge.fury.io/py/probly)
 [![PyPI status](https://img.shields.io/pypi/status/probly.svg?color=blue)](https://pypi.org/project/probly)
