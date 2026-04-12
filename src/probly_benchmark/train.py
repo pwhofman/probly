@@ -120,7 +120,7 @@ def _training_loop(
         val_fn: Validation function.
         log_prefix: Prefix for W&B log keys (e.g. ``"member_0/"``).
     """
-    model.forward = torch.compile(model.forward, mode="max-autotune")
+    model.forward = torch.compile(model.forward)
 
     optimizer = get_optimizer(cfg.optimizer.name, model.parameters())
     scheduler = get_scheduler(
@@ -261,7 +261,7 @@ def _training_loop_relative_likelihood(
     log_prefix: str = "",
 ) -> None:
     """Training loop that stops when the relative likelihood reaches ``alpha``."""
-    model.forward = torch.compile(model.forward, mode="max-autotune")
+    model.forward = torch.compile(model.forward)
 
     optimizer = get_optimizer(cfg.optimizer.name, model.parameters())
     scheduler = get_scheduler(
