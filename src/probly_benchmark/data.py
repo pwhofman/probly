@@ -24,6 +24,8 @@ def _get_imagenet_sharded(
     batch_size: int,
     num_workers: int = 0,
     pin_memory: bool = False,
+    persistent_workers: bool = True,
+    prefetch_factor: int = 4,
 ) -> tuple[DataLoader, DataLoader | None, DataLoader]:
     """Get WebDataset-based loaders for sharded ImageNet.
 
@@ -32,14 +34,17 @@ def _get_imagenet_sharded(
         batch_size: Batch size for all loaders.
         num_workers: Number of data loading workers.
         pin_memory: Whether to pin memory for CUDA transfers.
+        persistent_workers: Whether DataLoader workers persist between epochs.
+        prefetch_factor: Number of batches each worker prefetches.
 
     Returns:
         A tuple of (train_loader, val_loader, test_loader).
     """
+    # Decode directly to uint8 CHW torch tensors via torchvision.io (libjpeg-turbo);
+    # resize on-tensor to avoid the slow PIL path.
     transform = T.Compose(
         [
-            T.Resize((224, 224)),
-            T.ToImage(),
+            T.Resize((224, 224), antialias=True),
             T.ToDtype(torch.float32, scale=True),
             T.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
         ]
@@ -59,8 +64,20 @@ def _get_imagenet_sharded(
         ds = wds.WebDataset(shards, shardshuffle=shardshuffle)  # ty: ignore[unresolved-attribute]
         if shuffle_buf > 0:
             ds = ds.shuffle(shuffle_buf)
-        ds = ds.decode("pil").to_tuple("jpg", "txt").map_tuple(transform, int)
-        loader = wds.WebLoader(ds, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory)  # ty: ignore[unresolved-attribute]
+        ds = (
+            ds.decode(wds.imagehandler("torchrgb8"))  # ty: ignore[unresolved-attribute]
+            .to_tuple("jpg", "txt")
+            .map_tuple(transform, int)
+        )
+        loader_kwargs: dict[str, Any] = {
+            "batch_size": batch_size,
+            "num_workers": num_workers,
+            "pin_memory": pin_memory,
+        }
+        if num_workers > 0:
+            loader_kwargs["persistent_workers"] = persistent_workers
+            loader_kwargs["prefetch_factor"] = prefetch_factor
+        loader = wds.WebLoader(ds, **loader_kwargs)  # ty: ignore[unresolved-attribute]
         return loader.with_length(num_samples // batch_size)
 
     train_loader = _make_loader(train_shards, shuffle_buf=5000, num_samples=IMAGENET_TRAIN_SIZE, shardshuffle=True)
@@ -114,6 +131,8 @@ def get_data_train(
                 batch_size=kwargs["batch_size"],
                 num_workers=kwargs.get("num_workers", 0),
                 pin_memory=kwargs.get("pin_memory", False),
+                persistent_workers=kwargs.get("persistent_workers", True),
+                prefetch_factor=kwargs.get("prefetch_factor", 4),
             )
         case _:
             msg = f"Dataset {name} not recognized"
