@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 import pytest
 
 from probly.layers.torch import BayesConv2d, BayesLinear
@@ -25,7 +27,7 @@ class TestNetworkArchitectures:
         This function verifies that:
         - A standard linear layer is replaced with a bayesian linear layer.
         """
-        model = bayesian(torch_model_small_2d_2d)
+        model = cast("nn.Module", bayesian(torch_model_small_2d_2d))
 
         # count number of nn.Linear layers in original model
         count_linear_original = count_layers(torch_model_small_2d_2d, nn.Linear)
@@ -55,7 +57,7 @@ class TestNetworkArchitectures:
         has been correctly modified to include bayesian layers without altering the
         number of other components such as linear, sequential, or convolutional layers.
         """
-        model = bayesian(torch_conv_linear_model)
+        model = cast("nn.Module", bayesian(torch_conv_linear_model))
 
         # count number of nn.Linear layers in original model
         count_linear_original = count_layers(torch_conv_linear_model, nn.Linear)

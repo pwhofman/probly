@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from probly.lazy_types import FLAX_MODULE, TORCH_MODULE
 
-from ._common import dropconnect, dropconnect_traverser, register
+from ._common import DropConnectPredictor, dropconnect, dropconnect_traverser, register
 
 
 ## Torch
@@ -19,4 +19,4 @@ def _(_: type) -> None:
     from . import flax as flax  # noqa: PLC0415
 
 
-__all__ = ["dropconnect", "dropconnect_traverser", "register"]
+__all__ = ["DropConnectPredictor", "dropconnect", "dropconnect_traverser", "register"]

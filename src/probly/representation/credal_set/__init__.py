@@ -17,10 +17,6 @@ from .array import ArrayCategoricalCredalSet, ArrayDiscreteCredalSet
 
 
 @create_probability_intervals.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
-def _(_: type) -> None:
-    from . import torch as torch  # noqa: PLC0415
-
-
 @create_convex_credal_set.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415

@@ -1,0 +1,25 @@
+name: Docs CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, labeled, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  doc_build:
+    name: Test Documentation Build
+    # Run on pushes to main, manual dispatch, or on PRs that carry the
+    # "run-docs" label (label name may include decorative emoji/prefix —
+    # we substring-match via join).
+    if: >-
+      github.event_name == 'push' ||
+      github.event_name == 'workflow_dispatch' ||
+      contains(join(github.event.pull_request.labels.*.name, ','), 'run-docs')
+    uses: ./.github/workflows/_docs-build.yml
+    with:
+      strict: true

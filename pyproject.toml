@@ -9,13 +9,12 @@ description = "Uncertainty Representation and Quantification for Machine Learnin
 license = "MIT"
 requires-python = ">=3.13.0,<3.15"
 dependencies = [
-    "scipy",
-    "matplotlib>=3.8.0",
-    "mpltern",
-    "numpy>=2.0.0",
-    "scikit-learn",
-    "tqdm",
-    "joblib",
+    "scipy>=1.14.1",        # first cp313 wheels
+    "matplotlib>=3.9.2",
+    "mpltern>=0.6.0",
+    "numpy>=2.1.0",         # first cp313 wheels
+    "tqdm>=4.25.0",
+    "joblib>=1.1.0",
 ]
 authors = [
     { name = "Paul Hofman", email = "paul.hofman@ifi.lmu.de" },
@@ -56,16 +55,28 @@ changelog = "https://github.com/pwhofman/probly/blob/main/CHANGELOG.md"
 
 
 [dependency-groups]
-torch = ["torch>=2.0.0", "torchvision"]
-jax = ["jax>=0.8.0", "flax>=0.12.6"]
-jax-cuda12 = ["jax[cuda12]"]
-jax-cuda13 = ["jax[cuda13]"]
-all_ml = [{ include-group = "torch" }, { include-group = "jax" }]
+torch = [
+    "torch>=2.6.0",         # first cp313 wheels
+    "torchvision>=0.21.0"
+]
+jax = [
+    "jax>=0.8.1",
+    "flax>=0.12.4"
+]
+sklearn = [
+    "scikit-learn>=1.5.2"  # first cp313 wheels
+]
+all_ml = [{ include-group = "torch" }, { include-group = "jax" }, { include-group = "sklearn" }]
 test = [
     "pytest>=8.3.5",       # for testing
     "pytest-cov>=6.0.0",   # for coverage
     "pytest-xdist>=3.6.1", # for parallel testing
     "packaging",           # for version parsing
+    # TODO: sklearn is only needed by tests until the calibration and conformal
+    # modules stop importing it directly, and until probly.metrics no longer
+    # needs sklearn as a reference oracle. Remove this include once those
+    # migrations are done.
+    { include-group = "sklearn" },
 ]
 lint = [
     "ruff>=0.15.8",                                         # for linting
@@ -75,24 +86,23 @@ lint = [
 ]
 docs = [
     "sphinx>=9.0.0",
-    "sphinx-gallery",
-    "furo",                     # Beautiful modern theme (or use sphinx-rtd-theme)
-    "myst-nb",                  # Optional: Jupyter Notebook support
-    "matplotlib",               # Used by Sphinx-Gallery examples for plots
-    "sphinx-copybutton",        # Optional: Adds copy buttons to code blocks
-    "sphinx-autodoc-typehints", # Optional: Show type hints in your API docs
-    "sphinxcontrib-bibtex",     # Optional: For bibliography support
-    "ipython",                  # for code execution in notebooks
-    "pandas>=2.3.3",            # for code execution in some examples
+    "sphinx-gallery",               # for the example gallery
+    "furo",                         # theme
+    "sphinx-copybutton",            # adds copy buttons to code blocks
+    "sphinxcontrib-bibtex>=2.0.0",  # for bibliography support
+]
+benchmark = [
+    "wandb>=0.25.1",
+    "hydra-core>=1.3.1",
+    "webdataset>=1.0.2",
+    "nvidia-ml-py==13.590.48",
 ]
 dev = [
-    "ipykernel>=6.29.5",
-    "notebook>=7.3.3",
-    "ipywidgets",
     { include-group = "test" },
     { include-group = "lint" },
     { include-group = "docs" },
     { include-group = "all_ml" },
+    { include-group = "benchmark" },
 ]
 
 
@@ -207,6 +217,9 @@ addopts = [
     "--import-mode=importlib", # to avoid issues with lazy imports
 ]
 
+[tool.coverage.run]
+source = ["probly"]
+
 [tool.coverage.report]
 exclude_also = [
     "def __repr__",
@@ -216,7 +229,13 @@ exclude_also = [
 exclude_lines = ["if TYPE_CHECKING"]
 
 [tool.ty.src]
-exclude = ["notebooks", "docs", "tests", "supporting_files", "examples", "stubs"]
+exclude = ["notebooks", "docs", "supporting_files", "examples", "stubs"]
 
 [tool.ty.environment]
 extra-paths = ["./stubs"]
+
+[[tool.ty.overrides]]
+include = ["tests/probly/**"]
+
+[tool.ty.overrides.rules]
+unresolved-import = "ignore"

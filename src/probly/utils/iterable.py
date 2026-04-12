@@ -13,8 +13,8 @@ def first_element[T](elements: Iterable[T], *_args: Any, **_kwargs: Any) -> T:  
 
     Args:
         elements: The elements to create the sample from.
-        args: Additional arguments (ignored).
-        kwargs: Additional keyword arguments (ignored).
+        _args: Additional arguments (ignored).
+        _kwargs: Additional keyword arguments (ignored).
 
     Returns:
         The first element.

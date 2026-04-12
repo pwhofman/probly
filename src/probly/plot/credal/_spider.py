@@ -364,7 +364,7 @@ def _draw_singleton_spider(
     for idx in range(n_sets):
         color = config.color(idx)
         label = series_labels[idx] if series_labels is not None and idx < len(series_labels) else None
-        values = arr[idx].probabilities
+        values = arr[idx].unnormalized_probabilities
         ax.plot(theta, values, color=color, linewidth=config.line_width, label=label, zorder=3)
         ax.scatter(theta, values, color=color, s=config.marker_size, zorder=4)
 
@@ -404,7 +404,7 @@ def _draw_distance_based_spider(
     theta = _get_theta(data.num_classes)
     lower_all = data.lower()
     upper_all = data.upper()
-    nominal_all = data.nominal.probabilities
+    nominal_all = data.nominal.unnormalized_probabilities
     n_sets = lower_all.shape[0]
     for idx in range(n_sets):
         color = config.color(idx)
@@ -426,7 +426,7 @@ def _draw_convex_set_spider(
     for idx in range(n_sets):
         color = config.color(idx)
         label = series_labels[idx] if series_labels is not None and idx < len(series_labels) else None
-        pts = arr[idx].array.probabilities
+        pts = arr[idx].array.unnormalized_probabilities
 
         for member in pts:
             ax.plot(theta, member, color=color, linewidth=config.line_width, alpha=0.6, zorder=3)
@@ -449,7 +449,7 @@ def _draw_discrete_set_spider(
     n_sets = arr.shape[0]
     for idx in range(n_sets):
         label = series_labels[idx] if series_labels is not None and idx < len(series_labels) else None
-        pts = arr[idx].array.probabilities
+        pts = arr[idx].array.unnormalized_probabilities
 
         for m_idx, member in enumerate(pts):
             # Each member gets a unique color (unlike convex sets which use one color per batch element)
