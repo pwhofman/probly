@@ -19,7 +19,7 @@
           0
         ],
         "concepts": [],
-        "full_confidence": 0.92,
+        "full_confidence": 0.01,
         "low_confidence": false,
         "word_alternatives": [
           null,
@@ -538,7 +538,7 @@
           }
         ],
         "full_confidence": 0.28,
-        "low_confidence": false,
+        "low_confidence": true,
         "word_alternatives": [
           null,
           null,

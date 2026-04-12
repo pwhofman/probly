@@ -13,7 +13,7 @@ type UncertaintyMode = 'full' | 'concept' | 'word';
 
 const UNCERTAINTY_MODES: { key: UncertaintyMode; label: string }[] = [
   { key: 'full', label: 'Full Response' },
-  { key: 'concept', label: 'Concept Level' },
+  { key: 'concept', label: 'Sentence Level' },
   { key: 'word', label: 'Word Level' },
 ];
 
@@ -365,7 +365,9 @@ function AlternativesTooltip({
                 transitionDelay: open ? `${i * 40}ms` : '0ms',
               }}
             >
+              <span className="italic text-muted/70" style={{ fontFamily: 'Georgia, serif' }}>or </span>
               {alt}
+              <span className="italic text-muted/70" style={{ fontFamily: 'Georgia, serif' }}> ?</span>
             </button>
           ))}
         </span>

@@ -39,7 +39,7 @@ _INITIAL_DELAY_SECONDS = 2.2
 # Per-chunk sleep between streamed pieces of a reply. Slow enough that
 # the UI's typing animation is visible word-by-word, matching the feel
 # of Gemma's TextIteratorStreamer in real mode.
-_CHUNK_DELAY_SECONDS = 0.08
+_CHUNK_DELAY_SECONDS = 0.04
 _MODEL_UNAVAILABLE_MESSAGE = "Model not available."
 
 
