@@ -27,7 +27,7 @@ def register(cls: LazyType, generator: Callable) -> None:
     credal_net_generator.register(cls=cls, func=generator)
 
 
-@predictor_transformation(permitted_predictor_types=(ProbabilisticClassifier,))
+@predictor_transformation(permitted_predictor_types=(ProbabilisticClassifier,), preserve_predictor_type=True)
 def credal_net[T: Predictor](base: T) -> T:
     """Create a credal net predictor from a base predictor based on :cite:`wang2024credalnet`.
 
