@@ -2,16 +2,32 @@
 
 from probly.lazy_types import TORCH_TENSOR, TORCH_TENSOR_LIKE
 
-from ._common import CredalEnsemblingRepresenter, compute_representative_set
+from ._common import (
+    CredalBNNRepresenter,
+    CredalEnsemblingRepresenter,
+    CredalRelativeLikelihoodRepresenter,
+    CredalWrapperRepresenter,
+    compute_credal_ensembling_set,
+    compute_credal_net_set,
+)
 
 
 ## Torch
-@compute_representative_set.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
+@compute_credal_ensembling_set.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
+def _(_: type) -> None:
+    from . import torch as torch  # noqa: PLC0415
+
+
+@compute_credal_net_set.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415
 
 
 __all__ = [
+    "CredalBNNRepresenter",
     "CredalEnsemblingRepresenter",
-    "compute_representative_set",
+    "CredalRelativeLikelihoodRepresenter",
+    "CredalWrapperRepresenter",
+    "compute_credal_ensembling_set",
+    "compute_credal_net_set",
 ]
