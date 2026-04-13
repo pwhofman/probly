@@ -56,5 +56,5 @@ def test_torch_probability_intervals_numpy_and_shape_ops() -> None:
 
     expanded = torch.unsqueeze(cset, dim=0)
     assert isinstance(expanded, TorchProbabilityIntervalsCredalSet)
-    assert tuple(expanded.lower_bounds.probabilities.shape) == (1, 2, 2)
-    assert tuple(expanded.upper_bounds.probabilities.shape) == (1, 2, 2)
+    assert tuple(expanded.lower_bounds.shape) == (1, 2, 2)
+    assert tuple(expanded.upper_bounds.shape) == (1, 2, 2)
