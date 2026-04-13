@@ -16,6 +16,7 @@ import tempfile
 
 import hydra
 from omegaconf import DictConfig, OmegaConf
+from pytorch_optimizer import Lamb
 import torch
 from torch import nn, optim
 from torch.amp import GradScaler
@@ -47,6 +48,7 @@ torch.set_float32_matmul_precision("high")
 OPTIMIZERS = {
     "adam": optim.Adam,
     "sgd": optim.SGD,
+    "lamb": Lamb,
 }
 
 
