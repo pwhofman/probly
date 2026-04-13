@@ -38,7 +38,7 @@ def _draw_overlay_binary(
     """Draw ground_truth overlay on binary axes."""
     if ground_truth is None:
         return
-    gt = ground_truth.reshape(-1).array.probabilities
+    gt = ground_truth.reshape(-1).array.unnormalized_probabilities
     for idx in range(gt.shape[0]):
         ax.scatter(
             gt[idx, 1],
@@ -60,7 +60,7 @@ def _draw_overlay_ternary(
     if ground_truth is None:
         return
     ternary_ax = cast("TernaryAxes", ax)
-    gt = ground_truth.reshape(-1).array.probabilities
+    gt = ground_truth.reshape(-1).array.unnormalized_probabilities
     for idx in range(gt.shape[0]):
         # Slices (not scalars) are needed for mpltern's scatter API
         ternary_ax.scatter(
@@ -84,7 +84,7 @@ def _draw_overlay_spider(
     """Draw ground_truth overlay on spider axes."""
     if ground_truth is None:
         return
-    gt = ground_truth.reshape(-1).array.probabilities
+    gt = ground_truth.reshape(-1).array.unnormalized_probabilities
     for idx in range(gt.shape[0]):
         values = gt[idx]
         ax.plot(

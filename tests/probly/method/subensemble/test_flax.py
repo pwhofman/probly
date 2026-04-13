@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 import pytest
 
 from probly.method.subensemble import subensemble
@@ -10,7 +12,7 @@ from tests.probly.flax_utils import count_layers
 jax = pytest.importorskip("jax")
 from jax import numpy as jnp  # noqa: E402
 
-flax = pytest.importorskip("flax")
+pytest.importorskip("flax")
 from flax import nnx  # noqa: E402
 
 
@@ -106,10 +108,13 @@ class TestGeneration:
         model = request.getfixturevalue(model_fixture)
         num_heads = 5
 
-        subensemble_model = subensemble(
-            base=model,
-            num_heads=num_heads,
-            head=model,
+        subensemble_model = cast(
+            "nnx.Sequential",
+            subensemble(
+                base=model,
+                num_heads=num_heads,
+                head=model,
+            ),
         )
 
         count_linear_original = count_layers(model, nnx.Linear)
@@ -123,6 +128,7 @@ class TestGeneration:
         assert len(subensemble_model) == num_heads
         assert count_sequential_subensemble == 3 * num_heads * count_sequential_original
         for member in subensemble_model:
+            assert isinstance(member, nnx.Module)
             count_linear_subensemble = count_layers(member, nnx.Linear)
             count_convolutional_subensemble = count_layers(member, nnx.Conv)
             count_sequential_subensemble = count_layers(member, nnx.Sequential)

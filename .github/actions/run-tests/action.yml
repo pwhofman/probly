@@ -1,0 +1,60 @@
+name: Run Tests
+description: Install dependencies and run pytest, optionally collecting coverage
+
+inputs:
+  python-version:
+    description: Python version to use
+    required: true
+  dependency-group:
+    description: "Dependency group to install (e.g. torch, jax)"
+    required: true
+  resolution:
+    description: "UV resolution strategy (e.g. lowest-direct). Empty string uses default."
+    required: false
+    default: ""
+  coverage:
+    description: "Whether to collect coverage (true/false)"
+    required: false
+    default: "false"
+  coverage-artifact-name:
+    description: "Name for the uploaded coverage artifact"
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Python and uv
+      uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78  # v7.0.0
+      with:
+        python-version: ${{ inputs.python-version }}
+        enable-cache: true
+
+    - name: Install test dependencies
+      shell: bash
+      env:
+        INPUT_RESOLUTION: ${{ inputs.resolution }}
+        DEPENDENCY_GROUP: ${{ inputs.dependency-group }}
+      run: |
+        if [ -n "$INPUT_RESOLUTION" ]; then
+          export UV_RESOLUTION="$INPUT_RESOLUTION"
+        fi
+        uv sync --no-dev --group test --group "$DEPENDENCY_GROUP"
+
+    - name: Run tests with coverage
+      if: inputs.coverage == 'true'
+      shell: bash
+      run: uv run --no-sync pytest "tests/probly" -m "not integration" --cov=probly --cov-report=xml:coverage.xml
+
+    - name: Run tests without coverage
+      if: inputs.coverage != 'true'
+      shell: bash
+      run: uv run --no-sync pytest "tests/probly" -m "not integration"
+
+    - name: Upload coverage artifact
+      if: inputs.coverage == 'true'
+      uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08  # v4
+      with:
+        name: ${{ inputs.coverage-artifact-name }}
+        path: coverage.xml
+        retention-days: 1

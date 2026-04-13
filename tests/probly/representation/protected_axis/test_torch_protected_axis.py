@@ -93,12 +93,14 @@ def test_nested_multi_field_value_delegates_without_tensor_casts() -> None:
     assert values["inner"] is inner
 
     expanded = torch.unsqueeze(outer, dim=0)
+    assert isinstance(expanded, OuterNestedTensor)
     assert isinstance(expanded.inner, InnerPairTensor)
     assert tuple(expanded.inner.left.shape) == (1, 2, 3, 4)
     assert tuple(expanded.inner.right.shape) == (1, 2, 3, 4)
     assert tuple(expanded.aux.shape) == (1, 2, 5)
 
     stacked = torch.stack((outer, outer), dim=0)
+    assert isinstance(stacked, OuterNestedTensor)
     assert isinstance(stacked.inner, InnerPairTensor)
     assert tuple(stacked.inner.left.shape) == (2, 2, 3, 4)
     assert tuple(stacked.inner.right.shape) == (2, 2, 3, 4)

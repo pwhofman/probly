@@ -1,0 +1,80 @@
+"""Perform selective prediction experiments."""
+
+from __future__ import annotations
+
+from typing import Any
+
+import hydra
+from omegaconf import DictConfig, OmegaConf
+from scipy.stats import entropy
+import torch
+import wandb
+
+from probly.evaluation.tasks import selective_prediction
+from probly.representer import representer
+from probly_benchmark import data, utils
+from probly_benchmark.utils import load_model_from_wandb, resolve_artifact_name
+
+
+@hydra.main(version_base=None, config_path="configs/", config_name="selective_prediction")
+def main(cfg: DictConfig) -> None:
+    """Run selective prediction evaluation."""
+    print("=== Selective prediction configuration ===")
+    print(OmegaConf.to_yaml(cfg))
+
+    device = utils.get_device(cfg.get("device", None))
+    print(f"Running on device: {device}")
+
+    utils.set_seed(cfg.seed)
+
+    artifact_name = resolve_artifact_name(cfg)
+    model, _, run_id = load_model_from_wandb(
+        artifact_name,
+        cfg.wandb.entity,
+        cfg.wandb.project,
+        device,
+    )
+
+    _, _, test_loader = data.get_data_train(
+        cfg.dataset,
+        use_validation=False,
+        batch_size=cfg.batch_size,
+    )
+
+    rep_kwargs: dict[str, Any] = (
+        OmegaConf.to_container(cfg.method.selective_prediction, resolve=True)
+        if cfg.method.get("selective_prediction")
+        else {}
+    )  # ty: ignore[invalid-assignment]
+    rep = representer(model, **rep_kwargs)
+
+    outputs, targets = utils.collect_outputs_targets(
+        rep,
+        test_loader,
+        device,
+        cfg.get("amp", False),
+    )
+
+    mean_probs = torch.cat(
+        [torch.softmax(out.tensor, dim=-2).mean(dim=out.sample_dim).cpu() for out in outputs]
+    ).numpy()
+    labels = targets.numpy()
+    loss = (mean_probs.argmax(axis=1) != labels).astype(float)
+    uncertainties = entropy(mean_probs, axis=1)
+    auroc, bin_losses = selective_prediction(uncertainties, loss, n_bins=cfg.n_bins)
+    print(f"Selective prediction AUROC: {auroc:.4f}")
+
+    if cfg.wandb.enabled:
+        run = wandb.init(
+            id=run_id,
+            entity=cfg.wandb.entity,
+            project=cfg.wandb.project,
+            resume="must",
+        )
+        run.summary["sp/auroc"] = auroc
+        run.summary["sp/bin_losses"] = bin_losses.tolist()
+        run.finish()
+
+
+if __name__ == "__main__":
+    main()

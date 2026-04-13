@@ -6,7 +6,7 @@ import logging
 
 import torch
 
-from probly.method import ddu
+from probly.method.ddu import ddu
 from probly.representer import representer
 from probly_benchmark.models import MiniResNet
 

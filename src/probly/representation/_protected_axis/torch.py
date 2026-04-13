@@ -15,7 +15,7 @@ from probly.representation._protected_axis._common_functions import (
     value_shape,
 )
 from probly.representation._protected_axis.torch_functions import torch_function
-from probly.representation.torch_like import TorchTensorLike, TorchTensorLikeImplementation
+from probly.representation.torch_like import TorchLike, TorchLikeImplementation
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     from probly.representation.array_like import ToIndices
 
 
-type TorchProtectedValue = TorchTensorLike[Any] | torch.Tensor
+type TorchProtectedValue = TorchLike[Any] | torch.Tensor
 
 
 def _validate_field_ndim(name: str, ndim: int, protected_axes: int) -> None:
@@ -36,7 +36,7 @@ def _validate_field_ndim(name: str, ndim: int, protected_axes: int) -> None:
         raise ValueError(msg)
 
 
-class TorchAxisProtected[T: TorchTensorLike | torch.Tensor](TorchTensorLikeImplementation[T], ABC):
+class TorchAxisProtected[T: TorchLike | torch.Tensor](TorchLikeImplementation[T], ABC):
     """ABC for representations with one or multiple protected tensor-like fields."""
 
     protected_axes: ClassVar[dict[str, int]] = {}
@@ -283,7 +283,7 @@ class TorchAxisProtected[T: TorchTensorLike | torch.Tensor](TorchTensorLikeImple
         *,
         device: torch.device | str | None = None,
         copy: bool = False,
-    ) -> TorchTensorLikeImplementation[Any]:
+    ) -> TorchLikeImplementation[Any]:
         return self.to(dtype=dtype, device=device, copy=copy)
 
     @classmethod

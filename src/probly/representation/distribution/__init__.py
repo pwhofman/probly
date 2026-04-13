@@ -4,14 +4,17 @@ from probly.lazy_types import TORCH_TENSOR
 
 from ._common import (
     CategoricalDistribution,
+    CategoricalDistributionSample,
     DirichletDistribution,
     Distribution,
+    DistributionSample,
     DistributionType,
     GaussianDistribution,
+    SecondOrderDistribution,
     create_categorical_distribution,
     create_categorical_distribution_from_logits,
 )
-from .array_categorical import ArrayCategoricalDistribution
+from .array_categorical import ArrayCategoricalDistribution, ArrayCategoricalDistributionSample
 from .array_dirichlet import ArrayDirichletDistribution
 from .array_gaussian import ArrayGaussianDistribution
 
@@ -28,13 +31,17 @@ def _(_: type) -> None:
 
 __all__ = [
     "ArrayCategoricalDistribution",
+    "ArrayCategoricalDistributionSample",
     "ArrayDirichletDistribution",
     "ArrayGaussianDistribution",
     "CategoricalDistribution",
+    "CategoricalDistributionSample",
     "DirichletDistribution",
     "Distribution",
+    "DistributionSample",
     "DistributionType",
     "GaussianDistribution",
+    "SecondOrderDistribution",
     "create_categorical_distribution",
     "create_categorical_distribution_from_logits",
 ]
