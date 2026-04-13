@@ -52,7 +52,7 @@ def load_trivia_questions(
     Returns:
         List of dicts with keys: ``question``, ``answer_aliases``.
     """
-    ds = load_dataset("mandarjoshi/trivia_qa", "rc", split="validation")
+    ds = load_dataset("mandarjoshi/trivia_qa", "rc.nocontext", split="validation")
     indices = list(range(len(ds)))
     rng = random.Random(seed)  # noqa: S311
     rng.shuffle(indices)
@@ -96,6 +96,7 @@ def load_partial_results(partial_path: Path) -> list[dict]:
 
 def append_partial_result(partial_path: Path, result: dict) -> None:
     """Append a single result to the JSONL partial file."""
+    partial_path.parent.mkdir(parents=True, exist_ok=True)
     with partial_path.open("a") as f:
         f.write(json.dumps(result) + "\n")
 
