@@ -1,6 +1,6 @@
-"""=================================================
+"""==================================================
 Quantile Regression Conformal Prediction — PyTorch
-=================================================
+==================================================
 
 Demonstrate :class:`~probly.conformal.scores.CQRScore`,
 :class:`~probly.conformal.scores.CQRrScore`, and
