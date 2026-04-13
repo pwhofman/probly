@@ -61,10 +61,40 @@ def get_optimizer(name: str, params: Iterable[nn.Parameter], **kwargs: Any) -> o
     return OPTIMIZERS[name](params, **kwargs)
 
 
-SCHEDULERS: dict[str, type[optim.lr_scheduler.LRScheduler] | None] = {
+def _make_warmup_cosine(
+    optimizer: optim.Optimizer,
+    *,
+    total_iters: int,
+    warmup_iters: int,
+    warmup_start_factor: float = 1e-2,
+    min_lr: float = 0.0,
+) -> optim.lr_scheduler.LRScheduler:
+    """Build a linear-warmup + cosine-decay scheduler that steps per-iteration."""
+    warmup = optim.lr_scheduler.LinearLR(
+        optimizer,
+        start_factor=warmup_start_factor,
+        end_factor=1.0,
+        total_iters=warmup_iters,
+    )
+    cosine = optim.lr_scheduler.CosineAnnealingLR(
+        optimizer,
+        T_max=max(1, total_iters - warmup_iters),
+        eta_min=min_lr,
+    )
+    scheduler = optim.lr_scheduler.SequentialLR(
+        optimizer,
+        schedulers=[warmup, cosine],
+        milestones=[warmup_iters],
+    )
+    scheduler._step_per_iter = True  # ty: ignore[unresolved-attribute]  # noqa: SLF001
+    return scheduler
+
+
+SCHEDULERS: dict[str, Callable[..., optim.lr_scheduler.LRScheduler] | None] = {
     "cosine": optim.lr_scheduler.CosineAnnealingLR,
     "step": optim.lr_scheduler.StepLR,
     "plateau": optim.lr_scheduler.ReduceLROnPlateau,
+    "warmup_cosine": _make_warmup_cosine,
 }
 
 
@@ -72,6 +102,7 @@ def get_scheduler(
     name: str,
     optimizer: optim.Optimizer,
     epochs: int,
+    iters_per_epoch: int,
     **kwargs: Any,  # noqa: ANN401
 ) -> optim.lr_scheduler.LRScheduler | None:
     """Get learning rate scheduler.
@@ -79,7 +110,10 @@ def get_scheduler(
     Args:
         name: Scheduler name.
         optimizer: Optimizer to schedule.
-        epochs: Total number of training epochs. Used as default ``T_max`` for cosine.
+        epochs: Total number of training epochs. Used as default ``T_max`` for cosine
+            and to derive ``total_iters`` for ``warmup_cosine``.
+        iters_per_epoch: Number of optimizer steps per epoch. Used to convert the
+            ``warmup_epochs`` config into per-iteration counts for ``warmup_cosine``.
         **kwargs: Additional scheduler-specific kwargs. An explicit ``T_max`` here
             overrides the ``epochs`` default for cosine.
     """
@@ -87,12 +121,16 @@ def get_scheduler(
     if name not in SCHEDULERS:
         msg = f"Unknown scheduler: {name}"
         raise ValueError(msg)
-    cls = SCHEDULERS[name]
-    if cls is None:
+    factory = SCHEDULERS[name]
+    if factory is None:
         return None
     if name == "cosine":
         kwargs.setdefault("T_max", epochs)
-    return cls(optimizer, **kwargs)
+    elif name == "warmup_cosine":
+        warmup_epochs = kwargs.pop("warmup_epochs", 0)
+        kwargs["total_iters"] = epochs * iters_per_epoch
+        kwargs["warmup_iters"] = warmup_epochs * iters_per_epoch
+    return factory(optimizer, **kwargs)
 
 
 def _training_loop(
@@ -133,8 +171,10 @@ def _training_loop(
         cfg.scheduler.name,
         optimizer,
         cfg.epochs,
+        len(train_loader),
         **cfg.scheduler.get("params", {}),
     )
+    step_per_iter = getattr(scheduler, "_step_per_iter", False)
     early_stopping = EarlyStopping(patience=cfg.early_stopping.patience) if cfg.early_stopping.patience else None
 
     grad_clip_norm = cfg.get("grad_clip_norm", None)
@@ -157,13 +197,15 @@ def _training_loop(
                 scaler=scaler,
                 **train_kwargs,
             )
+            if scheduler is not None and step_per_iter:
+                scheduler.step()
         running_loss /= len(train_loader)
 
         val_loss: float | None = None
         if val_loader:
             val_loss = val_fn(model, val_loader, device, amp_enabled, **train_kwargs)
 
-        if scheduler is not None:
+        if scheduler is not None and not step_per_iter:
             if isinstance(scheduler, optim.lr_scheduler.ReduceLROnPlateau):
                 scheduler.step(val_loss)  # ty: ignore[invalid-argument-type]
             else:
@@ -252,7 +294,7 @@ def _compute_log_likelihood(
     return -total_loss / total_samples
 
 
-def _training_loop_relative_likelihood(
+def _training_loop_relative_likelihood(  # noqa: PLR0912
     model: nn.Module,
     train_loader: DataLoader,
     val_loader: DataLoader | None,
@@ -278,8 +320,10 @@ def _training_loop_relative_likelihood(
         cfg.scheduler.name,
         optimizer,
         cfg.epochs,
+        len(train_loader),
         **cfg.scheduler.get("params", {}),
     )
+    step_per_iter = getattr(scheduler, "_step_per_iter", False)
 
     grad_clip_norm = cfg.get("grad_clip_norm", None)
     amp_enabled = cfg.get("amp", False)
@@ -301,6 +345,8 @@ def _training_loop_relative_likelihood(
                 amp_enabled=amp_enabled,
                 scaler=scaler,
             )
+            if scheduler is not None and step_per_iter:
+                scheduler.step()
 
             if batch_check:
                 model.eval()
@@ -322,7 +368,7 @@ def _training_loop_relative_likelihood(
         if val_loader:
             val_loss = val_fn(model, val_loader, device, amp_enabled)
 
-        if scheduler is not None:
+        if scheduler is not None and not step_per_iter:
             if isinstance(scheduler, optim.lr_scheduler.ReduceLROnPlateau):
                 scheduler.step(val_loss)  # ty: ignore[invalid-argument-type]
             else:
