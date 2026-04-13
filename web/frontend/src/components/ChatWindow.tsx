@@ -49,8 +49,8 @@ export default function ChatWindow({ onFirstMessage }: Props) {
     // already blocked on model startup, so adding a fake delay just feels
     // slow. Only follow-up turns get a simulated "Thinking..." pause.
     const isFirstTurn = messages.length === 0;
-    const thinkingMs = isFirstTurn ? 0 : Math.floor(Math.random() * 2000);
-    const thoughtLabel = thinkingMs < 1000 ? '<1s' : '<2s';
+    const thinkingMs = isFirstTurn ? 0 : Math.floor(Math.random() * 600);
+    const thoughtLabel = '<1s';
 
     // Seed an empty assistant bubble up front so deltas can stream into it.
     setMessages([

@@ -28,18 +28,18 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
 # Simulated "first token" latency before streaming starts. The frontend
-# buffers incoming deltas for up to ~2s while showing its "Thinking..."
+# buffers incoming deltas for up to ~0.6s while showing its "Thinking..."
 # state (see web/frontend/src/components/ChatWindow.tsx). If deltas arrive
 # during that window they all get flushed at once when the timer fires,
 # killing the typing animation. Sleeping longer than the max thinking
 # delay here guarantees the first chunk lands after the UI has flipped
 # to the streaming state.
-_INITIAL_DELAY_SECONDS = 2.2
+_INITIAL_DELAY_SECONDS = 0.8
 
 # Per-chunk sleep between streamed pieces of a reply. Slow enough that
 # the UI's typing animation is visible word-by-word, matching the feel
 # of Gemma's TextIteratorStreamer in real mode.
-_CHUNK_DELAY_SECONDS = 0.04
+_CHUNK_DELAY_SECONDS = 0.02
 _MODEL_UNAVAILABLE_MESSAGE = "Model not available."
 
 
