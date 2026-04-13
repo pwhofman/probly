@@ -17,7 +17,7 @@ class CredalRelativeLikelihoodPredictor[**In, Out](EnsemblePredictor[In, Out], P
     """A predictor that applies the credal relative likelihood transformation."""
 
 
-@predictor_transformation(permitted_predictor_types=(ProbabilisticClassifier,))
+@predictor_transformation(permitted_predictor_types=(ProbabilisticClassifier,), preserve_predictor_type=False)
 @CredalRelativeLikelihoodPredictor.register_factory
 def credal_relative_likelihood[**In, Out](
     base: Predictor[In, Out], num_members: int, reset_params: bool = True

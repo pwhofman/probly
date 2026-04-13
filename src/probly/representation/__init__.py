@@ -1,6 +1,6 @@
 """Uncertainty representations for models."""
 
-from probly.representation.credal_set import (
+from .credal_set import (
     ArrayCategoricalCredalSet,
     ArrayDiscreteCredalSet,
     CategoricalCredalSet,
@@ -8,8 +8,8 @@ from probly.representation.credal_set import (
     CredalSetType,
     DiscreteCredalSet,
 )
-from probly.representation.representation import Representation
-from probly.representation.sample import Sample
+from .representation import Representation
+from .sample import Sample
 
 __all__ = [
     "ArrayCategoricalCredalSet",
