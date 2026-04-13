@@ -20,13 +20,14 @@ from probly.representation.conformal_set._common import (
 )
 from probly.representation.sample import create_sample
 from probly.representation.sample.array import ArraySample
+from probly.representer import representer
+from probly.representer._representer import Representer
 
 if TYPE_CHECKING:
     import numpy as np
 
+    from probly.calibrator._common import ConformalCalibrator
     from probly.representation.sample._common import Sample
-from probly.representer import representer
-from probly.representer._representer import Representer
 
 if TYPE_CHECKING:
     import numpy as np
