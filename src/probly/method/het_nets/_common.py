@@ -18,7 +18,6 @@ class HetNetsPredictor[**In, Out](RandomPredictor[In, Out], LogitDistributionPre
 hetnets_traverser = lazydispatch_traverser[object](name="hetnets_traverser")
 
 LAST_LAYER = GlobalVariable[bool]("LAST_LAYER")
-NUM_CLASSES = GlobalVariable[int]("NUM_CLASSES")
 NUM_FACTORS = GlobalVariable[int]("NUM_FACTORS")
 TEMPERATURE = GlobalVariable[float]("TEMPERATURE")
 NUM_MC_SAMPLES = GlobalVariable[int]("NUM_SAMPLES")
@@ -31,8 +30,7 @@ def register(cls: type, traverser: Any) -> None:
 
 @HetNetsPredictor.register_factory
 def het_nets[**In, Out](
-    base: Predictor[In, Out], 
-    num_classes: int = 10, 
+    base: Predictor[In, Out],  
     num_factors: int = 10, 
     temperature: float = 1.0, 
     num_mc_samples: int = 10, 
@@ -53,7 +51,7 @@ def het_nets[**In, Out](
         Predictor, The HetNets predictor.
     """
     return traverse(
-        base, nn_compose(hetnets_traverser), init={LAST_LAYER: True, TRAVERSE_REVERSED: True, NUM_CLASSES: num_classes, NUM_FACTORS: num_factors, TEMPERATURE: temperature, NUM_MC_SAMPLES: num_mc_samples, IS_PARAMETER_EFFICIENT: is_parameter_efficient, MULTILABEL: multilabel}
+        base, nn_compose(hetnets_traverser), init={LAST_LAYER: True, TRAVERSE_REVERSED: True, NUM_FACTORS: num_factors, TEMPERATURE: temperature, NUM_MC_SAMPLES: num_mc_samples, IS_PARAMETER_EFFICIENT: is_parameter_efficient, MULTILABEL: multilabel}
     )
 
 
