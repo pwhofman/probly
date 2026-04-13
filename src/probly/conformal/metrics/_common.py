@@ -42,18 +42,23 @@ def _empirical_coverage_classification_numpy(y_pred: np.ndarray, y_true: np.ndar
 
 
 @empirical_coverage_classification.register(ArrayOneHotConformalSet)
-@empirical_coverage_classification.register(TorchOneHotConformalSet)
-def _empirical_coverage_classification_array_onehot[T](
-    y_pred: ArrayOneHotConformalSet | TorchOneHotConformalSet, y_true: T
-) -> float:
+def _empirical_coverage_classification_array_onehot[T](y_pred: ArrayOneHotConformalSet, y_true: T) -> float:
     return empirical_coverage_classification(y_pred.array, y_true)
 
 
-@empirical_coverage_regression.register(ArrayIntervalConformalSet | TorchIntervalConformalSet)
-def _empirical_coverage_regression_array_onehot[T](
-    y_pred: ArrayIntervalConformalSet | TorchIntervalConformalSet, y_true: T
-) -> float:
+@empirical_coverage_classification.register(TorchOneHotConformalSet)
+def _empirical_coverage_classification_torch_onehot[T](y_pred: TorchOneHotConformalSet, y_true: T) -> float:
+    return empirical_coverage_classification(y_pred.tensor.cpu().numpy(), y_true)
+
+
+@empirical_coverage_regression.register(ArrayIntervalConformalSet)
+def _empirical_coverage_regression_array_onehot[T](y_pred: ArrayIntervalConformalSet, y_true: T) -> float:
     return empirical_coverage_regression(y_pred.array, y_true)
+
+
+@empirical_coverage_regression.register(TorchIntervalConformalSet)
+def _empirical_coverage_regression_torch_interval[T](y_pred: TorchIntervalConformalSet, y_true: T) -> float:
+    return empirical_coverage_regression(y_pred.tensor.cpu().numpy(), y_true)
 
 
 @empirical_coverage_regression.register(np.ndarray)
@@ -66,9 +71,14 @@ def _average_set_size_numpy(y_pred: np.ndarray) -> float:
     return np.mean(y_pred.sum(axis=1))
 
 
-@average_set_size.register(ArrayOneHotConformalSet | TorchOneHotConformalSet)
-def _average_set_size_array_onehot(y_pred: ArrayOneHotConformalSet | TorchOneHotConformalSet) -> float:
+@average_set_size.register(ArrayOneHotConformalSet)
+def _average_set_size_array_onehot(y_pred: ArrayOneHotConformalSet) -> float:
     return average_set_size(y_pred.array)
+
+
+@average_set_size.register(TorchOneHotConformalSet)
+def _average_set_size_torch_onehot(y_pred: TorchOneHotConformalSet) -> float:
+    return average_set_size(y_pred.tensor.cpu().numpy())
 
 
 @average_interval_size.register(np.ndarray)
@@ -76,6 +86,11 @@ def _average_interval_size_numpy(y_pred: np.ndarray) -> float:
     return np.mean(y_pred[:, 1] - y_pred[:, 0])
 
 
-@average_interval_size.register(ArrayIntervalConformalSet | TorchIntervalConformalSet)
-def _average_interval_size_array_interval(y_pred: ArrayIntervalConformalSet | TorchIntervalConformalSet) -> float:
+@average_interval_size.register(ArrayIntervalConformalSet)
+def _average_interval_size_array_interval(y_pred: ArrayIntervalConformalSet) -> float:
     return average_interval_size(y_pred.array)
+
+
+@average_interval_size.register(TorchIntervalConformalSet)
+def _average_interval_size_torch_interval(y_pred: TorchIntervalConformalSet) -> float:
+    return average_interval_size(y_pred.tensor.cpu().numpy())

@@ -7,12 +7,9 @@ from typing import TYPE_CHECKING, Protocol, runtime_checkable
 import numpy as np
 
 from lazy_dispatch import lazydispatch
-from probly.calibrator._common import calibrate_raw
-from probly.conformal._common import ConformalCalibrator
+from probly.calibrator._common import ConformalCalibrator, calibrate_raw
 from probly.conformal.quantile._common import calculate_quantile
 from probly.predictor._common import (
-    ConformalClassificationPredictor,
-    ConformalPredictor,
     predict_raw,
 )
 
@@ -37,7 +34,6 @@ def conformal_generator[**In, Out](model: Predictor[In, Out]) -> ConformalClassi
 
 
 @ConformalClassificationCalibrator.register_factory
-@ConformalClassificationPredictor.register_factory
 def conformalize_classifier[**In, Out](model: Predictor[In, Out]) -> ConformalClassificationCalibrator[In, Out]:
     """Conformalise a classification predictor.
 
@@ -60,7 +56,7 @@ def conformal_class_calibration[In, Out](
     y_calib: Out,
     non_conformity_score: ClassificationNonConformityScore,
     alpha: float,
-) -> ConformalPredictor:
+) -> ConformalClassificationCalibrator:
     """Calibrate a conformal predictor."""
     prediction = predict_raw(predictor, x_calib)
     probabilities = to_probabilities(prediction)
@@ -95,9 +91,9 @@ def _(pred: np.ndarray) -> np.ndarray:
 def _[**In, Out](predictor: ConformalClassificationCalibrator[In, Out], *args: In.args, **kwargs: In.kwargs) -> Out:
     """Obtain class probabilities from a conformal classification predictor."""
     if hasattr(predictor, "predict_proba"):
-        return predictor.predict_proba(*args, **kwargs)  # ty:ignore[call-non-callable]
+        return predictor.predict_proba(*args, **kwargs)  # ty: ignore[call-non-callable]
     if callable(predictor):
-        pred = predictor(*args, **kwargs)  # ty:ignore[call-top-callable]
+        pred = predictor(*args, **kwargs)  # ty: ignore[call-top-callable]
         probs = to_probabilities(pred)
         return probs  # type: ignore[return-value]
     msg = f"Predict function not found for predictor of type {type(predictor)}"

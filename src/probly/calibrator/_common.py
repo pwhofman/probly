@@ -36,11 +36,7 @@ class ConformalCalibrator[**In, Out](ProtocolRegistry, Protocol, structural_chec
 
     @classmethod
     def __subclasshook__(cls, subclass: type) -> bool:
-        calibrate_method = getattr(subclass, "calibrate", None)
-        conformal_method = getattr(subclass, "conformal_quantile", None)
-        if calibrate_method is not None or conformal_method is not None:
-            return True
-        if issubclass(subclass, ConformalCalibrator):
+        if hasattr(subclass, "conformal_quantile") and hasattr(subclass, "non_conformity_score"):
             return True
         return NotImplemented
 

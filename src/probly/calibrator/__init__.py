@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from ._common import calibrate
+from ._common import ConformalCalibrator, calibrate
 
 __all__ = [
+    "ConformalCalibrator",
     "calibrate",
 ]

@@ -5,11 +5,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from probly.traverse_nn import nn_compose
-from pytraverse import GlobalVariable, function_traverser, lazydispatch_traverser
-from pytraverse.core import State, traverse_with_state
 
 if TYPE_CHECKING:
-    from probly.predictor._common import ConformalPredictor
+    from probly.calibrator._common import ConformalCalibrator
+from pytraverse import GlobalVariable, function_traverser, lazydispatch_traverser
+from pytraverse.core import State, traverse_with_state
 
 calibration_traverser = lazydispatch_traverser(name="_check_calibrated")
 
@@ -25,7 +25,7 @@ def _(obj: object, state: State) -> tuple[object, State]:
     return obj, state
 
 
-def is_conformal_calibrated(predictor: ConformalPredictor) -> bool:
+def is_conformal_calibrated(predictor: ConformalCalibrator) -> bool:
     """Check if the conformal predictor is calibrated."""
     score_attribute = getattr(predictor, "non_conformity_score", None)
     quantile_attribute = getattr(predictor, "conformal_quantile", None)
