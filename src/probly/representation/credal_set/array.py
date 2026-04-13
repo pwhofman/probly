@@ -11,6 +11,11 @@ import numpy as np
 from probly.representation._protected_axis.array import ArrayAxisProtected
 from probly.representation.credal_set._common import (
     CategoricalCredalSet,
+    ConvexCredalSet,
+    DiscreteCredalSet,
+    DistanceBasedCredalSet,
+    ProbabilityIntervalsCredalSet,
+    SingletonCredalSet,
     create_convex_credal_set,
     create_probability_intervals,
 )
@@ -26,7 +31,7 @@ if TYPE_CHECKING:
 def _ensure_array_categorical_distribution(value: object) -> ArrayCategoricalDistribution:
     if isinstance(value, ArrayCategoricalDistribution):
         return value
-    return ArrayCategoricalDistribution(probabilities=np.asarray(value))
+    return ArrayCategoricalDistribution(np.asarray(value))
 
 
 def _sample_probabilities(sample: ArraySample[ArrayCategoricalDistribution]) -> np.ndarray:
@@ -35,7 +40,7 @@ def _sample_probabilities(sample: ArraySample[ArrayCategoricalDistribution]) -> 
         msg = "Array categorical credal sets require samples of ArrayCategoricalDistribution."
         raise TypeError(msg)
 
-    return sample_values.probabilities
+    return sample_values.unnormalized_probabilities
 
 
 class ArrayCategoricalCredalSet(CategoricalCredalSet, ABC):
@@ -52,7 +57,10 @@ class ArrayCategoricalCredalSet(CategoricalCredalSet, ABC):
 
     @classmethod
     @abstractmethod
-    def from_array_sample(cls, sample: ArraySample[ArrayCategoricalDistribution]) -> Self:
+    def from_array_sample(
+        cls,
+        sample: ArraySample[ArrayCategoricalDistribution],
+    ) -> Self:
         """Create a credal set from categorical distribution samples."""
 
     @abstractmethod
@@ -64,10 +72,11 @@ class ArrayCategoricalCredalSet(CategoricalCredalSet, ABC):
         """Return the upper probabilities of the credal set."""
 
 
-@dataclass(frozen=True, slots=True, weakref_slot=True)
+@dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
 class ArrayDiscreteCredalSet(
     ArrayAxisProtected[ArrayCategoricalDistribution],
     ArrayCategoricalCredalSet,
+    DiscreteCredalSet,
 ):
     """A finite set of categorical distributions."""
 
@@ -83,7 +92,7 @@ class ArrayDiscreteCredalSet(
     def from_array_sample(cls, sample: ArraySample[ArrayCategoricalDistribution]) -> Self:
         probabilities = _sample_probabilities(sample)
         members = np.moveaxis(probabilities, 0, -2)
-        return cls(array=ArrayCategoricalDistribution(probabilities=members))
+        return cls(array=ArrayCategoricalDistribution(members))
 
     @override
     @property
@@ -94,18 +103,19 @@ class ArrayDiscreteCredalSet(
     @override
     def lower(self) -> np.ndarray:
         """Return the lower probabilities of the credal set."""
-        return np.min(self.array.probabilities, axis=0)
+        return np.min(self.array.unnormalized_probabilities, axis=0)
 
     @override
     def upper(self) -> np.ndarray:
         """Return the upper probabilities of the credal set."""
-        return np.max(self.array.probabilities, axis=0)
+        return np.max(self.array.unnormalized_probabilities, axis=0)
 
 
-@dataclass(frozen=True, slots=True, weakref_slot=True)
+@dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
 class ArrayConvexCredalSet(
     ArrayAxisProtected[ArrayCategoricalDistribution],
     ArrayCategoricalCredalSet,
+    ConvexCredalSet,
 ):
     """A convex hull over a finite set of categorical distributions."""
 
@@ -118,10 +128,13 @@ class ArrayConvexCredalSet(
 
     @override
     @classmethod
-    def from_array_sample(cls, sample: ArraySample[ArrayCategoricalDistribution]) -> Self:
+    def from_array_sample(
+        cls,
+        sample: ArraySample[ArrayCategoricalDistribution],
+    ) -> Self:
         probabilities = _sample_probabilities(sample)
         vertices = np.moveaxis(probabilities, 0, -2)
-        return cls(array=ArrayCategoricalDistribution(probabilities=vertices))
+        return cls(array=ArrayCategoricalDistribution(vertices))
 
     @override
     @property
@@ -132,18 +145,19 @@ class ArrayConvexCredalSet(
     @override
     def lower(self) -> np.ndarray:
         """Return the lower probabilities of the credal set."""
-        return np.min(self.array.probabilities, axis=0)
+        return np.min(self.array.unnormalized_probabilities, axis=0)
 
     @override
     def upper(self) -> np.ndarray:
         """Return the upper probabilities of the credal set."""
-        return np.max(self.array.probabilities, axis=0)
+        return np.max(self.array.unnormalized_probabilities, axis=0)
 
 
-@dataclass(frozen=True, slots=True, weakref_slot=True)
+@dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
 class ArrayDistanceBasedCredalSet(
     ArrayAxisProtected[ArrayCategoricalDistribution],
     ArrayCategoricalCredalSet,
+    DistanceBasedCredalSet,
 ):
     """Distance-based credal set around a nominal categorical distribution."""
 
@@ -165,13 +179,13 @@ class ArrayDistanceBasedCredalSet(
         tv_dists = 0.5 * np.sum(diff, axis=-1)
         radius = np.max(tv_dists, axis=0)
         return cls(
-            nominal=ArrayCategoricalDistribution(probabilities=nominal),
+            nominal=ArrayCategoricalDistribution(nominal),
             radius=np.asarray(radius),
         )
 
     @override
     def __array__(self, dtype: DTypeLike | None = None, copy: bool | None = None) -> np.ndarray:
-        return np.asarray(self.nominal.probabilities, dtype=dtype, copy=copy)
+        return np.asarray(self.nominal.unnormalized_probabilities, dtype=dtype, copy=copy)
 
     @override
     @property
@@ -186,7 +200,7 @@ class ArrayDistanceBasedCredalSet(
         For L1/TV distance, the tightest element-wise lower bound is max(0, nominal - radius).
         """
         # Ensure radius is broadcastable to nominal (add last dim if needed)
-        nominal = self.nominal.probabilities
+        nominal = self.nominal.unnormalized_probabilities
         r = self.radius
         if isinstance(r, np.ndarray) and r.ndim == nominal.ndim - 1:
             r = np.expand_dims(r, axis=-1)
@@ -200,7 +214,7 @@ class ArrayDistanceBasedCredalSet(
         For L1/TV distance, the tightest element-wise upper bound is min(1, nominal + radius).
         """
         # Ensure radius is broadcastable to nominal (add last dim if needed)
-        nominal = self.nominal.probabilities
+        nominal = self.nominal.unnormalized_probabilities
         r = self.radius
         if isinstance(r, np.ndarray) and r.ndim == nominal.ndim - 1:
             r = np.expand_dims(r, axis=-1)
@@ -208,10 +222,11 @@ class ArrayDistanceBasedCredalSet(
         return np.clip(nominal + r, 0.0, 1.0)
 
 
-@dataclass(frozen=True, slots=True, weakref_slot=True)
+@dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
 class ArrayProbabilityIntervalsCredalSet(
     ArrayAxisProtected[ArrayCategoricalDistribution],
     ArrayCategoricalCredalSet,
+    ProbabilityIntervalsCredalSet,
 ):
     """Credal set represented by lower/upper categorical bounds."""
 
@@ -267,10 +282,11 @@ class ArrayProbabilityIntervalsCredalSet(
         return self.upper_bounds
 
 
-@dataclass(frozen=True, slots=True, weakref_slot=True)
+@dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
 class ArraySingletonCredalSet(
     ArrayAxisProtected[ArrayCategoricalDistribution],
     ArrayCategoricalCredalSet,
+    SingletonCredalSet,
 ):
     """A singleton credal set with one precise categorical distribution."""
 
@@ -285,7 +301,7 @@ class ArraySingletonCredalSet(
     @classmethod
     def from_array_sample(cls, sample: ArraySample[ArrayCategoricalDistribution]) -> Self:
         probabilities = _sample_probabilities(sample)
-        return cls(array=ArrayCategoricalDistribution(probabilities=np.mean(probabilities, axis=0)))
+        return cls(array=ArrayCategoricalDistribution(np.mean(probabilities, axis=0)))
 
     @override
     @property
@@ -296,12 +312,12 @@ class ArraySingletonCredalSet(
     @override
     def lower(self) -> np.ndarray:
         """Return the lower probabilities of the credal set."""
-        return self.array.probabilities
+        return self.array.unnormalized_probabilities
 
     @override
     def upper(self) -> np.ndarray:
         """Return the upper probabilities of the credal set."""
-        return self.array.probabilities
+        return self.array.unnormalized_probabilities
 
 
 create_probability_intervals.register(ArrayCategoricalDistribution, ArrayProbabilityIntervalsCredalSet.from_sample)

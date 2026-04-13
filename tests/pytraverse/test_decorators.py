@@ -637,7 +637,7 @@ class TestTraverserDecorator:
             match="signature with params 'obj' irresolvable with mode 'invalid'",
         ):
 
-            @traverser(mode="invalid")  # type: ignore[call-overload]
+            @traverser(mode="invalid")  # ty:ignore[no-matching-overload]
             def bad_traverser(obj):
                 return obj  # pragma: no cover
 
@@ -646,7 +646,7 @@ class TestTraverserDecorator:
             match="signature with params 'obj', 'state' irresolvable with mode 'invalid'",
         ):
 
-            @traverser(mode="invalid")  # type: ignore[call-overload]
+            @traverser(mode="invalid")  # ty:ignore[no-matching-overload]
             def bad_traverser(obj, state):
                 return obj  # pragma: no cover
 
@@ -655,7 +655,7 @@ class TestTraverserDecorator:
             match="signature with params 'obj', 'state', 'traverse' irresolvable with mode 'invalid'",
         ):
 
-            @traverser(mode="invalid")  # type: ignore[call-overload]
+            @traverser(mode="invalid")  # ty:ignore[no-matching-overload]
             def bad_traverser(obj, state, traverse):
                 return obj  # pragma: no cover
 

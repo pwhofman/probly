@@ -11,9 +11,14 @@ import torch.nn.functional as F
 
 from lazy_dispatch import lazydispatch
 from probly.method.bayesian import BayesianPredictor
+from probly.method.credal_ensembling import CredalEnsemblingPredictor
+from probly.method.credal_relative_likelihood import CredalRelativeLikelihoodPredictor
+from probly.method.credal_wrapper import CredalWrapperPredictor
 from probly.method.dropconnect import DropConnectPredictor
 from probly.method.dropout import DropoutPredictor
+from probly.method.ensemble import EnsemblePredictor
 from probly.method.posterior_network import PosteriorNetworkPredictor
+from probly.method.subensemble import SubensemblePredictor
 from probly.train.bayesian.torch import ELBOLoss, collect_kl_divergence
 from probly.train.calibration.torch import ExpectedCalibrationError
 from probly.train.evidential.torch import postnet_loss
@@ -71,7 +76,7 @@ def _(
 
 
 @train_epoch.register((DropConnectPredictor, DropoutPredictor))
-def _(
+def train_epoch_cross_entropy(
     model: Predictor,
     inputs: torch.Tensor,
     targets: torch.Tensor,
@@ -172,7 +177,7 @@ def _(
 
 @validate.register((DropConnectPredictor, DropoutPredictor))
 @torch.no_grad()
-def _(
+def validate_cross_entropy(
     model: Predictor,
     val_loader: DataLoader,
     device: torch.device,
@@ -319,6 +324,60 @@ def _(
     labels = torch.cat(all_labels)
 
     return _compute_metrics(probs, labels, n_bins)
+
+
+@evaluate.register(
+    (
+        EnsemblePredictor,
+        CredalEnsemblingPredictor,
+        CredalRelativeLikelihoodPredictor,
+        CredalWrapperPredictor,
+        SubensemblePredictor,
+    )
+)
+@torch.no_grad()
+def evaluate_ensemble(
+    model: EnsemblePredictor,
+    test_loader: DataLoader,
+    device: torch.device,
+    amp_enabled: bool = False,
+    n_bins: int = 10,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> dict[str, float]:
+    """Evaluate an ensemble by averaging member softmax outputs.
+
+    Returns ensemble-level metrics and per-member metrics keyed as
+    ``member_<i>/accuracy``, ``member_<i>/nll``, ``member_<i>/ece``.
+    """
+    members = list(model)
+    for member in members:
+        member.eval()
+
+    all_member_probs: list[list[torch.Tensor]] = [[] for _ in members]
+    all_labels: list[torch.Tensor] = []
+    for inputs_, targets_ in test_loader:
+        inputs, targets = inputs_.to(device), targets_.to(device)
+        with autocast(device.type, enabled=amp_enabled):
+            for j, member in enumerate(members):
+                all_member_probs[j].append(F.softmax(member(inputs), dim=1))
+        all_labels.append(targets)
+
+    labels = torch.cat(all_labels)
+
+    # Per-member metrics
+    metrics: dict[str, float] = {}
+    member_probs_cat: list[torch.Tensor] = []
+    for j, member_batches in enumerate(all_member_probs):
+        probs_j = torch.cat(member_batches)
+        member_probs_cat.append(probs_j)
+        for key, value in _compute_metrics(probs_j, labels, n_bins).items():
+            metrics[f"member_{j}/{key}"] = value
+
+    # Ensemble metrics (average of member probabilities)
+    ensemble_probs = torch.stack(member_probs_cat).mean(dim=0)
+    metrics.update(_compute_metrics(ensemble_probs, labels, n_bins))
+
+    return metrics
 
 
 def _compute_metrics(probs: torch.Tensor, labels: torch.Tensor, n_bins: int) -> dict[str, float]:

@@ -108,7 +108,7 @@ def _draw_singleton_binary(
     series_labels: list[str] | None = None,
 ) -> None:
     data = data.reshape(-1)
-    arr = data.array.probabilities
+    arr = data.array.unnormalized_probabilities
     n_sets = arr.shape[0]
     for idx in range(n_sets):
         color = config.color(idx)
@@ -147,7 +147,7 @@ def _draw_distance_based_binary(
     data = data.reshape(-1)
     lower_all = data.lower()
     upper_all = data.upper()
-    nominal_all = data.nominal.probabilities
+    nominal_all = data.nominal.unnormalized_probabilities
     n_sets = lower_all.shape[0]
     for idx in range(n_sets):
         color = config.color(idx)
@@ -163,7 +163,7 @@ def _draw_vertex_set_binary(
     config: PlotConfig,
     series_labels: list[str] | None = None,
 ) -> None:
-    arr = data.reshape(-1).array.probabilities
+    arr = data.reshape(-1).array.unnormalized_probabilities
     n_sets = arr.shape[0]
     for idx in range(n_sets):
         color = config.color(idx)

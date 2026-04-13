@@ -10,10 +10,64 @@ from torch.utils.data import DataLoader
 import torchvision
 from torchvision import datasets, transforms
 import torchvision.transforms.v2 as T
+import webdataset as wds
 
-from probly_benchmark.paths import DATA_PATH
+from probly_benchmark.paths import DATA_PATH, IMAGENET_SHARD_PATH
 
 VAL_SPLIT = 0.2
+IMAGENET_TRAIN_SIZE = 1_281_167
+IMAGENET_VAL_SIZE = 50_000
+
+
+def _get_imagenet_sharded(
+    use_validation: bool,
+    batch_size: int,
+    num_workers: int = 0,
+    pin_memory: bool = False,
+) -> tuple[DataLoader, DataLoader | None, DataLoader]:
+    """Get WebDataset-based loaders for sharded ImageNet.
+
+    Args:
+        use_validation: Whether to include a validation loader.
+        batch_size: Batch size for all loaders.
+        num_workers: Number of data loading workers.
+        pin_memory: Whether to pin memory for CUDA transfers.
+
+    Returns:
+        A tuple of (train_loader, val_loader, test_loader).
+    """
+    transform = T.Compose(
+        [
+            T.Resize((224, 224)),
+            T.ToImage(),
+            T.ToDtype(torch.float32, scale=True),
+            T.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
+        ]
+    )
+
+    train_shards = sorted(str(p) for p in IMAGENET_SHARD_PATH.glob("imagenet-train-*.tar"))
+    val_shards = sorted(str(p) for p in IMAGENET_SHARD_PATH.glob("imagenet-val-*.tar"))
+
+    if not train_shards:
+        msg = f"No train shards found in {IMAGENET_SHARD_PATH}"
+        raise FileNotFoundError(msg)
+    if not val_shards:
+        msg = f"No val shards found in {IMAGENET_SHARD_PATH}"
+        raise FileNotFoundError(msg)
+
+    def _make_loader(shards: list[str], shuffle_buf: int, num_samples: int, shardshuffle: bool = False) -> DataLoader:
+        ds = wds.WebDataset(shards, shardshuffle=shardshuffle)  # ty: ignore[unresolved-attribute]
+        if shuffle_buf > 0:
+            ds = ds.shuffle(shuffle_buf)
+        ds = ds.decode("pil").to_tuple("jpg", "txt").map_tuple(transform, int)
+        loader = wds.WebLoader(ds, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory)  # ty: ignore[unresolved-attribute]
+        return loader.with_length(num_samples // batch_size)
+
+    train_loader = _make_loader(train_shards, shuffle_buf=5000, num_samples=IMAGENET_TRAIN_SIZE, shardshuffle=True)
+    val_loader = _make_loader(val_shards, shuffle_buf=0, num_samples=IMAGENET_VAL_SIZE) if use_validation else None
+    test_loader = _make_loader(val_shards, shuffle_buf=0, num_samples=IMAGENET_VAL_SIZE)
+
+    return train_loader, val_loader, test_loader
 
 
 def get_data_train(
@@ -54,6 +108,13 @@ def get_data_train(
             )
             train = torchvision.datasets.ImageNet(root=DATA_PATH, split="train", transform=transforms_train)
             test = torchvision.datasets.ImageNet(root=DATA_PATH, split="val", transform=transforms_test)
+        case "imagenet_shards":
+            return _get_imagenet_sharded(
+                use_validation=use_validation,
+                batch_size=kwargs["batch_size"],
+                num_workers=kwargs.get("num_workers", 0),
+                pin_memory=kwargs.get("pin_memory", False),
+            )
         case _:
             msg = f"Dataset {name} not recognized"
             raise ValueError(msg)

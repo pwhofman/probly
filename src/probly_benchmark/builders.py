@@ -18,9 +18,14 @@ from torch import nn
 from torch.utils.data import Subset
 
 from probly.method.bayesian import bayesian
+from probly.method.credal_ensembling import credal_ensembling
+from probly.method.credal_relative_likelihood import credal_relative_likelihood
+from probly.method.credal_wrapper import credal_wrapper
 from probly.method.dropconnect import dropconnect
 from probly.method.dropout import dropout
+from probly.method.ensemble import ensemble
 from probly.method.posterior_network import posterior_network
+from probly.method.subensemble import subensemble
 from probly_benchmark import models
 
 if TYPE_CHECKING:
@@ -32,6 +37,11 @@ METHODS = {
     "dropout": dropout,
     "dropconnect": dropconnect,
     "posterior_network": posterior_network,
+    "ensemble": ensemble,
+    "credal_ensembling": credal_ensembling,
+    "credal_relative_likelihood": credal_relative_likelihood,
+    "credal_wrapper": credal_wrapper,
+    "subensemble": subensemble,
 }
 
 

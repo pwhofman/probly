@@ -203,7 +203,7 @@ def test_lacscore_with_trained_flax_model() -> None:
 
     # separate parameters from other state
     params, state = nnx.split(model, nnx.Param)
-    opt_state = tx.init(params)
+    opt_state = tx.init(params)  # ty:ignore[invalid-argument-type]
 
     # training loop using nnx-style training
     x_train_jax = jnp.array(x_train, dtype=jnp.float32)
@@ -212,7 +212,7 @@ def test_lacscore_with_trained_flax_model() -> None:
     @jax.jit
     def loss_fn(params: nnx.State, state: nnx.State, x: Array, y: Array) -> Array:
         """Compute cross-entropy loss."""
-        model_test: SimpleFlaxModel = nnx.merge(params, state)  # type: ignore[arg-type]
+        model_test: SimpleFlaxModel = nnx.merge(params, state)  # ty:ignore[invalid-argument-type]
         output = model_test(x)
         log_probs = jnp.log(output + 1e-8)
         return -jnp.mean(
@@ -324,7 +324,7 @@ def test_lacscore_iris_coverage_guarantee() -> None:
 
     # separate parameters from other state
     params, state = nnx.split(model, nnx.Param)
-    opt_state = tx.init(params)
+    opt_state = tx.init(params)  # ty:ignore[invalid-argument-type]
 
     # training loop using nnx-style training
     x_train_jax = jnp.array(x_train, dtype=jnp.float32)
@@ -333,7 +333,7 @@ def test_lacscore_iris_coverage_guarantee() -> None:
     @jax.jit
     def loss_fn(params: nnx.State, state: nnx.State, x: Array, y: Array) -> Array:
         """Compute cross-entropy loss."""
-        model_test: SimpleFlaxModel = nnx.merge(params, state)  # type: ignore[arg-type]
+        model_test: SimpleFlaxModel = nnx.merge(params, state)  # ty:ignore[invalid-argument-type]
         output = model_test(x)
         log_probs = jnp.log(output + 1e-8)
         return -jnp.mean(
@@ -439,7 +439,7 @@ def test_lacscore_iris_multiple_seeds() -> None:
 
         # separate parameters from other state
         params, state = nnx.split(model, nnx.Param)
-        opt_state = tx.init(params)
+        opt_state = tx.init(params)  # ty:ignore[invalid-argument-type]
 
         # training loop using nnx-style training
         x_train_jax = jnp.array(x_train, dtype=jnp.float32)
@@ -448,7 +448,7 @@ def test_lacscore_iris_multiple_seeds() -> None:
         @jax.jit
         def loss_fn(params: nnx.State, state: nnx.State, x: Array, y: Array) -> Array:
             """Compute cross-entropy loss."""
-            model_test: SimpleFlaxModel = nnx.merge(params, state)  # type: ignore[arg-type]
+            model_test: SimpleFlaxModel = nnx.merge(params, state)  # ty:ignore[invalid-argument-type]
             output = model_test(x)
             log_probs = jnp.log(output + 1e-8)
             return -jnp.mean(
@@ -479,10 +479,10 @@ def test_lacscore_iris_multiple_seeds() -> None:
 
         # simple training loop
         for _ in range(50):
-            params, opt_state, _loss = train_step(tx, params, state, opt_state, x_train_jax, y_train_jax)  # type: ignore[assignment, arg-type]
+            params, opt_state, _loss = train_step(tx, params, state, opt_state, x_train_jax, y_train_jax)  # ty:ignore[invalid-argument-type]
 
         # merge back into model
-        model = nnx.merge(params, state)
+        model = nnx.merge(params, state)  # ty:ignore[invalid-argument-type]
 
         # create predictor with trained model
         predictor = FlaxPredictor(model, {})
