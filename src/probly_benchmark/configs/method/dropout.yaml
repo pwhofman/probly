@@ -1,0 +1,8 @@
+# @package method
+name: "dropout"
+params:
+  p: 0.5
+train:
+  samples: 1
+selective_prediction:
+  num_samples: 50

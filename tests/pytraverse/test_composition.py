@@ -62,8 +62,8 @@ def test_sequential_basic() -> None:
 def test_sequential_with_name() -> None:
     """Test sequential composition with custom name."""
     composed: Traverser[Any] = sequential(dummy_traverser, name="test_traverser")
-    assert composed.__name__ == "test_traverser"
-    assert "test_traverser" in composed.__qualname__
+    assert composed.__name__ == "test_traverser"  # ty:ignore[unresolved-attribute]
+    assert "test_traverser" in composed.__qualname__  # ty:ignore[unresolved-attribute]
 
 
 def test_sequential_empty() -> None:
@@ -107,8 +107,8 @@ def test_top_sequential_basic() -> None:
 def test_top_sequential_with_name() -> None:
     """Test top_sequential with custom name."""
     composed = top_sequential(dummy_traverser, name="top_test")
-    assert composed.__name__ == "top_test"
-    assert "top_test" in composed.__qualname__
+    assert composed.__name__ == "top_test"  # ty:ignore[unresolved-attribute]
+    assert "top_test" in composed.__qualname__  # ty:ignore[unresolved-attribute]
 
 
 def test_is_union_type() -> None:
@@ -151,7 +151,7 @@ class TestSingledispatchTraverser:
         """Test initialization with custom name."""
         traverser = SingledispatchTraverser[int](name="test_dispatcher")
         assert traverser.__name__ == "test_dispatcher"
-        assert "test_dispatcher" in traverser.__qualname__
+        assert "test_dispatcher" in traverser.__qualname__  # ty:ignore[unsupported-operator]
 
     def test_init_with_default_traverser(self) -> None:
         """Test initialization with a default traverser function."""
@@ -286,7 +286,7 @@ class TestSingledispatchTraverser:
 
         # This should raise TypeError for invalid first argument
         with pytest.raises(TypeError, match="Invalid first argument"):
-            traverser.register("invalid_type", dummy_func)  # type: ignore[call-overload]
+            traverser.register("invalid_type", dummy_func)  # ty:ignore[invalid-argument-type]
 
     def test_register_invalid_none_with_traverser_error(self) -> None:
         """Test error when calling register(None, traverser)."""
@@ -300,4 +300,4 @@ class TestSingledispatchTraverser:
             return obj  # pragma: no cover
 
         with pytest.raises(TypeError, match="Invalid arguments"):
-            traverser.register(None, dummy_func)  # type: ignore[call-overload]
+            traverser.register(None, dummy_func)  # ty:ignore[invalid-argument-type]

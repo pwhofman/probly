@@ -42,7 +42,7 @@ def _resolve_param(
     return list(value)
 
 
-@predictor_transformation(permitted_predictor_types=(ProbabilisticClassifier,))
+@predictor_transformation(permitted_predictor_types=(ProbabilisticClassifier,), preserve_predictor_type=False)
 @CredalBNNPredictor.register_factory
 def credal_bnn[**In, Out](
     base: Predictor[In, Out],

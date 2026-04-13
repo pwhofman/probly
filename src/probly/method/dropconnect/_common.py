@@ -42,7 +42,7 @@ def register(cls: LazyType, traverser: RegisteredLooseTraverser) -> None:
     )
 
 
-@predictor_transformation(permitted_predictor_types=None)
+@predictor_transformation(permitted_predictor_types=None, preserve_predictor_type=True)
 @DropConnectPredictor.register_factory
 def dropconnect[T: Predictor](
     base: T, p: float = 0.25, rng_collection: str = "dropconnect", rngs: Rngs | RngStream | int = 1

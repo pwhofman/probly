@@ -138,7 +138,7 @@ class TestClassConditionalClassifier:
         model, score = classification_setup
         classifier = ClassConditionalClassifier(
             model=model,
-            score=cast(Any, score),
+            score=score,
             class_func=simple_class_func,
             use_accretive=False,
         )
@@ -153,7 +153,7 @@ class TestClassConditionalClassifier:
         model, score = classification_setup
         classifier = ClassConditionalClassifier(
             model=model,
-            score=cast(Any, score),
+            score=score,
             class_func=simple_class_func,
         )
 
@@ -179,7 +179,7 @@ class TestClassConditionalClassifier:
         model, score = classification_setup
         classifier = ClassConditionalClassifier(
             model=model,
-            score=cast(Any, score),
+            score=score,
             class_func=simple_class_func,
             use_accretive=False,
         )
@@ -202,7 +202,7 @@ class TestClassConditionalClassifier:
         model, score = classification_setup
         classifier = ClassConditionalClassifier(
             model=model,
-            score=cast(Any, score),
+            score=score,
             class_func=simple_class_func,
             use_accretive=True,
         )
@@ -224,7 +224,7 @@ class TestClassConditionalClassifier:
         model, score = classification_setup
         classifier = ClassConditionalClassifier(
             model=model,
-            score=cast(Any, score),
+            score=score,
             class_func=simple_class_func,
         )
 
@@ -241,7 +241,7 @@ class TestClassConditionalClassifier:
 
         classifier = ClassConditionalClassifier(
             model=model,
-            score=cast(Any, score),
+            score=score,
             class_func=single_class_func,
         )
 
@@ -261,7 +261,7 @@ class TestClassConditionalRegressor:
         model, score = regression_setup
         regressor = ClassConditionalRegressor(
             model=model,
-            score=cast(Any, score),
+            score=score,
             class_func=simple_class_func,
         )
 
@@ -274,7 +274,7 @@ class TestClassConditionalRegressor:
         model, score = regression_setup
         regressor = ClassConditionalRegressor(
             model=model,
-            score=cast(Any, score),
+            score=score,
             class_func=simple_class_func,
         )
 
@@ -296,7 +296,7 @@ class TestClassConditionalRegressor:
         model, score = regression_setup
         regressor = ClassConditionalRegressor(
             model=model,
-            score=cast(Any, score),
+            score=score,
             class_func=simple_class_func,
         )
 
@@ -318,7 +318,7 @@ class TestClassConditionalRegressor:
         model, score = regression_setup
         regressor = ClassConditionalRegressor(
             model=model,
-            score=cast(Any, score),
+            score=score,
             class_func=simple_class_func,
         )
 
@@ -336,7 +336,7 @@ class TestClassConditionalRegressor:
 
         regressor = ClassConditionalRegressor(
             model=model,
-            score=cast(Any, score),
+            score=score,
             class_func=constant_class_func,
         )
 
@@ -393,13 +393,13 @@ def test_class_conditional_vs_mondrian_differences() -> None:
     # both should work but with different grouping strategies
     mondrian = ClassConditionalClassifier(
         model=model,
-        score=cast(Any, score),
+        score=score,
         class_func=region_func,
     )
 
     class_conditional = ClassConditionalClassifier(
         model=model,
-        score=cast(Any, score),
+        score=score,
         class_func=class_func,
     )
 

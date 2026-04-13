@@ -17,14 +17,14 @@ from probly.representation._protected_axis._common_functions import (
     value_ndim,
     value_shape,
 )
-from probly.representation.torch_like import TorchTensorLike
+from probly.representation.torch_like import TorchLike
 from probly.utils import switchdispatch
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
 
-type TorchProtectedValue = TorchTensorLike[Any] | torch.Tensor
+type TorchProtectedValue = TorchLike[Any] | torch.Tensor
 
 
 class TorchAxisProtectedCreator(Protocol):

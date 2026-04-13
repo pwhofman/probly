@@ -30,7 +30,6 @@ def build_command(src_root: Path, out_root: Path) -> list[str]:
         "--out-root",
         str(out_root),
         "--fail-on-errors",
-        # "--prune-unplanned",
     ]
     for include in INCLUDES:
         command.extend(["--include", include])
