@@ -4,10 +4,11 @@ from __future__ import annotations
 
 from typing import Protocol, runtime_checkable
 
-from lazy_dispatch import lazydispatch
 from probly.method.method import predictor_transformation
 from probly.predictor import Predictor, ProbabilisticClassifier, RepresentationPredictor
 from probly.representation.distribution import CategoricalDistribution
+from probly.traverse_nn import nn_compose
+from pytraverse import TRAVERSE_REVERSED, GlobalVariable, lazydispatch_traverser, traverse
 
 
 @runtime_checkable
@@ -15,11 +16,9 @@ class CredalNetPredictor[**In, Out: CategoricalDistribution](RepresentationPredi
     """A predictor that applies the Credal Bayesian Neural Network transformation."""
 
 
-@lazydispatch
-def credal_net_generator[**In, Out: CategoricalDistribution](base: Predictor[In, Out]) -> CredalNetPredictor[In, Out]:
-    """Generate a credal net from a base model."""
-    msg = f"No credal net generator is registered for type {type(base)}"
-    raise NotImplementedError(msg)
+REPLACED = GlobalVariable[bool]("REPLACED", default=False)
+
+credal_net_traverser = lazydispatch_traverser[object](name="credal_net_traverser")
 
 
 @predictor_transformation(
@@ -37,4 +36,4 @@ def credal_net[**In, Out: CategoricalDistribution](base: Predictor[In, Out]) -> 
     Returns:
         Predictor, The credal net predictor.
     """
-    return credal_net_generator(base)
+    return traverse(base, nn_compose(credal_net_traverser), init={REPLACED: False, TRAVERSE_REVERSED: True})
