@@ -14,7 +14,7 @@ import webdataset as wds
 
 from probly_benchmark.paths import DATA_PATH, IMAGENET_SHARD_PATH
 
-VAL_SPLIT = 0.2
+VAL_SPLIT = 0.1
 IMAGENET_TRAIN_SIZE = 1_281_167
 IMAGENET_VAL_SIZE = 50_000
 
@@ -80,9 +80,16 @@ def _get_imagenet_sharded(
         loader = wds.WebLoader(ds, **loader_kwargs)  # ty: ignore[unresolved-attribute]
         return loader.with_length(num_samples // batch_size)
 
+    # split val shards deterministically to create a val and test set.
+    n_val_shards = max(1, round(len(val_shards) * VAL_SPLIT))
+    val_only_shards = val_shards[:n_val_shards]
+    test_only_shards = val_shards[n_val_shards:]
+    val_samples = IMAGENET_VAL_SIZE * n_val_shards // len(val_shards)
+    test_samples = IMAGENET_VAL_SIZE - val_samples
+
     train_loader = _make_loader(train_shards, shuffle_buf=5000, num_samples=IMAGENET_TRAIN_SIZE, shardshuffle=True)
-    val_loader = _make_loader(val_shards, shuffle_buf=0, num_samples=IMAGENET_VAL_SIZE) if use_validation else None
-    test_loader = _make_loader(val_shards, shuffle_buf=0, num_samples=IMAGENET_VAL_SIZE)
+    val_loader = _make_loader(val_only_shards, shuffle_buf=0, num_samples=val_samples) if use_validation else None
+    test_loader = _make_loader(test_only_shards, shuffle_buf=0, num_samples=test_samples)
 
     return train_loader, val_loader, test_loader
 
