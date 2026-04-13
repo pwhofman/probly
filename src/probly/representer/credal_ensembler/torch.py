@@ -6,11 +6,14 @@ import torch
 
 from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
 from probly.representation.sample.torch import TorchSample
-from probly.representer.credal_ensembler._common import compute_representative_set
+from probly.representer.credal_ensembler._common import (
+    compute_credal_ensembling_set,
+    compute_credal_net_set,
+)
 
 
-@compute_representative_set.register(TorchSample)
-def torch_compute_representative_set(
+@compute_credal_ensembling_set.register(TorchSample)
+def torch_compute_credal_ensembling_set(
     sample: TorchSample[TorchCategoricalDistribution],
     alpha: float,
     distance: str,
@@ -42,3 +45,13 @@ def torch_compute_representative_set(
         return TorchSample(TorchCategoricalDistribution(selected_probs), sample_dim=-1)
     msg = f"Distance {distance} not implemented for torch tensors."
     raise NotImplementedError(msg)
+
+
+@compute_credal_net_set.register(TorchSample)
+def torch_compute_credal_net_set(
+    sample: TorchSample[TorchCategoricalDistribution],
+) -> TorchSample[TorchCategoricalDistribution]:
+    """This function decouples the lower and upper bounds of the credal net."""
+    probs = sample.samples
+    probs = probs.reshape(*probs.shape[:-1], 2, probs.shape[-1] // 2)  # ty:ignore[unresolved-attribute]
+    return TorchSample(TorchCategoricalDistribution(probs), sample_dim=-1)
