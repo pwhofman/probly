@@ -4,11 +4,11 @@ defaults:
 
 seed: 1
 dataset: "imagenet_shards"
-base_model: "regnet_y_400mf"
+base_model: "resnet50"
 pretrained: True
-epochs: 5
-batch_size: 1024
-num_workers: 8
+epochs: 50
+batch_size: 512
+num_workers: 32
 pin_memory: true
 persistent_workers: true
 prefetch_factor: 4
@@ -33,7 +33,7 @@ scheduler:
   params: {}
 
 early_stopping:
-  patience: 0  # set to > 0 to enable; number of epochs to wait without improvement
+  patience: 5  # set to > 0 to enable; number of epochs to wait without improvement
 
 grad_clip_norm: 1.0
 amp: true
