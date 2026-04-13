@@ -3,6 +3,7 @@
 from probly.lazy_types import FLAX_MODULE, TORCH_MODULE
 
 from . import _common
+from .reset_traverser import reset_traverser
 
 ## NN
 
@@ -11,6 +12,7 @@ is_first_layer = _common.is_first_layer
 
 layer_count_traverser = _common.layer_count_traverser
 nn_traverser = _common.nn_traverser
+
 
 nn_compose = _common.compose
 
@@ -25,3 +27,6 @@ def _(_: type) -> None:
 @nn_traverser.delayed_register(FLAX_MODULE)
 def _(_: type) -> None:
     from . import flax as flax  # noqa: PLC0415
+
+
+__all__ = ["reset_traverser"]
