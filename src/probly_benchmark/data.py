@@ -26,6 +26,7 @@ def _get_imagenet_sharded(
     pin_memory: bool = False,
     persistent_workers: bool = True,
     prefetch_factor: int = 4,
+    seed: int | None = None,
 ) -> tuple[DataLoader, DataLoader | None, DataLoader]:
     """Get WebDataset-based loaders for sharded ImageNet.
 
@@ -36,6 +37,9 @@ def _get_imagenet_sharded(
         pin_memory: Whether to pin memory for CUDA transfers.
         persistent_workers: Whether DataLoader workers persist between epochs.
         prefetch_factor: Number of batches each worker prefetches.
+        seed: Seed for deterministic shard and sample shuffling on the train
+            loader. Val and test loaders do not shuffle, so the seed has no
+            effect on them.
 
     Returns:
         A tuple of (train_loader, val_loader, test_loader).
@@ -60,10 +64,19 @@ def _get_imagenet_sharded(
         msg = f"No val shards found in {IMAGENET_SHARD_PATH}"
         raise FileNotFoundError(msg)
 
-    def _make_loader(shards: list[str], shuffle_buf: int, num_samples: int, shardshuffle: bool = False) -> DataLoader:
-        ds = wds.WebDataset(shards, shardshuffle=shardshuffle)  # ty: ignore[unresolved-attribute]
+    def _make_loader(
+        shards: list[str],
+        shuffle_buf: int,
+        num_samples: int,
+        shardshuffle: bool = False,
+        loader_seed: int | None = None,
+    ) -> DataLoader:
+        ds = wds.WebDataset(shards, shardshuffle=shardshuffle, seed=loader_seed)  # ty: ignore[unresolved-attribute]
         if shuffle_buf > 0:
-            ds = ds.shuffle(shuffle_buf)
+            if loader_seed is not None:
+                ds = ds.compose(wds.detshuffle(bufsize=shuffle_buf, seed=loader_seed))  # ty: ignore[unresolved-attribute]
+            else:
+                ds = ds.shuffle(shuffle_buf)
         ds = (
             ds.decode(wds.imagehandler("torchrgb8"))  # ty: ignore[unresolved-attribute]
             .to_tuple("jpg", "txt")
@@ -87,7 +100,13 @@ def _get_imagenet_sharded(
     val_samples = IMAGENET_VAL_SIZE * n_val_shards // len(val_shards)
     test_samples = IMAGENET_VAL_SIZE - val_samples
 
-    train_loader = _make_loader(train_shards, shuffle_buf=5000, num_samples=IMAGENET_TRAIN_SIZE, shardshuffle=True)
+    train_loader = _make_loader(
+        train_shards,
+        shuffle_buf=5000,
+        num_samples=IMAGENET_TRAIN_SIZE,
+        shardshuffle=True,
+        loader_seed=seed,
+    )
     val_loader = _make_loader(val_only_shards, shuffle_buf=0, num_samples=val_samples) if use_validation else None
     test_loader = _make_loader(test_only_shards, shuffle_buf=0, num_samples=test_samples)
 
@@ -140,6 +159,7 @@ def get_data_train(
                 pin_memory=kwargs.get("pin_memory", False),
                 persistent_workers=kwargs.get("persistent_workers", True),
                 prefetch_factor=kwargs.get("prefetch_factor", 4),
+                seed=seed,
             )
         case _:
             msg = f"Dataset {name} not recognized"
