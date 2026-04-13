@@ -18,7 +18,7 @@ from sklearn.datasets import make_moons
 from sklearn.ensemble import GradientBoostingClassifier, GradientBoostingRegressor
 
 from probly.evaluation.active_learning import active_learning_loop
-import probly.quantification.classification as qc_cls
+from probly.evaluation.active_learning._utils import margin_sampling, total_entropy
 
 # ---------------------------------------------------------------------------
 # Config
@@ -201,8 +201,8 @@ def plot_results(
 def main(n_seeds: int = N_SEEDS) -> None:
     """Run active learning benchmark comparing uncertainty vs random sampling."""
     clf_strategies = {
-        "margin": qc_cls.margin,
-        "entropy": qc_cls.total_entropy,
+        "margin": margin_sampling,
+        "entropy": total_entropy,
         "random": random_query_fn,
     }
 
