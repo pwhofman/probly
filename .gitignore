@@ -282,3 +282,6 @@ wandb/
 
 # Hydra
 outputs/
+
+# Server scripts
+server_scripts/

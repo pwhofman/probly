@@ -15,6 +15,8 @@ from probly.representation.credal_set._common import (
     ProbabilityIntervalsCredalSet,
     create_convex_credal_set,
     create_probability_intervals,
+    create_probability_intervals_from_bounds,
+    create_probability_intervals_from_lower_upper_array,
 )
 from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
 from probly.representation.sample.torch import TorchSample
@@ -107,11 +109,6 @@ class TorchProbabilityIntervalsCredalSet(
     upper_bounds: torch.Tensor
     protected_axes: ClassVar[dict[str, int]] = {"lower_bounds": 1, "upper_bounds": 1}
 
-    def __post_init__(self) -> None:
-        """Validate that lower and upper bounds have the same shape and are valid distributions."""
-        object.__setattr__(self, "lower_bounds", _ensure_torch_categorical_distribution(self.lower_bounds))
-        object.__setattr__(self, "upper_bounds", _ensure_torch_categorical_distribution(self.upper_bounds))
-
     @override
     @classmethod
     def from_torch_sample(
@@ -151,4 +148,20 @@ class TorchProbabilityIntervalsCredalSet(
 
 
 create_probability_intervals.register(TorchCategoricalDistribution, TorchProbabilityIntervalsCredalSet.from_sample)
+create_probability_intervals.register(TorchSample, TorchProbabilityIntervalsCredalSet.from_torch_sample)
 create_convex_credal_set.register(TorchSample, TorchConvexCredalSet.from_torch_sample)
+
+
+@create_probability_intervals_from_lower_upper_array.register(torch.Tensor)
+def _create_probability_intervals_from_lower_upper_array(
+    bounds: torch.Tensor,
+) -> TorchProbabilityIntervalsCredalSet:
+    lower_bounds, upper_bounds = bounds.reshape(*bounds.shape[:-1], 2, -1).unbind(dim=-2)
+    return TorchProbabilityIntervalsCredalSet(lower_bounds, upper_bounds)
+
+
+@create_probability_intervals_from_bounds.register(torch.Tensor)
+def _create_probability_intervals_from_bounds(
+    probs: torch.Tensor, lower: torch.Tensor, upper: torch.Tensor
+) -> TorchProbabilityIntervalsCredalSet:
+    return TorchProbabilityIntervalsCredalSet(probs - lower, probs + upper)
