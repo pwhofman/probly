@@ -3,14 +3,15 @@ defaults:
   - method: ??? # user must specify a method.
 
 seed: 1
-dataset: "cifar10"
+dataset: "imagenet_shards"
 base_model: "resnet50"
-pretrained: False
+pretrained: True
 epochs: 50
 batch_size: 512
-num_workers: 4
+num_workers: 32
 pin_memory: true
 persistent_workers: true
+prefetch_factor: 4
 wandb:
   enabled: true
   entity: "probly"
@@ -20,16 +21,19 @@ validate : true
 save_to_disk: false
 
 optimizer:
-    name: "adam"
+    name: "sgd"
     params:
-        lr: 0.001
+        lr: 0.01
+        momentum: 0.9
+        weight_decay: 2e-5
+        fused: true
 
 scheduler:
   name: "cosine"
   params: {}
 
 early_stopping:
-  patience: 0  # set to > 0 to enable; number of epochs to wait without improvement
+  patience: 5  # set to > 0 to enable; number of epochs to wait without improvement
 
 grad_clip_norm: 1.0
 amp: true
