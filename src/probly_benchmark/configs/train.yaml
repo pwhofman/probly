@@ -1,5 +1,6 @@
 defaults:
   - _self_
+#  - recipe: ??? # user must specify a recipe.
   - method: ??? # user must specify a method.
 
 seed: 1
