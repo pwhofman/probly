@@ -8,8 +8,8 @@ dataset: "imagenet_shards"
 base_model: "resnet50"
 pretrained: True
 epochs: 50
-batch_size: 512
-num_workers: 32
+batch_size: 2048
+num_workers: 16
 pin_memory: true
 persistent_workers: true
 prefetch_factor: 4
@@ -21,17 +21,27 @@ validate : true
 # models will always be saved in wandb, but this option controls whether they are also saved to disk
 save_to_disk: false
 
+#optimizer:
+#    name: "sgd"
+#    params:
+#        lr: 0.01
+#        momentum: 0.9
+#        weight_decay: 5e-4
+#        fused: true
+# hyperparams based on
+# https://arxiv.org/pdf/2110.00476
 optimizer:
-    name: "sgd"
+    name: "lamb"
     params:
-        lr: 0.01
-        momentum: 0.9
-        weight_decay: 2e-5
-        fused: true
+        lr: 5e-3
+        weight_decay: 1e-2
 
 scheduler:
-  name: "cosine"
-  params: {}
+  name: "warmup_cosine"
+  params:
+    warmup_epochs: 5
+    warmup_start_factor: 0.1  # we start at 10% of optimizer.params.lr
+    min_lr: 1e-6  # lr goes down to 1e-6 at end of training
 
 early_stopping:
   patience: 5  # set to > 0 to enable; number of epochs to wait without improvement
