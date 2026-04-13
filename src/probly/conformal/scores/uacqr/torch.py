@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import torch
 
-from probly.representation.sample.torch import TorchTensorSample
+from probly.representation.sample.torch import TorchSample
 
-from ._common import uacqr_score_func, _weight_func
+from ._common import _weight_func, uacqr_score_func
 
 
 @uacqr_score_func.register(torch.Tensor)
@@ -38,13 +38,13 @@ def _(y_pred: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
     return std[:, 0], std[:, 1]
 
 
-@uacqr_score_func.register(TorchTensorSample)
-def _(y_pred: TorchTensorSample, y_true: torch.Tensor) -> torch.Tensor:
-    """UACQR nonconformity scores for TorchTensorSample."""
+@uacqr_score_func.register(TorchSample)
+def _(y_pred: TorchSample, y_true: torch.Tensor) -> torch.Tensor:
+    """UACQR nonconformity scores for TorchSample."""
     return uacqr_score_func(y_pred.tensor, y_true)
 
 
-@_weight_func.register(TorchTensorSample)
-def _(y_pred: TorchTensorSample) -> tuple[torch.Tensor, torch.Tensor]:
-    """Weight functions for TorchTensorSample."""
+@_weight_func.register(TorchSample)
+def _(y_pred: TorchSample) -> tuple[torch.Tensor, torch.Tensor]:
+    """Weight functions for TorchSample."""
     return _weight_func(y_pred.tensor)

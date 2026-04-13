@@ -12,6 +12,6 @@ def _(
     model: nnx.Module,
 ) -> nnx.Module:
     """Conformalise a Flax model."""
-    model.conformal_quantile = None
-    model.non_conformity_score = None
+    model.conformal_quantile = None  # ty: ignore[unresolved-attribute]
+    model.non_conformity_score = None  # ty: ignore[unresolved-attribute]
     return model

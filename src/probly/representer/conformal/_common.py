@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, override
-
-import numpy as np
+from typing import TYPE_CHECKING, Any, override
 
 from lazy_dispatch.singledispatch import lazydispatch
 from probly.conformal.utils import is_conformal_calibrated
@@ -22,19 +20,24 @@ from probly.representation.conformal_set._common import (
     create_onehot_conformal_set,
 )
 from probly.representation.sample import create_sample
-from probly.representation.sample._common import Sample
 from probly.representation.sample.array import ArraySample
+
+if TYPE_CHECKING:
+    import numpy as np
+
+    from probly.representation.sample._common import Sample
 from probly.representer import representer
 from probly.representer._representer import Representer
 
 
 class ConformalRepresenter[**In, Out: ConformalSet](Representer[Any, In, Out, ConformalSet]):
-    def __init__(self, predictor: ConformalPredictor[In, Out]) -> None:
-        super().__init__(predictor)
+    predictor: ConformalPredictor[In, Out]
 
 
 @representer.register(ConformalClassificationPredictor)
 class ConformalClassificationRepresenter[**In, Out: OneHotConformalSet](ConformalRepresenter[In, Out]):
+    predictor: ConformalClassificationPredictor[In, Out]
+
     @override
     def represent(self, *args: In.args, **kwargs: In.kwargs) -> OneHotConformalSet:
         """Predict for a conformal classification predictor."""
@@ -42,7 +45,7 @@ class ConformalClassificationRepresenter[**In, Out: OneHotConformalSet](Conforma
             msg = "The model must first be calibrated before it can be represented."
             raise ValueError(msg)
         predictions = predict_raw(self.predictor, *args, **kwargs)
-        non_conformity_score = self.predictor.non_conformity_score.compute(predictions)
+        non_conformity_score = self.predictor.non_conformity_score(predictions)
         set_prediction = non_conformity_score <= self.predictor.conformal_quantile
         return create_onehot_conformal_set(set_prediction)
 
@@ -65,6 +68,8 @@ def flatten_sample_numpy(sample: ArraySample) -> np.ndarray:
 
 @representer.register(ConformalRegressionPredictor)
 class ConformalRegressionRepresenter[**In, Out: ConformalSet](ConformalRepresenter[In, Out]):
+    predictor: ConformalRegressionPredictor[In, Out]
+
     @override
     def represent(self, *args: In.args, **kwargs: In.kwargs) -> ConformalSet:
         """Predict for a conformal regression predictor."""
@@ -95,13 +100,15 @@ def flatten_ensemble_quantile_sample_numpy(sample: ArraySample) -> np.ndarray:
 
 @representer.register(ConformalQuantileRegressionPredictor)
 class ConformalQuantileRegressionRepresenter[**In, Out: ConformalSet](ConformalRepresenter[In, Out]):
+    predictor: ConformalQuantileRegressionPredictor[In, Out]
+
     @override
     def represent(self, *args: In.args, **kwargs: In.kwargs) -> ConformalSet:
         """Predict for a conformal quantile regression predictor."""
         if not is_conformal_calibrated(self.predictor):
             msg = "The model must first be calibrated before it can be represented."
             raise ValueError(msg)
-        predictions = create_sample(predict_raw(self.predictor, *args, **kwargs),sample_axis=0)
+        predictions = create_sample(predict_raw(self.predictor, *args, **kwargs), sample_axis=0)
         weight_low, weight_high = self.predictor.non_conformity_score.weight(predictions)
         mean_predictions = flatten_ensemble_quantile_sample(predictions)
         low_bound = mean_predictions[:, 0] - self.predictor.conformal_quantile * weight_low

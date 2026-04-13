@@ -1,5 +1,7 @@
 """This module contains the quantile-based conformal prediction methods."""
 
+from __future__ import annotations
+
 import numpy as np
 import torch
 
@@ -7,7 +9,7 @@ from ._common import calculate_quantile, calculate_weighted_quantile
 
 
 @calculate_quantile.register(torch.Tensor)
-def _compute_quantile_score_torch(scores: torch.Tensor, alpha: float) -> torch.Tensor:
+def _compute_quantile_score_torch(scores: torch.Tensor, alpha: float) -> float:
     # Implementation for PyTorch tensors
     with torch.no_grad():
         if not 0 <= alpha <= 1:
@@ -23,15 +25,14 @@ def _compute_quantile_score_torch(scores: torch.Tensor, alpha: float) -> torch.T
         q_level = torch.minimum(q_level, torch.tensor(1.0))  # ensure within [0, 1]
 
         # Inverted CDF / right-continuous step quantile
-        return float(
-            torch.quantile(scores, q_level, interpolation="nearest")
-        )  # PyTorch does not support "inverted_cdf" method, using "nearest" as an approximation, which is the most precise method available in PyTorch for quantiles.
+        # PyTorch does not support "inverted_cdf" method; "nearest" is the most precise available approximation.
+        return float(torch.quantile(scores, q_level, interpolation="nearest"))
 
 
 @calculate_weighted_quantile.register(torch.Tensor)
 def _compute_weighted_quantile_torch(
     values: torch.Tensor, quantile: float, sample_weight: torch.Tensor | None = None
-) -> torch.Tensor:
+) -> float:
     with torch.no_grad():
         if sample_weight is None:
             return float(torch.quantile(values, quantile, interpolation="linear"))
@@ -46,4 +47,4 @@ def _compute_weighted_quantile_torch(
         weighted_quantiles = torch.cumsum(sample_weight, dim=0) - 0.5 * sample_weight
         weighted_quantiles /= torch.sum(sample_weight)
 
-        return float(torch.interp(quantile, weighted_quantiles, values))
+        return float(np.interp(quantile, weighted_quantiles.numpy(), values.numpy()))

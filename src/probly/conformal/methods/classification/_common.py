@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 
 
 @runtime_checkable
-class ConformalClassificationCalibrator[In, Out](ConformalCalibrator[In, Out], Protocol):
+class ConformalClassificationCalibrator[**In, Out](ConformalCalibrator[In, Out], Protocol):
     """A conformal calibrator for classification predictors."""
 
     conformal_quantile: float
@@ -60,7 +60,7 @@ def conformal_class_calibration[In, Out](
     y_calib: Out,
     non_conformity_score: ClassificationNonConformityScore,
     alpha: float,
-) -> ConformalPredictor[In, Out]:
+) -> ConformalPredictor:
     """Calibrate a conformal predictor."""
     prediction = predict_raw(predictor, x_calib)
     probabilities = to_probabilities(prediction)
@@ -92,7 +92,7 @@ def _(pred: np.ndarray) -> np.ndarray:
 
 
 @predict_raw.register(ConformalClassificationCalibrator)
-def _[In, Out](predictor: ConformalClassificationCalibrator[In, Out], *args: In.args, **kwargs: In.kwargs) -> Out:
+def _[**In, Out](predictor: ConformalClassificationCalibrator[In, Out], *args: In.args, **kwargs: In.kwargs) -> Out:
     """Obtain class probabilities from a conformal classification predictor."""
     if hasattr(predictor, "predict_proba"):
         return predictor.predict_proba(*args, **kwargs)  # ty:ignore[call-non-callable]

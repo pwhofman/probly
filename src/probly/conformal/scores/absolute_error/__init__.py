@@ -1,7 +1,8 @@
 """Conformal Prediction absolute error score implementation."""
 
-from ._common import absolute_error_score_func, AbsoluteErrorScore
 from probly.lazy_types import JAX_ARRAY, JAX_ARRAY_LIKE, TORCH_TENSOR, TORCH_TENSOR_LIKE
+
+from ._common import AbsoluteErrorScore as AbsoluteErrorScore, absolute_error_score_func
 
 
 @absolute_error_score_func.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))

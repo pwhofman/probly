@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import numpy as np
-import numpy.typing as npt
 
 from lazy_dispatch import lazydispatch
 from probly.conformal.scores._common import ClassificationNonConformityScore
@@ -45,8 +44,8 @@ def _(
     cumsum_probs = np.cumsum(srt_probs, axis=1)
 
     if randomized:
-        U = np.random.uniform(low=0, high=1, size=probs_np.shape)
-        cumsum_probs -= srt_probs * U
+        u = np.random.default_rng().uniform(low=0, high=1, size=probs_np.shape)
+        cumsum_probs -= srt_probs * u
 
     # apply regularization: penalize large sets
     ranks = np.arange(1, n_classes + 1).reshape(1, -1)

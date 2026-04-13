@@ -14,4 +14,3 @@ def compute_lac_score_torch(probs: torch.Tensor, y_cal: torch.Tensor | None = No
     if y_cal is not None:
         scores = scores[torch.arange(len(probs)), y_cal]
     return scores
-

@@ -53,9 +53,9 @@ def _(y_pred: ArraySample, y_true: np.ndarray) -> np.ndarray:
 class CQRScore[T](QuantileNonConformityScore[T]):
     non_conformity_score: Callable[[T, T], T] = cqr_score_func
 
-    def weight[T](self, _: T) -> tuple[T, T]:
+    def weight(self, y_pred: T) -> tuple[T, T]:  # noqa: ARG002
         """CQR score does not use weights, so return 1."""
-        return 1, 1
+        return 1, 1  # ty: ignore[invalid-return-type]
 
 
-__all__ = ["cqr_score_func", "CQRScore"]
+__all__ = ["CQRScore", "cqr_score_func"]

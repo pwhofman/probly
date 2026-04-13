@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-import jax.numpy as jnp
 from jax import Array
+import jax.numpy as jnp
+import jax.random
 
 from ._common import saps_score_func
 
@@ -20,7 +21,7 @@ def _(
     n_samples, n_classes = probs.shape
 
     if randomized:
-        u = jnp.random.uniform(low=0, high=1, size=(n_samples, n_classes))
+        u = jax.random.uniform(jax.random.PRNGKey(42), shape=(n_samples, n_classes))
     else:
         u = jnp.zeros((n_samples, n_classes), dtype=probs.dtype)
 

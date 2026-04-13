@@ -7,7 +7,6 @@ import numpy as np
 from lazy_dispatch import lazydispatch
 from probly.representation.conformal_set.array import ArrayIntervalConformalSet, ArrayOneHotConformalSet
 from probly.representation.conformal_set.torch import TorchIntervalConformalSet, TorchOneHotConformalSet
-from probly.representation.distribution.array_categorical import ArrayCategoricalDistribution
 
 
 @lazydispatch

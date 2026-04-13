@@ -30,5 +30,5 @@ class AbsoluteErrorScore[T](RegressionNonConformityScore[T]):
     def __init__(self) -> None:
         super().__init__()
 
-    def weight(self, _: T) -> tuple[T, T]:
-        return 1, 1
+    def weight(self, y_pred: T) -> tuple[T, T]:  # noqa: ARG002
+        return 1, 1  # ty: ignore[invalid-return-type]

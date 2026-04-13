@@ -5,8 +5,6 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Literal, Self
 
-import numpy as np
-
 from lazy_dispatch import lazydispatch
 from probly.representation.representation import Representation
 
@@ -35,6 +33,7 @@ class OneHotConformalSet[T](ConformalSet, ABC):
 
         Args:
             sample: The sample to create the conformal set from.
+
         Returns:
             The created conformal set.
         """
@@ -64,7 +63,7 @@ def create_onehot_conformal_set(sample: Sample) -> OneHotConformalSet:
 
 
 @lazydispatch
-def create_interval_conformal_set(lowerBound: Sample, upperBound: Sample) -> IntervalConformalSet:
+def create_interval_conformal_set(lower_bound: Sample, upper_bound: Sample) -> IntervalConformalSet:
     """Create an interval conformal set from a sample."""
     msg = "Interval conformal set creation not implemented for this type."
     raise NotImplementedError(msg)

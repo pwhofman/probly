@@ -1,12 +1,14 @@
 """This module contains the quantile-based conformal prediction methods."""
 
-from ._common import calculate_quantile, calculate_weighted_quantile
+from __future__ import annotations
 
 import jax.numpy as jnp
 
+from ._common import calculate_quantile, calculate_weighted_quantile
+
 
 @calculate_quantile.register(jnp.ndarray)
-def _compute_quantile_score_jax(scores: jnp.ndarray, alpha: float) -> jnp.ndarray:
+def _compute_quantile_score_jax(scores: jnp.ndarray, alpha: float) -> float:
     # Implementation for JAX arrays
     if not 0 <= alpha <= 1:
         msg = f"alpha must be in [0, 1], got {alpha}"
@@ -21,15 +23,14 @@ def _compute_quantile_score_jax(scores: jnp.ndarray, alpha: float) -> jnp.ndarra
     q_level = jnp.minimum(q_level, 1.0)  # ensure within [0, 1]
 
     # Inverted CDF / right-continuous step quantile
-    return float(
-        jnp.quantile(scores, q_level, method="nearest")
-    )  # JAX does not support "inverted_cdf" method, using "nearest" as an approximation, which is the most precise method available in JAX for quantiles.
+    # JAX does not support "inverted_cdf" method; "nearest" is the most precise available approximation.
+    return float(jnp.quantile(scores, q_level, method="nearest"))
 
 
 @calculate_weighted_quantile.register(jnp.ndarray)
 def _compute_weighted_quantile_jax(
     values: jnp.ndarray, quantile: float, sample_weight: jnp.ndarray | None = None
-) -> jnp.ndarray:
+) -> float:
     if sample_weight is None:
         return float(jnp.quantile(values, quantile, method="linear"))
 

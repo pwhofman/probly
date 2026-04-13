@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import numpy as np
 
-
 from lazy_dispatch import lazydispatch
 from probly.conformal.scores._common import ClassificationNonConformityScore
 from probly.representation.distribution import ArrayCategoricalDistribution

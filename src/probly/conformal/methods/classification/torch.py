@@ -1,9 +1,9 @@
+"""PyTorch conformal classification generator and probability extractor."""
+
 from __future__ import annotations
 
-from torch import nn
 import torch
-
-from probly.layers.torch import ConformalClassificationHead
+from torch import nn
 
 from ._common import conformal_generator, to_probabilities
 
@@ -11,10 +11,9 @@ from ._common import conformal_generator, to_probabilities
 @conformal_generator.register(nn.Module)
 def _(model: nn.Module) -> nn.Module:
     """Conformalise a PyTorch model."""
-    return nn.Sequential(
-        model,
-        ConformalClassificationHead(),
-    )
+    model.conformal_quantile = None  # ty: ignore[unresolved-attribute]
+    model.non_conformity_score = None  # ty: ignore[unresolved-attribute]
+    return model
 
 
 @to_probabilities.register(torch.Tensor)

@@ -2,7 +2,7 @@
 
 from probly.lazy_types import JAX_ARRAY, JAX_ARRAY_LIKE, TORCH_TENSOR, TORCH_TENSOR_LIKE
 
-from ._common import uacqr_score_func, _weight_func, UACQRScore
+from ._common import UACQRScore, _weight_func, uacqr_score_func
 
 
 @uacqr_score_func.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
@@ -11,10 +11,10 @@ def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415
 
 
-@uacqr_score_func.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))  #
+@uacqr_score_func.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
 @_weight_func.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
 def _(_: type) -> None:
     from . import jax as jax  # noqa: PLC0415
 
 
-__all__ = ["uacqr_score_func", "UACQRScore"]
+__all__ = ["UACQRScore", "uacqr_score_func"]

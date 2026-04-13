@@ -41,6 +41,7 @@ def _weight_func[T](y_pred: T) -> tuple[T, T]:
     msg = f"Weight computation for UACQR not implemented for this type {type(y_pred)}."
     raise NotImplementedError(msg)
 
+
 @uacqr_score_func.register(np.ndarray)
 def _(y_pred: np.ndarray, y_true: np.ndarray) -> np.ndarray:
     """UACQR nonconformity scores for numpy arrays."""

@@ -5,18 +5,15 @@ from __future__ import annotations
 from flax import nnx
 import jax.numpy as jnp
 
-from probly.layers.flax import ConformalClassificationHead
-
 from ._common import conformal_generator, to_probabilities
 
 
 @conformal_generator.register(nnx.Module)
 def _(model: nnx.Module) -> nnx.Module:
     """Conformalise a Flax model."""
-    return nnx.Sequential(
-        model,
-        ConformalClassificationHead(),
-    )
+    model.conformal_quantile = None  # ty: ignore[unresolved-attribute]
+    model.non_conformity_score = None  # ty: ignore[unresolved-attribute]
+    return model
 
 
 @to_probabilities.register(jnp.ndarray)

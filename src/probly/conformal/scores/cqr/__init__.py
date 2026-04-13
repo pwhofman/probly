@@ -1,7 +1,8 @@
 """Conformal Prediction CQR score implementation."""
 
-from ._common import cqr_score_func, CQRScore
 from probly.lazy_types import JAX_ARRAY, JAX_ARRAY_LIKE, TORCH_TENSOR, TORCH_TENSOR_LIKE
+
+from ._common import CQRScore as CQRScore, cqr_score_func
 
 
 @cqr_score_func.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))

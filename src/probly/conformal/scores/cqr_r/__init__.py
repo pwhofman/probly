@@ -2,7 +2,7 @@
 
 from probly.lazy_types import JAX_ARRAY, JAX_ARRAY_LIKE, TORCH_TENSOR, TORCH_TENSOR_LIKE
 
-from ._common import cqr_r_score_func, CQRrScore
+from ._common import CQRrScore, cqr_r_score_func
 
 
 @cqr_r_score_func.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
@@ -14,4 +14,5 @@ def _(_: type) -> None:
 def _(_: type) -> None:
     from . import jax as jax  # noqa: PLC0415
 
-__all__ = ["cqr_r_score_func", "CQRrScore"]
+
+__all__ = ["CQRrScore", "cqr_r_score_func"]

@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-import jax.numpy as jnp
 from jax import Array
+import jax.numpy as jnp
 
-from ._common import uacqr_score_func, _weight_func
+from ._common import _weight_func, uacqr_score_func
 
 
 @uacqr_score_func.register(Array)

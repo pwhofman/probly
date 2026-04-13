@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import torch
 
-from probly.representation.sample.torch import TorchTensorSample
+from probly.representation.sample.torch import TorchSample
 
-from ._common import cqr_score_func, CQRScore
+from ._common import cqr_score_func
 
 
 @cqr_score_func.register(torch.Tensor)
@@ -27,7 +27,7 @@ def _(
     return torch.maximum(lower - y, y - upper)
 
 
-@cqr_score_func.register(TorchTensorSample)
-def _(y_pred: TorchTensorSample, y_true: torch.Tensor) -> torch.Tensor:
-    """CQR nonconformity scores for TorchTensorSamples."""
+@cqr_score_func.register(TorchSample)
+def _(y_pred: TorchSample, y_true: torch.Tensor) -> torch.Tensor:
+    """CQR nonconformity scores for TorchSamples."""
     return cqr_score_func(y_pred.tensor, y_true)

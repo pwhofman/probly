@@ -4,8 +4,10 @@ from __future__ import annotations
 
 from jax import Array
 import jax.numpy as jnp
+import jax.random
 
 from ._common import aps_score_func
+
 
 @aps_score_func.register(Array)
 def _(probs: Array, y_cal: Array | None = None, randomized: bool = True) -> Array:
@@ -25,8 +27,8 @@ def _(probs: Array, y_cal: Array | None = None, randomized: bool = True) -> Arra
     inv_idx = jnp.argsort(srt_idx, axis=1)
 
     if randomized:
-        U = jnp.random.uniform(low=0, high=1, size=probs_jnp.shape)
-        cumsum_probs -= srt_probs * U
+        u = jax.random.uniform(jax.random.PRNGKey(42), shape=probs_jnp.shape)
+        cumsum_probs -= srt_probs * u
 
     scores = jnp.take_along_axis(cumsum_probs, inv_idx, axis=1)
     if y_cal is not None:

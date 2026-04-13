@@ -2,15 +2,18 @@
 
 from __future__ import annotations
 
-import torch
+from typing import TYPE_CHECKING
 
-from probly.representation.sample.torch import TorchTensorSample
+from probly.representation.sample.torch import TorchSample
 
-from ._common import flatten_sample, flatten_ensemble_quantile_sample
+if TYPE_CHECKING:
+    import torch
+
+from ._common import flatten_ensemble_quantile_sample, flatten_sample
 
 
-@flatten_sample.register(TorchTensorSample)
-def _(sample: TorchTensorSample) -> torch.Tensor:
+@flatten_sample.register(TorchSample)
+def _(sample: TorchSample) -> torch.Tensor:
     raw_tensor = sample.tensor
     if raw_tensor.ndim == 1:
         return raw_tensor
@@ -20,8 +23,8 @@ def _(sample: TorchTensorSample) -> torch.Tensor:
     return sample.sample_mean()
 
 
-@flatten_ensemble_quantile_sample.register(TorchTensorSample)
-def _(sample: TorchTensorSample) -> torch.Tensor:
+@flatten_ensemble_quantile_sample.register(TorchSample)
+def _(sample: TorchSample) -> torch.Tensor:
     raw_tensor = sample.tensor
     if raw_tensor.ndim == 3:
         return sample.sample_mean()

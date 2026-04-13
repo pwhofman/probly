@@ -33,10 +33,7 @@ def _(
     probs_np = np.asarray(probs, dtype=float)
     n_samples, n_classes = probs_np.shape
 
-    if randomized:
-        u = np.random.uniform(size=(n_samples, n_classes))
-    else:
-        u = np.zeros((n_samples, n_classes))
+    u = np.random.default_rng().uniform(size=(n_samples, n_classes)) if randomized else np.zeros((n_samples, n_classes))
 
     max_probs = np.max(probs_np, axis=1, keepdims=True)
     sort_idx = np.argsort(-probs_np, axis=1)
@@ -59,6 +56,7 @@ def _(
 ) -> np.ndarray:
     """SAPS Nonconformity-Scores for ArrayCategoricalDistributions."""
     return saps_score_func(probs.probabilities, y_cal, randomized=randomized, lambda_val=lambda_val)
+
 
 class SAPSScore[T](ClassificationNonConformityScore[T]):
     non_conformity_score = saps_score_func

@@ -6,6 +6,7 @@ import torch
 
 from ._common import aps_score_func
 
+
 @aps_score_func.register(torch.Tensor)
 def _(probs: torch.Tensor, y_cal: torch.Tensor | None = None, randomized: bool = True) -> torch.Tensor:
     """APS Nonconformity-Scores for PyTorch tensors."""
@@ -24,8 +25,8 @@ def _(probs: torch.Tensor, y_cal: torch.Tensor | None = None, randomized: bool =
     inv_idx = torch.argsort(srt_idx, dim=1)
 
     if randomized:
-        U = torch.rand_like(probs_torch)
-        cumsum_probs -= srt_probs * U
+        u = torch.rand_like(probs_torch)
+        cumsum_probs -= srt_probs * u
 
     scores = torch.gather(cumsum_probs, 1, inv_idx)
     if y_cal is not None:

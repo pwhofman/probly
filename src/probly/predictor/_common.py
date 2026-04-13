@@ -3,9 +3,17 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable
-from typing import Any, Literal, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Literal, Protocol, runtime_checkable
 
 from lazy_dispatch import ProtocolRegistry, lazydispatch
+
+if TYPE_CHECKING:
+    from probly.conformal.scores._common import (
+        ClassificationNonConformityScore,
+        NonConformityScore,
+        QuantileNonConformityScore,
+        RegressionNonConformityScore,
+    )
 from probly.representation import Representation
 from probly.representation.credal_set import CredalSet, ProbabilityIntervalsCredalSet
 from probly.representation.distribution import (
@@ -92,6 +100,38 @@ class CredalPredictor[**In, Out: CredalSet](RepresentationPredictor[In, Out], Pr
 @runtime_checkable
 class ProbabilityIntervalPredictor[**In, Out: ProbabilityIntervalsCredalSet](CredalPredictor[In, Out], Protocol):
     """Protocol for predictors that return a set of distributions over outputs."""
+
+
+@runtime_checkable
+class ConformalPredictor[**In, Out](Predictor[In, Out], Protocol):
+    """Protocol for conformal predictors."""
+
+    conformal_quantile: float
+    non_conformity_score: NonConformityScore
+
+
+@runtime_checkable
+class ConformalClassificationPredictor[**In, Out](ConformalPredictor[In, Out], Protocol):
+    """Protocol for conformal classification predictors."""
+
+    conformal_quantile: float
+    non_conformity_score: ClassificationNonConformityScore
+
+
+@runtime_checkable
+class ConformalQuantileRegressionPredictor[**In, Out](ConformalPredictor[In, Out], Protocol):
+    """Protocol for conformal quantile regression predictors."""
+
+    conformal_quantile: float
+    non_conformity_score: QuantileNonConformityScore
+
+
+@runtime_checkable
+class ConformalRegressionPredictor[**In, Out](ConformalPredictor[In, Out], Protocol):
+    """Protocol for conformal regression predictors."""
+
+    conformal_quantile: float
+    non_conformity_score: RegressionNonConformityScore
 
 
 # Prediction functions

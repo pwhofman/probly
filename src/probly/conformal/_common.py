@@ -19,4 +19,3 @@ class ConformalCalibrator[**In, Out](Calibrator[In, Out], Protocol):
         if callable(subclass):
             return True
         return NotImplemented
-

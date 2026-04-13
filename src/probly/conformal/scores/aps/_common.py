@@ -2,15 +2,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
-
-from probly.conformal.scores._common import ClassificationNonConformityScore
-from probly.representation.distribution.array_categorical import ArrayCategoricalDistribution
-
 import numpy as np
-import numpy.typing as npt
 
 from lazy_dispatch import lazydispatch
+from probly.conformal.scores._common import ClassificationNonConformityScore
+from probly.representation.distribution.array_categorical import ArrayCategoricalDistribution
 
 
 @lazydispatch
@@ -38,8 +34,8 @@ def _(probs: np.ndarray, y_cal: np.ndarray | None = None, randomized: bool = Tru
     inv_idx = np.argsort(srt_idx, axis=1)
 
     if randomized:
-        U = np.random.uniform(low=0, high=1, size=probs_np.shape)
-        cumsum_probs -= srt_probs * U
+        u = np.random.default_rng().uniform(low=0, high=1, size=probs_np.shape)
+        cumsum_probs -= srt_probs * u
 
     scores = np.take_along_axis(cumsum_probs, inv_idx, axis=1)
     if y_cal is not None:
@@ -57,4 +53,5 @@ def _(probs: ArrayCategoricalDistribution, y_cal: np.ndarray | None, randomized:
 class APSScore[T](ClassificationNonConformityScore[T]):
     non_conformity_score = aps_score_func
 
-__all__ = ["aps_score_func", "APSScore"]
+
+__all__ = ["APSScore", "aps_score_func"]

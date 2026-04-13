@@ -15,4 +15,4 @@ def _(_: type) -> None:
     from . import jax as jax  # noqa: PLC0415
 
 
-__all__ = ["saps_score_func", "SAPSScore"]
+__all__ = ["SAPSScore", "saps_score_func"]

@@ -49,12 +49,12 @@ calibrator_registry = switch[CalibratorName, type[Calibrator]]()
 
 
 @lazydispatch
-def calibrate_raw[In, Out](predictor: Calibrator[In, Out], /, *args: In.args, **kwargs: In.kwargs) -> Out:
+def calibrate_raw[**In, Out](predictor: Calibrator[In, Out], /, *args: In.args, **kwargs: In.kwargs) -> Out:
     """Calibrate the predictor with the given arguments, returning the raw output of the calibrator."""
     msg = "Calibration not implemented for this type of predictor."
     raise NotImplementedError(msg)
 
 
 @lazydispatch
-def calibrate[In, Out](predictor: Calibrator[In, Out], /, *args: In.args, **kwargs: In.kwargs) -> Out:
+def calibrate[**In, Out](predictor: Calibrator[In, Out], /, *args: In.args, **kwargs: In.kwargs) -> Out:
     return calibrate_raw(predictor, *args, **kwargs)

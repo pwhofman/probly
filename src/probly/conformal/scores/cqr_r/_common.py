@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Protocol, runtime_checkable
-
 import numpy as np
 
 from lazy_dispatch import lazydispatch

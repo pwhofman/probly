@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import jax.numpy as jnp
 from jax import Array
+import jax.numpy as jnp
 
 from ._common import cqr_score_func
 

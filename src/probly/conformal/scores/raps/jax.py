@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-import jax.numpy as jnp
 from jax import Array
+import jax.numpy as jnp
+import jax.random
 
 from ._common import raps_score_func
 
@@ -28,8 +29,8 @@ def _(
     cumsum_probs = jnp.cumsum(srt_probs, axis=1)
 
     if randomized:
-        U = jnp.random.uniform(low=0, high=1, size=probs.shape)
-        cumsum_probs -= srt_probs * U
+        u = jax.random.uniform(jax.random.PRNGKey(42), shape=probs.shape)
+        cumsum_probs -= srt_probs * u
 
     # regularization penalty
     ranks = jnp.arange(1, n_classes + 1, dtype=probs.dtype).reshape(1, -1)

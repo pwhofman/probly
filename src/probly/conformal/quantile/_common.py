@@ -1,18 +1,21 @@
+from __future__ import annotations
+
 import numpy as np
 
 from lazy_dispatch import lazydispatch
+
 
 @lazydispatch
 def calculate_quantile[In](scores: In, alpha: float) -> In:
     msg = "Quantile score computation not implemented for this type."
     raise NotImplementedError(msg)
 
+
 @lazydispatch
-def calculate_weighted_quantile[In](
-    values: In, quantile: float, sample_weight: In | None = None
-) -> In:
+def calculate_weighted_quantile[In](values: In, quantile: float, sample_weight: In | None = None) -> In:
     msg = "Weighted quantile computation not implemented for this type."
     raise NotImplementedError(msg)
+
 
 @calculate_quantile.register(np.ndarray)
 def calculate_quantile_numpy(scores: np.ndarray, alpha: float) -> float:
@@ -39,6 +42,7 @@ def calculate_quantile_numpy(scores: np.ndarray, alpha: float) -> float:
 
     # Inverted CDF / right-continuous step quantile
     return float(np.quantile(scores, q_level, method="inverted_cdf"))
+
 
 @calculate_weighted_quantile.register(np.ndarray)
 def calculate_weighted_quantile_numpy(

@@ -27,8 +27,8 @@ def _(
     cumsum_probs = torch.cumsum(srt_probs, dim=1)
 
     if randomized:
-        U = torch.rand_like(probs)
-        cumsum_probs -= srt_probs * U
+        u = torch.rand_like(probs)
+        cumsum_probs -= srt_probs * u
 
     # regularization penalty
     ranks = torch.arange(1, n_classes + 1, device=probs.device).reshape(1, -1)

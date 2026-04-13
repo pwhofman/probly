@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import torch
 
-from probly.representation.sample.torch import TorchTensorSample
+from probly.representation.sample.torch import TorchSample
 
 from ._common import _EPS, cqr_r_score_func, weight_func
 
@@ -25,9 +25,9 @@ def _(y_pred: torch.Tensor, y_true: torch.Tensor) -> torch.Tensor:
     return torch.maximum(lower - y, y - upper) / width
 
 
-@cqr_r_score_func.register(TorchTensorSample)
-def _(y_pred: TorchTensorSample, y_true: torch.Tensor) -> torch.Tensor:
-    """CQR-r nonconformity scores for TorchTensorSamples."""
+@cqr_r_score_func.register(TorchSample)
+def _(y_pred: TorchSample, y_true: torch.Tensor) -> torch.Tensor:
+    """CQR-r nonconformity scores for TorchSamples."""
     return cqr_r_score_func(y_pred.tensor, y_true)
 
 
@@ -46,7 +46,7 @@ def _(y_pred: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
     return width, width
 
 
-@weight_func.register(TorchTensorSample)
-def _(y_pred: TorchTensorSample) -> tuple[torch.Tensor, torch.Tensor]:
-    """Weights for CQR-r score normalization for TorchTensorSamples."""
+@weight_func.register(TorchSample)
+def _(y_pred: TorchSample) -> tuple[torch.Tensor, torch.Tensor]:
+    """Weights for CQR-r score normalization for TorchSamples."""
     return weight_func(y_pred.tensor)
