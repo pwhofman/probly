@@ -1072,3 +1072,115 @@ class IntSoftmax(nn.Module):
         output = torch.cat([lo, hi], dim=-1)
 
         return output
+
+
+class HeteroscedasticLayer(nn.Module):
+    """A unified PyTorch implementation of the Heteroscedastic MC-Softmax Dense layer.
+
+    Attributes:
+        in_features: int, number of input features.
+        num_classes: int, number of classes.
+        num_factors: int, number of factors.
+        temperature: float, temperature scaling.
+        num_mc_samples: int, number of Monte Carlo samples.
+        is_parameter_efficient: bool, whether to use parameter efficient routing.
+        multilabel: bool, whether to use multilabel classification.
+        mu_layer: nn.Linear, deterministic mean parameter transformation.
+        diag_layer: nn.Linear, diagonal correction variance transformation.
+        v_layer: nn.Linear, covariance factor parameterization routing.
+        V_matrix: torch.nn.Parameter, global homoscedastic matrix (if parameter efficient).
+    """
+
+    def __init__(
+        self,
+        in_features: int,
+        num_classes: int,
+        num_factors: int = 15,
+        temperature: float = 1.0,
+        num_mc_samples: int = 1000,
+        is_parameter_efficient: bool = False,
+        multilabel: bool = False,
+    ) -> None:
+        """Initialize the HeteroscedasticLayer.
+
+        Args:
+            in_features: int, number of input features.
+            num_classes: int, number of classes.
+            num_factors: int, number of factors.
+            temperature: float, temperature scaling.
+            num_mc_samples: int, number of Monte Carlo samples.
+            is_parameter_efficient: bool, whether to use parameter efficient routing.
+            multilabel: bool, whether to use multilabel classification.
+        """
+        super().__init__()
+        self.in_features = in_features
+        self.num_classes = num_classes
+        self.num_factors = num_factors
+        self.temperature = temperature
+        self.num_mc_samples = num_mc_samples
+        self.is_parameter_efficient = is_parameter_efficient
+        self.multilabel = multilabel
+
+        self.mu_layer = nn.Linear(in_features, num_classes)
+        self.diag_layer = nn.Linear(in_features, num_classes)
+
+        if self.is_parameter_efficient:
+            self.v_layer = nn.Linear(in_features, num_factors)
+            self.V_matrix = nn.Parameter(torch.Tensor(num_classes, num_factors))
+        else:
+            self.v_layer = nn.Linear(in_features, num_classes * num_factors)
+
+        nn.init.xavier_uniform_(self.mu_layer.weight)
+        nn.init.zeros_(self.mu_layer.bias)
+
+        nn.init.xavier_uniform_(self.diag_layer.weight)
+        bias_init_val = math.log(math.exp(1.0) - 1.0)
+        nn.init.constant_(self.diag_layer.bias, bias_init_val)
+
+        nn.init.xavier_uniform_(self.v_layer.weight)
+        nn.init.zeros_(self.v_layer.bias)
+
+        if self.is_parameter_efficient:
+            nn.init.xavier_normal_(self.V_matrix)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Execute the Monte Carlo forward pass to compute log expected probabilities.
+
+        Samples from a multivariate normal distribution parameterized by the input features.
+        The covariance matrix is modeled using a low-rank approximation plus a diagonal term,
+        capturing both feature-wise uncertainty and correlations between classes.
+
+        Args:
+            x: Input tensor of shape (batch_size, in_features).
+
+        Returns:
+            Logarithm of the expected probabilities across Monte Carlo samples,
+            of shape (batch_size, num_classes).
+        """
+        batch_size = x.size(0)
+
+        mu = self.mu_layer(x)
+        diag_scale = F.softplus(self.diag_layer(x))
+
+        eps_k = torch.randn(self.num_mc_samples, batch_size, self.num_classes, device=x.device, dtype=x.dtype)
+        eps_r = torch.randn(self.num_mc_samples, batch_size, self.num_factors, device=x.device, dtype=x.dtype)
+
+        if self.is_parameter_efficient:
+            v_x = self.v_layer(x)
+            v_global = self.V_matrix.unsqueeze(0).unsqueeze(0)
+            scaled_eps_r = (eps_r * v_x.unsqueeze(0)).unsqueeze(-1)
+            low_rank_noise = torch.matmul(v_global, scaled_eps_r).squeeze(-1)
+        else:
+            v_x_full = self.v_layer(x)
+            v_x_full = v_x_full.view(batch_size, self.num_classes, self.num_factors)
+            v_x_expanded = v_x_full.unsqueeze(0).expand(self.num_mc_samples, -1, -1, -1)
+            eps_r_expanded = eps_r.unsqueeze(-1)
+            low_rank_noise = torch.matmul(v_x_expanded, eps_r_expanded).squeeze(-1)
+
+        utilities = mu.unsqueeze(0) + (diag_scale.unsqueeze(0) * eps_k) + low_rank_noise
+        utilities = utilities / self.temperature
+
+        probs = torch.sigmoid(utilities) if self.multilabel else F.softmax(utilities, dim=-1)
+        expected_probs = torch.mean(probs, dim=0)
+
+        return torch.log(expected_probs + 1e-7)
