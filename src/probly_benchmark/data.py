@@ -82,12 +82,18 @@ def _get_imagenet_sharded(
             .to_tuple("jpg", "txt")
             .map_tuple(transform, int)
         )
+        effective_num_workers = min(num_workers, len(shards))
+        if effective_num_workers < num_workers:
+            print(
+                f"[imagenet_shards] Requested num_workers={num_workers} exceeds "
+                f"shard count ({len(shards)}); capping to {effective_num_workers}."
+            )
         loader_kwargs: dict[str, Any] = {
             "batch_size": batch_size,
-            "num_workers": num_workers,
+            "num_workers": effective_num_workers,
             "pin_memory": pin_memory,
         }
-        if num_workers > 0:
+        if effective_num_workers > 0:
             loader_kwargs["persistent_workers"] = persistent_workers
             loader_kwargs["prefetch_factor"] = prefetch_factor
         loader = wds.WebLoader(ds, **loader_kwargs)  # ty: ignore[unresolved-attribute]
