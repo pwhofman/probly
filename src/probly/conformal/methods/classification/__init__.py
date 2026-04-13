@@ -1,4 +1,4 @@
-"""Dropout ensemble implementation for uncertainty quantification."""
+"""Conformal classification implementation for uncertainty quantification."""
 
 from __future__ import annotations
 
