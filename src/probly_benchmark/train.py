@@ -504,7 +504,9 @@ def main(cfg: DictConfig) -> None:
     )
     model = build_model(cfg.method.name, method_kwargs, context).to(device)
     # channels_last layout gives a large speedup for conv nets on recent NVIDIA GPUs.
-    model = model.to(memory_format=torch.channels_last)  # ty: ignore[no-matching-overload]
+    # only
+    # model = model.to(memory_format=torch.channels_last)  # ty: ignore[no-matching-overload] # noqa: ERA001
+    model = model.to(device)
 
     if not cfg.validate:
         if cfg.scheduler.name.lower() == "plateau":
