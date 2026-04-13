@@ -3,4 +3,4 @@
 Conformal Prediction
 --------------------
 
-Examples concerning the :mod:`probly.conformal_prediction` module.
+Examples concerning the :mod:`probly.conformal` module.
