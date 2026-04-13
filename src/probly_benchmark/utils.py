@@ -155,7 +155,7 @@ def load_model_from_wandb(
         pretrained=cfg.get("pretrained", False),
         train_loader=None,
     )
-    model = build_model(cfg["method"]["name"], method_params, ctx)
+    model: torch.nn.Module = build_model(cfg["method"]["name"], method_params, ctx)
     model.load_state_dict(checkpoint["model_state_dict"])
     model.to(device)
     model.eval()
