@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import torch
 from torch import nn
+from torch.nn import functional as F
 import torchvision.models as tm
 
 
@@ -77,3 +78,50 @@ class LeNet(nn.Module):
     def forward(self, x: torch.Tensor) -> nn.Module:
         """Forward pass."""
         return self.classifier(self.features(x))
+
+
+class SmallResidualBlock(nn.Module):
+    """Small residual block with two convolutions."""
+
+    def __init__(self, channels: int) -> None:
+        """Initialize the block."""
+        super().__init__()
+        self.conv1 = nn.Conv2d(channels, channels, 3, padding=1)
+        self.conv2 = nn.Conv2d(channels, channels, 3, padding=1)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Forward pass."""
+        identity = x
+        out = F.relu(self.conv1(x))
+        out = self.conv2(out)
+        out += identity  # residual connection
+        return F.relu(out)
+
+
+class MiniResNet(nn.Module):
+    """MiniResNet model."""
+
+    def __init__(self, n_classes: int = 5) -> None:
+        """Initialize the model."""
+        super().__init__()
+
+        self.conv1 = nn.Conv2d(1, 16, 3, padding=1)
+        self.block1 = SmallResidualBlock(16)
+
+        self.conv2 = nn.Conv2d(16, 32, 3, padding=1)
+        self.block2 = SmallResidualBlock(32)
+
+        self.pool = nn.AdaptiveAvgPool2d((1, 1))
+        self.fc = nn.Linear(32, n_classes)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Forward pass."""
+        x = F.relu(self.conv1(x))
+        x = self.block1(x)
+
+        x = F.relu(self.conv2(x))
+        x = self.block2(x)
+
+        x = self.pool(x)
+        x = torch.flatten(x, 1)
+        return self.fc(x)

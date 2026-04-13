@@ -40,7 +40,7 @@ class PredictorTransformationMethod[PIn: Predictor, **In, POut: Predictor](Proto
 def predictor_transformation[Pin: Predictor, **In, POut: Predictor](
     permitted_predictor_types: Collection[type[Predictor]] | None,
     *,
-    preserve_predictor_type: bool = True,
+    preserve_predictor_type: bool = False,
     auto_infer_predictor_type: bool = True,
 ) -> Callable[[PredictorTransformationMethod[Pin, In, POut]], PredictorTransformationMethod[Pin, In, POut]]: ...
 
@@ -58,7 +58,7 @@ def predictor_transformation[Pin: Predictor, **In, POut: Predictor](
 def predictor_transformation[Pin: Predictor, **In, POut: Predictor](
     permitted_predictor_types: Collection[type[Predictor]] | None,
     *,
-    preserve_predictor_type: bool = True,
+    preserve_predictor_type: bool = False,
     auto_infer_predictor_type: bool = True,
     post_transform: Callable[[POut, type[Predictor] | None], POut] | None = None,
 ) -> Callable[[PredictorTransformationMethod[Pin, In, POut]], PredictorTransformationMethod[Pin, In, POut]]:
@@ -68,7 +68,7 @@ def predictor_transformation[Pin: Predictor, **In, POut: Predictor](
         permitted_predictor_types: Optional collection of predictor types that the method can be applied to.
             If None, the method can be applied to any predictor type.
         preserve_predictor_type: Whether to preserve the original predictor type of the transformed predictor.
-            Default is True. Only has an effect if `post_transform` is not provided.
+            Only has an effect if `post_transform` is not provided.
         auto_infer_predictor_type: Whether to automatically infer the predictor type if not explicitly specified.
             Default is True.
         post_transform: An optional function that takes the transformed predictor and its original type,
