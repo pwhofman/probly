@@ -25,4 +25,4 @@ scheduler:
     min_lr: 1e-6  # lr goes down to 1e-6 at end of training
 
 early_stopping:
-  patience: 5  # set to > 0 to enable; number of epochs to wait without improvement
+  patience: 0  # set to > 0 to enable; number of epochs to wait without improvement
