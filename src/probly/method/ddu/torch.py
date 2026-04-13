@@ -12,6 +12,8 @@ import torch.nn.functional as F
 from torch.nn.utils import parametrize
 
 from probly.method.ddu import DDUPredictor
+from probly.representation.ddu.torch import TorchDDURepresentation
+from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
 from probly.traverse_nn import nn_compose, nn_traverser
 from pytraverse import TRAVERSE_REVERSED, GlobalVariable, State, singledispatch_traverser, traverse_with_state
 
@@ -323,8 +325,8 @@ class TorchDDUPredictor(nn.Module, DDUPredictor[[torch.Tensor], torch.Tensor]):
         """
         features = self.encoder(x)
         logits = self.classification_head(features)
-        density = self.density_head(features)
-        return logits, density
+        densities = self.density_head(features)
+        return logits, densities
 
     def fit_density_head(self, x: torch.Tensor, labels: torch.Tensor) -> None:
         """Fit the GMM density head to the given features and labels."""
@@ -336,3 +338,12 @@ class TorchDDUPredictor(nn.Module, DDUPredictor[[torch.Tensor], torch.Tensor]):
         self.density_head.fit(features, labels)
         self.encoder.train(encoder_state)  # restore state
         self.density_head.train(density_state)
+
+    def predict_representation(self, x: torch.Tensor) -> TorchDDURepresentation:
+        """Predict the DDU representation (logits and density scores)."""
+        logits, densities = self.forward(x)
+
+        return TorchDDURepresentation(
+            TorchCategoricalDistribution(torch.softmax(logits, dim=-1)),
+            densities,
+        )
