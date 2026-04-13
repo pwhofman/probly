@@ -77,14 +77,6 @@ class ProbabilityIntervalsFactory[S: Sample, C: ProbabilityIntervalsCredalSet](P
         """Create a probability-interval credal set from a sample."""
 
 
-def dispatch_on_sample(sample: Sample, **_kwargs: object) -> object:
-    """Dispatch on the concrete sample object itself."""
-    try:
-        return sample.samples
-    except Exception:  # noqa: BLE001
-        return None
-
-
 @lazydispatch
 def create_probability_intervals[T: CategoricalDistribution](sample: Sample[T]) -> ProbabilityIntervalsCredalSet:
     """Create a probability-interval credal set from a sample."""
@@ -104,5 +96,16 @@ def create_probability_intervals_from_lower_upper_array[T: ArrayLike](
     array: T,
 ) -> ProbabilityIntervalsCredalSet:
     """Create a probability-interval credal set from an array of lower and upper probabilities."""
-    msg = f"No probability intervals factory registered for sample type {type(array)}"
+    msg = f"No probability intervals factory registered for array type {type(array)}"
+    raise NotImplementedError(msg)
+
+
+@lazydispatch
+def create_probability_intervals_from_bounds[T: ArrayLike](
+    array: T,
+    lower_bounds: T,
+    upper_bounds: T,
+) -> ProbabilityIntervalsCredalSet:
+    """Create a probability-interval credal set from an array of predictions and lower and upper bounds."""
+    msg = f"No probability intervals factory registered for array type {type(array)}"
     raise NotImplementedError(msg)

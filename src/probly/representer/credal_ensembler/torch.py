@@ -9,7 +9,6 @@ from probly.representation.sample.torch import TorchSample
 from probly.representer.credal_ensembler._common import (
     compute_credal_ensembling_set,
     compute_credal_net_set,
-    compute_efficient_credal_set,
 )
 
 
@@ -56,17 +55,3 @@ def torch_compute_credal_net_set(
     probs = sample.samples
     probs = probs.reshape(*probs.shape[:-1], 2, probs.shape[-1] // 2)  # ty:ignore[unresolved-attribute]
     return TorchSample(TorchCategoricalDistribution(probs), sample_dim=-1)
-
-
-@compute_efficient_credal_set.register(TorchSample)
-def torch_compute_efficient_credal_set(
-    sample: TorchSample[TorchCategoricalDistribution],
-    lower_bounds: torch.Tensor,
-    upper_bounds: torch.Tensor,
-) -> TorchSample[TorchCategoricalDistribution]:
-    """This function computes bounds based on the constants."""
-    probs = sample.samples.data  # (n_instances, n_classes)  # ty:ignore[unresolved-attribute]
-    lower = probs - lower_bounds
-    upper = probs + upper_bounds
-    stacked = torch.stack([lower, upper], dim=1)  # (n_instances, 2, n_classes)
-    return TorchSample(TorchCategoricalDistribution(stacked), sample_dim=1)

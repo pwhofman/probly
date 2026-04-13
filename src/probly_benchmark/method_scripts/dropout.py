@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 model = LeNet(n_classes=5)
 cep = dropout(model, p=0.5, predictor_type="probabilistic_classifier")
-rep = Sampler(cep, num_samples=1)
+rep = Sampler(cep, num_samples=10)
 logger.info(rep)
 inputs = torch.randn(3, 1, 28, 28)
 output = rep.predict(inputs)

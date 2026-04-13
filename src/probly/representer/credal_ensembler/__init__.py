@@ -9,7 +9,6 @@ from ._common import (
     CredalWrapperRepresenter,
     compute_credal_ensembling_set,
     compute_credal_net_set,
-    compute_efficient_credal_set,
 )
 
 
@@ -24,11 +23,6 @@ def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415
 
 
-@compute_efficient_credal_set.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
-def _(_: type) -> None:
-    from . import torch as torch  # noqa: PLC0415
-
-
 __all__ = [
     "CredalBNNRepresenter",
     "CredalEnsemblingRepresenter",
@@ -36,5 +30,4 @@ __all__ = [
     "CredalWrapperRepresenter",
     "compute_credal_ensembling_set",
     "compute_credal_net_set",
-    "compute_efficient_credal_set",
 ]
