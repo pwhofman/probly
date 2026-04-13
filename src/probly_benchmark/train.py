@@ -436,6 +436,7 @@ def main(cfg: DictConfig) -> None:
         persistent_workers=cfg.persistent_workers,
         prefetch_factor=cfg.get("prefetch_factor", 4),
         shuffle=True,
+        seed=seed,
     )
 
     num_classes = metadata.DATASETS[cfg.dataset].num_classes
