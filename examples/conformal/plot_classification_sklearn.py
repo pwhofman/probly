@@ -3,16 +3,16 @@ Classification Conformal Prediction — sklearn
 ==============================================
 
 Demonstrate all four classification non-conformity scores
-(:class:`~probly.conformal_prediction.scores_new.LACScore`,
-:class:`~probly.conformal_prediction.scores_new.APSScore`,
-:class:`~probly.conformal_prediction.scores_new.RAPSScore`,
-:class:`~probly.conformal_prediction.scores_new.SAPSScore`)
+(:class:`~probly.conformal.scores.LACScore`,
+:class:`~probly.conformal.scores.APSScore`,
+:class:`~probly.conformal.scores.RAPSScore`,
+:class:`~probly.conformal.scores.SAPSScore`)
 using a :class:`~sklearn.tree.DecisionTreeClassifier` on the Iris dataset.
 
 The three-step workflow is the same for every score:
 
-1. Wrap the model once with :func:`~probly.conformal_prediction.methods.classification.clas_conformal`.
-2. Re-calibrate with a different :class:`~probly.conformal_prediction.scores_new.NonConformityScore`.
+1. Wrap the model once with :func:`~probly.conformal.methods.classification.conformalize_classifier`.
+2. Re-calibrate with a different :class:`~probly.conformal.scores._common.NonConformityScore`.
 3. Call :func:`~probly.representer.representer` to obtain typed conformal sets.
 """
 

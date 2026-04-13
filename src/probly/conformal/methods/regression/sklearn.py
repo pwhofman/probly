@@ -11,6 +11,7 @@ from ._common import conformal_generator
 
 @conformal_generator.register(RegressorMixin)
 def _(model: RegressorMixin) -> RegressorMixin:
+    """Conformalise a scikit-learn regressor."""
     conformal_model = copy.deepcopy(model)
     conformal_model.conformal_quantile = None  # ty: ignore[unresolved-attribute]
     conformal_model.non_conformity_score = None  # ty: ignore[unresolved-attribute]

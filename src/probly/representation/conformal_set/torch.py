@@ -43,7 +43,7 @@ class TorchOneHotConformalSet(TorchAxisProtected[Any], OneHotConformalSet):
 
     @classmethod
     def from_tensor_sample(cls, sample: torch.Tensor) -> Self:
-        """Create a TorchOneHotConformalSet from a tensor."""
+        """Create a one-hot conformal set from a raw torch tensor."""
         if not isinstance(sample, torch.Tensor):
             msg = "Expected torch.Tensor for one-hot conformal sets."
             raise TypeError(msg)
@@ -51,7 +51,7 @@ class TorchOneHotConformalSet(TorchAxisProtected[Any], OneHotConformalSet):
 
     @classmethod
     def from_sample(cls, sample: Sample[torch.Tensor]) -> Self:
-        """Create a TorchOneHotConformalSet from a TorchSample."""
+        """Create a one-hot conformal set from a sample."""
         if not isinstance(sample, TorchSample):
             msg = "Expected TorchSample for one-hot conformal sets."
             raise TypeError(msg)

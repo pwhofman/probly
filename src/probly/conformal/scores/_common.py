@@ -12,6 +12,8 @@ if TYPE_CHECKING:
 
 @runtime_checkable
 class NonConformityScore[T](ProtocolRegistry, Protocol, structural_checking=False):
+    """Base protocol for nonconformity scores."""
+
     non_conformity_score: Callable[..., T]
 
     def __call__(self, y_pred: T, y_true: T | None = None, **kwargs: dict[str, Any]) -> T:

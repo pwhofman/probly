@@ -11,6 +11,7 @@ from ._common import conformal_generator
 
 @conformal_generator.register(ClassifierMixin)
 def _(model: ClassifierMixin) -> ClassifierMixin:
+    """Conformalise a scikit-learn classifier."""
     conformal_model = copy.deepcopy(model)
     conformal_model.conformal_quantile = None  # ty: ignore[unresolved-attribute]
     conformal_model.non_conformity_score = None  # ty: ignore[unresolved-attribute]

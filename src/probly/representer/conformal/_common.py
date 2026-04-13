@@ -40,7 +40,7 @@ class ConformalClassificationRepresenter[**In, Out: OneHotConformalSet](Conforma
 
     @override
     def represent(self, *args: In.args, **kwargs: In.kwargs) -> OneHotConformalSet:
-        """Predict for a conformal classification predictor."""
+        """Represent the output of a conformal classification predictor as a one-hot conformal set."""
         if not is_conformal_calibrated(self.predictor):
             msg = "The model must first be calibrated before it can be represented."
             raise ValueError(msg)
@@ -52,6 +52,7 @@ class ConformalClassificationRepresenter[**In, Out: OneHotConformalSet](Conforma
 
 @lazydispatch
 def flatten_sample[T](sample: Sample[T]) -> T:
+    """Flatten a sample to a one-dimensional array for regression interval construction."""
     msg = f"Flattening not implemented for type {type(sample)}."
     raise NotImplementedError(msg)
 
@@ -72,7 +73,7 @@ class ConformalRegressionRepresenter[**In, Out: ConformalSet](ConformalRepresent
 
     @override
     def represent(self, *args: In.args, **kwargs: In.kwargs) -> ConformalSet:
-        """Predict for a conformal regression predictor."""
+        """Represent the output of a conformal regression predictor as an interval conformal set."""
         if not is_conformal_calibrated(self.predictor):
             msg = "The model must first be calibrated before it can be represented."
             raise ValueError(msg)
@@ -86,6 +87,7 @@ class ConformalRegressionRepresenter[**In, Out: ConformalSet](ConformalRepresent
 
 @lazydispatch
 def flatten_ensemble_quantile_sample[T](sample: Sample[T]) -> T:
+    """Flatten an ensemble quantile sample to a two-column array for interval construction."""
     msg = f"Flattening not implemented for type {type(sample)}."
     raise NotImplementedError(msg)
 
@@ -104,7 +106,7 @@ class ConformalQuantileRegressionRepresenter[**In, Out: ConformalSet](ConformalR
 
     @override
     def represent(self, *args: In.args, **kwargs: In.kwargs) -> ConformalSet:
-        """Predict for a conformal quantile regression calibrator."""
+        """Represent the output of a conformal quantile regression predictor as an interval conformal set."""
         if not is_conformal_calibrated(self.predictor):
             msg = "The model must first be calibrated before it can be represented."
             raise ValueError(msg)

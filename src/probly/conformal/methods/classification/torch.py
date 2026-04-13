@@ -18,7 +18,7 @@ def _(model: nn.Module) -> nn.Module:
 
 @to_probabilities.register(torch.Tensor)
 def _(pred: torch.Tensor) -> torch.Tensor:
-    """Obtain probabilities from a PyTorch model."""
+    """Obtain probabilities from a PyTorch tensor."""
     if pred.ndim != 2:
         msg = f"Probability extraction expects a 2D array, got {pred.ndim}D array instead."
         raise ValueError(msg)

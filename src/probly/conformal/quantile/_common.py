@@ -1,3 +1,5 @@
+"""Quantile computation utilities for conformal prediction."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -7,12 +9,14 @@ from lazy_dispatch import lazydispatch
 
 @lazydispatch
 def calculate_quantile[In](scores: In, alpha: float) -> In:
+    """Calculate the conformal quantile from nonconformity scores."""
     msg = "Quantile score computation not implemented for this type."
     raise NotImplementedError(msg)
 
 
 @lazydispatch
 def calculate_weighted_quantile[In](values: In, quantile: float, sample_weight: In | None = None) -> In:
+    """Calculate a weighted quantile of the given values."""
     msg = "Weighted quantile computation not implemented for this type."
     raise NotImplementedError(msg)
 
@@ -48,7 +52,7 @@ def calculate_quantile_numpy(scores: np.ndarray, alpha: float) -> float:
 def calculate_weighted_quantile_numpy(
     values: np.ndarray, quantile: float, sample_weight: np.ndarray | None = None
 ) -> float:
-    """Calculates a weighted quantile of the values using numpy."""
+    """Calculate a weighted quantile of the values using numpy."""
     if sample_weight is None:
         return float(np.quantile(values, quantile, method="higher"))
 

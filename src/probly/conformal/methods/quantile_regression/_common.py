@@ -1,4 +1,4 @@
-"""Shared dropout implementation."""
+"""Shared conformal quantile regression implementation."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 @runtime_checkable
 class ConformalQuantileRegressionCalibrator[**In, Out](ConformalCalibrator[In, Out], Protocol):
-    """A conformal calibrator for regression predictors."""
+    """A conformal calibrator for quantile regression predictors."""
 
     conformal_quantile: float
     non_conformity_score: QuantileNonConformityScore
@@ -34,7 +34,15 @@ def conformal_generator[**In, Out](model: Predictor[In, Out]) -> ConformalQuanti
 def conformalize_quantile_regressor[**In, Out](
     model: Predictor[In, Out],
 ) -> ConformalQuantileRegressionCalibrator[In, Out]:
-    """Conformalise a predictor."""
+    """Conformalise a quantile regression predictor.
+
+    Args:
+        model: A base quantile regression predictor to be conformalized.
+
+    Returns:
+        A conformal quantile regression calibrator that can be calibrated using a calibration dataset.
+
+    """
     return conformal_generator(model)
 
 

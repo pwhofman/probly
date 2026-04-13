@@ -1,4 +1,4 @@
-"""This module contains the quantile-based conformal prediction methods."""
+"""JAX implementations of conformal quantile computation."""
 
 from __future__ import annotations
 

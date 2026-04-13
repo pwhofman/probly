@@ -18,11 +18,11 @@ def _(model: nnx.Module) -> nnx.Module:
 
 @to_probabilities.register(jnp.ndarray)
 def _(pred: jnp.ndarray) -> jnp.ndarray:
-    """Obtain probabilities from a Flax model."""
+    """Obtain probabilities from a JAX array."""
     if pred.ndim != 2:
         msg = f"Probability extraction expects a 2D array, got {pred.ndim}D array instead."
         raise ValueError(msg)
-    if jnp.allclose(pred.sum(axis=-1), jnp.ones(pred.shape[0], device=pred.device)):
+    if jnp.allclose(pred.sum(axis=-1), jnp.ones(pred.shape[0])):
         # If the predictions already sum to 1, we assume they are probabilities
         return pred
     probs = nnx.softmax(pred, axis=-1)

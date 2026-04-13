@@ -3,16 +3,16 @@ Classification Conformal Prediction — PyTorch
 =============================================
 
 Demonstrate all four classification non-conformity scores
-(:class:`~probly.conformal_prediction.scores_new.LACScore`,
-:class:`~probly.conformal_prediction.scores_new.APSScore`,
-:class:`~probly.conformal_prediction.scores_new.RAPSScore`,
-:class:`~probly.conformal_prediction.scores_new.SAPSScore`)
+(:class:`~probly.conformal.scores.LACScore`,
+:class:`~probly.conformal.scores.APSScore`,
+:class:`~probly.conformal.scores.RAPSScore`,
+:class:`~probly.conformal.scores.SAPSScore`)
 using a small :class:`~torch.nn.Module` on the Iris dataset.
 
-After wrapping with :func:`~probly.conformal_prediction.methods.classification.clas_conformal`
-an :class:`~probly.layers.torch.ConformalClassificationHead` is appended.
-During training the head passes logits through unchanged; after calibration it
-returns a boolean inclusion mask (the conformal prediction set).
+After wrapping with :func:`~probly.conformal.methods.classification.conformalize_classifier`
+the model gains conformal attributes. During calibration the conformal quantile is
+computed; after calibration :func:`~probly.representer.representer` returns a boolean
+inclusion mask (the conformal prediction set).
 """
 
 from __future__ import annotations

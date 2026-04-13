@@ -11,6 +11,7 @@ from probly.representation.conformal_set.torch import TorchIntervalConformalSet,
 
 @lazydispatch
 def empirical_coverage_classification[T](y_pred: T, y_true: T) -> float:
+    """Calculate the empirical coverage for classification."""
     msg = f"Empirical coverage for classification is not implemented for this type {type(y_pred)}."
     raise NotImplementedError(msg)
 
@@ -24,6 +25,7 @@ def empirical_coverage_regression[T](y_pred: T, y_true: T) -> float:
 
 @lazydispatch
 def average_set_size[T](y_pred: T) -> float:
+    """Calculate the average prediction set size for classification."""
     msg = f"Average set size for classification is not implemented for this type {type(y_pred)}."
     raise NotImplementedError(msg)
 

@@ -17,7 +17,7 @@ def saps_score_func[T](
     randomized: bool = True,
     lambda_val: float = 0.1,
 ) -> npt.NDArray[np.floating]:
-    """Compute the SAPS nonconformity scores."""
+    """Compute the SAPS nonconformity score."""
     msg = "SAPS score computation not implemented for this type."
     raise NotImplementedError(msg)
 

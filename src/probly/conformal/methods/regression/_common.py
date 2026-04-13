@@ -1,4 +1,4 @@
-"""Shared dropout implementation."""
+"""Shared conformal regression implementation."""
 
 from __future__ import annotations
 
@@ -30,7 +30,15 @@ def conformal_generator[**In, Out](model: Predictor[In, Out]) -> ConformalRegres
 
 @ConformalRegressionCalibrator.register_factory
 def conformalize_regressor[**In, Out](model: Predictor[In, Out]) -> ConformalRegressionCalibrator[In, Out]:
-    """Conformalise a predictor."""
+    """Conformalise a regression predictor.
+
+    Args:
+        model: A base regression predictor to be conformalized.
+
+    Returns:
+        A conformal regression calibrator that can be calibrated using a calibration dataset.
+
+    """
     return conformal_generator(model)
 
 

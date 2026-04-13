@@ -76,7 +76,7 @@ def to_probabilities[T](predictions: T) -> T:
 
 @to_probabilities.register(np.ndarray)
 def _(pred: np.ndarray) -> np.ndarray:
-    """Obtain probabilities from a PyTorch model."""
+    """Obtain probabilities from a numpy array."""
     if pred.ndim != 2:
         msg = f"Probability extraction expects a 2D array, got {pred.ndim}D array instead."
         raise ValueError(msg)

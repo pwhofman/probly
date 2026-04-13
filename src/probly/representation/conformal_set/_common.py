@@ -64,6 +64,6 @@ def create_onehot_conformal_set(sample: Sample) -> OneHotConformalSet:
 
 @lazydispatch
 def create_interval_conformal_set(lower_bound: Sample, upper_bound: Sample) -> IntervalConformalSet:
-    """Create an interval conformal set from a sample."""
+    """Create an interval conformal set from lower and upper bound samples."""
     msg = "Interval conformal set creation not implemented for this type."
     raise NotImplementedError(msg)

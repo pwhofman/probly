@@ -18,7 +18,7 @@ def raps_score_func[T](
     k_reg: int = 0,
     epsilon: float = 0.01,
 ) -> T:
-    """Compute the RAPS nonconformity scores."""
+    """Compute the RAPS nonconformity score."""
     msg = "RAPS score computation not implemented for this type."
     raise NotImplementedError(msg)
 

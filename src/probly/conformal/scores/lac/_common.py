@@ -9,6 +9,7 @@ from probly.representation.distribution import ArrayCategoricalDistribution
 
 @lazydispatch
 def lac_score_func[T](probs: T, y_cal: T | None = None) -> T:
+    """Compute the LAC nonconformity score."""
     msg = "LAC score computation not implemented for this type."
     raise NotImplementedError(msg)
 

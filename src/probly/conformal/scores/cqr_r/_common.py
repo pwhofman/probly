@@ -23,8 +23,8 @@ def cqr_r_score_func[T](y_pred: T, y_true: T) -> T:
     normalized scores, rewarding models that express higher uncertainty.
 
     Args:
-        y_true: True target values, shape ``(n_samples,)``.
         y_pred: Predicted lower and upper quantiles, shape ``(n_samples, 2)``.
+        y_true: True target values, shape ``(n_samples,)``.
 
     Returns:
         One-dimensional array of nonconformity scores, shape ``(n_samples,)``.

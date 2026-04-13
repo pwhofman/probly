@@ -2,13 +2,13 @@
 Regression Conformal Prediction — PyTorch
 ==========================================
 
-Demonstrate :class:`~probly.conformal_prediction.scores_new.AbsoluteErrorScore`
+Demonstrate :class:`~probly.conformal.scores.AbsoluteErrorScore`
 using a small :class:`~torch.nn.Module` on the Diabetes dataset.
 
-After wrapping with :func:`~probly.conformal_prediction.methods.regression.reg_conformal`
-a :class:`~probly.layers.torch.ConformalRegressionHead` is appended.
-Before calibration the head is a no-op; after calibration it expands the
-scalar prediction into ``[pred - q, pred + q]``.
+After wrapping with :func:`~probly.conformal.methods.regression.conformalize_regressor`
+the model gains conformal attributes. After calibration,
+:func:`~probly.representer.representer` expands the scalar prediction into
+``[pred - q, pred + q]``.
 """
 
 from __future__ import annotations

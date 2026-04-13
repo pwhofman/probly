@@ -32,7 +32,7 @@ class Calibrator[**In, Out](ProtocolRegistry, Protocol, structural_checking=Fals
 
 @runtime_checkable
 class ConformalCalibrator[**In, Out](ProtocolRegistry, Protocol, structural_checking=False):
-    """Protocol for generic predictors."""
+    """Protocol for conformal calibrators."""
 
     @classmethod
     def __subclasshook__(cls, subclass: type) -> bool:
@@ -53,4 +53,5 @@ def calibrate_raw[**In, Out](predictor: Calibrator[In, Out], /, *args: In.args, 
 
 @lazydispatch
 def calibrate[**In, Out](predictor: Calibrator[In, Out], /, *args: In.args, **kwargs: In.kwargs) -> Out:
+    """Calibrate the predictor with the given arguments."""
     return calibrate_raw(predictor, *args, **kwargs)

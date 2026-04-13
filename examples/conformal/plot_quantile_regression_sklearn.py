@@ -2,8 +2,8 @@
 Quantile Regression Conformal Prediction — sklearn
 ==================================================
 
-Demonstrate :class:`~probly.conformal_prediction.scores_new.CQRScore` and
-:class:`~probly.conformal_prediction.scores_new.CQRrScore` using a custom
+Demonstrate :class:`~probly.conformal.scores.CQRScore` and
+:class:`~probly.conformal.scores.CQRrScore` using a custom
 ``DualQuantileRegressor`` wrapper on the Diabetes dataset.
 
 sklearn's :class:`~sklearn.linear_model.QuantileRegressor` predicts a
@@ -51,12 +51,10 @@ X_train, X_calib, y_train, y_calib = train_test_split(X_train, y_train, test_siz
 class DualQuantileRegressor(BaseEstimator, RegressorMixin):
     """Pair of QuantileRegressors producing ``[lower_q, upper_q]`` per sample.
 
-    Parameters
-    ----------
-    alpha:
-        Miscoverage level.  The lower quantile is ``alpha / 2`` and the upper
-        quantile is ``1 - alpha / 2``, targeting nominal coverage ``1 - alpha``
-        before conformal calibration.
+    Args:
+        alpha: Miscoverage level. The lower quantile is ``alpha / 2`` and the upper
+            quantile is ``1 - alpha / 2``, targeting nominal coverage ``1 - alpha``
+            before conformal calibration.
     """
 
     def __init__(self, alpha: float = 0.1) -> None:

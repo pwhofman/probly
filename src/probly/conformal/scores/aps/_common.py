@@ -11,7 +11,7 @@ from probly.representation.distribution.array_categorical import ArrayCategorica
 
 @lazydispatch
 def aps_score_func[T](probs: T, y_cal: T | None = None, randomized: bool = True) -> T:
-    """Compute the APS nonconformity scores."""
+    """Compute the APS nonconformity score."""
     msg = "APS score computation not implemented for this type."
     raise NotImplementedError(msg)
 
