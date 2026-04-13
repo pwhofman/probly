@@ -83,7 +83,7 @@ def collect_outputs_targets(
     outputs = []
     targets = []
 
-    for inputs, targets_ in tqdm(loader, desc="Predicting"):
+    for inputs, targets_ in tqdm(loader, desc="Batch"):
         if amp_enabled:
             with torch.amp.autocast(device.type):
                 outputs_ = rep.predict(inputs.to(device))

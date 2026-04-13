@@ -32,6 +32,12 @@ def get_base_model(name: str, num_classes: int, pretrained: bool = False) -> nn.
         case "resnet50_encoder":
             model = tm.resnet50(weights="DEFAULT" if pretrained else None)
             model.fc = nn.Identity()
+        case "convnext_tiny":
+            model = tm.convnext_tiny(weights="DEFAULT" if pretrained else None)
+            model.classifier[-1] = nn.Linear(768, num_classes)
+        case "regnet_y_400mf":
+            model = tm.regnet_y_400mf(weights="DEFAULT" if pretrained else None)
+            model.fc = nn.Linear(model.fc.in_features, num_classes)
         case _:
             msg = f"Model {name} not recognized"
             raise ValueError(msg)
