@@ -146,4 +146,5 @@ class TorchProbabilityIntervalsCredalSet(
 
 
 create_probability_intervals.register(TorchCategoricalDistribution, TorchProbabilityIntervalsCredalSet.from_sample)
+create_probability_intervals.register(TorchSample, TorchProbabilityIntervalsCredalSet.from_torch_sample)
 create_convex_credal_set.register(TorchSample, TorchConvexCredalSet.from_torch_sample)

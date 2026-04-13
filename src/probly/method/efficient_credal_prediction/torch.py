@@ -2,22 +2,30 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Protocol
-
+import torch
 from torch import nn
 
-from probly.predictor import RepresentationPredictor
-from probly.representation.distribution import CategoricalDistribution
+from probly.method.efficient_credal_prediction import EfficientCredalPredictor
 
 from ._common import efficient_credal_prediction_generator
 
-if TYPE_CHECKING:
-    import torch
 
+@efficient_credal_prediction_generator.register(nn.Module)
+class TorchEfficientCredalPredictor(nn.Module, EfficientCredalPredictor):
+    """Torch nn.Module that wraps a softmax-free model and stores credal bounds."""
 
-@efficient_credal_prediction_generator.register(cls=nn.Module)
-class TorchEfficientCredalPredictor[**In, Out: CategoricalDistribution](RepresentationPredictor[In, Out], Protocol):
-    """A predictor that applies the efficient credal prediction method."""
+    def __init__(self, predictor: nn.Module, num_classes: int) -> None:
+        """Initialize the predictor.
 
-    lower: torch.Tensor[float]
-    upper: torch.Tensor[float]
+        Args:
+            predictor: The base model.
+            num_classes: Number of classes.
+        """
+        super().__init__()
+        self.predictor = predictor
+        self.lower = torch.zeros(num_classes, dtype=torch.float)
+        self.upper = torch.zeros(num_classes, dtype=torch.float)
+
+    def forward(self, x: torch.Tensor) -> nn.Module:
+        """Forward pass through the predictor."""
+        return self.predictor(x)

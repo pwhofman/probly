@@ -19,6 +19,7 @@ if TYPE_CHECKING:
 class EfficientCredalPredictor[**In, Out: CategoricalDistribution](RepresentationPredictor[In, Out], Protocol):
     """A predictor that applies the efficient credal prediction method."""
 
+    predictor: Predictor
     lower: Iterable[float]
     upper: Iterable[float]
 
@@ -34,6 +35,7 @@ class EfficientCredalPredictor[**In, Out: CategoricalDistribution](Representatio
 @lazydispatch
 def efficient_credal_prediction_generator[**In, Out: CategoricalDistribution](
     base: Predictor,
+    num_classes: int,
 ) -> EfficientCredalPredictor[In, Out]:
     """Generate an efficient credal predictor from a base model."""
     msg = f"No efficient credal prediction generator is registered for type {type(base)}"
@@ -44,13 +46,15 @@ def efficient_credal_prediction_generator[**In, Out: CategoricalDistribution](
 @EfficientCredalPredictor.register_factory
 def efficient_credal_prediction[**In, Out: CategoricalDistribution](
     base: Predictor,
+    num_classes: int,
 ) -> EfficientCredalPredictor[In, Out]:
     """Create an efficient credal predictor from a base predictor based on :cite:`hofmanefficient`.
 
     Args:
         base: Predictor, The base model to be used for the efficient credal predictor.
+        num_classes: int, The number of classes to predict.
 
     Returns:
         Predictor, The efficient credal predictor.
     """
-    return efficient_credal_prediction_generator(base)
+    return efficient_credal_prediction_generator(base, num_classes)

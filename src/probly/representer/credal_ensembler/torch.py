@@ -65,7 +65,7 @@ def torch_compute_efficient_credal_set(
     upper_bounds: torch.Tensor,
 ) -> TorchSample[TorchCategoricalDistribution]:
     """This function computes bounds based on the constants."""
-    probs = sample.tensor.probabilities  # (n_instances, n_classes)
+    probs = sample.samples.data  # (n_instances, n_classes)  # ty:ignore[unresolved-attribute]
     lower = probs - lower_bounds
     upper = probs + upper_bounds
     stacked = torch.stack([lower, upper], dim=1)  # (n_instances, 2, n_classes)
