@@ -12,7 +12,7 @@ import numpy as np
 
 from probly.representation._protected_axis.array import ArrayAxisProtected
 from probly.representation.conformal_set._common import (
-    ConformalSet,
+    IntervalConformalSet,
     OneHotConformalSet,
     create_interval_conformal_set,
     create_onehot_conformal_set,
@@ -71,7 +71,7 @@ class ArrayOneHotConformalSet(ArrayAxisProtected[ArraySample], OneHotConformalSe
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class ArrayIntervalConformalSet(ArrayAxisProtected[ArraySample], ConformalSet):
+class ArrayIntervalConformalSet(ArrayAxisProtected[ArraySample], IntervalConformalSet):
     """Interval conformal set backed by a NumPy array storing lower and upper bounds."""
 
     array: np.ndarray

@@ -5,12 +5,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, override
 
 from lazy_dispatch.singledispatch import lazydispatch
+from probly.conformal.methods.classification._common import ConformalClassificationCalibrator
+from probly.conformal.methods.quantile_regression._common import ConformalQuantileRegressionCalibrator
+from probly.conformal.methods.regression._common import ConformalRegressionCalibrator
 from probly.conformal.utils import is_conformal_calibrated
 from probly.predictor._common import (
-    ConformalClassificationPredictor,
-    ConformalPredictor,
-    ConformalQuantileRegressionPredictor,
-    ConformalRegressionPredictor,
     predict_raw,
 )
 from probly.representation.conformal_set._common import (
@@ -21,22 +20,23 @@ from probly.representation.conformal_set._common import (
 )
 from probly.representation.sample import create_sample
 from probly.representation.sample.array import ArraySample
+from probly.representer import representer
+from probly.representer._representer import Representer
 
 if TYPE_CHECKING:
     import numpy as np
 
+    from probly.calibrator._common import ConformalCalibrator
     from probly.representation.sample._common import Sample
-from probly.representer import representer
-from probly.representer._representer import Representer
 
 
 class ConformalRepresenter[**In, Out: ConformalSet](Representer[Any, In, Out, ConformalSet]):
-    predictor: ConformalPredictor[In, Out]
+    predictor: ConformalCalibrator[In, Out]
 
 
-@representer.register(ConformalClassificationPredictor)
+@representer.register(ConformalClassificationCalibrator)
 class ConformalClassificationRepresenter[**In, Out: OneHotConformalSet](ConformalRepresenter[In, Out]):
-    predictor: ConformalClassificationPredictor[In, Out]
+    predictor: ConformalClassificationCalibrator[In, Out]
 
     @override
     def represent(self, *args: In.args, **kwargs: In.kwargs) -> OneHotConformalSet:
@@ -66,9 +66,9 @@ def flatten_sample_numpy(sample: ArraySample) -> np.ndarray:
     return sample.sample_mean()
 
 
-@representer.register(ConformalRegressionPredictor)
+@representer.register(ConformalRegressionCalibrator)
 class ConformalRegressionRepresenter[**In, Out: ConformalSet](ConformalRepresenter[In, Out]):
-    predictor: ConformalRegressionPredictor[In, Out]
+    predictor: ConformalRegressionCalibrator[In, Out]
 
     @override
     def represent(self, *args: In.args, **kwargs: In.kwargs) -> ConformalSet:
@@ -98,13 +98,13 @@ def flatten_ensemble_quantile_sample_numpy(sample: ArraySample) -> np.ndarray:
     return raw_array
 
 
-@representer.register(ConformalQuantileRegressionPredictor)
+@representer.register(ConformalQuantileRegressionCalibrator)
 class ConformalQuantileRegressionRepresenter[**In, Out: ConformalSet](ConformalRepresenter[In, Out]):
-    predictor: ConformalQuantileRegressionPredictor[In, Out]
+    predictor: ConformalQuantileRegressionCalibrator[In, Out]
 
     @override
     def represent(self, *args: In.args, **kwargs: In.kwargs) -> ConformalSet:
-        """Predict for a conformal quantile regression predictor."""
+        """Predict for a conformal quantile regression calibrator."""
         if not is_conformal_calibrated(self.predictor):
             msg = "The model must first be calibrated before it can be represented."
             raise ValueError(msg)
