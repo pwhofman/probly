@@ -92,7 +92,7 @@ print(f"Absolute Error — coverage: {coverage:.3f}, avg interval size: {avg_siz
 # Visualise prediction intervals
 # -------------------------------
 
-intervals = output.array.numpy()  # (n_test, 2)
+intervals = output.tensor.cpu().numpy()  # (n_test, 2)
 order = np.argsort(y_test_np)
 
 plt.figure(figsize=(9, 4))

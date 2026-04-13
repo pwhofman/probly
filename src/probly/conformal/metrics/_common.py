@@ -48,7 +48,7 @@ def _empirical_coverage_classification_array_onehot[T](y_pred: ArrayOneHotConfor
 
 @empirical_coverage_classification.register(TorchOneHotConformalSet)
 def _empirical_coverage_classification_torch_onehot[T](y_pred: TorchOneHotConformalSet, y_true: T) -> float:
-    return empirical_coverage_classification(y_pred.tensor.cpu().numpy(), y_true)
+    return empirical_coverage_classification(y_pred.tensor.cpu(), y_true)
 
 
 @empirical_coverage_regression.register(ArrayIntervalConformalSet)
@@ -58,7 +58,7 @@ def _empirical_coverage_regression_array_onehot[T](y_pred: ArrayIntervalConforma
 
 @empirical_coverage_regression.register(TorchIntervalConformalSet)
 def _empirical_coverage_regression_torch_interval[T](y_pred: TorchIntervalConformalSet, y_true: T) -> float:
-    return empirical_coverage_regression(y_pred.tensor.cpu().numpy(), y_true)
+    return empirical_coverage_regression(y_pred.tensor.cpu(), y_true)
 
 
 @empirical_coverage_regression.register(np.ndarray)
@@ -93,4 +93,4 @@ def _average_interval_size_array_interval(y_pred: ArrayIntervalConformalSet) -> 
 
 @average_interval_size.register(TorchIntervalConformalSet)
 def _average_interval_size_torch_interval(y_pred: TorchIntervalConformalSet) -> float:
-    return average_interval_size(y_pred.tensor.cpu().numpy())
+    return average_interval_size(y_pred.tensor.cpu())
