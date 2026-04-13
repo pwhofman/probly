@@ -140,6 +140,7 @@ exclude = [
     "docs/build",
     "supporting_files",
     "examples",
+    "web",
     "*.pyi",
 ]
 
@@ -194,6 +195,7 @@ convention = "google"
 ]
 "docs/**/*.py" = ["INP001", "PTH", "I002"]
 "src/probly_benchmark/*.py" = ["T201"]
+"experiments/**/*.py" = ["INP001", "T201", "D103"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 15
@@ -227,7 +229,7 @@ exclude_also = [
 exclude_lines = ["if TYPE_CHECKING"]
 
 [tool.ty.src]
-exclude = ["notebooks", "docs", "tests", "supporting_files", "examples", "stubs"]
+exclude = ["notebooks", "docs", "tests", "supporting_files", "examples", "experiments", "web", "stubs"]
 
 [tool.ty.environment]
 extra-paths = ["./stubs"]

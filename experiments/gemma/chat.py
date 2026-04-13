@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 import argparse
-from pathlib import Path
 
+from core import CACHE_DIR, suppress_hf_noise
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, TextStreamer
 
 MODEL_ID = "google/gemma-4-E2B-it"
-CACHE_DIR = Path(__file__).parent / "model_cache"
 EXIT_WORDS = {"exit", "quit", "/exit", "/quit", ":q"}
 
 
@@ -111,6 +110,8 @@ def main() -> None:
     args = parse_args()
     if args.seed is not None:
         torch.manual_seed(args.seed)
+
+    suppress_hf_noise()
 
     print(f"Loading {MODEL_ID}...")
     tokenizer = AutoTokenizer.from_pretrained(MODEL_ID, cache_dir=CACHE_DIR)

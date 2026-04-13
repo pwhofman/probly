@@ -1,13 +1,11 @@
-"""Download the smallest Gemma 4 model into a local cache directory."""
+"""Download the smallest Gemma 4 model into the shared data cache."""
 
 from __future__ import annotations
 
-from pathlib import Path
-
+from core import CACHE_DIR
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 MODEL_ID = "google/gemma-4-E2B-it"
-CACHE_DIR = Path(__file__).parent / "model_cache"
 
 
 def main() -> None:
