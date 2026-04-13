@@ -6,10 +6,6 @@
   <img src="docs/source/_static/logo/logo_light.png" alt="probly logo" width="300" />
 </picture>
 
-[![Watch the demo](https://drive.google.com/thumbnail?id=1gpQStxaR7VYS2GWcGmko8z-yMFSa2Gc6&sz=w640)](https://drive.google.com/file/d/1gpQStxaR7VYS2GWcGmko8z-yMFSa2Gc6/view?usp=share_link)
-
-*Click the image above to watch the demo video*
-
 [![PyPI version](https://badge.fury.io/py/probly.svg)](https://badge.fury.io/py/probly)
 [![PyPI status](https://img.shields.io/pypi/status/probly.svg?color=blue)](https://pypi.org/project/probly)
 [![PePy](https://static.pepy.tech/badge/probly?style=flat-square)](https://pepy.tech/project/probly)
@@ -17,28 +13,6 @@
 [![Contributions Welcome](https://img.shields.io/badge/contributions-welcome-brightgreen)](.github/CONTRIBUTING.md)
 [![License](https://img.shields.io/badge/License-MIT-brightgreen.svg)](https://opensource.org/licenses/MIT)
 </div>
-
-## Gemma 4 Demo
-
-The `web/` directory on the [`gemma4`](https://github.com/pwhofman/probly/tree/gemma4) branch
-contains a prototype that pairs `probly` with Gemma 4 to surface
-uncertainty directly in a chat interface. Note for running it yourself: We are dealing with a real local Gemma Model on your machine with full access. You have to perfrom the following:
-
-```sh
-git checkout gemma4
-
-# backend
-cd web/backend
-uv sync
-uv run uvicorn app.main:app --reload --port 8000
-
-# frontend (in a second terminal)
-cd web/frontend
-npm install
-npm run dev
-```
-
-Then open http://localhost:5173.
 
 ## 🛠️ Install
 `probly` is intended to work with **Python 3.12 and above**. Installation can be done via `pip` and
