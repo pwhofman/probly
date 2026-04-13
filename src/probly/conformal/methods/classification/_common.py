@@ -1,4 +1,4 @@
-"""Shared dropout implementation."""
+"""Shared conformal classification implementation."""
 
 from __future__ import annotations
 
