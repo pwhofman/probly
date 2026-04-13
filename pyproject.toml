@@ -239,3 +239,6 @@ include = ["tests/probly/**"]
 
 [tool.ty.overrides.rules]
 unresolved-import = "ignore"
+
+[tool.uv]
+override-dependencies = ["torch<2.11"] # no cuda 13
