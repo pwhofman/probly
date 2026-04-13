@@ -14,6 +14,7 @@ from probly.representation.distribution import (
     DirichletDistribution,
     Distribution,
     create_categorical_distribution,
+    create_categorical_distribution_from_logits,
 )
 from probly.utils.switchdispatch import switch
 
@@ -66,6 +67,13 @@ class IterablePredictor[**In, Out](Predictor[In, Iterable[Out]], Protocol):
 class RepresentationPredictor[**In, Out: Representation](Predictor[In, Out], Protocol):
     """Protocol for predictors that return a distribution over outputs."""
 
+    @classmethod
+    def __subclasshook__(cls, subclass: type) -> bool:
+        predict_method = getattr(subclass, "predict_representation", None)
+        if predict_method is not None and callable(predict_method):
+            return True
+        return NotImplemented
+
 
 @runtime_checkable
 class DistributionPredictor[**In, Out: Distribution](RepresentationPredictor[In, Out], Protocol):
@@ -111,6 +119,8 @@ def predict_raw[**In, Out](predictor: Predictor[In, Out], /, *args: In.args, **k
     without any conversion to a specific type. For most use cases, the `predict` function should be used instead,
     which will attempt to convert the output to the correct type using registered conversion functions.
     """
+    if isinstance(predictor, RepresentationPredictor) and hasattr(predictor, "predict_representation"):
+        return predictor.predict_representation(*args, **kwargs)  # ty:ignore[call-non-callable]
     if isinstance(predictor, CategoricalDistributionPredictor) and hasattr(predictor, "predict_proba"):
         return predictor.predict_proba(*args, **kwargs)  # ty:ignore[call-non-callable]
     if hasattr(predictor, "predict"):
@@ -131,9 +141,29 @@ def predict[**In, Out](predictor: Predictor[In, Out], /, *args: In.args, **kwarg
     return predict_raw(predictor, *args, **kwargs)
 
 
+@predict.register(RepresentationPredictor)
+def predict_representation[**In, Out](
+    predictor: RepresentationPredictor[In, Out], *args: In.args, **kwargs: In.kwargs
+) -> Out:
+    """Predict for a representation predictor."""
+    raw_prediction = predict_raw(predictor, *args, **kwargs)
+    if isinstance(raw_prediction, Representation):
+        return raw_prediction
+    msg = f"Expected predictor of type {type(predictor)} to return a Representation, but got {type(raw_prediction)}"
+    raise TypeError(msg)
+
+
 @predict.register(CategoricalDistributionPredictor)
 def predict_categorical_distribution[**In, Out: CategoricalDistribution](
     predictor: CategoricalDistributionPredictor[In, Out], *args: In.args, **kwargs: In.kwargs
 ) -> Out:
     """Predict for a categorical distribution predictor."""
     return create_categorical_distribution(predict_raw(predictor, *args, **kwargs))  # ty:ignore[invalid-return-type]
+
+
+@predict.register(LogitDistributionPredictor)
+def predict_categorical_distribution_from_logit[**In, Out: CategoricalDistribution](
+    predictor: CategoricalDistributionPredictor[In, Out], *args: In.args, **kwargs: In.kwargs
+) -> Out:
+    """Predict for a categorical distribution predictor."""
+    return create_categorical_distribution_from_logits(predict_raw(predictor, *args, **kwargs))  # ty:ignore[invalid-return-type]
