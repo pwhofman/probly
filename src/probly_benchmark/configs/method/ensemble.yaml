@@ -1,5 +1,5 @@
 # @package method
 name: "ensemble"
 params:
-  num_members: 3
+  num_members: 10
   reset_params: true
