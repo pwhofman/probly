@@ -5,7 +5,6 @@ from probly.lazy_types import TORCH_TENSOR, TORCH_TENSOR_LIKE
 from ._common import (
     CredalBNNRepresenter,
     CredalEnsemblingRepresenter,
-    CredalNetRepresenter,
     CredalRelativeLikelihoodRepresenter,
     CredalWrapperRepresenter,
     compute_credal_ensembling_set,
@@ -33,7 +32,6 @@ def _(_: type) -> None:
 __all__ = [
     "CredalBNNRepresenter",
     "CredalEnsemblingRepresenter",
-    "CredalNetRepresenter",
     "CredalRelativeLikelihoodRepresenter",
     "CredalWrapperRepresenter",
     "compute_credal_ensembling_set",

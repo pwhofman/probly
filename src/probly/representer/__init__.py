@@ -4,7 +4,6 @@ from ._representer import Representer, representer
 from .credal_ensembler import (
     CredalBNNRepresenter,
     CredalEnsemblingRepresenter,
-    CredalNetRepresenter,
     CredalRelativeLikelihoodRepresenter,
     CredalWrapperRepresenter,
 )
@@ -13,7 +12,6 @@ from .sampler import IterableSampler, Sampler
 __all__ = [
     "CredalBNNRepresenter",
     "CredalEnsemblingRepresenter",
-    "CredalNetRepresenter",
     "CredalRelativeLikelihoodRepresenter",
     "CredalWrapperRepresenter",
     "IterableSampler",

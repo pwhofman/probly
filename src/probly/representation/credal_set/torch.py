@@ -15,6 +15,7 @@ from probly.representation.credal_set._common import (
     ProbabilityIntervalsCredalSet,
     create_convex_credal_set,
     create_probability_intervals,
+    create_probability_intervals_from_lower_upper_array,
 )
 from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
 from probly.representation.sample.torch import TorchSample
@@ -148,3 +149,11 @@ class TorchProbabilityIntervalsCredalSet(
 create_probability_intervals.register(TorchCategoricalDistribution, TorchProbabilityIntervalsCredalSet.from_sample)
 create_probability_intervals.register(TorchSample, TorchProbabilityIntervalsCredalSet.from_torch_sample)
 create_convex_credal_set.register(TorchSample, TorchConvexCredalSet.from_torch_sample)
+
+
+@create_probability_intervals_from_lower_upper_array.register(torch.Tensor)
+def _create_probability_intervals_from_lower_upper_array(
+    bounds: torch.Tensor,
+) -> TorchProbabilityIntervalsCredalSet:
+    lower_bounds, upper_bounds = bounds.reshape(*bounds.shape[:-1], 2, -1).unbind(dim=-2)
+    return TorchProbabilityIntervalsCredalSet(lower_bounds, upper_bounds)

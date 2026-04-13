@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Literal, Protocol, Self
 
 from lazy_dispatch import lazydispatch
+from probly.representation.array_like import ArrayLike
 from probly.representation.distribution import CategoricalDistribution
 from probly.representation.representation import Representation
 
@@ -84,7 +85,7 @@ def dispatch_on_sample(sample: Sample, **_kwargs: object) -> object:
         return None
 
 
-@lazydispatch(dispatch_on=dispatch_on_sample)
+@lazydispatch
 def create_probability_intervals[T: CategoricalDistribution](sample: Sample[T]) -> ProbabilityIntervalsCredalSet:
     """Create a probability-interval credal set from a sample."""
     msg = f"No probability intervals factory registered for sample type {type(sample)}"
@@ -95,4 +96,13 @@ def create_probability_intervals[T: CategoricalDistribution](sample: Sample[T]) 
 def create_convex_credal_set[T: CategoricalDistribution](sample: Sample[T]) -> ConvexCredalSet[T]:
     """Create a convex credal set from a sample."""
     msg = f"No convex credal set factory registered for sample type {type(sample)}"
+    raise NotImplementedError(msg)
+
+
+@lazydispatch
+def create_probability_intervals_from_lower_upper_array[T: ArrayLike](
+    array: T,
+) -> ProbabilityIntervalsCredalSet:
+    """Create a probability-interval credal set from an array of lower and upper probabilities."""
+    msg = f"No probability intervals factory registered for sample type {type(array)}"
     raise NotImplementedError(msg)

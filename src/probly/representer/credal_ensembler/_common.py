@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, override
 
 from probly.method.credal_bnn import CredalBNNPredictor
-from probly.method.credal_net import CredalNetPredictor
 from probly.method.credal_relative_likelihood import CredalRelativeLikelihoodPredictor
 from probly.method.credal_wrapper import CredalWrapperPredictor
 from probly.method.efficient_credal_prediction import EfficientCredalPredictor
@@ -128,25 +127,6 @@ class CredalBNNRepresenter[**In, Out: CategoricalDistribution, C: ConvexCredalSe
     def represent(self, *args: In.args, **kwargs: In.kwargs) -> C:
         sample = self._predict(*args, **kwargs)
         cset = create_convex_credal_set(sample)
-        return cset  # ty:ignore[invalid-return-type]
-
-
-@representer.register(CredalNetPredictor)
-class CredalNetRepresenter[**In, Out: CategoricalDistribution, C: ProbabilityIntervalsCredalSet](
-    Representer[Any, In, Out, C]
-):
-    def __init__(self, predictor: CredalBNNPredictor) -> None:
-        super().__init__(predictor)
-
-    def _predict(self, *args: In.args, **kwargs: In.kwargs) -> Sample[Out]:
-        """Predict the outputs from the ensemble predictor."""
-        pred = predict(self.predictor, *args, **kwargs)
-        return create_sample(pred)
-
-    @override
-    def represent(self, *args: In.args, **kwargs: In.kwargs) -> C:
-        sample = compute_credal_net_set(self._predict(*args, **kwargs))
-        cset = create_probability_intervals(sample)
         return cset  # ty:ignore[invalid-return-type]
 
 
