@@ -13,29 +13,28 @@ if TYPE_CHECKING:
 
 
 @credal_relative_likelihood_traverser.register(nn.Module)
-def _(base: nn.Module, state: State) -> tuple[nn.Module, State]:
+def _(obj: nn.Module, state: State) -> tuple[nn.Module, State]:
     """Skip layers if last linear layer is initialized or raise error."""
     if not state[INITIALIZED]:
         msg = (
             f"Initialization of credal relative likelihood models "
             f"with last layer not being a linear layer is not possible. "
-            f"Found last layer to be of type {type(base)}"
+            f"Found last layer to be of type {type(obj)}"
         )
         raise ValueError(msg)
-    return base, state
+    return obj, state
 
 
 @credal_relative_likelihood_traverser.register(nn.Linear)
-def _(base: nn.Linear, state: State) -> tuple[nn.Module, State]:
+def _(obj: nn.Linear, state: State) -> tuple[nn.Module, State]:
     """Initialize last linear layer with class bias."""
     if not state[INITIALIZED]:
-        base.bias.data[(state[BIAS_CLS] - 1) % base.out_features] = state[TOBIAS_VALUE]
+        obj.bias.data[(state[BIAS_CLS] - 1) % obj.out_features] = state[TOBIAS_VALUE]
         state[INITIALIZED] = True
-    return base, state
+    return obj, state
 
 
-@credal_relative_likelihood_traverser.register(nn.Softmax)
-@credal_relative_likelihood_traverser.register(nn.Sequential)
-def _(base: nn.Softmax | nn.Sequential, state: State) -> tuple[nn.Module, State]:
+@credal_relative_likelihood_traverser.register(nn.Softmax | nn.Sequential)
+def _(obj: nn.Softmax | nn.Sequential, state: State) -> tuple[nn.Module, State]:
     """Skip softmax sequential layer at the end."""
-    return base, state
+    return obj, state

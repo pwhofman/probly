@@ -7,8 +7,7 @@ from typing import TYPE_CHECKING, Protocol
 from probly.method.ensemble import EnsemblePredictor
 from probly.method.method import predictor_transformation
 from probly.predictor import ProbabilisticClassifier
-from probly.traverse_nn import nn_compose
-from probly.traverse_nn.reset_traverser import reset_traverser
+from probly.traverse_nn import nn_compose, reset_traverser
 from pytraverse import TRAVERSE_REVERSED, GlobalVariable, lazydispatch_traverser, traverse
 
 if TYPE_CHECKING:
