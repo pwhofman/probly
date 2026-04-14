@@ -16,8 +16,6 @@ if TYPE_CHECKING:
 
 def skip_layer(obj: nn.Module, state: State) -> tuple[nn.Module, State]:
     """Traverser for torch HetNets."""
-    if state[LAST_LAYER]:
-        state[LAST_LAYER] = False
     return obj, state
 
 
@@ -39,11 +37,13 @@ def drop_in_place_het_layer(obj: nn.Linear, state: State) -> tuple[nn.Module, St
     return obj, state
 
 
-def ignore_layer(obj: nn.Sequential, state: State) -> tuple[nn.Module, State]:
-    """Skip last layer if it is a sequential."""
+def remove_layer(obj: nn.Softmax, state: State) -> tuple[nn.Module, State]:
+    """Remove the softmax layer."""
+    if state[LAST_LAYER]:
+        return nn.Identity(), state
     return obj, state
 
 
 register(nn.Module, skip_layer)
-register(nn.Sequential, ignore_layer)
+register(nn.Softmax, remove_layer)
 register(nn.Linear, drop_in_place_het_layer)

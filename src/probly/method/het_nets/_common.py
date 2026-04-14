@@ -5,12 +5,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from probly.method.method import predictor_transformation
-from probly.predictor import RandomPredictor
+from probly.predictor import Predictor, RandomPredictor
 from probly.traverse_nn import nn_compose
 from pytraverse import TRAVERSE_REVERSED, GlobalVariable, lazydispatch_traverser, traverse
 
 if TYPE_CHECKING:
-    from probly.predictor import Predictor
     from pytraverse.composition import RegisteredLooseTraverser
 
 
@@ -34,7 +33,7 @@ def register(cls: type, traverser: RegisteredLooseTraverser) -> None:
     hetnets_traverser.register(cls=cls, traverser=traverser, vars={"last_layer": LAST_LAYER})
 
 
-@predictor_transformation(permitted_predictor_types=None, preserve_predictor_type=True)
+@predictor_transformation(permitted_predictor_types=None, preserve_predictor_type=False)
 @HetNetsPredictor.register_factory
 def het_nets[T: Predictor](
     base: T,
