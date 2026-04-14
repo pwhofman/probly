@@ -1,11 +1,13 @@
-"""Semantic calibration experiment on TriviaQA with Gemma.
+"""Step 1: Generate responses, cluster semantically, compute entropy/confidence.
 
-Generates multiple responses per question, clusters semantically, checks
-correctness against ground-truth answer aliases, and saves results as JSON.
+Generates multiple responses per question from Gemma, clusters them via
+NLI-based semantic equivalence, and computes entropy and confidence scores.
+Does NOT perform correctness checking -- that is deferred to ``analyze.py``.
+
 Supports incremental saving (JSONL partial file) and resume after crash.
 
 Usage:
-    uv run python gemma/calibration/run_experiment.py \
+    uv run python gemma/calibration/generate.py \
         --num-questions 200 --num-samples 10 --temperature 0.7 \
         --seed 42 --output data/results/run_t07_s42.json
 """
@@ -29,11 +31,9 @@ from core import (
     weighted_semantic_entropy,
 )
 from core.calibration import (
-    compute_aggregates,
     compute_semantic_confidence_discrete,
     compute_semantic_confidence_weighted,
 )
-from core.correctness import check_cluster_correctness
 from datasets import load_dataset
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -70,15 +70,6 @@ def load_trivia_questions(
     return questions
 
 
-def check_correctness_multi_alias(
-    cluster_responses: list[str],
-    answer_aliases: list[str],
-    entailment_model: EntailmentModel,
-) -> bool:
-    """Check if a cluster is correct against any answer alias."""
-    return any(check_cluster_correctness(cluster_responses, alias, entailment_model) for alias in answer_aliases)
-
-
 def load_partial_results(partial_path: Path) -> list[dict]:
     """Load previously completed results from JSONL partial file."""
     if not partial_path.exists():
@@ -108,7 +99,7 @@ def process_question(
     temperature: float,
     max_new_tokens: int,
 ) -> dict:
-    """Run the full pipeline for a single question."""
+    """Run generation and semantic clustering for a single question."""
     question = question_data["question"]
     answer_aliases = question_data["answer_aliases"]
 
@@ -131,24 +122,14 @@ def process_question(
         log_likelihoods,
     )
 
-    cluster_resps: dict[int, list[str]] = {}
-    for sid, resp in zip(semantic_ids, responses, strict=True):
-        cluster_resps.setdefault(sid, []).append(resp)
-
-    is_correct_d = check_correctness_multi_alias(
-        cluster_resps[mode_d],
-        answer_aliases,
-        entailment,
-    )
-    is_correct_w = (
-        is_correct_d
-        if mode_w == mode_d
-        else check_correctness_multi_alias(
-            cluster_resps[mode_w],
-            answer_aliases,
-            entailment,
-        )
-    )
+    # Build clusters dict keyed by semantic ID
+    clusters: dict[str, dict] = {}
+    for sid, resp, idx in zip(semantic_ids, responses, range(len(responses)), strict=False):
+        key = str(sid)
+        if key not in clusters:
+            clusters[key] = {"representative": resp, "count": 0, "response_indices": []}
+        clusters[key]["count"] += 1
+        clusters[key]["response_indices"].append(idx)
 
     return {
         "question": question,
@@ -156,10 +137,13 @@ def process_question(
         "responses": responses,
         "log_likelihoods": log_likelihoods,
         "semantic_ids": semantic_ids,
+        "clusters": clusters,
+        "mode_cluster_discrete": mode_d,
+        "mode_cluster_weighted": mode_w,
         "confidence_discrete": conf_d,
         "confidence_weighted": conf_w,
-        "is_correct_discrete": is_correct_d,
-        "is_correct_weighted": is_correct_w,
+        "is_correct_discrete": None,
+        "is_correct_weighted": None,
         "entropy_discrete": se_discrete,
         "entropy_weighted": se_weighted,
         "num_clusters": len(set(semantic_ids)),
@@ -176,7 +160,7 @@ def save_final_results(
     payload = {
         "metadata": metadata,
         "results": results,
-        "aggregate": compute_aggregates(results),
+        "aggregate": None,
     }
     with output_path.open("w") as f:
         json.dump(payload, f, indent=2)
@@ -229,22 +213,42 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def main() -> None:
-    """Run the semantic calibration experiment."""
-    args = parse_args()
-    torch.manual_seed(args.seed)
+def generate_main(
+    *,
+    num_questions: int = 200,
+    num_samples: int = 10,
+    temperature: float = 0.7,
+    max_new_tokens: int = 128,
+    nli_model: str = "microsoft/deberta-base-mnli",
+    seed: int = 42,
+    output: str | Path | None = None,
+) -> Path:
+    """Run the generation and semantic clustering pipeline.
 
+    Args:
+        num_questions: Number of TriviaQA questions to sample.
+        num_samples: Number of responses to generate per question.
+        temperature: Sampling temperature for generation.
+        max_new_tokens: Maximum tokens per generated response.
+        nli_model: HuggingFace model ID for NLI-based entailment.
+        seed: Random seed for reproducibility.
+        output: Path for the output JSON file.
+
+    Returns:
+        Path to the saved results JSON file.
+    """
+    torch.manual_seed(seed)
     suppress_hf_noise()
 
-    output_path = Path(args.output)
+    output_path = Path(output) if output is not None else DATA_DIR / "results" / "run.json"
     partial_path = Path(str(output_path) + ".partial")
 
     # Resume support: load any previously completed results
     completed = load_partial_results(partial_path)
     start_idx = len(completed)
 
-    print(f"Loading TriviaQA (sampling {args.num_questions} questions, seed={args.seed})...")
-    questions = load_trivia_questions(args.num_questions, args.seed)
+    print(f"Loading TriviaQA (sampling {num_questions} questions, seed={seed})...")
+    questions = load_trivia_questions(num_questions, seed)
 
     if start_idx > 0:
         print(f"Resuming from question {start_idx + 1} ({start_idx} already completed)")
@@ -258,11 +262,11 @@ def main() -> None:
     )
     model.eval()
 
-    print(f"Loading NLI model: {args.nli_model}")
-    entailment = EntailmentModel(args.nli_model)
+    print(f"Loading NLI model: {nli_model}")
+    entailment = EntailmentModel(nli_model)
 
     total = len(questions)
-    print(f"\nRunning: {total} questions, {args.num_samples} samples each, temperature={args.temperature}\n")
+    print(f"\nRunning: {total} questions, {num_samples} samples each, temperature={temperature}\n")
 
     results = list(completed)
     for i in range(start_idx, total):
@@ -275,47 +279,51 @@ def main() -> None:
             model,
             tokenizer,
             entailment,
-            args.num_samples,
-            args.temperature,
-            args.max_new_tokens,
+            num_samples,
+            temperature,
+            max_new_tokens,
         )
         results.append(result)
         append_partial_result(partial_path, result)
 
         elapsed = time.time() - t0
-        correct = "Y" if result["is_correct_discrete"] else "N"
         print(
             f"  -> clusters={result['num_clusters']}, "
             f"conf={result['confidence_discrete']:.3f}, "
-            f"correct={correct}, "
             f"entropy={result['entropy_discrete']:.3f} "
             f"({elapsed:.1f}s)"
         )
 
     # Consolidate into final JSON
     metadata = {
+        "step": "generate",
         "model": MODEL_ID,
-        "nli_model": args.nli_model,
-        "temperature": args.temperature,
-        "num_samples": args.num_samples,
+        "nli_model": nli_model,
+        "temperature": temperature,
+        "num_samples": num_samples,
         "num_questions": total,
-        "seed": args.seed,
+        "seed": seed,
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S"),
     }
     save_final_results(output_path, metadata, results)
     print(f"\nResults saved to {output_path}")
-
-    # Print summary
-    agg = compute_aggregates(results)
-    print(f"Accuracy: {agg['accuracy']:.1%}")
-    print(f"ECE (discrete): {agg['ece_discrete']:.4f}")
-    print(f"ACE (discrete): {agg['ace_discrete']:.4f}")
 
     # Clean up partial file
     if partial_path.exists():
         partial_path.unlink()
         print(f"Cleaned up {partial_path}")
 
+    return output_path
+
 
 if __name__ == "__main__":
-    main()
+    args = parse_args()
+    generate_main(
+        num_questions=args.num_questions,
+        num_samples=args.num_samples,
+        temperature=args.temperature,
+        max_new_tokens=args.max_new_tokens,
+        nli_model=args.nli_model,
+        seed=args.seed,
+        output=args.output,
+    )

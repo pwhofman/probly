@@ -1,8 +1,8 @@
 """Generate publication-quality figures from semantic calibration results.
 
-Loads one or more JSON result files from run_experiment.py and produces
-four figures: reliability diagram, confidence scatter, entropy distribution,
-and calibration comparison bar chart.
+Loads one or more JSON result files and produces figures: reliability diagram,
+confidence scatter, entropy distribution, and calibration comparison bar chart.
+Handles partially-reviewed files by filtering out results with null correctness.
 
 Usage:
     uv run python gemma/calibration/plot_calibration.py \
@@ -70,6 +70,11 @@ def _has_llm_judge(run: dict) -> bool:
     return "is_correct_discrete_llm" in run["results"][0]
 
 
+def _filter_labeled(results: list[dict], corr_key: str = "is_correct_discrete") -> list[dict]:
+    """Return only results where the correctness field is not None."""
+    return [r for r in results if r.get(corr_key) is not None]
+
+
 def plot_reliability_diagram(runs: list[dict], output_dir: Path) -> None:
     """Figure 1: Reliability diagram with calibration overlays."""
     n_runs = len(runs)
@@ -77,9 +82,11 @@ def plot_reliability_diagram(runs: list[dict], output_dir: Path) -> None:
 
     for col, run in enumerate(runs):
         ax = axes[0, col]
-        results = run["results"]
-        conf = np.array([r["confidence_discrete"] for r in results])
-        corr = np.array([float(r["is_correct_discrete"]) for r in results])
+        labeled = _filter_labeled(run["results"])
+        if not labeled:
+            continue
+        conf = np.array([r["confidence_discrete"] for r in labeled])
+        corr = np.array([float(r["is_correct_discrete"]) for r in labeled])
 
         # Diagonal reference
         ax.plot([0, 1], [0, 1], "k--", alpha=0.4, label="Perfect")
@@ -139,9 +146,11 @@ def plot_confidence_scatter(runs: list[dict], output_dir: Path) -> None:
     fig, ax = plt.subplots(figsize=(6, 4))
 
     for i, run in enumerate(runs):
-        results = run["results"]
-        conf = np.array([r["confidence_discrete"] for r in results])
-        corr = np.array([float(r["is_correct_discrete"]) for r in results])
+        labeled = _filter_labeled(run["results"])
+        if not labeled:
+            continue
+        conf = np.array([r["confidence_discrete"] for r in labeled])
+        corr = np.array([float(r["is_correct_discrete"]) for r in labeled])
 
         # Jitter correctness for visibility
         rng = np.random.default_rng(seed=42 + i)
@@ -199,9 +208,11 @@ def plot_entropy_distribution(runs: list[dict], output_dir: Path) -> None:
 
     for col, run in enumerate(runs):
         ax = axes[0, col]
-        results = run["results"]
-        entropy = np.array([r["entropy_discrete"] for r in results])
-        corr = np.array([r["is_correct_discrete"] for r in results])
+        labeled = _filter_labeled(run["results"])
+        if not labeled:
+            continue
+        entropy = np.array([r["entropy_discrete"] for r in labeled])
+        corr = np.array([r["is_correct_discrete"] for r in labeled])
 
         ax.hist(
             entropy[corr.astype(bool)],
@@ -241,9 +252,11 @@ def plot_calibration_comparison(runs: list[dict], output_dir: Path) -> None:
     fig, ax = plt.subplots(figsize=(7, 4))
 
     for i, run in enumerate(runs):
-        results = run["results"]
-        conf = np.array([r["confidence_discrete"] for r in results])
-        corr = np.array([float(r["is_correct_discrete"]) for r in results])
+        labeled = _filter_labeled(run["results"])
+        if not labeled:
+            continue
+        conf = np.array([r["confidence_discrete"] for r in labeled])
+        corr = np.array([float(r["is_correct_discrete"]) for r in labeled])
 
         aces = []
         for cls in calibrator_classes:
@@ -440,7 +453,7 @@ def parse_args() -> argparse.Namespace:
         "--results",
         nargs="+",
         required=True,
-        help="One or more JSON result files from run_experiment.py.",
+        help="One or more JSON result files from generate.py.",
     )
     parser.add_argument(
         "--output",
@@ -449,6 +462,25 @@ def parse_args() -> argparse.Namespace:
         help="Output directory for figures (default: data/figures).",
     )
     return parser.parse_args()
+
+
+def generate_all_plots(runs: list[dict], output_dir: Path) -> None:
+    """Generate all figures from loaded run data.
+
+    Args:
+        runs: List of run dicts, each with ``metadata``, ``results``, ``aggregate``.
+        output_dir: Directory to write figure files into.
+    """
+    output_dir.mkdir(parents=True, exist_ok=True)
+    plot_reliability_diagram(runs, output_dir)
+    plot_confidence_scatter(runs, output_dir)
+    plot_entropy_distribution(runs, output_dir)
+    plot_calibration_comparison(runs, output_dir)
+
+    # LLM judge comparison plots (only generated if judge data present)
+    plot_judge_agreement(runs, output_dir)
+    plot_reliability_comparison(runs, output_dir)
+    plot_calibration_comparison_llm(runs, output_dir)
 
 
 def main() -> None:
@@ -464,15 +496,7 @@ def main() -> None:
         print(f"  {label}: {n} questions")
 
     print(f"\nGenerating figures in {output_dir}/")
-    plot_reliability_diagram(runs, output_dir)
-    plot_confidence_scatter(runs, output_dir)
-    plot_entropy_distribution(runs, output_dir)
-    plot_calibration_comparison(runs, output_dir)
-
-    # LLM judge comparison plots (only generated if judge data present)
-    plot_judge_agreement(runs, output_dir)
-    plot_reliability_comparison(runs, output_dir)
-    plot_calibration_comparison_llm(runs, output_dir)
+    generate_all_plots(runs, output_dir)
 
     print("\nDone!")
 

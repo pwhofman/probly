@@ -1,6 +1,6 @@
 """Post-hoc LLM judge evaluation on existing calibration results.
 
-Reads a result JSON from run_experiment.py, sends each question's mode-cluster
+Reads a result JSON from generate.py, sends each question's mode-cluster
 representative to a Claude judge, and writes an augmented JSON with both NLI
 and LLM judge correctness labels plus comparison metrics.
 
@@ -136,7 +136,7 @@ def parse_args() -> argparse.Namespace:
         "--input",
         type=str,
         required=True,
-        help="Input JSON result file from run_experiment.py.",
+        help="Input JSON result file from generate.py.",
     )
     parser.add_argument(
         "--output",
