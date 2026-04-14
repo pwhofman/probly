@@ -247,3 +247,31 @@ def leave_one_out_evaluate(
 
     ace = average_calibration_error(calibrated, correctness)
     return ace, calibrated
+
+
+def compute_aggregates(
+    results: list[dict],
+    correctness_key_discrete: str = "is_correct_discrete",
+    correctness_key_weighted: str = "is_correct_weighted",
+) -> dict:
+    """Compute aggregate calibration metrics from per-question results.
+
+    Args:
+        results: List of per-question result dicts. Each must contain
+            ``confidence_discrete``, ``confidence_weighted``, and the
+            correctness keys.
+        correctness_key_discrete: Key for discrete correctness values.
+        correctness_key_weighted: Key for weighted correctness values.
+    """
+    conf_d = np.array([r["confidence_discrete"] for r in results])
+    conf_w = np.array([r["confidence_weighted"] for r in results])
+    corr_d = np.array([float(r[correctness_key_discrete]) for r in results])
+    corr_w = np.array([float(r[correctness_key_weighted]) for r in results])
+
+    return {
+        "ece_discrete": float(expected_calibration_error(conf_d, corr_d)),
+        "ece_weighted": float(expected_calibration_error(conf_w, corr_w)),
+        "ace_discrete": float(average_calibration_error(conf_d, corr_d)),
+        "ace_weighted": float(average_calibration_error(conf_w, corr_w)),
+        "accuracy": float(corr_d.mean()),
+    }

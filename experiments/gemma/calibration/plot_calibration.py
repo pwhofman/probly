@@ -63,6 +63,13 @@ def label_for_run(run: dict) -> str:
     return f"T={t}"
 
 
+def _has_llm_judge(run: dict) -> bool:
+    """Check if a run contains LLM judge results."""
+    if not run["results"]:
+        return False
+    return "is_correct_discrete_llm" in run["results"][0]
+
+
 def plot_reliability_diagram(runs: list[dict], output_dir: Path) -> None:
     """Figure 1: Reliability diagram with calibration overlays."""
     n_runs = len(runs)
@@ -268,6 +275,155 @@ def plot_calibration_comparison(runs: list[dict], output_dir: Path) -> None:
     _save(fig, output_dir, "calibration_comparison")
 
 
+def plot_judge_agreement(runs: list[dict], output_dir: Path) -> None:
+    """NLI vs LLM judge agreement confusion matrix."""
+    judged = [r for r in runs if _has_llm_judge(r)]
+    if not judged:
+        return
+
+    n = len(judged)
+    fig, axes = plt.subplots(1, n, figsize=(4.5 * n, 4), squeeze=False)
+
+    for col, run in enumerate(judged):
+        ax = axes[0, col]
+        results = run["results"]
+        nli = np.array([r["is_correct_discrete"] for r in results])
+        llm = np.array([r["is_correct_discrete_llm"] for r in results])
+
+        both_correct = int(np.sum(nli & llm))
+        nli_only = int(np.sum(nli & ~llm))
+        llm_only = int(np.sum(~nli & llm))
+        both_wrong = int(np.sum(~nli & ~llm))
+        matrix = np.array([[both_correct, nli_only], [llm_only, both_wrong]])
+
+        im = ax.imshow(matrix, cmap="Blues", aspect="auto")
+        for (j, k), val in np.ndenumerate(matrix):
+            ax.text(
+                k,
+                j,
+                str(val),
+                ha="center",
+                va="center",
+                fontsize=14,
+                color="white" if val > matrix.max() / 2 else "black",
+            )
+
+        ax.set_xticks([0, 1])
+        ax.set_xticklabels(["LLM Correct", "LLM Incorrect"])
+        ax.set_yticks([0, 1])
+        ax.set_yticklabels(["NLI Correct", "NLI Incorrect"])
+        ax.set_title(f"Judge Agreement ({label_for_run(run)})")
+        fig.colorbar(im, ax=ax, shrink=0.8)
+
+    fig.tight_layout()
+    _save(fig, output_dir, "judge_agreement")
+
+
+def plot_reliability_comparison(runs: list[dict], output_dir: Path) -> None:
+    """Side-by-side reliability diagrams -- NLI vs LLM judge."""
+    judged = [r for r in runs if _has_llm_judge(r)]
+    if not judged:
+        return
+
+    n = len(judged)
+    fig, axes = plt.subplots(n, 2, figsize=(10, 4.5 * n), squeeze=False)
+
+    for row, run in enumerate(judged):
+        results = run["results"]
+        conf = np.array([r["confidence_discrete"] for r in results])
+
+        for panel, (corr_key, title_suffix) in enumerate(
+            [
+                ("is_correct_discrete", "NLI Judge"),
+                ("is_correct_discrete_llm", "LLM Judge"),
+            ]
+        ):
+            ax = axes[row, panel]
+            corr = np.array([float(r[corr_key]) for r in results])
+
+            ax.plot([0, 1], [0, 1], "k--", alpha=0.4, label="Perfect")
+
+            centers, accs, counts = reliability_diagram_data(conf, corr, n_bins=10)
+            mask = counts > 0
+            ax.bar(
+                centers[mask],
+                accs[mask],
+                width=0.08,
+                alpha=0.3,
+                color=COLORS[0],
+                label="Uncalibrated",
+            )
+            ax.plot(centers[mask], accs[mask], "o-", color=COLORS[0], markersize=4)
+
+            ax.set_xlabel("Confidence")
+            ax.set_ylabel("Accuracy")
+            ax.set_title(f"{title_suffix} ({label_for_run(run)})")
+            ax.set_xlim(0, 1)
+            ax.set_ylim(0, 1)
+            ax.legend(loc="lower right")
+
+    fig.tight_layout()
+    _save(fig, output_dir, "reliability_comparison")
+
+
+def plot_calibration_comparison_llm(runs: list[dict], output_dir: Path) -> None:
+    """ACE bar chart with both NLI and LLM judge variants."""
+    judged = [r for r in runs if _has_llm_judge(r)]
+    if not judged:
+        return
+
+    methods = ["Uncalibrated", "Temperature", "Platt", "Isotonic"]
+    calibrator_classes = [None, TemperatureScaler, PlattScaler, IsotonicCalibrator]
+
+    n_groups = len(methods)
+    n_bars = len(judged) * 2
+    width = 0.8 / n_bars
+    x = np.arange(n_groups)
+
+    fig, ax = plt.subplots(figsize=(9, 4.5))
+
+    bar_idx = 0
+    for run in judged:
+        results = run["results"]
+        conf = np.array([r["confidence_discrete"] for r in results])
+
+        for judge_name, corr_key in [
+            ("NLI", "is_correct_discrete"),
+            ("LLM", "is_correct_discrete_llm"),
+        ]:
+            corr = np.array([float(r[corr_key]) for r in results])
+            aces = []
+            for cls in calibrator_classes:
+                if cls is None:
+                    aces.append(float(average_calibration_error(conf, corr)))
+                else:
+                    cal = cls()
+                    cal.fit(conf, corr)
+                    cal_conf = cal.calibrate(conf)
+                    aces.append(float(average_calibration_error(cal_conf, corr)))
+
+            offset = (bar_idx - (n_bars - 1) / 2) * width
+            color_idx = bar_idx % len(COLORS)
+            ax.bar(
+                x + offset,
+                aces,
+                width,
+                label=f"{label_for_run(run)} ({judge_name})",
+                color=COLORS[color_idx],
+                alpha=0.8,
+            )
+            bar_idx += 1
+
+    ax.set_xlabel("Calibration Method")
+    ax.set_ylabel("ACE (lower is better)")
+    ax.set_title("Calibration Comparison: NLI vs LLM Judge")
+    ax.set_xticks(x)
+    ax.set_xticklabels(methods)
+    ax.legend()
+    fig.tight_layout()
+    _save(fig, output_dir, "calibration_comparison_llm")
+
+
 def _save(fig: plt.Figure, output_dir: Path, name: str) -> None:
     """Save figure as both PDF and PNG."""
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -312,6 +468,11 @@ def main() -> None:
     plot_confidence_scatter(runs, output_dir)
     plot_entropy_distribution(runs, output_dir)
     plot_calibration_comparison(runs, output_dir)
+
+    # LLM judge comparison plots (only generated if judge data present)
+    plot_judge_agreement(runs, output_dir)
+    plot_reliability_comparison(runs, output_dir)
+    plot_calibration_comparison_llm(runs, output_dir)
 
     print("\nDone!")
 

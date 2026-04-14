@@ -29,14 +29,12 @@ from core import (
     weighted_semantic_entropy,
 )
 from core.calibration import (
-    average_calibration_error,
+    compute_aggregates,
     compute_semantic_confidence_discrete,
     compute_semantic_confidence_weighted,
-    expected_calibration_error,
 )
 from core.correctness import check_cluster_correctness
 from datasets import load_dataset
-import numpy as np
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
@@ -165,22 +163,6 @@ def process_question(
         "entropy_discrete": se_discrete,
         "entropy_weighted": se_weighted,
         "num_clusters": len(set(semantic_ids)),
-    }
-
-
-def compute_aggregates(results: list[dict]) -> dict:
-    """Compute aggregate calibration metrics from per-question results."""
-    conf_d = np.array([r["confidence_discrete"] for r in results])
-    conf_w = np.array([r["confidence_weighted"] for r in results])
-    corr_d = np.array([float(r["is_correct_discrete"]) for r in results])
-    corr_w = np.array([float(r["is_correct_weighted"]) for r in results])
-
-    return {
-        "ece_discrete": float(expected_calibration_error(conf_d, corr_d)),
-        "ece_weighted": float(expected_calibration_error(conf_w, corr_w)),
-        "ace_discrete": float(average_calibration_error(conf_d, corr_d)),
-        "ace_weighted": float(average_calibration_error(conf_w, corr_w)),
-        "accuracy": float(corr_d.mean()),
     }
 
 
