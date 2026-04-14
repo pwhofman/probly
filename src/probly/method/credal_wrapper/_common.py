@@ -21,7 +21,7 @@ class CredalWrapperPredictor[**In, Out](EnsemblePredictor[In, Out], Protocol):
 @CredalWrapperPredictor.register_factory
 def credal_wrapper[**In, Out](
     base: Predictor[In, Out], num_members: int, reset_params: bool = True
-) -> EnsemblePredictor[In, Out]:
+) -> CredalWrapperPredictor[In, Out]:
     """Create a credal wrapper predictor from a base predictor based on :cite:`wangCredalWrapper2024`.
 
     Args:

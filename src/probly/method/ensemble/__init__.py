@@ -10,6 +10,7 @@ from ._common import (
     EnsemblePredictor,
     ensemble,
     ensemble_generator,
+    register_ensemble_members,
 )
 
 EnsemblePredictor.register(
@@ -49,4 +50,5 @@ __all__ = [
     "EnsemblePredictor",
     "ensemble",
     "ensemble_generator",
+    "register_ensemble_members",
 ]
