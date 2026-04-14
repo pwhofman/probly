@@ -12,6 +12,7 @@ from probly.representation.distribution._common import (
     CategoricalDistribution,
     CategoricalDistributionSample,
     create_categorical_distribution,
+    create_categorical_distribution_from_logits,
 )
 from probly.representation.sample.torch import TorchSample
 
@@ -159,3 +160,10 @@ def _create_torch_categorical_distribution_from_instance(
     data: TorchCategoricalDistribution,
 ) -> TorchCategoricalDistribution:
     return data
+
+
+@create_categorical_distribution_from_logits.register(torch.Tensor)
+def _create_torch_categorical_distribution_from_logits(
+    data: torch.Tensor,
+) -> TorchCategoricalDistribution:
+    return TorchCategoricalDistribution(torch.softmax(data, dim=-1))

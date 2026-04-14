@@ -83,7 +83,7 @@ def collect_outputs_targets(
     outputs = []
     targets = []
 
-    for inputs, targets_ in tqdm(loader, desc="Predicting"):
+    for inputs, targets_ in tqdm(loader, desc="Batch"):
         if amp_enabled:
             with torch.amp.autocast(device.type):
                 outputs_ = rep.predict(inputs.to(device))
@@ -153,7 +153,7 @@ def load_model_from_wandb(
         pretrained=cfg.get("pretrained", False),
         train_loader=None,
     )
-    model: torch.nn.Module = build_model(cfg["method"]["name"], method_params, ctx)  # ty: ignore[invalid-assignment]
+    model: torch.nn.Module = build_model(cfg["method"]["name"], method_params, ctx)
     model.load_state_dict(checkpoint["model_state_dict"])
     model.to(device)
     model.eval()

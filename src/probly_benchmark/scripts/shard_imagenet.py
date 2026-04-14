@@ -14,6 +14,7 @@ IMAGE_SUFFIXES = {".jpeg", ".jpg", ".png"}
 
 def main(root: Path, output_dir: Path, split: str, maxcount: int) -> None:
     """Shard an ImageNet split directory into WebDataset tar files."""
+    random.seed(1)
     split_dir = root / split
     output_dir.mkdir(parents=True, exist_ok=True)
     output_pattern = str(output_dir / f"imagenet-{split}-%06d.tar")

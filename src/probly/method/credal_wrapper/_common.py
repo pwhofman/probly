@@ -17,11 +17,11 @@ class CredalWrapperPredictor[**In, Out](EnsemblePredictor[In, Out], Protocol):
     """A predictor that applies the credal wrapper representer."""
 
 
-@predictor_transformation(permitted_predictor_types=(ProbabilisticClassifier,))
+@predictor_transformation(permitted_predictor_types=(ProbabilisticClassifier,), preserve_predictor_type=False)
 @CredalWrapperPredictor.register_factory
 def credal_wrapper[**In, Out](
     base: Predictor[In, Out], num_members: int, reset_params: bool = True
-) -> EnsemblePredictor[In, Out]:
+) -> CredalWrapperPredictor[In, Out]:
     """Create a credal wrapper predictor from a base predictor based on :cite:`wangCredalWrapper2024`.
 
     Args:

@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Protocol, runtime_checkable
 from probly.method.ensemble import EnsembleCategoricalDistributionPredictor
 from probly.method.ensemble._common import ensemble
 from probly.method.method import predictor_transformation
-from probly.predictor import ProbabilisticClassifier
+from probly.predictor import LogitClassifier, ProbabilisticClassifier
 from probly.representation.distribution import CategoricalDistribution
 
 if TYPE_CHECKING:
@@ -21,7 +21,13 @@ class CredalEnsemblingPredictor[**In, Out: CategoricalDistribution](
     """A predictor that applies the credal ensembling representer."""
 
 
-@predictor_transformation(permitted_predictor_types=(ProbabilisticClassifier,), preserve_predictor_type=False)
+@predictor_transformation(
+    permitted_predictor_types=(
+        ProbabilisticClassifier,
+        LogitClassifier,
+    ),
+    preserve_predictor_type=False,
+)
 @CredalEnsemblingPredictor.register_factory
 def credal_ensembling[**In, Out: CategoricalDistribution](
     base: Predictor[In, Out], num_members: int, reset_params: bool = True

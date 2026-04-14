@@ -34,18 +34,11 @@ def _ensure_array_categorical_distribution(value: object) -> ArrayCategoricalDis
     return ArrayCategoricalDistribution(np.asarray(value))
 
 
-def _sample_probabilities(
-    sample: ArraySample[ArrayCategoricalDistribution],
-    distribution_axis: int = -1,
-) -> np.ndarray:
+def _sample_probabilities(sample: ArraySample[ArrayCategoricalDistribution]) -> np.ndarray:
     sample_values = sample.samples
     if not isinstance(sample_values, ArrayCategoricalDistribution):
         msg = "Array categorical credal sets require samples of ArrayCategoricalDistribution."
         raise TypeError(msg)
-
-    if distribution_axis != -1:
-        msg = "distribution_axis is only supported as -1 for distribution-backed samples."
-        raise ValueError(msg)
 
     return sample_values.unnormalized_probabilities
 
@@ -96,12 +89,8 @@ class ArrayDiscreteCredalSet(
 
     @override
     @classmethod
-    def from_array_sample(
-        cls,
-        sample: ArraySample[ArrayCategoricalDistribution],
-        distribution_axis: int = -1,
-    ) -> Self:
-        probabilities = _sample_probabilities(sample, distribution_axis)
+    def from_array_sample(cls, sample: ArraySample[ArrayCategoricalDistribution]) -> Self:
+        probabilities = _sample_probabilities(sample)
         members = np.moveaxis(probabilities, 0, -2)
         return cls(array=ArrayCategoricalDistribution(members))
 
@@ -183,12 +172,8 @@ class ArrayDistanceBasedCredalSet(
 
     @override
     @classmethod
-    def from_array_sample(
-        cls,
-        sample: ArraySample[ArrayCategoricalDistribution],
-        distribution_axis: int = -1,
-    ) -> Self:
-        probabilities = _sample_probabilities(sample, distribution_axis)
+    def from_array_sample(cls, sample: ArraySample[ArrayCategoricalDistribution]) -> Self:
+        probabilities = _sample_probabilities(sample)
         nominal = np.mean(probabilities, axis=0)
         diff = np.abs(probabilities - nominal)
         tv_dists = 0.5 * np.sum(diff, axis=-1)
@@ -257,12 +242,8 @@ class ArrayProbabilityIntervalsCredalSet(
 
     @override
     @classmethod
-    def from_array_sample(
-        cls,
-        sample: ArraySample[ArrayCategoricalDistribution],
-        distribution_axis: int = -1,
-    ) -> Self:
-        probabilities = _sample_probabilities(sample, distribution_axis)
+    def from_array_sample(cls, sample: ArraySample[ArrayCategoricalDistribution]) -> Self:
+        probabilities = _sample_probabilities(sample)
         lower_bounds = np.min(probabilities, axis=0)
         upper_bounds = np.max(probabilities, axis=0)
         return cls(
@@ -318,12 +299,8 @@ class ArraySingletonCredalSet(
 
     @override
     @classmethod
-    def from_array_sample(
-        cls,
-        sample: ArraySample[ArrayCategoricalDistribution],
-        distribution_axis: int = -1,
-    ) -> Self:
-        probabilities = _sample_probabilities(sample, distribution_axis)
+    def from_array_sample(cls, sample: ArraySample[ArrayCategoricalDistribution]) -> Self:
+        probabilities = _sample_probabilities(sample)
         return cls(array=ArrayCategoricalDistribution(np.mean(probabilities, axis=0)))
 
     @override
