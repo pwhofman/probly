@@ -15,6 +15,7 @@ from dataclasses import dataclass, field
 
 from core import (
     CACHE_DIR,
+    DEFAULT_NLI_MODEL,
     EntailmentModel,
     cluster_assignment_entropy,
     generate_responses,
@@ -23,9 +24,7 @@ from core import (
     weighted_semantic_entropy,
 )
 from core.calibration import (
-    IsotonicCalibrator,
-    PlattScaler,
-    TemperatureScaler,
+    CALIBRATORS,
     average_calibration_error,
     compute_semantic_confidence_discrete,
     compute_semantic_confidence_weighted,
@@ -37,7 +36,7 @@ import numpy as np
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-MODEL_ID = "google/gemma-4-E2B-it"
+from gemma import MODEL_ID
 
 QUESTIONS: list[tuple[str, str, str | None]] = [
     # Easy factual (expect high confidence, correct) -- sanity baseline
@@ -191,14 +190,9 @@ def print_calibration_summary(results: list[CalibrationResult]) -> None:
     print("\n" + "=" * 90)
     print("Post-hoc Calibration (LOOCV)")
     print("-" * 90)
-    calibrators = [
-        ("Temperature", TemperatureScaler),
-        ("Platt", PlattScaler),
-        ("Isotonic", IsotonicCalibrator),
-    ]
     print(f"  {'Method':<20} {'ACE(d)':>10} {'ACE(w)':>10}")
     print(f"  {'(uncalibrated)':<20} {ace_d:>10.4f} {ace_w:>10.4f}")
-    for name, cls in calibrators:
+    for name, cls in CALIBRATORS:
         ace_d, _ = leave_one_out_evaluate(conf_d, corr_d, cls)
         ace_w, _ = leave_one_out_evaluate(conf_w, corr_w, cls)
         print(f"  {name:<20} {ace_d:>10.4f} {ace_w:>10.4f}")
@@ -227,7 +221,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--nli-model",
-        default="microsoft/deberta-base-mnli",
+        default=DEFAULT_NLI_MODEL,
         help="NLI model for entailment checking.",
     )
     parser.add_argument(

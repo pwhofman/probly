@@ -5,7 +5,7 @@ from __future__ import annotations
 from core import CACHE_DIR
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-MODEL_ID = "google/gemma-4-E2B-it"
+from gemma import MODEL_ID
 
 
 def main() -> None:

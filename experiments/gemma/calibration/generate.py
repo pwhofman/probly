@@ -23,7 +23,9 @@ import time
 from core import (
     CACHE_DIR,
     DATA_DIR,
+    DEFAULT_NLI_MODEL,
     EntailmentModel,
+    NLIModel,
     cluster_assignment_entropy,
     generate_responses,
     get_semantic_ids,
@@ -38,7 +40,7 @@ from datasets import load_dataset
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-MODEL_ID = "google/gemma-4-E2B-it"
+from gemma import MODEL_ID
 
 
 def load_trivia_questions(
@@ -195,7 +197,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--nli-model",
-        default="microsoft/deberta-base-mnli",
+        default=DEFAULT_NLI_MODEL,
         help="NLI model for entailment checking.",
     )
     parser.add_argument(
@@ -219,7 +221,7 @@ def generate_main(
     num_samples: int = 10,
     temperature: float = 0.7,
     max_new_tokens: int = 128,
-    nli_model: str = "microsoft/deberta-base-mnli",
+    nli_model: NLIModel = DEFAULT_NLI_MODEL,
     seed: int = 42,
     output: str | Path | None = None,
 ) -> Path:

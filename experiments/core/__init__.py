@@ -1,6 +1,7 @@
 """Shared utilities for probly experiments."""
 
 from core.calibration import (
+    CALIBRATORS,
     IsotonicCalibrator,
     PlattScaler,
     TemperatureScaler,
@@ -13,19 +14,21 @@ from core.calibration import (
     reliability_diagram_data,
 )
 from core.correctness import check_cluster_correctness
-from core.entailment import EntailmentModel
+from core.entailment import DEFAULT_NLI_MODEL, EntailmentModel, NLIModel
 from core.generation import generate_responses
-from core.llm_judge import judge_correctness, judge_correctness_batch
 from core.paths import CACHE_DIR, DATA_DIR, PROJECT_ROOT
 from core.semantic_entropy import cluster_assignment_entropy, get_semantic_ids, weighted_semantic_entropy
 from core.setup import suppress_hf_noise
 
 __all__ = [
     "CACHE_DIR",
+    "CALIBRATORS",
     "DATA_DIR",
+    "DEFAULT_NLI_MODEL",
     "PROJECT_ROOT",
     "EntailmentModel",
     "IsotonicCalibrator",
+    "NLIModel",
     "PlattScaler",
     "TemperatureScaler",
     "average_calibration_error",
@@ -37,8 +40,6 @@ __all__ = [
     "expected_calibration_error",
     "generate_responses",
     "get_semantic_ids",
-    "judge_correctness",
-    "judge_correctness_batch",
     "leave_one_out_evaluate",
     "reliability_diagram_data",
     "suppress_hf_noise",

@@ -18,6 +18,7 @@ from dataclasses import dataclass
 
 from core import (
     CACHE_DIR,
+    DEFAULT_NLI_MODEL,
     EntailmentModel,
     cluster_assignment_entropy,
     generate_responses,
@@ -28,7 +29,7 @@ from core import (
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-MODEL_ID = "google/gemma-4-E2B-it"
+from gemma import MODEL_ID
 
 QUESTIONS: list[tuple[str, str]] = [
     ("Factual", "What is the capital of France?"),
@@ -124,10 +125,8 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--nli-model",
-        default="microsoft/deberta-base-mnli",
-        help="NLI model for entailment checking "
-        "(default: microsoft/deberta-base-mnli, "
-        "alt: microsoft/deberta-v2-xlarge-mnli).",
+        default=DEFAULT_NLI_MODEL,
+        help="NLI model for entailment checking.",
     )
     parser.add_argument(
         "--seed",

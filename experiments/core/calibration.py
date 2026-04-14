@@ -219,6 +219,12 @@ class IsotonicCalibrator:
         return self._iso.predict(confidences)
 
 
+CALIBRATORS: list[tuple[str, type]] = [
+    ("Temperature", TemperatureScaler),
+    ("Platt", PlattScaler),
+    ("Isotonic", IsotonicCalibrator),
+]
+
 # ---------------------------------------------------------------------------
 # LOOCV evaluation
 # ---------------------------------------------------------------------------

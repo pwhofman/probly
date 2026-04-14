@@ -2,16 +2,21 @@
 
 from __future__ import annotations
 
+from typing import Literal
+
 import torch
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 from core.paths import CACHE_DIR
 
+NLIModel = Literal["microsoft/deberta-base-mnli", "microsoft/deberta-v2-xlarge-mnli"]
+DEFAULT_NLI_MODEL: NLIModel = "microsoft/deberta-base-mnli"
+
 
 class EntailmentModel:
     """NLI model for checking semantic entailment between text pairs."""
 
-    def __init__(self, model_name: str, device: str | None = None) -> None:
+    def __init__(self, model_name: NLIModel = DEFAULT_NLI_MODEL, device: str | None = None) -> None:
         """Load the NLI model and tokenizer."""
         if device is None:
             device = "cuda" if torch.cuda.is_available() else "cpu"

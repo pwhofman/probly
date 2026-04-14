@@ -1,13 +1,12 @@
-"""Analyze reviewed calibration results and generate figures.
+"""Analyze reviewed calibration results.
 
-Loads result JSON files where correctness labels have been filled in,
-computes aggregate calibration metrics, and generates publication-quality
-figures. Handles partially-reviewed files by filtering out unlabeled items.
+Loads result JSON files where correctness labels have been filled in
+and computes aggregate calibration metrics. Handles partially-reviewed
+files by filtering out unlabeled items.
 
 Usage:
     uv run python gemma/calibration/analyze.py \
-        --results data/results/run_t07.json \
-        --output data/figures/
+        --results data/results/run_t07.json
 """
 
 from __future__ import annotations
@@ -17,12 +16,15 @@ import json
 from pathlib import Path
 
 from core.calibration import compute_aggregates
-from gemma.calibration.plot_calibration import generate_all_plots, load_results
 
 
-def _filter_labeled(results: list[dict]) -> list[dict]:
-    """Return results where both correctness fields are not None."""
-    return [r for r in results if r.get("is_correct_discrete") is not None and r.get("is_correct_weighted") is not None]
+def load_results(paths: list[str]) -> list[dict]:
+    """Load result files and return list of run dicts."""
+    runs = []
+    for p in paths:
+        with Path(p).open() as f:
+            runs.append(json.load(f))
+    return runs
 
 
 def analyze_run(run: dict) -> dict:
@@ -32,7 +34,9 @@ def analyze_run(run: dict) -> dict:
         run: A run dict with ``metadata``, ``results``, ``aggregate`` keys.
     """
     all_results = run["results"]
-    labeled = _filter_labeled(all_results)
+    labeled = [
+        r for r in all_results if r.get("is_correct_discrete") is not None and r.get("is_correct_weighted") is not None
+    ]
     total = len(all_results)
     n_labeled = len(labeled)
     skipped = total - n_labeled
@@ -54,17 +58,14 @@ def analyze_run(run: dict) -> dict:
 def analyze_main(
     *,
     results: list[str | Path],
-    output: str | Path = "data/figures",
     save_aggregates: bool = True,
 ) -> None:
-    """Load reviewed results, compute metrics, and generate plots.
+    """Load reviewed results and compute calibration metrics.
 
     Args:
         results: Paths to result JSON files.
-        output: Output directory for figures.
         save_aggregates: Whether to write aggregates back into the JSON files.
     """
-    output_dir = Path(output)
     result_paths = [str(p) for p in results]
 
     print(f"Loading {len(result_paths)} result file(s)...")
@@ -91,8 +92,6 @@ def analyze_main(
         print(f"ECE (discrete): {agg['ece_discrete']:.4f}")
         print(f"ACE (discrete): {agg['ace_discrete']:.4f}")
 
-    print(f"\nGenerating figures in {output_dir}/")
-    generate_all_plots(runs, output_dir)
     print("\nDone!")
 
 
@@ -104,12 +103,6 @@ def parse_args() -> argparse.Namespace:
         nargs="+",
         required=True,
         help="One or more reviewed JSON result files.",
-    )
-    parser.add_argument(
-        "--output",
-        type=str,
-        default="data/figures",
-        help="Output directory for figures (default: data/figures).",
     )
     parser.add_argument(
         "--no-save",
@@ -124,7 +117,6 @@ def main() -> None:
     args = parse_args()
     analyze_main(
         results=args.results,
-        output=args.output,
         save_aggregates=not args.no_save,
     )
 

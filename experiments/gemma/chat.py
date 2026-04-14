@@ -8,7 +8,8 @@ from core import CACHE_DIR, suppress_hf_noise
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, TextStreamer
 
-MODEL_ID = "google/gemma-4-E2B-it"
+from gemma import MODEL_ID
+
 EXIT_WORDS = {"exit", "quit", "/exit", "/quit", ":q"}
 
 
