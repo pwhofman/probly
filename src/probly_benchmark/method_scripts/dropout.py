@@ -7,6 +7,7 @@ import logging
 import torch
 
 from probly.method.dropout import dropout
+from probly.quantification import quantify
 from probly.representer import Sampler
 from probly_benchmark.models import LeNet
 
@@ -21,3 +22,6 @@ inputs = torch.randn(3, 1, 28, 28)
 output = rep.predict(inputs)
 logger.info(output)
 logger.info(output.shape)
+quantification = quantify(output)
+logger.info(quantification)
+logger.info(quantification.total)  # ty:ignore[unresolved-attribute]
