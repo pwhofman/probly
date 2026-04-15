@@ -7,10 +7,10 @@ from typing import Any
 import hydra
 from omegaconf import DictConfig, OmegaConf
 import torch
-import wandb
 
 from probly.evaluation.tasks import selective_prediction
 from probly.quantification import quantify
+from probly.representation._helpers import compute_mean_probs
 from probly.representation.distribution.torch_categorical import (
     TorchCategoricalDistribution,
     TorchCategoricalDistributionSample,
@@ -18,6 +18,7 @@ from probly.representation.distribution.torch_categorical import (
 from probly.representer import representer
 from probly_benchmark import data, utils
 from probly_benchmark.utils import load_model_from_wandb, resolve_artifact_name
+import wandb
 
 
 def compute_total_uncertainty(outputs: list[Any]) -> torch.Tensor:
@@ -32,7 +33,7 @@ def compute_total_uncertainty(outputs: list[Any]) -> torch.Tensor:
     return torch.cat(all_uncertainties)
 
 
-def compute_mean_probs(outputs: list[Any]) -> torch.Tensor:
+def compute_mean_probsq(outputs: list[Any]) -> torch.Tensor:
     """Compute the mean softmax probabilities across samples from sampler outputs."""
     all_mean_probs = []
     for out in outputs:
@@ -59,6 +60,7 @@ def main(cfg: DictConfig) -> None:
         cfg.wandb.project,
         device,
     )
+    print(f"Loaded model {artifact_name} from wandb run: {run_id}")
 
     _, _, test_loader = data.get_data_train(
         cfg.dataset,
@@ -79,9 +81,13 @@ def main(cfg: DictConfig) -> None:
         device,
         cfg.get("amp", False),
     )
+    print(outputs)
+    print(type(outputs))
+    decomposition = quantify(outputs)
+    uncertainties = decomposition.total  # ty: ignore[unresolved-attribute]
 
-    mean_probs = compute_mean_probs(outputs).numpy()
-    uncertainties = compute_total_uncertainty(outputs).numpy()
+    mean_probs = compute_mean_probs(outputs).cpu().numpy()
+
     labels = targets.numpy()
     loss = (mean_probs.argmax(axis=1) != labels).astype(float)
     auroc, bin_losses = selective_prediction(uncertainties, loss, n_bins=cfg.n_bins)
