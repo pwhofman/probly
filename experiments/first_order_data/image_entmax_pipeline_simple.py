@@ -4,7 +4,6 @@ import copy
 import csv
 import json
 import random
-from collections import Counter, defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -12,9 +11,21 @@ from typing import Any
 import numpy as np
 import torch
 from entmax import entmax_bisect
-from PIL import Image
+from probly.datasets.torch import (
+    Benthic,
+    CIFAR10HDCIC,
+    DCICDataset,
+    MiceBone,
+    Pig,
+    Plankton,
+    QualityMRI,
+    Synthetic,
+    Turkey,
+    Treeversity1,
+    Treeversity6,
+)
 from torch import nn
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader, Subset
 from torchvision import transforms
 from torchvision.models import get_model, get_model_weights
 
@@ -32,13 +43,18 @@ DEFAULT_ENCODERS = {
     "vit_b_16": 224,
 }
 
-
-@dataclass(slots=True)
-class ImageRecord:
-    image_path: str
-    fold: str
-    target_probs: np.ndarray
-
+DCIC_DATASET_LOADERS = {
+    "Benthic": Benthic,
+    "CIFAR10H": CIFAR10HDCIC,
+    "MiceBone": MiceBone,
+    "Pig": Pig,
+    "Plankton": Plankton,
+    "QualityMRI": QualityMRI,
+    "Synthetic": Synthetic,
+    "Turkey": Turkey,
+    "Treeversity#1": Treeversity1,
+    "Treeversity#6": Treeversity6,
+}
 
 @dataclass(slots=True)
 class FoldResult:
@@ -109,27 +125,6 @@ class EntmaxImageExperimentConfig:
     augmentation: str
     classifier_dropout: float
     entmax_alpha: float
-
-
-class SoftLabelImageDataset(Dataset):
-    def __init__(
-        self,
-        data_root: Path,
-        records: list[ImageRecord],
-        transform: transforms.Compose,
-    ):
-        self.data_root = data_root
-        self.records = records
-        self.transform = transform
-
-    def __len__(self) -> int:
-        return len(self.records)
-
-    def __getitem__(self, index: int) -> tuple[torch.Tensor, torch.Tensor, str]:
-        record = self.records[index]
-        image = Image.open(self.data_root / record.image_path).convert("RGB")
-        target = torch.tensor(record.target_probs, dtype=torch.float32)
-        return self.transform(image), target, record.image_path
 
 
 class SoftTargetEntmaxBisectLoss(nn.Module):
@@ -301,54 +296,42 @@ def extract_fold_name(image_path: str) -> str:
     return parts[1] if len(parts) > 1 else "unknown_fold"
 
 
-def load_image_dataset(dataset_dir: Path) -> tuple[list[str], list[ImageRecord]]:
-    with (dataset_dir / "annotations.json").open("r", encoding="utf-8") as handle:
-        payload = json.load(handle)
-
-    annotation_groups = payload if isinstance(payload, list) else [payload]
-    vote_counts_by_image: dict[str, Counter[str]] = defaultdict(Counter)
-    class_names: set[str] = set()
-
-    for group in annotation_groups:
-        for annotation in group.get("annotations", []):
-            image_path = annotation["image_path"]
-            class_name = annotation["class_label"]
-            vote_counts_by_image[image_path][class_name] += 1
-            class_names.add(class_name)
-
-    ordered_classes = sorted(class_names)
-    records: list[ImageRecord] = []
-
-    for image_path, class_counts in sorted(vote_counts_by_image.items()):
-        total_votes = sum(class_counts.values())
-        target_probs = np.array(
-            [
-                class_counts.get(class_name, 0) / total_votes 
-                for class_name in ordered_classes # checks class_counts for each possible class
-            ],
-            dtype=np.float32,
-        )
-        records.append(
-            ImageRecord(
-                image_path=image_path,
-                fold=extract_fold_name(image_path),
-                target_probs=target_probs,
-            )
-        )
-
-    return ordered_classes, records
+def class_names_from_dataset(dataset: DCICDataset) -> list[str]:
+    return [
+        str(label)
+        for label, _ in sorted(dataset.label_mappings.items(), key=lambda item: item[1])
+    ]
 
 
-def split_train_validation_records(
-    records: list[ImageRecord],
+def load_dcic_dataset(dataset_dir: Path) -> tuple[type[DCICDataset], list[str]]:
+    dataset_loader = DCIC_DATASET_LOADERS.get(dataset_dir.name)
+    if dataset_loader is None:
+        raise ValueError(f"Dataset '{dataset_dir.name}' is not supported by probly.datasets.")
+    dataset = dataset_loader(dataset_dir.parent)
+    return dataset_loader, class_names_from_dataset(dataset)
+
+
+def build_dataset(
+    dataset_name: str,
+    data_root: Path,
+    transform: transforms.Compose | None = None,
+) -> DCICDataset:
+    dataset_loader = DCIC_DATASET_LOADERS.get(dataset_name)
+    if dataset_loader is None:
+        raise ValueError(f"Dataset '{dataset_name}' is not supported by probly.datasets.")
+    return dataset_loader(data_root, transform=transform)
+
+
+def split_train_validation_indices(
+    indices: list[int],
     validation_size: float,
     seed: int,
-) -> tuple[list[ImageRecord], list[ImageRecord]]:
+) -> tuple[list[int], list[int]]:
     rng = np.random.default_rng(seed)
-    shuffled_indices = rng.permutation(len(records))
-    split_index = int(len(records) * (1 - validation_size))
-    shuffled_records = [records[index] for index in shuffled_indices]
-    return shuffled_records[:split_index], shuffled_records[split_index:]
+    shuffled_positions = rng.permutation(len(indices))
+    split_index = int(len(indices) * (1 - validation_size))
+    shuffled_indices = [indices[position] for position in shuffled_positions]
+    return shuffled_indices[:split_index], shuffled_indices[split_index:]
 
 
 def build_transform(
@@ -373,15 +356,12 @@ def build_transform(
 
 
 def make_dataloader(
-    data_root: Path,
-    records: list[ImageRecord],
-    transform: transforms.Compose,
+    dataset: Subset[DCICDataset],
     batch_size: int,
     shuffle: bool,
     num_workers: int,
     pin_memory: bool,
 ) -> DataLoader:
-    dataset = SoftLabelImageDataset(data_root, records, transform)
     return DataLoader(
         dataset,
         batch_size=batch_size,
@@ -472,7 +452,7 @@ def run_epoch(
     total_items = 0
 
     with torch.set_grad_enabled(is_training):
-        for images, targets, _ in loader:
+        for images, targets in loader:
             images = images.to(device)
             targets = targets.to(device)
 
@@ -493,8 +473,8 @@ def run_epoch(
 
 def train_single_model(
     *,
-    train_records: list[ImageRecord],
-    val_records: list[ImageRecord],
+    train_dataset: Subset[DCICDataset],
+    val_dataset: Subset[DCICDataset],
     num_classes: int,
     config: EntmaxImageExperimentConfig,
     seed: int,
@@ -502,26 +482,14 @@ def train_single_model(
     set_seed(seed)
 
     train_loader = make_dataloader(
-        data_root=config.data_root,
-        records=train_records,
-        transform=build_transform(
-            config.encoder_name,
-            train=True,
-            augmentation=config.augmentation,
-        ),
+        dataset=train_dataset,
         batch_size=config.batch_size,
         shuffle=True,
         num_workers=config.num_workers,
         pin_memory=config.device.startswith("cuda"), # small optimization, can speed up data transfer to GPU
     )
     val_loader = make_dataloader(
-        data_root=config.data_root,
-        records=val_records,
-        transform=build_transform(
-            config.encoder_name,
-            train=False,
-            augmentation=config.augmentation,
-        ),
+        dataset=val_dataset,
         batch_size=config.batch_size,
         shuffle=False,
         num_workers=config.num_workers,
@@ -568,20 +536,14 @@ def train_single_model(
     return model, history
 
 
-def predict_records(
+def predict_dataset(
     *,
     model: nn.Module,
-    records: list[ImageRecord],
+    dataset: Subset[DCICDataset],
     config: EntmaxImageExperimentConfig,
 ) -> tuple[np.ndarray, np.ndarray, list[str]]:
     loader = make_dataloader(
-        data_root=config.data_root,
-        records=records,
-        transform=build_transform(
-            config.encoder_name,
-            train=False,
-            augmentation=config.augmentation,
-        ),
+        dataset=dataset,
         batch_size=config.batch_size,
         shuffle=False,
         num_workers=config.num_workers,
@@ -594,7 +556,7 @@ def predict_records(
 
     model.eval()
     with torch.no_grad():
-        for images, targets, image_paths in loader:
+        for images, targets in loader:
             logits = model(images.to(config.device))
             probabilities = (
                 entmax_bisect(
@@ -610,7 +572,7 @@ def predict_records(
             )
             all_probabilities.append(probabilities)
             all_targets.append(targets.numpy())
-            all_paths.extend(image_paths)
+    all_paths = [dataset.dataset.image_paths[index] for index in dataset.indices]
 
     return (
         np.concatenate(all_probabilities, axis=0),
@@ -625,22 +587,22 @@ def train_single_member(
     member_seed: int,
     member_dir: Path,
     test_fold: str,
-    train_records: list[ImageRecord],
-    val_records: list[ImageRecord],
-    test_records: list[ImageRecord],
+    train_dataset: Subset[DCICDataset],
+    val_dataset: Subset[DCICDataset],
+    test_dataset: Subset[DCICDataset],
     class_names: list[str],
     config: EntmaxImageExperimentConfig,
 ) -> tuple[np.ndarray, np.ndarray, dict[str, Any], list[str]]:
     model, history = train_single_model(
-        train_records=train_records,
-        val_records=val_records,
+        train_dataset=train_dataset,
+        val_dataset=val_dataset,
         num_classes=len(class_names),
         config=config,
         seed=member_seed,
     )
-    probabilities, targets, image_paths = predict_records(
+    probabilities, targets, image_paths = predict_dataset(
         model=model,
-        records=test_records,
+        dataset=test_dataset,
         config=config,
     )
     member_loss = mean_cross_entropy(targets, probabilities)
@@ -679,19 +641,66 @@ def run_dataset_experiment(
     fold_dir = output_dir / config.test_fold
     fold_dir.mkdir(parents=True, exist_ok=True)
 
-    class_names, records = load_image_dataset(config.data_root / dataset_name)
-    train_records = [record for record in records if record.fold != config.test_fold]
-    test_records = [record for record in records if record.fold == config.test_fold]
+    dataset_loader, class_names = load_dcic_dataset(config.data_root / dataset_name)
+    split_dataset = dataset_loader(config.data_root)
+    fold_indices: dict[str, list[int]] = {}
+    for index, image_path in enumerate(split_dataset.image_paths):
+        fold_name = extract_fold_name(image_path)
+        fold_indices.setdefault(fold_name, []).append(index)
 
-    if not test_records:
+    test_indices = fold_indices.get(config.test_fold, [])
+
+    if not test_indices:
         raise ValueError(
             f"Fold '{config.test_fold}' was not found in dataset '{dataset_name}'."
         )
 
-    train_records, val_records = split_train_validation_records(
-        train_records,
+    train_indices = [
+        index
+        for fold_name, indices in fold_indices.items()
+        if fold_name != config.test_fold
+        for index in indices
+    ]
+    train_indices, val_indices = split_train_validation_indices(
+        train_indices,
         validation_size=config.validation_size,
         seed=config.seed,
+    )
+    train_dataset = Subset(
+        build_dataset(
+            dataset_name,
+            config.data_root,
+            transform=build_transform(
+                config.encoder_name,
+                train=True,
+                augmentation=config.augmentation,
+            ),
+        ),
+        train_indices,
+    )
+    val_dataset = Subset(
+        build_dataset(
+            dataset_name,
+            config.data_root,
+            transform=build_transform(
+                config.encoder_name,
+                train=False,
+                augmentation=config.augmentation,
+            ),
+        ),
+        val_indices,
+    )
+    test_dataset = Subset(
+        build_dataset(
+            dataset_name,
+            config.data_root,
+            transform=build_transform(
+                config.encoder_name,
+                train=False,
+                augmentation=config.augmentation,
+            ),
+        ),
+        test_indices,
     )
 
     member_probabilities: list[np.ndarray] = []
@@ -709,9 +718,9 @@ def run_dataset_experiment(
             member_seed=member_seed,
             member_dir=member_dir,
             test_fold=config.test_fold,
-            train_records=train_records,
-            val_records=val_records,
-            test_records=test_records,
+            train_dataset=train_dataset,
+            val_dataset=val_dataset,
+            test_dataset=test_dataset,
             class_names=class_names,
             config=config,
         )
@@ -736,9 +745,9 @@ def run_dataset_experiment(
 
     fold_result = FoldResult(
         test_fold=config.test_fold,
-        train_size=len(train_records),
-        val_size=len(val_records),
-        test_size=len(test_records),
+        train_size=len(train_dataset),
+        val_size=len(val_dataset),
+        test_size=len(test_dataset),
         member_cross_entropies=member_losses,
         ensemble_cross_entropy=ensemble_loss,
         prediction_file=str(ensemble_prediction_path),
