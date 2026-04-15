@@ -17,7 +17,18 @@ from unittest.mock import MagicMock, mock_open, patch
 import numpy as np
 import torch
 
-from probly.datasets.torch import CIFAR10H, Benthic, ImageNetReaL, Plankton, Treeversity1, Treeversity6
+from probly.datasets.torch import (
+    CIFAR10H,
+    Benthic,
+    ImageNetReaL,
+    MiceBone,
+    Pig,
+    Plankton,
+    Synthetic,
+    Turkey,
+    Treeversity1,
+    Treeversity6,
+)
 
 
 def patch_cifar10_init(self: CIFAR10, root: str, train: bool, transform: Callable[..., Any], download: bool) -> None:  # noqa: ARG001, the init requires these arguments
@@ -64,6 +75,38 @@ def test_plankton(mock_dcic_init: MagicMock) -> None:
     root = "some/path"
     _ = Plankton(root, first_order=False)
     expected = Path(root) / "Plankton"
+    mock_dcic_init.assert_called_once_with(expected, None, first_order=False)
+
+
+@patch("probly.datasets.torch.DCICDataset.__init__", return_value=None)
+def test_micebone(mock_dcic_init: MagicMock) -> None:
+    root = "some/path"
+    _ = MiceBone(root, first_order=False)
+    expected = Path(root) / "MiceBone"
+    mock_dcic_init.assert_called_once_with(expected, None, first_order=False)
+
+
+@patch("probly.datasets.torch.DCICDataset.__init__", return_value=None)
+def test_pig(mock_dcic_init: MagicMock) -> None:
+    root = "some/path"
+    _ = Pig(root, first_order=False)
+    expected = Path(root) / "Pig"
+    mock_dcic_init.assert_called_once_with(expected, None, first_order=False)
+
+
+@patch("probly.datasets.torch.DCICDataset.__init__", return_value=None)
+def test_synthetic(mock_dcic_init: MagicMock) -> None:
+    root = "some/path"
+    _ = Synthetic(root, first_order=False)
+    expected = Path(root) / "Synthetic"
+    mock_dcic_init.assert_called_once_with(expected, None, first_order=False)
+
+
+@patch("probly.datasets.torch.DCICDataset.__init__", return_value=None)
+def test_turkey(mock_dcic_init: MagicMock) -> None:
+    root = "some/path"
+    _ = Turkey(root, first_order=False)
+    expected = Path(root) / "Turkey"
     mock_dcic_init.assert_called_once_with(expected, None, first_order=False)
 
 

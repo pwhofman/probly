@@ -225,6 +225,52 @@ class Benthic(DCICDataset):
         super().__init__(Path(root) / "Benthic", transform, first_order=first_order)
 
 
+class MiceBone(DCICDataset):
+    """Implementation of the MiceBone dataset.
+
+    The dataset can be found at https://zenodo.org/records/7180818.
+    """
+
+    def __init__(
+        self,
+        root: Path | str,
+        transform: Callable[..., Any] | None = None,
+        *,
+        first_order: bool = True,
+    ) -> None:
+        """Initialize an instance of the MiceBone dataset class.
+
+        Args:
+            root: Root directory of the dataset.
+            transform: Optional transform to apply to the data.
+            first_order: Whether to use first order data or class labels. Defaults to True.
+        """
+        super().__init__(Path(root) / "MiceBone", transform, first_order=first_order)
+
+
+class Pig(DCICDataset):
+    """Implementation of the Pig dataset.
+
+    The dataset can be found at https://zenodo.org/records/7180818.
+    """
+
+    def __init__(
+        self,
+        root: Path | str,
+        transform: Callable[..., Any] | None = None,
+        *,
+        first_order: bool = True,
+    ) -> None:
+        """Initialize an instance of the Pig dataset class.
+
+        Args:
+            root: Root directory of the dataset.
+            transform: Optional transform to apply to the data.
+            first_order: Whether to use first order data or class labels. Defaults to True.
+        """
+        super().__init__(Path(root) / "Pig", transform, first_order=first_order)
+
+
 class Plankton(DCICDataset):
     """Implementation of the Plankton dataset.
 
@@ -269,6 +315,52 @@ class QualityMRI(DCICDataset):
             first_order: Whether to use first order data or class labels. Defaults to True.
         """
         super().__init__(Path(root) / "QualityMRI", transform, first_order=first_order)
+
+
+class Synthetic(DCICDataset):
+    """Implementation of the Synthetic dataset.
+
+    The dataset can be found at https://zenodo.org/records/7180818.
+    """
+
+    def __init__(
+        self,
+        root: Path | str,
+        transform: Callable[..., Any] | None = None,
+        *,
+        first_order: bool = True,
+    ) -> None:
+        """Initialize an instance of the Synthetic dataset class.
+
+        Args:
+            root: Root directory of the dataset.
+            transform: Optional transform to apply to the data.
+            first_order: Whether to use first order data or class labels. Defaults to True.
+        """
+        super().__init__(Path(root) / "Synthetic", transform, first_order=first_order)
+
+
+class Turkey(DCICDataset):
+    """Implementation of the Turkey dataset.
+
+    The dataset can be found at https://zenodo.org/records/7180818.
+    """
+
+    def __init__(
+        self,
+        root: Path | str,
+        transform: Callable[..., Any] | None = None,
+        *,
+        first_order: bool = True,
+    ) -> None:
+        """Initialize an instance of the Turkey dataset class.
+
+        Args:
+            root: Root directory of the dataset.
+            transform: Optional transform to apply to the data.
+            first_order: Whether to use first order data or class labels. Defaults to True.
+        """
+        super().__init__(Path(root) / "Turkey", transform, first_order=first_order)
 
 
 class Treeversity1(DCICDataset):
