@@ -6,40 +6,14 @@ from typing import Any
 
 import hydra
 from omegaconf import DictConfig, OmegaConf
-import torch
+import wandb
 
 from probly.evaluation.tasks import selective_prediction
 from probly.quantification import quantify
 from probly.representation._helpers import compute_mean_probs
-from probly.representation.distribution.torch_categorical import (
-    TorchCategoricalDistribution,
-    TorchCategoricalDistributionSample,
-)
-from probly.representer import representer
+from probly.representer import Sampler
 from probly_benchmark import data, utils
 from probly_benchmark.utils import load_model_from_wandb, resolve_artifact_name
-import wandb
-
-
-def compute_total_uncertainty(outputs: list[Any]) -> torch.Tensor:
-    """Compute total uncertainty (predictive entropy) from sampler outputs."""
-    all_uncertainties = []
-    for out in outputs:
-        probs = torch.softmax(out.samples, dim=-1)  # (num_samples, batch, n_classes)
-        dist = TorchCategoricalDistribution(probs)
-        dist_sample = TorchCategoricalDistributionSample(tensor=dist, sample_dim=0)
-        decomposition = quantify(dist_sample)
-        all_uncertainties.append(decomposition.total.cpu())  # ty: ignore[unresolved-attribute]
-    return torch.cat(all_uncertainties)
-
-
-def compute_mean_probsq(outputs: list[Any]) -> torch.Tensor:
-    """Compute the mean softmax probabilities across samples from sampler outputs."""
-    all_mean_probs = []
-    for out in outputs:
-        probs = torch.softmax(out.samples, dim=-1)  # (num_samples, batch, n_classes)
-        all_mean_probs.append(probs.mean(dim=0).cpu())
-    return torch.cat(all_mean_probs)
 
 
 @hydra.main(version_base=None, config_path="configs/", config_name="selective_prediction")
@@ -73,7 +47,7 @@ def main(cfg: DictConfig) -> None:
         if cfg.method.get("selective_prediction")
         else {}
     )  # ty: ignore[invalid-assignment]
-    rep = representer(model, **rep_kwargs)
+    rep = Sampler(model, **rep_kwargs)
 
     outputs, targets = utils.collect_outputs_targets(
         rep,
