@@ -16,7 +16,7 @@ from probly.representation.distribution._common import (
 from probly.representation.sample import ArraySample
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Callable, Iterator
 
 
 @create_categorical_distribution.register(np.ndarray)
@@ -33,6 +33,7 @@ class ArrayCategoricalDistribution(
 
     unnormalized_probabilities: np.ndarray
     protected_axes: ClassVar[dict[str, int]] = {"unnormalized_probabilities": 1}
+    permitted_functions: ClassVar[set[Callable]] = {np.mean}
 
     def __post_init__(self) -> None:
         """Validate the concentration parameters."""

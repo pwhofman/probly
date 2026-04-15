@@ -45,7 +45,7 @@ def register(cls: LazyType, traverser: RegisteredLooseTraverser) -> None:
     )
 
 
-@predictor_transformation(permitted_predictor_types=None)
+@predictor_transformation(permitted_predictor_types=None, preserve_predictor_type=True)
 def batchensemble[T: Predictor](
     base: T,
     num_members: int = NUM_MEMBERS.default,

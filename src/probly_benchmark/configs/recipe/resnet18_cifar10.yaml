@@ -1,0 +1,22 @@
+# @package _global_
+dataset: "cifar10"
+base_model: "resnet18"
+model_type: "logit_classifier"
+pretrained: false
+epochs: 200
+batch_size: 128
+num_workers: 16
+pin_memory: true
+persistent_workers: true
+optimizer:
+    name: "sgd"
+    params:
+        lr: 0.1
+        momentum: 0.9
+        weight_decay: 5e-4
+
+scheduler:
+  name: "cosine"
+
+early_stopping:
+  patience: 0  # set to > 0 to enable; number of epochs to wait without improvement

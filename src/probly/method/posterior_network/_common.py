@@ -29,7 +29,7 @@ def posterior_network_generator[**In, Out](
     raise NotImplementedError(msg)
 
 
-@predictor_transformation(permitted_predictor_types=None)
+@predictor_transformation(permitted_predictor_types=None, preserve_predictor_type=False)
 @PosteriorNetworkPredictor.register_factory
 def posterior_network[**In, Out](
     encoder: Predictor[In, Out],

@@ -78,6 +78,7 @@ class BuildContext:
     """
 
     base_model_name: str
+    model_type: str
     num_classes: int
     pretrained: bool
     train_loader: DataLoader | None = None
@@ -93,7 +94,7 @@ def _default_builder(
 ) -> nn.Module:
     """Build a model using only the YAML hyperparameters and a base network."""
     base = models.get_base_model(ctx.base_model_name, ctx.num_classes, ctx.pretrained)
-    return method_fn(base, **params)
+    return method_fn(base, predictor_type=ctx.model_type, **params)
 
 
 def _posterior_network_builder(
@@ -129,6 +130,7 @@ def _posterior_network_builder(
         encoder,
         num_classes=ctx.num_classes,
         class_counts=class_counts,
+        predictor_type=ctx.model_type,
         **params,
     )
 

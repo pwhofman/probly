@@ -6,11 +6,11 @@ from typing import Any
 
 import hydra
 from omegaconf import DictConfig, OmegaConf
-from scipy.stats import entropy
-import torch
 import wandb
 
 from probly.evaluation.tasks import selective_prediction
+from probly.quantification import quantify
+from probly.representation._helpers import compute_mean_probs
 from probly.representer import representer
 from probly_benchmark import data, utils
 from probly_benchmark.utils import load_model_from_wandb, resolve_artifact_name
@@ -34,6 +34,7 @@ def main(cfg: DictConfig) -> None:
         cfg.wandb.project,
         device,
     )
+    print(f"Loaded model {artifact_name} from wandb run: {run_id}")
 
     _, _, test_loader = data.get_data_train(
         cfg.dataset,
@@ -54,13 +55,13 @@ def main(cfg: DictConfig) -> None:
         device,
         cfg.get("amp", False),
     )
+    decomposition = quantify(outputs)
+    uncertainties = decomposition.total.detach().cpu().numpy()  # ty: ignore[unresolved-attribute]
 
-    mean_probs = torch.cat(
-        [torch.softmax(out.tensor, dim=-2).mean(dim=out.sample_dim).cpu() for out in outputs]
-    ).numpy()
+    mean_probs = compute_mean_probs(outputs).cpu().numpy()
+
     labels = targets.numpy()
     loss = (mean_probs.argmax(axis=1) != labels).astype(float)
-    uncertainties = entropy(mean_probs, axis=1)
     auroc, bin_losses = selective_prediction(uncertainties, loss, n_bins=cfg.n_bins)
     print(f"Selective prediction AUROC: {auroc:.4f}")
 

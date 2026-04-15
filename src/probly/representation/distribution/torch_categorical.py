@@ -12,11 +12,12 @@ from probly.representation.distribution._common import (
     CategoricalDistribution,
     CategoricalDistributionSample,
     create_categorical_distribution,
+    create_categorical_distribution_from_logits,
 )
 from probly.representation.sample.torch import TorchSample
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Callable, Iterator
 
     import numpy as np
 
@@ -35,6 +36,7 @@ class TorchCategoricalDistribution(
 
     unnormalized_probabilities: torch.Tensor
     protected_axes: ClassVar[dict[str, int]] = {"unnormalized_probabilities": 1}
+    permitted_functions: ClassVar[set[Callable]] = {torch.mean}
 
     def __post_init__(self) -> None:
         """Validate the concentration parameters."""
@@ -159,3 +161,10 @@ def _create_torch_categorical_distribution_from_instance(
     data: TorchCategoricalDistribution,
 ) -> TorchCategoricalDistribution:
     return data
+
+
+@create_categorical_distribution_from_logits.register(torch.Tensor)
+def _create_torch_categorical_distribution_from_logits(
+    data: torch.Tensor,
+) -> TorchCategoricalDistribution:
+    return TorchCategoricalDistribution(torch.softmax(data, dim=-1))
