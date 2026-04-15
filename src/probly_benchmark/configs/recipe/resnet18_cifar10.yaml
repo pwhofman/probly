@@ -1,6 +1,7 @@
 # @package _global_
 dataset: "cifar10"
 base_model: "resnet18"
+model_type: "logit_classifier"
 pretrained: false
 epochs: 200
 batch_size: 128
