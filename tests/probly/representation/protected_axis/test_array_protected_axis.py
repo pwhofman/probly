@@ -15,6 +15,15 @@ from probly.representation._protected_axis.array import ArrayAxisProtected
 class SingleArray(ArrayAxisProtected[np.ndarray]):
     array: np.ndarray
     protected_axes: ClassVar[dict[str, int]] = {"array": 1}
+    permitted_ufuncs: ClassVar[dict[np.ufunc, list[str]]] = {np.add: ["__call__"]}
+
+
+@dataclass(frozen=True, slots=True)
+class ReductionArray(ArrayAxisProtected[np.ndarray]):
+    array: np.ndarray
+    protected_axes: ClassVar[dict[str, int]] = {"array": 1}
+    permitted_functions: ClassVar[set[Any]] = {np.mean, np.sum}
+    permitted_ufuncs: ClassVar[dict[np.ufunc, list[str]]] = {np.add: ["reduce", "accumulate", "reduceat"]}
 
 
 @dataclass(frozen=True, slots=True)
@@ -49,6 +58,55 @@ def test_single_field_array_and_ufunc() -> None:
     np.testing.assert_array_equal(shifted.array, x.array + 1.0)
 
 
+def test_unpermitted_reductions_return_notimplemented() -> None:
+    x = SingleArray(np.arange(24.0).reshape(2, 3, 4))
+
+    with pytest.raises(TypeError):
+        _ = np.sum(x)
+
+    with pytest.raises(TypeError):
+        _ = np.mean(x)
+
+    with pytest.raises(TypeError):
+        _ = np.add.reduce(x, axis=0)
+
+
+def test_permitted_sum_and_mean_reduce_only_batch_axes() -> None:
+    x = ReductionArray(np.arange(24.0).reshape(2, 3, 4))
+
+    summed = np.sum(x)
+    assert isinstance(summed, ReductionArray)
+    np.testing.assert_array_equal(summed.array, np.sum(x.array, axis=(0, 1)))
+    assert summed.shape == ()
+    assert summed.protected_shape == (4,)
+
+    meaned = np.mean(x, axis=1)
+    assert isinstance(meaned, ReductionArray)
+    np.testing.assert_array_equal(meaned.array, np.mean(x.array, axis=1))
+    assert meaned.shape == (2,)
+    assert meaned.protected_shape == (4,)
+
+
+def test_permitted_ufunc_reductions_reduce_only_batch_axes() -> None:
+    x = ReductionArray(np.arange(24.0).reshape(2, 3, 4))
+
+    reduced = np.add.reduce(x, axis=None)
+    assert isinstance(reduced, ReductionArray)
+    np.testing.assert_array_equal(reduced.array, np.add.reduce(x.array, axis=(0, 1)))
+    assert reduced.shape == ()
+    assert reduced.protected_shape == (4,)
+
+    accumulated = np.add.accumulate(x, axis=0)
+    assert isinstance(accumulated, ReductionArray)
+    np.testing.assert_array_equal(accumulated.array, np.add.accumulate(x.array, axis=0))
+    assert accumulated.protected_shape == (4,)
+
+    reduced_at = np.add.reduceat(x, [0, 2], axis=1)
+    assert isinstance(reduced_at, ReductionArray)
+    np.testing.assert_array_equal(reduced_at.array, np.add.reduceat(x.array, [0, 2], axis=1))
+    assert reduced_at.protected_shape == (4,)
+
+
 def test_multi_field_metadata_comes_from_first_field() -> None:
     x = PairArray(
         first=np.ones((2, 3), dtype=np.float64),
@@ -67,7 +125,7 @@ def test_multi_field_array_and_ufunc_raise_by_default() -> None:
     with pytest.raises(TypeError, match="Cannot convert multi-field"):
         _ = np.asarray(x)
 
-    with pytest.raises(TypeError, match="__array_ufunc__ is undefined"):
+    with pytest.raises(TypeError):
         _ = np.add(x, 1)
 
 
