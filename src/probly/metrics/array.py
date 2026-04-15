@@ -4,7 +4,19 @@ from __future__ import annotations
 
 import numpy as np
 
-from ._common import auc, average_precision_score, precision_recall_curve, roc_auc_score, roc_curve
+from probly.representation.conformal_set.array import ArrayIntervalConformalSet, ArrayOneHotConformalSet
+
+from ._common import (
+    auc,
+    average_interval_size,
+    average_precision_score,
+    average_set_size,
+    empirical_coverage_classification,
+    empirical_coverage_regression,
+    precision_recall_curve,
+    roc_auc_score,
+    roc_curve,
+)
 
 
 @auc.register(np.ndarray)
@@ -52,6 +64,7 @@ def roc_auc_score_numpy(y_true: np.ndarray, y_score: np.ndarray) -> np.ndarray:
     fpr, tpr, _ = roc_curve(y_true, y_score)
     return auc(fpr, tpr)  # ty:ignore[invalid-return-type]
 
+
 @roc_curve.register(np.ndarray)
 def roc_curve_numpy(y_true: np.ndarray, y_score: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Compute ROC curve along the last axis."""
@@ -78,3 +91,44 @@ def roc_curve_numpy(y_true: np.ndarray, y_score: np.ndarray) -> tuple[np.ndarray
     thresholds = np.concatenate([y_score_sorted[..., :1] + 1, y_score_sorted], axis=-1)
 
     return fpr, tpr, thresholds
+
+
+@empirical_coverage_classification.register(np.ndarray)
+def _empirical_coverage_classification_numpy(y_pred: np.ndarray, y_true: np.ndarray) -> float:
+    contained = y_pred[np.arange(len(y_true)), y_true.astype(int)]
+    return contained.mean()
+
+
+@empirical_coverage_regression.register(np.ndarray)
+def _empirical_coverage_regression_numpy(y_pred: np.ndarray, y_true: np.ndarray) -> float:
+    return ((y_true >= y_pred[:, 0]) & (y_true <= y_pred[:, 1])).mean()
+
+
+@average_set_size.register(np.ndarray)
+def _average_set_size_numpy(y_pred: np.ndarray) -> float:
+    return np.mean(y_pred.sum(axis=1))
+
+
+@average_interval_size.register(np.ndarray)
+def _average_interval_size_numpy(y_pred: np.ndarray) -> float:
+    return np.mean(y_pred[:, 1] - y_pred[:, 0])
+
+
+@average_set_size.register(ArrayOneHotConformalSet)
+def _average_set_size_array_onehot(y_pred: ArrayOneHotConformalSet) -> float:
+    return average_set_size(y_pred.array)
+
+
+@empirical_coverage_classification.register(ArrayOneHotConformalSet)
+def _empirical_coverage_classification_array_onehot[T](y_pred: ArrayOneHotConformalSet, y_true: T) -> float:
+    return empirical_coverage_classification(y_pred.array, y_true)
+
+
+@average_interval_size.register(ArrayIntervalConformalSet)
+def _average_interval_size_array_interval(y_pred: ArrayIntervalConformalSet) -> float:
+    return average_interval_size(y_pred.array)
+
+
+@empirical_coverage_regression.register(ArrayIntervalConformalSet)
+def _empirical_coverage_regression_array_interval[T](y_pred: ArrayIntervalConformalSet, y_true: T) -> float:
+    return empirical_coverage_regression(y_pred.array, y_true)

@@ -84,3 +84,29 @@ def average_precision_score(y_true: object, y_score: object) -> object:
     """
     msg = f"No average_precision_score implementation registered for type {type(y_true)}"
     raise NotImplementedError(msg)
+
+@lazydispatch
+def empirical_coverage_classification[T](y_pred: T, y_true: T) -> float:
+    """Calculate the empirical coverage for classification."""
+    msg = f"Empirical coverage for classification is not implemented for this type {type(y_pred)}."
+    raise NotImplementedError(msg)
+
+
+@lazydispatch
+def empirical_coverage_regression[T](y_pred: T, y_true: T) -> float:
+    """Calculate the empirical coverage for regression."""
+    msg = f"Empirical coverage for regression is not implemented for this type {type(y_pred)}."
+    raise NotImplementedError(msg)
+
+
+@lazydispatch
+def average_set_size[T](y_pred: T) -> float:
+    """Calculate the average prediction set size for classification."""
+    msg = f"Average set size for classification is not implemented for this type {type(y_pred)}."
+    raise NotImplementedError(msg)
+
+@lazydispatch
+def average_interval_size[T](y_pred: T) -> float:
+    """Calculate the average interval size for regression."""
+    msg = f"Average interval size for regression is not implemented for this type {type(y_pred)}."
+    raise NotImplementedError(msg)
