@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from probly.lazy_types import TORCH_MODULE
 
-from ._common import HetNetsPredictor, het_nets, hetnets_traverser, register
+from ._common import HetNetsPredictor, het_nets, het_nets_traverser, register
 
 
 ## Torch
-@hetnets_traverser.delayed_register(TORCH_MODULE)
+@het_nets_traverser.delayed_register(TORCH_MODULE)
 def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415
 
@@ -16,6 +16,6 @@ def _(_: type) -> None:
 __all__ = [
     "HetNetsPredictor",
     "het_nets",
-    "hetnets_traverser",
+    "het_nets_traverser",
     "register",
 ]

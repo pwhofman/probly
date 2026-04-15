@@ -18,19 +18,19 @@ class HetNetsPredictor[**In, Out](RandomPredictor[In, Out], Protocol):
     """A predictor that applies HetNets."""
 
 
-hetnets_traverser = lazydispatch_traverser[object](name="hetnets_traverser")
+het_nets_traverser = lazydispatch_traverser[object](name="het_nets_traverser")
 
 LAST_LAYER = GlobalVariable[bool]("LAST_LAYER")
 NUM_FACTORS = GlobalVariable[int]("NUM_FACTORS")
 TEMPERATURE = GlobalVariable[float]("TEMPERATURE")
-NUM_MC_SAMPLES = GlobalVariable[int]("NUM_SAMPLES")
+NUM_MC_SAMPLES = GlobalVariable[int]("NUM_MC_SAMPLES")
 IS_PARAMETER_EFFICIENT = GlobalVariable[bool]("IS_PARAMETER_EFFICIENT")
 MULTILABEL = GlobalVariable[bool]("MULTILABEL")
 
 
 def register(cls: type, traverser: RegisteredLooseTraverser) -> None:
     """Register a class to be transformed by HetNets."""
-    hetnets_traverser.register(cls=cls, traverser=traverser, vars={"last_layer": LAST_LAYER})
+    het_nets_traverser.register(cls=cls, traverser=traverser, vars={"last_layer": LAST_LAYER})
 
 
 @predictor_transformation(permitted_predictor_types=None, preserve_predictor_type=False)
@@ -58,7 +58,7 @@ def het_nets[T: Predictor](
     """
     return traverse(
         base,
-        nn_compose(hetnets_traverser),
+        nn_compose(het_nets_traverser),
         init={
             LAST_LAYER: True,
             TRAVERSE_REVERSED: True,
