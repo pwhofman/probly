@@ -21,7 +21,6 @@ import torch
 from torch import nn, optim
 from torch.amp import GradScaler
 from tqdm import tqdm
-import wandb
 import wandb.util
 
 from lazy_dispatch import lazydispatch
@@ -41,6 +40,7 @@ from probly_benchmark.train_funcs import (
     validate,
     validate_cross_entropy,
 )
+import wandb
 
 torch.set_float32_matmul_precision("high")
 
@@ -498,6 +498,7 @@ def main(cfg: DictConfig) -> None:
 
     context = BuildContext(
         base_model_name=cfg.base_model,
+        model_type=cfg.model_type,
         num_classes=num_classes,
         pretrained=cfg.pretrained,
         train_loader=train_loader,
@@ -505,7 +506,7 @@ def main(cfg: DictConfig) -> None:
     model = build_model(cfg.method.name, method_kwargs, context).to(device)
     # channels_last layout gives a large speedup for conv nets on recent NVIDIA GPUs.
     # only
-    # model = model.to(memory_format=torch.channels_last)  # ty: ignore[no-matching-overload] # noqa: ERA001
+    # model = model.to(memory_format=torch.channels_last) # noqa: ERA001
     model = model.to(device)
 
     if not cfg.validate:
