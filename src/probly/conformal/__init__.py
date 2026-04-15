@@ -2,8 +2,8 @@
 
 from probly.calibrator._common import ConformalCalibrator
 
-from .methods import conformalize_classifier, conformalize_quantile_regressor, conformalize_regressor
-from .quantile import calculate_quantile, calculate_weighted_quantile
+from ..method.conformal import conformalize_classifier, conformalize_quantile_regressor, conformalize_regressor
+from ..utils.quantile import calculate_quantile, calculate_weighted_quantile
 from .scores import AbsoluteErrorScore, APSScore, CQRrScore, CQRScore, LACScore, RAPSScore, SAPSScore, UACQRScore
 from .utils import is_conformal_calibrated
 

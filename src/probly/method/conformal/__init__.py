@@ -2,9 +2,14 @@
 
 from __future__ import annotations
 
-from .classification import ConformalClassificationCalibrator, conformalize_classifier
-from .quantile_regression import ConformalQuantileRegressionCalibrator, conformalize_quantile_regressor
-from .regression import ConformalRegressionCalibrator, conformalize_regressor
+from ._common import (
+    ConformalClassificationCalibrator,
+    ConformalQuantileRegressionCalibrator,
+    ConformalRegressionCalibrator,
+    conformalize_classifier,
+    conformalize_quantile_regressor,
+    conformalize_regressor,
+)
 
 __all__ = [
     "ConformalClassificationCalibrator",
