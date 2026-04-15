@@ -3,7 +3,7 @@ dataset: "cifar10"
 base_model: "resnet18"
 model_type: "logit_classifier"
 pretrained: false
-epochs: 200
+epochs: 3
 batch_size: 128
 num_workers: 16
 pin_memory: true
