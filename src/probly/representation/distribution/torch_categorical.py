@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, ClassVar, override
 
@@ -18,7 +17,7 @@ from probly.representation.distribution._common import (
 from probly.representation.sample.torch import TorchSample
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Callable, Iterator
 
     import numpy as np
 
