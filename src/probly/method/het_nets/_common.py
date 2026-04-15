@@ -43,15 +43,15 @@ def het_nets[T: Predictor](
     is_parameter_efficient: bool = False,
     multilabel: bool = False,
 ) -> T:
-    """Create a HetNets predictor from a base predictor.
+    """Create a HetNets predictor from a base predictor base on :cite:`collier2021hetnets`.
 
     Args:
-        base: Predictor, The base model to be used for HetNets.
-        num_factors: int, The rank of the low-rank covariance parametrization. Default is 10.
-        temperature: float, The temperature parameter for scaling the utility. Default is 1.0.
-        num_mc_samples: int, The number of Monte Carlo samples to use during training. Default is 10.
-        is_parameter_efficient: bool, Whether to use the parameter-efficient version of HetNets. Default is False.
-        multilabel: bool, Whether the task is multilabel. Default is False.
+        base: The base model to be used for HetNets.
+        num_factors: The rank of the low-rank covariance parametrization. Default is 10.
+        temperature: The temperature parameter for scaling the utility. Default is 1.0.
+        num_mc_samples: The number of Monte Carlo samples to use during training. Default is 10.
+        is_parameter_efficient: Whether to use the parameter-efficient version of HetNets. Default is False.
+        multilabel: Whether the task is multilabel. Default is False.
 
     Returns:
         Predictor, The HetNets predictor.
