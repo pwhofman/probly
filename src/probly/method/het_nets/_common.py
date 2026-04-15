@@ -7,7 +7,7 @@ from typing import Protocol, runtime_checkable
 from probly.method.method import predictor_transformation
 from probly.predictor import Predictor, RandomPredictor
 from probly.traverse_nn import nn_compose
-from pytraverse import TRAVERSE_REVERSED, GlobalVariable, lazydispatch_traverser, traverse, CLONE
+from pytraverse import CLONE, TRAVERSE_REVERSED, GlobalVariable, lazydispatch_traverser, traverse
 
 
 @runtime_checkable
@@ -25,7 +25,7 @@ IS_PARAMETER_EFFICIENT = GlobalVariable[bool]("IS_PARAMETER_EFFICIENT")
 MULTILABEL = GlobalVariable[bool]("MULTILABEL")
 
 
-@predictor_transformation(permitted_predictor_types=None, preserve_predictor_type=False) # ty:ignore[invalid-argument-type]
+@predictor_transformation(permitted_predictor_types=None, preserve_predictor_type=False)  # ty:ignore[invalid-argument-type]
 @HetNetsPredictor.register_factory
 def het_nets[**In, Out](
     base: Predictor[In, Out],
