@@ -25,4 +25,4 @@ logger.info(output)
 logger.info(output.shape)
 quantification = quantify(output)
 logger.info(quantification)
-logger.info(quantification.total)  # ty:ignore[unresolved-attribute]
+logger.info(quantification.total.detach().numpy())  # ty:ignore[unresolved-attribute]

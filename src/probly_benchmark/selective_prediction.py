@@ -82,7 +82,7 @@ def main(cfg: DictConfig) -> None:
         cfg.get("amp", False),
     )
     decomposition = quantify(outputs)
-    uncertainties = decomposition.total  # ty: ignore[unresolved-attribute]
+    uncertainties = decomposition.total.detach().cpu().numpy()  # ty: ignore[unresolved-attribute]
 
     mean_probs = compute_mean_probs(outputs).cpu().numpy()
 
