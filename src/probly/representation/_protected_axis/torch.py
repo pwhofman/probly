@@ -40,6 +40,7 @@ class TorchAxisProtected[T: TorchLike | torch.Tensor](TorchLikeImplementation[T]
     """ABC for representations with one or multiple protected tensor-like fields."""
 
     protected_axes: ClassVar[dict[str, int]] = {}
+    permitted_functions: ClassVar[set[Callable[..., Any]]] = set()
 
     def __init_subclass__(cls, **kwargs: object) -> None:
         super().__init_subclass__(**kwargs)
@@ -62,6 +63,12 @@ class TorchAxisProtected[T: TorchLike | torch.Tensor](TorchLikeImplementation[T]
             if not hasattr(cls, "__annotations__") or name not in cls.__annotations__:
                 msg = f"{cls.__name__}.protected_axes refers to unknown field {name!r}."
                 raise TypeError(msg)
+
+        permitted_functions = getattr(cls, "permitted_functions", set())
+        if not isinstance(permitted_functions, set) or not all(callable(func) for func in permitted_functions):
+            msg = f"{cls.__name__}.permitted_functions must be a set of callables."
+            raise TypeError(msg)
+        cls.permitted_functions = set(permitted_functions)
 
     @classmethod
     def primary_protected_name(cls) -> str:

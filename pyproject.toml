@@ -98,6 +98,7 @@ benchmark = [
     "nvidia-ml-py==13.590.48",
     "torch<2.11.0",
     "torchvision<0.26.0",
+    "pytorch-optimizer>=3.0",
 ]
 dev = [
     { include-group = "test" },

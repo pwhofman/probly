@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable
-from typing import Any, Literal, Protocol, runtime_checkable
+from contextvars import ContextVar
+from typing import Any, ClassVar, Literal, Protocol, runtime_checkable
 
 from lazy_dispatch import ProtocolRegistry, lazydispatch
 from probly.representation import Representation
@@ -66,6 +67,30 @@ class RepresentationPredictor[**In, Out: Representation](Predictor[In, Out], Pro
         predict_method = getattr(subclass, "predict_representation", None)
         if predict_method is not None and callable(predict_method):
             return True
+        return NotImplemented
+
+
+@runtime_checkable  # ty:ignore[conflicting-metaclass]
+class RandomRepresentationPredictor[**In, Out: Representation](
+    RepresentationPredictor[In, Out], RandomPredictor[In, Out], Protocol
+):
+    """Protocol for non-deterministic predictors that return a distribution over outputs."""
+
+    _running_instancehook: ClassVar[ContextVar[object]] = ContextVar(
+        "RandomRepresentationPredictor._running_instancehook", default=NotImplemented
+    )
+    sample_space: ClassVar[type[Distribution]] = Distribution
+
+    @classmethod
+    def __instancehook__(cls, instance: object) -> bool:
+        if cls._running_instancehook.get() is instance:
+            return NotImplemented
+        try:
+            tok = cls._running_instancehook.set(instance)
+            if isinstance(instance, RepresentationPredictor) and isinstance(instance, RandomPredictor):
+                return True
+        finally:
+            cls._running_instancehook.reset(tok)
         return NotImplemented
 
 
