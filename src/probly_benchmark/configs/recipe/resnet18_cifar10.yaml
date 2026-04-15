@@ -3,7 +3,7 @@ dataset: "cifar10"
 base_model: "resnet18"
 model_type: "logit_classifier"
 pretrained: false
-epochs: 3
+epochs: 200
 batch_size: 128
 num_workers: 16
 pin_memory: true
@@ -14,7 +14,6 @@ optimizer:
         lr: 0.1
         momentum: 0.9
         weight_decay: 5e-4
-        fused: true
 
 scheduler:
   name: "cosine"
