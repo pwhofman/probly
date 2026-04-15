@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, ClassVar, override
 
@@ -36,6 +37,7 @@ class TorchCategoricalDistribution(
 
     unnormalized_probabilities: torch.Tensor
     protected_axes: ClassVar[dict[str, int]] = {"unnormalized_probabilities": 1}
+    permitted_functions: ClassVar[set[Callable]] = {torch.mean}
 
     def __post_init__(self) -> None:
         """Validate the concentration parameters."""
