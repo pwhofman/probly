@@ -2,15 +2,12 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 from probly.method.method import predictor_transformation
 from probly.predictor import Predictor, RandomPredictor
 from probly.traverse_nn import nn_compose
 from pytraverse import TRAVERSE_REVERSED, GlobalVariable, lazydispatch_traverser, traverse
-
-if TYPE_CHECKING:
-    from pytraverse.composition import RegisteredLooseTraverser
 
 
 @runtime_checkable
@@ -26,11 +23,6 @@ TEMPERATURE = GlobalVariable[float]("TEMPERATURE")
 NUM_MC_SAMPLES = GlobalVariable[int]("NUM_MC_SAMPLES")
 IS_PARAMETER_EFFICIENT = GlobalVariable[bool]("IS_PARAMETER_EFFICIENT")
 MULTILABEL = GlobalVariable[bool]("MULTILABEL")
-
-
-def register(cls: type, traverser: RegisteredLooseTraverser) -> None:
-    """Register a class to be transformed by HetNets."""
-    het_nets_traverser.register(cls=cls, traverser=traverser, vars={"last_layer": LAST_LAYER})
 
 
 @predictor_transformation(permitted_predictor_types=None, preserve_predictor_type=False)

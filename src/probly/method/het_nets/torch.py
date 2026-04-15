@@ -8,17 +8,27 @@ from torch import nn
 
 from probly.layers.torch import HeteroscedasticLayer
 
-from ._common import IS_PARAMETER_EFFICIENT, LAST_LAYER, MULTILABEL, NUM_FACTORS, NUM_MC_SAMPLES, TEMPERATURE, register
+from ._common import (
+    IS_PARAMETER_EFFICIENT,
+    LAST_LAYER,
+    MULTILABEL,
+    NUM_FACTORS,
+    NUM_MC_SAMPLES,
+    TEMPERATURE,
+    het_nets_traverser,
+)
 
 if TYPE_CHECKING:
     from pytraverse import State
 
 
+@het_nets_traverser.register(nn.Module)
 def skip_layer(obj: nn.Module, state: State) -> tuple[nn.Module, State]:
     """Traverser for torch HetNets."""
     return obj, state
 
 
+@het_nets_traverser.register(nn.Linear)
 def drop_in_place_het_layer(obj: nn.Linear, state: State) -> tuple[nn.Module, State]:
     """Replace the last linear layer with a HeteroscedasticLayer."""
     if state[LAST_LAYER]:
@@ -37,13 +47,9 @@ def drop_in_place_het_layer(obj: nn.Linear, state: State) -> tuple[nn.Module, St
     return obj, state
 
 
+@het_nets_traverser.register(nn.Softmax)
 def remove_layer(obj: nn.Softmax, state: State) -> tuple[nn.Module, State]:
     """Remove the softmax layer."""
     if state[LAST_LAYER]:
         return nn.Identity(), state
     return obj, state
-
-
-register(nn.Module, skip_layer)
-register(nn.Softmax, remove_layer)
-register(nn.Linear, drop_in_place_het_layer)

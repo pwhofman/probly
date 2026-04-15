@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from probly.lazy_types import TORCH_MODULE
 
-from ._common import HetNetsPredictor, het_nets, het_nets_traverser, register
+from ._common import HetNetsPredictor, het_nets, het_nets_traverser
 
 
 ## Torch
@@ -17,5 +17,4 @@ __all__ = [
     "HetNetsPredictor",
     "het_nets",
     "het_nets_traverser",
-    "register",
 ]
