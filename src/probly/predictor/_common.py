@@ -58,12 +58,6 @@ class RandomPredictor[**In, Out](Predictor[In, Out], Protocol):
 class IterablePredictor[**In, Out](Predictor[In, Iterable[Out]], Protocol):
     """Protocol for predictors that return an iterable of outputs."""
 
-    # Needed as UACQR requires a iterable predictor, but then we have ambiguity between the dispatches.
-    @classmethod
-    def __subclasshook__(cls, subclass: type) -> bool:
-        return not isinstance(subclass, ConformalCalibrator)
-
-
 @runtime_checkable
 class RepresentationPredictor[**In, Out: Representation](Predictor[In, Out], Protocol):
     """Protocol for predictors that return a distribution over outputs."""
