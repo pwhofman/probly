@@ -225,6 +225,31 @@ class Benthic(DCICDataset):
         super().__init__(Path(root) / "Benthic", transform, first_order=first_order)
 
 
+class CIFAR10HDCIC(DCICDataset):
+    """Implementation of the DCIC version of the CIFAR10H dataset.
+
+    Targets and labels are the same as in the original CIFAR10H dataset.
+    This variant uses the DCIC file structure and predefined folds.
+    The dataset can be found at https://zenodo.org/records/7180818.
+    """
+
+    def __init__(
+        self,
+        root: Path | str,
+        transform: Callable[..., Any] | None = None,
+        *,
+        first_order: bool = True,
+    ) -> None:
+        """Initialize an instance of the DCIC-version of the CIFAR10H dataset class.
+
+        Args:
+            root: Root directory of the dataset.
+            transform: Optional transform to apply to the data.
+            first_order: Whether to use first order data or class labels. Defaults to True.
+        """
+        super().__init__(Path(root) / "CIFAR10H", transform, first_order=first_order)
+
+
 class MiceBone(DCICDataset):
     """Implementation of the MiceBone dataset.
 
