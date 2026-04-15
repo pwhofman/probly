@@ -6,30 +6,13 @@ from typing import Any
 
 import hydra
 from omegaconf import DictConfig, OmegaConf
-import torch
 
 from probly.evaluation.ood import out_of_distribution_detection_auroc
 from probly.quantification import quantify
-from probly.representation.distribution.torch_categorical import (
-    TorchCategoricalDistribution,
-    TorchCategoricalDistributionSample,
-)
 from probly.representer import representer
 from probly_benchmark import data, utils
 from probly_benchmark.utils import load_model_from_wandb, resolve_artifact_name
 import wandb
-
-
-def compute_epistemic_uncertainty(outputs: list[Any]) -> torch.Tensor:
-    """Compute epistemic uncertainty (mutual information) from sampler outputs."""
-    all_uncertainties = []
-    for out in outputs:
-        probs = torch.softmax(out.samples, dim=-1)  # (num_samples, batch, n_classes)
-        dist = TorchCategoricalDistribution(probs)
-        dist_sample = TorchCategoricalDistributionSample(tensor=dist, sample_dim=0)
-        decomposition = quantify(dist_sample)
-        all_uncertainties.append(decomposition.epistemic.cpu())  # ty: ignore[unresolved-attribute]
-    return torch.cat(all_uncertainties)
 
 
 @hydra.main(version_base=None, config_path="configs/", config_name="ood_detection")
