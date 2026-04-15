@@ -81,8 +81,6 @@ def main(cfg: DictConfig) -> None:
         device,
         cfg.get("amp", False),
     )
-    print(outputs)
-    print(type(outputs))
     decomposition = quantify(outputs)
     uncertainties = decomposition.total  # ty: ignore[unresolved-attribute]
 
