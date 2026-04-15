@@ -6,14 +6,14 @@ from typing import Any
 
 import hydra
 from omegaconf import DictConfig, OmegaConf
-import wandb
 
 from probly.evaluation.tasks import selective_prediction
 from probly.quantification import quantify
 from probly.representation._helpers import compute_mean_probs
-from probly.representer import Sampler
+from probly.representer import representer
 from probly_benchmark import data, utils
 from probly_benchmark.utils import load_model_from_wandb, resolve_artifact_name
+import wandb
 
 
 @hydra.main(version_base=None, config_path="configs/", config_name="selective_prediction")
@@ -47,7 +47,7 @@ def main(cfg: DictConfig) -> None:
         if cfg.method.get("selective_prediction")
         else {}
     )  # ty: ignore[invalid-assignment]
-    rep = Sampler(model, **rep_kwargs)
+    rep = representer(model, **rep_kwargs)
 
     outputs, targets = utils.collect_outputs_targets(
         rep,
