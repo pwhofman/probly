@@ -3,7 +3,7 @@ defaults:
   - method: ???
 
 dataset: "cifar10"
-base_model: "resnet50"
+base_model: "resnet18"
 seed: 1
 batch_size: 512
 amp: true
