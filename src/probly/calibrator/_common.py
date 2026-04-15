@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
-from typing import Literal, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Literal, Protocol, runtime_checkable
 
 from lazy_dispatch import lazydispatch
 from lazy_dispatch.registry_meta import ProtocolRegistry
 from probly.utils.switchdispatch import switch
+
+if TYPE_CHECKING:
+    from probly.conformal_scores._common import NonConformityScore
 
 type CalibratorName = Literal[
     "conformal_calibrator",
@@ -55,3 +58,28 @@ def calibrate_raw[**In, Out](predictor: Calibrator[In, Out], /, *args: In.args, 
 def calibrate[**In, Out](predictor: Calibrator[In, Out], /, *args: In.args, **kwargs: In.kwargs) -> Out:
     """Calibrate the predictor with the given arguments."""
     return calibrate_raw(predictor, *args, **kwargs)
+
+
+@lazydispatch
+def calibrate_raw_conformal[**In, Out](
+    predictor: ConformalCalibrator[In, Out],
+    non_conformity_score: NonConformityScore,
+    /,
+    *args: In.args,
+    **kwargs: In.kwargs,
+) -> Out:
+    """Calibrate a conformal predictor with the given arguments, returning the raw output of the calibrator."""
+    msg = "Conformal calibration not implemented for this type of predictor."
+    raise NotImplementedError(msg)
+
+
+@lazydispatch
+def calibrate_conformal[**In, Out](
+    predictor: ConformalCalibrator[In, Out],
+    non_conformity_score: NonConformityScore,
+    /,
+    *args: In.args,
+    **kwargs: In.kwargs,
+) -> Out:
+    """Calibrate a conformal predictor with the given arguments."""
+    return calibrate_raw_conformal(predictor, non_conformity_score, *args, **kwargs)
