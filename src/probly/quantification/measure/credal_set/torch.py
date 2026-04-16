@@ -13,7 +13,7 @@ from probly.utils.torch import torch_entropy
 from ._common import LogBase, generalized_hartley, lower_entropy, upper_entropy
 
 _BISECT_ITERS = 64
-_LBFGS_ITERS = 100
+_LBFGS_ITERS = 128
 
 
 def _apply_base(result: torch.Tensor, n_classes: int, base: LogBase) -> torch.Tensor:
@@ -23,9 +23,6 @@ def _apply_base(result: torch.Tensor, n_classes: int, base: LogBase) -> torch.Te
     return result / math.log(n_classes if base == "normalize" else base)  # type: ignore[arg-type]
 
 
-# ---------------------------------------------------------------------------
-# Upper and lower entropy
-# ---------------------------------------------------------------------------
 
 
 @upper_entropy.register(TorchProbabilityIntervalsCredalSet)
@@ -121,7 +118,6 @@ def torch_convex_upper_entropy(
 def torch_convex_lower_entropy(
     credal_set: TorchConvexCredalSet,
     base: LogBase = None,
-    n_jobs: int | None = None,  # noqa: ARG001
 ) -> torch.Tensor:
     """Compute the lower entropy of a convex hull credal set.
 
@@ -129,11 +125,6 @@ def torch_convex_lower_entropy(
     """
     result = torch_entropy(credal_set.tensor.probabilities).min(-1).values
     return _apply_base(result, credal_set.num_classes, base)
-
-
-# ---------------------------------------------------------------------------
-# Generalised Hartley measure
-# ---------------------------------------------------------------------------
 
 
 def _upper_probability(vertices: torch.Tensor, subset: tuple[int, ...]) -> torch.Tensor:
