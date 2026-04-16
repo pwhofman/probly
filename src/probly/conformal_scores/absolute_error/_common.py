@@ -37,4 +37,4 @@ def compute_absolute_error_score_numpy(y_pred: np.ndarray, y_true: np.ndarray) -
 @absolute_error_score_func.register(ArraySample)
 def _(y_pred: ArraySample, y_true: np.ndarray) -> np.ndarray:
     """Absolute error for ArraySamples."""
-    return compute_absolute_error_score_numpy(y_pred.array, y_true)
+    return absolute_error_score_func(y_pred.array, y_true)

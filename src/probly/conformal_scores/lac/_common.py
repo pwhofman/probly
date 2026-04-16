@@ -29,4 +29,4 @@ def compute_lac_score_categorical(probs: ArrayCategoricalDistribution, y_cal: np
 
 @lac_score_func.register(ArraySample)
 def compute_lac_score_sample(probs: ArraySample, y_cal: np.ndarray | None = None) -> np.ndarray:
-    return compute_lac_score_numpy(probs.array, y_cal)
+    return lac_score_func(probs.array, y_cal)

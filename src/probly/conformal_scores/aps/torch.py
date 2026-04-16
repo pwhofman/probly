@@ -43,7 +43,7 @@ def compute_aps_score_func_torch(
 @aps_score_func.register(TorchSample)
 def _(probs: TorchSample, y_cal: torch.Tensor | None = None, randomized: bool = True) -> torch.Tensor:
     """APS Nonconformity-Scores for PyTorch tensors."""
-    return compute_aps_score_func_torch(probs.tensor, y_cal, randomized=randomized)
+    return aps_score_func(probs.tensor, y_cal, randomized=randomized)
 
 
 @aps_score_func.register(TorchCategoricalDistribution)

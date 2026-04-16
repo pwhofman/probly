@@ -59,7 +59,7 @@ def _(
     epsilon: float = 0.01,
 ) -> torch.Tensor:
     """RAPS Nonconformity-Scores for TorchSamples."""
-    return compute_raps_score_func_torch(
+    return raps_score_func(
         probs.tensor,
         y_cal,
         randomized=randomized,

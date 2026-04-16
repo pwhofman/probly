@@ -46,7 +46,7 @@ def _(
     lambda_val: float = 0.1,
 ) -> torch.Tensor:
     """SAPS Nonconformity-Scores for TorchSamples."""
-    return compute_saps_score_func_torch(
+    return saps_score_func(
         probs.samples,
         y_cal,
         randomized=randomized,

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import numpy as np
-import numpy.typing as npt
 
 from lazy_dispatch import lazydispatch
 from probly.representation.distribution import ArrayCategoricalDistribution
@@ -16,7 +15,7 @@ def saps_score_func[T](
     y_cal: T | None = None,
     randomized: bool = True,
     lambda_val: float = 0.1,
-) -> npt.NDArray[np.floating]:
+) -> T:
     """Compute the SAPS nonconformity score."""
     msg = "SAPS score computation not implemented for this type."
     raise NotImplementedError(msg)
@@ -66,7 +65,7 @@ def _(
     lambda_val: float = 0.1,
 ) -> np.ndarray:
     """SAPS Nonconformity-Scores for ArraySamples."""
-    return compute_saps_score_func_numpy(
+    return saps_score_func(
         probs.array,
         y_cal,
         randomized=randomized,

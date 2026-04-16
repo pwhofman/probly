@@ -22,7 +22,7 @@ def compute_lac_score_torch(probs: torch.Tensor, y_cal: torch.Tensor | None = No
 @lac_score_func.register(TorchSample)
 def compute_lac_score_torch_sample(probs: TorchSample, y_cal: torch.Tensor | None = None) -> torch.Tensor:
     """Compute the LAC score for torch samples."""
-    return compute_lac_score_torch(probs.tensor, y_cal)
+    return lac_score_func(probs.tensor, y_cal)
 
 
 @lac_score_func.register(TorchCategoricalDistribution)

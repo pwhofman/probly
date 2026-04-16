@@ -93,7 +93,7 @@ def _(
     epsilon: float = 0.01,
 ) -> np.ndarray:
     """RAPS Nonconformity-Scores for ArraySamples."""
-    return compute_raps_score_func_numpy(
+    return raps_score_func(
         probs.array,
         y_cal,
         randomized=randomized,
