@@ -8,6 +8,7 @@ from .decomposition import (
     CachingDecomposition,
     Decomposition,
     SecondOrderEntropyDecomposition,
+    SecondOrderZeroOneDecomposition,
 )
 from .notion import (
     AleatoricUncertainty,
@@ -28,6 +29,7 @@ __all__ = [
     "QuantificationResult",
     "Quantifier",
     "SecondOrderEntropyDecomposition",
+    "SecondOrderZeroOneDecomposition",
     "TotalUncertainty",
     "notion_registry",
     "quantify",

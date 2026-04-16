@@ -13,7 +13,16 @@ from probly.representation.distribution.array_categorical import (
 from probly.representation.distribution.array_dirichlet import ArrayDirichletDistribution
 from probly.representation.distribution.array_gaussian import ArrayGaussianDistribution
 
-from ._common import LogBase, conditional_entropy, entropy, entropy_of_expected_value, mutual_information
+from ._common import (
+    LogBase,
+    conditional_entropy,
+    entropy,
+    entropy_of_expected_value,
+    expected_max_probability_complement,
+    max_disagreement,
+    max_probability_complement_of_expected,
+    mutual_information,
+)
 
 # Entropy
 
@@ -182,3 +191,45 @@ def array_categorical_sample_mutual_information(
         base = p.shape[-1]
 
     return scipy_entropy(p, expected_value, axis=-1, base=base).mean(axis=axis)
+
+
+# Zero-one proper scoring rule measures
+
+
+@max_probability_complement_of_expected.register(ArrayCategoricalDistributionSample)
+def array_categorical_sample_max_probability_complement_of_expected(
+    sample: ArrayCategoricalDistributionSample,
+) -> np.ndarray:
+    """Compute one minus the max probability of the expected value of a categorical sample."""
+    p = sample.array.probabilities
+    axis = sample.sample_axis
+    del sample  # Avoid keeping a reference to the sample for memory efficiency
+    expected_value = np.mean(p, axis=axis)
+    return 1.0 - np.max(expected_value, axis=-1)
+
+
+@expected_max_probability_complement.register(ArrayCategoricalDistributionSample)
+def array_categorical_sample_expected_max_probability_complement(
+    sample: ArrayCategoricalDistributionSample,
+) -> np.ndarray:
+    """Compute the expected value of one minus the max probability of a categorical sample."""
+    p = sample.array.probabilities
+    axis = sample.sample_axis
+    del sample  # Avoid keeping a reference to the sample for memory efficiency
+    per_sample_complement = 1.0 - np.max(p, axis=-1)
+    return np.mean(per_sample_complement, axis=axis)
+
+
+@max_disagreement.register(ArrayCategoricalDistributionSample)
+def array_categorical_sample_max_disagreement(
+    sample: ArrayCategoricalDistributionSample,
+) -> np.ndarray:
+    """Compute the expected gap between each sample's max probability and its probability on the BMA argmax."""
+    p = sample.array.probabilities
+    axis = sample.sample_axis
+    del sample  # Avoid keeping a reference to the sample for memory efficiency
+    expected_value = np.mean(p, axis=axis, keepdims=True)
+    bma_argmax = np.argmax(expected_value, axis=-1, keepdims=True)
+    per_sample_bma_prob = np.take_along_axis(p, bma_argmax, axis=-1).squeeze(-1)
+    per_sample_max = np.max(p, axis=-1)
+    return np.mean(per_sample_max - per_sample_bma_prob, axis=axis)
