@@ -5,8 +5,10 @@ from __future__ import annotations
 from typing import Protocol, runtime_checkable
 
 from probly.method.method import predictor_transformation
-from probly.predictor import LogitDistributionPredictor, Predictor, predict, predict_raw
-from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution, create_categorical_distribution_from_logits
+from probly.predictor import LogitDistributionPredictor, Predictor
+from probly.representation.distribution.torch_categorical import (
+    TorchCategoricalDistribution,
+)
 from probly.traverse_nn import nn_compose
 from pytraverse import CLONE, TRAVERSE_REVERSED, GlobalVariable, lazydispatch_traverser, traverse
 
@@ -63,4 +65,3 @@ def het_nets[**In, Out: TorchCategoricalDistribution](
             MULTILABEL: multilabel,
         },
     )
-
