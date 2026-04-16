@@ -37,12 +37,6 @@ if TYPE_CHECKING:
 
     from probly.representation.sample._common import Sample
 
-if TYPE_CHECKING:
-    import numpy as np
-
-    from probly.calibrator._common import ConformalCalibrator
-    from probly.representation.sample._common import Sample
-
 
 @runtime_checkable  # ty: ignore[conflicting-metaclass]
 class ConformalIterableCalibrator[**In, Out](
