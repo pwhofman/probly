@@ -20,10 +20,11 @@ from torch import nn
 from sklearn.datasets import load_diabetes
 from sklearn.model_selection import train_test_split
 
-from probly.calibrator import calibrate
-from probly.conformal.metrics import average_interval_size, empirical_coverage_regression
-from probly.conformal.methods.regression import conformalize_regressor
-from probly.conformal.scores import AbsoluteErrorScore
+from probly.calibrator._common import calibrate_conformal
+from probly.metrics._common import average_interval_size, empirical_coverage_regression
+from probly.method.conformal import conformalize_regressor
+from probly.conformal_scores import AbsoluteErrorScore
+from probly.representation.sample import create_sample
 from probly.representer import representer
 
 torch.manual_seed(42)
@@ -81,8 +82,9 @@ model.eval()
 # --------------------
 
 with torch.no_grad():
-    calibrate(model, X_calib_t, y_calib_t, AbsoluteErrorScore(), alpha=0.05)
-    output = representer(model).predict(X_test_t)
+    y_calib_sample = create_sample(y_calib_t, sample_axis=0)
+    calibrated_model = calibrate_conformal(model, AbsoluteErrorScore(), X_calib_t, y_calib_sample, alpha=0.05)
+    output = representer(calibrated_model).predict(X_test_t)
 
 coverage = empirical_coverage_regression(output, y_test_t)
 avg_size = average_interval_size(output)

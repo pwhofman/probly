@@ -27,11 +27,12 @@ from sklearn.datasets import load_diabetes
 from sklearn.model_selection import train_test_split
 
 from probly.calibrator import calibrate
-from probly.conformal.metrics import average_interval_size, empirical_coverage_regression
-from probly.conformal.methods.quantile_regression import conformalize_quantile_regressor
-from probly.conformal.quantile import calculate_quantile
-from probly.conformal.scores import CQRScore, CQRrScore, UACQRScore
-from probly.method.ensemble._common import ensemble
+from probly.calibrator._common import calibrate_conformal
+from probly.metrics._common import average_interval_size, empirical_coverage_regression
+from probly.method.conformal import conformalize_quantile_regressor
+from probly.utils.quantile import calculate_quantile
+from probly.conformal_scores import CQRScore, CQRrScore, UACQRScore
+from probly.method.ensemble._common import EnsemblePredictor, ensemble
 from probly.representer import representer
 
 torch.manual_seed(42)
@@ -105,8 +106,8 @@ model.eval()
 # ---------
 
 with torch.no_grad():
-    calibrate(model, X_calib_t, y_calib_t, CQRScore(), alpha=0.05)
-    output = representer(model).predict(X_test_t)
+    calibrated_model = calibrate_conformal(model, CQRScore(), X_calib_t, y_calib_t, alpha=0.05)
+    output = representer(calibrated_model).predict(X_test_t)
 
 cqr_cov = empirical_coverage_regression(output, y_test_t)
 cqr_size = average_interval_size(output)
@@ -117,8 +118,8 @@ print(f"CQR  — coverage: {cqr_cov:.3f}, avg interval size: {cqr_size:.1f}")
 # ----------
 
 with torch.no_grad():
-    calibrate(model, X_calib_t, y_calib_t, CQRrScore(), alpha=0.05)
-    output = representer(model).predict(X_test_t)
+    calibrated_model = calibrate_conformal(model, CQRrScore(), X_calib_t, y_calib_t, alpha=0.05)
+    output = representer(calibrated_model).predict(X_test_t)
 
 cqrr_cov = empirical_coverage_regression(output, y_test_t)
 cqrr_size = average_interval_size(output)
@@ -147,13 +148,26 @@ for _ in range(300):
         optimizer.step()
 
 
-calibrate(model, X_calib_t, y_calib_t, UACQRScore(), alpha=0.05)
-representation = representer(model)
+calibrated_model = calibrate_conformal(model, UACQRScore(), X_calib_t, y_calib_t, alpha=0.05)
+representation = representer(calibrated_model)
 output = representation.predict(X_test_t)
 
 uacqr_cov = empirical_coverage_regression(output, y_test_t)
 uacqr_size = average_interval_size(output)
 print(f"UACQR — coverage: {uacqr_cov:.3f}, avg interval size: {uacqr_size:.1f}")
+
+calibrated_model = calibrate_conformal(model, CQRScore(), X_calib_t, y_calib_t, alpha=0.05)
+output = representer(calibrated_model).predict(X_test_t)
+cqr_cov_ens = empirical_coverage_regression(output, y_test_t)
+cqr_size_ens = average_interval_size(output)
+print(f"CQR (ensemble)  — coverage: {cqr_cov_ens:.3f}, avg interval size: {cqr_size_ens:.1f}")
+
+calibrated_model = calibrate_conformal(model, CQRrScore(), X_calib_t, y_calib_t, alpha=0.05)
+output = representer(calibrated_model).predict(X_test_t)
+cqrr_cov_ens = empirical_coverage_regression(output, y_test_t)
+cqrr_size_ens = average_interval_size(output)
+print(f"CQRr (ensemble) — coverage: {cqrr_cov_ens:.3f}, avg interval size: {cqrr_size_ens:.1f}")
+
 
 # %%
 # Comparison
@@ -165,5 +179,7 @@ for name, cov, sz in [
     ("CQR", cqr_cov, cqr_size),
     ("CQRr", cqrr_cov, cqrr_size),
     ("UACQR", uacqr_cov, uacqr_size),
+    ("CQR (ens)", cqr_cov_ens, cqr_size_ens),
+    ("CQRr (ens)", cqrr_cov_ens, cqrr_size_ens),
 ]:
     print(f"{name:<6} {cov:>10.3f} {sz:>18.1f}")

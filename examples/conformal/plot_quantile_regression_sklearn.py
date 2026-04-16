@@ -28,9 +28,10 @@ from sklearn.linear_model import QuantileRegressor
 from sklearn.model_selection import train_test_split
 
 from probly.calibrator import calibrate
-from probly.conformal.metrics import average_interval_size, empirical_coverage_regression
-from probly.conformal.methods.quantile_regression import conformalize_quantile_regressor
-from probly.conformal.scores import CQRScore, CQRrScore
+from probly.calibrator._common import calibrate_conformal
+from probly.metrics._common import average_interval_size, empirical_coverage_regression
+from probly.method.conformal import conformalize_quantile_regressor
+from probly.conformal_scores import CQRScore, CQRrScore
 from probly.representer import representer
 
 # %%
@@ -86,8 +87,8 @@ model.fit(X_train, y_train)
 # ---------
 # Symmetric correction: ``score = max(q_lo - y, y - q_hi)``.
 
-calibrate(model, X_calib, y_calib, CQRScore(), alpha=0.05)
-output = representer(model).predict(X_test)
+calibrated_model = calibrate_conformal(model, CQRScore(), X_calib, y_calib, alpha=0.05)
+output = representer(calibrated_model).predict(X_test)
 cqr_cov = empirical_coverage_regression(output, y_test)
 cqr_size = average_interval_size(output)
 print(f"CQR  — coverage: {cqr_cov:.3f}, avg interval size: {cqr_size:.1f}")
@@ -97,8 +98,8 @@ print(f"CQR  — coverage: {cqr_cov:.3f}, avg interval size: {cqr_size:.1f}")
 # ----------
 # Width-normalised correction: adapts to heteroscedastic models.
 
-calibrate(model, X_calib, y_calib, CQRrScore(), alpha=0.05)
-output = representer(model).predict(X_test)
+calibrated_model = calibrate_conformal(model, CQRrScore(), X_calib, y_calib, alpha=0.05)
+output = representer(calibrated_model).predict(X_test)
 cqrr_cov = empirical_coverage_regression(output, y_test)
 cqrr_size = average_interval_size(output)
 print(f"CQRr — coverage: {cqrr_cov:.3f}, avg interval size: {cqrr_size:.1f}")

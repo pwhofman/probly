@@ -24,9 +24,10 @@ from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeRegressor
 
 from probly.calibrator import calibrate
-from probly.conformal.metrics import average_interval_size, empirical_coverage_regression
-from probly.conformal.methods.regression import conformalize_regressor
-from probly.conformal.scores import AbsoluteErrorScore
+from probly.calibrator._common import calibrate_conformal
+from probly.metrics._common import average_interval_size, empirical_coverage_regression
+from probly.method.conformal import conformalize_regressor
+from probly.conformal_scores import AbsoluteErrorScore
 from probly.representer import representer
 
 # %%
@@ -48,9 +49,8 @@ model.fit(X_train, y_train)
 # %%
 # Absolute error score
 # --------------------
-
-calibrate(model, X_calib, y_calib, AbsoluteErrorScore(), alpha=0.05)
-output = representer(model).predict(X_test)
+calibrated_model = calibrate_conformal(model,AbsoluteErrorScore(), X_calib, y_calib,  alpha=0.05)
+output = representer(calibrated_model).predict(X_test)
 coverage = empirical_coverage_regression(output, y_test)
 avg_size = average_interval_size(output)
 print(f"Absolute Error — coverage: {coverage:.3f}, avg interval size: {avg_size:.1f}")

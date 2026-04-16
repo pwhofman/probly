@@ -23,9 +23,10 @@ from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
 
 from probly.calibrator import calibrate
-from probly.conformal.metrics import average_set_size, empirical_coverage_classification
-from probly.conformal.methods.classification import conformalize_classifier
-from probly.conformal.scores import APSScore, LACScore, RAPSScore, SAPSScore
+from probly.calibrator._common import calibrate_conformal
+from probly.metrics._common import average_set_size, empirical_coverage_classification
+from probly.method.conformal import conformalize_classifier
+from probly.conformal_scores import APSScore, LACScore, RAPSScore, SAPSScore
 from probly.representer import representer
 
 torch.manual_seed(42)
@@ -81,8 +82,8 @@ model.eval()
 # LAC score
 # ---------
 
-calibrate(model, X_calib_t, y_calib_t, LACScore(), alpha=0.05)
-output = representer(model).predict(X_test_t)
+calibrated_model = calibrate_conformal(model, LACScore(), X_calib_t, y_calib_t, alpha=0.05)
+output = representer(calibrated_model).predict(X_test_t)
 lac_cov = empirical_coverage_classification(output, y_test_t)
 lac_size = average_set_size(output)
 print(f"LAC  — coverage: {lac_cov:.3f}, avg set size: {lac_size:.3f}")
@@ -91,8 +92,8 @@ print(f"LAC  — coverage: {lac_cov:.3f}, avg set size: {lac_size:.3f}")
 # APS score
 # ---------
 
-calibrate(model, X_calib_t, y_calib_t, APSScore(), alpha=0.05)
-output = representer(model).predict(X_test_t)
+calibrated_model = calibrate_conformal(model, APSScore(), X_calib_t, y_calib_t, alpha=0.05)
+output = representer(calibrated_model).predict(X_test_t)
 aps_cov = empirical_coverage_classification(output, y_test_t)
 aps_size = average_set_size(output)
 print(f"APS  — coverage: {aps_cov:.3f}, avg set size: {aps_size:.3f}")
@@ -101,8 +102,8 @@ print(f"APS  — coverage: {aps_cov:.3f}, avg set size: {aps_size:.3f}")
 # RAPS score
 # ----------
 
-calibrate(model, X_calib_t, y_calib_t, RAPSScore(), alpha=0.05)
-output = representer(model).predict(X_test_t)
+calibrated_model = calibrate_conformal(model, RAPSScore(), X_calib_t, y_calib_t, alpha=0.05)
+output = representer(calibrated_model).predict(X_test_t)
 raps_cov = empirical_coverage_classification(output, y_test_t)
 raps_size = average_set_size(output)
 print(f"RAPS — coverage: {raps_cov:.3f}, avg set size: {raps_size:.3f}")
@@ -111,8 +112,8 @@ print(f"RAPS — coverage: {raps_cov:.3f}, avg set size: {raps_size:.3f}")
 # SAPS score
 # ----------
 
-calibrate(model, X_calib_t, y_calib_t, SAPSScore(), alpha=0.05)
-output = representer(model).predict(X_test_t)
+calibrated_model = calibrate_conformal(model, SAPSScore(), X_calib_t, y_calib_t, alpha=0.05)
+output = representer(calibrated_model).predict(X_test_t)
 saps_cov = empirical_coverage_classification(output, y_test_t)
 saps_size = average_set_size(output)
 print(f"SAPS — coverage: {saps_cov:.3f}, avg set size: {saps_size:.3f}")

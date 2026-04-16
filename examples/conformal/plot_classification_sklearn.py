@@ -24,9 +24,10 @@ from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
 
 from probly.calibrator import calibrate
-from probly.conformal.metrics import average_set_size, empirical_coverage_classification
-from probly.conformal.methods.classification import conformalize_classifier
-from probly.conformal.scores import APSScore, LACScore, RAPSScore, SAPSScore
+from probly.calibrator._common import calibrate_conformal
+from probly.metrics._common import average_set_size, empirical_coverage_classification
+from probly.method.conformal import conformalize_classifier
+from probly.conformal_scores import APSScore, LACScore, RAPSScore, SAPSScore
 from probly.representer import representer
 
 # %%
@@ -53,8 +54,8 @@ model.fit(X_train, y_train)
 # ---------
 # The Least Ambiguous set-valued Classifier score: ``1 - P(y | x)``.
 
-calibrate(model, X_calib, y_calib, LACScore(), alpha=0.05)
-output = representer(model).predict(X_test)
+calibrated_model = calibrate_conformal(model,LACScore(), X_calib, y_calib,  alpha=0.05)
+output = representer(calibrated_model).predict(X_test)
 lac_cov = empirical_coverage_classification(output, y_test)
 lac_size = average_set_size(output)
 print(f"LAC  — coverage: {lac_cov:.3f}, avg set size: {lac_size:.3f}")
@@ -64,8 +65,8 @@ print(f"LAC  — coverage: {lac_cov:.3f}, avg set size: {lac_size:.3f}")
 # ---------
 # Adaptive Prediction Sets: cumulative sorted probabilities with randomisation.
 
-calibrate(model, X_calib, y_calib, APSScore(), alpha=0.05)
-output = representer(model).predict(X_test)
+calibrated_model = calibrate_conformal(model, APSScore(), X_calib, y_calib, alpha=0.05)
+output = representer(calibrated_model).predict(X_test)
 aps_cov = empirical_coverage_classification(output, y_test)
 aps_size = average_set_size(output)
 print(f"APS  — coverage: {aps_cov:.3f}, avg set size: {aps_size:.3f}")
@@ -75,8 +76,8 @@ print(f"APS  — coverage: {aps_cov:.3f}, avg set size: {aps_size:.3f}")
 # ----------
 # Regularised APS: adds a size penalty to encourage smaller prediction sets.
 
-calibrate(model, X_calib, y_calib, RAPSScore(), alpha=0.05)
-output = representer(model).predict(X_test)
+calibrated_model = calibrate_conformal(model, RAPSScore(), X_calib, y_calib, alpha=0.05)
+output = representer(calibrated_model).predict(X_test)
 raps_cov = empirical_coverage_classification(output, y_test)
 raps_size = average_set_size(output)
 print(f"RAPS — coverage: {raps_cov:.3f}, avg set size: {raps_size:.3f}")
@@ -86,8 +87,8 @@ print(f"RAPS — coverage: {raps_cov:.3f}, avg set size: {raps_size:.3f}")
 # ----------
 # Sorted APS: penalises gaps between consecutive sorted probabilities.
 
-calibrate(model, X_calib, y_calib, SAPSScore(), alpha=0.05)
-output = representer(model).predict(X_test)
+calibrated_model = calibrate_conformal(model, SAPSScore(), X_calib, y_calib, alpha=0.05)
+output = representer(calibrated_model).predict(X_test)
 saps_cov = empirical_coverage_classification(output, y_test)
 saps_size = average_set_size(output)
 print(f"SAPS — coverage: {saps_cov:.3f}, avg set size: {saps_size:.3f}")
