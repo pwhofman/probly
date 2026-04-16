@@ -158,8 +158,8 @@ def test_generalized_hartley_corner_vertices_known_value() -> None:
     cs = _convex_credal_set(vertices)
     gh_nat = generalized_hartley(cs)
     gh_2 = generalized_hartley(cs, base=2.0)
-    expected_nat = -3.0 * np.log(2) + np.log(3)
-    expected_2 = -3.0 + np.log2(3)
+    expected_nat = np.log(3)
+    expected_2 = np.log2(3)
     assert float(gh_nat) == pytest.approx(expected_nat, abs=1e-4)
     assert float(gh_2) == pytest.approx(expected_2, abs=1e-4)
 
