@@ -42,8 +42,8 @@ def torch_intervals_upper_entropy(
     bisection finds the unique root.
     """
     lower, upper = credal_set.lower_bounds, credal_set.upper_bounds
-    lo = lower.new_full(lower.shape[:-1], -500.0)
-    hi = lower.new_full(lower.shape[:-1], 500.0)
+    lo = 1.0 + lower.amin(dim=-1).clamp_min(torch.finfo(lower.dtype).tiny).log()
+    hi = lower.new_ones(lower.shape[:-1])
     for _ in range(_BISECT_ITERS):
         mu = (lo + hi) / 2
         g = torch.clamp((mu.unsqueeze(-1) - 1).exp(), lower, upper).sum(-1) - 1.0
