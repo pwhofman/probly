@@ -17,9 +17,15 @@ def _(
     """CQR nonconformity scores for PyTorch tensors."""
     y = y_true.reshape(-1)
 
-    if y_pred.ndim != 2 or y_pred.shape[1] != 2:
-        msg = f"y_pred must have shape (n_samples, 2), got {y_pred.shape}"
+    if y_pred.ndim > 3 or y_pred.shape[-1] != 2:
+        msg = (
+            "y_pred must have shape (n_evaluations, n_samples, 2), "
+            f"got {y_pred.shape}. The n_evaluations dimension is optional and "
+            "will be averaged over if present."
+        )
         raise ValueError(msg)
+    if y_pred.ndim == 3:
+        y_pred = y_pred.mean(dim=0)
 
     lower = y_pred[:, 0]
     upper = y_pred[:, 1]

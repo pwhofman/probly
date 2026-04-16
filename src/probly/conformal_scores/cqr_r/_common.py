@@ -38,9 +38,16 @@ def _(y_pred: np.ndarray, y_true: np.ndarray) -> np.ndarray:
     y_np = np.asarray(y_true, dtype=float).reshape(-1)
     pred_np = np.asarray(y_pred, dtype=float)
 
-    if pred_np.ndim != 2 or pred_np.shape[1] != 2:
-        msg = f"y_pred must have shape (n_samples, 2), got {pred_np.shape}"
+    if pred_np.ndim > 3 or pred_np.shape[-1] != 2:
+        msg = (
+            "y_pred must have shape (n_evaluations, n_samples, 2), "
+            f"got {pred_np.shape}. The n_evaluations dimension is optional and "
+            "will be averaged over if present."
+        )
         raise ValueError(msg)
+
+    if pred_np.ndim == 3:
+        pred_np = pred_np.mean(axis=0)
 
     lower = pred_np[:, 0]
     upper = pred_np[:, 1]

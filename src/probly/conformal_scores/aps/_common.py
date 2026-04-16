@@ -55,4 +55,5 @@ def _(probs: ArraySample, y_cal: np.ndarray | None, randomized: bool = True) -> 
     """APS Nonconformity-Scores for ArraySamples."""
     return aps_score_func(probs.array, y_cal, randomized=randomized)
 
+
 __all__ = ["aps_score_func"]

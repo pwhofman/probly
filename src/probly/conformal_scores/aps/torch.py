@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import torch
 
+from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
 from probly.representation.sample.torch import TorchSample
 
 from ._common import aps_score_func
@@ -41,3 +42,9 @@ def _(probs: torch.Tensor, y_cal: torch.Tensor | None = None, randomized: bool =
 def _(probs: TorchSample, y_cal: torch.Tensor | None = None, randomized: bool = True) -> torch.Tensor:
     """APS Nonconformity-Scores for PyTorch tensors."""
     return aps_score_func(probs.tensor, y_cal, randomized=randomized)
+
+
+@aps_score_func.register(TorchCategoricalDistribution)
+def _(probs: TorchCategoricalDistribution, y_cal: torch.Tensor | None = None, randomized: bool = True) -> torch.Tensor:
+    """APS Nonconformity-Scores for PyTorch tensors."""
+    return aps_score_func(probs.probabilities, y_cal, randomized=randomized)

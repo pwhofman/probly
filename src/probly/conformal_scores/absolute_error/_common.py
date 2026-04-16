@@ -22,6 +22,15 @@ def absolute_error_score_func[T](
 @absolute_error_score_func.register(np.ndarray)
 def _(y_pred: np.ndarray, y_true: np.ndarray) -> np.ndarray:
     """Absolute error for numpy arrays."""
+    if y_pred.ndim > 2:
+        msg = (
+            "y_pred must have shape (n_evaluations, n_samples) or (n_samples,), "
+            f"got {y_pred.shape}. The n_evaluations dimension is optional and "
+            "will be averaged over if present."
+        )
+        raise ValueError(msg)
+    if y_pred.ndim == 2:
+        y_pred = y_pred.mean(axis=0)
     return np.abs(y_true - y_pred)
 
 

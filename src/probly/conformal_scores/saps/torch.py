@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 import torch
 
+from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
 from probly.representation.sample.torch import TorchSample
 
 from ._common import saps_score_func
@@ -45,9 +48,31 @@ def _(
     lambda_val: float = 0.1,
 ) -> torch.Tensor:
     """SAPS Nonconformity-Scores for TorchSamples."""
-    return saps_score_func(
-        probs.array,
-        y_cal,
-        randomized=randomized,
-        lambda_val=lambda_val,
+    return cast(
+        "torch.Tensor",
+        saps_score_func(
+            probs.samples,
+            y_cal,
+            randomized=randomized,
+            lambda_val=lambda_val,
+        ),
+    )
+
+
+@saps_score_func.register(TorchCategoricalDistribution)
+def _(
+    probs: TorchCategoricalDistribution,
+    y_cal: torch.Tensor | None = None,
+    randomized: bool = True,
+    lambda_val: float = 0.1,
+) -> torch.Tensor:
+    """SAPS Nonconformity-Scores for TorchCategoricalDistributions."""
+    return cast(
+        "torch.Tensor",
+        saps_score_func(
+            probs.probabilities,
+            y_cal,
+            randomized=randomized,
+            lambda_val=lambda_val,
+        ),
     )

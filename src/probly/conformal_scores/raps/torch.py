@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import torch
 
+from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
 from probly.representation.sample.torch import TorchSample
 
 from ._common import raps_score_func
@@ -60,6 +61,26 @@ def _(
     """RAPS Nonconformity-Scores for TorchSamples."""
     return raps_score_func(
         probs.tensor,
+        y_cal,
+        randomized=randomized,
+        lambda_reg=lambda_reg,
+        k_reg=k_reg,
+        epsilon=epsilon,
+    )
+
+
+@raps_score_func.register(TorchCategoricalDistribution)
+def _(
+    probs: TorchCategoricalDistribution,
+    y_cal: torch.Tensor | None = None,
+    randomized: bool = True,
+    lambda_reg: float = 0.1,
+    k_reg: int = 0,
+    epsilon: float = 0.01,
+) -> torch.Tensor:
+    """RAPS Nonconformity-Scores for TorchCategoricalDistributions."""
+    return raps_score_func(
+        probs.probabilities,
         y_cal,
         randomized=randomized,
         lambda_reg=lambda_reg,
