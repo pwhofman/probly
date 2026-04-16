@@ -5,13 +5,14 @@ from __future__ import annotations
 from typing import Protocol, runtime_checkable
 
 from probly.method.method import predictor_transformation
-from probly.predictor import Predictor, RandomPredictor
+from probly.predictor import LogitDistributionPredictor, Predictor, predict, predict_raw
+from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution, create_categorical_distribution_from_logits
 from probly.traverse_nn import nn_compose
 from pytraverse import CLONE, TRAVERSE_REVERSED, GlobalVariable, lazydispatch_traverser, traverse
 
 
 @runtime_checkable
-class HetNetsPredictor[**In, Out](RandomPredictor[In, Out], Protocol):
+class HetNetsPredictor[**In, Out: TorchCategoricalDistribution](LogitDistributionPredictor[In, Out], Protocol):
     """A predictor that applies HetNets."""
 
 
@@ -27,7 +28,7 @@ MULTILABEL = GlobalVariable[bool]("MULTILABEL")
 
 @predictor_transformation(permitted_predictor_types=None, preserve_predictor_type=False)  # ty:ignore[invalid-argument-type]
 @HetNetsPredictor.register_factory
-def het_nets[**In, Out](
+def het_nets[**In, Out: TorchCategoricalDistribution](
     base: Predictor[In, Out],
     num_factors: int = 10,
     temperature: float = 1.0,
@@ -62,3 +63,4 @@ def het_nets[**In, Out](
             MULTILABEL: multilabel,
         },
     )
+
