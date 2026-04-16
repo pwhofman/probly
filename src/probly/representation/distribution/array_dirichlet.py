@@ -31,6 +31,10 @@ class ArrayDirichletDistribution(
 
     alphas: np.ndarray
     protected_axes: ClassVar[dict[str, int]] = {"alphas": 1}
+    permitted_ufuncs: ClassVar[dict[np.ufunc, list[str]]] = {
+        np.add: ["__call__"],
+        np.subtract: ["__call__"],
+    }
 
     def __post_init__(self) -> None:
         """Validate the concentration parameters."""

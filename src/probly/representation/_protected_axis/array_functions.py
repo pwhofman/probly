@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from functools import wraps
 from inspect import BoundArguments, signature
-from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, cast, runtime_checkable
 
 import numpy as np
 
@@ -37,6 +37,7 @@ class ArrayAxisProtectedCreator(Protocol):
 @runtime_checkable
 class _SupportsProtectedInternals(Protocol):
     protected_axes: dict[str, int]
+    permitted_functions: set[Callable[..., Any]]
 
     def protected_values(self) -> dict[str, ArrayProtectedValue]:
         """Return protected field values."""
@@ -53,6 +54,8 @@ class ArrayAxisProtectedInternals:
     values: dict[str, ArrayProtectedValue]
     protected_axes: dict[str, int]
     primary_name: str
+    owner_type: type[Any]
+    permitted_functions: set[Callable[..., Any]]
 
     @property
     def primary_value(self) -> ArrayProtectedValue:
@@ -92,11 +95,15 @@ def array_axis_protected_internals(obj: object) -> ArrayAxisProtectedInternals |
 
     primary_name = next(iter(protected_axes))
     create: ArrayAxisProtectedCreator = obj.with_protected_values
+    owner_type = type(obj)
+    permitted_functions = set(getattr(owner_type, "permitted_functions", set()))
     return ArrayAxisProtectedInternals(
         create=create,
         values=dict(values),
         protected_axes=dict(protected_axes),
         primary_name=primary_name,
+        owner_type=owner_type,
+        permitted_functions=permitted_functions,
     )
 
 
@@ -125,6 +132,23 @@ def _map_batch_axes(
     batch_ndim = ndim - protected_axes_count
     normalized = normalize_axes(batch_axes, batch_ndim)
     return (*normalized, *range(batch_ndim, ndim))
+
+
+def _is_permitted_function(internals: ArrayAxisProtectedInternals, func: Callable) -> bool:
+    return func in internals.permitted_functions
+
+
+def _normalize_batch_reduction_axes(axis: object, batch_ndim: int) -> int | tuple[int, ...]:
+    if axis is None:
+        return tuple(range(batch_ndim))
+    if isinstance(axis, int):
+        return normalize_axis(axis, batch_ndim)
+    if isinstance(axis, (tuple, list)) and all(isinstance(item, int) for item in axis):
+        axis_tuple = cast("tuple[int, ...]", tuple(axis))
+        return normalize_axes(axis_tuple, batch_ndim)
+
+    msg = "reduction axis must be None, an int, or a tuple/list of ints."
+    raise TypeError(msg)
 
 
 def _apply_unary(
@@ -281,6 +305,73 @@ def protected_astype_function(
     dtype = params.arguments["dtype"]
     copy = params.arguments.get("copy", True)
     return _apply_unary(internals, lambda _name, value, _axes: func(value, dtype=dtype, copy=copy))
+
+
+@array_function.multi_register([np.mean, np.sum])
+@array_internals_override("a")
+def protected_batch_reduction_function(  # noqa: PLR0912
+    func: Callable,
+    params: BoundArguments,
+    internals: ArrayAxisProtectedInternals,
+) -> Any:  # noqa: ANN401
+    if not _is_permitted_function(internals, func):
+        return NotImplemented
+
+    axis = params.arguments.get("axis", None)
+    out = params.arguments.get("out", None)
+    out_internals = array_axis_protected_internals(out)
+    if out_internals is not None and out_internals.protected_axes != internals.protected_axes:
+        msg = "out must use the same protected_axes layout as input values."
+        raise ValueError(msg)
+
+    if out is not None and out_internals is None and len(internals.protected_axes) != 1:
+        msg = "non-protected out is only supported for single-field protected objects."
+        raise TypeError(msg)
+
+    results: dict[str, ArrayProtectedValue] = {}
+    for name, axes_count in internals.protected_axes.items():
+        value = internals.values[name]
+        batch_ndim = value_ndim(value) - axes_count
+        mapped_axis = _normalize_batch_reduction_axes(axis, batch_ndim)
+
+        field_kwargs: dict[str, object] = {}
+        for key, field_value in params.arguments.items():
+            if key == "a":
+                continue
+            if key == "axis":
+                field_kwargs[key] = mapped_axis
+                continue
+            if key == "out":
+                if out is None:
+                    field_kwargs[key] = None
+                elif out_internals is not None:
+                    field_kwargs[key] = out_internals.values[name]
+                else:
+                    field_kwargs[key] = out
+                continue
+            field_kwargs[key] = field_value
+
+        result = func(value, **field_kwargs)
+
+        if out is not None:
+            continue
+
+        if axes_count == 0 and not hasattr(result, "ndim"):
+            result = np.asarray(result)
+
+        original_shape = value_shape(value)
+        result_shape = value_shape(result)
+        if protected_shape(result_shape, axes_count) != protected_shape(original_shape, axes_count):
+            msg = f"Reduction modified protected trailing axes for field {name!r}."
+            raise ValueError(msg)
+
+        results[name] = cast("ArrayProtectedValue", result)
+
+    if out is not None:
+        return out
+
+    _validate_batch_sync(results, internals.protected_axes)
+    return internals.create(results)
 
 
 @array_function.register(np.transpose)

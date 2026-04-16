@@ -95,9 +95,10 @@ benchmark = [
     "wandb>=0.25.1",
     "hydra-core>=1.3.1",
     "webdataset>=1.0.2",
-    "nvidia-ml-py==13.590.48",
+    "nvidia-ml-py==13.595.45",
     "torch<2.11.0",
     "torchvision<0.26.0",
+    "pytorch-optimizer>=3.0",
 ]
 dev = [
     { include-group = "test" },

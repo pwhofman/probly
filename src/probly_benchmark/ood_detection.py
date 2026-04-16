@@ -6,30 +6,13 @@ from typing import Any
 
 import hydra
 from omegaconf import DictConfig, OmegaConf
-import torch
 import wandb
 
 from probly.evaluation.ood import out_of_distribution_detection_auroc
 from probly.quantification import quantify
-from probly.representation.distribution.torch_categorical import (
-    TorchCategoricalDistribution,
-    TorchCategoricalDistributionSample,
-)
 from probly.representer import representer
 from probly_benchmark import data, utils
 from probly_benchmark.utils import load_model_from_wandb, resolve_artifact_name
-
-
-def compute_epistemic_uncertainty(outputs: list[Any]) -> torch.Tensor:
-    """Compute epistemic uncertainty (mutual information) from sampler outputs."""
-    all_uncertainties = []
-    for out in outputs:
-        probs = torch.softmax(out.samples, dim=-1)  # (num_samples, batch, n_classes)
-        dist = TorchCategoricalDistribution(probs)
-        dist_sample = TorchCategoricalDistributionSample(tensor=dist, sample_dim=0)
-        decomposition = quantify(dist_sample)
-        all_uncertainties.append(decomposition.epistemic.cpu())  # ty: ignore[unresolved-attribute]
-    return torch.cat(all_uncertainties)
 
 
 @hydra.main(version_base=None, config_path="configs/", config_name="ood_detection")
@@ -71,8 +54,8 @@ def main(cfg: DictConfig) -> None:
     id_outputs, _ = utils.collect_outputs_targets(rep, id_loader, device, cfg.get("amp", False))
     ood_outputs, _ = utils.collect_outputs_targets(rep, ood_loader, device, cfg.get("amp", False))
 
-    id_uncertainties = compute_epistemic_uncertainty(id_outputs).numpy()
-    ood_uncertainties = compute_epistemic_uncertainty(ood_outputs).numpy()
+    id_uncertainties = quantify(id_outputs).epistemic.detach().cpu().numpy()  # ty:ignore[unresolved-attribute]
+    ood_uncertainties = quantify(ood_outputs).epistemic.detach().cpu().numpy()  # ty:ignore[unresolved-attribute]
 
     auroc = out_of_distribution_detection_auroc(id_uncertainties, ood_uncertainties)
     print(f"OOD detection AUROC: {auroc:.4f}")
