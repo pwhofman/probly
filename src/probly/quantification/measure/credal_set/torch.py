@@ -127,11 +127,11 @@ def torch_convex_lower_entropy(
     return _apply_base(result, credal_set.num_classes, base)
 
 
-def _upper_probability(vertices: torch.Tensor, subset: tuple[int, ...]) -> torch.Tensor:
+def _lower_probability(vertices: torch.Tensor, subset: tuple[int, ...]) -> torch.Tensor:
     """Upper probability P*(A) = max_v sum_{i in A} v_i, shape (...)."""
     if not subset:
         return vertices.new_zeros(vertices.shape[:-2])
-    return vertices[..., list(subset)].sum(-1).max(-1).values
+    return vertices[..., list(subset)].sum(-1).min(-1).values
 
 
 def _moebius(vertices: torch.Tensor, subset: tuple[int, ...]) -> torch.Tensor:
@@ -140,7 +140,7 @@ def _moebius(vertices: torch.Tensor, subset: tuple[int, ...]) -> torch.Tensor:
     for r in range(len(subset) + 1):
         sign = (-1) ** (len(subset) - r)
         for b in combinations(list(subset), r):
-            result = result + sign * _upper_probability(vertices, b)
+            result = result + sign * _lower_probability(vertices, b)
     return result
 
 
@@ -152,7 +152,7 @@ def torch_convex_generalized_hartley(
     """Compute the generalized Hartley measure of a convex credal set.
 
     Based on :cite:`abellanDisaggregatedTotal2006`. Computed via the Mobius
-    transform of the upper probability function over all subsets of the class
+    transform of the lower probability function over all subsets of the class
     space.
     """
     vertices = credal_set.tensor.probabilities  # (..., n_vertices, n_classes)
