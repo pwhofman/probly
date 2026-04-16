@@ -23,8 +23,6 @@ def _apply_base(result: torch.Tensor, n_classes: int, base: LogBase) -> torch.Te
     return result / math.log(n_classes if base == "normalize" else base)  # type: ignore[arg-type]
 
 
-
-
 @upper_entropy.register(TorchProbabilityIntervalsCredalSet)
 def torch_intervals_upper_entropy(
     credal_set: TorchProbabilityIntervalsCredalSet,
