@@ -37,6 +37,9 @@ class Calibrator[**In, Out](ProtocolRegistry, Protocol, structural_checking=Fals
 class ConformalCalibrator[**In, Out](ProtocolRegistry, Protocol, structural_checking=False):
     """Protocol for conformal calibrators."""
 
+    conformal_quantile: float
+    non_conformity_score: NonConformityScore
+
     @classmethod
     def __subclasshook__(cls, subclass: type) -> bool:
         if hasattr(subclass, "conformal_quantile") and hasattr(subclass, "non_conformity_score"):

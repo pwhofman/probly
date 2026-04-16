@@ -7,7 +7,6 @@ from contextvars import ContextVar
 from typing import Any, ClassVar, Literal, Protocol, runtime_checkable
 
 from lazy_dispatch import ProtocolRegistry, lazydispatch
-from probly.calibrator import ConformalCalibrator
 from probly.representation import Representation
 from probly.representation.credal_set import CredalSet, ProbabilityIntervalsCredalSet
 from probly.representation.distribution import (
@@ -57,6 +56,7 @@ class RandomPredictor[**In, Out](Predictor[In, Out], Protocol):
 @runtime_checkable
 class IterablePredictor[**In, Out](Predictor[In, Iterable[Out]], Protocol):
     """Protocol for predictors that return an iterable of outputs."""
+
 
 @runtime_checkable
 class RepresentationPredictor[**In, Out: Representation](Predictor[In, Out], Protocol):
