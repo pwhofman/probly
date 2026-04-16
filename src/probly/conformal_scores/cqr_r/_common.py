@@ -33,7 +33,7 @@ def cqr_r_score_func[T](y_pred: T, y_true: T) -> T:
 
 
 @cqr_r_score_func.register(np.ndarray)
-def _(y_pred: np.ndarray, y_true: np.ndarray) -> np.ndarray:
+def compute_cqr_r_score_func_numpy(y_pred: np.ndarray, y_true: np.ndarray) -> np.ndarray:
     """CQR-r nonconformity scores for numpy arrays."""
     y_np = np.asarray(y_true, dtype=float).reshape(-1)
     pred_np = np.asarray(y_pred, dtype=float)
@@ -59,4 +59,4 @@ def _(y_pred: np.ndarray, y_true: np.ndarray) -> np.ndarray:
 @cqr_r_score_func.register(ArraySample)
 def _(y_pred: ArraySample, y_true: np.ndarray) -> np.ndarray:
     """CQR-r nonconformity scores for ArraySamples."""
-    return cqr_r_score_func(y_pred.array, y_true)
+    return compute_cqr_r_score_func_numpy(y_pred.array, y_true)

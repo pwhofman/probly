@@ -17,7 +17,9 @@ def aps_score_func[T](probs: T, y_cal: T | None = None, randomized: bool = True)
 
 
 @aps_score_func.register(np.ndarray)
-def _(probs: np.ndarray, y_cal: np.ndarray | None = None, randomized: bool = True) -> np.ndarray:
+def compute_aps_score_func_numpy(
+    probs: np.ndarray, y_cal: np.ndarray | None = None, randomized: bool = True
+) -> np.ndarray:
     """APS Nonconformity-Scores for numpy arrays."""
     probs_np = np.asarray(probs)
 
@@ -47,13 +49,13 @@ def _(probs: np.ndarray, y_cal: np.ndarray | None = None, randomized: bool = Tru
 @aps_score_func.register(ArrayCategoricalDistribution)
 def _(probs: ArrayCategoricalDistribution, y_cal: np.ndarray | None, randomized: bool = True) -> np.ndarray:
     """APS Nonconformity-Scores for ArrayCategoricalDistributions."""
-    return aps_score_func(probs.probabilities, y_cal, randomized=randomized)
+    return compute_aps_score_func_numpy(probs.probabilities, y_cal, randomized=randomized)
 
 
 @aps_score_func.register(ArraySample)
 def _(probs: ArraySample, y_cal: np.ndarray | None, randomized: bool = True) -> np.ndarray:
     """APS Nonconformity-Scores for ArraySamples."""
-    return aps_score_func(probs.array, y_cal, randomized=randomized)
+    return compute_aps_score_func_numpy(probs.array, y_cal, randomized=randomized)
 
 
 __all__ = ["aps_score_func"]

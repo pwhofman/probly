@@ -24,7 +24,7 @@ def raps_score_func[T](
 
 
 @raps_score_func.register(np.ndarray)
-def _(
+def compute_raps_score_func_numpy(
     probs: np.ndarray,
     y_cal: np.ndarray | None = None,
     randomized: bool = True,
@@ -73,7 +73,7 @@ def _(
     epsilon: float = 0.01,
 ) -> np.ndarray:
     """RAPS Nonconformity-Scores for ArrayCategoricalDistributions."""
-    return raps_score_func(
+    return compute_raps_score_func_numpy(
         probs.probabilities,
         y_cal,
         randomized=randomized,
@@ -93,7 +93,7 @@ def _(
     epsilon: float = 0.01,
 ) -> np.ndarray:
     """RAPS Nonconformity-Scores for ArraySamples."""
-    return raps_score_func(
+    return compute_raps_score_func_numpy(
         probs.array,
         y_cal,
         randomized=randomized,

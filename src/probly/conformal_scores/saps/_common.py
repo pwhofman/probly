@@ -23,7 +23,7 @@ def saps_score_func[T](
 
 
 @saps_score_func.register(np.ndarray)
-def _(
+def compute_saps_score_func_numpy(
     probs: np.ndarray,
     y_cal: np.ndarray | None = None,
     randomized: bool = True,
@@ -55,7 +55,7 @@ def _(
     lambda_val: float = 0.1,
 ) -> np.ndarray:
     """SAPS Nonconformity-Scores for ArrayCategoricalDistributions."""
-    return saps_score_func(probs.probabilities, y_cal, randomized=randomized, lambda_val=lambda_val)
+    return compute_saps_score_func_numpy(probs.probabilities, y_cal, randomized=randomized, lambda_val=lambda_val)
 
 
 @saps_score_func.register(ArraySample)
@@ -66,7 +66,7 @@ def _(
     lambda_val: float = 0.1,
 ) -> np.ndarray:
     """SAPS Nonconformity-Scores for ArraySamples."""
-    return saps_score_func(
+    return compute_saps_score_func_numpy(
         probs.array,
         y_cal,
         randomized=randomized,

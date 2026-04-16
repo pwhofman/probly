@@ -10,7 +10,7 @@ from ._common import _EPS, cqr_r_score_func
 
 
 @cqr_r_score_func.register(torch.Tensor)
-def _(y_pred: torch.Tensor, y_true: torch.Tensor) -> torch.Tensor:
+def compute_cqr_r_score_func_torch(y_pred: torch.Tensor, y_true: torch.Tensor) -> torch.Tensor:
     """CQR-r nonconformity scores for PyTorch tensors."""
     y = y_true.reshape(-1)
 
@@ -34,4 +34,4 @@ def _(y_pred: torch.Tensor, y_true: torch.Tensor) -> torch.Tensor:
 @cqr_r_score_func.register(TorchSample)
 def _(y_pred: TorchSample, y_true: torch.Tensor) -> torch.Tensor:
     """CQR-r nonconformity scores for TorchSamples."""
-    return cqr_r_score_func(y_pred.tensor, y_true)
+    return compute_cqr_r_score_func_torch(y_pred.tensor, y_true)

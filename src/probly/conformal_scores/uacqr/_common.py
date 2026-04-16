@@ -36,7 +36,7 @@ def uacqr_score_func[T](y_pred: T, y_true: T) -> T:
 
 
 @uacqr_score_func.register(np.ndarray)
-def _(y_pred: np.ndarray, y_true: np.ndarray) -> np.ndarray:
+def compute_uacqr_score_func_numpy(y_pred: np.ndarray, y_true: np.ndarray) -> np.ndarray:
     """UACQR nonconformity scores for numpy arrays."""
     y_true = y_true.flatten()
 
@@ -58,4 +58,4 @@ def _(y_pred: np.ndarray, y_true: np.ndarray) -> np.ndarray:
 @uacqr_score_func.register(ArraySample)
 def _(y_pred: ArraySample, y_true: np.ndarray) -> np.ndarray:
     """UACQR nonconformity scores for ArraySamples."""
-    return uacqr_score_func(y_pred.array, y_true)
+    return compute_uacqr_score_func_numpy(y_pred.array, y_true)
