@@ -15,6 +15,7 @@ from probly.predictor._common import (
     Predictor,
     predict_raw,
 )
+from probly.representation.distribution._common import CategoricalDistribution
 from probly.representation.distribution.array_categorical import ArrayCategoricalDistribution
 from probly.representation.sample import create_sample
 from probly.representation.sample.array import ArraySample
@@ -31,9 +32,9 @@ if TYPE_CHECKING:
 
 
 @runtime_checkable  # ty: ignore[conflicting-metaclass]
-class ConformalClassificationCalibrator[**In, Out](
+class ConformalClassificationCalibrator[**In, Out: CategoricalDistribution](
     ConformalCalibrator[In, Out],
-    ProbabilisticClassifier[In, Out],  # ty: ignore[invalid-type-arguments]
+    ProbabilisticClassifier[In, Out],
     Protocol,
 ):
     """A conformal calibrator for classification predictors."""
@@ -85,7 +86,9 @@ def conformal_generator[**In, Out](model: Predictor[In, Out]) -> Predictor[In, O
 
 
 @ConformalClassificationCalibrator.register_factory
-def conformalize_classifier[**In, Out](model: Predictor[In, Out]) -> ConformalClassificationCalibrator[In, Out]:
+def conformalize_classifier[**In, Out: CategoricalDistribution](
+    model: Predictor[In, Out],
+) -> ConformalClassificationCalibrator[In, Out]:
     """Conformalise a classification predictor.
 
     This factory function creates a conformal predictor from a base classification model.

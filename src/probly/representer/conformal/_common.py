@@ -67,9 +67,9 @@ class ConformalIterableCalibrator[**In, Out](
 
 
 @runtime_checkable  # ty: ignore[conflicting-metaclass]
-class ConformalRandomCalibrator[In, Out](
-    ConformalCalibrator[In, Out],  # ty: ignore[invalid-type-arguments]
-    RandomPredictor[In, Out],  # ty: ignore[invalid-type-arguments]
+class ConformalRandomCalibrator[**In, Out](
+    ConformalCalibrator[In, Out],
+    RandomPredictor[In, Out],
     Protocol,
 ):
     """Intersection protocol for conformal calibrators that are random predictors."""
@@ -115,10 +115,9 @@ def predict_set(predictor: ConformalCalibrator[Any, Any], *args: object, **kwarg
     raise NotImplementedError(msg)
 
 
-@representer.register(ConformalRandomCalibrator)
-@representer.register(ConformalIterableCalibrator)
-@representer.register(ConformalClassificationCalibrator)
-@representer.register(ConformalCalibrator)
+@representer.register(
+    ConformalRandomCalibrator | ConformalIterableCalibrator | ConformalClassificationCalibrator | ConformalCalibrator
+)
 class ConformalRepresenter[**In, Out: ConformalSet](Representer[Any, In, Out, ConformalSet]):
     predictor: ConformalCalibrator[In, Out]
 
