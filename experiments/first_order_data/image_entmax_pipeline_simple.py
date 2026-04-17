@@ -11,6 +11,7 @@ from typing import Any
 import numpy as np
 import torch
 from entmax import entmax_bisect
+from probly.method.ensemble import ensemble
 from probly.datasets.torch import (
     Benthic,
     CIFAR10HDCIC,
@@ -473,9 +474,9 @@ def run_epoch(
 
 def train_single_model(
     *,
+    model: nn.Module,
     train_dataset: Subset[DCICDataset],
     val_dataset: Subset[DCICDataset],
-    num_classes: int,
     config: EntmaxImageExperimentConfig,
     seed: int,
 ) -> tuple[nn.Module, dict[str, list[float]]]:
@@ -496,13 +497,7 @@ def train_single_model(
         pin_memory=config.device.startswith("cuda"), # small optimization, can speed up data transfer to GPU
     )
 
-    model = ImageEntmaxClassifier(
-        encoder_name=config.encoder_name,
-        num_classes=num_classes,
-        pretrained=config.pretrained,
-        freeze_encoder=config.freeze_encoder,
-        classifier_dropout=config.classifier_dropout,
-    ).to(config.device)
+    model = model.to(config.device)
 
     optimizer = torch.optim.AdamW(
         [parameter for parameter in model.parameters() if parameter.requires_grad],
@@ -583,6 +578,7 @@ def predict_dataset(
 
 def train_single_member(
     *,
+    model: nn.Module,
     member_index: int,
     member_seed: int,
     member_dir: Path,
@@ -594,9 +590,9 @@ def train_single_member(
     config: EntmaxImageExperimentConfig,
 ) -> tuple[np.ndarray, np.ndarray, dict[str, Any], list[str]]:
     model, history = train_single_model(
+        model=model,
         train_dataset=train_dataset,
         val_dataset=val_dataset,
-        num_classes=len(class_names),
         config=config,
         seed=member_seed,
     )
@@ -703,17 +699,33 @@ def run_dataset_experiment(
         test_indices,
     )
 
+    # Builds the ensemble via probly
+    set_seed(config.seed)
+    base_model = ImageEntmaxClassifier(
+        encoder_name=config.encoder_name,
+        num_classes=len(class_names),
+        pretrained=config.pretrained,
+        freeze_encoder=config.freeze_encoder,
+        classifier_dropout=config.classifier_dropout,
+    )
+    ensemble_members = ensemble(
+        base_model,
+        num_members=config.ensemble_size,
+        reset_params=not config.pretrained,
+    )
+
     member_probabilities: list[np.ndarray] = []
     member_losses: list[float] = []
     member_prediction_files: list[str] = []
     model_files: list[str] = []
 
-    for member_index in range(config.ensemble_size):
+    for member_index, member in enumerate(ensemble_members):
         member_seed = config.seed + member_index
         member_dir = fold_dir / f"member_{member_index:02d}"
         member_dir.mkdir(parents=True, exist_ok=True)
 
         probabilities, targets, member_summary, image_paths = train_single_member(
+            model=member,
             member_index=member_index,
             member_seed=member_seed,
             member_dir=member_dir,
