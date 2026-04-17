@@ -8,6 +8,7 @@ from probly.representation.distribution.torch_categorical import (
     TorchCategoricalDistribution,
     TorchCategoricalDistributionSample,
 )
+from probly.utils.torch import torch_entropy
 
 from ._common import (
     LogBase,
@@ -31,8 +32,7 @@ def torch_categorical_entropy(distribution: TorchCategoricalDistribution, base: 
         del distribution  # Avoid keeping a reference to the distribution for memory efficiency
     else:
         p = distribution
-    log_p = torch.where(p > 0, torch.log(p), torch.zeros_like(p))
-    entropy = -torch.sum(p * log_p, dim=-1)
+    entropy = torch_entropy(p)
     if base is None or base == torch.e:
         return entropy
     if base == "normalize":

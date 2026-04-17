@@ -64,3 +64,16 @@ def temperature_softmax(logits: torch.Tensor, temperature: float | torch.Tensor)
     """
     ts = F.softmax(logits / temperature, dim=-1)
     return ts
+
+
+def torch_entropy(p: torch.Tensor) -> torch.Tensor:
+    """Shannon entropy H(p) computed in torch along the last dim; 0*log(0) treated as 0.
+
+    Args:
+        p: Probabilities to compute entropy of.
+
+    Returns:
+        Entropy of probabilities p
+    """
+    log_p = torch.where(p > 0, p.log(), p.new_zeros(()))
+    return -(p * log_p).sum(-1)

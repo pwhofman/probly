@@ -9,6 +9,7 @@ from ._common import (
     expected_max_probability_complement,
     max_disagreement,
     max_probability_complement_of_expected,
+    SecondOrderDistributionLike,
     mutual_information,
 )
 from .array import array_categorical_entropy, array_dirichlet_entropy, array_gaussian_entropy
@@ -26,6 +27,7 @@ def _(_: type) -> None:
 
 
 __all__ = [
+    "SecondOrderDistributionLike",
     "array_categorical_entropy",
     "array_dirichlet_entropy",
     "array_gaussian_entropy",

@@ -133,3 +133,10 @@ def create_categorical_distribution_from_logits[T](data: T) -> CategoricalDistri
     """Create a categorical distribution from backend-specific logit data."""
     msg = f"No categorical distribution factory from logits registered for data type {type(data)}"
     raise NotImplementedError(msg)
+
+
+@lazydispatch
+def create_dirichlet_distribution_from_alphas[T](alphas: T) -> DirichletDistribution:
+    """Create a Dirichlet distribution from backend-specific alpha data."""
+    msg = f"No Dirichlet distribution factory registered for alphas type {type(alphas)}"
+    raise NotImplementedError(msg)
