@@ -7,8 +7,6 @@ from .decomposition import (
     CachingDecomposition,
     Decomposition,
 )
-
-
 from .entropy import CredalSetEntropyDecomposition, SecondOrderEntropyDecomposition
 from .zero_one import SecondOrderZeroOneDecomposition
 
