@@ -12,6 +12,7 @@ import numpy as np
 import torch
 from entmax import entmax_bisect
 from probly.method.ensemble import ensemble
+from probly.utils.torch import torch_collect_outputs
 from probly.datasets.torch import (
     Benthic,
     CIFAR10HDCIC,
@@ -545,34 +546,22 @@ def predict_dataset(
         pin_memory=config.device.startswith("cuda"),
     )
 
-    all_probabilities: list[np.ndarray] = []
-    all_targets: list[np.ndarray] = []
-    all_paths: list[str] = []
-
     model.eval()
-    with torch.no_grad():
-        for images, targets in loader:
-            logits = model(images.to(config.device))
-            probabilities = (
-                entmax_bisect(
-                    logits.float(),
-                    alpha=config.entmax_alpha,
-                    dim=1,
-                    n_iter=50,
-                    ensure_sum_one=True,
-                )
-                .cpu()
-                .numpy()
-                .astype(np.float32, copy=False)
-            )
-            all_probabilities.append(probabilities)
-            all_targets.append(targets.numpy())
-    all_paths = [dataset.dataset.image_paths[index] for index in dataset.indices]
+    # Uses probly's utility to collect outputs across dataset
+    logits, targets = torch_collect_outputs(model, loader, config.device)
+    probabilities = entmax_bisect(
+        logits.float(),
+        alpha=config.entmax_alpha,
+        dim=1,
+        n_iter=50,
+        ensure_sum_one=True,
+    )
+    image_paths = [dataset.dataset.image_paths[index] for index in dataset.indices]
 
     return (
-        np.concatenate(all_probabilities, axis=0),
-        np.concatenate(all_targets, axis=0),
-        all_paths,
+        probabilities.cpu().numpy().astype(np.float32, copy=False),
+        targets.cpu().numpy(),
+        image_paths,
     )
 
 
