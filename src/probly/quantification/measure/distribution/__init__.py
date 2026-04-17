@@ -2,7 +2,13 @@
 
 from probly.lazy_types import TORCH_TENSOR, TORCH_TENSOR_LIKE
 
-from ._common import conditional_entropy, entropy, entropy_of_expected_value, mutual_information
+from ._common import (
+    SecondOrderDistributionLike,
+    conditional_entropy,
+    entropy,
+    entropy_of_expected_value,
+    mutual_information,
+)
 from .array import array_categorical_entropy, array_dirichlet_entropy, array_gaussian_entropy
 
 
@@ -15,6 +21,7 @@ def _(_: type) -> None:
 
 
 __all__ = [
+    "SecondOrderDistributionLike",
     "array_categorical_entropy",
     "array_dirichlet_entropy",
     "array_gaussian_entropy",
