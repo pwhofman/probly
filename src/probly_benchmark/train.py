@@ -34,6 +34,7 @@ from probly_benchmark import data, metadata, utils
 from probly_benchmark.builders import BuildContext, build_model
 from probly_benchmark.paths import CHECKPOINT_PATH
 from probly_benchmark.train_funcs import (
+    BestModelTracker,
     EarlyStopping,
     evaluate,
     train_epoch,
@@ -175,7 +176,13 @@ def _training_loop(
         **cfg.scheduler.get("params", {}),
     )
     step_per_iter = getattr(scheduler, "_step_per_iter", False)
-    early_stopping = EarlyStopping(patience=cfg.early_stopping.patience) if cfg.early_stopping.patience else None
+    min_delta = cfg.early_stopping.get("min_delta", 0.0)
+    early_stopping = (
+        EarlyStopping(patience=cfg.early_stopping.patience, min_delta=min_delta)
+        if cfg.early_stopping.patience
+        else None
+    )
+    best_tracker = BestModelTracker(min_delta=min_delta) if val_loader is not None else None
 
     grad_clip_norm = cfg.get("grad_clip_norm", None)
     amp_enabled = cfg.get("amp", False)
@@ -205,6 +212,9 @@ def _training_loop(
         if val_loader:
             val_loss = val_fn(model, val_loader, device, amp_enabled, **train_kwargs)
 
+        if best_tracker is not None and val_loss is not None:
+            best_tracker.update(val_loss, model)
+
         if scheduler is not None and not step_per_iter:
             if isinstance(scheduler, optim.lr_scheduler.ReduceLROnPlateau):
                 scheduler.step(val_loss)  # ty: ignore[invalid-argument-type]
@@ -222,6 +232,10 @@ def _training_loop(
             break
     else:
         run.summary[f"{log_prefix}early_stopped"] = False
+
+    if best_tracker is not None and best_tracker.best_state_dict is not None:
+        model.load_state_dict(best_tracker.best_state_dict)
+        run.summary[f"{log_prefix}best_val_loss"] = best_tracker.best_loss
 
 
 @lazydispatch

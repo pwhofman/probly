@@ -397,6 +397,11 @@ def _accuracy(outputs: torch.Tensor, targets: torch.Tensor) -> float:
     return (outputs.argmax(1) == targets).float().mean().item()
 
 
+def _is_improvement(new_loss: float, best_loss: float, min_delta: float = 0.0) -> bool:
+    """Whether ``new_loss`` is a meaningful improvement over ``best_loss``."""
+    return new_loss < best_loss - min_delta
+
+
 class EarlyStopping:
     """Stop training when validation loss stops improving.
 
@@ -414,9 +419,38 @@ class EarlyStopping:
 
     def should_stop(self, val_loss: float) -> bool:
         """Check if training should stop."""
-        if val_loss < self.best_loss - self.min_delta:
+        if _is_improvement(val_loss, self.best_loss, self.min_delta):
             self.best_loss = val_loss
             self.counter = 0
             return False
         self.counter += 1
         return self.counter >= self.patience
+
+
+class BestModelTracker:
+    """Track the state_dict of the model with the lowest validation loss seen.
+
+    Weights are stored as a CPU-resident deep copy of ``model.state_dict()`` so that
+    the running "best" weights do not share storage with the live model and do not
+    occupy GPU memory.
+
+    Args:
+        min_delta: Minimum change to qualify as an improvement.
+    """
+
+    def __init__(self, min_delta: float = 0.0) -> None:
+        """Initialize the best-model tracker."""
+        self.min_delta = min_delta
+        self.best_loss = float("inf")
+        self.best_state_dict: dict[str, torch.Tensor] | None = None
+
+    def update(self, val_loss: float, model: nn.Module) -> bool:
+        """Store a CPU clone of ``model.state_dict()`` if ``val_loss`` improves.
+
+        Returns whether the stored best was updated.
+        """
+        if _is_improvement(val_loss, self.best_loss, self.min_delta):
+            self.best_loss = val_loss
+            self.best_state_dict = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
+            return True
+        return False
