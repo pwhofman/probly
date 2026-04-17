@@ -6,6 +6,7 @@ from .decomposition import (
     AleatoricEpistemicDecomposition,
     AleatoricEpistemicTotalDecomposition,
     CachingDecomposition,
+    CredalSetEntropyDecomposition,
     Decomposition,
     SecondOrderEntropyDecomposition,
 )
@@ -22,6 +23,7 @@ __all__ = [
     "AleatoricEpistemicTotalDecomposition",
     "AleatoricUncertainty",
     "CachingDecomposition",
+    "CredalSetEntropyDecomposition",
     "Decomposition",
     "EpistemicUncertainty",
     "Notion",
