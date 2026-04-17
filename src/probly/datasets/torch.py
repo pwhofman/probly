@@ -119,9 +119,6 @@ class DCICDataset(torch.utils.data.Dataset):
     num_classes: int
     """Number of classes."""
 
-    data: list[Image.Image]
-    """List of images."""
-
     targets: list[torch.Tensor]
     """List of labels."""
 
@@ -161,13 +158,8 @@ class DCICDataset(torch.utils.data.Dataset):
         unique_labels = {label for labels in self.image_labels.values() for label in labels}
         self.label_mappings = {label: idx for idx, label in enumerate(unique_labels)}
         self.num_classes = len({label for labels in self.image_labels.values() for label in labels})
-        self.data = []
         self.targets = []
         for img_path in self.image_paths:
-            full_img_path = Path(self.root) / img_path
-
-            image = Image.open(full_img_path).convert("RGB").copy()
-            self.data.append(image)
             labels = self.image_labels[img_path]
             label_indices = [self.label_mappings[label] for label in labels]
             dist = torch.bincount(torch.tensor(label_indices), minlength=self.num_classes).float()
@@ -184,7 +176,7 @@ class DCICDataset(torch.utils.data.Dataset):
             The number of instances in the dataset.
 
         """
-        return len(self.data)
+        return len(self.image_paths)
 
     def __getitem__(self, index: int) -> tuple[Any, torch.Tensor]:
         """Returned indexed item in the dataset.
@@ -195,7 +187,9 @@ class DCICDataset(torch.utils.data.Dataset):
         Returns:
             The (image, target) tuple within the dataset.
         """
-        image = self.data[index]
+        image_path = Path(self.root) / self.image_paths[index]
+        with Image.open(image_path) as image_file:
+            image = image_file.convert("RGB")
         if self.transform:
             image = self.transform(image)
         target = self.targets[index]
