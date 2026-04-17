@@ -139,19 +139,31 @@ def get_data_train(
     name = name.lower()
     match name:
         case "cifar10":
-            transforms_train = transforms_test = T.Compose(
+            transforms_train = T.Compose(
                 [
-                    T.ToTensor(),
+                    T.RandomCrop(32, padding=4),
+                    T.RandomHorizontalFlip(),
+                    T.ToImage(),
+                    T.ToDtype(torch.float32, scale=True),
                     T.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
                 ]
             )
+            transforms_test = T.Compose(
+                [
+                    T.ToImage(),
+                    T.ToDtype(torch.float32, scale=True),
+                    T.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+                ]
+            )
+
             train = torchvision.datasets.CIFAR10(root=DATA_PATH, train=True, download=True, transform=transforms_train)
             test = torchvision.datasets.CIFAR10(root=DATA_PATH, train=False, download=True, transform=transforms_test)
         case "imagenet":
             transforms_train = transforms_test = T.Compose(
                 [
                     T.Resize((224, 224)),
-                    T.ToTensor(),
+                    T.ToImage(),
+                    T.ToDtype(torch.float32, scale=True),
                     T.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
                 ]
             )
