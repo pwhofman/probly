@@ -4,7 +4,7 @@ from pathlib import Path
 
 import torch
 
-from image_entmax_pipeline_simple import (
+from first_order_data.image_entmax_pipeline_simple import (
     DEFAULT_ENCODERS,
     EntmaxImageExperimentConfig,
     build_run_name,
@@ -45,7 +45,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--data-root", type=Path, default=Path("data/image"))
     parser.add_argument("--augmentation", choices=["none", "basic"], default="basic")  # basic is currently just RandomHorizontalFlip
     parser.add_argument("--dropout", type=float, default=0.0)  # dropout rate for classification head, applied after global average pooling and before linear layer
-    parser.add_argument("--entmax-alpha", type=float, default=1.5)  # alpha parameter for entmax, controls sparsity output logits, alpha=1 is softmax, alpha=2 is sparsemax
+    parser.add_argument("--entmax-alpha", type=float, default=1.0)  # alpha parameter for entmax, controls sparsity output logits, setting alpha=1 will use softmax + CE, alpha=2 is sparsemax
     return parser
 
 

@@ -16,8 +16,8 @@ ARCHIVES = {
     "Plankton": "Plankton.zip",
     "QualityMRI": "QualityMRI.zip",
     "Synthetic": "Synthetic.zip",
-    "Treeversity#1": "Treeversity1.zip", # zip file name differs from dataset name
-    "Treeversity#6": "Treeversity6.zip", # zip file name differs from dataset name
+    "Treeversity#1": "Treeversity1.zip",  # zip file name differs from dataset name
+    "Treeversity#6": "Treeversity6.zip",  # zip file name differs from dataset name
     "Turkey": "Turkey.zip",
 }
 
