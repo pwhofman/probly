@@ -4,6 +4,7 @@ import copy
 import csv
 from dataclasses import dataclass
 import json
+import math
 from pathlib import Path
 import random
 from typing import Any
@@ -162,6 +163,10 @@ class SoftTargetEntmaxBisectLoss(nn.Module):
         return (omega + ((probabilities - targets) * logits).sum(dim=1)).mean()
 
 
+def uses_softmax_training(entmax_alpha: float) -> bool:
+    return math.isclose(entmax_alpha, 1.0)
+
+
 class ImageEntmaxClassifier(nn.Module):
     def __init__(
         self,
@@ -283,7 +288,7 @@ def build_run_name(config: EntmaxImageExperimentConfig) -> str:
     pretrained = "pretrained" if config.pretrained else "scratch"
     parts = [
         config.encoder_name,
-        "entmax",
+        "softmax" if uses_softmax_training(config.entmax_alpha) else "entmax",
         mode,
         pretrained,
         f"ens{config.ensemble_size}",
@@ -516,7 +521,11 @@ def train_single_model(
         lr=config.learning_rate,
         weight_decay=config.weight_decay,
     )
-    criterion = SoftTargetEntmaxBisectLoss(alpha=config.entmax_alpha)
+    criterion: nn.Module
+    if uses_softmax_training(config.entmax_alpha):
+        criterion = nn.CrossEntropyLoss()
+    else:
+        criterion = SoftTargetEntmaxBisectLoss(alpha=config.entmax_alpha)
 
     best_state = copy.deepcopy(model.state_dict())
     best_val_loss = float("inf")
@@ -560,13 +569,16 @@ def predict_dataset(
     model.eval()
     # Uses probly's utility to collect outputs across dataset
     logits, targets = torch_collect_outputs(model, loader, config.device)
-    probabilities = entmax_bisect(
-        logits.float(),
-        alpha=config.entmax_alpha,
-        dim=1,
-        n_iter=50,
-        ensure_sum_one=True,
-    )
+    if uses_softmax_training(config.entmax_alpha):
+        probabilities = torch.softmax(logits.float(), dim=1)
+    else:
+        probabilities = entmax_bisect(
+            logits.float(),
+            alpha=config.entmax_alpha,
+            dim=1,
+            n_iter=50,
+            ensure_sum_one=True,
+        )
     image_paths = [dataset.dataset.image_paths[index] for index in dataset.indices]
 
     return (
