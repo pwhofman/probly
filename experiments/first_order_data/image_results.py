@@ -1,13 +1,21 @@
 from __future__ import annotations
 
-import sys
+from collections.abc import Iterator
 import csv
 import json
 from pathlib import Path
-from typing import Iterator
+import sys
 
+from first_order_data.utils import coverage_convex_hull_relaxed, coverage_convex_hull
 import numpy as np
-from probly.metrics import coverage_convex_hull
+
+from probly.representation.credal_set.array import ArrayProbabilityIntervalsCredalSet
+from probly.representation.distribution import (
+    ArrayCategoricalDistribution,
+    ArrayCategoricalDistributionSample,
+)
+
+UNCERTAINTY_COLUMNS = ("total_uncertainty", "aleatoric_uncertainty", "epistemic_uncertainty")
 
 
 def load_json(path: Path):
@@ -15,30 +23,44 @@ def load_json(path: Path):
         return json.load(handle)
 
 
-def load_prediction_csv(path: Path) -> tuple[np.ndarray, np.ndarray]:
+def load_prediction_csv(path: Path) -> tuple[np.ndarray, np.ndarray, dict[str, np.ndarray]]:
     with path.open("r", encoding="utf-8", newline="") as handle:
         reader = csv.DictReader(handle)
         rows = list(reader)
 
-    target_columns = [name for name in reader.fieldnames or [] if name.startswith("target::")]
-    prediction_columns = [name for name in reader.fieldnames or [] if name.startswith("pred::")]
+    fieldnames = reader.fieldnames or []
+    target_columns = [name for name in fieldnames if name.startswith("target::")]
+    prediction_columns = [name for name in fieldnames if name.startswith("pred::")]
 
-    targets = np.array(
-        [[float(row[name]) for name in target_columns] for row in rows],
-        dtype=float,
-    )
-    predictions = np.array(
-        [[float(row[name]) for name in prediction_columns] for row in rows],
-        dtype=float,
-    )
-    return targets, predictions
+    targets = np.array([[float(row[name]) for name in target_columns] for row in rows], dtype=float)
+    predictions = np.array([[float(row[name]) for name in prediction_columns] for row in rows], dtype=float)
+    uncertainty = {
+        name: np.array([float(row[name]) for row in rows], dtype=float)
+        for name in UNCERTAINTY_COLUMNS
+        if name in fieldnames
+    }
+    return targets, predictions, uncertainty
 
 
 def interval_coverage(member_probabilities: np.ndarray, targets: np.ndarray) -> float:
-    lower = member_probabilities.min(axis=1)
-    upper = member_probabilities.max(axis=1)
-    inside = (targets >= lower) & (targets <= upper)
-    return float(np.mean(np.all(inside, axis=1)))
+    """Credal-set interval coverage via :class:`ArrayProbabilityIntervalsCredalSet`.
+
+    `member_probabilities` has shape `(n_instances, n_members, n_classes)`.
+    Credal set is built from per-class min/max across members.
+    `contains` tests whether each target lies inside every class interval.
+    """
+    members_first = np.moveaxis(member_probabilities, 1, 0)  # (n_members, n_instances, n_classes)
+    sample = ArrayCategoricalDistributionSample(
+        array=ArrayCategoricalDistribution(members_first),
+        sample_axis=0,
+    )
+    credal_set = ArrayProbabilityIntervalsCredalSet.from_array_sample(sample)
+    return float(credal_set.contains(targets).mean())
+
+
+def convex_hull_coverage_relaxed(member_probabilities: np.ndarray, targets: np.ndarray, epsilon: float) -> float:
+    """Relaxed convex-hull coverage, where a target is considered covered if it's within `epsilon` of the convex hull."""
+    return float(coverage_convex_hull_relaxed(member_probabilities, targets, epsilon=epsilon))
 
 
 def total_variation_distance(predictions: np.ndarray, targets: np.ndarray) -> float:
@@ -49,7 +71,7 @@ def dataset_row(run_dir: Path, dataset_result: dict) -> dict[str, float | str]:
     fold_rows = []
 
     for fold_result in dataset_result["folds"]:
-        ensemble_targets, ensemble_predictions = load_prediction_csv(
+        ensemble_targets, ensemble_predictions, ensemble_uncertainty = load_prediction_csv(
             run_dir
             / dataset_result["dataset_name"]
             / dataset_result["encoder_name"]
@@ -68,16 +90,21 @@ def dataset_row(run_dir: Path, dataset_result: dict) -> dict[str, float | str]:
                 "interval_coverage": interval_coverage(member_probabilities, ensemble_targets),
                 "convex_hull_coverage": float(coverage_convex_hull(member_probabilities, ensemble_targets)),
                 "tv_distance": total_variation_distance(ensemble_predictions, ensemble_targets),
+                **{name: float(ensemble_uncertainty[name].mean()) for name in UNCERTAINTY_COLUMNS},
             }
         )
 
+    keys = (
+        "member_ce",
+        "ensemble_ce",
+        "interval_coverage",
+        "convex_hull_coverage",
+        "tv_distance",
+        *UNCERTAINTY_COLUMNS,
+    )
     return {
         "dataset_name": dataset_result["dataset_name"],
-        "member_ce": float(np.mean([row["member_ce"] for row in fold_rows])),
-        "ensemble_ce": float(np.mean([row["ensemble_ce"] for row in fold_rows])),
-        "interval_coverage": float(np.mean([row["interval_coverage"] for row in fold_rows])),
-        "convex_hull_coverage": float(np.mean([row["convex_hull_coverage"] for row in fold_rows])),
-        "tv_distance": float(np.mean([row["tv_distance"] for row in fold_rows])),
+        **{key: float(np.mean([row[key] for row in fold_rows])) for key in keys},
     }
 
 
@@ -94,9 +121,9 @@ def latex_escape(text: str) -> str:
 def get_latex_table(run_dir: Path) -> str:
     rows = list(iter_dataset_rows(run_dir))
     lines = [
-        "\\begin{tabular}{lrrrrr}",
+        "\\begin{tabular}{lrrrrrrrr}",
         "\\toprule",
-        "Dataset & Member CE & Ensemble CE & Interval Cov. & Convex Hull Cov. & TV Distance \\\\",
+        "Dataset & Member CE & Ensemble CE & Interval Cov. & Hull Cov. & TV Distance & TU & AU & EU \\\\",
         "\\midrule",
     ]
 
@@ -107,7 +134,10 @@ def get_latex_table(run_dir: Path) -> str:
             f"{row['ensemble_ce']:.4f} & "
             f"{row['interval_coverage']:.4f} & "
             f"{row['convex_hull_coverage']:.4f} & "
-            f"{row['tv_distance']:.4f} \\\\"
+            f"{row['tv_distance']:.4f} & "
+            f"{row['total_uncertainty']:.4f} & "
+            f"{row['aleatoric_uncertainty']:.4f} & "
+            f"{row['epistemic_uncertainty']:.4f} \\\\"
         )
 
     lines.extend(["\\bottomrule", "\\end{tabular}"])
@@ -119,7 +149,7 @@ def main():
 
     for row in iter_dataset_rows(run_dir):
         print(
-            row["dataset_name"] + ":", 
+            row["dataset_name"] + ":",
             "\n  Member CE:",
             f"{row['member_ce']:.4f}",
             "\n  Ensemble CE:",
@@ -130,6 +160,12 @@ def main():
             f"{row['convex_hull_coverage']:.4f}",
             "\n  TV Distance:",
             f"{row['tv_distance']:.4f}",
+            "\n  Total Uncertainty:",
+            f"{row['total_uncertainty']:.4f}",
+            "\n  Aleatoric Uncertainty:",
+            f"{row['aleatoric_uncertainty']:.4f}",
+            "\n  Epistemic Uncertainty:",
+            f"{row['epistemic_uncertainty']:.4f}",
         )
 
     print()
