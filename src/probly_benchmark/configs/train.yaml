@@ -10,8 +10,6 @@ wandb:
   entity: "probly"
   project: "test"
 
-validate : true
-
 # models will always be saved in wandb, but this option controls whether they are also saved to disk
 save_to_disk: false
 

@@ -489,17 +489,21 @@ def main(cfg: DictConfig) -> None:
     device = utils.get_device(cfg.get("device", None))
     print(f"Running on device: {device}")
 
-    train_loader, val_loader, test_loader = data.get_data_train(
+    loaders = data.get_data_train(
         cfg.dataset,
-        use_validation=cfg.validate,
+        seed,
+        val_split=cfg.val_split,
+        cal_split=cfg.get("cal_split", 0.0),
         batch_size=cfg.batch_size,
         num_workers=cfg.num_workers,
         pin_memory=cfg.pin_memory,
         persistent_workers=cfg.persistent_workers,
         prefetch_factor=cfg.get("prefetch_factor", 4),
         shuffle=True,
-        seed=seed,
     )
+    train_loader = loaders.train
+    val_loader = loaders.validation
+    test_loader = loaders.test
 
     num_classes = metadata.DATASETS[cfg.dataset].num_classes
 
@@ -523,12 +527,15 @@ def main(cfg: DictConfig) -> None:
     # model = model.to(memory_format=torch.channels_last) # noqa: ERA001
     model = model.to(device)
 
-    if not cfg.validate:
+    if cfg.val_split == 0:
         if cfg.scheduler.name.lower() == "plateau":
-            msg = "ReduceLROnPlateau scheduler requires `validate: true` in the config."
+            msg = "ReduceLROnPlateau scheduler requires `val_split > 0` in the config."
             raise ValueError(msg)
         if cfg.early_stopping.patience:
-            msg = "Early stopping requires `validate: true` in the config. Disable early stopping or enable validation."
+            msg = (
+                "Early stopping requires `val_split > 0` in the config. "
+                "Disable early stopping or set a validation split."
+            )
             raise ValueError(msg)
 
     train_model(model, train_loader, val_loader, cfg, device, run, train_kwargs)

@@ -8,6 +8,7 @@ batch_size: 128
 num_workers: 16
 pin_memory: true
 persistent_workers: true
+val_split: 0.1
 optimizer:
     name: "sgd"
     params:

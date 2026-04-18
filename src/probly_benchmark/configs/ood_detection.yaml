@@ -1,8 +1,10 @@
 defaults:
   - _self_
+  - recipe: ???
   - method: ???
 
 dataset: "cifar10"
+ood_dataset: "cifar100"
 base_model: "resnet18"
 seed: 1
 batch_size: 512
