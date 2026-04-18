@@ -4,8 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
-from lazy_dispatch import lazydispatch
-from lazy_dispatch.registry_meta import ProtocolRegistry
+from lazy_dispatch import ProtocolRegistry, lazydispatch
 
 if TYPE_CHECKING:
     from probly.method.conformal_credal_set_prediction.scores import NonConformityFunction
@@ -20,8 +19,8 @@ class Calibrator[**In, Out](ProtocolRegistry, Protocol, structural_checking=Fals
 class ConformalCalibrator[**In, Out](ProtocolRegistry, Protocol, structural_checking=False):
     """Protocol for conformal calibrators."""
 
-    quantile: float
-    non_conformity_score: NonConformityFunction
+    quantile: float | None
+    non_conformity_score: NonConformityFunction | None
 
 
 @lazydispatch
