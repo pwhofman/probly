@@ -2,35 +2,40 @@ from __future__ import annotations
 
 import copy
 import csv
-import json
-import random
 from dataclasses import dataclass
+import json
 from pathlib import Path
+import random
 from typing import Any
 
+from entmax import entmax_bisect
 import numpy as np
 import torch
-from entmax import entmax_bisect
-from probly.method.ensemble import ensemble
-from probly.utils.torch import torch_collect_outputs
+from torch import nn
+from torch.utils.data import DataLoader, Subset
+from torchvision import transforms
+from torchvision.models import get_model, get_model_weights
+
 from probly.datasets.torch import (
-    Benthic,
     CIFAR10HDCIC,
+    Benthic,
     DCICDataset,
     MiceBone,
     Pig,
     Plankton,
     QualityMRI,
     Synthetic,
-    Turkey,
     Treeversity1,
     Treeversity6,
+    Turkey,
 )
-from torch import nn
-from torch.utils.data import DataLoader, Subset
-from torchvision import transforms
-from torchvision.models import get_model, get_model_weights
-
+from probly.method.ensemble import ensemble
+from probly.quantification import quantify
+from probly.representation.distribution import (
+    ArrayCategoricalDistribution,
+    ArrayCategoricalDistributionSample,
+)
+from probly.utils.torch import torch_collect_outputs
 
 torch.set_float32_matmul_precision("high")
 
@@ -58,6 +63,7 @@ DCIC_DATASET_LOADERS = {
     "Treeversity#6": Treeversity6,
 }
 
+
 @dataclass(slots=True)
 class FoldResult:
     test_fold: str
@@ -66,6 +72,7 @@ class FoldResult:
     test_size: int
     member_cross_entropies: list[float]
     ensemble_cross_entropy: float
+    mean_uncertainty: dict[str, float]
     prediction_file: str
     member_prediction_files: list[str]
     model_files: list[str]
@@ -78,6 +85,7 @@ class FoldResult:
             "test_size": self.test_size,
             "member_cross_entropies": self.member_cross_entropies,
             "ensemble_cross_entropy": self.ensemble_cross_entropy,
+            "mean_uncertainty": self.mean_uncertainty,
             "prediction_file": self.prediction_file,
             "member_prediction_files": self.member_prediction_files,
             "model_files": self.model_files,
@@ -92,6 +100,7 @@ class DatasetResult:
     folds: list[FoldResult]
     mean_member_cross_entropy: float
     mean_ensemble_cross_entropy: float
+    mean_uncertainty: dict[str, float]
     config: dict[str, Any]
 
     def to_dict(self) -> dict[str, Any]:
@@ -102,6 +111,7 @@ class DatasetResult:
             "folds": [fold.to_dict() for fold in self.folds],
             "mean_member_cross_entropy": self.mean_member_cross_entropy,
             "mean_ensemble_cross_entropy": self.mean_ensemble_cross_entropy,
+            "mean_uncertainty": self.mean_uncertainty,
             "config": self.config,
         }
 
@@ -140,15 +150,15 @@ class SoftTargetEntmaxBisectLoss(nn.Module):
             logits,
             alpha=self.alpha,
             dim=1,
-            n_iter=self.n_iter, # number iterations to solve for entmax normalization threshold
+            n_iter=self.n_iter,  # number iterations to solve for entmax normalization threshold
         )
         # The loss is derived from the Fenchel-Young loss formulation for entmax.
-        # This is necessary since Entmax uses a different mapping from logits to probabilities, 
+        # This is necessary since Entmax uses a different mapping from logits to probabilities,
         # so it has a different matched loss.
         # This is equivalent to the standard cross-entropy loss when alpha=1 (softmax)
-        omega = (1 - (probabilities**self.alpha).sum(dim=1)) / (
-            self.alpha * (self.alpha - 1)
-        ) # Tsallis entropy, acts as regularization to prevent solution becoming too sharp too early, rewards distributions with larger entropy
+        omega = (
+            (1 - (probabilities**self.alpha).sum(dim=1)) / (self.alpha * (self.alpha - 1))
+        )  # Tsallis entropy, acts as regularization to prevent solution becoming too sharp too early, rewards distributions with larger entropy
         return (omega + ((probabilities - targets) * logits).sum(dim=1)).mean()
 
 
@@ -263,10 +273,9 @@ def config_to_dict(config: EntmaxImageExperimentConfig) -> dict[str, Any]:
 
 
 def sanitize_path_token(value: str) -> str:
-    return "".join(
-        character if character.isalnum() or character in {"-", "_"} else "-"
-        for character in value
-    ).strip("-")
+    return "".join(character if character.isalnum() or character in {"-", "_"} else "-" for character in value).strip(
+        "-"
+    )
 
 
 def build_run_name(config: EntmaxImageExperimentConfig) -> str:
@@ -299,10 +308,7 @@ def extract_fold_name(image_path: str) -> str:
 
 
 def class_names_from_dataset(dataset: DCICDataset) -> list[str]:
-    return [
-        str(label)
-        for label, _ in sorted(dataset.label_mappings.items(), key=lambda item: item[1])
-    ]
+    return [str(label) for label, _ in sorted(dataset.label_mappings.items(), key=lambda item: item[1])]
 
 
 def load_dcic_dataset(dataset_dir: Path) -> tuple[type[DCICDataset], list[str]]:
@@ -377,13 +383,13 @@ def cross_entropy_per_sample(
     targets: np.ndarray,
     probabilities: np.ndarray,
 ) -> np.ndarray:
-    clipped = np.clip(np.asarray(probabilities, dtype=np.float64), 1e-8, 1.0) # Prevent log(0)
+    clipped = np.clip(np.asarray(probabilities, dtype=np.float64), 1e-8, 1.0)  # Prevent log(0)
     safe_targets = np.asarray(targets, dtype=np.float64)
     return -(safe_targets * np.log(clipped)).sum(axis=1)
 
 
 def entropy_per_sample(distributions: np.ndarray) -> np.ndarray:
-    clipped = np.clip(np.asarray(distributions, dtype=np.float64), 1e-8, 1.0) # Prevent log(0)
+    clipped = np.clip(np.asarray(distributions, dtype=np.float64), 1e-8, 1.0)  # Prevent log(0)
     return -(clipped * np.log(clipped)).sum(axis=1)
 
 
@@ -399,8 +405,11 @@ def export_prediction_frame(
     class_names: list[str],
     fold_name: str,
     history: dict[str, list[float]] | None,
+    uncertainty: dict[str, np.ndarray] | None = None,
 ) -> None:
     fieldnames = ["image_path", "fold", "cross_entropy", "target_entropy"]
+    uncertainty_keys = sorted(uncertainty) if uncertainty else []
+    fieldnames.extend(uncertainty_keys)
     fieldnames.extend(f"target::{class_name}" for class_name in class_names)
     fieldnames.extend(f"pred::{class_name}" for class_name in class_names)
 
@@ -419,6 +428,8 @@ def export_prediction_frame(
                 "cross_entropy": float(sample_cross_entropy[index]),
                 "target_entropy": float(sample_entropy[index]),
             }
+            for key in uncertainty_keys:
+                row[key] = float(uncertainty[key][index])
             for class_index, class_name in enumerate(class_names):
                 row[f"target::{class_name}"] = float(targets[index, class_index])
                 row[f"pred::{class_name}"] = float(probabilities[index, class_index])
@@ -488,14 +499,14 @@ def train_single_model(
         batch_size=config.batch_size,
         shuffle=True,
         num_workers=config.num_workers,
-        pin_memory=config.device.startswith("cuda"), # small optimization, can speed up data transfer to GPU
+        pin_memory=config.device.startswith("cuda"),  # small optimization, can speed up data transfer to GPU
     )
     val_loader = make_dataloader(
         dataset=val_dataset,
         batch_size=config.batch_size,
         shuffle=False,
         num_workers=config.num_workers,
-        pin_memory=config.device.startswith("cuda"), # small optimization, can speed up data transfer to GPU
+        pin_memory=config.device.startswith("cuda"),  # small optimization, can speed up data transfer to GPU
     )
 
     model = model.to(config.device)
@@ -636,15 +647,10 @@ def run_dataset_experiment(
     test_indices = fold_indices.get(config.test_fold, [])
 
     if not test_indices:
-        raise ValueError(
-            f"Fold '{config.test_fold}' was not found in dataset '{dataset_name}'."
-        )
+        raise ValueError(f"Fold '{config.test_fold}' was not found in dataset '{dataset_name}'.")
 
     train_indices = [
-        index
-        for fold_name, indices in fold_indices.items()
-        if fold_name != config.test_fold
-        for index in indices
+        index for fold_name, indices in fold_indices.items() if fold_name != config.test_fold for index in indices
     ]
     train_indices, val_indices = split_train_validation_indices(
         train_indices,
@@ -730,8 +736,23 @@ def run_dataset_experiment(
         member_prediction_files.append(member_summary["prediction_file"])
         model_files.append(member_summary["model_file"])
 
-    ensemble_probabilities = np.mean(np.stack(member_probabilities, axis=0), axis=0)
+    member_stack = np.stack(member_probabilities, axis=0)  # (n_members, n, n_classes)
+    ensemble_probabilities = member_stack.mean(axis=0)
     ensemble_loss = mean_cross_entropy(targets, ensemble_probabilities)
+
+    # treat the stack as a sample from a second-order categorical distribution and use
+    # probly to decompose uncertainty into total, aleatoric and epistemic
+    ensemble_sample = ArrayCategoricalDistributionSample(
+        array=ArrayCategoricalDistribution(member_stack),
+        sample_axis=0,
+    )
+    decomposition = quantify(ensemble_sample)
+    uncertainty = {
+        "total_uncertainty": np.asarray(decomposition.total, dtype=np.float64),
+        "aleatoric_uncertainty": np.asarray(decomposition.aleatoric, dtype=np.float64),
+        "epistemic_uncertainty": np.asarray(decomposition.epistemic, dtype=np.float64),
+    }
+    mean_uncertainty = {name: float(values.mean()) for name, values in uncertainty.items()}
 
     ensemble_prediction_path = fold_dir / "ensemble_predictions.csv"
     export_prediction_frame(
@@ -742,6 +763,7 @@ def run_dataset_experiment(
         class_names=class_names,
         fold_name=config.test_fold,
         history=None,
+        uncertainty=uncertainty,
     )
 
     fold_result = FoldResult(
@@ -751,6 +773,7 @@ def run_dataset_experiment(
         test_size=len(test_dataset),
         member_cross_entropies=member_losses,
         ensemble_cross_entropy=ensemble_loss,
+        mean_uncertainty=mean_uncertainty,
         prediction_file=str(ensemble_prediction_path),
         member_prediction_files=member_prediction_files,
         model_files=model_files,
@@ -764,6 +787,7 @@ def run_dataset_experiment(
         folds=[fold_result],
         mean_member_cross_entropy=float(np.mean(member_losses)),
         mean_ensemble_cross_entropy=ensemble_loss,
+        mean_uncertainty=mean_uncertainty,
         config=config_to_dict(config),
     )
 
