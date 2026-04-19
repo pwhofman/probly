@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import torch
 from torch import nn, optim
@@ -14,6 +14,7 @@ from probly.method.bayesian import BayesianPredictor
 from probly.method.credal_ensembling import CredalEnsemblingPredictor
 from probly.method.credal_relative_likelihood import CredalRelativeLikelihoodPredictor
 from probly.method.credal_wrapper import CredalWrapperPredictor
+from probly.method.ddu import DDUPredictor
 from probly.method.dropconnect import DropConnectPredictor
 from probly.method.dropout import DropoutPredictor
 from probly.method.ensemble import EnsemblePredictor
@@ -51,10 +52,10 @@ def _(
     grad_clip_norm: float | None = None,
     amp_enabled: bool = False,
     scaler: GradScaler | None = None,
-    **kwargs: Any,  # noqa: ANN401, ARG001
+    **kwargs: Any,  # noqa: ANN401
 ) -> torch.Tensor | float:
     """Train a Bayesian predictor for one epoch."""
-    criterion = ELBOLoss()
+    criterion = ELBOLoss(kl_penalty=kwargs.get("kl_penalty", 1e-5))
     optimizer.zero_grad()
     with autocast(inputs.device.type, enabled=amp_enabled):
         outputs = model(inputs)
@@ -124,6 +125,46 @@ def _(
     with autocast(inputs.device.type, enabled=amp_enabled):
         alpha = model(inputs)
         loss = postnet_loss(alpha, targets, entropy_weight=entropy_weight)
+    if scaler is not None:
+        scaler.scale(loss).backward()
+        if grad_clip_norm is not None:
+            scaler.unscale_(optimizer)
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)
+        scaler.step(optimizer)
+        scaler.update()
+    else:
+        loss.backward()
+        if grad_clip_norm is not None:
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)
+        optimizer.step()
+    return loss.item()
+
+
+@train_epoch.register(DDUPredictor)
+def train_epoch_ddu(
+    model: nn.Module,
+    inputs: torch.Tensor,
+    targets: torch.Tensor,
+    optimizer: optim.Optimizer,
+    grad_clip_norm: float | None = None,
+    amp_enabled: bool = False,
+    scaler: GradScaler | None = None,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> torch.Tensor | float:
+    """Train a DDU predictor for one step with cross-entropy on the classification logits.
+
+    The density head is not used during training; it is fitted on the full
+    training set after the supervised phase completes.
+    Mukhoti et al., "Deep Deterministic Uncertainty", CVPR 2023
+    (https://arxiv.org/abs/2102.11582), Section 3.
+    """
+    model_ = cast("Any", model)
+    criterion = nn.CrossEntropyLoss()
+    optimizer.zero_grad()
+    with autocast(inputs.device.type, enabled=amp_enabled):
+        features = model_.encoder(inputs)
+        logits = model_.classification_head(features)
+        loss = criterion(logits, targets)
     if scaler is not None:
         scaler.scale(loss).backward()
         if grad_clip_norm is not None:
@@ -215,6 +256,30 @@ def _(
         with autocast(device.type, enabled=amp_enabled):
             alpha = model(inputs)
             val_loss += postnet_loss(alpha, targets, entropy_weight=entropy_weight).item()
+    val_loss /= len(val_loader)
+    return val_loss
+
+
+@validate.register(DDUPredictor)
+@torch.no_grad()
+def validate_ddu(
+    model: nn.Module,
+    val_loader: DataLoader,
+    device: torch.device,
+    amp_enabled: bool = False,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> float:
+    """Validate a DDU predictor with cross-entropy loss on the classification logits."""
+    model_ = cast("Any", model)
+    criterion = nn.CrossEntropyLoss()
+    model_.eval()
+    val_loss = 0.0
+    for inputs_, targets_ in val_loader:
+        inputs, targets = inputs_.to(device), targets_.to(device)
+        with autocast(device.type, enabled=amp_enabled):
+            features = model_.encoder(inputs)
+            logits = model_.classification_head(features)
+            val_loss += criterion(logits, targets).item()
     val_loss /= len(val_loader)
     return val_loss
 
@@ -323,6 +388,36 @@ def _(
     probs = torch.cat(all_probs)
     labels = torch.cat(all_labels)
 
+    return _compute_metrics(probs, labels, n_bins)
+
+
+@evaluate.register(DDUPredictor)
+@torch.no_grad()
+def evaluate_ddu(
+    model: nn.Module,
+    test_loader: DataLoader,
+    device: torch.device,
+    amp_enabled: bool = False,
+    n_bins: int = 10,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> dict[str, float]:
+    """Evaluate a DDU predictor on the test set.
+
+    Uses softmax of the classification logits as class probabilities.
+    """
+    model_ = cast("Any", model)
+    model_.eval()
+    all_probs: list[torch.Tensor] = []
+    all_labels: list[torch.Tensor] = []
+    for inputs_, targets_ in test_loader:
+        inputs, targets = inputs_.to(device), targets_.to(device)
+        with autocast(device.type, enabled=amp_enabled):
+            features = model_.encoder(inputs)
+            logits = model_.classification_head(features)
+        all_probs.append(F.softmax(logits, dim=1))
+        all_labels.append(targets)
+    probs = torch.cat(all_probs)
+    labels = torch.cat(all_labels)
     return _compute_metrics(probs, labels, n_bins)
 
 

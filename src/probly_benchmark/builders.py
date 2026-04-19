@@ -21,6 +21,7 @@ from probly.method.bayesian import bayesian
 from probly.method.credal_ensembling import credal_ensembling
 from probly.method.credal_relative_likelihood import credal_relative_likelihood
 from probly.method.credal_wrapper import credal_wrapper
+from probly.method.ddu import ddu
 from probly.method.dropconnect import dropconnect
 from probly.method.dropout import dropout
 from probly.method.ensemble import ensemble
@@ -34,6 +35,7 @@ if TYPE_CHECKING:
 
 METHODS = {
     "bayesian": bayesian,
+    "ddu": ddu,
     "dropout": dropout,
     "dropconnect": dropconnect,
     "posterior_network": posterior_network,

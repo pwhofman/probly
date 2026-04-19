@@ -9,6 +9,8 @@ if TYPE_CHECKING:
 
     from torch.utils.data import DataLoader
 
+    from probly.method.ddu.torch import GaussianMixtureHead
+
 
 import pathlib
 import secrets
@@ -25,9 +27,11 @@ import wandb
 import wandb.util
 
 from lazy_dispatch import lazydispatch
+from probly.method.bayesian import BayesianPredictor
 from probly.method.credal_ensembling import CredalEnsemblingPredictor
 from probly.method.credal_relative_likelihood import CredalRelativeLikelihoodPredictor
 from probly.method.credal_wrapper import CredalWrapperPredictor
+from probly.method.ddu import DDUPredictor
 from probly.method.ensemble import EnsemblePredictor
 from probly.method.subensemble import SubensemblePredictor
 from probly_benchmark import data, metadata, utils
@@ -93,6 +97,7 @@ def _make_warmup_cosine(
 
 SCHEDULERS: dict[str, Callable[..., optim.lr_scheduler.LRScheduler] | None] = {
     "cosine": optim.lr_scheduler.CosineAnnealingLR,
+    "multistep": optim.lr_scheduler.MultiStepLR,
     "step": optim.lr_scheduler.StepLR,
     "plateau": optim.lr_scheduler.ReduceLROnPlateau,
     "warmup_cosine": _make_warmup_cosine,
@@ -161,8 +166,6 @@ def _training_loop(
         val_fn: Validation function.
         log_prefix: Prefix for W&B log keys (e.g. ``"member_0/"``).
     """
-    model.forward = torch.compile(model.forward)
-
     optimizer = get_optimizer(
         cfg.optimizer.name,
         model.parameters(),
@@ -209,8 +212,11 @@ def _training_loop(
         running_loss /= len(train_loader)
 
         val_loss: float | None = None
+        log_data = {f"{log_prefix}train_loss": running_loss}
         if val_loader:
             val_loss = val_fn(model, val_loader, device, amp_enabled, **train_kwargs)
+            log_data[f"{log_prefix}val_loss"] = val_loss
+        run.log(data=log_data)
 
         if best_tracker is not None and val_loss is not None:
             best_tracker.update(val_loss, model)
@@ -220,11 +226,6 @@ def _training_loop(
                 scheduler.step(val_loss)  # ty: ignore[invalid-argument-type]
             else:
                 scheduler.step()
-
-        log_data = {f"{log_prefix}train_loss": running_loss}
-        if val_loss is not None:
-            log_data[f"{log_prefix}val_loss"] = val_loss
-        run.log(data=log_data)
 
         if early_stopping is not None and val_loss is not None and early_stopping.should_stop(val_loss):
             run.summary[f"{log_prefix}early_stopped"] = True
@@ -308,7 +309,7 @@ def _compute_log_likelihood(
     return -total_loss / total_samples
 
 
-def _training_loop_relative_likelihood(  # noqa: PLR0912
+def _training_loop_relative_likelihood(
     model: nn.Module,
     train_loader: DataLoader,
     val_loader: DataLoader | None,
@@ -323,8 +324,6 @@ def _training_loop_relative_likelihood(  # noqa: PLR0912
     log_prefix: str = "",
 ) -> None:
     """Training loop that stops when the relative likelihood reaches ``alpha``."""
-    model.forward = torch.compile(model.forward)
-
     optimizer = get_optimizer(
         cfg.optimizer.name,
         model.parameters(),
@@ -379,22 +378,20 @@ def _training_loop_relative_likelihood(  # noqa: PLR0912
             relative_likelihood = torch.exp(torch.tensor(current_ll - max_ll)).item()
 
         val_loss: float | None = None
+        log_data = {
+            f"{log_prefix}train_loss": running_loss,
+            f"{log_prefix}relative_likelihood": relative_likelihood,
+        }
         if val_loader:
             val_loss = val_fn(model, val_loader, device, amp_enabled)
+            log_data[f"{log_prefix}val_loss"] = val_loss
+        run.log(data=log_data)
 
         if scheduler is not None and not step_per_iter:
             if isinstance(scheduler, optim.lr_scheduler.ReduceLROnPlateau):
                 scheduler.step(val_loss)  # ty: ignore[invalid-argument-type]
             else:
                 scheduler.step()
-
-        log_data = {
-            f"{log_prefix}train_loss": running_loss,
-            f"{log_prefix}relative_likelihood": relative_likelihood,
-        }
-        if val_loss is not None:
-            log_data[f"{log_prefix}val_loss"] = val_loss
-        run.log(data=log_data)
 
         if stopped or relative_likelihood >= alpha:
             run.summary[f"{log_prefix}rl_stopped"] = True
@@ -403,6 +400,37 @@ def _training_loop_relative_likelihood(  # noqa: PLR0912
             break
     else:
         run.summary[f"{log_prefix}rl_stopped"] = False
+
+
+@train_model.register(BayesianPredictor)
+def _(
+    model: nn.Module,
+    train_loader: DataLoader,
+    val_loader: DataLoader | None,
+    cfg: DictConfig,
+    device: torch.device,
+    run: Any,  # noqa: ANN401
+    train_kwargs: dict[str, Any],
+) -> None:
+    """Train a BayesianPredictor with ELBO loss.
+
+    The KL penalty is set to 1/N (N = dataset size) following
+    Blundell et al., "Weight Uncertainty in Neural Networks", ICML 2015.
+    """
+    dataset = getattr(train_loader, "dataset", None)
+    dataset_size = len(dataset) if dataset is not None else len(train_loader) * cfg.batch_size
+    kl_penalty = 1.0 / dataset_size
+    _training_loop(
+        model,
+        train_loader,
+        val_loader,
+        cfg,
+        device,
+        run,
+        {**train_kwargs, "kl_penalty": kl_penalty},
+        train_fn=train_epoch,  # ty: ignore[invalid-argument-type]
+        val_fn=validate,
+    )
 
 
 @train_model.register(CredalRelativeLikelihoodPredictor)
@@ -463,6 +491,79 @@ def _(
         )
 
 
+@torch.no_grad()
+def _fit_ddu_density_head(
+    model: DDUPredictor,
+    train_loader: DataLoader,
+    device: torch.device,
+    amp_enabled: bool = False,
+) -> None:
+    """Fit the GMM density head of a DDU predictor on the full training set.
+
+    Iterates through ``train_loader`` to extract encoder features batch-by-batch
+    (on ``device``), accumulates them on CPU to avoid GPU memory exhaustion, then
+    calls ``density_head.fit`` on CPU before moving the fitted buffers back to
+    ``device``.
+
+    Args:
+        model: Trained DDU predictor with ``.encoder`` and ``.density_head`` attributes.
+        train_loader: Training data loader used to collect features.
+        device: Device on which the encoder runs.
+        amp_enabled: Whether to use automatic mixed precision during feature extraction.
+    """
+    model.eval()
+    all_features: list[torch.Tensor] = []
+    all_labels: list[torch.Tensor] = []
+    for inputs_, targets_ in tqdm(train_loader, desc="Fitting DDU density head"):
+        inputs = inputs_.to(device, non_blocking=True).contiguous(memory_format=torch.channels_last)
+        targets = targets_.to(device, non_blocking=True)
+        with torch.amp.autocast(device.type, enabled=amp_enabled):
+            features = model.encoder(inputs)
+        all_features.append(features.detach().cpu())
+        all_labels.append(targets.detach().cpu())
+    features_cat = torch.cat(all_features)
+    labels_cat = torch.cat(all_labels)
+    density_head: GaussianMixtureHead = model.density_head  # ty:ignore[invalid-assignment]
+    density_head_device = density_head.means.device
+    density_head.cpu()
+    density_head.fit(features_cat, labels_cat)
+    density_head.to(density_head_device)
+
+
+@train_model.register(DDUPredictor)
+def _(
+    model: nn.Module,
+    train_loader: DataLoader,
+    val_loader: DataLoader | None,
+    cfg: DictConfig,
+    device: torch.device,
+    run: Any,  # noqa: ANN401
+    train_kwargs: dict[str, Any],
+) -> None:
+    """Train a DDU predictor and fit the GMM density head post-training.
+
+    Phase 1 trains the spectrally-normalised network end-to-end with standard
+    cross-entropy exactly as described in Mukhoti et al., CVPR 2023
+    (https://arxiv.org/abs/2102.11582).  Phase 2 fits the per-class Gaussian
+    density estimator (GDA) on all training features extracted from the frozen
+    encoder, which is used at inference time for epistemic uncertainty scoring.
+    """
+    _training_loop(
+        model,
+        train_loader,
+        val_loader,
+        cfg,
+        device,
+        run,
+        train_kwargs,
+        train_fn=train_epoch,  # ty: ignore[invalid-argument-type]
+        val_fn=validate,
+    )
+    amp_enabled = cfg.get("amp", False)
+    _fit_ddu_density_head(model, train_loader, device, amp_enabled)
+    run.summary["ddu_gmm_fitted"] = True
+
+
 @hydra.main(version_base=None, config_path="configs/", config_name="train")
 def main(cfg: DictConfig) -> None:
     """Run the training script."""
@@ -518,9 +619,6 @@ def main(cfg: DictConfig) -> None:
         train_loader=train_loader,
     )
     model = build_model(cfg.method.name, method_kwargs, context).to(device)
-    # channels_last layout gives a large speedup for conv nets on recent NVIDIA GPUs.
-    # only
-    # model = model.to(memory_format=torch.channels_last) # noqa: ERA001
     model = model.to(device)
 
     if not cfg.validate:
