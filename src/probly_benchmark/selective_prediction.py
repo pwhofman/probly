@@ -36,9 +36,11 @@ def main(cfg: DictConfig) -> None:
     )
     print(f"Loaded model {artifact_name} from wandb run: {run_id}")
 
-    _, _, test_loader = data.get_data_train(
+    test_loader = data.get_data_selective_prediction(
         cfg.dataset,
-        use_validation=False,
+        cfg.seed,
+        val_split=cfg.val_split,
+        cal_split=cfg.get("cal_split", 0.0),
         batch_size=cfg.batch_size,
     )
 
