@@ -1,5 +1,5 @@
 # @package _global_
-dataset: "imagenet_shards"
+dataset: "imagenet"
 base_model: "resnet50"
 model_type: "logit_classifier"
 pretrained: True
