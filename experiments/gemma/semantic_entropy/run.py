@@ -9,6 +9,8 @@ Two variants are computed:
   - Discrete: cluster probabilities from uniform sample counts
   - Weighted: cluster probabilities from generation log-likelihoods
 
+Usage:
+    uv run python gemma/semantic_entropy/run.py --num-samples 10 --seed 42
 """
 
 from __future__ import annotations

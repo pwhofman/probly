@@ -6,7 +6,7 @@ files by filtering out unlabeled items.
 
 Usage:
     uv run python gemma/calibration/analyze.py \
-        --results data/results/run_t07.json
+        --results data/experiments/gemma/run_t07.json
 """
 
 from __future__ import annotations

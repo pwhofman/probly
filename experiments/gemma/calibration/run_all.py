@@ -10,12 +10,15 @@ Usage:
 
 from __future__ import annotations
 
-from pathlib import Path
 import time
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+from core import GEMMA_DIR
 
 from gemma.calibration.generate import generate_main
-
-RESULTS_DIR = Path("data/results")
 
 RUNS = [
     {"temperature": 0.7, "seed": 42},
@@ -29,7 +32,7 @@ NUM_SAMPLES = 10
 def result_path(run: dict) -> Path:
     """Build the output path for a run config."""
     t = str(run["temperature"]).replace(".", "")
-    return RESULTS_DIR / f"trivia_t{t}_s{run['seed']}.json"
+    return GEMMA_DIR / f"trivia_t{t}_s{run['seed']}.json"
 
 
 def main() -> None:

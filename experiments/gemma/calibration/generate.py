@@ -9,7 +9,7 @@ Supports incremental saving (JSONL partial file) and resume after crash.
 Usage:
     uv run python gemma/calibration/generate.py \
         --num-questions 200 --num-samples 10 --temperature 0.7 \
-        --seed 42 --output data/results/run_t07_s42.json
+        --seed 42 --output data/experiments/gemma/run_t07_s42.json
 """
 
 from __future__ import annotations
@@ -22,8 +22,8 @@ import time
 
 from core import (
     CACHE_DIR,
-    DATA_DIR,
     DEFAULT_NLI_MODEL,
+    GEMMA_DIR,
     EntailmentModel,
     NLIModel,
     cluster_assignment_entropy,
@@ -209,7 +209,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output",
         type=str,
-        default=str(DATA_DIR / "results" / "run.json"),
+        default=str(GEMMA_DIR / "run.json"),
         help="Output JSON path.",
     )
     return parser.parse_args()
@@ -242,7 +242,7 @@ def generate_main(
     torch.manual_seed(seed)
     suppress_hf_noise()
 
-    output_path = Path(output) if output is not None else DATA_DIR / "results" / "run.json"
+    output_path = Path(output) if output is not None else GEMMA_DIR / "run.json"
     partial_path = Path(str(output_path) + ".partial")
 
     # Resume support: load any previously completed results

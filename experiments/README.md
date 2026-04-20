@@ -31,6 +31,6 @@ uv run python gemma/chat.py --temperature 0.7 --top-k 40
 Measures how semantically diverse the model's responses are across multiple samples. High entropy = uncertain, low entropy = confident.
 
 ```bash
-uv run python gemma/run_semantic_entropy.py --num-samples 10 --seed 42
-uv run python gemma/run_semantic_entropy.py --nli-model microsoft/deberta-v2-xlarge-mnli
+uv run python gemma/semantic_entropy/run.py --num-samples 10 --seed 42
+uv run python gemma/semantic_entropy/run.py --nli-model microsoft/deberta-v2-xlarge-mnli
 ```
