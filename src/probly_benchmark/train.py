@@ -13,7 +13,6 @@ if TYPE_CHECKING:
 
 
 import pathlib
-import secrets
 import tempfile
 
 import hydra
@@ -523,7 +522,7 @@ def _fit_ddu_density_head(
         all_labels.append(targets.detach().cpu())
     features_cat = torch.cat(all_features)
     labels_cat = torch.cat(all_labels)
-    density_head: GaussianMixtureHead = model.density_head  # ty:ignore[invalid-assignment]
+    density_head: GaussianMixtureHead = model.density_head
     density_head_device = density_head.means.device
     density_head.cpu()
     density_head.fit(features_cat, labels_cat)
@@ -572,8 +571,6 @@ def main(cfg: DictConfig) -> None:
 
     run_id = wandb.util.generate_id()
     seed = cfg.get("seed", None)
-    if seed is None:
-        seed = secrets.randbelow(2**32)
     utils.set_seed(seed)
 
     run = wandb.init(
@@ -622,8 +619,12 @@ def main(cfg: DictConfig) -> None:
         pretrained=cfg.pretrained,
         train_loader=train_loader,
     )
-    model = build_model(cfg.method.name, method_kwargs, context).to(device)
-    model = model.to(device)
+    model = build_model(cfg.method.name, method_kwargs, context)
+    if isinstance(model, EnsemblePredictor):
+        for member in model:
+            member.to(device)
+    else:
+        model = model.to(device)
 
     if cfg.val_split == 0:
         if cfg.scheduler.name.lower() == "plateau":

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pathlib
 import random
+import secrets
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
@@ -21,12 +22,14 @@ if TYPE_CHECKING:
     from probly.representer import Representer
 
 
-def set_seed(seed: int) -> None:
+def set_seed(seed: int | None) -> None:
     """Set seed for reproducibility.
 
     Args:
         seed: Seed for reproducibility.
     """
+    if seed is None:
+        seed = secrets.randbelow(2**32)
     random.seed(seed)
     np.random.seed(seed)  # noqa: NPY002
     np.random.default_rng(seed)
