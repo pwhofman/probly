@@ -14,7 +14,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 model = LeNet(n_classes=5)
-cep = credal_relative_likelihood(model, num_members=10, predictor_type="probabilistic_classifier")
+cep = credal_relative_likelihood(model, num_members=10, predictor_type="logit_classifier")
 rep = CredalRelativeLikelihoodRepresenter(cep)
 logger.info(rep)
 inputs = torch.randn(3, 1, 28, 28)
