@@ -125,7 +125,7 @@ class TestEnsembleGeneration:
     def test_not_implemented_error_with_reset(self, flax_model_small_2d_2d) -> None:
         num_members = 2
 
-        msg = "resetting parameters of flax models is not supported yet."
+        msg = "resetting parameters of <class 'flax.nnx.variablelib.Param'> models is not supported yet."
         with pytest.raises(NotImplementedError, match=msg):
             ensemble(flax_model_small_2d_2d, num_members=num_members, reset_params=True)
 

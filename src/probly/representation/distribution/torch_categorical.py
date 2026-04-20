@@ -3,25 +3,30 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, ClassVar, Self, override
+from typing import TYPE_CHECKING, Any, ClassVar, override
 
 import torch
 
 from probly.representation._protected_axis.torch import TorchAxisProtected
-from probly.representation.distribution._common import CategoricalDistribution, create_categorical_distribution
-from probly.representation.sample.torch import TorchTensorSample
+from probly.representation.distribution._common import (
+    CategoricalDistribution,
+    CategoricalDistributionSample,
+    create_categorical_distribution,
+    create_categorical_distribution_from_logits,
+)
+from probly.representation.sample.torch import TorchSample
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Callable, Iterator
 
     import numpy as np
 
 
 @create_categorical_distribution.register(torch.Tensor)
 @dataclass(frozen=True, slots=True, weakref_slot=True)
-class TorchTensorCategoricalDistribution(
+class TorchCategoricalDistribution(
     TorchAxisProtected[Any],
-    CategoricalDistribution,
+    CategoricalDistribution[torch.Tensor],
 ):
     """A categorical distribution stored as a torch tensor.
 
@@ -29,52 +34,53 @@ class TorchTensorCategoricalDistribution(
     The last axis represents the category dimension.
     """
 
-    probabilities: torch.Tensor
-    protected_axes: ClassVar[dict[str, int]] = {"probabilities": 1}
-
-    @property
-    def _is_bernoulli(self) -> bool:
-        return self.probabilities.shape[-1] == 1
-
-    def _bernoulli_probability(self) -> torch.Tensor:
-        return self.probabilities[..., 0]
-
-    def _normalized_probabilities(self) -> torch.Tensor:
-        if self._is_bernoulli:
-            msg = "Bernoulli distributions do not use categorical normalization."
-            raise ValueError(msg)
-
-        sums = torch.sum(self.probabilities, dim=-1, keepdim=True)
-        if torch.any(sums <= 0):
-            msg = "Relative probabilities must have strictly positive sum along the last axis."
-            raise ValueError(msg)
-
-        return self.probabilities / sums
+    unnormalized_probabilities: torch.Tensor
+    protected_axes: ClassVar[dict[str, int]] = {"unnormalized_probabilities": 1}
+    permitted_functions: ClassVar[set[Callable]] = {torch.mean}
 
     def __post_init__(self) -> None:
         """Validate the concentration parameters."""
-        if not isinstance(self.probabilities, torch.Tensor):
+        if not isinstance(self.unnormalized_probabilities, torch.Tensor):
             msg = "probabilities must be a torch tensor."
             raise TypeError(msg)
 
-        if self.probabilities.ndim < 1:
+        if self.unnormalized_probabilities.ndim < 1:
             msg = "probabilities must have at least one dimension."
             raise ValueError(msg)
 
         if self._is_bernoulli:
-            if torch.any(self.probabilities < 0) or torch.any(self.probabilities > 1):
+            if torch.any(self.unnormalized_probabilities < 0) or torch.any(self.unnormalized_probabilities > 1):
                 msg = "Bernoulli probabilities must be in the range [0, 1]."
                 raise ValueError(msg)
-        elif torch.any(self.probabilities < 0):
+        elif torch.any(self.unnormalized_probabilities < 0):
             msg = "Relative probabilities must be non-negative."
             raise ValueError(msg)
+
+    @property
+    def _is_bernoulli(self) -> bool:
+        return self.unnormalized_probabilities.shape[-1] == 1
+
+    def _bernoulli_probability(self) -> torch.Tensor:
+        return self.unnormalized_probabilities[..., 0]
+
+    @override
+    @property
+    def probabilities(self) -> torch.Tensor:
+        if self._is_bernoulli:
+            p = self._bernoulli_probability()
+            q = 1 - p
+            return torch.stack((p, q), dim=-1)
+
+        sums = torch.sum(self.unnormalized_probabilities, dim=-1, keepdim=True)
+
+        return self.unnormalized_probabilities / sums
 
     @override
     @property
     def num_classes(self) -> int:
         if self._is_bernoulli:
             return 2
-        return self.probabilities.shape[-1]
+        return self.unnormalized_probabilities.shape[-1]
 
     @override
     @property
@@ -86,7 +92,7 @@ class TorchTensorCategoricalDistribution(
             log_q = torch.where(q > 0, torch.log(q), torch.zeros_like(q))
             return -(p * log_p + q * log_q)
 
-        p = self._normalized_probabilities()
+        p = self.probabilities
         log_p = torch.where(p > 0, torch.log(p), torch.zeros_like(p))
         return -torch.sum(p * log_p, dim=-1)
 
@@ -95,18 +101,18 @@ class TorchTensorCategoricalDistribution(
         self,
         num_samples: int = 1,
         rng: torch.Generator | None = None,
-    ) -> TorchTensorSample:
+    ) -> TorchSample[torch.Tensor]:
         """Sample from the categorical distribution (torch backend)."""
         if self._is_bernoulli:
             probabilities = self._bernoulli_probability()
             expanded = probabilities.expand((num_samples, *probabilities.shape))
             samples = torch.bernoulli(expanded, generator=rng).to(dtype=torch.int64)
-            return TorchTensorSample(tensor=samples, sample_dim=0)  # ty:ignore[invalid-argument-type]
+            return TorchSample(tensor=samples, sample_dim=0)
 
-        flat_probabilities = self._normalized_probabilities().reshape((-1, self.num_classes))
+        flat_probabilities = self.probabilities.reshape((-1, self.num_classes))
         flat_samples = torch.multinomial(flat_probabilities, num_samples=num_samples, replacement=True, generator=rng)
         samples = flat_samples.transpose(0, 1).reshape((num_samples, *self.shape))
-        return TorchTensorSample(tensor=samples, sample_dim=0)  # ty:ignore[invalid-argument-type]
+        return TorchSample(tensor=samples, sample_dim=0)
 
     @override
     def numpy(self, *, force: bool = False) -> np.ndarray:
@@ -117,11 +123,14 @@ class TorchTensorCategoricalDistribution(
     def __iter__(self) -> Iterator[Any]:
         return self.probabilities.__iter__()
 
-    def __eq__(self, value: Any) -> Self:  # ty: ignore[invalid-method-override]  # noqa: ANN401, PYI032
+    @override
+    def __eq__(self, value: Any) -> torch.Tensor:  # ty: ignore[invalid-method-override]  # noqa: PYI032
         """Vectorized equality comparison."""
-        if isinstance(value, TorchTensorCategoricalDistribution):
-            return torch.eq(self.probabilities, value.probabilities)  # ty: ignore[invalid-return-type]
-        return torch.eq(self.probabilities, value)  # ty: ignore[invalid-return-type]
+        if isinstance(value, TorchCategoricalDistribution):
+            eq = torch.eq(self.probabilities, value.probabilities)
+        else:
+            eq = torch.eq(self.unnormalized_probabilities, value)
+        return torch.all(eq, dim=-1)
 
     def __hash__(self) -> int:
         """Return an identity-based hash.
@@ -133,8 +142,29 @@ class TorchTensorCategoricalDistribution(
         return object.__hash__(self)
 
 
-@create_categorical_distribution.register(TorchTensorCategoricalDistribution)
+class TorchCategoricalDistributionSample(  # ty:ignore[conflicting-metaclass]
+    CategoricalDistributionSample[TorchCategoricalDistribution],
+    TorchSample[TorchCategoricalDistribution],
+):
+    """Sample type for empirical second-order categorical distributions."""
+
+    sample_space: ClassVar[type[CategoricalDistribution]] = TorchCategoricalDistribution
+
+    @override
+    @classmethod
+    def __instancehook__(cls, instance: object) -> bool:
+        return super().__instancehook__(instance)
+
+
+@create_categorical_distribution.register(TorchCategoricalDistribution)
 def _create_torch_categorical_distribution_from_instance(
-    data: TorchTensorCategoricalDistribution,
-) -> TorchTensorCategoricalDistribution:
+    data: TorchCategoricalDistribution,
+) -> TorchCategoricalDistribution:
     return data
+
+
+@create_categorical_distribution_from_logits.register(torch.Tensor)
+def _create_torch_categorical_distribution_from_logits(
+    data: torch.Tensor,
+) -> TorchCategoricalDistribution:
+    return TorchCategoricalDistribution(torch.softmax(data, dim=-1))

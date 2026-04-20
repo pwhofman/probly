@@ -6,6 +6,7 @@ from collections.abc import Callable, Iterable
 from typing import Any, Literal, override
 
 from probly.predictor import IterablePredictor, Predictor, RandomPredictor, predict
+from probly.predictor._common import RandomRepresentationPredictor
 from probly.representation.sample import Sample, SampleFactory, create_sample
 from probly.representer._representer import Representer, representer
 from probly.traverse_nn import nn_compose
@@ -96,7 +97,7 @@ class IterableSampler[**In, Out, S: Sample](Representer[Any, In, Out, S]):
         )
 
 
-@representer.register(RandomPredictor)
+@representer.register(RandomPredictor | RandomRepresentationPredictor)
 class Sampler[**In, Out, S: Sample](IterableSampler[In, Out, S]):
     """A representation predictor that creates representations from finite samples."""
 

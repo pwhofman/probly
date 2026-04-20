@@ -1,0 +1,6 @@
+# @package method
+name: "credal_wrapper"
+params:
+  num_members: 5
+  reset_params: true
+train:

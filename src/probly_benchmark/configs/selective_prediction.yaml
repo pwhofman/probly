@@ -1,0 +1,16 @@
+defaults:
+  - _self_
+  - method: ???
+
+dataset: "cifar10"
+base_model: "resnet18"
+seed: 1
+n_bins: 50
+decomposition: "total"
+measure: "entropy"
+batch_size: 512
+amp: true
+wandb:
+  enabled: true
+  entity: "probly"
+  project: "test"

@@ -18,9 +18,14 @@ from torch import nn
 from torch.utils.data import Subset
 
 from probly.method.bayesian import bayesian
+from probly.method.credal_ensembling import credal_ensembling
+from probly.method.credal_relative_likelihood import credal_relative_likelihood
+from probly.method.credal_wrapper import credal_wrapper
 from probly.method.dropconnect import dropconnect
 from probly.method.dropout import dropout
+from probly.method.ensemble import ensemble
 from probly.method.posterior_network import posterior_network
+from probly.method.subensemble import subensemble
 from probly_benchmark import models
 
 if TYPE_CHECKING:
@@ -32,6 +37,11 @@ METHODS = {
     "dropout": dropout,
     "dropconnect": dropconnect,
     "posterior_network": posterior_network,
+    "ensemble": ensemble,
+    "credal_ensembling": credal_ensembling,
+    "credal_relative_likelihood": credal_relative_likelihood,
+    "credal_wrapper": credal_wrapper,
+    "subensemble": subensemble,
 }
 
 
@@ -68,6 +78,7 @@ class BuildContext:
     """
 
     base_model_name: str
+    model_type: str
     num_classes: int
     pretrained: bool
     train_loader: DataLoader | None = None
@@ -83,7 +94,7 @@ def _default_builder(
 ) -> nn.Module:
     """Build a model using only the YAML hyperparameters and a base network."""
     base = models.get_base_model(ctx.base_model_name, ctx.num_classes, ctx.pretrained)
-    return method_fn(base, **params)
+    return method_fn(base, predictor_type=ctx.model_type, **params)
 
 
 def _posterior_network_builder(
@@ -119,6 +130,7 @@ def _posterior_network_builder(
         encoder,
         num_classes=ctx.num_classes,
         class_counts=class_counts,
+        predictor_type=ctx.model_type,
         **params,
     )
 

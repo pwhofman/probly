@@ -3,31 +3,8 @@
 from __future__ import annotations
 
 import torch
-from torch import nn
 import torch.nn.functional as F
 from tqdm import tqdm
-
-from .model_inspection import LAST_OUTPUT_DIM, output_dim_traverser
-
-
-@output_dim_traverser.register(
-    nn.Linear,
-    vars={"_current": LAST_OUTPUT_DIM},
-    update_vars=True,
-)
-def _(obj: nn.Linear, _current: int) -> tuple[nn.Linear, dict[str, int]]:
-    """Record the output feature count of a torch ``nn.Linear`` layer."""
-    return obj, {"_current": obj.out_features}
-
-
-@output_dim_traverser.register(
-    (nn.Conv1d, nn.Conv2d, nn.Conv3d, nn.ConvTranspose1d, nn.ConvTranspose2d, nn.ConvTranspose3d),
-    vars={"_current": LAST_OUTPUT_DIM},
-    update_vars=True,
-)
-def _(obj: nn.Module, _current: int) -> tuple[nn.Module, dict[str, int]]:
-    """Record the output channel count of a torch convolutional layer."""
-    return obj, {"_current": obj.out_channels}  # ty: ignore
 
 
 @torch.no_grad()
@@ -87,3 +64,16 @@ def temperature_softmax(logits: torch.Tensor, temperature: float | torch.Tensor)
     """
     ts = F.softmax(logits / temperature, dim=-1)
     return ts
+
+
+def torch_entropy(p: torch.Tensor) -> torch.Tensor:
+    """Shannon entropy H(p) computed in torch along the last dim; 0*log(0) treated as 0.
+
+    Args:
+        p: Probabilities to compute entropy of.
+
+    Returns:
+        Entropy of probabilities p
+    """
+    log_p = torch.where(p > 0, p.log(), p.new_zeros(()))
+    return -(p * log_p).sum(-1)

@@ -1,12 +1,15 @@
 """Quantification methods for uncertainty."""
 
-from ._quantification import Quantification, Quantifier, quantify
+from ._quantification import QuantificationResult, Quantifier, quantify
 from .decomposition import (
     AdditiveDecomposition,
     AleatoricEpistemicDecomposition,
     AleatoricEpistemicTotalDecomposition,
     CachingDecomposition,
+    CredalSetEntropyDecomposition,
     Decomposition,
+    SecondOrderEntropyDecomposition,
+    SecondOrderZeroOneDecomposition,
 )
 from .notion import (
     AleatoricUncertainty,
@@ -21,11 +24,14 @@ __all__ = [
     "AleatoricEpistemicTotalDecomposition",
     "AleatoricUncertainty",
     "CachingDecomposition",
+    "CredalSetEntropyDecomposition",
     "Decomposition",
     "EpistemicUncertainty",
     "Notion",
-    "Quantification",
+    "QuantificationResult",
     "Quantifier",
+    "SecondOrderEntropyDecomposition",
+    "SecondOrderZeroOneDecomposition",
     "TotalUncertainty",
     "notion_registry",
     "quantify",

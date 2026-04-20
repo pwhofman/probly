@@ -4,17 +4,20 @@ from __future__ import annotations
 
 import torch
 
-from probly.representation.distribution.torch_categorical import TorchTensorCategoricalDistribution
-from probly.representation.sample.torch import TorchTensorSample
-from probly.representer.credal_ensembler._common import compute_representative_set
+from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
+from probly.representation.sample.torch import TorchSample
+from probly.representer.credal_ensembler._common import (
+    compute_credal_ensembling_set,
+    compute_credal_net_set,
+)
 
 
-@compute_representative_set.register(TorchTensorSample)
-def torch_compute_representative_set(
-    sample: TorchTensorSample[TorchTensorCategoricalDistribution],
+@compute_credal_ensembling_set.register(TorchSample)
+def torch_compute_credal_ensembling_set(
+    sample: TorchSample[TorchCategoricalDistribution],
     alpha: float,
     distance: str,
-) -> TorchTensorSample[TorchTensorCategoricalDistribution]:
+) -> TorchSample[TorchCategoricalDistribution]:
     """This function constructs a set of distributions based on :cite:`nguyenCredalEnsembling2025`.
 
     In general, a distribution is included in the set if it is in the top (1 - alpha) fraction of distributions closest
@@ -39,6 +42,16 @@ def torch_compute_representative_set(
         k = max(k, 1)  # Ensure at least one member is selected
         _, idx = torch.topk(dist, k=k, dim=sample_dim, largest=False)
         selected_probs = torch.gather(probs, dim=sample_dim, index=idx.unsqueeze(-1).expand(-1, -1, probs.shape[-1]))
-        return TorchTensorSample(TorchTensorCategoricalDistribution(selected_probs), sample_dim=-1)
+        return TorchSample(TorchCategoricalDistribution(selected_probs), sample_dim=-1)
     msg = f"Distance {distance} not implemented for torch tensors."
     raise NotImplementedError(msg)
+
+
+@compute_credal_net_set.register(TorchSample)
+def torch_compute_credal_net_set(
+    sample: TorchSample[TorchCategoricalDistribution],
+) -> TorchSample[TorchCategoricalDistribution]:
+    """This function decouples the lower and upper bounds of the credal net."""
+    probs = sample.samples
+    probs = probs.reshape(*probs.shape[:-1], 2, probs.shape[-1] // 2)  # ty:ignore[unresolved-attribute]
+    return TorchSample(TorchCategoricalDistribution(probs), sample_dim=-1)

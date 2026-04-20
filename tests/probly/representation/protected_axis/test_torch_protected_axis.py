@@ -21,6 +21,13 @@ class SingleTensor(TorchAxisProtected[Any]):
 
 
 @dataclass(frozen=True, slots=True)
+class ReductionTensor(TorchAxisProtected[Any]):
+    tensor: torch.Tensor
+    protected_axes: ClassVar[dict[str, int]] = {"tensor": 1}
+    permitted_functions: ClassVar[set[Any]] = {torch.mean, torch.sum}
+
+
+@dataclass(frozen=True, slots=True)
 class PairTensor(TorchAxisProtected[Any]):
     first: torch.Tensor
     second: torch.Tensor
@@ -51,6 +58,32 @@ def test_single_field_torch_functions_preserve_type() -> None:
     stacked = torch.stack((x, x), dim=0)
     assert isinstance(stacked, SingleTensor)
     assert tuple(stacked.tensor.shape) == (2, 2, 3)
+
+
+def test_unpermitted_torch_reductions_return_notimplemented() -> None:
+    x = SingleTensor(torch.arange(24.0).reshape(2, 3, 4))
+
+    with pytest.raises(TypeError):
+        _ = torch.sum(x)
+
+    with pytest.raises(TypeError):
+        _ = torch.mean(x)
+
+
+def test_permitted_torch_reductions_reduce_only_batch_axes() -> None:
+    x = ReductionTensor(torch.arange(24.0).reshape(2, 3, 4))
+
+    summed = torch.sum(x)
+    assert isinstance(summed, ReductionTensor)
+    assert torch.equal(summed.tensor, torch.sum(x.tensor, dim=(0, 1)))
+    assert summed.shape == ()
+    assert summed.protected_shape == (4,)
+
+    meaned = torch.mean(x, dim=1)
+    assert isinstance(meaned, ReductionTensor)
+    assert torch.equal(meaned.tensor, torch.mean(x.tensor, dim=1))
+    assert meaned.shape == (2,)
+    assert meaned.protected_shape == (4,)
 
 
 def test_multi_field_tensor_conversion_and_cat() -> None:
@@ -93,12 +126,14 @@ def test_nested_multi_field_value_delegates_without_tensor_casts() -> None:
     assert values["inner"] is inner
 
     expanded = torch.unsqueeze(outer, dim=0)
+    assert isinstance(expanded, OuterNestedTensor)
     assert isinstance(expanded.inner, InnerPairTensor)
     assert tuple(expanded.inner.left.shape) == (1, 2, 3, 4)
     assert tuple(expanded.inner.right.shape) == (1, 2, 3, 4)
     assert tuple(expanded.aux.shape) == (1, 2, 5)
 
     stacked = torch.stack((outer, outer), dim=0)
+    assert isinstance(stacked, OuterNestedTensor)
     assert isinstance(stacked.inner, InnerPairTensor)
     assert tuple(stacked.inner.left.shape) == (2, 2, 3, 4)
     assert tuple(stacked.inner.right.shape) == (2, 2, 3, 4)

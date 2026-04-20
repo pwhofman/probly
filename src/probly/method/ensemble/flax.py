@@ -4,18 +4,10 @@ from __future__ import annotations
 
 from flax import nnx
 
-from probly.traverse_nn import nn_compose, nn_traverser
-from pytraverse import CLONE, singledispatch_traverser, traverse
+from probly.traverse_nn import nn_compose, nn_traverser, reset_traverser
+from pytraverse import CLONE, traverse
 
 from ._common import ensemble_generator
-
-reset_traverser = singledispatch_traverser[nnx.Module](name="reset_traverser")
-
-
-@reset_traverser.register
-def _(obj: nnx.Module) -> nnx.Module:
-    msg = "resetting parameters of flax models is not supported yet."
-    raise NotImplementedError(msg)
 
 
 def _clone(obj: nnx.Module) -> nnx.Module:

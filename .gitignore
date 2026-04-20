@@ -283,6 +283,12 @@ wandb/
 # Hydra
 outputs/
 
+# Server scripts
+server_scripts/
+
+# Artifacts
+artifacts/
+
 # Experiments scratch env
 experiments/uv.lock
 experiments/**/model_cache/

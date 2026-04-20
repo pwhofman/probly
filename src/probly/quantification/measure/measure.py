@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from probly.quantification._quantification import Quantification, Quantifier
+from probly.quantification._quantification import QuantificationResult, Quantifier
 from probly.representation.representation import Representation
 
 
-class MeasureResult(Quantification, Protocol):
+class MeasureResult(QuantificationResult, Protocol):
     """Protocol for uncertainty measure results."""
 
 

@@ -1,37 +1,31 @@
-"""Torch specific functions for efficient credal prediction."""
+"""Torch implementation of the efficient credal prediction method."""
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
+import torch
 from torch import nn
 
-from ._common import LAST_LAYER, register
+from probly.method.efficient_credal_prediction import EfficientCredalPredictor
 
-if TYPE_CHECKING:
-    from pytraverse import State
-
-
-def skip_layer(obj: nn.Module, state: State) -> tuple[nn.Module, State]:
-    """Traverser for torch efficient credal prediction."""
-    if state[LAST_LAYER]:
-        state[LAST_LAYER] = False
-    return obj, state
+from ._common import efficient_credal_prediction_generator
 
 
-def remove_softmax(obj: nn.Softmax, state: State) -> tuple[nn.Module, State]:
-    """Remove the last layer if Softmax for the efficient credal prediction."""
-    if state[LAST_LAYER]:
-        state[LAST_LAYER] = False
-        return nn.Sequential(), state
-    return obj, state
+@efficient_credal_prediction_generator.register(nn.Module)
+class TorchEfficientCredalPredictor(nn.Module, EfficientCredalPredictor):
+    """Torch nn.Module that wraps a softmax-free model and stores credal bounds."""
 
+    def __init__(self, predictor: nn.Module, num_classes: int) -> None:
+        """Initialize the predictor.
 
-def ignore_layer(obj: nn.Sequential, state: State) -> tuple[nn.Module, State]:
-    """Skip last layer if it is a sequential."""
-    return obj, state
+        Args:
+            predictor: The base model.
+            num_classes: Number of classes.
+        """
+        super().__init__()
+        self.predictor = predictor
+        self.lower = torch.zeros(num_classes, dtype=torch.float)
+        self.upper = torch.zeros(num_classes, dtype=torch.float)
 
-
-register(nn.Module, skip_layer)
-register(nn.Sequential, ignore_layer)
-register(nn.Softmax, remove_softmax)
+    def forward(self, x: torch.Tensor) -> nn.Module:
+        """Forward pass through the predictor."""
+        return self.predictor(x)

@@ -131,7 +131,7 @@ def test_entropy_matches_scipy_single() -> None:
 
     expected = stats.dirichlet(alpha).entropy()
     assert np.all(np.isfinite(expected))
-    assert np.allclose(dist.entropy, expected, rtol=1e-10, atol=1e-12)
+    assert np.allclose(dist.entropy(), expected, rtol=1e-10, atol=1e-12)
 
 
 def test_entropy_matches_scipy_batched() -> None:
@@ -146,7 +146,7 @@ def test_entropy_matches_scipy_batched() -> None:
     )
     dist = ArrayDirichletDistribution(alphas=alphas)
 
-    ent = dist.entropy
+    ent = dist.entropy()
     assert isinstance(ent, np.ndarray)
     assert ent.shape == (3,)
     assert np.all(np.isfinite(ent))
@@ -164,7 +164,7 @@ def test_sample_function_dirichlet() -> None:
     samples = dist.sample(n_samples)
 
     assert isinstance(samples, ArraySample)
-    assert samples.array.shape == (n_samples, *shape)
+    assert samples.array.shape == (n_samples, 2)
     assert samples.sample_axis == 0
 
 
@@ -174,7 +174,7 @@ def test_sample_simplex_constraints() -> None:
 
     n_samples = 5000
     sample_wrapper = dist.sample(n_samples)
-    samples = sample_wrapper.array
+    samples = sample_wrapper.array.probabilities
 
     assert np.all(samples >= 0.0)
     np.testing.assert_allclose(samples.sum(axis=-1), 1.0, atol=1e-12)
@@ -187,7 +187,7 @@ def test_sample_statistics_dirichlet_var() -> None:
 
     n_samples = 300000
     sample_wrapper = dist.sample(n_samples)
-    samples = sample_wrapper.array
+    samples = sample_wrapper.array.probabilities
 
     a0 = alphas.sum()
     expected_var = (alphas * (a0 - alphas)) / (a0**2 * (a0 + 1.0))
@@ -227,7 +227,7 @@ def test_reshape_with_none_inserts_before_class_axis() -> None:
     alphas = np.arange(24, dtype=float).reshape((2, 3, 4)) + 1.0
     dist = ArrayDirichletDistribution(alphas=alphas)
 
-    reshaped = np.reshape(dist, (6, None))
+    reshaped = dist.reshape(6, None)
 
     assert isinstance(reshaped, ArrayDirichletDistribution)
     assert reshaped.shape == (6, 1)
