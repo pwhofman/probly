@@ -1,13 +1,14 @@
 [project]
 name = "river-uncertainty"
 version = "0.1.0"
-description = "Phase 1 experiment: uncertainty quantification for a river adaptive random forest, inspired by probly representations."
+description = "Experiment: uncertainty quantification for river online learners using probly representations."
 requires-python = ">=3.13"
 dependencies = [
     "river>=0.21",
     "numpy>=1.26",
     "scipy>=1.11",
     "matplotlib>=3.8",
+    "torch>=2.6.0",
     "probly",
 ]
 

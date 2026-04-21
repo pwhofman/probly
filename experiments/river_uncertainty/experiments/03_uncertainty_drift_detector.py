@@ -23,7 +23,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 from river import forest
 
-from river_uncertainty import make_synthetic_stream, rolling_mean, run_prequential
+from river_uncertainty import (
+    detect_drift,
+    first_arf_drift_after,
+    make_synthetic_stream,
+    rolling_mean,
+    run_prequential,
+)
 
 # ---- easy-to-tweak settings ------------------------------------------------
 STREAM_KIND = "stagger_drift"
@@ -49,49 +55,14 @@ def _run() -> dict[str, np.ndarray]:
     return trace.as_arrays()
 
 
-def _detect_drift(epistemic: np.ndarray, steps: np.ndarray) -> tuple[int | None, float, float, np.ndarray]:
-    """Threshold detector on the smoothed epistemic-uncertainty signal.
-
-    Returns:
-        detect_step: the first step where the detector fires, or ``None``.
-        mu, sigma:   baseline statistics actually used.
-        smoothed:    the smoothed epistemic signal (aligned with ``steps``).
-    """
-    smoothed = rolling_mean(epistemic, ROLLING_WINDOW)
-    in_baseline = (steps >= BASELINE_WINDOW[0]) & (steps < BASELINE_WINDOW[1])
-    baseline_vals = smoothed[in_baseline]
-    mu = float(baseline_vals.mean())
-    sigma = float(baseline_vals.std(ddof=1))
-    threshold = mu + K_SIGMA * sigma
-
-    # Only start scanning once the baseline window has closed: we are not
-    # allowed to "detect" drift during the window from which we learnt mu/sigma.
-    scan_start = int(np.searchsorted(steps, BASELINE_WINDOW[1], side="left"))
-    above = smoothed > threshold
-    detect_step: int | None = None
-    streak = 0
-    for i in range(scan_start, len(above)):
-        if above[i]:
-            streak += 1
-            if streak >= MIN_CONSECUTIVE:
-                detect_step = int(steps[i])
-                break
-        else:
-            streak = 0
-    return detect_step, mu, sigma, smoothed
-
-
-def _first_arf_drift_after(n_drifts: np.ndarray, steps: np.ndarray, after: int) -> int | None:
-    """Return the first step where ``n_drifts_detected`` increments past its value at ``after``."""
-    pre_idx = np.searchsorted(steps, after, side="right") - 1
-    if pre_idx < 0:
-        baseline = 0
-    else:
-        baseline = int(n_drifts[pre_idx])
-    mask = (steps >= after) & (n_drifts > baseline)
-    if not mask.any():
-        return None
-    return int(steps[mask][0])
+def _detect(data: dict[str, np.ndarray]) -> tuple[int | None, float, float, np.ndarray]:
+    return detect_drift(
+        data["epistemic_entropy"], data["step"],
+        rolling_window=ROLLING_WINDOW,
+        baseline_window=BASELINE_WINDOW,
+        k_sigma=K_SIGMA,
+        min_consecutive=MIN_CONSECUTIVE,
+    )
 
 
 def _plot(data: dict[str, np.ndarray], detect_step: int | None, mu: float, sigma: float, smoothed: np.ndarray) -> Path:
@@ -142,8 +113,8 @@ def main() -> None:
           f"(n_samples={N_SAMPLES}, drift at step {DRIFT_POS}).")
     data = _run()
 
-    detect_step, mu, sigma, smoothed = _detect_drift(data["epistemic_entropy"], data["step"])
-    arf_detect_step = _first_arf_drift_after(data["n_drifts_detected"], data["step"], after=DRIFT_POS - 10)
+    detect_step, mu, sigma, smoothed = _detect(data)
+    arf_detect_step = first_arf_drift_after(data["n_drifts_detected"], data["step"], after=DRIFT_POS - 10)
 
     print(f"\nBaseline epistemic stats (window {BASELINE_WINDOW}): mu={mu:.4f}, sigma={sigma:.4f}")
     print(f"Threshold mu + {K_SIGMA}*sigma = {mu + K_SIGMA * sigma:.4f}")

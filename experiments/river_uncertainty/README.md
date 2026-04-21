@@ -1,12 +1,17 @@
-# river-uncertainty - Phase 1 experiment
+# river-uncertainty experiment
 
 A small sandbox living next to the probly package (in `experiments/`, **not**
-under `src/probly/`). The goal is to see how naturally a river online
-ensemble - `river.forest.ARFClassifier`, the Adaptive Random Forest - plugs
-into probly's second-order uncertainty representations.
+under `src/probly/`). The goal is to see how naturally river online
+learners plug into probly's second-order uncertainty representations.
+
+**Phase 1** (Levels 1-3) uses `river.forest.ARFClassifier` (Adaptive Random
+Forest) as the ensemble source. **Phase 2** (Levels 4-5) adds deep-learning
+models (deep ensembles and MC Dropout via PyTorch) and compares them against
+ARF on the same streams.
 
 It is a standalone uv project with its own `pyproject.toml`; it depends on
 probly via an editable local path pointing at the repo root (`../..`).
+Levels 4-5 additionally require `torch`.
 
 ## TL;DR
 
@@ -32,13 +37,18 @@ experiments/river_uncertainty/
 │   ├── __init__.py
 │   ├── stream.py                    # make_synthetic_stream(kind, n, seed)
 │   ├── representation.py            # ARFEnsembleRepresentation + bridge
-│   ├── experiment.py                # prequential loop + PrequentialTrace
+│   ├── deep_classifier.py           # OnlineClassifier (torch, lazy init)
+│   ├── deep_networks.py             # DropoutMLP module
+│   ├── deep_representation.py       # DeepRepresentation + bridge factories
+│   ├── experiment.py                # prequential loops + drift detection
 │   └── plotting.py                  # rolling_mean helper
 ├── experiments/
-│   ├── 01_stream_response.py        # Level 1
-│   ├── 02_ensemble_size_ablation.py # Level 2
-│   ├── 03_uncertainty_drift_detector.py  # Level 3
-│   └── run_all.py                   # convenience: run all three in sequence
+│   ├── 01_stream_response.py        # Level 1 (ARF)
+│   ├── 02_ensemble_size_ablation.py # Level 2 (ARF)
+│   ├── 03_uncertainty_drift_detector.py  # Level 3 (ARF)
+│   ├── 04_deep_stream_response.py   # Level 4 (deep ensemble + MC Dropout)
+│   ├── 05_deep_drift_detector.py    # Level 5 (deep drift detection)
+│   └── run_all.py                   # convenience: run all levels in sequence
 ├── tests/
 │   └── test_representation.py
 └── results/                         # plots, npz dumps, csv tables
@@ -50,11 +60,13 @@ experiments/river_uncertainty/
 cd experiments/river_uncertainty
 uv sync -p 3.13
 uv run pytest                                     # 4 tests, should all pass
-uv run python experiments/run_all.py              # reproduce all three figures
+uv run python experiments/run_all.py              # reproduce all figures (levels 4-5 need torch)
 # ...or run them individually:
 uv run python experiments/01_stream_response.py
 uv run python experiments/02_ensemble_size_ablation.py
 uv run python experiments/03_uncertainty_drift_detector.py
+uv run python experiments/04_deep_stream_response.py      # requires torch
+uv run python experiments/05_deep_drift_detector.py        # requires torch
 ```
 
 Each level script has an "easy-to-tweak settings" block at the top (constants
@@ -95,7 +107,9 @@ river ARFClassifier
 The same sample object flows through `SecondOrderZeroOneDecomposition` for
 the alternative (bounded) zero-one decomposition.
 
-## Three levels of investigation
+## Levels of investigation
+
+### Phase 1 (ARF)
 
 ### Level 1 - Stream-response survey
 
@@ -216,22 +230,35 @@ Things to try from here (all one-line edits in the script):
   so for a single API call we get cached access to `.total`, `.aleatoric`,
   `.epistemic` without re-computing shared intermediates.
 
-## Phase 2 ideas (not implemented)
+### Phase 2 (deep learning)
 
-If we want to make this a first-class probly feature, a natural API would be:
+#### Level 4 - Deep-learning stream-response survey
 
-```python
-# Hypothetical
-from probly.representation.river import RiverEnsembleDistributionSample
+*File: `experiments/04_deep_stream_response.py` -> `results/level4_deep_stream_response.png`*
 
-rep = RiverEnsembleDistributionSample.from_classifier(arf, x)
-# rep is an ArrayCategoricalDistributionSample subclass that also stores
-# .classes and .weights; all probly quantifiers continue to work unchanged.
+Recreates Level 1 using two deep-learning approaches:
 
-decomp = probly.quantification.quantify(rep)
-```
+* **Deep ensemble** -- N independent online MLPs; per-member
+  `predict_proba_one` outputs are stacked into a second-order sample.
+  Epistemic uncertainty comes from member disagreement.
+* **MC Dropout** -- a single online MLP with dropout layers; N stochastic
+  forward passes (dropout active) form the sample. Epistemic uncertainty
+  comes from parameter sensitivity via dropout noise.
 
-Open questions:
+Both are evaluated on the same three streams as Level 1 (stationary,
+abrupt drift, harder drift) using an identical prequential protocol.
+
+#### Level 5 - Uncertainty-based drift detection with deep models
+
+*File: `experiments/05_deep_drift_detector.py` -> `results/level5_deep_drift_detector.png`*
+
+Recreates Level 3 using the deep ensemble and MC Dropout models from
+Level 4. The same threshold detector (baseline `mu + k * sigma` on
+a warmup window) is applied to the epistemic entropy signal of each
+model. Detection latency is compared across all three approaches
+(deep ensemble, MC Dropout, and the ARF baseline from Level 3).
+
+## Open questions
 
 - **Weighted second-order distributions.** Probly currently assumes the
   empirical sample is uniform. ARF, SRP, Leveraging Bagging and friends all
@@ -241,9 +268,5 @@ Open questions:
 - **Regressors.** For `ARFRegressor` the natural probly representation is a
   Gaussian mixture (one Gaussian per tree using each tree's residual
   variance) or a Dirac-mixture `DistributionSample[ArrayGaussian]`.
-- **Concept-drift detection via uncertainty.** The experiments suggest
-  epistemic spikes are often faster than accuracy drops and, in at least one
-  setting (Level 3), they precede ARF's own drift detections. Worth a proper
-  study.
 - **Online conformal.** Probly already has `conformal_prediction`; plugging
-  an online conformalizer on top of the ensemble BMA is a third Phase 2 thread.
+  an online conformalizer on top of the ensemble BMA is another thread.
