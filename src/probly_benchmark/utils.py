@@ -9,10 +9,10 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 import torch
 from tqdm import tqdm
+import wandb
 
 from probly_benchmark import metadata
 from probly_benchmark.builders import BuildContext, build_model
-import wandb
 
 if TYPE_CHECKING:
     from omegaconf import DictConfig

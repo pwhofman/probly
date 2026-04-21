@@ -21,6 +21,7 @@ import torch
 from torch import nn, optim
 from torch.amp import GradScaler
 from tqdm import tqdm
+import wandb
 import wandb.util
 
 from lazy_dispatch import lazydispatch
@@ -40,7 +41,6 @@ from probly_benchmark.train_funcs import (
     validate,
     validate_cross_entropy,
 )
-import wandb
 
 torch.set_float32_matmul_precision("high")
 
