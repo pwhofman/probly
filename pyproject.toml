@@ -145,6 +145,7 @@ exclude = [
     "docs/build",
     "supporting_files",
     "examples",
+    "experiments",
     "*.pyi",
 ]
 
@@ -232,7 +233,7 @@ exclude_also = [
 exclude_lines = ["if TYPE_CHECKING"]
 
 [tool.ty.src]
-exclude = ["notebooks", "docs", "supporting_files", "examples", "stubs"]
+exclude = ["notebooks", "docs", "supporting_files", "examples", "experiments", "stubs"]
 
 [tool.ty.environment]
 extra-paths = ["./stubs"]
