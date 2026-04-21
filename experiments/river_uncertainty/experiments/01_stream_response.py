@@ -23,8 +23,8 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 from river import forest
-
 from river_uncertainty import (
+    RESULTS_DIR as RESULTS,
     make_synthetic_stream,
     rolling_mean,
     run_prequential,
@@ -43,8 +43,6 @@ STREAMS: tuple[tuple[str, str, int | None], ...] = (
     ("sea_drift", "Harder drift (SEA 0->3)", N_SAMPLES // 2),
 )
 # ---------------------------------------------------------------------------
-
-RESULTS = Path(__file__).resolve().parent.parent / "results"
 
 
 def _run(kind: str) -> dict[str, np.ndarray]:
@@ -130,9 +128,11 @@ def _summarise(datasets: dict[str, dict[str, np.ndarray]]) -> None:
 
 
 def main() -> None:
-    RESULTS.mkdir(exist_ok=True)
+    RESULTS.mkdir(parents=True, exist_ok=True)
     datasets = {kind: _run(kind) for kind, _, _ in STREAMS}
-    np.savez(RESULTS / "level1_stream_response.npz", **{f"{k}_{key}": v for k, d in datasets.items() for key, v in d.items()})
+    np.savez(
+        RESULTS / "level1_stream_response.npz", **{f"{k}_{key}": v for k, d in datasets.items() for key, v in d.items()}
+    )
     path = _plot(datasets)
     print(f"Wrote {path}")
     _summarise(datasets)

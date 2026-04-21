@@ -7,6 +7,7 @@ from river_uncertainty.experiment import (
     run_prequential,
     run_prequential_generic,
 )
+from river_uncertainty.paths import RESULTS_DIR
 from river_uncertainty.plotting import rolling_mean
 from river_uncertainty.representation import (
     ARFEnsembleRepresentation,
@@ -15,6 +16,7 @@ from river_uncertainty.representation import (
 from river_uncertainty.stream import make_synthetic_stream
 
 __all__ = [
+    "RESULTS_DIR",
     "ARFEnsembleRepresentation",
     "PrequentialTrace",
     "detect_drift",

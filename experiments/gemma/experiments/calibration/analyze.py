@@ -5,8 +5,8 @@ and computes aggregate calibration metrics. Handles partially-reviewed
 files by filtering out unlabeled items.
 
 Usage:
-    uv run python gemma/calibration/analyze.py \
-        --results data/experiments/gemma/run_t07.json
+    uv run python experiments/calibration/analyze.py \
+        --results data/results/experiments/gemma/run_t07.json
 """
 
 from __future__ import annotations
@@ -15,7 +15,7 @@ import argparse
 import json
 from pathlib import Path
 
-from core.calibration import compute_aggregates
+from gemma_experiment.calibration import compute_aggregates
 
 
 def load_results(paths: list[str]) -> list[dict]:

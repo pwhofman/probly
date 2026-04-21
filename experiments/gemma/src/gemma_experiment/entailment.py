@@ -7,7 +7,7 @@ from typing import Literal
 import torch
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
-from core.paths import CACHE_DIR
+from gemma_experiment.paths import CACHE_DIR
 
 NLIModel = Literal["microsoft/deberta-base-mnli", "microsoft/deberta-v2-xlarge-mnli"]
 DEFAULT_NLI_MODEL: NLIModel = "microsoft/deberta-base-mnli"

@@ -17,7 +17,7 @@ import numpy as np
 from scipy.optimize import minimize, minimize_scalar
 from sklearn.isotonic import IsotonicRegression
 
-from core.semantic_entropy import _logsumexp
+from gemma_experiment.semantic_entropy import _logsumexp
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray

@@ -22,8 +22,8 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 from river import forest
-
 from river_uncertainty import (
+    RESULTS_DIR as RESULTS,
     detect_drift,
     first_arf_drift_after,
     make_synthetic_stream,
@@ -40,12 +40,10 @@ DRIFT_POS = N_SAMPLES // 2
 
 # Detector settings
 BASELINE_WINDOW = (500, 1_500)  # [start, end) - baseline mu/sigma measured here
-ROLLING_WINDOW = 30             # smooth the epistemic signal before thresholding
-K_SIGMA = 4.0                   # flag when rolling epistemic exceeds mu + k*sigma
-MIN_CONSECUTIVE = 5             # require this many consecutive exceedances
+ROLLING_WINDOW = 30  # smooth the epistemic signal before thresholding
+K_SIGMA = 4.0  # flag when rolling epistemic exceeds mu + k*sigma
+MIN_CONSECUTIVE = 5  # require this many consecutive exceedances
 # ---------------------------------------------------------------------------
-
-RESULTS = Path(__file__).resolve().parent.parent / "results"
 
 
 def _run() -> dict[str, np.ndarray]:
@@ -57,7 +55,8 @@ def _run() -> dict[str, np.ndarray]:
 
 def _detect(data: dict[str, np.ndarray]) -> tuple[int | None, float, float, np.ndarray]:
     return detect_drift(
-        data["epistemic_entropy"], data["step"],
+        data["epistemic_entropy"],
+        data["step"],
         rolling_window=ROLLING_WINDOW,
         baseline_window=BASELINE_WINDOW,
         k_sigma=K_SIGMA,
@@ -91,7 +90,9 @@ def _plot(data: dict[str, np.ndarray], detect_step: int | None, mu: float, sigma
     ax.legend(loc="upper right")
 
     ax = axes[2]
-    ax.plot(steps, data["n_drifts_detected"], color="tab:purple", drawstyle="steps-post", label="ARF internal detections")
+    ax.plot(
+        steps, data["n_drifts_detected"], color="tab:purple", drawstyle="steps-post", label="ARF internal detections"
+    )
     ax.axvline(DRIFT_POS, color="crimson", linestyle="--", alpha=0.7)
     if detect_step is not None:
         ax.axvline(detect_step, color="tab:green", linestyle="-.", alpha=0.8)
@@ -108,9 +109,8 @@ def _plot(data: dict[str, np.ndarray], detect_step: int | None, mu: float, sigma
 
 
 def main() -> None:
-    RESULTS.mkdir(exist_ok=True)
-    print(f"Running drift-detection comparison on {STREAM_KIND!r} "
-          f"(n_samples={N_SAMPLES}, drift at step {DRIFT_POS}).")
+    RESULTS.mkdir(parents=True, exist_ok=True)
+    print(f"Running drift-detection comparison on {STREAM_KIND!r} (n_samples={N_SAMPLES}, drift at step {DRIFT_POS}).")
     data = _run()
 
     detect_step, mu, sigma, smoothed = _detect(data)
@@ -118,10 +118,14 @@ def main() -> None:
 
     print(f"\nBaseline epistemic stats (window {BASELINE_WINDOW}): mu={mu:.4f}, sigma={sigma:.4f}")
     print(f"Threshold mu + {K_SIGMA}*sigma = {mu + K_SIGMA * sigma:.4f}")
-    print(f"Uncertainty detector fired at step: {detect_step}  (latency vs truth: "
-          f"{(detect_step - DRIFT_POS) if detect_step is not None else 'n/a'})")
-    print(f"First ARF drift after truth      : {arf_detect_step}  (latency vs truth: "
-          f"{(arf_detect_step - DRIFT_POS) if arf_detect_step is not None else 'n/a'})")
+    print(
+        f"Uncertainty detector fired at step: {detect_step}  (latency vs truth: "
+        f"{(detect_step - DRIFT_POS) if detect_step is not None else 'n/a'})"
+    )
+    print(
+        f"First ARF drift after truth      : {arf_detect_step}  (latency vs truth: "
+        f"{(arf_detect_step - DRIFT_POS) if arf_detect_step is not None else 'n/a'})"
+    )
 
     np.savez(
         RESULTS / "level3_uncertainty_drift_detector.npz",

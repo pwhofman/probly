@@ -7,9 +7,9 @@ Does NOT perform correctness checking -- that is deferred to ``analyze.py``.
 Supports incremental saving (JSONL partial file) and resume after crash.
 
 Usage:
-    uv run python gemma/calibration/generate.py \
+    uv run python experiments/calibration/generate.py \
         --num-questions 200 --num-samples 10 --temperature 0.7 \
-        --seed 42 --output data/experiments/gemma/run_t07_s42.json
+        --seed 42 --output data/results/experiments/gemma/run_t07_s42.json
 """
 
 from __future__ import annotations
@@ -20,10 +20,11 @@ from pathlib import Path
 import random
 import time
 
-from core import (
+from gemma_experiment import (
     CACHE_DIR,
     DEFAULT_NLI_MODEL,
-    GEMMA_DIR,
+    MODEL_ID,
+    RESULTS_DIR,
     EntailmentModel,
     NLIModel,
     cluster_assignment_entropy,
@@ -32,15 +33,13 @@ from core import (
     suppress_hf_noise,
     weighted_semantic_entropy,
 )
-from core.calibration import (
+from gemma_experiment.calibration import (
     compute_semantic_confidence_discrete,
     compute_semantic_confidence_weighted,
 )
 from datasets import load_dataset
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
-
-from gemma import MODEL_ID
 
 
 def load_trivia_questions(
@@ -209,7 +208,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output",
         type=str,
-        default=str(GEMMA_DIR / "run.json"),
+        default=str(RESULTS_DIR / "run.json"),
         help="Output JSON path.",
     )
     return parser.parse_args()
@@ -242,7 +241,7 @@ def generate_main(
     torch.manual_seed(seed)
     suppress_hf_noise()
 
-    output_path = Path(output) if output is not None else GEMMA_DIR / "run.json"
+    output_path = Path(output) if output is not None else RESULTS_DIR / "run.json"
     partial_path = Path(str(output_path) + ".partial")
 
     # Resume support: load any previously completed results

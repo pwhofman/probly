@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-from core import CACHE_DIR
+from gemma_experiment import CACHE_DIR, MODEL_ID
 from transformers import AutoModelForCausalLM, AutoTokenizer
-
-from gemma import MODEL_ID
 
 
 def main() -> None:

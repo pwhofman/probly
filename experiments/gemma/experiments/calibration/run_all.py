@@ -5,20 +5,27 @@ function calls. After generation, prints instructions for the manual
 review step before analysis.
 
 Usage:
-    caffeinate -i uv run python gemma/calibration/run_all.py
+    caffeinate -i uv run python experiments/calibration/run_all.py
 """
 
 from __future__ import annotations
 
+import sys
 import time
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from pathlib import Path
+    pass
 
-from core import GEMMA_DIR
+# Allow importing sibling modules when run as a script
+_THIS_DIR = Path(__file__).resolve().parent
+if str(_THIS_DIR) not in sys.path:
+    sys.path.insert(0, str(_THIS_DIR))
 
-from gemma.calibration.generate import generate_main
+from generate import generate_main  # noqa: E402
+
+from gemma_experiment import RESULTS_DIR  # noqa: E402
 
 RUNS = [
     {"temperature": 0.7, "seed": 42},
@@ -32,7 +39,7 @@ NUM_SAMPLES = 10
 def result_path(run: dict) -> Path:
     """Build the output path for a run config."""
     t = str(run["temperature"]).replace(".", "")
-    return GEMMA_DIR / f"trivia_t{t}_s{run['seed']}.json"
+    return RESULTS_DIR / f"trivia_t{t}_s{run['seed']}.json"
 
 
 def main() -> None:
@@ -69,7 +76,7 @@ def main() -> None:
         print(f"     - {f}")
     print("  2. Run analysis:")
     files_arg = " ".join(str(f) for f in result_files)
-    print(f"     uv run python gemma/calibration/analyze.py --results {files_arg}")
+    print(f"     uv run python experiments/calibration/analyze.py --results {files_arg}")
     print("=" * 60)
 
 

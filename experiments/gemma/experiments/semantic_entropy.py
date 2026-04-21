@@ -10,7 +10,7 @@ Two variants are computed:
   - Weighted: cluster probabilities from generation log-likelihoods
 
 Usage:
-    uv run python gemma/semantic_entropy/run.py --num-samples 10 --seed 42
+    uv run python experiments/semantic_entropy.py --num-samples 10 --seed 42
 """
 
 from __future__ import annotations
@@ -18,9 +18,10 @@ from __future__ import annotations
 import argparse
 from dataclasses import dataclass
 
-from core import (
+from gemma_experiment import (
     CACHE_DIR,
     DEFAULT_NLI_MODEL,
+    MODEL_ID,
     EntailmentModel,
     cluster_assignment_entropy,
     generate_responses,
@@ -30,8 +31,6 @@ from core import (
 )
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
-
-from gemma import MODEL_ID
 
 QUESTIONS: list[tuple[str, str]] = [
     ("Factual", "What is the capital of France?"),

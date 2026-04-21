@@ -20,10 +20,9 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
-import torch
 from river import forest
-
 from river_uncertainty import (
+    RESULTS_DIR as RESULTS,
     DropoutMLP,
     OnlineClassifier,
     deep_ensemble_to_probly_sample,
@@ -35,6 +34,7 @@ from river_uncertainty import (
     run_prequential,
     run_prequential_generic,
 )
+import torch
 
 # ---- easy-to-tweak settings ------------------------------------------------
 STREAM_KIND = "stagger_drift"
@@ -55,9 +55,6 @@ ROLLING_WINDOW = 30
 K_SIGMA = 4.0
 MIN_CONSECUTIVE = 5
 # ---------------------------------------------------------------------------
-
-RESULTS = Path(__file__).resolve().parent.parent / "results"
-
 
 # ---- model runners ---------------------------------------------------------
 
@@ -118,7 +115,8 @@ def _run_mc_dropout() -> dict[str, np.ndarray]:
 
 def _detect(data: dict[str, np.ndarray]) -> tuple[int | None, float, float, np.ndarray]:
     return detect_drift(
-        data["epistemic_entropy"], data["step"],
+        data["epistemic_entropy"],
+        data["step"],
         rolling_window=ROLLING_WINDOW,
         baseline_window=BASELINE_WINDOW,
         k_sigma=K_SIGMA,
@@ -150,22 +148,17 @@ def _plot(
         ax.set_ylabel(f"{name}\nrolling accuracy (w=100)")
         ax.axvline(DRIFT_POS, color="crimson", ls="--", alpha=0.7, label="true drift")
         if det_step is not None:
-            ax.axvline(det_step, color=color, ls="-.", alpha=0.8,
-                       label=f"detect (step {det_step})")
+            ax.axvline(det_step, color=color, ls="-.", alpha=0.8, label=f"detect (step {det_step})")
         if arf_detect_step is not None and row == 0:
-            ax.axvline(arf_detect_step, color="gray", ls=":", alpha=0.6,
-                       label=f"ARF internal ({arf_detect_step})")
+            ax.axvline(arf_detect_step, color="gray", ls=":", alpha=0.6, label=f"ARF internal ({arf_detect_step})")
         ax.legend(loc="lower right", fontsize=8)
 
         # Right column: epistemic signal + threshold
         ax = axes[row, 1]
-        ax.plot(steps, smoothed, color=color,
-                label=f"epistemic (w={ROLLING_WINDOW})")
+        ax.plot(steps, smoothed, color=color, label=f"epistemic (w={ROLLING_WINDOW})")
         ax.axhline(mu, color="gray", ls=":", label="baseline mu")
-        ax.axhline(threshold, color="tab:red", ls="--",
-                   label=f"mu + {K_SIGMA}*sigma")
-        ax.axvspan(BASELINE_WINDOW[0], BASELINE_WINDOW[1],
-                   color="gray", alpha=0.12, label="baseline window")
+        ax.axhline(threshold, color="tab:red", ls="--", label=f"mu + {K_SIGMA}*sigma")
+        ax.axvspan(BASELINE_WINDOW[0], BASELINE_WINDOW[1], color="gray", alpha=0.12, label="baseline window")
         ax.axvline(DRIFT_POS, color="crimson", ls="--", alpha=0.7)
         if det_step is not None:
             ax.axvline(det_step, color=color, ls="-.", alpha=0.8)
@@ -177,8 +170,7 @@ def _plot(
             axes[row, 1].set_xlabel("step")
 
     fig.suptitle(
-        f"Level 5: deep drift detection ({STREAM_KIND}, "
-        f"true drift at {DRIFT_POS})",
+        f"Level 5: deep drift detection ({STREAM_KIND}, true drift at {DRIFT_POS})",
         fontsize=13,
     )
     fig.tight_layout()
@@ -192,10 +184,9 @@ def _plot(
 
 
 def main() -> None:
-    RESULTS.mkdir(exist_ok=True)
+    RESULTS.mkdir(parents=True, exist_ok=True)
     print(
-        f"Running drift-detection comparison on {STREAM_KIND!r} "
-        f"(n_samples={N_SAMPLES}, drift at step {DRIFT_POS}).\n"
+        f"Running drift-detection comparison on {STREAM_KIND!r} (n_samples={N_SAMPLES}, drift at step {DRIFT_POS}).\n"
     )
 
     # Run all three models
@@ -222,8 +213,12 @@ def main() -> None:
 
     print(f"\n{'Method':<18s} {'Baseline mu':>12s} {'sigma':>8s} {'Threshold':>10s} {'Detection':>30s}")
     print("-" * 82)
-    print(f"{'ARF (epistemic)':<18s} {arf_mu:>12.4f} {arf_sig:>8.4f} {arf_mu + K_SIGMA * arf_sig:>10.4f} {_fmt(arf_det):>30s}")
-    print(f"{'Deep Ensemble':<18s} {ens_mu:>12.4f} {ens_sig:>8.4f} {ens_mu + K_SIGMA * ens_sig:>10.4f} {_fmt(ens_det):>30s}")
+    print(
+        f"{'ARF (epistemic)':<18s} {arf_mu:>12.4f} {arf_sig:>8.4f} {arf_mu + K_SIGMA * arf_sig:>10.4f} {_fmt(arf_det):>30s}"
+    )
+    print(
+        f"{'Deep Ensemble':<18s} {ens_mu:>12.4f} {ens_sig:>8.4f} {ens_mu + K_SIGMA * ens_sig:>10.4f} {_fmt(ens_det):>30s}"
+    )
     print(f"{'MC Dropout':<18s} {mc_mu:>12.4f} {mc_sig:>8.4f} {mc_mu + K_SIGMA * mc_sig:>10.4f} {_fmt(mc_det):>30s}")
     print(f"{'ARF internal':<18s} {'':>12s} {'':>8s} {'':>10s} {_fmt(arf_internal):>30s}")
 

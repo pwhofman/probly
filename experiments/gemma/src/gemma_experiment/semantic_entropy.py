@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 if TYPE_CHECKING:
-    from core.entailment import EntailmentModel
+    from gemma_experiment.entailment import EntailmentModel
 
 
 def get_semantic_ids(responses: list[str], entailment_model: EntailmentModel) -> list[int]:

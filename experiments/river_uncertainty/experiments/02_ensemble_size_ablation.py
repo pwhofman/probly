@@ -26,8 +26,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 from river import forest
-
-from river_uncertainty import make_synthetic_stream, run_prequential
+from river_uncertainty import RESULTS_DIR as RESULTS, make_synthetic_stream, run_prequential
 
 # ---- easy-to-tweak settings ------------------------------------------------
 N_MODELS_GRID: tuple[int, ...] = (3, 5, 10, 20, 40)
@@ -35,8 +34,6 @@ SEEDS: tuple[int, ...] = (0, 1, 2, 3, 4)
 N_SAMPLES = 4_000
 STREAM_KIND = "stagger_drift"
 # ---------------------------------------------------------------------------
-
-RESULTS = Path(__file__).resolve().parent.parent / "results"
 DRIFT_POS = N_SAMPLES // 2
 PRE_WINDOW = 200
 POST_WINDOW = 100
@@ -82,17 +79,31 @@ def _aggregate(grid: dict[int, list[dict[str, float]]]) -> dict[str, np.ndarray]
 def _plot(agg: dict[str, np.ndarray]) -> Path:
     fig, (ax_acc, ax_eps) = plt.subplots(1, 2, figsize=(11, 4.5))
 
-    ax_acc.errorbar(agg["n_models"], agg["accuracy_pre_mean"], yerr=agg["accuracy_pre_std"], marker="o", label="pre-drift")
-    ax_acc.errorbar(agg["n_models"], agg["accuracy_post_mean"], yerr=agg["accuracy_post_std"], marker="s", label="post-drift")
+    ax_acc.errorbar(
+        agg["n_models"], agg["accuracy_pre_mean"], yerr=agg["accuracy_pre_std"], marker="o", label="pre-drift"
+    )
+    ax_acc.errorbar(
+        agg["n_models"], agg["accuracy_post_mean"], yerr=agg["accuracy_post_std"], marker="s", label="post-drift"
+    )
     ax_acc.set_xscale("log")
     ax_acc.set_xlabel("n_models")
     ax_acc.set_ylabel("accuracy (window mean)")
     ax_acc.set_title("Prequential accuracy around drift")
     ax_acc.legend()
 
-    ax_eps.errorbar(agg["n_models"], agg["epistemic_pre_mean"], yerr=agg["epistemic_pre_std"], marker="o", label="pre-drift")
-    ax_eps.errorbar(agg["n_models"], agg["epistemic_post_mean"], yerr=agg["epistemic_post_std"], marker="s", label="post-drift")
-    ax_eps.errorbar(agg["n_models"], agg["epistemic_spike_mean"], yerr=agg["epistemic_spike_std"], marker="^", label="spike (post - pre)")
+    ax_eps.errorbar(
+        agg["n_models"], agg["epistemic_pre_mean"], yerr=agg["epistemic_pre_std"], marker="o", label="pre-drift"
+    )
+    ax_eps.errorbar(
+        agg["n_models"], agg["epistemic_post_mean"], yerr=agg["epistemic_post_std"], marker="s", label="post-drift"
+    )
+    ax_eps.errorbar(
+        agg["n_models"],
+        agg["epistemic_spike_mean"],
+        yerr=agg["epistemic_spike_std"],
+        marker="^",
+        label="spike (post - pre)",
+    )
     ax_eps.set_xscale("log")
     ax_eps.set_xlabel("n_models")
     ax_eps.set_ylabel("epistemic (entropy, nats)")
@@ -119,7 +130,7 @@ def _dump_csv(agg: dict[str, np.ndarray]) -> Path:
 
 
 def main() -> None:
-    RESULTS.mkdir(exist_ok=True)
+    RESULTS.mkdir(parents=True, exist_ok=True)
     print(f"Running ensemble-size ablation on {STREAM_KIND!r}:")
     print(f"  n_models_grid = {N_MODELS_GRID}")
     print(f"  seeds         = {SEEDS}")

@@ -24,9 +24,8 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
-import torch
-
 from river_uncertainty import (
+    RESULTS_DIR as RESULTS,
     DropoutMLP,
     OnlineClassifier,
     deep_ensemble_to_probly_sample,
@@ -35,6 +34,7 @@ from river_uncertainty import (
     rolling_mean,
     run_prequential_generic,
 )
+import torch
 
 # ---- easy-to-tweak settings ------------------------------------------------
 N_MEMBERS = 15  # ensemble size / MC forward passes (matches ARF n_models=15)
@@ -50,8 +50,6 @@ STREAMS: tuple[tuple[str, str, int | None], ...] = (
     ("sea_drift", "Harder drift (SEA 0->3)", N_SAMPLES // 2),
 )
 # ---------------------------------------------------------------------------
-
-RESULTS = Path(__file__).resolve().parent.parent / "results"
 
 
 def _make_ensemble() -> list[OnlineClassifier]:
@@ -177,8 +175,7 @@ def _plot(
                 ax_unc.legend(loc="upper right")
 
     fig.suptitle(
-        f"Level 4: deep stream-response survey "
-        f"(N={N_MEMBERS}, lr={LR}, hidden={HIDDEN_SIZES}, seed={SEED})",
+        f"Level 4: deep stream-response survey (N={N_MEMBERS}, lr={LR}, hidden={HIDDEN_SIZES}, seed={SEED})",
         fontsize=13,
     )
     fig.tight_layout()
@@ -222,7 +219,7 @@ def _summarise(
 
 
 def main() -> None:
-    RESULTS.mkdir(exist_ok=True)
+    RESULTS.mkdir(parents=True, exist_ok=True)
 
     print("Running deep ensemble experiments...")
     ensemble_data = {kind: _run_ensemble(kind) for kind, _, _ in STREAMS}

@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from core.entailment import EntailmentModel
+    from gemma_experiment.entailment import EntailmentModel
 
 
 def check_cluster_correctness(

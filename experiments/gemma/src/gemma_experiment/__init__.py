@@ -1,6 +1,8 @@
-"""Shared utilities for probly experiments."""
+"""Gemma 4 experiment: semantic entropy and calibration utilities."""
 
-from core.calibration import (
+MODEL_ID = "google/gemma-4-E2B-it"
+
+from gemma_experiment.calibration import (
     CALIBRATORS,
     IsotonicCalibrator,
     PlattScaler,
@@ -13,20 +15,25 @@ from core.calibration import (
     leave_one_out_evaluate,
     reliability_diagram_data,
 )
-from core.correctness import check_cluster_correctness
-from core.entailment import DEFAULT_NLI_MODEL, EntailmentModel, NLIModel
-from core.generation import generate_responses
-from core.paths import CACHE_DIR, DATA_DIR, GEMMA_DIR, PROJECT_ROOT
-from core.semantic_entropy import cluster_assignment_entropy, get_semantic_ids, weighted_semantic_entropy
-from core.setup import suppress_hf_noise
+from gemma_experiment.correctness import check_cluster_correctness
+from gemma_experiment.entailment import DEFAULT_NLI_MODEL, EntailmentModel, NLIModel
+from gemma_experiment.generation import generate_responses
+from gemma_experiment.paths import CACHE_DIR, DATA_DIR, PROJECT_ROOT, RESULTS_DIR
+from gemma_experiment.semantic_entropy import (
+    cluster_assignment_entropy,
+    get_semantic_ids,
+    weighted_semantic_entropy,
+)
+from gemma_experiment.setup import suppress_hf_noise
 
 __all__ = [
     "CACHE_DIR",
     "CALIBRATORS",
     "DATA_DIR",
     "DEFAULT_NLI_MODEL",
-    "GEMMA_DIR",
+    "MODEL_ID",
     "PROJECT_ROOT",
+    "RESULTS_DIR",
     "EntailmentModel",
     "IsotonicCalibrator",
     "NLIModel",

@@ -4,11 +4,9 @@ from __future__ import annotations
 
 import argparse
 
-from core import CACHE_DIR, suppress_hf_noise
+from gemma_experiment import CACHE_DIR, MODEL_ID, suppress_hf_noise
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, TextStreamer
-
-from gemma import MODEL_ID
 
 EXIT_WORDS = {"exit", "quit", "/exit", "/quit", ":q"}
 
