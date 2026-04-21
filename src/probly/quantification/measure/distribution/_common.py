@@ -43,3 +43,24 @@ def mutual_information(distribution: SecondOrderDistributionLike, base: LogBase 
     """Compute the mutual information of a distribution."""
     msg = f"Mutual information is not supported for distributions of type {type(distribution)}."
     raise NotImplementedError(msg)
+
+
+@lazydispatch
+def max_probability_complement_of_expected(distribution: SecondOrderDistributionLike) -> ArrayLike:
+    """Compute one minus the max probability of the expected value of a second-order distribution."""
+    msg = f"Max probability complement of expected is not supported for distributions of type {type(distribution)}."
+    raise NotImplementedError(msg)
+
+
+@lazydispatch
+def expected_max_probability_complement(distribution: SecondOrderDistributionLike) -> ArrayLike:
+    """Compute the expected value of one minus the max probability under a second-order distribution."""
+    msg = f"Expected max probability complement is not supported for distributions of type {type(distribution)}."
+    raise NotImplementedError(msg)
+
+
+@lazydispatch
+def max_disagreement(distribution: SecondOrderDistributionLike) -> ArrayLike:
+    """Compute the expected gap between each sample's max probability and its probability on the BMA argmax."""
+    msg = f"Max disagreement is not supported for distributions of type {type(distribution)}."
+    raise NotImplementedError(msg)

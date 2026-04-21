@@ -8,8 +8,18 @@ from probly.representation.distribution.torch_categorical import (
     TorchCategoricalDistribution,
     TorchCategoricalDistributionSample,
 )
+from probly.utils.torch import torch_entropy
 
-from ._common import LogBase, conditional_entropy, entropy, entropy_of_expected_value, mutual_information
+from ._common import (
+    LogBase,
+    conditional_entropy,
+    entropy,
+    entropy_of_expected_value,
+    expected_max_probability_complement,
+    max_disagreement,
+    max_probability_complement_of_expected,
+    mutual_information,
+)
 
 # Entropy
 
@@ -22,8 +32,7 @@ def torch_categorical_entropy(distribution: TorchCategoricalDistribution, base: 
         del distribution  # Avoid keeping a reference to the distribution for memory efficiency
     else:
         p = distribution
-    log_p = torch.where(p > 0, torch.log(p), torch.zeros_like(p))
-    entropy = -torch.sum(p * log_p, dim=-1)
+    entropy = torch_entropy(p)
     if base is None or base == torch.e:
         return entropy
     if base == "normalize":
@@ -76,3 +85,45 @@ def torch_categorical_sample_mutual_information(
     expected_value_entropy = torch_categorical_entropy(torch.mean(p, dim=axis), base=base)
     conditional_entropy_value = torch.mean(torch_categorical_entropy(p, base=base), dim=axis)
     return expected_value_entropy - conditional_entropy_value
+
+
+# Zero-one proper scoring rule measures
+
+
+@max_probability_complement_of_expected.register(TorchCategoricalDistributionSample)
+def torch_categorical_sample_max_probability_complement_of_expected(
+    sample: TorchCategoricalDistributionSample,
+) -> torch.Tensor:
+    """Compute one minus the max probability of the expected value of a categorical sample."""
+    p = sample.tensor.probabilities
+    axis = sample.sample_axis
+    del sample  # Avoid keeping a reference to the sample for memory efficiency
+    expected_value = torch.mean(p, dim=axis)
+    return 1.0 - torch.max(expected_value, dim=-1).values
+
+
+@expected_max_probability_complement.register(TorchCategoricalDistributionSample)
+def torch_categorical_sample_expected_max_probability_complement(
+    sample: TorchCategoricalDistributionSample,
+) -> torch.Tensor:
+    """Compute the expected value of one minus the max probability of a categorical sample."""
+    p = sample.tensor.probabilities
+    axis = sample.sample_axis
+    del sample  # Avoid keeping a reference to the sample for memory efficiency
+    per_sample_complement = 1.0 - torch.max(p, dim=-1).values
+    return torch.mean(per_sample_complement, dim=axis)
+
+
+@max_disagreement.register(TorchCategoricalDistributionSample)
+def torch_categorical_sample_max_disagreement(
+    sample: TorchCategoricalDistributionSample,
+) -> torch.Tensor:
+    """Compute the expected gap between each sample's max probability and its probability on the BMA argmax."""
+    p = sample.tensor.probabilities
+    axis = sample.sample_axis
+    del sample  # Avoid keeping a reference to the sample for memory efficiency
+    expected_value = torch.mean(p, dim=axis, keepdim=True)
+    bma_argmax = torch.argmax(expected_value, dim=-1, keepdim=True)
+    per_sample_bma_prob = torch.take_along_dim(p, bma_argmax, dim=-1).squeeze(-1)
+    per_sample_max = torch.max(p, dim=-1).values
+    return torch.mean(per_sample_max - per_sample_bma_prob, dim=axis)
