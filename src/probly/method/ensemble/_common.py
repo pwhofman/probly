@@ -68,7 +68,6 @@ def register_ensemble_members(ensemble: EnsemblePredictor, t: type[Predictor] | 
     """Register the members of an ensemble predictor."""
     if t is None:
         return ensemble
-
     for member in ensemble:
         t.register_instance(member)
 

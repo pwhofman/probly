@@ -4,7 +4,6 @@ defaults:
   - method: ??? # user must specify a method.
 
 seed: 1
-
 wandb:
   enabled: true
   entity: "probly"

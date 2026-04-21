@@ -79,7 +79,7 @@ test = [
     { include-group = "sklearn" },
 ]
 lint = [
-    "ruff>=0.15.8",                                         # for linting
+    "ruff>=0.15.11",                                         # for linting
     "prek>=0.3.8",                                          # for running the linters pre-commit hooks
     "ty>=0.0.29",                                           # for static type checking
     "sigx @ git+https://github.com/Cortys/sigx.git@master",
@@ -208,7 +208,8 @@ max-complexity = 15
 
 # Use isort-compatible settings
 [tool.ruff.lint.isort]
-known-first-party = ["probly", "pytraverse", "lazy_dispatch"]
+known-first-party = ["probly", "probly_benchmark", "pytraverse", "lazy_dispatch"]
+known-third-party = ["wandb"]
 force-sort-within-sections = true
 combine-as-imports = true
 force-single-line = false
