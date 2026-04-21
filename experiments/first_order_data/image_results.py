@@ -1,10 +1,10 @@
 from __future__ import annotations
 
+import argparse
 from collections.abc import Iterator
 import csv
 import json
 from pathlib import Path
-import sys
 
 from first_order_data.utils import coverage_convex_hull_relaxed, coverage_convex_hull
 import numpy as np
@@ -58,8 +58,10 @@ def interval_coverage(member_probabilities: np.ndarray, targets: np.ndarray) -> 
     return float(credal_set.contains(targets).mean())
 
 
-def convex_hull_coverage_relaxed(member_probabilities: np.ndarray, targets: np.ndarray, epsilon: float) -> float:
-    """Relaxed convex-hull coverage, where a target is considered covered if it's within `epsilon` of the convex hull."""
+def convex_hull_coverage(member_probabilities: np.ndarray, targets: np.ndarray, epsilon: float = 0.0) -> float:
+    """Compute convex-hull coverage, using relaxed coverage if `epsilon > 0`."""
+    if epsilon == 0:
+        return float(coverage_convex_hull(member_probabilities, targets))
     return float(coverage_convex_hull_relaxed(member_probabilities, targets, epsilon=epsilon))
 
 
@@ -67,7 +69,7 @@ def total_variation_distance(predictions: np.ndarray, targets: np.ndarray) -> fl
     return float(np.mean(0.5 * np.abs(predictions - targets).sum(axis=1)))
 
 
-def dataset_row(run_dir: Path, dataset_result: dict) -> dict[str, float | str]:
+def dataset_row(run_dir: Path, dataset_result: dict, convex_hull_epsilon: float = 0.0) -> dict[str, float | str]:
     fold_rows = []
 
     for fold_result in dataset_result["folds"]:
@@ -88,7 +90,11 @@ def dataset_row(run_dir: Path, dataset_result: dict) -> dict[str, float | str]:
                 "member_ce": float(np.mean(fold_result["member_cross_entropies"])),
                 "ensemble_ce": float(fold_result["ensemble_cross_entropy"]),
                 "interval_coverage": interval_coverage(member_probabilities, ensemble_targets),
-                "convex_hull_coverage": float(coverage_convex_hull(member_probabilities, ensemble_targets)),
+                "convex_hull_coverage": convex_hull_coverage(
+                    member_probabilities,
+                    ensemble_targets,
+                    epsilon=convex_hull_epsilon,
+                ),
                 "tv_distance": total_variation_distance(ensemble_predictions, ensemble_targets),
                 **{name: float(ensemble_uncertainty[name].mean()) for name in UNCERTAINTY_COLUMNS},
             }
@@ -108,18 +114,18 @@ def dataset_row(run_dir: Path, dataset_result: dict) -> dict[str, float | str]:
     }
 
 
-def iter_dataset_rows(run_dir: Path) -> Iterator[dict[str, float | str]]:
+def iter_dataset_rows(run_dir: Path, convex_hull_epsilon: float = 0.0) -> Iterator[dict[str, float | str]]:
     results = load_json(run_dir / "results.json")
     for dataset_result in results:
-        yield dataset_row(run_dir, dataset_result)
+        yield dataset_row(run_dir, dataset_result, convex_hull_epsilon=convex_hull_epsilon)
 
 
 def latex_escape(text: str) -> str:
     return text.replace("_", r"\_").replace("&", r"\&")
 
 
-def get_latex_table(run_dir: Path) -> str:
-    rows = list(iter_dataset_rows(run_dir))
+def get_latex_table(run_dir: Path, convex_hull_epsilon: float = 0.0) -> str:
+    rows = list(iter_dataset_rows(run_dir, convex_hull_epsilon=convex_hull_epsilon))
     lines = [
         "\\begin{tabular}{lrrrrrrrr}",
         "\\toprule",
@@ -144,10 +150,26 @@ def get_latex_table(run_dir: Path) -> str:
     return "\n".join(lines)
 
 
-def main():
-    run_dir = Path(sys.argv[1])
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("run_dir", type=Path)
+    parser.add_argument(
+        "--convex-hull-epsilon",
+        type=float,
+        default=0.0,
+        help="Use relaxed convex-hull coverage with this non-negative epsilon. Default 0 uses strict coverage.",
+    )
+    args = parser.parse_args()
+    if args.convex_hull_epsilon < 0:
+        parser.error("--convex-hull-epsilon must be non-negative")
+    return args
 
-    for row in iter_dataset_rows(run_dir):
+
+def main():
+    args = parse_args()
+    run_dir = args.run_dir
+
+    for row in iter_dataset_rows(run_dir, convex_hull_epsilon=args.convex_hull_epsilon):
         print(
             row["dataset_name"] + ":",
             "\n  Member CE:",
@@ -169,7 +191,7 @@ def main():
         )
 
     print()
-    print(get_latex_table(run_dir))
+    print(get_latex_table(run_dir, convex_hull_epsilon=args.convex_hull_epsilon))
 
 
 if __name__ == "__main__":
