@@ -326,3 +326,10 @@ class TorchAxisProtected[T: TorchLike | torch.Tensor](TorchLikeImplementation[T]
             for name, value in self.protected_values().items()
         }
         return self.with_protected_values(values)
+
+    def reshape(self, *shape: int | tuple[int, ...]) -> Self:
+        """Return a copy with reshaped protected values."""
+        if len(shape) == 1 and isinstance(shape[0], tuple):
+            shape = shape[0]
+
+        return torch.reshape(self, shape)  # ty:ignore[invalid-return-type, invalid-argument-type]

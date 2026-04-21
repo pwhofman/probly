@@ -120,6 +120,7 @@ intersphinx_mapping = {
     "matplotlib": ("https://matplotlib.org/stable", None),
     "PIL": ("https://pillow.readthedocs.io/en/stable/", None),
     "torch": ("https://pytorch.org/docs/stable/", None),
+    "sklearn": ("https://scikit-learn.org/stable/", None),
 }
 
 # Workaround for https://github.com/sphinx-doc/sphinx/issues/10568  --------------------------------
