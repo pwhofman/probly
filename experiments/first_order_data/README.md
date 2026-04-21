@@ -2,18 +2,18 @@
 
 ## Image dataset overview
 
-| Dataset       | size  | classes | avg. entropy | type                                                                        | input size |
-| ------------- | ----- | ------- | ------------ | --------------------------------------------------------------------------- | ---------- | --------------------------- |
-| benthic       | 4867  | 8       | 0.340        | images from the seafloor and consists of underwater flora and fauna         | 112x112    |
-| cifar-10h     | 10000 | 10      | 0.154        | reannotated variant of the original CIFAR-10 test set                                                            | 32x32      |
-| MiceBone      | 7240  | 4       | 0.319        | Second-<br>Harmonic-Generation images of collagen fibers                    | 224x224    |
-| pig           | 10237 | 4       | 0.735        | tail images form european farms                                             | 96x96      |
-| plankton      | 12280 | 10      | 0.163        | underwater plankton images                                                  | 96x96      |
-| qualityMRI    | 310   | 2       | 0.556        | MRI images                                                                  | 224x224    |
-| synthetic     | 15000 | 6       | 0.584        | images that contain 1 colored circle on a black background          | 224x224    |
-| TreeVersity#1 | 9489  | 6       | 0.266        | plant images, single label per image                                | 224x224    |
-| TreeVersity#6 | 9826  | 6       | 0.742        | plant images, possibly multiple labels per image                    | 224x224    |
-| turkey        | 8040  | 3       | 0.196        | images of turkeys and their injuries                                | 192x192    |
+| Dataset       |  size | classes | avg. entropy | type                                                                | input size |
+| ------------- | ----: | ------: | -----------: | ------------------------------------------------------------------- | :--------: |
+| benthic       |  4867 |       8 |        0.340 | images from the seafloor and consists of underwater flora and fauna |  112x112   |
+| cifar-10h     | 10000 |      10 |        0.154 | reannotated variant of the original CIFAR-10 test set               |   32x32    |
+| MiceBone      |  7240 |       4 |        0.319 | Second-Harmonic-Generation images of collagen fibers                |  224x224   |
+| pig           | 10237 |       4 |        0.735 | tail images form european farms                                     |   96x96    |
+| plankton      | 12280 |      10 |        0.163 | underwater plankton images                                          |   96x96    |
+| qualityMRI    |   310 |       2 |        0.556 | MRI images                                                          |  224x224   |
+| synthetic     | 15000 |       6 |        0.584 | images that contain 1 colored circle on a black background          |  224x224   |
+| TreeVersity#1 |  9489 |       6 |        0.266 | plant images, single label per image                                |  224x224   |
+| TreeVersity#6 |  9826 |       6 |        0.742 | plant images, possibly multiple labels per image                    |  224x224   |
+| turkey        |  8040 |       3 |        0.196 | images of turkeys and their injuries                                |  192x192   |
 
 
 
@@ -138,7 +138,7 @@ Turkey consists of images of turkeys and their injuries. The task is to classify
 | `--data-root`       |                                             `data/image` | root directory containing the image datasets                                                                   |
 | `--augmentation`    |                                                  `basic` | basic is currently just `RandomHorizontalFlip`                                                                 |
 | `--dropout`         |                                                    `0.0` | dropout rate for classification head, applied after global average pooling and before linear layer             |
-| `--entmax-alpha`    |                                                    `1.5` | alpha parameter for entmax, controls sparsity output logits, alpha=1 is softmax, alpha=2 is sparsemax          |
+| `--entmax-alpha`    |                                                    `1.0` | alpha parameter for entmax, controls sparsity output logits, setting alpha=1 will use softmax + CE, alpha=2 is sparsemax |
 
 ### Full Pipeline
 
@@ -183,6 +183,9 @@ image_entmax_pipeline_simple, run_dataset_experiment:
 
 - `resnet18`
 - `resnet50`
+- `wide_resnet50_2`
+- `resnext50_32x4d`
+- `densenet121`
 - `efficientnet_b0`
 - `convnext_tiny`
 - `vit_b_16`
