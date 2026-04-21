@@ -205,7 +205,7 @@ max-complexity = 15
 
 # Use isort-compatible settings
 [tool.ruff.lint.isort]
-known-first-party = ["probly", "pytraverse", "lazy_dispatch"]
+known-first-party = ["probly", "probly_benchmark", "pytraverse", "lazy_dispatch"]
 force-sort-within-sections = true
 combine-as-imports = true
 force-single-line = false
