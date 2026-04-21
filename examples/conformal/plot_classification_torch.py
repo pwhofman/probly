@@ -3,16 +3,15 @@ Classification Conformal Prediction — PyTorch
 =============================================
 
 Demonstrate all four classification non-conformity scores
-(:class:`~probly.conformal.scores.LACScore`,
+(:func:`~probly.conformal.scores.lac_score`,
 :class:`~probly.conformal.scores.APSScore`,
 :class:`~probly.conformal.scores.RAPSScore`,
 :class:`~probly.conformal.scores.SAPSScore`)
 using a small :class:`~torch.nn.Module` on the Iris dataset.
 
-After wrapping with :func:`~probly.conformal.methods.classification.conformalize_classifier`
-the model gains conformal attributes. During calibration the conformal quantile is
-computed; after calibration :func:`~probly.representer.representer` returns a boolean
-inclusion mask (the conformal prediction set).
+Each score uses its own conformal wrapper. During calibration the conformal quantile
+is computed; after calibration :func:`~probly.representer.representer` returns a
+boolean inclusion mask (the conformal prediction set).
 """
 
 from __future__ import annotations
@@ -23,10 +22,9 @@ from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
 
 from probly.calibrator import calibrate
-from probly.calibrator._common import calibrate_conformal
 from probly.metrics._common import average_set_size, empirical_coverage_classification
-from probly.method.conformal import conformalize_classifier
-from probly.conformal_scores import APSScore, LACScore, RAPSScore, SAPSScore
+from probly.method.conformal import conformal_aps, conformal_lac, conformal_raps, conformal_saps
+from probly.predictor import LogitClassifier
 from probly.representer import representer
 
 torch.manual_seed(42)
@@ -49,11 +47,9 @@ y_test_t = torch.tensor(y_test, dtype=torch.long)
 # %%
 # Define and train the model
 # --------------------------
-# The model is wrapped **before** training so that ``parameters()``
-# includes the full sequential (base + conformal head).
 
 
-class SimpleNet(nn.Module):
+class SimpleNet(nn.Module, LogitClassifier):
     """Two-layer classifier."""
 
     def __init__(self, in_features: int, num_classes: int) -> None:
@@ -66,7 +62,7 @@ class SimpleNet(nn.Module):
         return self.fc2(self.relu(self.fc1(x)))
 
 
-model = conformalize_classifier(SimpleNet(4, 3))
+model = SimpleNet(4, 3)
 
 optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 loss_fn = nn.CrossEntropyLoss()
@@ -82,7 +78,7 @@ model.eval()
 # LAC score
 # ---------
 
-calibrated_model = calibrate_conformal(model, LACScore(), X_calib_t, y_calib_t, alpha=0.05)
+calibrated_model = calibrate(conformal_lac(model), 0.05, y_calib_t, X_calib_t)
 output = representer(calibrated_model).predict(X_test_t)
 lac_cov = empirical_coverage_classification(output, y_test_t)
 lac_size = average_set_size(output)
@@ -92,7 +88,7 @@ print(f"LAC  — coverage: {lac_cov:.3f}, avg set size: {lac_size:.3f}")
 # APS score
 # ---------
 
-calibrated_model = calibrate_conformal(model, APSScore(), X_calib_t, y_calib_t, alpha=0.05)
+calibrated_model = calibrate(conformal_aps(model), 0.05, y_calib_t, X_calib_t)
 output = representer(calibrated_model).predict(X_test_t)
 aps_cov = empirical_coverage_classification(output, y_test_t)
 aps_size = average_set_size(output)
@@ -102,7 +98,7 @@ print(f"APS  — coverage: {aps_cov:.3f}, avg set size: {aps_size:.3f}")
 # RAPS score
 # ----------
 
-calibrated_model = calibrate_conformal(model, RAPSScore(), X_calib_t, y_calib_t, alpha=0.05)
+calibrated_model = calibrate(conformal_raps(model), 0.05, y_calib_t, X_calib_t)
 output = representer(calibrated_model).predict(X_test_t)
 raps_cov = empirical_coverage_classification(output, y_test_t)
 raps_size = average_set_size(output)
@@ -112,7 +108,7 @@ print(f"RAPS — coverage: {raps_cov:.3f}, avg set size: {raps_size:.3f}")
 # SAPS score
 # ----------
 
-calibrated_model = calibrate_conformal(model, SAPSScore(), X_calib_t, y_calib_t, alpha=0.05)
+calibrated_model = calibrate(conformal_saps(model), 0.05, y_calib_t, X_calib_t)
 output = representer(calibrated_model).predict(X_test_t)
 saps_cov = empirical_coverage_classification(output, y_test_t)
 saps_size = average_set_size(output)

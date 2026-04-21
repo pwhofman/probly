@@ -79,7 +79,7 @@ class TorchIntervalConformalSet(TorchAxisProtected[Any], IntervalConformalSet):
         if not isinstance(lower, torch.Tensor) or not isinstance(upper, torch.Tensor):
             msg = "Expected torch.Tensor for interval conformal sets."
             raise TypeError(msg)
-        return cls(tensor=torch.stack([lower.flatten(), upper.flatten()], dim=-1))
+        return cls(tensor=torch.stack([lower, upper], dim=-1))
 
     @classmethod
     def from_samples(cls, lower: TorchSample, upper: TorchSample) -> Self:

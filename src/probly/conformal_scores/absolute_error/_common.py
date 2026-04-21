@@ -6,11 +6,11 @@ import numpy as np
 import numpy.typing as npt
 
 from lazy_dispatch import lazydispatch
-from probly.representation.sample.array import ArraySample
+from probly.representation.array_like import ArrayLike
 
 
 @lazydispatch
-def absolute_error_score_func[T](
+def absolute_error_score[T](
     y_pred: T,
     y_true: T,
 ) -> npt.NDArray[np.floating]:
@@ -19,22 +19,19 @@ def absolute_error_score_func[T](
     raise NotImplementedError(msg)
 
 
-@absolute_error_score_func.register(np.ndarray)
-def compute_absolute_error_score_numpy(y_pred: np.ndarray, y_true: np.ndarray) -> np.ndarray:
+@absolute_error_score.register(np.ndarray | ArrayLike)
+def compute_absolute_error_score_numpy(y_pred: np.ndarray | ArrayLike, y_true: np.ndarray | ArrayLike) -> np.ndarray:
     """Absolute error for numpy arrays."""
-    if y_pred.ndim > 2:
+    y_true_np = np.asarray(y_true, dtype=float)
+    y_pred_np = np.asarray(y_pred, dtype=float)
+
+    if y_pred_np.ndim == y_true_np.ndim + 1:
+        y_pred_np = y_pred_np.mean(axis=0)
+    elif y_pred_np.ndim != y_true_np.ndim:
         msg = (
-            "y_pred must have shape (n_evaluations, n_samples) or (n_samples,), "
-            f"got {y_pred.shape}. The n_evaluations dimension is optional and "
-            "will be averaged over if present."
+            "y_pred must match y_true shape or add a leading evaluation axis; "
+            f"got y_pred shape {y_pred_np.shape} and y_true shape {y_true_np.shape}."
         )
         raise ValueError(msg)
-    if y_pred.ndim == 2:
-        y_pred = y_pred.mean(axis=0)
-    return np.abs(y_true - y_pred)
 
-
-@absolute_error_score_func.register(ArraySample)
-def _(y_pred: ArraySample, y_true: np.ndarray) -> np.ndarray:
-    """Absolute error for ArraySamples."""
-    return absolute_error_score_func(y_pred.array, y_true)
+    return np.abs(y_true_np - y_pred_np)

@@ -5,11 +5,11 @@ from __future__ import annotations
 import numpy as np
 
 from lazy_dispatch import lazydispatch
-from probly.representation.sample.array import ArraySample
+from probly.representation.array_like import ArrayLike
 
 
 @lazydispatch
-def uacqr_score_func[T](y_pred: T, y_true: T) -> T:
+def uacqr_score[T](y_pred: T, y_true: T) -> T:
     """Compute the UACQR nonconformity score.
 
     Normalizes the CQR score by the standard deviation of the ensemble's
@@ -35,27 +35,25 @@ def uacqr_score_func[T](y_pred: T, y_true: T) -> T:
     raise NotImplementedError(msg)
 
 
-@uacqr_score_func.register(np.ndarray)
-def compute_uacqr_score_func_numpy(y_pred: np.ndarray, y_true: np.ndarray) -> np.ndarray:
+@uacqr_score.register(np.ndarray | ArrayLike)
+def compute_uacqr_score_func_numpy(y_pred: np.ndarray | ArrayLike, y_true: np.ndarray) -> np.ndarray:
     """UACQR nonconformity scores for numpy arrays."""
-    y_true = y_true.flatten()
+    y_true_np = np.asarray(y_true, dtype=float)
+    y_pred_np = np.asarray(y_pred, dtype=float)
 
-    if y_pred.ndim != 3 or y_pred.shape[2] != 2:
-        msg = f"intervals must have shape (n_estimations, n_samples, 2), got {y_pred.shape}"
+    if y_pred_np.ndim != y_true_np.ndim + 2 or y_pred_np.shape[-1] != 2:
+        msg = (
+            "intervals must have shape (n_estimations, ..., 2) with batch shape matching y_true; "
+            f"got y_pred shape {y_pred_np.shape} and y_true shape {y_true_np.shape}."
+        )
         raise ValueError(msg)
 
-    std = np.std(y_pred, axis=0)
-    mean_intervals = np.mean(y_pred, axis=0)
+    std = np.std(y_pred_np, axis=0)
+    mean_intervals = np.mean(y_pred_np, axis=0)
 
-    lower = mean_intervals[:, 0]
-    upper = mean_intervals[:, 1]
-    std_lo = std[:, 0]
-    std_hi = std[:, 1]
+    lower = mean_intervals[..., 0]
+    upper = mean_intervals[..., 1]
+    std_lo = std[..., 0]
+    std_hi = std[..., 1]
 
-    return np.maximum((lower - y_true) / std_lo, (y_true - upper) / std_hi)
-
-
-@uacqr_score_func.register(ArraySample)
-def _(y_pred: ArraySample, y_true: np.ndarray) -> np.ndarray:
-    """UACQR nonconformity scores for ArraySamples."""
-    return compute_uacqr_score_func_numpy(y_pred.array, y_true)
+    return np.maximum((lower - y_true_np) / std_lo, (y_true_np - upper) / std_hi)

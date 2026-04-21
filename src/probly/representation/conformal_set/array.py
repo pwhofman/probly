@@ -91,7 +91,7 @@ class ArrayIntervalConformalSet(ArrayAxisProtected[ArraySample], IntervalConform
         if not isinstance(lower, np.ndarray) or not isinstance(upper, np.ndarray):
             msg = "Expected np.ndarray for interval conformal sets."
             raise TypeError(msg)
-        return cls(array=np.stack([lower.flatten(), upper.flatten()], axis=-1))
+        return cls(array=np.stack([lower, upper], axis=-1))
 
     @classmethod
     def from_samples(cls, lower: ArraySample, upper: ArraySample) -> Self:

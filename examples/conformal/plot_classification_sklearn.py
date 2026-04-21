@@ -3,31 +3,29 @@ Classification Conformal Prediction — sklearn
 ==============================================
 
 Demonstrate all four classification non-conformity scores
-(:class:`~probly.conformal.scores.LACScore`,
+(:func:`~probly.conformal.scores.lac_score`,
 :class:`~probly.conformal.scores.APSScore`,
 :class:`~probly.conformal.scores.RAPSScore`,
 :class:`~probly.conformal.scores.SAPSScore`)
 using a :class:`~sklearn.tree.DecisionTreeClassifier` on the Iris dataset.
 
-The three-step workflow is the same for every score:
+The workflow is the same for every score:
 
-1. Wrap the model once with :func:`~probly.conformal.methods.classification.conformalize_classifier`.
-2. Re-calibrate with a different :class:`~probly.conformal.scores._common.NonConformityScore`.
-3. Call :func:`~probly.representer.representer` to obtain typed conformal sets.
+1. Fit a base model.
+2. Create a score-specific conformal wrapper.
+3. Calibrate with :func:`~probly.calibrator.calibrate`.
+4. Call :func:`~probly.representer.representer` to obtain typed conformal sets.
 """
 
 from __future__ import annotations
 
-import numpy as np
 from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
 
 from probly.calibrator import calibrate
-from probly.calibrator._common import calibrate_conformal
 from probly.metrics._common import average_set_size, empirical_coverage_classification
-from probly.method.conformal import conformalize_classifier
-from probly.conformal_scores import APSScore, LACScore, RAPSScore, SAPSScore
+from probly.method.conformal import conformal_aps, conformal_lac, conformal_raps, conformal_saps
 from probly.representer import representer
 
 # %%
@@ -42,11 +40,8 @@ X_train, X_calib, y_train, y_calib = train_test_split(X_train, y_train, test_siz
 # %%
 # Build and train the model
 # -------------------------
-# ``conformalize_classifier`` deep-copies the model and attaches conformal attributes.
-# Training must happen **after** the wrap so that the copy's state is updated.
 
 model = DecisionTreeClassifier(max_depth=2, random_state=42)
-model = conformalize_classifier(model)
 model.fit(X_train, y_train)
 
 # %%
@@ -54,7 +49,7 @@ model.fit(X_train, y_train)
 # ---------
 # The Least Ambiguous set-valued Classifier score: ``1 - P(y | x)``.
 
-calibrated_model = calibrate_conformal(model,LACScore(), X_calib, y_calib,  alpha=0.05)
+calibrated_model = calibrate(conformal_lac(model), 0.05, y_calib, X_calib)
 output = representer(calibrated_model).predict(X_test)
 lac_cov = empirical_coverage_classification(output, y_test)
 lac_size = average_set_size(output)
@@ -65,7 +60,7 @@ print(f"LAC  — coverage: {lac_cov:.3f}, avg set size: {lac_size:.3f}")
 # ---------
 # Adaptive Prediction Sets: cumulative sorted probabilities with randomisation.
 
-calibrated_model = calibrate_conformal(model, APSScore(), X_calib, y_calib, alpha=0.05)
+calibrated_model = calibrate(conformal_aps(model), 0.05, y_calib, X_calib)
 output = representer(calibrated_model).predict(X_test)
 aps_cov = empirical_coverage_classification(output, y_test)
 aps_size = average_set_size(output)
@@ -76,7 +71,7 @@ print(f"APS  — coverage: {aps_cov:.3f}, avg set size: {aps_size:.3f}")
 # ----------
 # Regularised APS: adds a size penalty to encourage smaller prediction sets.
 
-calibrated_model = calibrate_conformal(model, RAPSScore(), X_calib, y_calib, alpha=0.05)
+calibrated_model = calibrate(conformal_raps(model), 0.05, y_calib, X_calib)
 output = representer(calibrated_model).predict(X_test)
 raps_cov = empirical_coverage_classification(output, y_test)
 raps_size = average_set_size(output)
@@ -87,7 +82,7 @@ print(f"RAPS — coverage: {raps_cov:.3f}, avg set size: {raps_size:.3f}")
 # ----------
 # Sorted APS: penalises gaps between consecutive sorted probabilities.
 
-calibrated_model = calibrate_conformal(model, SAPSScore(), X_calib, y_calib, alpha=0.05)
+calibrated_model = calibrate(conformal_saps(model), 0.05, y_calib, X_calib)
 output = representer(calibrated_model).predict(X_test)
 saps_cov = empirical_coverage_classification(output, y_test)
 saps_size = average_set_size(output)

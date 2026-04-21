@@ -104,6 +104,17 @@ class DistributionPredictor[**In, Out: Distribution](RepresentationPredictor[In,
 class CategoricalDistributionPredictor[**In, Out: CategoricalDistribution](DistributionPredictor[In, Out], Protocol):
     """Protocol for predictors that return a categorical distribution over outputs expressed as probabilities."""
 
+    @classmethod
+    def __instancehook__(cls, instance: object) -> bool:
+        predict_proba_method = getattr(instance, "predict_proba", None)
+        if (
+            predict_proba_method is not None
+            and callable(predict_proba_method)
+            and not hasattr(instance, "predict_representation")
+        ):
+            return True
+        return NotImplemented
+
 
 @predictor_registry.multi_register(["logit_distribution_predictor", "logit_classifier"])
 @runtime_checkable

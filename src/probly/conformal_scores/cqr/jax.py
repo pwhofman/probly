@@ -5,24 +5,30 @@ from __future__ import annotations
 from jax import Array
 import jax.numpy as jnp
 
-from ._common import cqr_score_func
+from ._common import cqr_score
 
 
-@cqr_score_func.register(Array)
+@cqr_score.register(Array)
 def _(y_pred: Array, y_true: Array) -> Array:
     """CQR nonconformity scores for JAX arrays."""
-    y_true = jnp.ravel(y_true)
+    y = jnp.asarray(y_true, dtype=float)
+    pred = jnp.asarray(y_pred, dtype=float)
 
-    if y_pred.ndim > 3 or y_pred.shape[-1] != 2:
+    if pred.ndim < y.ndim + 1 or pred.shape[-1] != 2:
         msg = (
-            "y_pred must have shape (n_evaluations, n_samples, 2), "
-            f"got {y_pred.shape}. The n_evaluations dimension is optional and "
-            "will be averaged over if present."
+            "y_pred must have shape (..., 2) or (n_evaluations, ..., 2) matching y_true batch shape; "
+            f"got y_pred shape {pred.shape} and y_true shape {y.shape}."
         )
         raise ValueError(msg)
-    if y_pred.ndim == 3:
-        y_pred = y_pred.mean(axis=0)
-    lower = y_pred[:, 0]
-    upper = y_pred[:, 1]
+    if pred.ndim == y.ndim + 2:
+        pred = pred.mean(axis=0)
+    elif pred.ndim != y.ndim + 1:
+        msg = (
+            "y_pred must match y_true batch rank with a trailing quantile axis, "
+            "or include one additional leading evaluation axis."
+        )
+        raise ValueError(msg)
+    lower = pred[..., 0]
+    upper = pred[..., 1]
 
-    return jnp.maximum(lower - y_true, y_true - upper)
+    return jnp.maximum(lower - y, y - upper)

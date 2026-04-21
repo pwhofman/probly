@@ -2,9 +2,9 @@
 Quantile Regression Conformal Prediction — PyTorch
 ==================================================
 
-Demonstrate :class:`~probly.conformal.scores.CQRScore`,
-:class:`~probly.conformal.scores.CQRrScore`, and
-:class:`~probly.conformal.scores.UACQRScore` using
+Demonstrate :func:`~probly.conformal.scores.cqr_score`,
+:func:`~probly.conformal.scores.cqr_r_score`, and
+:func:`~probly.conformal.scores.uacqr_score` using
 PyTorch models on the Diabetes dataset.
 
 **CQR / CQRr** use the standard conformal API
@@ -13,9 +13,7 @@ on a ``QuantileNet`` that outputs ``(n_samples, 2)`` lower/upper quantiles.
 
 **UACQR** (Uncertainty-Aware CQR) normalises residuals by the standard
 deviation of an ensemble of quantile predictors.  It expects predictions of
-shape ``(n_members, n_samples, 2)`` and uses a manual calibration loop because
-the standard :class:`~probly.layers.torch.ConformalQuantileHead` assumes a
-``(n_samples, 2)`` forward pass.
+shape ``(n_members, n_samples, 2)``.
 """
 
 from __future__ import annotations
@@ -27,11 +25,8 @@ from sklearn.datasets import load_diabetes
 from sklearn.model_selection import train_test_split
 
 from probly.calibrator import calibrate
-from probly.calibrator._common import calibrate_conformal
 from probly.metrics._common import average_interval_size, empirical_coverage_regression
-from probly.method.conformal import conformalize_quantile_regressor
-from probly.utils.quantile import calculate_quantile
-from probly.conformal_scores import CQRScore, CQRrScore, UACQRScore
+from probly.method.conformal import conformal_cqr, conformal_cqr_r, conformal_uacqr
 from probly.method.ensemble._common import EnsemblePredictor, ensemble
 from probly.representer import representer
 
@@ -90,7 +85,7 @@ class QuantileNet(nn.Module):
 
 QUANTILES = [0.05, 0.95]
 
-model = conformalize_quantile_regressor(QuantileNet(X_train.shape[1]))
+model = QuantileNet(X_train.shape[1])
 
 optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
@@ -106,7 +101,7 @@ model.eval()
 # ---------
 
 with torch.no_grad():
-    calibrated_model = calibrate_conformal(model, CQRScore(), X_calib_t, y_calib_t, alpha=0.05)
+    calibrated_model = calibrate(conformal_cqr(model), 0.05, y_calib_t, X_calib_t)
     output = representer(calibrated_model).predict(X_test_t)
 
 cqr_cov = empirical_coverage_regression(output, y_test_t)
@@ -118,7 +113,7 @@ print(f"CQR  — coverage: {cqr_cov:.3f}, avg interval size: {cqr_size:.1f}")
 # ----------
 
 with torch.no_grad():
-    calibrated_model = calibrate_conformal(model, CQRrScore(), X_calib_t, y_calib_t, alpha=0.05)
+    calibrated_model = calibrate(conformal_cqr_r(model), 0.05, y_calib_t, X_calib_t)
     output = representer(calibrated_model).predict(X_test_t)
 
 cqrr_cov = empirical_coverage_regression(output, y_test_t)
@@ -128,27 +123,22 @@ print(f"CQRr — coverage: {cqrr_cov:.3f}, avg interval size: {cqrr_size:.1f}")
 # %%
 # UACQR with an ensemble
 # ----------------------
-# ``UACQRScore`` normalises CQR residuals by the *standard deviation* across
+# ``uacqr_score`` normalises CQR residuals by the *standard deviation* across
 # an ensemble of quantile predictors, making the conformal correction adaptive
 # to regions of high model uncertainty.
-#
-# The score expects predictions of shape ``(n_members, n_samples, 2)``.
-# Because :class:`~probly.layers.torch.ConformalQuantileHead` assumes
-# ``(n_samples, 2)`` in its calibrated forward pass, UACQR uses a manual
-# calibration loop instead of the standard ``representer`` API.
 
 ensemble_net = ensemble(QuantileNet(X_train.shape[1]), num_members=5)
-model = conformalize_quantile_regressor(ensemble_net)
+member_optimizers = [torch.optim.Adam(member.parameters(), lr=0.01) for member in ensemble_net]
 
 
 for _ in range(300):
-    for m in model:
-        optimizer.zero_grad()
+    for m, member_optimizer in zip(ensemble_net, member_optimizers, strict=False):
+        member_optimizer.zero_grad()
         quantile_loss(m(X_train_t), y_train_t, QUANTILES).backward()
-        optimizer.step()
+        member_optimizer.step()
 
 
-calibrated_model = calibrate_conformal(model, UACQRScore(), X_calib_t, y_calib_t, alpha=0.05)
+calibrated_model = calibrate(conformal_uacqr(ensemble_net), 0.05, y_calib_t, X_calib_t)
 representation = representer(calibrated_model)
 output = representation.predict(X_test_t)
 
@@ -156,13 +146,13 @@ uacqr_cov = empirical_coverage_regression(output, y_test_t)
 uacqr_size = average_interval_size(output)
 print(f"UACQR — coverage: {uacqr_cov:.3f}, avg interval size: {uacqr_size:.1f}")
 
-calibrated_model = calibrate_conformal(model, CQRScore(), X_calib_t, y_calib_t, alpha=0.05)
+calibrated_model = calibrate(conformal_cqr(ensemble_net), 0.05, y_calib_t, X_calib_t)
 output = representer(calibrated_model).predict(X_test_t)
 cqr_cov_ens = empirical_coverage_regression(output, y_test_t)
 cqr_size_ens = average_interval_size(output)
 print(f"CQR (ensemble)  — coverage: {cqr_cov_ens:.3f}, avg interval size: {cqr_size_ens:.1f}")
 
-calibrated_model = calibrate_conformal(model, CQRrScore(), X_calib_t, y_calib_t, alpha=0.05)
+calibrated_model = calibrate(conformal_cqr_r(ensemble_net), 0.05, y_calib_t, X_calib_t)
 output = representer(calibrated_model).predict(X_test_t)
 cqrr_cov_ens = empirical_coverage_regression(output, y_test_t)
 cqrr_size_ens = average_interval_size(output)
@@ -173,8 +163,8 @@ print(f"CQRr (ensemble) — coverage: {cqrr_cov_ens:.3f}, avg interval size: {cq
 # Comparison
 # ----------
 
-print("\n{:<6} {:>10} {:>18}".format("Score", "Coverage", "Avg interval size"))
-print("-" * 36)
+print("\n{:<10} {:>10} {:>18}".format("Score", "Coverage", "Avg interval size"))
+print("-" * 40)
 for name, cov, sz in [
     ("CQR", cqr_cov, cqr_size),
     ("CQRr", cqrr_cov, cqrr_size),
@@ -182,4 +172,4 @@ for name, cov, sz in [
     ("CQR (ens)", cqr_cov_ens, cqr_size_ens),
     ("CQRr (ens)", cqrr_cov_ens, cqrr_size_ens),
 ]:
-    print(f"{name:<6} {cov:>10.3f} {sz:>18.1f}")
+    print(f"{name:<10} {cov:>10.3f} {sz:>18.1f}")

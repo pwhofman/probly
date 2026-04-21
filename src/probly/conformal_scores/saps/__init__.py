@@ -2,17 +2,17 @@
 
 from probly.lazy_types import JAX_ARRAY, JAX_ARRAY_LIKE, TORCH_TENSOR, TORCH_TENSOR_LIKE
 
-from ._common import saps_score_func
+from ._common import SAPSScore, _saps_score_dispatch, saps_score
 
 
-@saps_score_func.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
+@_saps_score_dispatch.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415
 
 
-@saps_score_func.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
+@_saps_score_dispatch.delayed_register((JAX_ARRAY, JAX_ARRAY_LIKE))
 def _(_: type) -> None:
     from . import jax as jax  # noqa: PLC0415
 
 
-__all__ = ["saps_score_func"]
+__all__ = ["SAPSScore", "saps_score"]

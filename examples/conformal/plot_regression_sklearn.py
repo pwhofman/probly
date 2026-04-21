@@ -2,7 +2,7 @@
 Regression Conformal Prediction — sklearn
 ==========================================
 
-Demonstrate :class:`~probly.conformal.scores.AbsoluteErrorScore`
+Demonstrate :func:`~probly.conformal.scores.absolute_error_score`
 using a :class:`~sklearn.tree.DecisionTreeRegressor` on the Diabetes dataset.
 
 The conformal interval for a new point :math:`x` is
@@ -24,10 +24,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeRegressor
 
 from probly.calibrator import calibrate
-from probly.calibrator._common import calibrate_conformal
 from probly.metrics._common import average_interval_size, empirical_coverage_regression
-from probly.method.conformal import conformalize_regressor
-from probly.conformal_scores import AbsoluteErrorScore
+from probly.method.conformal import conformal_absolute_error
 from probly.representer import representer
 
 # %%
@@ -43,13 +41,12 @@ X_train, X_calib, y_train, y_calib = train_test_split(X_train, y_train, test_siz
 # -------------------------
 
 model = DecisionTreeRegressor(max_depth=3, random_state=42)
-model = conformalize_regressor(model)
 model.fit(X_train, y_train)
 
 # %%
 # Absolute error score
 # --------------------
-calibrated_model = calibrate_conformal(model,AbsoluteErrorScore(), X_calib, y_calib,  alpha=0.05)
+calibrated_model = calibrate(conformal_absolute_error(model), 0.05, y_calib, X_calib)
 output = representer(calibrated_model).predict(X_test)
 coverage = empirical_coverage_regression(output, y_test)
 avg_size = average_interval_size(output)

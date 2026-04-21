@@ -8,7 +8,7 @@ from lazy_dispatch import lazydispatch
 
 
 @lazydispatch
-def calculate_quantile[In](scores: In, alpha: float) -> In:
+def calculate_quantile[In](scores: In, alpha: float) -> float:
     """Calculate the conformal quantile from nonconformity scores."""
     msg = "Quantile score computation not implemented for this type."
     raise NotImplementedError(msg)

@@ -2,12 +2,11 @@
 Regression Conformal Prediction — PyTorch
 ==========================================
 
-Demonstrate :class:`~probly.conformal.scores.AbsoluteErrorScore`
+Demonstrate :func:`~probly.conformal.scores.absolute_error_score`
 using a small :class:`~torch.nn.Module` on the Diabetes dataset.
 
-After wrapping with :func:`~probly.conformal.methods.regression.conformalize_regressor`
-the model gains conformal attributes. After calibration,
-:func:`~probly.representer.representer` expands the scalar prediction into
+After applying :func:`~probly.method.conformal.conformal_absolute_error`
+and calibrating, :func:`~probly.representer.representer` expands the scalar prediction into
 ``[pred - q, pred + q]``.
 """
 
@@ -20,11 +19,9 @@ from torch import nn
 from sklearn.datasets import load_diabetes
 from sklearn.model_selection import train_test_split
 
-from probly.calibrator._common import calibrate_conformal
+from probly.calibrator import calibrate
 from probly.metrics._common import average_interval_size, empirical_coverage_regression
-from probly.method.conformal import conformalize_regressor
-from probly.conformal_scores import AbsoluteErrorScore
-from probly.representation.sample import create_sample
+from probly.method.conformal import conformal_absolute_error
 from probly.representer import representer
 
 torch.manual_seed(42)
@@ -65,7 +62,7 @@ class SimpleNet(nn.Module):
         return self.fc(x).squeeze(-1)
 
 
-model = conformalize_regressor(SimpleNet(X_train.shape[1]))
+model = SimpleNet(X_train.shape[1])
 
 optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 loss_fn = nn.MSELoss()
@@ -82,8 +79,7 @@ model.eval()
 # --------------------
 
 with torch.no_grad():
-    y_calib_sample = create_sample(y_calib_t, sample_axis=0)
-    calibrated_model = calibrate_conformal(model, AbsoluteErrorScore(), X_calib_t, y_calib_sample, alpha=0.05)
+    calibrated_model = calibrate(conformal_absolute_error(model), 0.05, y_calib_t, X_calib_t)
     output = representer(calibrated_model).predict(X_test_t)
 
 coverage = empirical_coverage_regression(output, y_test_t)

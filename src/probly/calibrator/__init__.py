@@ -1,10 +1,10 @@
-"""This module contains the Protocols for the calibrator submodule."""
+"""Calibrator protocols and calibration dispatch."""
 
 from __future__ import annotations
 
-from ._common import ConformalCalibrator, calibrate
+from ._common import Calibrator, calibrate
 
 __all__ = [
-    "ConformalCalibrator",
+    "Calibrator",
     "calibrate",
 ]

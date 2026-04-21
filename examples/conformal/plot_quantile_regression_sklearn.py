@@ -2,8 +2,8 @@
 Quantile Regression Conformal Prediction — sklearn
 ==================================================
 
-Demonstrate :class:`~probly.conformal.scores.CQRScore` and
-:class:`~probly.conformal.scores.CQRrScore` using a custom
+Demonstrate :func:`~probly.conformal.scores.cqr_score` and
+:func:`~probly.conformal.scores.cqr_r_score` using a custom
 ``DualQuantileRegressor`` wrapper on the Diabetes dataset.
 
 sklearn's :class:`~sklearn.linear_model.QuantileRegressor` predicts a
@@ -28,10 +28,8 @@ from sklearn.linear_model import QuantileRegressor
 from sklearn.model_selection import train_test_split
 
 from probly.calibrator import calibrate
-from probly.calibrator._common import calibrate_conformal
 from probly.metrics._common import average_interval_size, empirical_coverage_regression
-from probly.method.conformal import conformalize_quantile_regressor
-from probly.conformal_scores import CQRScore, CQRrScore
+from probly.method.conformal import conformal_cqr, conformal_cqr_r
 from probly.representer import representer
 
 # %%
@@ -76,10 +74,9 @@ class DualQuantileRegressor(BaseEstimator, RegressorMixin):
 # %%
 # Build and train the model
 # -------------------------
-# ``conformalize_quantile_regressor`` recognises any ``RegressorMixin`` and attaches
-# the conformal attributes needed by ``calibrate``.
+# Fit the base quantile regressor once, then wrap per score.
 
-model = conformalize_quantile_regressor(DualQuantileRegressor(alpha=0.1))
+model = DualQuantileRegressor(alpha=0.1)
 model.fit(X_train, y_train)
 
 # %%
@@ -87,7 +84,7 @@ model.fit(X_train, y_train)
 # ---------
 # Symmetric correction: ``score = max(q_lo - y, y - q_hi)``.
 
-calibrated_model = calibrate_conformal(model, CQRScore(), X_calib, y_calib, alpha=0.05)
+calibrated_model = calibrate(conformal_cqr(model), 0.05, y_calib, X_calib)
 output = representer(calibrated_model).predict(X_test)
 cqr_cov = empirical_coverage_regression(output, y_test)
 cqr_size = average_interval_size(output)
@@ -98,7 +95,7 @@ print(f"CQR  — coverage: {cqr_cov:.3f}, avg interval size: {cqr_size:.1f}")
 # ----------
 # Width-normalised correction: adapts to heteroscedastic models.
 
-calibrated_model = calibrate_conformal(model, CQRrScore(), X_calib, y_calib, alpha=0.05)
+calibrated_model = calibrate(conformal_cqr_r(model), 0.05, y_calib, X_calib)
 output = representer(calibrated_model).predict(X_test)
 cqrr_cov = empirical_coverage_regression(output, y_test)
 cqrr_size = average_interval_size(output)
