@@ -21,6 +21,117 @@ type QueryFn = Callable[[np.ndarray], np.ndarray]
 _METRIC_NAMES = Literal["mse", "mae", "accuracy", "auc"]
 
 
+def distance(x1: tuple, x2: tuple, mu: tuple) -> np.ndarray:
+    """Compute the BADGE kernel distance between two sets of gradient embeddings.
+
+    Args:
+        x1: Tuple of (vector, norm_squared) for the first embedding set.
+        x2: Tuple of (vector, norm_squared) for the second embedding set.
+        mu: Tuple of two (vector, norm_squared) pairs representing the cluster centre.
+
+    Returns:
+        Distance array of shape ``(n_instances,)``.
+    """
+    y1, y2 = mu
+    x1_vec, x1_norm_sq = x1
+    x2_vec, x2_norm_sq = x2
+    y1_vec, y1_norm_sq = y1
+    y2_vec, y2_norm_sq = y2
+    dist = x1_norm_sq * x2_norm_sq + y1_norm_sq * y2_norm_sq - 2 * (x1_vec @ y1_vec) * (x2_vec @ y2_vec)
+    dist = np.sqrt(np.clip(dist, a_min=0, a_max=None))
+    return dist
+
+
+def init_centers(
+    x1: tuple,
+    x2: tuple,
+    chosen: set,
+    chosen_list: list,
+    mu: list | None,
+    d2: np.ndarray | None,
+) -> tuple[set, list, list, np.ndarray]:
+    """Select the next cluster centre via k-means++ initialisation for BADGE.
+
+    Args:
+        x1: Tuple of (prob_vecs, prob_norms_squared) for unlabelled instances.
+        x2: Tuple of (emb_vecs, emb_norms_squared) for unlabelled instances.
+        chosen: Set of already-chosen indices.
+        chosen_list: Ordered list of already-chosen indices.
+        mu: List of chosen centre tuples; ``None`` on the first call.
+        d2: Current minimum-distance array; ``None`` on the first call.
+
+    Returns:
+        chosen: Updated set of chosen indices.
+        chosen_list: Updated ordered list of chosen indices.
+        mu: Updated list of centre tuples.
+        d2: Updated minimum-distance array.
+    """
+    from scipy import stats  # noqa: PLC0415
+
+    if len(chosen) == 0:
+        ind = np.argmax(x1[1] * x2[1])
+        mu = [((x1[0][ind], x1[1][ind]), (x2[0][ind], x2[1][ind]))]
+        d2 = distance(x1, x2, mu[0]).ravel().astype(float)
+        d2[ind] = 0
+    else:
+        mu = cast("list", mu)
+        d2 = cast("np.ndarray", d2)
+        new_d = distance(x1, x2, mu[-1]).ravel().astype(float)
+        d2 = np.minimum(d2, new_d)
+        d2[chosen_list] = 0
+        ddist = (d2**2) / sum(d2**2)
+        custom_dist = stats.rv_discrete(name="custm", values=(np.arange(len(ddist)), ddist))
+        ind = custom_dist.rvs(size=1)[0]
+        while ind in chosen:
+            ind = custom_dist.rvs(size=1)[0]
+        mu.append(((x1[0][ind], x1[1][ind]), (x2[0][ind], x2[1][ind])))
+    chosen.add(ind)
+    chosen_list.append(ind)
+    return chosen, chosen_list, mu, d2
+
+
+def badge_query(
+    embeddings: np.ndarray,
+    probs: np.ndarray,
+    n: int,
+) -> np.ndarray:
+    """Select *n* instances via BADGE (Batch Active learning by Diverse Gradient Embeddings).
+
+    Implements the k-means++ initialisation over gradient embeddings from
+    Ash et al. (2020), with the speedup from Zhang et al. (2023, Appendix D).
+
+    Args:
+        embeddings: Gradient embedding matrix of shape ``(n_pool, emb_dim)``.
+        probs: Predicted class probabilities of shape ``(n_pool, n_classes)``.
+        n: Number of instances to select.
+
+    Returns:
+        Indices into the pool of shape ``(n,)``, sorted by selection order.
+    """
+    m = len(embeddings)
+    emb_norms_square = np.sum(embeddings**2, axis=-1)
+    max_inds = np.argmax(probs, axis=-1)
+
+    grad_probs = -1 * probs.copy()
+    grad_probs[np.arange(m), max_inds] += 1
+    prob_norms_square = np.sum(grad_probs**2, axis=-1)
+
+    mu: list | None = None
+    d2: np.ndarray | None = None
+    chosen: set = set()
+    chosen_list: list = []
+    for _ in range(n):
+        chosen, chosen_list, mu, d2 = init_centers(
+            (grad_probs, prob_norms_square),
+            (embeddings, emb_norms_square),
+            chosen,
+            chosen_list,
+            mu,
+            d2,
+        )
+    return np.array(chosen_list)
+
+
 def total_entropy(probs: np.ndarray) -> np.ndarray:
     """Compute total entropy of the mean predictive distribution.
 

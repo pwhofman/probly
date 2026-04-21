@@ -11,6 +11,9 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+    import torch
+    from torch import nn
+
 from matplotlib import pyplot as plt
 import numpy as np
 from scipy import stats
@@ -18,7 +21,8 @@ from sklearn.datasets import make_moons
 from sklearn.ensemble import GradientBoostingClassifier, GradientBoostingRegressor
 
 from probly.evaluation.active_learning import active_learning_loop
-from probly.evaluation.active_learning._utils import margin_sampling, total_entropy
+from probly.evaluation.active_learning._torch_estimator import TorchEstimator
+from probly.evaluation.active_learning._utils import badge_query, margin_sampling, total_entropy
 
 # ---------------------------------------------------------------------------
 # Config
@@ -31,11 +35,143 @@ N_SEEDS = 10
 
 
 # ---------------------------------------------------------------------------
-# Query functions
+# Query functions / wrappers
 # ---------------------------------------------------------------------------
 def random_query_fn(outputs: np.ndarray) -> np.ndarray:
     """Return uniform random scores — effectively random sampling."""
     return np.ones(outputs.shape[0])
+
+
+class BADGEClassifier:
+    """Sklearn-compatible wrapper that plugs BADGE selection into the active learning loop.
+
+    BADGE selects instances by k-means++ over gradient embeddings.  For
+    sklearn models without an explicit embedding layer the input features are
+    used as a proxy embedding.  ``uncertainty_scores`` returns a binary array
+    (1 for BADGE-selected, 0 otherwise) so the loop's top-n selection retrieves
+    exactly the BADGE-chosen indices.
+
+    Args:
+        base_model: Any sklearn classifier with ``fit``, ``predict``, and
+            ``predict_proba``.
+        pool_size: Number of instances queried per iteration — must match the
+            ``pool_size`` passed to ``active_learning_loop``.
+    """
+
+    def __init__(self, base_model: Any, pool_size: int = POOL_SIZE) -> None:  # noqa: ANN401
+        """See class docstring."""
+        self._model = base_model
+        self._pool_size = pool_size
+
+    def fit(self, x: np.ndarray, y: np.ndarray) -> BADGEClassifier:
+        """Delegate to the base model's fit."""
+        self._model.fit(x, y)
+        return self
+
+    def predict(self, x: np.ndarray) -> np.ndarray:
+        """Delegate to the base model's predict."""
+        return self._model.predict(x)
+
+    def predict_proba(self, x: np.ndarray) -> np.ndarray:
+        """Delegate to the base model's predict_proba."""
+        return self._model.predict_proba(x)
+
+    def uncertainty_scores(self, x: np.ndarray) -> np.ndarray:
+        """Return a binary mask with 1s at the BADGE-selected positions."""
+        probs = self._model.predict_proba(x)
+        n = min(self._pool_size, len(x))
+        selected = badge_query(x, probs, n)
+        scores = np.zeros(len(x))
+        scores[selected] = 1.0
+        return scores
+
+
+class SimpleMLP:
+    """Two-hidden-layer MLP with an ``embed`` method for penultimate-layer access.
+
+    The architecture is ``Linear -> ReLU -> Linear -> ReLU -> Linear``.
+    ``embed`` returns the activations after the second ReLU, which serve as
+    gradient embeddings for BADGE.
+
+    Args:
+        in_features: Input dimensionality.
+        hidden: Width of each hidden layer.
+        out_features: Number of output classes.
+    """
+
+    def __new__(cls, in_features: int, hidden: int, out_features: int) -> nn.Module:
+        """Return a freshly constructed ``_MLP`` instance."""
+        from torch import nn  # noqa: PLC0415
+
+        class _MLP(nn.Module):
+            def __init__(self) -> None:
+                super().__init__()
+                self.features = nn.Sequential(
+                    nn.Linear(in_features, hidden),
+                    nn.ReLU(),
+                    nn.Linear(hidden, hidden),
+                    nn.ReLU(),
+                )
+                self.head = nn.Linear(hidden, out_features)
+
+            def forward(self, x: torch.Tensor) -> torch.Tensor:
+                return self.head(self.features(x))
+
+            def embed(self, x: torch.Tensor) -> torch.Tensor:
+                """Return penultimate-layer activations of shape ``(n, hidden)``."""
+                return self.features(x)
+
+        return _MLP()
+
+
+class BADGEMLPEstimator(TorchEstimator):
+    """``TorchEstimator`` subclass that uses real MLP embeddings for BADGE selection.
+
+    Extends :class:`~probly.evaluation.active_learning._torch_estimator.TorchEstimator`
+    with an ``uncertainty_scores`` method.  At query time the penultimate-layer
+    activations are extracted via the model's ``embed`` method and passed to
+    :func:`~probly.evaluation.active_learning._utils.badge_query` together with
+    the softmax probabilities.
+
+    Args:
+        model: A :class:`SimpleMLP` instance (or any ``nn.Module`` that exposes
+            an ``embed`` method returning penultimate-layer features).
+        pool_size: Number of instances queried per iteration — must match the
+            ``pool_size`` passed to ``active_learning_loop``.
+        **kwargs: Forwarded to :class:`TorchEstimator`.
+    """
+
+    def __init__(self, model: nn.Module, *, pool_size: int = POOL_SIZE, **kwargs: Any) -> None:  # noqa: ANN401
+        """See class docstring."""
+        super().__init__(model, **kwargs)
+        self._pool_size = pool_size
+
+    def _embed(self, x: np.ndarray) -> np.ndarray:
+        """Return penultimate-layer activations of shape ``(n_samples, hidden)``."""
+        from typing import cast as _cast  # noqa: PLC0415
+
+        import torch  # noqa: PLC0415
+
+        model_any = _cast("Any", self.model)
+        self.model.eval()
+        x_t = torch.as_tensor(x, dtype=torch.float32, device=self.device)
+        parts: list[np.ndarray] = []
+        with torch.no_grad():
+            for start in range(0, len(x_t), self.pred_batch_size):
+                batch = x_t[start : start + self.pred_batch_size]
+                emb = model_any.embed(batch)
+                parts.append(emb.cpu().numpy())
+        return np.concatenate(parts, axis=0)
+
+    def uncertainty_scores(self, x: np.ndarray) -> np.ndarray:
+        """Return a binary mask with 1s at the BADGE-selected positions."""
+        embeddings = self._embed(x)
+        probs = self._predict_proba(x)
+        n = min(self._pool_size, len(x))
+        selected = badge_query(embeddings, probs, n)
+        scores = np.zeros(len(x))
+        scores[selected] = 1.0
+        return scores
 
 
 # ---------------------------------------------------------------------------
@@ -44,6 +180,8 @@ def random_query_fn(outputs: np.ndarray) -> np.ndarray:
 _STRATEGY_STYLES: dict[str, dict] = {
     "margin": {"color": "C0", "label": "Margin sampling", "linestyle": "-"},
     "entropy": {"color": "C2", "label": "Entropy sampling", "linestyle": "-."},
+    "badge_gbm": {"color": "C3", "label": "BADGE (GBM, feature emb)", "linestyle": ":"},
+    "badge_mlp": {"color": "C4", "label": "BADGE (MLP, layer emb)", "linestyle": (0, (3, 1, 1, 1))},
     "random": {"color": "C1", "label": "Random sampling", "linestyle": "--"},
 }
 
@@ -94,7 +232,8 @@ def run_seeds(
         make_dataset: Callable that returns (x_train, y_train, x_test, y_test) given a seed.
         make_model: Callable that returns a fresh model given a seed.
         metric: Metric name passed to ``active_learning_loop``.
-        strategies: Mapping from strategy name to query function.
+        strategies: Mapping from strategy name to query function (``None`` for
+            models that expose ``uncertainty_scores``).
         n_seeds: Number of random seeds to average over.
     """
     runs: dict[str, list[list[float]]] = {name: [] for name in strategies}
@@ -185,9 +324,9 @@ def plot_results(
 ) -> None:
     """Render side-by-side comparison plots for classification and regression."""
     fig, axes = plt.subplots(1, 2, figsize=(12, 4))
-    fig.suptitle(f"Active learning benchmark  ({n_seeds} seeds, mean ± 95 % CI)", fontsize=11)
+    fig.suptitle(f"Active learning benchmark  ({n_seeds} seeds, mean +/- 95 % CI)", fontsize=11)
 
-    plot_comparison(axes[0], clf_runs, ylabel="Accuracy", title="Two Moons — Classification")
+    plot_comparison(axes[0], clf_runs, ylabel="Accuracy", title="Two Moons -- Classification")
     plot_comparison(axes[1], reg_runs, ylabel="Negative MAE", title="Sine Regression")
 
     axes[0].set_ylim(0, 1)
@@ -200,22 +339,46 @@ def plot_results(
 # ---------------------------------------------------------------------------
 def main(n_seeds: int = N_SEEDS) -> None:
     """Run active learning benchmark comparing uncertainty vs random sampling."""
-    clf_strategies = {
-        "margin": margin_sampling,
-        "entropy": total_entropy,
-        "random": random_query_fn,
-    }
-
     print(f"=== Two Moons Classification  ({n_seeds} seeds) ===")
     clf_runs = run_seeds(
         make_two_moons_classification,
         lambda seed: GradientBoostingClassifier(n_estimators=50, random_state=seed),
         metric="accuracy",
-        strategies=clf_strategies,
+        strategies={
+            "margin": margin_sampling,
+            "entropy": total_entropy,
+            "random": random_query_fn,
+        },
         n_seeds=n_seeds,
     )
+
+    print(f"=== Two Moons Classification -- BADGE (GBM)  ({n_seeds} seeds) ===")
+    badge_gbm_runs = run_seeds(
+        make_two_moons_classification,
+        lambda seed: BADGEClassifier(GradientBoostingClassifier(n_estimators=50, random_state=seed)),
+        metric="accuracy",
+        strategies={"badge_gbm": None},
+        n_seeds=n_seeds,
+    )
+    clf_runs.update(badge_gbm_runs)
+
+    print(f"=== Two Moons Classification -- BADGE (MLP)  ({n_seeds} seeds) ===")
+    badge_mlp_runs = run_seeds(
+        make_two_moons_classification,
+        lambda _: BADGEMLPEstimator(
+            SimpleMLP(in_features=2, hidden=64, out_features=2),
+            pool_size=POOL_SIZE,
+            n_epochs=50,
+            optimizer_kwargs={"lr": 1e-3},
+        ),
+        metric="accuracy",
+        strategies={"badge_mlp": None},
+        n_seeds=n_seeds,
+    )
+    clf_runs.update(badge_mlp_runs)
+
     for name, data in clf_runs.items():
-        print(f"  {name:>10}: mean accuracy @ last iter = {data[:, -1].mean():.4f}")
+        print(f"  {name:>12}: mean accuracy @ last iter = {data[:, -1].mean():.4f}")
 
     print()
     print(f"=== Sine Regression  ({n_seeds} seeds) ===")
