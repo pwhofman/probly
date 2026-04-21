@@ -146,6 +146,7 @@ exclude = [
     "supporting_files",
     "examples",
     "web",
+    "experiments",
     "*.pyi",
 ]
 
