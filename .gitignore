@@ -74,6 +74,7 @@ docs/_build/
 docs/source/auto_examples/
 docs/source/sg_execution_times.rst
 docs/source/generated/
+docs/source/gen_modules/
 
 # PyBuilder
 .pybuilder/
