@@ -1,6 +1,6 @@
-# Ensemble Uncertainty Quantification
+# First-order Data Experiments
 
-## Image dataset overview
+## Image dataset overview (DCIC Datasets)
 
 | Dataset       |  size | classes | avg. entropy | type                                                                | input size |
 | ------------- | ----: | ------: | -----------: | ------------------------------------------------------------------- | :--------: |
@@ -109,10 +109,12 @@ Turkey consists of images of turkeys and their injuries. The task is to classify
 
 ### DCIC Ensemble Pipeline
 
+- Dataset installer: [install_dcic_datasets.py](install_dcic_datasets.py) (downloads + extracts the DCIC archives from Zenodo into `data/image`)
 - Main runner: [run_dcic_ensemble.py](run_dcic_ensemble.py)
 - Main pipeline: [dcic_ensemble_pipeline.py](dcic_ensemble_pipeline.py)
 - Results helper: [summarize_dcic_ensemble_results.py](summarize_dcic_ensemble_results.py)
-- Conformal prediction evaluation: [conformal_eval.py](conformal_eval.py)
+- Convex-hull coverage utilities (used by the results helper): [utils.py](utils.py)
+- Conformal prediction evaluation on cached predictions: [conformal_eval.py](conformal_eval.py)
 
 ### Supported args
 
@@ -139,44 +141,50 @@ Turkey consists of images of turkeys and their injuries. The task is to classify
 | `--dropout`         |                                                    `0.0` | dropout rate for classification head, applied after global average pooling and before linear layer             |
 | `--entmax-alpha`    |                                                    `1.0` | alpha parameter for entmax, controls sparsity output logits, setting alpha=1 will use softmax + CE, alpha=2 is sparsemax |
 
-### Full Pipeline
+<details>
+<summary><strong>Detailed Pipeline description</strong></summary>
 
-run_dcic_ensemble:
-1. Initialize Argument Parser
-2. Construct config from passed arguments
-3. Create run directory and write config to .json
-4. For each dataset run: run_dataset_experiment(dataset_name, config)
-5. Save run result summary for each dataset
+One run of the runner trains an ensemble for one held-out fold per dataset.
 
+`run_dcic_ensemble.py`:
+1. Initialize the argument parser and parse CLI args
+2. Build an `EntmaxImageExperimentConfig` from the parsed args (if `--dataset` isn't passed, every dataset stored under `--data-root` is treated is used)
+3. Create a run directory based on config (encoder, loss, mode, ensemble size, epochs, batch size, lr, wd, seed, test fold, entmax alpha, ...) via `build_run_name`, and write `config.json` into it
+4. For each dataset, call `run_dataset_experiment(dataset_name, config)`
+5. After each dataset finishes, update the top-level `results.json` summary so progress is never lost on long runs
+6. Print the per-dataset ensemble cross entropy at the end
 
-dcic_ensemble_pipeline, run_dataset_experiment:
-1. load class_names + dataset records (load_image_dataset)
-	- Each dataset has an annotations.json, which links an image path to its vote counts, structure: {"record_n": {"annotations": {"image_path": ..., "class_label": ..., "created_at": ...}, ...}, ...}
-	- For each annotation get image path + class label, count number of times a class was voted for a given image path
-	- class_counts is a dict (associated with an image_path) that contains a mapping from class_names with their respective counts e.g. {"car": 1, "house": 7, "tree": 2}
-	- transform counts to probabilities, wrap each Image into a ImageRecord (stores image path, fold it was in and target distribution)
-2. Put all records that match chosen test fold in the test set, all others in the train set
-3. Split train set into train and validation sets (additional shuffling of records given the seed, default split is 90/10)
-4. For each ensemble member index:
-	1. Construct own directory inside run directory
-	2. train member given set config:
-		1. Train single model:
-			1. Create train and validation dataloaders with a transform recipe built in build_transform (Image resize to encoder input and RandomHorizontalFlip)
-			2. Initialize model:
-				1. If pretrained model is utilized, imagenet weights are loaded for the specified model
-				2. replace old classification head with identity and get number of in features to classification head (replace_classification_head_with_identity)
-				3. Bulid new classification head, single Linear Layer with num_classes neurons and in_features weights + 1 weights per neuron (with optional dropout before linear layer)
-				4. if only classification head is supposed to be trained (so no --finetune flag was passed) encoder parameters are frozen
-			3. Initialize AdamW optimizer and Loss function (Fenchel-Young loss formulation, required since entmax uses different mapping from logits to probabilities)
-			4. for specified number of epochs:
-				1. Standard torch model training setup, update model weights
-				2. Then also run inference once for validation data
-				3. check if validation loss is smaller than previous best val loss, if so start counting up to early stopping threshold
-		2. run trained model on test data and compute predicted probability distributions with entmax
-		3. compute mean cross entropy loss for this member
-		4. save model, all predictions in .csv (image path, fold, cross_entropy, target_entropy + target and predicted probabilities for each class) and a small summary
-	3. compute mean ensemble-wise probability predictions and compute ensemble cross entropy
-	4. save results for fold + dataset, as well as a summary and the utilized config
+`dcic_ensemble_pipeline.run_dataset_experiment`:
+1. Load the DCIC dataset through its probly loader (`load_dcic_dataset`):
+	- Each dataset has an `annotations.json`, which links an image path to its vote counts, structure: `{"record_n": {"annotations": {"image_path": ..., "class_label": ..., "created_at": ...}, ...}, ...}`
+	- For each annotation it extracts the image path + class label and counts how many times a class was voted for a given image path
+	- `class_counts` is a dict (associated with an image_path) that maps class names to their counts, e.g. `{"car": 1, "house": 7, "tree": 2}`
+	- Counts are normalised to a soft target distribution and each image path keeps its fold prefix so records can be grouped by fold later
+2. Group record indices by fold. All records in `--test-fold` go to the test pool, everything else to the train pool
+3. Split the train pool into train and validation sets via `split_train_validation_indices` (seeded shuffle, default 90/10)
+4. Build three `Subset`s (train/val/test) over the same dataset, each with its own `build_transform` recipe (resize to the encoder's input size + `RandomHorizontalFlip` on train when `--augmentation basic`)
+5. Build a single `ImageEntmaxClassifier` to act as the ensemble prototype:
+	1. Load the torchvision encoder (imagenet weights if `--pretrained` is kept on)
+	2. Replace the encoder's native classification head with `nn.Identity` via `replace_classification_head_with_identity`, and grab its `in_features`
+	3. Build a new classification head: a single `Linear(in_features, num_classes)` (with optional `Dropout` before it when `--dropout > 0`)
+	4. If `--finetune` is not set, freeze all encoder parameters so only the head is trained
+6. Instantiate the ensemble via `probly.method.ensemble.ensemble(base_model, num_members=..., reset_params=not pretrained)`
+7. For each ensemble member index:
+	1. Seed with `config.seed + member_index`, create a `member_XX` subdirectory under the fold directory
+	2. Train the member (`train_single_member` -> `train_single_model`):
+		1. Build train/validation dataloaders (shuffled on train; `pin_memory=True` on CUDA for a small speedup)
+		2. Initialise an AdamW optimizer over trainable params only, and pick the loss:
+			- `nn.CrossEntropyLoss` when `--entmax-alpha 1` (i.e. softmax training)
+			- `SoftTargetEntmaxBisectLoss` otherwise (the Fenchel-Young loss matched to entmax, needed because entmax uses a different logits-to-probabilities mapping than softmax. It adds a Tsallis-entropy term that regularises the distribution so it doesn't collapse too sharply too early)
+		3. For `--epochs` epochs: train, then run a validation pass; keep a copy of the best state by val loss; early-stop once `--patience` epochs go by without improvement; finally load the best state back
+	3. Run the trained member on the test subset (`predict_dataset`) and convert logits to probabilities with either `softmax` or `entmax_bisect` depending on alpha
+	4. Compute the member's mean cross entropy, then save `model.pt`, `predictions.csv` (image path, fold, per-sample cross_entropy and target_entropy, plus one `target::<class>` and one `pred::<class>` column per class), `history.json` (train/val loss per epoch), and a small `summary.json`
+8. Stack member probability matrices (shape `(n_members, n_test, n_classes)`) and average across members to get ensemble probabilities; compute the ensemble cross entropy
+9. Use the stacked member predictions as a second-order categorical sample (`ArrayCategoricalDistributionSample`) and hand it to `probly.quantification.quantify` to decompose the ensemble's uncertainty into total / aleatoric / epistemic
+10. Write `ensemble_predictions.csv` (same schema as the per-member CSV, plus the three uncertainty columns), the fold `summary.json`, and the dataset-level `summary.json` + `config.json`
+
+</details>
+
 
 ### Supported encoders
 
@@ -207,24 +215,34 @@ Run a single held-out fold:
 
 Results are written under [out/image](out/image):
 
-- one run directory per executed configuration
+- one run directory per executed configuration (named from the config via `build_run_name`)
 - one folder per dataset and encoder inside the run directory
 - one subfolder for the chosen held-out fold
-- `predictions.csv` for each ensemble member
-- `ensemble_predictions.csv` for the averaged ensemble probabilities
-- `summary.json` with fold metrics and mean cross entropy
-- top-level `results.json` summarizing all datasets in the run
+- a `member_XX` subfolder per ensemble member with its own `model.pt`, `predictions.csv`, `history.json`, and `summary.json`
+- `ensemble_predictions.csv` next to the member folders, holding the averaged ensemble probabilities and the per-sample uncertainty decomposition
+- a fold-level `summary.json` with split sizes, per-member cross entropies, ensemble cross entropy, mean uncertainty, and paths to the member artifacts
+- a dataset-level `summary.json` + `config.json` one level up
+- a top-level `config.json` for the whole run and a top-level `results.json` summarising all datasets in the run (updated after every dataset)
 
-Each exported prediction file contains:
+Each per-member `predictions.csv` contains:
 
 - image path
 - held-out fold
-- target distribution for every class
-- predicted distribution for every class
 - per-sample cross entropy
 - target entropy
+- target distribution for every class (`target::<class>`)
+- predicted distribution for every class (`pred::<class>`)
+
+`ensemble_predictions.csv` has the same columns plus the ensemble uncertainty columns:
+`total_uncertainty`, `aleatoric_uncertainty`, `epistemic_uncertainty`.
 
 `summarize_dcic_ensemble_results.py` reads one run directory and provides:
 
+- a CLI that prints per-dataset member CE, ensemble CE, credal-set interval coverage, (optionally relaxed) convex-hull coverage, total-variation distance, and mean total / aleatoric / epistemic uncertainty
 - `iter_dataset_rows(run_dir)` to iterate row by row over dataset results
-- `get_latex_table(run_dir)` to build a LaTeX table
+- `get_latex_table(run_dir)` to build a LaTeX table of the same metrics
+
+`conformal_eval.py` uses the cached `ensemble_predictions.csv` files and evaluates conformal
+prediction strategies (LAC / APS / RAPS scores, combined with split / class-conditional /
+Mondrian-by-uncertainty conditioning) over repeated calibration/test splits, reporting hard and
+soft empirical coverage as well as average set size.
