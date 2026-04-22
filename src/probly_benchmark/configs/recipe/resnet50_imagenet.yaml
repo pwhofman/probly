@@ -28,3 +28,9 @@ scheduler:
 
 early_stopping:
   patience: 0  # set to > 0 to enable; number of epochs to wait without improvement
+
+# Params of methods specific to this recipe
+# Ensemble methods
+method:
+  params:
+    reset_params: false
