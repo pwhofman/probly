@@ -5,17 +5,17 @@ from __future__ import annotations
 from contextlib import suppress
 from functools import reduce, singledispatch, update_wrapper
 import operator
-from typing import TYPE_CHECKING, Any, get_args, overload
+from typing import TYPE_CHECKING, Any, SupportsIndex, get_args, overload, override
 from weakref import WeakKeyDictionary
 
-from lazy_dispatch.isinstance import (
+from flextype.isinstance import (
     LazyType,
     _find_closest_string_type,
     _is_union_type,
     _split_lazy_type,
     lazy_issubclass,
 )
-from lazy_dispatch.registry_meta import RegistryMeta
+from flextype.registry_meta import RegistryMeta
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -39,7 +39,20 @@ def first_argument[T](x: T, *args: Any, **kwargs: Any) -> T:  # noqa: ANN401, AR
     return x
 
 
-class Lazydispatch[**In, Out]:
+def _resolve_global(module_name: str, qualname: str) -> object:
+    """Resolve a global object by module + qualname."""
+    import importlib  # noqa: PLC0415
+
+    obj: object = importlib.import_module(module_name)
+    for part in qualname.split("."):
+        if part == "<locals>":
+            msg = f"Can't pickle local object {module_name}.{qualname}"
+            raise AttributeError(msg)
+        obj = getattr(obj, part)
+    return obj
+
+
+class Flexdispatch[**In, Out]:
     """A lazy version of functools.singledispatch that also works with string types."""
 
     __slots__ = (
@@ -199,7 +212,7 @@ class Lazydispatch[**In, Out]:
 
         This method simply delegates to the underlying functools.singledispatch instance.
         Instance-based RegistryMeta types and lazy-string registrations are not supported.
-        To use the full functionality of lazydispatch, use the `register` method instead.
+        To use the full functionality of flexdispatch, use the `register` method instead.
         """
         registry = self._singledispatcher.registry
         old_functions = {t: registry.get(t) for t in types}
@@ -350,35 +363,62 @@ class Lazydispatch[**In, Out]:
             registry_meta_lookup=dispatch_value,
         )(*args, **kwargs)
 
+    @override
+    def __reduce_ex__(self, protocol: SupportsIndex | None = None) -> tuple[object, tuple[str, str]]:
+        """Pickle by global reference, like regular functions."""
+        import pickle  # noqa: PLC0415
+
+        del protocol
+        module_name = getattr(self, "__module__", None)
+        qualname = getattr(self, "__qualname__", None)
+        if not isinstance(module_name, str) or not isinstance(qualname, str):
+            msg = f"Can't pickle {self!r}: missing module/qualname."
+            raise pickle.PicklingError(msg)
+
+        try:
+            resolved = _resolve_global(module_name, qualname)
+        except Exception as err:
+            msg = f"Can't pickle {self!r}: it's not found as {module_name}.{qualname}"
+            raise pickle.PicklingError(msg) from err
+        if resolved is not self:
+            msg = f"Can't pickle {self!r}: it's not the same object as {module_name}.{qualname}"
+            raise pickle.PicklingError(msg)
+        return (_resolve_global, (module_name, qualname))
+
+    @override
+    def __reduce__(self) -> tuple[object, tuple[str, str]]:
+        """Pickle by global reference, like regular functions."""
+        return self.__reduce_ex__()
+
 
 @overload
-def lazydispatch[**In, Out](
+def flexdispatch[**In, Out](
     func: Callable[In, Out],
     *,
     dispatch_on: Callable = first_argument,
     parse_annotations: bool = True,
-) -> Lazydispatch[In, Out]: ...
+) -> Flexdispatch[In, Out]: ...
 
 
 @overload
-def lazydispatch[**In, Out](
+def flexdispatch[**In, Out](
     *,
     dispatch_on: Callable = first_argument,
     parse_annotations: bool = True,
-) -> Callable[[Callable[In, Out]], Lazydispatch[In, Out]]: ...
+) -> Callable[[Callable[In, Out]], Flexdispatch[In, Out]]: ...
 
 
-def lazydispatch[**In, Out](
+def flexdispatch[**In, Out](
     func: Callable[In, Out] | None = None,
     *,
     dispatch_on: Callable = first_argument,
     parse_annotations: bool = True,
-) -> Lazydispatch[In, Out] | Callable[[Callable[In, Out]], Lazydispatch[In, Out]]:
+) -> Flexdispatch[In, Out] | Callable[[Callable[In, Out]], Flexdispatch[In, Out]]:
     """Create a new lazy_singledispatch or return a decorator."""
     if func is None:
 
-        def decorator(func: Callable[In, Out]) -> Lazydispatch[In, Out]:
-            return Lazydispatch(
+        def decorator(func: Callable[In, Out]) -> Flexdispatch[In, Out]:
+            return Flexdispatch(
                 func,
                 dispatch_on=dispatch_on,
                 parse_annotations=parse_annotations,
@@ -386,7 +426,7 @@ def lazydispatch[**In, Out](
 
         return decorator
 
-    return Lazydispatch(
+    return Flexdispatch(
         func,
         dispatch_on=dispatch_on,
         parse_annotations=parse_annotations,

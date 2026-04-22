@@ -24,7 +24,7 @@ from tqdm import tqdm
 import wandb
 import wandb.util
 
-from lazy_dispatch import lazydispatch
+from flextype import flexdispatch
 from probly.method.credal_ensembling import CredalEnsemblingPredictor
 from probly.method.credal_relative_likelihood import CredalRelativeLikelihoodPredictor
 from probly.method.credal_wrapper import CredalWrapperPredictor
@@ -224,7 +224,7 @@ def _training_loop(
         run.summary[f"{log_prefix}early_stopped"] = False
 
 
-@lazydispatch
+@flexdispatch
 def train_model(
     model: nn.Module,
     train_loader: DataLoader,

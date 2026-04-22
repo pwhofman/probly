@@ -9,7 +9,7 @@ from torch import nn, optim
 from torch.amp import GradScaler, autocast
 import torch.nn.functional as F
 
-from lazy_dispatch import lazydispatch
+from flextype import flexdispatch
 from probly.method.bayesian import BayesianPredictor
 from probly.method.credal_ensembling import CredalEnsemblingPredictor
 from probly.method.credal_relative_likelihood import CredalRelativeLikelihoodPredictor
@@ -29,7 +29,7 @@ if TYPE_CHECKING:
     from probly.predictor import Predictor
 
 
-@lazydispatch
+@flexdispatch
 def train_epoch(
     model: Predictor,
     inputs: torch.Tensor,
@@ -139,7 +139,7 @@ def _(
     return loss.item()
 
 
-@lazydispatch
+@flexdispatch
 def validate(
     model: Predictor,
     val_loader: DataLoader,
@@ -219,7 +219,7 @@ def _(
     return val_loss
 
 
-@lazydispatch
+@flexdispatch
 def evaluate(
     model: Predictor,
     test_loader: DataLoader,

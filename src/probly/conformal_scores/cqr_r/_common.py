@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import numpy as np
 
-from lazy_dispatch import lazydispatch
+from flextype import flexdispatch
 from probly.representation.array_like import ArrayLike
 
 _EPS = 1e-6  # Small constant to prevent division by zero
 
 
-@lazydispatch
+@flexdispatch
 def cqr_r_score[T](y_pred: T, y_true: T) -> T:
     """Compute the CQR-r nonconformity score.
 

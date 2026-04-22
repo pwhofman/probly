@@ -7,12 +7,12 @@ import functools
 from typing import TYPE_CHECKING, Any, Protocol, is_protocol, runtime_checkable
 from weakref import WeakSet
 
-from lazy_dispatch.isinstance import _find_closest_string_type, _split_lazy_type
+from flextype.isinstance import _find_closest_string_type, _split_lazy_type
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from lazy_dispatch import LazyType
+    from flextype import LazyType
 
 EXCLUDED_ATTRS = frozenset(
     {
@@ -23,6 +23,17 @@ EXCLUDED_ATTRS = frozenset(
         "_structural_checking",
     }
 )
+
+
+def iter_registry_classes() -> list[RegistryMeta[Any]]:
+    """Return all currently alive classes that use RegistryMeta."""
+    classes = [
+        registry_class
+        for registry_class in RegistryMeta.known_registry_classes
+        if isinstance(registry_class, RegistryMeta)
+    ]
+    classes.sort(key=lambda cls: (cls.__module__, cls.__qualname__))
+    return classes
 
 
 class RegistrationError(Exception):
@@ -84,6 +95,7 @@ class RegistryMeta[T: object](ABCMeta):
     _instance_registry: WeakSet[T]
     _negative_instance_registry: WeakSet[object]
     _string_registry: set[str]
+    known_registry_classes: WeakSet[type] = WeakSet()
 
     def __init__(
         cls,
@@ -110,6 +122,15 @@ class RegistryMeta[T: object](ABCMeta):
                 subclasshook = _lazy_subclass_hook_with_pre_hook(subclasshook)
 
             cls.__subclasshook__ = subclasshook  # ty: ignore[invalid-assignment]
+
+        RegistryMeta.known_registry_classes.add(cls)
+
+    def is_explicit_instance_registered(cls, instance: object) -> bool:
+        """Return whether `instance` was explicitly registered via register_instance."""
+        try:
+            return instance in cls._instance_registry
+        except TypeError:
+            return False
 
     def _register(cls, subclass: type) -> type:
         """Register a subclass in the registry."""

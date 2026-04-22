@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from lazy_dispatch.isinstance import LazyType, lazy_isinstance
+from flextype.isinstance import LazyType, lazy_isinstance
 
 
 class TestIsInstance:
