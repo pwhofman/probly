@@ -29,14 +29,11 @@ class Calibrator[**In, Out](ProtocolRegistry, Protocol, structural_checking=Fals
 @flexdispatch
 def calibrate[**In, Out](
     predictor: Calibrator[In, Out],
-    alpha: float,
-    y_calib: Out,
-    /,
     *calib_args: In.args,
     **calib_kwargs: In.kwargs,
 ) -> None:
     """Calibrate the predictor with the given arguments."""
     if hasattr(predictor, "calibrate"):
-        return predictor.calibrate(alpha, y_calib, *calib_args, **calib_kwargs)  # ty:ignore[call-non-callable]
+        return predictor.calibrate(*calib_args, **calib_kwargs)  # ty:ignore[call-non-callable]
     msg = "Conformal calibration not implemented for this type of predictor."
     raise NotImplementedError(msg)
