@@ -147,7 +147,7 @@ def _training_loop(
     run: Any,  # noqa: ANN401
     train_kwargs: dict[str, Any],
     train_fn: Callable[..., float],
-    val_fn: Callable[..., float],
+    val_fn: Callable[..., tuple[float, float]],
     log_prefix: str = "",
 ) -> None:
     """Run the training loop for a single model.
@@ -194,7 +194,9 @@ def _training_loop(
         model.train()
         running_loss = 0.0
         for inputs_, targets_ in tqdm(train_loader):
-            inputs = inputs_.to(device, non_blocking=True).contiguous(memory_format=torch.channels_last)
+            inputs = inputs_.to(device, non_blocking=True)
+            if device.type == "cuda":
+                inputs = inputs.contiguous(memory_format=torch.channels_last)
             targets = targets_.to(device, non_blocking=True)
             running_loss += train_fn(
                 model,
@@ -213,8 +215,9 @@ def _training_loop(
         val_loss: float | None = None
         log_data = {f"{log_prefix}train_loss": running_loss}
         if val_loader:
-            val_loss = val_fn(model, val_loader, device, amp_enabled, **train_kwargs)
+            val_loss, val_acc = val_fn(model, val_loader, device, amp_enabled, **train_kwargs)
             log_data[f"{log_prefix}val_loss"] = val_loss
+            log_data[f"{log_prefix}val_acc"] = val_acc
         run.log(data=log_data)
 
         if best_tracker is not None and val_loss is not None:
@@ -308,7 +311,7 @@ def _compute_log_likelihood(
     return -total_loss / total_samples
 
 
-def _training_loop_relative_likelihood(
+def _training_loop_relative_likelihood(  # noqa: PLR0912
     model: nn.Module,
     train_loader: DataLoader,
     val_loader: DataLoader | None,
@@ -316,7 +319,7 @@ def _training_loop_relative_likelihood(
     device: torch.device,
     run: Any,  # noqa: ANN401
     train_fn: Callable[..., float],
-    val_fn: Callable[..., float],
+    val_fn: Callable[..., tuple[float, float]],
     max_ll: float,
     alpha: float,
     batch_check: bool = False,
@@ -346,7 +349,9 @@ def _training_loop_relative_likelihood(
         model.train()
         running_loss = 0.0
         for inputs_, targets_ in tqdm(train_loader):
-            inputs = inputs_.to(device, non_blocking=True).contiguous(memory_format=torch.channels_last)
+            inputs = inputs_.to(device, non_blocking=True)
+            if device.type == "cuda":
+                inputs = inputs.contiguous(memory_format=torch.channels_last)
             targets = targets_.to(device, non_blocking=True)
             running_loss += train_fn(
                 model,
@@ -382,8 +387,9 @@ def _training_loop_relative_likelihood(
             f"{log_prefix}relative_likelihood": relative_likelihood,
         }
         if val_loader:
-            val_loss = val_fn(model, val_loader, device, amp_enabled)
+            val_loss, val_acc = val_fn(model, val_loader, device, amp_enabled)
             log_data[f"{log_prefix}val_loss"] = val_loss
+            log_data[f"{log_prefix}val_acc"] = val_acc
         run.log(data=log_data)
 
         if scheduler is not None and not step_per_iter:
@@ -416,9 +422,7 @@ def _(
     The KL penalty is set to 1/N (N = dataset size) following
     Blundell et al., "Weight Uncertainty in Neural Networks", ICML 2015.
     """
-    dataset = getattr(train_loader, "dataset", None)
-    dataset_size = len(dataset) if dataset is not None else len(train_loader) * cfg.batch_size
-    kl_penalty = 1.0 / dataset_size
+    kl_penalty = 1.0 / len(train_loader)
     _training_loop(
         model,
         train_loader,
@@ -514,7 +518,9 @@ def _fit_ddu_density_head(
     all_features: list[torch.Tensor] = []
     all_labels: list[torch.Tensor] = []
     for inputs_, targets_ in tqdm(train_loader, desc="Fitting DDU density head"):
-        inputs = inputs_.to(device, non_blocking=True).contiguous(memory_format=torch.channels_last)
+        inputs = inputs_.to(device, non_blocking=True)
+        if device.type == "cuda":
+            inputs = inputs.contiguous(memory_format=torch.channels_last)
         targets = targets_.to(device, non_blocking=True)
         with torch.amp.autocast(device.type, enabled=amp_enabled):
             features = model.encoder(inputs)

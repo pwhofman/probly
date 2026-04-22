@@ -187,7 +187,7 @@ def validate(
     device: torch.device,
     amp_enabled: bool = False,
     **kwargs: Any,  # noqa: ANN401
-) -> float:
+) -> tuple[float, float]:
     """Validate a model."""
     msg = f"No validation function for {type(model)}"
     raise NotImplementedError(msg)
@@ -201,19 +201,21 @@ def _(
     device: torch.device,
     amp_enabled: bool = False,
     **kwargs: Any,  # noqa: ANN401, ARG001
-) -> float:
+) -> tuple[float, float]:
     """Validate a Bayesian predictor."""
     criterion = ELBOLoss()
     model.eval()
-    val_loss = 0.0
+    val_loss, val_acc = 0.0, 0.0
     for inputs_, targets_ in val_loader:
         inputs, targets = inputs_.to(device), targets_.to(device)
         with autocast(device.type, enabled=amp_enabled):
             outputs = model(inputs)
             kl = collect_kl_divergence(model)
             val_loss += criterion(outputs, targets, kl).item()
+            val_acc += _accuracy(outputs, targets)
     val_loss /= len(val_loader)
-    return val_loss
+    val_acc /= len(val_loader)
+    return val_loss, val_acc
 
 
 @validate.register((DropConnectPredictor, DropoutPredictor))
@@ -224,18 +226,21 @@ def validate_cross_entropy(
     device: torch.device,
     amp_enabled: bool = False,
     **kwargs: Any,  # noqa: ANN401, ARG001
-) -> float:
+) -> tuple[float, float]:
     """Validate a dropout/dropconnect predictor with cross-entropy loss."""
     criterion = nn.CrossEntropyLoss()
     model.eval()  # ty: ignore[unresolved-attribute]
     val_loss = 0.0
+    val_acc = 0.0
     for inputs_, targets_ in val_loader:
         inputs, targets = inputs_.to(device), targets_.to(device)
         with autocast(device.type, enabled=amp_enabled):
             outputs = model(inputs)  # ty: ignore[call-non-callable]
             val_loss += criterion(outputs, targets).item()
+            val_acc += _accuracy(outputs, targets)
     val_loss /= len(val_loader)
-    return val_loss
+    val_acc /= len(val_loader)
+    return val_loss, val_acc
 
 
 @validate.register(PosteriorNetworkPredictor)
@@ -247,17 +252,20 @@ def _(
     amp_enabled: bool = False,
     entropy_weight: float = 1e-5,
     **kwargs: Any,  # noqa: ANN401, ARG001
-) -> float:
+) -> tuple[float, float]:
     """Validate a posterior network with the PostNet loss."""
     model.eval()
     val_loss = 0.0
+    val_acc = 0.0
     for inputs_, targets_ in val_loader:
         inputs, targets = inputs_.to(device), targets_.to(device)
         with autocast(device.type, enabled=amp_enabled):
             alpha = model(inputs)
             val_loss += postnet_loss(alpha, targets, entropy_weight=entropy_weight).item()
+            val_acc += _accuracy(alpha, targets)
     val_loss /= len(val_loader)
-    return val_loss
+    val_acc /= len(val_loader)
+    return val_loss, val_acc
 
 
 @validate.register(DDUPredictor)
@@ -268,20 +276,23 @@ def validate_ddu(
     device: torch.device,
     amp_enabled: bool = False,
     **kwargs: Any,  # noqa: ANN401, ARG001
-) -> float:
+) -> tuple[float, float]:
     """Validate a DDU predictor with cross-entropy loss on the classification logits."""
     model_ = cast("Any", model)
     criterion = nn.CrossEntropyLoss()
     model_.eval()
     val_loss = 0.0
+    val_acc = 0.0
     for inputs_, targets_ in val_loader:
         inputs, targets = inputs_.to(device), targets_.to(device)
         with autocast(device.type, enabled=amp_enabled):
             features = model_.encoder(inputs)
             logits = model_.classification_head(features)
             val_loss += criterion(logits, targets).item()
+            val_acc += _accuracy(logits, targets)
     val_loss /= len(val_loader)
-    return val_loss
+    val_acc /= len(val_loader)
+    return val_loss, val_acc
 
 
 @lazydispatch
