@@ -11,6 +11,8 @@ from lazy_dispatch.registry_meta import (
 )
 from lazy_dispatch.singledispatch import Lazydispatch, is_valid_dispatch_type, lazydispatch
 
+from . import registry_pickle
+
 __all__ = [
     "LazyType",
     "Lazydispatch",
@@ -25,4 +27,5 @@ __all__ = [
     "lazy_isinstance",
     "lazy_issubclass",
     "lazydispatch",
+    "registry_pickle",
 ]
