@@ -20,8 +20,8 @@ from __future__ import annotations
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.datasets import load_diabetes
-from sklearn.model_selection import train_test_split
-from sklearn.tree import DecisionTreeRegressor
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.model_selection import KFold, train_test_split
 
 from probly.calibrator import calibrate
 from probly.metrics._common import average_interval_size, empirical_coverage_regression
@@ -40,7 +40,7 @@ X_train, X_calib, y_train, y_calib = train_test_split(X_train, y_train, test_siz
 # Build and train the model
 # -------------------------
 
-model = DecisionTreeRegressor(max_depth=3, random_state=42)
+model = RandomForestRegressor(random_state=42)
 model.fit(X_train, y_train)
 
 # %%
@@ -75,3 +75,24 @@ plt.title("Conformal Regression Intervals — Absolute Error Score (sklearn)")
 plt.legend()
 plt.tight_layout()
 plt.show()
+
+# %%
+# Summary (Averaged over multiple runs)
+# -------
+res = {"Absolute Error": []}
+for fold, (train_idx, test_idx) in enumerate(KFold(n_splits=5, shuffle=True, random_state=42).split(X)):
+    X_train, y_train = X[train_idx], y[train_idx]
+    X_test, y_test = X[test_idx], y[test_idx]
+    X_train, X_calib, y_train, y_calib = train_test_split(X_train, y_train, test_size=0.25, random_state=fold)
+
+    fold_model = RandomForestRegressor(max_depth=3, random_state=fold)
+    fold_model.fit(X_train, y_train)
+    calibrated_model = calibrate(conformal_absolute_error(fold_model), 0.05, y_calib, X_calib)
+    output = representer(calibrated_model).predict(X_test)
+    cov = empirical_coverage_regression(output, y_test)
+    size = average_interval_size(output)
+    res["Absolute Error"].append((cov, size))
+
+for name, vals in res.items():
+    covs, sizes = zip(*vals)
+    print(f"{name} — coverage: {np.mean(covs):.3f} ± {np.std(covs):.3f}, avg interval size: {np.mean(sizes):.1f} ± {np.std(sizes):.1f}")
