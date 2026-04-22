@@ -11,7 +11,7 @@ from probly.representation.credal_set import (
     create_probability_intervals_from_lower_upper_array,
 )
 from probly.traverse_nn import nn_compose
-from pytraverse import TRAVERSE_REVERSED, GlobalVariable, lazydispatch_traverser, traverse
+from pytraverse import TRAVERSE_REVERSED, GlobalVariable, flexdispatch_traverser, traverse
 
 
 @runtime_checkable
@@ -21,7 +21,7 @@ class CredalNetPredictor[**In, Out: ProbabilityIntervalsCredalSet](Representatio
 
 REPLACED = GlobalVariable[bool]("REPLACED", default=False)
 
-credal_net_traverser = lazydispatch_traverser[object](name="credal_net_traverser")
+credal_net_traverser = flexdispatch_traverser[object](name="credal_net_traverser")
 
 
 @predictor_transformation(

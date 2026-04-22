@@ -6,7 +6,7 @@ from collections.abc import Callable, Iterable
 from contextvars import ContextVar
 from typing import Any, ClassVar, Literal, Protocol, runtime_checkable
 
-from lazy_dispatch import ProtocolRegistry, lazydispatch
+from flextype import ProtocolRegistry, flexdispatch
 from probly.representation import Representation
 from probly.representation.credal_set import CredalSet, ProbabilityIntervalsCredalSet
 from probly.representation.distribution import (
@@ -141,7 +141,7 @@ class ProbabilityIntervalPredictor[**In, Out: ProbabilityIntervalsCredalSet](Cre
 # Prediction functions
 
 
-@lazydispatch
+@flexdispatch
 def predict_raw[**In, Out](predictor: Predictor[In, Out], /, *args: In.args, **kwargs: In.kwargs) -> Any:  # noqa: ANN401
     """Calls a predictor and returns the result as-is.
 
@@ -161,7 +161,7 @@ def predict_raw[**In, Out](predictor: Predictor[In, Out], /, *args: In.args, **k
     raise NotImplementedError(msg)
 
 
-@lazydispatch
+@flexdispatch
 def predict[**In, Out](predictor: Predictor[In, Out], /, *args: In.args, **kwargs: In.kwargs) -> Out:
     """Calls a predictor via `predict_raw` and returns the result as specified in the predictor's signature.
 

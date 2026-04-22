@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import numpy as np
 
-from lazy_dispatch import lazydispatch
+from flextype import flexdispatch
 from probly.representation.array_like import ArrayLike
 
 
-@lazydispatch
+@flexdispatch
 def uacqr_score[T](y_pred: T, y_true: T) -> T:
     """Compute the UACQR nonconformity score.
 

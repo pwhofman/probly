@@ -6,7 +6,7 @@ import io
 import pickle
 from typing import TYPE_CHECKING, Any, cast
 
-from lazy_dispatch.registry_meta import RegistryMeta, iter_registry_classes
+from flextype.registry_meta import RegistryMeta, iter_registry_classes
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     type _StateSetter = Callable[[object, object], Any]
 
 
-_REGISTRY_STATE_MARKER = "lazy_dispatch.registry_pickle.state.v1"
+_REGISTRY_STATE_MARKER = "flextype.registry_pickle.state.v1"
 
 
 def _collect_explicit_registry_classes(instance: object) -> list[RegistryMeta[Any]]:

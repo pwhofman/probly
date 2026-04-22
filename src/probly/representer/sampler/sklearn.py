@@ -9,7 +9,7 @@ from sklearn.base import BaseEstimator
 from ._common import sampling_preparation_traverser
 
 if TYPE_CHECKING:
-    from lazy_dispatch.isinstance import LazyType
+    from flextype.isinstance import LazyType
     from pytraverse import State
 
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
-from lazy_dispatch import lazydispatch
+from flextype import flexdispatch
 from probly.method.ensemble import EnsemblePredictor
 from probly.method.method import predictor_transformation
 
@@ -21,7 +21,7 @@ class SubensemblePredictor[**In, Out](EnsemblePredictor[In, Out], Protocol):
         return super().__instancehook__(instance)
 
 
-@lazydispatch
+@flexdispatch
 def subensemble_generator[**In, H, Out](
     base: Predictor[In, H],
     *args: Any,  # noqa: ANN401

@@ -5,7 +5,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, final, override
 
-from lazy_dispatch import lazydispatch
+from flextype import flexdispatch
 from probly.predictor import RepresentationPredictor, predict
 from probly.representation import Representation
 
@@ -61,7 +61,7 @@ class DummyRepresenter[**In, Out: Representation](Representer[Any, In, Out, Out]
         return predict(self.predictor, *args, **kwargs)
 
 
-@lazydispatch
+@flexdispatch
 def representer[**CtrIn, **In, Out, R: Representation](
     predictor: Predictor[In, Out], *args: CtrIn.args, **kwargs: CtrIn.kwargs
 ) -> Representer[CtrIn, In, Out, R]:

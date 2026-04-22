@@ -5,7 +5,7 @@ from __future__ import annotations
 from abc import ABC
 from typing import TYPE_CHECKING, Any, Protocol, Self, cast, runtime_checkable
 
-from lazy_dispatch import lazydispatch
+from flextype import flexdispatch
 from probly.calibrator._common import Calibrator
 from probly.conformal_scores import (
     APSScore,
@@ -148,7 +148,7 @@ class _ConformalPredictorBase[**In, Out](ABC):
         return self
 
 
-@lazydispatch
+@flexdispatch
 def calibrated_state(_: object) -> tuple[float, NonConformityScore[Any, Any]]:
     msg = "Predictor is not a conformal predictor or is not calibrated."
     raise ValueError(msg)
@@ -248,7 +248,7 @@ def predict_uacqr_conformal_set[**In, T](
     return create_interval_conformal_set(lower, upper)
 
 
-@lazydispatch
+@flexdispatch
 def conformal_generator[**In, T, Out](
     base: Predictor[In, Out],
     non_conformity_score: NonConformityScore[Out, T],

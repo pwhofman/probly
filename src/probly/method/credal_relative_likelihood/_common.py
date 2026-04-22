@@ -8,7 +8,7 @@ from probly.method.ensemble import EnsemblePredictor, register_ensemble_members
 from probly.method.method import predictor_transformation
 from probly.predictor import ProbabilisticClassifier
 from probly.traverse_nn import nn_compose, reset_traverser
-from pytraverse import TRAVERSE_REVERSED, GlobalVariable, lazydispatch_traverser, traverse
+from pytraverse import TRAVERSE_REVERSED, GlobalVariable, flexdispatch_traverser, traverse
 
 if TYPE_CHECKING:
     from probly.predictor import Predictor
@@ -23,7 +23,7 @@ RESET_PARAMS = GlobalVariable[bool]("RESET_PARAMS", default=True)
 BIAS_CLS = GlobalVariable[int]("BIAS_CLS", default=0)
 TOBIAS_VALUE = GlobalVariable[int]("TOBIAS_VALUE", default=100)
 
-credal_relative_likelihood_traverser = lazydispatch_traverser[object](name="credal_relative_likelihood_traverser")
+credal_relative_likelihood_traverser = flexdispatch_traverser[object](name="credal_relative_likelihood_traverser")
 
 
 @predictor_transformation(

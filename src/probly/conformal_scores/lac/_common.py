@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import numpy as np
 
-from lazy_dispatch import lazydispatch
+from flextype import flexdispatch
 from probly.representation.distribution import ArrayCategoricalDistribution
 from probly.representation.sample.array import ArraySample
 
 
-@lazydispatch
+@flexdispatch
 def lac_score[T](probs: T, y_cal: T | None = None) -> T:
     """Compute the LAC nonconformity score."""
     msg = "LAC score computation not implemented for this type."

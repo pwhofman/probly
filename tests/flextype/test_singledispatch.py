@@ -8,8 +8,8 @@ from functools import singledispatch as functools_singledispatch
 
 import pytest
 
-from lazy_dispatch.registry_meta import RegistryMeta
-from lazy_dispatch.singledispatch import lazydispatch
+from flextype.registry_meta import RegistryMeta
+from flextype.singledispatch import flexdispatch
 
 
 def _assert_same_dispatch_result(
@@ -53,7 +53,7 @@ class TestFunctorParity:
             del value
             return "dog"
 
-        @lazydispatch
+        @flexdispatch
         def got(value: object) -> str:
             del value
             return "object"
@@ -83,7 +83,7 @@ class TestFunctorParity:
             del value
             return "int"
 
-        @lazydispatch
+        @flexdispatch
         def got(value: object) -> str:
             del value
             return "object"
@@ -107,7 +107,7 @@ class TestFunctorParity:
             del value
             return "number_or_text"
 
-        @lazydispatch
+        @flexdispatch
         def got(value: object) -> str:
             del value
             return "object"
@@ -154,7 +154,7 @@ class TestFunctorParity:
             del value
             return "B"
 
-        @lazydispatch
+        @flexdispatch
         def got(value: object) -> str:
             del value
             return "object"
@@ -180,7 +180,7 @@ class TestAnnotationParsing:
     """Behavior controlled by parse_annotations."""
 
     def test_parse_annotations_true_resolves_string_annotations_eagerly(self) -> None:
-        @lazydispatch(parse_annotations=True)
+        @flexdispatch(parse_annotations=True)
         def f(value: object) -> str:
             del value
             return "object"
@@ -195,7 +195,7 @@ class TestAnnotationParsing:
         assert f.string_registry == {}
 
     def test_parse_annotations_false_keeps_string_annotations_lazy(self) -> None:
-        @lazydispatch(parse_annotations=False)
+        @flexdispatch(parse_annotations=False)
         def f(value: object) -> str:
             del value
             return "object"
@@ -210,7 +210,7 @@ class TestAnnotationParsing:
         assert f.string_registry == {}
 
     def test_parse_annotations_true_raises_for_unresolvable_forward_ref(self) -> None:
-        @lazydispatch(parse_annotations=True)
+        @flexdispatch(parse_annotations=True)
         def f(value: object) -> str:
             del value
             return "object"
@@ -225,7 +225,7 @@ class TestAnnotationParsing:
             f.register(missing_impl)
 
     def test_parse_annotations_true_is_consistent_for_delayed_register(self) -> None:
-        @lazydispatch(parse_annotations=True)
+        @flexdispatch(parse_annotations=True)
         def f(value: object) -> str:
             del value
             return "object"
@@ -251,7 +251,7 @@ class TestLazyStringRegistration:
 
         type_name = f"{Base.__module__}.{Base.__qualname__}"
 
-        @lazydispatch
+        @flexdispatch
         def f(value: object) -> str:
             del value
             return "object"
@@ -266,7 +266,7 @@ class TestLazyStringRegistration:
         assert f.string_registry == {}
 
     def test_builtin_aliases_use_deterministic_last_registration_wins(self) -> None:
-        @lazydispatch
+        @flexdispatch
         def f(value: object) -> str:
             del value
             return "object"
@@ -286,7 +286,7 @@ class TestLazyStringRegistration:
         assert f(2) == "full"
 
     def test_builtin_aliases_reverse_order_is_also_deterministic(self) -> None:
-        @lazydispatch
+        @flexdispatch
         def f(value: object) -> str:
             del value
             return "object"
@@ -321,7 +321,7 @@ class TestDelayedRegistration:
         class DerivedB(Base):
             pass
 
-        @lazydispatch
+        @flexdispatch
         def f(value: object) -> str:
             del value
             return "object"
@@ -345,7 +345,7 @@ class TestDelayedRegistration:
         class Marker:
             pass
 
-        @lazydispatch
+        @flexdispatch
         def f(value: object) -> str:
             del value
             return "object"
@@ -360,7 +360,7 @@ class TestDelayedRegistration:
     def test_delayed_builtin_aliases_are_deterministic_last_wins(self) -> None:
         calls: list[str] = []
 
-        @lazydispatch
+        @flexdispatch
         def f(value: object) -> str:
             del value
             return "object"
@@ -391,7 +391,7 @@ class TestDelayedRegistration:
     def test_delayed_builtin_aliases_reverse_order_is_deterministic(self) -> None:
         calls: list[str] = []
 
-        @lazydispatch
+        @flexdispatch
         def f(value: object) -> str:
             del value
             return "object"
@@ -433,7 +433,7 @@ class TestRegistryMetaDispatch:
         candidate = Candidate()
         RegistryType.register_instance(candidate)
 
-        @lazydispatch
+        @flexdispatch
         def f(value: object) -> str:
             del value
             return "object"
@@ -459,7 +459,7 @@ class TestRegistryMetaDispatch:
         RegistryBase.register_instance(candidate)
         RegistrySub.register_instance(candidate)
 
-        @lazydispatch
+        @flexdispatch
         def f(value: object) -> str:
             del value
             return "object"
@@ -490,7 +490,7 @@ class TestRegistryMetaDispatch:
         RegistryA.register_instance(candidate)
         RegistryB.register_instance(candidate)
 
-        @lazydispatch
+        @flexdispatch
         def f(value: object) -> str:
             del value
             return "object"
@@ -517,7 +517,7 @@ class TestRegistryMetaDispatch:
 
         concrete = Concrete()
 
-        @lazydispatch
+        @flexdispatch
         def f(value: object) -> str:
             del value
             return "object"
@@ -550,7 +550,7 @@ class TestRegistryMetaDispatch:
         candidate = Candidate()
         RegistryType.register_instance(candidate)
 
-        @lazydispatch
+        @flexdispatch
         def f(value: object) -> str:
             del value
             return "object"
@@ -585,7 +585,7 @@ class TestRegistryMetaDispatch:
         candidate = Candidate()
         RegistryType.register_instance(candidate)
 
-        @lazydispatch
+        @flexdispatch
         def f(value: object) -> str:
             del value
             return "object"
@@ -630,7 +630,7 @@ class TestRegistryMetaDispatch:
             candidate = Candidate()
             RegistryType.register_instance(candidate)
 
-            @lazydispatch
+            @flexdispatch
             def f(value: object) -> str:
                 del value
                 return "object"
@@ -681,7 +681,7 @@ class TestAbcVirtualRegistrationDispatchParity:
             del value
             return "virtual"
 
-        @lazydispatch
+        @flexdispatch
         def got(value: object) -> str:
             del value
             return "object"
@@ -727,7 +727,7 @@ class TestAbcVirtualRegistrationDispatchParity:
             del value
             return "sub"
 
-        @lazydispatch
+        @flexdispatch
         def got(value: object) -> str:
             del value
             return "object"
@@ -777,7 +777,7 @@ class TestAbcVirtualRegistrationDispatchParity:
             del value
             return "right"
 
-        @lazydispatch
+        @flexdispatch
         def got(value: object) -> str:
             del value
             return "object"
@@ -821,7 +821,7 @@ class TestAbcVirtualRegistrationDispatchParity:
             del value
             return "concrete"
 
-        @lazydispatch
+        @flexdispatch
         def got(value: object) -> str:
             del value
             return "object"
@@ -873,7 +873,7 @@ class TestAbcVirtualRegistrationDispatchParity:
             del value
             return "virtual"
 
-        @lazydispatch
+        @flexdispatch
         def got(value: object) -> str:
             del value
             return "object"
@@ -921,7 +921,7 @@ class TestAbcVirtualRegistrationDispatchParity:
                 del value
                 return "object"
 
-            @lazydispatch
+            @flexdispatch
             def got(value: object) -> str:
                 del value
                 return "object"
@@ -984,7 +984,7 @@ class TestSubclassHookDispatchParity:
             del value
             return "foo"
 
-        @lazydispatch
+        @flexdispatch
         def got(value: object) -> str:
             del value
             return "object"
@@ -1038,7 +1038,7 @@ class TestSubclassHookDispatchParity:
             del value
             return "bar"
 
-        @lazydispatch
+        @flexdispatch
         def got(value: object) -> str:
             del value
             return "object"
@@ -1100,7 +1100,7 @@ class TestSubclassHookDispatchParity:
             del value
             return "xy"
 
-        @lazydispatch
+        @flexdispatch
         def got(value: object) -> str:
             del value
             return "object"
@@ -1148,7 +1148,7 @@ class TestSubclassHookDispatchParity:
             del value
             return "hook"
 
-        @lazydispatch
+        @flexdispatch
         def got(value: object) -> str:
             del value
             return "object"
@@ -1174,7 +1174,7 @@ class TestInstanceHookDispatch:
         class Candidate:
             foo = 1
 
-        @lazydispatch
+        @flexdispatch
         def f(value: object) -> str:
             del value
             return "object"
@@ -1201,7 +1201,7 @@ class TestInstanceHookDispatch:
             x = 1
             y = 1
 
-        @lazydispatch
+        @flexdispatch
         def f(value: object) -> str:
             del value
             return "object"
@@ -1233,7 +1233,7 @@ class TestInstanceHookDispatch:
             foo = 1
             bar = 1
 
-        @lazydispatch
+        @flexdispatch
         def f(value: object) -> str:
             del value
             return "object"
@@ -1264,7 +1264,7 @@ class TestInstanceHookDispatch:
         candidate = Candidate()
         HookNotImplementedRegistry.register_instance(candidate)
 
-        @lazydispatch
+        @flexdispatch
         def f(value: object) -> str:
             del value
             return "object"
@@ -1288,7 +1288,7 @@ class TestInstanceHookDispatch:
         class Candidate:
             x = 1
 
-        @lazydispatch
+        @flexdispatch
         def f(value: object) -> str:
             del value
             return "object"
@@ -1312,7 +1312,7 @@ class TestInstanceHookDispatch:
                 cls.calls += 1
                 return isinstance(instance, list)
 
-        @lazydispatch
+        @flexdispatch
         def f(value: object) -> str:
             del value
             return "object"

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Protocol, runtime_checkable
 
-from lazy_dispatch import lazydispatch
+from flextype import flexdispatch
 from probly.method.method import predictor_transformation
 from probly.predictor import LogitClassifier, Predictor, RepresentationPredictor
 from probly.representation.ddu import DDURepresentation
@@ -19,7 +19,7 @@ class DDUPredictor[**In, Out: DDURepresentation](RepresentationPredictor[In, Out
     density_head: Predictor[In, Out]
 
 
-@lazydispatch
+@flexdispatch
 def ddu_generator[**In, Out: DDURepresentation](
     base: Predictor[In, Out],
     sn_coeff: float,
