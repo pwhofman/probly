@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pickle
 
-from lazy_dispatch import registry_pickle
-from lazy_dispatch.registry_meta import RegistryMeta
+from flextype import registry_pickle
+from flextype.registry_meta import RegistryMeta
 
 
 class _RegistryAlpha(metaclass=RegistryMeta):
@@ -26,7 +26,7 @@ class _ExternalPayload:
 
 
 class _SlotsPayload:
-    __slots__ = ("value", "__weakref__")
+    __slots__ = ("__weakref__", "value")
 
     def __init__(self, value: int) -> None:
         self.value = value

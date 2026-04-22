@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from lazy_dispatch import lazydispatch
+from flextype import flexdispatch
 from probly.lazy_types import JAX_ARRAY, TORCH_TENSOR
 
 if TYPE_CHECKING:
@@ -28,7 +28,7 @@ type _AdvancedIndexElement = int | bool | slice | ArrayIndex | EllipsisType
 type _InternalIndexElement = _BasicIndexElement | _AdvancedIndexElement
 
 
-@lazydispatch
+@flexdispatch
 def convert_idx(idx: ToIndex) -> _InternalIndexElement:  # noqa: PLR0911
     """Convert IndexElement to a _InternalIndexElement."""
     if isinstance(idx, slice) or idx is None or idx is Ellipsis:

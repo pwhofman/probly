@@ -6,7 +6,7 @@ from typing import Protocol, runtime_checkable
 
 import pytest
 
-from lazy_dispatch.registry_meta import ProtocolRegistry, ProtocolRegistryMeta, RegistrationError, RegistryMeta
+from flextype.registry_meta import ProtocolRegistry, ProtocolRegistryMeta, RegistrationError, RegistryMeta
 
 
 class TestRegistryMeta:

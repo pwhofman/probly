@@ -8,14 +8,14 @@ import operator
 from typing import TYPE_CHECKING, Any, get_args, overload
 from weakref import WeakKeyDictionary
 
-from lazy_dispatch.isinstance import (
+from flextype.isinstance import (
     LazyType,
     _find_closest_string_type,
     _is_union_type,
     _split_lazy_type,
     lazy_issubclass,
 )
-from lazy_dispatch.registry_meta import RegistryMeta
+from flextype.registry_meta import RegistryMeta
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -39,7 +39,7 @@ def first_argument[T](x: T, *args: Any, **kwargs: Any) -> T:  # noqa: ANN401, AR
     return x
 
 
-class Lazydispatch[**In, Out]:
+class Flexdispatch[**In, Out]:
     """A lazy version of functools.singledispatch that also works with string types."""
 
     __slots__ = (
@@ -199,7 +199,7 @@ class Lazydispatch[**In, Out]:
 
         This method simply delegates to the underlying functools.singledispatch instance.
         Instance-based RegistryMeta types and lazy-string registrations are not supported.
-        To use the full functionality of lazydispatch, use the `register` method instead.
+        To use the full functionality of flexdispatch, use the `register` method instead.
         """
         registry = self._singledispatcher.registry
         old_functions = {t: registry.get(t) for t in types}
@@ -352,33 +352,33 @@ class Lazydispatch[**In, Out]:
 
 
 @overload
-def lazydispatch[**In, Out](
+def flexdispatch[**In, Out](
     func: Callable[In, Out],
     *,
     dispatch_on: Callable = first_argument,
     parse_annotations: bool = True,
-) -> Lazydispatch[In, Out]: ...
+) -> Flexdispatch[In, Out]: ...
 
 
 @overload
-def lazydispatch[**In, Out](
+def flexdispatch[**In, Out](
     *,
     dispatch_on: Callable = first_argument,
     parse_annotations: bool = True,
-) -> Callable[[Callable[In, Out]], Lazydispatch[In, Out]]: ...
+) -> Callable[[Callable[In, Out]], Flexdispatch[In, Out]]: ...
 
 
-def lazydispatch[**In, Out](
+def flexdispatch[**In, Out](
     func: Callable[In, Out] | None = None,
     *,
     dispatch_on: Callable = first_argument,
     parse_annotations: bool = True,
-) -> Lazydispatch[In, Out] | Callable[[Callable[In, Out]], Lazydispatch[In, Out]]:
+) -> Flexdispatch[In, Out] | Callable[[Callable[In, Out]], Flexdispatch[In, Out]]:
     """Create a new lazy_singledispatch or return a decorator."""
     if func is None:
 
-        def decorator(func: Callable[In, Out]) -> Lazydispatch[In, Out]:
-            return Lazydispatch(
+        def decorator(func: Callable[In, Out]) -> Flexdispatch[In, Out]:
+            return Flexdispatch(
                 func,
                 dispatch_on=dispatch_on,
                 parse_annotations=parse_annotations,
@@ -386,7 +386,7 @@ def lazydispatch[**In, Out](
 
         return decorator
 
-    return Lazydispatch(
+    return Flexdispatch(
         func,
         dispatch_on=dispatch_on,
         parse_annotations=parse_annotations,

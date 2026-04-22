@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from pytraverse import lazydispatch_traverser
+from pytraverse import flexdispatch_traverser
 
-reset_traverser = lazydispatch_traverser[object](name="reset_traverser")
+reset_traverser = flexdispatch_traverser[object](name="reset_traverser")
 
 
 @reset_traverser.register

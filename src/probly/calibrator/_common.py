@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import Literal, Protocol, runtime_checkable
 
-from lazy_dispatch import lazydispatch
-from lazy_dispatch.registry_meta import ProtocolRegistry
+from flextype import flexdispatch
+from flextype.registry_meta import ProtocolRegistry
 
 type CalibratorName = Literal[
     "conformal_calibrator",
@@ -26,7 +26,7 @@ class Calibrator[**In, Out](ProtocolRegistry, Protocol, structural_checking=Fals
         return NotImplemented
 
 
-@lazydispatch
+@flexdispatch
 def calibrate[**In, Out](
     predictor: Calibrator[In, Out],
     alpha: float,

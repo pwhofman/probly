@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
-from lazy_dispatch import lazydispatch
+from flextype import flexdispatch
 from probly.method.method import predictor_transformation
 from probly.predictor import EvidentialPredictor, predict, predict_raw
 from probly.representation.distribution import DirichletDistribution, create_dirichlet_distribution_from_alphas
@@ -18,7 +18,7 @@ class PosteriorNetworkPredictor[**In, Out: DirichletDistribution](EvidentialPred
     """Protocol for posterior network predictors."""
 
 
-@lazydispatch
+@flexdispatch
 def posterior_network_generator[**In, Out: DirichletDistribution](
     encoder: Predictor[In, Out], latent_dim: int, num_classes: int, class_counts: list | None = None, num_flows: int = 6
 ) -> PosteriorNetworkPredictor[In, Out]:

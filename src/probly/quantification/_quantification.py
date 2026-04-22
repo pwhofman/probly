@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Protocol
 
-from lazy_dispatch import lazydispatch
+from flextype import flexdispatch
 
 if TYPE_CHECKING:
     from probly.representation.representation import Representation
@@ -21,7 +21,7 @@ class Quantifier[R: Representation, Q: QuantificationResult](Protocol):
         """Quantify the uncertainty of a given representation."""
 
 
-@lazydispatch
+@flexdispatch
 def quantify(representation: Representation, *args: Any, **kwargs: Any) -> QuantificationResult:  # noqa: ANN401
     """Generic quantify function."""
     msg = f"No quantify function registered for type {type(representation)}"

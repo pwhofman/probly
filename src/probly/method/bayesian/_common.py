@@ -7,10 +7,10 @@ from typing import TYPE_CHECKING, Protocol
 from probly.method.method import predictor_transformation
 from probly.predictor import RandomPredictor
 from probly.traverse_nn import nn_compose
-from pytraverse import CLONE, GlobalVariable, lazydispatch_traverser, traverse
+from pytraverse import CLONE, GlobalVariable, flexdispatch_traverser, traverse
 
 if TYPE_CHECKING:
-    from lazy_dispatch.isinstance import LazyType
+    from flextype.isinstance import LazyType
     from probly.predictor import Predictor
     from pytraverse.composition import RegisteredLooseTraverser
 
@@ -24,7 +24,7 @@ POSTERIOR_STD = GlobalVariable[float]("POSTERIOR_STD", default=0.05)
 PRIOR_MEAN = GlobalVariable[float]("PRIOR_MEAN", default=0.0)
 PRIOR_STD = GlobalVariable[float]("PRIOR_STD", default=1.0)
 
-bayesian_traverser = lazydispatch_traverser[object](name="bayesian_traverser")
+bayesian_traverser = flexdispatch_traverser[object](name="bayesian_traverser")
 
 
 def register(cls: LazyType, traverser: RegisteredLooseTraverser) -> None:

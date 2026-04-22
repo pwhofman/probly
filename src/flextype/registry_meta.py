@@ -7,12 +7,12 @@ import functools
 from typing import TYPE_CHECKING, Any, Protocol, is_protocol, runtime_checkable
 from weakref import WeakSet
 
-from lazy_dispatch.isinstance import _find_closest_string_type, _split_lazy_type
+from flextype.isinstance import _find_closest_string_type, _split_lazy_type
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from lazy_dispatch import LazyType
+    from flextype import LazyType
 
 EXCLUDED_ATTRS = frozenset(
     {

@@ -14,7 +14,7 @@ from probly.utils.iterable import first_element
 if TYPE_CHECKING:
     from probly.representation.sample import Sample
 
-from lazy_dispatch import lazydispatch
+from flextype import flexdispatch
 from probly.method.credal_ensembling import CredalEnsemblingPredictor
 from probly.predictor import predict
 from probly.representation.credal_set._common import ConvexCredalSet, ProbabilityIntervalsCredalSet
@@ -22,7 +22,7 @@ from probly.representation.distribution import CategoricalDistribution
 from probly.representer._representer import Representer, representer
 
 
-@lazydispatch(dispatch_on=first_element)
+@flexdispatch(dispatch_on=first_element)
 def compute_credal_ensembling_set[T: CategoricalDistribution](
     sample: Sample[T], alpha: float, distance: str
 ) -> Sample[T]:
@@ -31,7 +31,7 @@ def compute_credal_ensembling_set[T: CategoricalDistribution](
     raise NotImplementedError(msg)
 
 
-@lazydispatch(dispatch_on=first_element)
+@flexdispatch(dispatch_on=first_element)
 def compute_credal_net_set[T: CategoricalDistribution](sample: Sample[T]) -> Sample[T]:
     """Compute the credal set from the ensemble predictions."""
     msg = f"compute_credal_net_set method not implemented for type {type(sample)}."

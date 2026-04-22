@@ -5,7 +5,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Literal, Protocol, Self, TypedDict, Unpack
 
-from lazy_dispatch import Lazydispatch, lazydispatch
+from flextype import Flexdispatch, flexdispatch
 from probly.representation.representation import Representation
 from probly.utils.iterable import first_element
 
@@ -139,7 +139,7 @@ class ListSample[T](list[T], Sample[T]):
         return type(self)(self + list(other.samples))
 
 
-create_sample: Lazydispatch[Any, Sample] = lazydispatch(
+create_sample: Flexdispatch[Any, Sample] = flexdispatch(
     ListSample.from_iterable,
     dispatch_on=first_element,
 )

@@ -4,16 +4,16 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from lazy_dispatch import lazydispatch
+from flextype import flexdispatch
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from lazy_dispatch.isinstance import LazyType
+    from flextype.isinstance import LazyType
     from probly.predictor import Predictor
 
 
-@lazydispatch
+@flexdispatch
 def evidential_classification_appender[**In, Out](base: Predictor[In, Out]) -> Predictor[In, Out]:
     """Append an evidential classification activation function to a base model."""
     msg = f"No evidential classification appender registered for type {type(base)}"

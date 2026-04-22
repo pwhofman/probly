@@ -5,7 +5,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Literal, Self
 
-from lazy_dispatch import lazydispatch
+from flextype import flexdispatch
 from probly.representation.representation import Representation
 
 if TYPE_CHECKING:
@@ -55,14 +55,14 @@ def dispatch_on_sample(sample: Sample, **_kwargs: object) -> object:
         return None
 
 
-@lazydispatch
+@flexdispatch
 def create_onehot_conformal_set(sample: Sample) -> OneHotConformalSet:
     """Create a one-hot conformal set from a sample."""
     msg = "One-hot conformal set creation not implemented for this type."
     raise NotImplementedError(msg)
 
 
-@lazydispatch
+@flexdispatch
 def create_interval_conformal_set(lower_bound: Sample, upper_bound: Sample) -> IntervalConformalSet:
     """Create an interval conformal set from lower and upper bound samples."""
     msg = "Interval conformal set creation not implemented for this type."

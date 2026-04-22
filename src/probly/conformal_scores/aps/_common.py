@@ -7,11 +7,11 @@ from typing import Any
 
 import numpy as np
 
-from lazy_dispatch import lazydispatch
+from flextype import flexdispatch
 from probly.representation.array_like import ArrayLike
 
 
-@lazydispatch
+@flexdispatch
 def _aps_score_dispatch[T](probs: T, y_cal: T | None = None, randomized: bool = True) -> T:
     """Compute the APS nonconformity score."""
     msg = "APS score computation not implemented for this type."

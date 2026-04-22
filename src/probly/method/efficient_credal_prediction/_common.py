@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
-from lazy_dispatch import lazydispatch
+from flextype import flexdispatch
 from probly.method.method import predictor_transformation
 from probly.predictor import LogitClassifier, RepresentationPredictor, predict, predict_raw
 from probly.representation.credal_set import ProbabilityIntervalsCredalSet, create_probability_intervals_from_bounds
@@ -31,7 +31,7 @@ class EfficientCredalPredictor[**In, Out: ProbabilityIntervalsCredalSet](Represe
         return self.upper
 
 
-@lazydispatch
+@flexdispatch
 def efficient_credal_prediction_generator[**In, Out: ProbabilityIntervalsCredalSet](
     base: Predictor,
     num_classes: int,
