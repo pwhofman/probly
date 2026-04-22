@@ -159,6 +159,7 @@ def parse_args() -> argparse.Namespace:
         default=0.0,
         help="Use relaxed convex-hull coverage with this non-negative epsilon. Default 0 uses strict coverage.",
     )
+    parser.add_argument("--latex-table", action="store_true", help="Print additional LaTeX table of results.")
     args = parser.parse_args()
     if args.convex_hull_epsilon < 0:
         parser.error("--convex-hull-epsilon must be non-negative")
@@ -191,7 +192,8 @@ def main():
         )
 
     print()
-    print(get_latex_table(run_dir, convex_hull_epsilon=args.convex_hull_epsilon))
+    if args.latex_table:
+        print(get_latex_table(run_dir, convex_hull_epsilon=args.convex_hull_epsilon))
 
 
 if __name__ == "__main__":

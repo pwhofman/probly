@@ -4,7 +4,7 @@ from pathlib import Path
 
 import torch
 
-from first_order_data.image_entmax_pipeline_simple import (
+from first_order_data.dcic_ensemble_pipeline import (
     DEFAULT_ENCODERS,
     EntmaxImageExperimentConfig,
     build_run_name,

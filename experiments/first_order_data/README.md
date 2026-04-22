@@ -4,20 +4,18 @@
 
 | Dataset       |  size | classes | avg. entropy | type                                                                | input size |
 | ------------- | ----: | ------: | -----------: | ------------------------------------------------------------------- | :--------: |
-| benthic       |  4867 |       8 |        0.340 | images from the seafloor and consists of underwater flora and fauna |  112x112   |
-| cifar-10h     | 10000 |      10 |        0.154 | reannotated variant of the original CIFAR-10 test set               |   32x32    |
+| Benthic       |  4867 |       8 |        0.340 | images from the seafloor and consists of underwater flora and fauna |  112x112   |
+| CIFAR-10H     | 10000 |      10 |        0.154 | reannotated variant of the original CIFAR-10 test set               |   32x32    |
 | MiceBone      |  7240 |       4 |        0.319 | Second-Harmonic-Generation images of collagen fibers                |  224x224   |
-| pig           | 10237 |       4 |        0.735 | tail images form european farms                                     |   96x96    |
-| plankton      | 12280 |      10 |        0.163 | underwater plankton images                                          |   96x96    |
-| qualityMRI    |   310 |       2 |        0.556 | MRI images                                                          |  224x224   |
-| synthetic     | 15000 |       6 |        0.584 | images that contain 1 colored circle on a black background          |  224x224   |
+| Pig           | 10237 |       4 |        0.735 | tail images form european farms                                     |   96x96    |
+| Plankton      | 12280 |      10 |        0.163 | underwater plankton images                                          |   96x96    |
+| QualityMRI    |   310 |       2 |        0.556 | MRI images                                                          |  224x224   |
+| Synthetic     | 15000 |       6 |        0.584 | images that contain 1 colored circle on a black background          |  224x224   |
 | TreeVersity#1 |  9489 |       6 |        0.266 | plant images, single label per image                                |  224x224   |
 | TreeVersity#6 |  9826 |       6 |        0.742 | plant images, possibly multiple labels per image                    |  224x224   |
-| turkey        |  8040 |       3 |        0.196 | images of turkeys and their injuries                                |  192x192   |
+| Turkey        |  8040 |       3 |        0.196 | images of turkeys and their injuries                                |  192x192   |
 
 
-
-(Config for Mean Cross Entropy: resnet18, 5 Fold CV mean, frozen encoder weights, 10 epochs)
 
 Image datasets should be stored under [data/image](data/image). Used datasets can be downloaded here: https://zenodo.org/records/8115942
 
@@ -109,11 +107,12 @@ Turkey consists of images of turkeys and their injuries. The task is to classify
 
 </details>
 
-### Entmax Image Pipeline
+### DCIC Ensemble Pipeline
 
-- Main runner: [run_image_entmax_simple.py](run_image_entmax_simple.py)
-- Main pipeline: [image_entmax_pipeline_simple.py](image_entmax_pipeline_simple.py)
-- Results helper: [image_results.py](image_results.py)
+- Main runner: [run_dcic_ensemble.py](run_dcic_ensemble.py)
+- Main pipeline: [dcic_ensemble_pipeline.py](dcic_ensemble_pipeline.py)
+- Results helper: [summarize_dcic_ensemble_results.py](summarize_dcic_ensemble_results.py)
+- Conformal prediction evaluation: [conformal_eval.py](conformal_eval.py)
 
 ### Supported args
 
@@ -142,7 +141,7 @@ Turkey consists of images of turkeys and their injuries. The task is to classify
 
 ### Full Pipeline
 
-run_image_entmax_simple:
+run_dcic_ensemble:
 1. Initialize Argument Parser
 2. Construct config from passed arguments
 3. Create run directory and write config to .json
@@ -150,7 +149,7 @@ run_image_entmax_simple:
 5. Save run result summary for each dataset
 
 
-image_entmax_pipeline_simple, run_dataset_experiment:
+dcic_ensemble_pipeline, run_dataset_experiment:
 1. load class_names + dataset records (load_image_dataset)
 	- Each dataset has an annotations.json, which links an image path to its vote counts, structure: {"record_n": {"annotations": {"image_path": ..., "class_label": ..., "created_at": ...}, ...}, ...}
 	- For each annotation get image path + class label, count number of times a class was voted for a given image path
@@ -194,15 +193,15 @@ image_entmax_pipeline_simple, run_dataset_experiment:
 
 Run one dataset with a `resnet18` ensemble:
 
-    python run_image_entmax_simple.py --dataset CIFAR10H --encoder resnet18 --ensemble-size 5
+    python run_dcic_ensemble.py --dataset CIFAR10H --encoder resnet18 --ensemble-size 5
 
 Fine-tune the full encoder instead of only the head:
 
-    python run_image_entmax_simple.py --dataset Benthic --encoder convnext_tiny --ensemble-size 3 --finetune
+    python run_dcic_ensemble.py --dataset Benthic --encoder convnext_tiny --ensemble-size 3 --finetune
 
 Run a single held-out fold:
 
-    python run_image_entmax_simple.py --dataset CIFAR10H --encoder resnet18 --ensemble-size 5 --test-fold fold1
+    python run_dcic_ensemble.py --dataset CIFAR10H --encoder resnet18 --ensemble-size 5 --test-fold fold1
 
 ### Outputs
 
@@ -225,7 +224,7 @@ Each exported prediction file contains:
 - per-sample cross entropy
 - target entropy
 
-`image_results.py` reads one run directory and provides:
+`summarize_dcic_ensemble_results.py` reads one run directory and provides:
 
 - `iter_dataset_rows(run_dir)` to iterate row by row over dataset results
 - `get_latex_table(run_dir)` to build a LaTeX table

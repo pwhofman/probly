@@ -6,7 +6,11 @@ import argparse
 from collections.abc import Mapping
 from pathlib import Path
 
-from first_order_data.image_results import UNCERTAINTY_COLUMNS, load_json, load_prediction_csv
+from first_order_data.summarize_dcic_ensemble_results import (
+    UNCERTAINTY_COLUMNS,
+    load_json,
+    load_prediction_csv,
+)
 import numpy as np
 import numpy.typing as npt
 
