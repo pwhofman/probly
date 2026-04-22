@@ -5,7 +5,7 @@ from __future__ import annotations
 from contextlib import suppress
 from functools import reduce, singledispatch, update_wrapper
 import operator
-from typing import TYPE_CHECKING, Any, get_args, overload
+from typing import TYPE_CHECKING, Any, SupportsIndex, get_args, overload, override
 from weakref import WeakKeyDictionary
 
 from flextype.isinstance import (
@@ -37,6 +37,19 @@ def is_valid_dispatch_type(cls: LazyType) -> bool:
 def first_argument[T](x: T, *args: Any, **kwargs: Any) -> T:  # noqa: ANN401, ARG001
     """Return the first argument."""
     return x
+
+
+def _resolve_global(module_name: str, qualname: str) -> object:
+    """Resolve a global object by module + qualname."""
+    import importlib  # noqa: PLC0415
+
+    obj: object = importlib.import_module(module_name)
+    for part in qualname.split("."):
+        if part == "<locals>":
+            msg = f"Can't pickle local object {module_name}.{qualname}"
+            raise AttributeError(msg)
+        obj = getattr(obj, part)
+    return obj
 
 
 class Flexdispatch[**In, Out]:
@@ -349,6 +362,33 @@ class Flexdispatch[**In, Out]:
             dispatch_value.__class__,
             registry_meta_lookup=dispatch_value,
         )(*args, **kwargs)
+
+    @override
+    def __reduce_ex__(self, protocol: SupportsIndex | None = None) -> tuple[object, tuple[str, str]]:
+        """Pickle by global reference, like regular functions."""
+        import pickle  # noqa: PLC0415
+
+        del protocol
+        module_name = getattr(self, "__module__", None)
+        qualname = getattr(self, "__qualname__", None)
+        if not isinstance(module_name, str) or not isinstance(qualname, str):
+            msg = f"Can't pickle {self!r}: missing module/qualname."
+            raise pickle.PicklingError(msg)
+
+        try:
+            resolved = _resolve_global(module_name, qualname)
+        except Exception as err:
+            msg = f"Can't pickle {self!r}: it's not found as {module_name}.{qualname}"
+            raise pickle.PicklingError(msg) from err
+        if resolved is not self:
+            msg = f"Can't pickle {self!r}: it's not the same object as {module_name}.{qualname}"
+            raise pickle.PicklingError(msg)
+        return (_resolve_global, (module_name, qualname))
+
+    @override
+    def __reduce__(self) -> tuple[object, tuple[str, str]]:
+        """Pickle by global reference, like regular functions."""
+        return self.__reduce_ex__()
 
 
 @overload
