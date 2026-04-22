@@ -4,13 +4,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from lazy_dispatch import lazydispatch
+from flextype import flexdispatch
 
 if TYPE_CHECKING:
     from probly.representation import Representation
 
 
-@lazydispatch
+@flexdispatch
 def compute_mean_probs[T](rep: Representation[T]) -> T:
     """Compute the mean softmax probabilities across samples from sampler outputs."""
     msg = f"No mean probs computation registered for type {type(rep)}"

@@ -11,7 +11,7 @@ LAST_OUTPUT_DIM = t.GlobalVariable[int]("LAST_OUTPUT_DIM", default=-1)
 """Global variable tracking the output dim of the most recently visited layer during traversal."""
 
 
-output_dim_traverser = t.lazydispatch_traverser[object](name="output_dim_traverser")
+output_dim_traverser = t.flexdispatch_traverser[object](name="output_dim_traverser")
 """Dispatches on layer type. Registered handlers update :data:`LAST_OUTPUT_DIM` and return the
 layer unchanged. Backend-specific handlers (e.g., for torch ``nn.Linear``/``nn.Conv2d``) are
 registered in the corresponding backend util module."""

@@ -6,12 +6,12 @@ from typing import TYPE_CHECKING
 
 from probly.method.method import predictor_transformation
 from probly.traverse_nn import nn_compose
-from pytraverse import CLONE, GlobalVariable, lazydispatch_traverser, traverse
+from pytraverse import CLONE, GlobalVariable, flexdispatch_traverser, traverse
 
 if TYPE_CHECKING:
     from flax.nnx.rnglib import Rngs
 
-    from lazy_dispatch.isinstance import LazyType
+    from flextype.isinstance import LazyType
     from probly.predictor import Predictor
     from pytraverse.composition import RegisteredLooseTraverser
 
@@ -25,7 +25,7 @@ R_STD = GlobalVariable[float]("R_STD", default=0.01)
 type RNG = Rngs | int
 RNGS = GlobalVariable[RNG]("RNGS", "rngs for flax layer initialization.", default=1)
 
-batchensemble_traverser = lazydispatch_traverser[object](name="batchensemble_traverser")
+batchensemble_traverser = flexdispatch_traverser[object](name="batchensemble_traverser")
 
 
 def register(cls: LazyType, traverser: RegisteredLooseTraverser) -> None:

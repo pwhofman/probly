@@ -6,13 +6,13 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from lazy_dispatch import lazydispatch
+from flextype import flexdispatch
 
 if TYPE_CHECKING:
     from probly.representation.array_like import ArrayLike
 
 
-@lazydispatch
+@flexdispatch
 def cqr_score[T](y_pred: T, y_true: T) -> T:
     """Compute the CQR nonconformity score.
 

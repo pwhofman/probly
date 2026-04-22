@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 
-from lazy_dispatch import lazydispatch
+from flextype import flexdispatch
 from probly.representation.credal_set.array import (
     ArrayCategoricalCredalSet,
     ArrayConvexCredalSet,
@@ -325,11 +325,11 @@ def _draw_intervals_on_spokes(
 
 
 # ---------------------------------------------------------------------------
-# lazydispatch handlers
+# flexdispatch handlers
 # ---------------------------------------------------------------------------
 
 
-@lazydispatch
+@flexdispatch
 def _draw_credal_set_spider(
     data: ArrayCategoricalCredalSet,
     ax: Axes,

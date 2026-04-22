@@ -7,12 +7,12 @@ from typing import Any
 
 import numpy as np
 
-from lazy_dispatch import lazydispatch
+from flextype import flexdispatch
 from probly.representation.distribution import ArrayCategoricalDistribution
 from probly.representation.sample.array import ArraySample
 
 
-@lazydispatch
+@flexdispatch
 def _raps_score_dispatch[T](
     probs: T,
     y_cal: T | None = None,

@@ -4,17 +4,17 @@ from __future__ import annotations
 
 import numpy as np
 
-from lazy_dispatch import lazydispatch
+from flextype import flexdispatch
 
 
-@lazydispatch
+@flexdispatch
 def calculate_quantile[In](scores: In, alpha: float) -> float:
     """Calculate the conformal quantile from nonconformity scores."""
     msg = "Quantile score computation not implemented for this type."
     raise NotImplementedError(msg)
 
 
-@lazydispatch
+@flexdispatch
 def calculate_weighted_quantile[In](values: In, quantile: float, sample_weight: In | None = None) -> In:
     """Calculate a weighted quantile of the given values."""
     msg = "Weighted quantile computation not implemented for this type."
