@@ -169,6 +169,13 @@ class RegistryPickler(pickle.Pickler):
         )
 
 
+# `torch.save`/`torch.load` expects a pickle-like module with these attributes.
+Pickler = RegistryPickler
+Unpickler = pickle.Unpickler
+DEFAULT_PROTOCOL = pickle.DEFAULT_PROTOCOL
+HIGHEST_PROTOCOL = pickle.HIGHEST_PROTOCOL
+
+
 def dump(
     obj: object,
     file: Any,  # noqa: ANN401
