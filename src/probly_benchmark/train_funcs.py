@@ -206,15 +206,17 @@ def _(
     criterion = ELBOLoss()
     model.eval()
     val_loss, val_acc = 0.0, 0.0
+    num_instances = 0
     for inputs_, targets_ in val_loader:
         inputs, targets = inputs_.to(device), targets_.to(device)
         with autocast(device.type, enabled=amp_enabled):
             outputs = model(inputs)
             kl = collect_kl_divergence(model)
             val_loss += criterion(outputs, targets, kl).item()
-            val_acc += _accuracy(outputs, targets)
+            val_acc += _accuracy(outputs, targets) * inputs.shape[0]
+            num_instances += inputs.shape[0]
     val_loss /= len(val_loader)
-    val_acc /= len(val_loader)
+    val_acc /= num_instances
     return val_loss, val_acc
 
 
@@ -232,14 +234,16 @@ def validate_cross_entropy(
     model.eval()  # ty: ignore[unresolved-attribute]
     val_loss = 0.0
     val_acc = 0.0
+    num_instances = 0
     for inputs_, targets_ in val_loader:
         inputs, targets = inputs_.to(device), targets_.to(device)
         with autocast(device.type, enabled=amp_enabled):
             outputs = model(inputs)  # ty: ignore[call-non-callable]
             val_loss += criterion(outputs, targets).item()
-            val_acc += _accuracy(outputs, targets)
+            val_acc += _accuracy(outputs, targets) * inputs.shape[0]
+            num_instances += inputs.shape[0]
     val_loss /= len(val_loader)
-    val_acc /= len(val_loader)
+    val_acc /= num_instances
     return val_loss, val_acc
 
 
@@ -257,14 +261,16 @@ def _(
     model.eval()
     val_loss = 0.0
     val_acc = 0.0
+    num_instances = 0
     for inputs_, targets_ in val_loader:
         inputs, targets = inputs_.to(device), targets_.to(device)
         with autocast(device.type, enabled=amp_enabled):
             alpha = model(inputs)
             val_loss += postnet_loss(alpha, targets, entropy_weight=entropy_weight).item()
-            val_acc += _accuracy(alpha, targets)
+            val_acc += _accuracy(alpha, targets) * inputs.shape[0]
+            num_instances += inputs.shape[0]
     val_loss /= len(val_loader)
-    val_acc /= len(val_loader)
+    val_acc /= num_instances
     return val_loss, val_acc
 
 
@@ -283,15 +289,17 @@ def validate_ddu(
     model_.eval()
     val_loss = 0.0
     val_acc = 0.0
+    num_instances = 0
     for inputs_, targets_ in val_loader:
         inputs, targets = inputs_.to(device), targets_.to(device)
         with autocast(device.type, enabled=amp_enabled):
             features = model_.encoder(inputs)
             logits = model_.classification_head(features)
             val_loss += criterion(logits, targets).item()
-            val_acc += _accuracy(logits, targets)
+            val_acc += _accuracy(logits, targets) * inputs.shape[0]
+            num_instances += inputs.shape[0]
     val_loss /= len(val_loader)
-    val_acc /= len(val_loader)
+    val_acc /= num_instances
     return val_loss, val_acc
 
 
