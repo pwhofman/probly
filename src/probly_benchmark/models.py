@@ -36,7 +36,8 @@ def get_base_model(name: str, num_classes: int, pretrained: bool = False) -> nn.
             model.linear = nn.Identity()
         case "resnet50":
             model = tm.resnet50(weights="DEFAULT" if pretrained else None)
-            model.fc = nn.Linear(model.fc.in_features, num_classes)
+            if model.fc.out_features != num_classes:
+                model.fc = nn.Linear(model.fc.in_features, num_classes)
         case "resnet50_encoder":
             model = tm.resnet50(weights="DEFAULT" if pretrained else None)
             model.fc = nn.Identity()
