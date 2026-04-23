@@ -17,7 +17,7 @@
 
 
 
-Image datasets should be stored under [data/image](data/image). Used datasets can be downloaded here: https://zenodo.org/records/8115942
+Image datasets should be stored under [data/image](data/image). Used datasets can be downloaded here: https://zenodo.org/records/8115942 or directly with the [install_dcic_datasets.py](install_dcic_datasets.py) helper.
 
 <details>
 <summary><strong>Detailed dataset descriptions</strong></summary>
@@ -201,15 +201,15 @@ One run of the runner trains an ensemble for one held-out fold per dataset.
 
 Run one dataset with a `resnet18` ensemble:
 
-    python run_dcic_ensemble.py --dataset CIFAR10H --encoder resnet18 --ensemble-size 5
+    uv run first_order_data/run_dcic_ensemble.py --dataset CIFAR10H --encoder resnet18 --ensemble-size 5
 
 Fine-tune the full encoder instead of only the head:
 
-    python run_dcic_ensemble.py --dataset Benthic --encoder convnext_tiny --ensemble-size 3 --finetune
+    uv run first_order_data/run_dcic_ensemble.py --dataset Benthic --encoder convnext_tiny --ensemble-size 3 --finetune
 
 Run a single held-out fold:
 
-    python run_dcic_ensemble.py --dataset CIFAR10H --encoder resnet18 --ensemble-size 5 --test-fold fold1
+    uv run first_order_data/run_dcic_ensemble.py --dataset CIFAR10H --encoder resnet18 --ensemble-size 5 --test-fold fold1
 
 ### Outputs
 
@@ -236,13 +236,34 @@ Each per-member `predictions.csv` contains:
 `ensemble_predictions.csv` has the same columns plus the ensemble uncertainty columns:
 `total_uncertainty`, `aleatoric_uncertainty`, `epistemic_uncertainty`.
 
-`summarize_dcic_ensemble_results.py` reads one run directory and provides:
+### Results evaluation
 
-- a CLI that prints per-dataset member CE, ensemble CE, credal-set interval coverage, (optionally relaxed) convex-hull coverage, total-variation distance, and mean total / aleatoric / epistemic uncertainty
-- `iter_dataset_rows(run_dir)` to iterate row by row over dataset results
-- `get_latex_table(run_dir)` to build a LaTeX table of the same metrics
+The evaluation scripts use the completed run directories under `out/image/...`.
 
-`conformal_eval.py` uses the cached `ensemble_predictions.csv` files and evaluates conformal
-prediction strategies (LAC / APS / RAPS scores, combined with split / class-conditional /
-Mondrian-by-uncertainty conditioning) over repeated calibration/test splits, reporting hard and
-soft empirical coverage as well as average set size.
+`summarize_dcic_ensemble_results.py` reads a single run directory and provides:
+
+- a CLI summary with per-dataset member cross entropy, ensemble cross entropy, credal-set interval coverage, convex-hull coverage, total-variation distance, and mean total / aleatoric / epistemic uncertainty
+- `iter_dataset_rows(run_dir)` to iterate over dataset-level result rows programmatically
+- `get_latex_table(run_dir)` to render the same metrics as a LaTeX table
+
+From the `experiments/` directory, for example:
+
+```bash
+uv run first_order_data/summarize_dcic_ensemble_results.py \
+  --run-dir out/image/resnet18_softmax_finetune_pretrained_ens25_ep25_bs32_lr0-001_wd0-0001_seed42_test-fold1_alpha-1 \
+  --convex-hull-epsilon 0.01
+```
+
+`conformal_eval.py` uses the cached `ensemble_predictions.csv` files in one run directory and evaluates conformal prediction methods without retraining. It combines LAC / APS / RAPS scores with split, class-conditional, and Mondrian-by-uncertainty conditioning over repeated calibration/test splits, and reports:
+
+- hard empirical coverage against a sampled or argmax hard label
+- soft empirical coverage against the full target distribution
+- average prediction set size
+
+Example:
+
+```bash
+uv run first_order_data/conformal_eval.py \
+  --run-dir out/image/resnet18_softmax_finetune_pretrained_ens25_ep25_bs32_lr0-001_wd0-0001_seed42_test-fold1_alpha-1 \
+  --label-mode sample
+```
