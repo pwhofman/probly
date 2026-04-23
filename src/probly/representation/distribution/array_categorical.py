@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, ClassVar, Unpack, override
+from typing import TYPE_CHECKING, Any, ClassVar, override
 
 import numpy as np
 
@@ -14,10 +14,9 @@ from probly.representation.distribution._common import (
     create_categorical_distribution,
 )
 from probly.representation.sample import ArraySample
-from probly.representation.sample._common import SampleAxis, SampleParams, create_sample
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Iterator
+    from collections.abc import Callable, Iterator
 
 
 @create_categorical_distribution.register(np.ndarray)
@@ -154,17 +153,3 @@ def _create_array_categorical_distribution_from_instance(
     data: ArrayCategoricalDistribution,
 ) -> ArrayCategoricalDistribution:
     return data
-
-
-@create_sample.register(ArrayCategoricalDistribution)
-def _create_array_categorical_distribution_sample(
-    samples: Iterable[ArrayCategoricalDistribution],
-    _sample_axis: SampleAxis = "auto",
-    **_kwargs: Unpack[SampleParams],
-) -> ArrayCategoricalDistributionSample:
-    prob_arrays = [s.unnormalized_probabilities for s in samples]
-    # The last axis of ArrayCategoricalDistribution is protected (class axis),
-    # so the sample axis is always prepended as axis 0.
-    stacked = np.stack(prob_arrays, axis=0)
-    dist = ArrayCategoricalDistribution(unnormalized_probabilities=stacked)
-    return ArrayCategoricalDistributionSample(array=dist, sample_axis=0)

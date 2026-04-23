@@ -21,6 +21,8 @@ EnsemblePredictor.register(
     )
 )
 
+EnsembleCategoricalDistributionPredictor.register(RIVER_ARF)
+
 
 ## Torch
 @ensemble_generator.delayed_register(TORCH_MODULE)

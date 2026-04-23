@@ -86,7 +86,7 @@ class ArraySample[D: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplementation[D
             if sample_axis != 0:
                 samples = np.moveaxis(sample_array, 0, sample_axis)  # ty:ignore[invalid-argument-type]
         else:
-            samples = [to_numpy_array_like(s, dtype=dtype) for s in samples]  # ty:ignore[invalid-assignment]
+            samples = [s if isinstance(s, NumpyArrayLike) else to_numpy_array_like(s, dtype=dtype) for s in samples]  # ty:ignore[invalid-assignment]
             if sample_axis == "auto":
                 if len(samples) == 0:  # ty:ignore[invalid-argument-type]
                     msg = "Cannot infer sample_axis for empty samples."
