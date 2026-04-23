@@ -1,39 +1,18 @@
 defaults:
   - _self_
+  - recipe: ??? # user must specify a recipe.
   - method: ??? # user must specify a method.
 
 seed: 1
-dataset: "imagenet_shards"
-base_model: "resnet50"
-pretrained: True
-epochs: 50
-batch_size: 512
-num_workers: 32
-pin_memory: true
-persistent_workers: true
-prefetch_factor: 4
 wandb:
   enabled: true
   entity: "probly"
   project: "test"
+
 validate : true
+
 # models will always be saved in wandb, but this option controls whether they are also saved to disk
 save_to_disk: false
-
-optimizer:
-    name: "sgd"
-    params:
-        lr: 0.01
-        momentum: 0.9
-        weight_decay: 2e-5
-        fused: true
-
-scheduler:
-  name: "cosine"
-  params: {}
-
-early_stopping:
-  patience: 5  # set to > 0 to enable; number of epochs to wait without improvement
 
 grad_clip_norm: 1.0
 amp: true

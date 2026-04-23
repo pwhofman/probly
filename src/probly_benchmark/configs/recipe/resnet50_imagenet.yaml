@@ -1,0 +1,29 @@
+# @package _global_
+dataset: "imagenet_shards"
+base_model: "resnet50"
+model_type: "logit_classifier"
+pretrained: True
+epochs: 20
+batch_size: 2048
+num_workers: 16
+pin_memory: true
+persistent_workers: true
+prefetch_factor: 4
+
+# hyperparams based on
+# https://arxiv.org/pdf/2110.00476
+optimizer:
+    name: "lamb"
+    params:
+        lr: 5e-3
+        weight_decay: 1e-2
+
+scheduler:
+  name: "warmup_cosine"
+  params:
+    warmup_epochs: 2
+    warmup_start_factor: 0.1  # we start at 10% of optimizer.params.lr
+    min_lr: 1e-6  # lr goes down to 1e-6 at end of training
+
+early_stopping:
+  patience: 0  # set to > 0 to enable; number of epochs to wait without improvement

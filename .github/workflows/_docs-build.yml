@@ -21,7 +21,7 @@ jobs:
         with:
             persist-credentials: false
       - name: Set up Python and uv
-        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78  # v7.0.0
+        uses: astral-sh/setup-uv@cec208311dfd045dd5311c1add060b2062131d57  # v7.0.0
         with:
           python-version: "3.13"
           enable-cache: true
@@ -30,7 +30,7 @@ jobs:
       - name: Build Sphinx documentation
         run: uv run sphinx-build ${{ inputs.strict && '-W' || '' }} -b html docs/source docs/build/html
       - name: Upload docs artifact
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
           name: sphinx-docs
           path: docs/build/html

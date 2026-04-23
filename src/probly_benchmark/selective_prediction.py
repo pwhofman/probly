@@ -6,39 +6,14 @@ from typing import Any
 
 import hydra
 from omegaconf import DictConfig, OmegaConf
-import torch
 import wandb
 
 from probly.evaluation.tasks import selective_prediction
 from probly.quantification import quantify
-from probly.representation.distribution.torch_categorical import (
-    TorchCategoricalDistribution,
-    TorchCategoricalDistributionSample,
-)
+from probly.representation._helpers import compute_mean_probs
 from probly.representer import representer
 from probly_benchmark import data, utils
 from probly_benchmark.utils import load_model_from_wandb, resolve_artifact_name
-
-
-def compute_total_uncertainty(outputs: list[Any]) -> torch.Tensor:
-    """Compute total uncertainty (predictive entropy) from sampler outputs."""
-    all_uncertainties = []
-    for out in outputs:
-        probs = torch.softmax(out.samples, dim=-1)  # (num_samples, batch, n_classes)
-        dist = TorchCategoricalDistribution(probs)
-        dist_sample = TorchCategoricalDistributionSample(tensor=dist, sample_dim=0)
-        decomposition = quantify(dist_sample)
-        all_uncertainties.append(decomposition.total.cpu())  # ty: ignore[unresolved-attribute]
-    return torch.cat(all_uncertainties)
-
-
-def compute_mean_probs(outputs: list[Any]) -> torch.Tensor:
-    """Compute the mean softmax probabilities across samples from sampler outputs."""
-    all_mean_probs = []
-    for out in outputs:
-        probs = torch.softmax(out.samples, dim=-1)  # (num_samples, batch, n_classes)
-        all_mean_probs.append(probs.mean(dim=0).cpu())
-    return torch.cat(all_mean_probs)
 
 
 @hydra.main(version_base=None, config_path="configs/", config_name="selective_prediction")
@@ -59,6 +34,7 @@ def main(cfg: DictConfig) -> None:
         cfg.wandb.project,
         device,
     )
+    print(f"Loaded model {artifact_name} from wandb run: {run_id}")
 
     _, _, test_loader = data.get_data_train(
         cfg.dataset,
@@ -79,9 +55,11 @@ def main(cfg: DictConfig) -> None:
         device,
         cfg.get("amp", False),
     )
+    decomposition = quantify(outputs)
+    uncertainties = decomposition.total.detach().cpu().numpy()  # ty: ignore[unresolved-attribute]
 
-    mean_probs = compute_mean_probs(outputs).numpy()
-    uncertainties = compute_total_uncertainty(outputs).numpy()
+    mean_probs = compute_mean_probs(outputs).cpu().numpy()
+
     labels = targets.numpy()
     loss = (mean_probs.argmax(axis=1) != labels).astype(float)
     auroc, bin_losses = selective_prediction(uncertainties, loss, n_bins=cfg.n_bins)

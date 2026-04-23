@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from lazy_dispatch import lazydispatch
+from flextype import flexdispatch
 from probly.representation.credal_set.array import (
     ArrayCategoricalCredalSet,
     ArrayConvexCredalSet,
@@ -48,7 +48,7 @@ def _draw_polygon(
     ternary_ax.plot(closed[:, 0], closed[:, 1], closed[:, 2], color=color, linewidth=config.line_width)
 
 
-@lazydispatch
+@flexdispatch
 def _draw_credal_set_ternary(
     data: ArrayCategoricalCredalSet,
     ternary_ax: TernaryAxes,

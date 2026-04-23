@@ -6,15 +6,16 @@ from collections.abc import Callable, Iterable
 from typing import Any, Literal, override
 
 from probly.predictor import IterablePredictor, Predictor, RandomPredictor, predict
+from probly.predictor._common import RandomRepresentationPredictor
 from probly.representation.sample import Sample, SampleFactory, create_sample
 from probly.representer._representer import Representer, representer
 from probly.traverse_nn import nn_compose
-from pytraverse import CLONE, GlobalVariable, function_traverser, lazydispatch_traverser, traverse_with_state
+from pytraverse import CLONE, GlobalVariable, flexdispatch_traverser, function_traverser, traverse_with_state
 
 type SamplingStrategy = Literal["sequential"]
 
 
-sampling_preparation_traverser = lazydispatch_traverser[object](name="sampling_preparation_traverser")
+sampling_preparation_traverser = flexdispatch_traverser[object](name="sampling_preparation_traverser")
 
 CLEANUP_FUNCS = GlobalVariable[set[Callable[[], Any]]](name="CLEANUP_FUNCS")
 
@@ -96,7 +97,7 @@ class IterableSampler[**In, Out, S: Sample](Representer[Any, In, Out, S]):
         )
 
 
-@representer.register(RandomPredictor)
+@representer.register(RandomPredictor | RandomRepresentationPredictor)
 class Sampler[**In, Out, S: Sample](IterableSampler[In, Out, S]):
     """A representation predictor that creates representations from finite samples."""
 

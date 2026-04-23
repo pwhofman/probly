@@ -22,7 +22,7 @@ jobs:
                 with:
                     persist-credentials: false
             -   name: Set up Python and uv
-                uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78  # v7.0.0
+                uses: astral-sh/setup-uv@cec208311dfd045dd5311c1add060b2062131d57  # v7.0.0
                 with:
                     python-version: "3.13"
                     enable-cache: true
@@ -39,7 +39,7 @@ jobs:
                 with:
                     persist-credentials: false
             -   name: Set up Python and uv
-                uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78  # v7.0.0
+                uses: astral-sh/setup-uv@cec208311dfd045dd5311c1add060b2062131d57  # v7.0.0
                 with:
                     python-version: "3.13"
                     enable-cache: true
@@ -98,7 +98,7 @@ jobs:
                 with:
                     persist-credentials: false
             -   name: Download all coverage artifacts
-                uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16  # v4
+                uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v4
                 with:
                     pattern: coverage-*
                     path: coverage-reports/
