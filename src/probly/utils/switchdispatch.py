@@ -93,7 +93,7 @@ class switchdispatch[T, **In, Out]:  # noqa: N801
 
         return wrapper
 
-    def __call__(self, arg: object, *args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
+    def __call__(self, arg: T, *args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
         """Call the appropriate function based on the argument."""
         func_impl = self._registry.get(arg, self._func)
         return func_impl(arg, *args, **kwargs)
