@@ -34,13 +34,13 @@ def test_cifar10h(mock_np_load: MagicMock, tmp_path: Path) -> None:
     assert torch.allclose(torch.sum(dataset.targets, dim=1), torch.ones(5))
 
 
-def patch_imagenet_init(self: ImageNet, root: str, split: str, transform: Callable[..., Any]) -> None:  # noqa: ARG001, the init requires these arguments
-    self.samples = [
+def patch_imagenet_init(model: ImageNet, root: str, split: str, transform: Callable[..., Any]) -> None:  # noqa: ARG001, the init requires these arguments
+    model.samples = [
         ("some/path/ILSVRC2012_val_00000001.JPEG", 0),
         ("some/path/ILSVRC2012_val_00000002.JPEG", 1),
         ("some/path/ILSVRC2012_val_00000003.JPEG", 2),
     ]
-    self.classes = [0, 1, 2]
+    model.classes = [0, 1, 2]  # ty:ignore[invalid-assignment]
 
 
 @patch("probly.datasets.torch.torchvision.datasets.ImageNet.__init__", new=patch_imagenet_init)

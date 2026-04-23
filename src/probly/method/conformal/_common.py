@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from abc import ABC
-from typing import TYPE_CHECKING, Any, Protocol, Self, cast, runtime_checkable
+from typing import TYPE_CHECKING, Any, Concatenate, Protocol, Self, cast, runtime_checkable
 
 from flextype import flexdispatch
 from probly.calibrator._common import Calibrator
@@ -44,7 +44,7 @@ if TYPE_CHECKING:
 @runtime_checkable  # ty:ignore[conflicting-metaclass]
 class ConformalSetPredictor[**In, T, Out: ConformalSet](
     RepresentationPredictor[In, Out],
-    Calibrator[In, T],
+    Calibrator[Concatenate[float, Out, In], T],
     Protocol,
 ):
     """Predictor wrapper returning conformal sets."""
