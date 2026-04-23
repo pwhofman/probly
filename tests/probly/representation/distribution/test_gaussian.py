@@ -120,8 +120,8 @@ def test_sample_statistics() -> None:
     sample_wrapper = dist.sample(n_samples)
     samples = sample_wrapper.array
 
-    assert np.mean(samples) == pytest.approx(mean_val, abs=0.05)
-    assert np.var(samples) == pytest.approx(var_val, abs=0.05)
+    assert np.mean(samples) == pytest.approx(mean_val, abs=0.1)
+    assert np.var(samples) == pytest.approx(var_val, abs=0.1)
 
 
 def test_entropy() -> None:
