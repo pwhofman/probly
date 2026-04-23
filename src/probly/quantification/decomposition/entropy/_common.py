@@ -15,6 +15,7 @@ from probly.quantification.measure.distribution import (
 )
 from probly.representation.credal_set import CategoricalCredalSet
 from probly.representation.distribution import DistributionSample, SecondOrderDistribution
+from probly.representation.het_nets._common import HetNetsRepresentation
 
 if TYPE_CHECKING:
     from probly.quantification.measure.distribution import SecondOrderDistributionLike
@@ -74,3 +75,25 @@ class CredalSetEntropyDecomposition[T](AdditiveDecomposition[T, T, T]):
     @property
     def _aleatoric(self) -> T:
         return lower_entropy(self.credal_set)  # ty:ignore[invalid-return-type]
+
+
+@quantify.register(HetNetsRepresentation)
+@dataclass(frozen=True, slots=True)
+class HetNetsDecomposition[T](AdditiveDecomposition[T, T, T]):
+    """Entropy-based decomposition for PyTorch HetNets representations.
+
+    Since HetNets primarily capture aleatoric uncertainty, the epistemic
+    uncertainty is assumed to be zero, and total uncertainty equals aleatoric.
+    """
+
+    representation: HetNetsRepresentation
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "_caching", True)
+        object.__setattr__(self, "_cache", {})
+
+    @override
+    @property
+    def _aleatoric(self) -> T:
+        """The aleatoric uncertainty of the decomposition."""
+        return conditional_entropy(self.representation.distribution)  # ty:ignore[invalid-return-type]
