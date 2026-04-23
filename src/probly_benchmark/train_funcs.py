@@ -17,6 +17,7 @@ from probly.method.credal_wrapper import CredalWrapperPredictor
 from probly.method.ddu import DDUPredictor
 from probly.method.dropconnect import DropConnectPredictor
 from probly.method.dropout import DropoutPredictor
+from probly.method.efficient_credal_prediction import EfficientCredalPredictor
 from probly.method.ensemble import EnsemblePredictor
 from probly.method.evidential.classification import EvidentialClassificationPredictor
 from probly.method.posterior_network import PosteriorNetworkPredictor
@@ -97,7 +98,7 @@ def _(
     return loss.item()
 
 
-@train_epoch.register((DropConnectPredictor, DropoutPredictor))
+@train_epoch.register((DropConnectPredictor, DropoutPredictor, EfficientCredalPredictor))
 def train_epoch_cross_entropy(
     model: Predictor,
     inputs: torch.Tensor,
@@ -287,7 +288,7 @@ def _(
     return val_loss, val_acc
 
 
-@validate.register((DropConnectPredictor, DropoutPredictor))
+@validate.register((DropConnectPredictor, DropoutPredictor, EfficientCredalPredictor))
 @torch.no_grad()
 def validate_cross_entropy(
     model: Predictor,
