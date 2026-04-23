@@ -187,6 +187,7 @@ def test_isotonic_state_dict_roundtrip_restores_calibration_state() -> None:
 
 def test_torch_temperature_scaling_matches_sklearn_on_identity_logits() -> None:
     """Torch and sklearn temperature scaling should produce near-identical calibrated probabilities."""
+    pytest.importorskip("sklearn", minversion="1.8.0")
     true_calib_logits, y_calib = _sample_multiclass_logits(seed=5100, num_samples=7000, num_classes=4)
     true_test_logits, _ = _sample_multiclass_logits(seed=5300, num_samples=4000, num_classes=4)
     x_calib = true_calib_logits * 2.35
@@ -205,6 +206,7 @@ def test_torch_temperature_scaling_matches_sklearn_on_identity_logits() -> None:
 
 def test_torch_platt_scaling_matches_sklearn_on_identity_logits() -> None:
     """Torch and sklearn platt scaling should produce near-identical calibrated binary probabilities."""
+    pytest.importorskip("sklearn")
     true_calib_logits, y_calib = _sample_binary_logits(seed=5500, num_samples=9000)
     true_test_logits, _ = _sample_binary_logits(seed=5700, num_samples=5000)
     x_calib = (true_calib_logits * 2.15 - 0.55).unsqueeze(-1)
@@ -223,6 +225,7 @@ def test_torch_platt_scaling_matches_sklearn_on_identity_logits() -> None:
 
 def test_torch_vector_scaling_matches_sklearn_on_identity_logits() -> None:
     """Torch and sklearn vector scaling should produce near-identical calibrated probabilities."""
+    pytest.importorskip("sklearn")
     scales = torch.tensor([2.1, 0.95, 2.3])
     shifts = torch.tensor([0.15, -0.2, 0.35])
     true_calib_logits, y_calib = _sample_multiclass_logits(seed=5900, num_samples=9000, num_classes=3)
@@ -243,6 +246,7 @@ def test_torch_vector_scaling_matches_sklearn_on_identity_logits() -> None:
 
 def test_torch_isotonic_regression_matches_sklearn_on_identity_logits() -> None:
     """Torch and sklearn isotonic calibration should produce close binary probabilities."""
+    pytest.importorskip("sklearn")
     true_calib_logits, y_calib = _sample_binary_logits(seed=6300, num_samples=9000)
     true_test_logits, _ = _sample_binary_logits(seed=6500, num_samples=5000)
     x_calib = (5.0 * true_calib_logits - 2.0).unsqueeze(-1)

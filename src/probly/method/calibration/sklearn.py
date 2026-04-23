@@ -5,10 +5,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import numpy as np
+from packaging.version import Version
 from scipy.optimize import minimize
-from scipy.special import logsumexp
+from scipy.special import expit, logsumexp
+import sklearn
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.calibration import CalibratedClassifierCV
+from sklearn.frozen import FrozenEstimator
 
 from probly.calibrator import calibrate
 from probly.predictor import LogitClassifier
@@ -49,27 +52,48 @@ class SklearnIdentityLogitEstimator(ClassifierMixin, BaseEstimator):
     """Pass-through sklearn estimator returning provided logits unchanged."""
 
     classes_: np.ndarray
-    n_features_in_: int
+
+    def __init__(self) -> None:
+        """Initialize unfitted state."""
+        super().__init__()
+        self.is_fitted_ = True  # This estimator is always "fitted" since it has no parameters to fit.
 
     def fit(self, x: object, y: object) -> SklearnIdentityLogitEstimator:
-        """Record fitted-state metadata for sklearn compatibility."""
+        """Record fitted-state metadata for sklearn compatibility.
+
+        Normally fit is not needed, since the primary use of this estimator is to pass-through logits from an
+        already-fitted predictor via :meth:`decision_function`.
+
+        The only use of this method is to populate the `classes_` attribute required by :meth:`predict`.
+        """
         logits = np.asarray(x, dtype=float)
         if logits.ndim < 2:
             msg = f"Expected logits with class axis, got shape {logits.shape}."
             raise ValueError(msg)
         labels = np.asarray(y).reshape(-1)
         self.classes_ = np.asarray(np.unique(labels))
-        self.n_features_in_ = int(logits.shape[-1])
         return self
 
     def decision_function(self, x: object) -> np.ndarray:
         """Return input logits unchanged."""
-        return np.asarray(x, dtype=float)
+        logits = np.asarray(x, dtype=float)
+
+        if not hasattr(self, "classes_"):
+            self.classes_ = np.arange(np.maximum(2, logits.shape[-1] if logits.ndim >= 2 else 1))
+
+        return logits
+
+    def predict_proba(self, x: object) -> np.ndarray:
+        """Return probabilities corresponding to input logits."""
+        logits = self.decision_function(x)
+        if logits.ndim < 2:
+            return np.stack([1.0 - expit(logits), expit(logits)], axis=-1)
+        return np.exp(logits - logsumexp(logits, axis=-1, keepdims=True))
 
     def predict(self, x: object) -> np.ndarray:
         """Predict labels by argmax over provided logits."""
         logits = self.decision_function(x)
-        if logits.ndim == 1:
+        if logits.ndim < 2:
             return (logits > 0).astype(int)
         indices = np.argmax(logits, axis=-1)
         return self.classes_[indices]
@@ -261,5 +285,9 @@ def generate_sklearn_scaling_calibrator(
     """Create sklearn scaling calibrators from configuration."""
     if config.method in {"temperature", "platt", "isotonic"}:
         method = "sigmoid" if config.method == "platt" else config.method
-        return CalibratedClassifierCV(estimator=base, method=method)
+        if method == "temperature" and Version(sklearn.__version__) < Version("1.8.0"):
+            msg = "Temperature scaling calibration requires scikit-learn 1.8.0 or later."
+            raise ValueError(msg)
+
+        return CalibratedClassifierCV(estimator=FrozenEstimator(base), method=method)
     return SklearnVectorScalingPredictor(base, num_classes=config.num_classes)

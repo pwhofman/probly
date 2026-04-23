@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import numpy as np
+from packaging.version import Version
 import pytest
 from scipy.special import logsumexp
+import sklearn
 
 from probly.calibrator import calibrate
 from probly.method.calibration import (
@@ -21,6 +23,9 @@ pytest.importorskip("sklearn")
 from sklearn.base import BaseEstimator
 from sklearn.calibration import CalibratedClassifierCV
 from sklearn.linear_model import LogisticRegression
+
+_SKLEARN_TEMP_SCALING_VERSION = "1.8.0"
+_SKLEARN_HAS_NO_TEMP_SCALING = Version(sklearn.__version__) < Version(_SKLEARN_TEMP_SCALING_VERSION)
 
 _SKLEARN_TEMPERATURE_CONFIGS = [1.8, 1.95, 2.1, 2.25, 2.4, 2.55, 2.7, 2.85, 3.0, 3.15]
 
@@ -61,28 +66,22 @@ def _multiclass_nll(logits: np.ndarray, labels: np.ndarray) -> float:
     return float(-np.mean(log_probs[np.arange(flat_labels.size), flat_labels]))
 
 
-def test_temperature_platt_and_isotonic_return_builtin_calibrated_classifier_cv() -> None:
+@pytest.mark.parametrize("method", [temperature_scaling, platt_scaling, isotonic_regression])
+def test_temperature_platt_and_isotonic_return_builtin_calibrated_classifier_cv(method) -> None:
     """Temperature, platt, and isotonic use sklearn's builtin calibration estimator."""
+    if method is temperature_scaling and _SKLEARN_HAS_NO_TEMP_SCALING:
+        pytest.skip("sklearn temperature scaling requires version 1.8.0 or higher")
+
     x, y = _make_binary_data(1)
 
-    temperature = temperature_scaling(LogisticRegression(max_iter=400))
-    platt = platt_scaling(LogisticRegression(max_iter=400))
-    isotonic = isotonic_regression(LogisticRegression(max_iter=400))
+    calibrated_model = method(LogisticRegression(max_iter=400).fit(x, y))
 
-    assert isinstance(temperature, CalibratedClassifierCV)
-    assert isinstance(platt, CalibratedClassifierCV)
-    assert isinstance(isotonic, CalibratedClassifierCV)
+    assert isinstance(calibrated_model, CalibratedClassifierCV)
 
-    calibrated_temperature = calibrate(temperature, y, x)
-    calibrated_platt = calibrate(platt, y, x)
-    calibrated_isotonic = calibrate(isotonic, y, x)
+    post_calibrated_model = calibrate(calibrated_model, y, x)
 
-    assert calibrated_temperature is temperature
-    assert calibrated_platt is platt
-    assert calibrated_isotonic is isotonic
-    assert temperature.predict_proba(x).shape == (len(x), 2)
-    assert platt.predict_proba(x).shape == (len(x), 2)
-    assert isotonic.predict_proba(x).shape == (len(x), 2)
+    assert post_calibrated_model is calibrated_model
+    assert post_calibrated_model.predict_proba(x).shape == (len(x), 2)
 
 
 def test_vector_scaling_wrapper_uses_fit_for_calibration_and_exposes_estimator_alias() -> None:
@@ -195,6 +194,11 @@ def test_sklearn_vector_scaling_improves_heldout_nll_on_synthetic_distorted_logi
     np.testing.assert_allclose(centered_bias, centered_expected_bias, rtol=0.35, atol=0.28)
 
 
+@pytest.mark.xfail(
+    _SKLEARN_HAS_NO_TEMP_SCALING,
+    raises=ValueError,
+    reason="Temperature scaling calibration requires scikit-learn 1.8.0 or later.",
+)
 @pytest.mark.parametrize("scale", _SKLEARN_TEMPERATURE_CONFIGS)
 def test_sklearn_temperature_scaling_builtin_improves_heldout_nll(scale: float) -> None:
     """Builtin sklearn temperature calibration should improve held-out NLL on overconfident logits."""
