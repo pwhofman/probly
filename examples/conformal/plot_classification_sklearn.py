@@ -61,7 +61,7 @@ print(f"LAC  — coverage: {lac_cov:.3f}, avg set size: {lac_size:.3f}")
 # ---------
 # Adaptive Prediction Sets: cumulative sorted probabilities with randomisation.
 
-calibrated_model = calibrate(conformal_aps(model), ALPHA, y_calib, X_calib)
+calibrated_model = calibrate(conformal_aps(model, randomized=True), ALPHA, y_calib, X_calib)
 output = representer(calibrated_model).predict(X_test)
 aps_cov = empirical_coverage_classification(output, y_test)
 aps_size = average_set_size(output)
@@ -72,7 +72,7 @@ print(f"APS  — coverage: {aps_cov:.3f}, avg set size: {aps_size:.3f}")
 # ----------
 # Regularised APS: adds a size penalty to encourage smaller prediction sets.
 
-calibrated_model = calibrate(conformal_raps(model), ALPHA, y_calib, X_calib)
+calibrated_model = calibrate(conformal_raps(model, randomized=True, lambda_reg=0.1, k_reg=0), ALPHA, y_calib, X_calib)
 output = representer(calibrated_model).predict(X_test)
 raps_cov = empirical_coverage_classification(output, y_test)
 raps_size = average_set_size(output)
@@ -83,7 +83,7 @@ print(f"RAPS — coverage: {raps_cov:.3f}, avg set size: {raps_size:.3f}")
 # ----------
 # Sorted APS: penalises gaps between consecutive sorted probabilities.
 
-calibrated_model = calibrate(conformal_saps(model), ALPHA, y_calib, X_calib)
+calibrated_model = calibrate(conformal_saps(model, randomized=True, lambda_val=0.1), ALPHA, y_calib, X_calib)
 output = representer(calibrated_model).predict(X_test)
 saps_cov = empirical_coverage_classification(output, y_test)
 saps_size = average_set_size(output)

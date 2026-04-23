@@ -90,7 +90,7 @@ print(f"LAC  — coverage: {lac_cov:.3f}, avg set size: {lac_size:.3f}")
 # APS score
 # ---------
 
-calibrated_model = calibrate(conformal_aps(model), ALPHA, y_calib_t, X_calib_t)
+calibrated_model = calibrate(conformal_aps(model, randomized=True), ALPHA, y_calib_t, X_calib_t)
 output = representer(calibrated_model).predict(X_test_t)
 aps_cov = empirical_coverage_classification(output, y_test_t)
 aps_size = average_set_size(output)
@@ -100,7 +100,7 @@ print(f"APS  — coverage: {aps_cov:.3f}, avg set size: {aps_size:.3f}")
 # RAPS score
 # ----------
 
-calibrated_model = calibrate(conformal_raps(model), ALPHA, y_calib_t, X_calib_t)
+calibrated_model = calibrate(conformal_raps(model, randomized=True, lambda_reg=0.1, k_reg=0), ALPHA, y_calib_t, X_calib_t)
 output = representer(calibrated_model).predict(X_test_t)
 raps_cov = empirical_coverage_classification(output, y_test_t)
 raps_size = average_set_size(output)
@@ -110,7 +110,7 @@ print(f"RAPS — coverage: {raps_cov:.3f}, avg set size: {raps_size:.3f}")
 # SAPS score
 # ----------
 
-calibrated_model = calibrate(conformal_saps(model), ALPHA, y_calib_t, X_calib_t)
+calibrated_model = calibrate(conformal_saps(model, randomized=True, lambda_val=0.1), ALPHA, y_calib_t, X_calib_t)
 output = representer(calibrated_model).predict(X_test_t)
 saps_cov = empirical_coverage_classification(output, y_test_t)
 saps_size = average_set_size(output)

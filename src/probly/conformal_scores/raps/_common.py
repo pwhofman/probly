@@ -19,7 +19,6 @@ def _raps_score_dispatch[T](
     randomized: bool = True,
     lambda_reg: float = 0.1,
     k_reg: int = 0,
-    epsilon: float = 0.01,
 ) -> T:
     """Compute the RAPS nonconformity score."""
     msg = "RAPS score computation not implemented for this type."
@@ -33,7 +32,6 @@ def compute_raps_score_numpy(
     randomized: bool = True,
     lambda_reg: float = 0.1,
     k_reg: int = 0,
-    epsilon: float = 0.01,
 ) -> np.ndarray:
     """RAPS Nonconformity-Scores for numpy arrays."""
     probs_np = np.asarray(probs, dtype=float)
@@ -57,9 +55,8 @@ def compute_raps_score_numpy(
     # apply regularization: penalize large sets
     ranks = np.arange(1, n_classes + 1, dtype=probs_np.dtype).reshape((1,) * (probs_np.ndim - 1) + (n_classes,))
     penalty = lambda_reg * np.maximum(0, ranks - k_reg - 1)
-    epsilon_penalty = epsilon * np.ones_like(probs_np)
 
-    reg_cumsum = cumsum_probs + penalty + epsilon_penalty
+    reg_cumsum = cumsum_probs + penalty
 
     # sort back to original order
     inv_idx = np.argsort(srt_idx, axis=-1)
@@ -85,7 +82,6 @@ def _(
     randomized: bool = True,
     lambda_reg: float = 0.1,
     k_reg: int = 0,
-    epsilon: float = 0.01,
 ) -> np.ndarray:
     """RAPS Nonconformity-Scores for ArrayCategoricalDistributions."""
     return compute_raps_score_numpy(
@@ -94,7 +90,6 @@ def _(
         randomized=randomized,
         lambda_reg=lambda_reg,
         k_reg=k_reg,
-        epsilon=epsilon,
     )
 
 
@@ -105,7 +100,6 @@ def _(
     randomized: bool = True,
     lambda_reg: float = 0.1,
     k_reg: int = 0,
-    epsilon: float = 0.01,
 ) -> np.ndarray:
     """RAPS Nonconformity-Scores for ArraySamples."""
     return _raps_score_dispatch(
@@ -114,7 +108,6 @@ def _(
         randomized=randomized,
         lambda_reg=lambda_reg,
         k_reg=k_reg,
-        epsilon=epsilon,
     )
 
 
@@ -125,7 +118,6 @@ class RAPSScore:
     randomized: bool = True
     lambda_reg: float = 0.1
     k_reg: int = 0
-    epsilon: float = 0.01
 
     def __call__(self, y_pred: Any, y_true: Any | None = None) -> Any:  # noqa: ANN401
         """Compute RAPS scores with constructor-provided configuration."""
@@ -135,7 +127,6 @@ class RAPSScore:
             randomized=self.randomized,
             lambda_reg=self.lambda_reg,
             k_reg=self.k_reg,
-            epsilon=self.epsilon,
         )
 
 
