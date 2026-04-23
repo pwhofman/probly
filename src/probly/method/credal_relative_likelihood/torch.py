@@ -29,7 +29,8 @@ def _(obj: nn.Module, state: State) -> tuple[nn.Module, State]:
 def _(obj: nn.Linear, state: State) -> tuple[nn.Module, State]:
     """Initialize last linear layer with class bias."""
     if not state[INITIALIZED]:
-        obj.bias.data[(state[BIAS_CLS] - 1) % obj.out_features] = state[TOBIAS_VALUE]
+        if state[BIAS_CLS] > 0:
+            obj.bias.data[(state[BIAS_CLS] - 1) % obj.out_features] = state[TOBIAS_VALUE]
         state[INITIALIZED] = True
     return obj, state
 
