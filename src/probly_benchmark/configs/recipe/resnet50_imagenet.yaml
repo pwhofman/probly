@@ -30,7 +30,9 @@ early_stopping:
   patience: 0  # set to > 0 to enable; number of epochs to wait without improvement
 
 # Params of methods specific to this recipe
-# Ensemble methods
 method:
   params:
+    # Ensemble methods
     reset_params: false
+    # Posterior network
+    latent_dim: 32

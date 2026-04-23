@@ -172,6 +172,8 @@ def _training_loop(
         val_fn: Validation function.
         log_prefix: Prefix for W&B log keys (e.g. ``"member_0/"``).
     """
+    model.forward = torch.compile(model.forward)
+
     optimizer = get_optimizer(
         cfg.optimizer.name,
         model.parameters(),
