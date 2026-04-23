@@ -27,6 +27,7 @@ from probly.method.credal_wrapper import credal_wrapper
 from probly.method.ddu import ddu
 from probly.method.dropconnect import dropconnect
 from probly.method.dropout import dropout
+from probly.method.efficient_credal_prediction import efficient_credal_prediction
 from probly.method.ensemble import ensemble
 from probly.method.posterior_network import posterior_network
 from probly.method.subensemble import subensemble
@@ -48,6 +49,7 @@ METHODS = {
     "credal_ensembling": credal_ensembling,
     "credal_relative_likelihood": credal_relative_likelihood,
     "credal_wrapper": credal_wrapper,
+    "efficient_credal_prediction": efficient_credal_prediction,
     "subensemble": subensemble,
 }
 
