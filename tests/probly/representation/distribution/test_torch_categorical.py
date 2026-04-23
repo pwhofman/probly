@@ -131,6 +131,17 @@ def test_reshape_inserts_before_class_axis() -> None:
     assert reshaped.probabilities.shape == (6, 1, 4)
 
 
+def test_reshape_method_inserts_before_class_axis() -> None:
+    probabilities = torch.arange(24, dtype=torch.float64).reshape((2, 3, 4)) + 1.0
+    dist = TorchCategoricalDistribution(probabilities)
+
+    reshaped = dist.reshape(6, 1)
+
+    assert isinstance(reshaped, TorchCategoricalDistribution)
+    assert reshaped.shape == (6, 1)
+    assert reshaped.probabilities.shape == (6, 1, 4)
+
+
 def test_cat_preserves_distribution_type() -> None:
     probabilities = torch.arange(24, dtype=torch.float64).reshape((2, 3, 4)) + 1.0
     dist = TorchCategoricalDistribution(probabilities)

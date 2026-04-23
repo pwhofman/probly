@@ -13,6 +13,9 @@ from probly.quantification.measure.distribution import (
     conditional_entropy,
     entropy,
     entropy_of_expected_value,
+    expected_max_probability_complement,
+    max_disagreement,
+    max_probability_complement_of_expected,
     mutual_information,
 )
 from probly.representation.distribution.torch_categorical import (
@@ -143,3 +146,76 @@ def test_identity_holds_for_torch_categorical_sample(sample_axis: int, base: Non
 
     rtol, atol = _tol(base)
     assert torch.allclose(expected_entropy, decomposition_sum, rtol=rtol, atol=atol)
+
+
+@pytest.mark.parametrize("sample_axis", [0, 1])
+def test_torch_sample_zero_one_measures_match_manual(sample_axis: int) -> None:
+    base_probabilities = torch.tensor(
+        [
+            [[0.70, 0.20, 0.10], [0.15, 0.35, 0.50]],
+            [[0.60, 0.30, 0.10], [0.20, 0.30, 0.50]],
+            [[0.80, 0.10, 0.10], [0.10, 0.40, 0.50]],
+        ],
+        dtype=torch.float64,
+    )
+    probabilities = torch.moveaxis(base_probabilities, 0, sample_axis)
+    sample = TorchCategoricalDistributionSample(
+        tensor=TorchCategoricalDistribution(probabilities),
+        sample_dim=sample_axis,
+    )
+
+    measured_total = max_probability_complement_of_expected(sample)
+    measured_aleatoric = expected_max_probability_complement(sample)
+    measured_epistemic = max_disagreement(sample)
+
+    expected_mean = torch.mean(probabilities, dim=sample_axis)
+    expected_total = 1.0 - torch.max(expected_mean, dim=-1).values
+    expected_aleatoric = torch.mean(1.0 - torch.max(probabilities, dim=-1).values, dim=sample_axis)
+    bma_argmax = torch.argmax(expected_mean, dim=-1).unsqueeze(sample_axis).unsqueeze(-1)
+    per_sample_bma_prob = torch.take_along_dim(probabilities, bma_argmax, dim=-1).squeeze(-1)
+    expected_epistemic = torch.mean(torch.max(probabilities, dim=-1).values - per_sample_bma_prob, dim=sample_axis)
+
+    assert torch.allclose(measured_total, expected_total, rtol=1e-12, atol=1e-12)
+    assert torch.allclose(measured_aleatoric, expected_aleatoric, rtol=1e-12, atol=1e-12)
+    assert torch.allclose(measured_epistemic, expected_epistemic, rtol=1e-12, atol=1e-12)
+
+
+def test_torch_sample_zero_one_known_values() -> None:
+    probabilities = torch.tensor(
+        [
+            [0.90, 0.10],
+            [0.20, 0.80],
+        ],
+        dtype=torch.float64,
+    )
+    sample = TorchCategoricalDistributionSample(
+        tensor=TorchCategoricalDistribution(probabilities),
+        sample_dim=0,
+    )
+
+    assert max_probability_complement_of_expected(sample).item() == pytest.approx(0.45, abs=1e-12)
+    assert expected_max_probability_complement(sample).item() == pytest.approx(0.15, abs=1e-12)
+    assert max_disagreement(sample).item() == pytest.approx(0.30, abs=1e-12)
+
+
+@pytest.mark.parametrize("sample_axis", [0, 1])
+def test_zero_one_identity_holds_for_torch_categorical_sample(sample_axis: int) -> None:
+    base_probabilities = torch.tensor(
+        [
+            [[0.70, 0.20, 0.10], [0.15, 0.35, 0.50]],
+            [[0.60, 0.30, 0.10], [0.20, 0.30, 0.50]],
+            [[0.80, 0.10, 0.10], [0.10, 0.40, 0.50]],
+        ],
+        dtype=torch.float64,
+    )
+    probabilities = torch.moveaxis(base_probabilities, 0, sample_axis)
+    sample = TorchCategoricalDistributionSample(
+        tensor=TorchCategoricalDistribution(probabilities),
+        sample_dim=sample_axis,
+    )
+
+    total = max_probability_complement_of_expected(sample)
+    aleatoric = expected_max_probability_complement(sample)
+    epistemic = max_disagreement(sample)
+
+    assert torch.allclose(total, aleatoric + epistemic, rtol=1e-12, atol=1e-12)

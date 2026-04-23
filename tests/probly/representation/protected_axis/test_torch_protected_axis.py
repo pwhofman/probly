@@ -60,6 +60,22 @@ def test_single_field_torch_functions_preserve_type() -> None:
     assert tuple(stacked.tensor.shape) == (2, 2, 3)
 
 
+def test_reshape_method_preserves_protected_axes() -> None:
+    x = SingleTensor(torch.arange(24.0).reshape(2, 3, 4))
+
+    reshaped = x.reshape(6)
+    assert isinstance(reshaped, SingleTensor)
+    assert tuple(reshaped.tensor.shape) == (6, 4)
+    assert reshaped.shape == (6,)
+    assert reshaped.protected_shape == (4,)
+
+    reshaped_with_tuple = x.reshape((1, 6))
+    assert isinstance(reshaped_with_tuple, SingleTensor)
+    assert tuple(reshaped_with_tuple.tensor.shape) == (1, 6, 4)
+    assert reshaped_with_tuple.shape == (1, 6)
+    assert reshaped_with_tuple.protected_shape == (4,)
+
+
 def test_unpermitted_torch_reductions_return_notimplemented() -> None:
     x = SingleTensor(torch.arange(24.0).reshape(2, 3, 4))
 
@@ -96,6 +112,15 @@ def test_multi_field_tensor_conversion_and_cat() -> None:
     assert isinstance(cat, PairTensor)
     assert tuple(cat.first.shape) == (4, 2)
     assert tuple(cat.second.shape) == (4, 2)
+
+
+def test_reshape_method_applies_to_all_fields() -> None:
+    x = PairTensor(torch.arange(6.0).reshape(2, 3), torch.arange(6.0).reshape(2, 3) + 10)
+
+    reshaped = x.reshape(3, 2)
+    assert isinstance(reshaped, PairTensor)
+    assert tuple(reshaped.first.shape) == (3, 2)
+    assert tuple(reshaped.second.shape) == (3, 2)
 
 
 def test_multi_field_index_and_assignment() -> None:

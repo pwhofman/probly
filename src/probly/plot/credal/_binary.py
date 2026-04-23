@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from lazy_dispatch import lazydispatch
+from flextype import flexdispatch
 from probly.representation.credal_set.array import (
     ArrayCategoricalCredalSet,
     ArrayConvexCredalSet,
@@ -78,7 +78,7 @@ def _draw_binary_interval(
     ax.fill_betweenx(y_extent, low, high, color=color, alpha=config.fill_alpha, zorder=2, label=label)
 
 
-@lazydispatch
+@flexdispatch
 def _draw_credal_set_binary(
     data: ArrayCategoricalCredalSet,
     ax: Axes,

@@ -5,7 +5,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Literal, Protocol, Self
 
-from lazy_dispatch import lazydispatch
+from flextype import flexdispatch
 from probly.representation.array_like import ArrayLike
 from probly.representation.distribution import CategoricalDistribution
 from probly.representation.representation import Representation
@@ -77,21 +77,21 @@ class ProbabilityIntervalsFactory[S: Sample, C: ProbabilityIntervalsCredalSet](P
         """Create a probability-interval credal set from a sample."""
 
 
-@lazydispatch
+@flexdispatch
 def create_probability_intervals[T: CategoricalDistribution](sample: Sample[T]) -> ProbabilityIntervalsCredalSet:
     """Create a probability-interval credal set from a sample."""
     msg = f"No probability intervals factory registered for sample type {type(sample)}"
     raise NotImplementedError(msg)
 
 
-@lazydispatch
+@flexdispatch
 def create_convex_credal_set[T: CategoricalDistribution](sample: Sample[T]) -> ConvexCredalSet[T]:
     """Create a convex credal set from a sample."""
     msg = f"No convex credal set factory registered for sample type {type(sample)}"
     raise NotImplementedError(msg)
 
 
-@lazydispatch
+@flexdispatch
 def create_probability_intervals_from_lower_upper_array[T: ArrayLike](
     array: T,
 ) -> ProbabilityIntervalsCredalSet:
@@ -100,7 +100,7 @@ def create_probability_intervals_from_lower_upper_array[T: ArrayLike](
     raise NotImplementedError(msg)
 
 
-@lazydispatch
+@flexdispatch
 def create_probability_intervals_from_bounds[T: ArrayLike](
     array: T,
     lower_bounds: T,
