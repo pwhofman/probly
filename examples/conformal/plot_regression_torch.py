@@ -111,7 +111,7 @@ plt.show()
 
 # %%
 # Summary (Averaged over multiple runs)
-# -------
+# --------------------------------------
 res = {"Absolute Error": []}
 for fold, (train_idx, test_idx) in enumerate(KFold(n_splits=5, shuffle=True, random_state=42).split(X)):
     torch.manual_seed(fold)

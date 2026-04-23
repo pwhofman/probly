@@ -91,7 +91,7 @@ print(f"SAPS — coverage: {saps_cov:.3f}, avg set size: {saps_size:.3f}")
 
 # %%
 # Summary (Averaged over multiple runs)
-# -------
+# --------------------------------------
 res = {
     "LAC": [],
     "APS": [],

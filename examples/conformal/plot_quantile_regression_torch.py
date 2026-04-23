@@ -161,7 +161,7 @@ print(f"CQRr (ensemble) — coverage: {cqrr_cov_ens:.3f}, avg interval size: {cq
 
 # %%
 # Summary (Averaged over multiple runs)
-# -------
+# --------------------------------------
 res = {"CQR": [], "CQRr": [], "UACQR": [], "CQR (ens)": [], "CQRr (ens)": []}
 for fold, (train_idx, test_idx) in enumerate(KFold(n_splits=5, shuffle=True, random_state=42).split(X)):
     torch.manual_seed(fold)
