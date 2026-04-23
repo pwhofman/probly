@@ -66,7 +66,10 @@ jax = [
 sklearn = [
     "scikit-learn>=1.5.2"  # first cp313 wheels
 ]
-all_ml = [{ include-group = "torch" }, { include-group = "jax" }, { include-group = "sklearn" }]
+river = [
+    "river>=0.21"
+]
+all_ml = [{ include-group = "torch" }, { include-group = "jax" }, { include-group = "sklearn" }, { include-group = "river" }]
 test = [
     "pytest>=8.3.5",       # for testing
     "pytest-cov>=6.0.0",   # for coverage
@@ -145,6 +148,8 @@ exclude = [
     "docs/build",
     "supporting_files",
     "examples",
+    "web",
+    "experiments",
     "*.pyi",
 ]
 
@@ -199,6 +204,7 @@ convention = "google"
 ]
 "docs/**/*.py" = ["INP001", "PTH", "I002"]
 "src/probly_benchmark/*.py" = ["T201"]
+"experiments/**/*.py" = ["INP001", "T201", "D103"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 15
@@ -233,7 +239,7 @@ exclude_also = [
 exclude_lines = ["if TYPE_CHECKING"]
 
 [tool.ty.src]
-exclude = ["notebooks", "docs", "supporting_files", "examples", "stubs"]
+exclude = ["notebooks", "docs", "supporting_files", "examples", "experiments", "web", "stubs"]
 
 [tool.ty.environment]
 extra-paths = ["./stubs"]
