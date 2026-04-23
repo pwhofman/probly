@@ -86,6 +86,8 @@ class ArraySample[D: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplementation[D
             if sample_axis != 0:
                 samples = np.moveaxis(sample_array, 0, sample_axis)  # ty:ignore[invalid-argument-type]
         else:
+            # Preserve NumpyArrayLike subtypes (e.g. ArrayGaussianDistribution) so np.stack
+            # can use their __array_function__; to_numpy_array_like would flatten them to ndarray.
             samples = [s if isinstance(s, NumpyArrayLike) else to_numpy_array_like(s, dtype=dtype) for s in samples]  # ty:ignore[invalid-assignment]
             if sample_axis == "auto":
                 if len(samples) == 0:  # ty:ignore[invalid-argument-type]
