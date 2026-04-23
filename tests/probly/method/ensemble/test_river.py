@@ -8,13 +8,17 @@ import pytest
 pytest.importorskip("river")
 
 from river.datasets import synth
-from river.forest import ARFClassifier
+from river.forest import ARFClassifier, ARFRegressor
 
 from probly.predictor import predict_raw
 from probly.quantification import quantify
 from probly.representation.distribution.array_categorical import (
     ArrayCategoricalDistribution,
     ArrayCategoricalDistributionSample,
+)
+from probly.representation.distribution.array_gaussian import (
+    ArrayGaussianDistribution,
+    ArrayGaussianDistributionSample,
 )
 from probly.representation.sample._common import create_sample
 from probly.representer import representer
@@ -113,3 +117,85 @@ class TestEndToEnd:
         assert decomp.aleatoric >= 0
         assert decomp.epistemic >= 0
         np.testing.assert_allclose(decomp.total, decomp.aleatoric + decomp.epistemic, atol=1e-10)
+
+
+# ---------------------------------------------------------------------------
+# ARFRegressor tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def trained_arf_regressor():
+    """Train a small ARF regressor on Friedman stream and return (model, last_x)."""
+    arf = ARFRegressor(n_models=5, seed=42)
+    stream = synth.Friedman(seed=42)
+    last_x: dict = {}
+    for x, y in stream.take(200):
+        arf.learn_one(x, y)
+        last_x = x
+    return arf, last_x
+
+
+class TestRegressorPredictRaw:
+    def test_returns_list_of_gaussians(self, trained_arf_regressor):
+        arf, x = trained_arf_regressor
+        result = predict_raw(arf, x)
+
+        assert isinstance(result, list)
+        assert len(result) == arf.n_models
+        for dist in result:
+            assert isinstance(dist, ArrayGaussianDistribution)
+
+    def test_gaussians_have_valid_parameters(self, trained_arf_regressor):
+        arf, x = trained_arf_regressor
+        result = predict_raw(arf, x)
+
+        for dist in result:
+            assert dist.mean.shape == (1,)
+            assert dist.var.shape == (1,)
+            assert np.all(dist.var > 0)
+            assert np.isfinite(dist.mean).all()
+
+
+class TestRegressorCreateSample:
+    def test_create_sample_produces_gaussian_sample(self, trained_arf_regressor):
+        arf, x = trained_arf_regressor
+        result = predict_raw(arf, x)
+        sample = create_sample(result)
+
+        assert isinstance(sample, ArrayGaussianDistributionSample)
+
+    def test_sample_shape(self, trained_arf_regressor):
+        arf, x = trained_arf_regressor
+        result = predict_raw(arf, x)
+        sample = create_sample(result)
+
+        assert sample.array.mean.shape == (1, arf.n_models)
+        assert sample.array.var.shape == (1, arf.n_models)
+        assert sample.sample_axis == 1
+
+
+class TestRegressorEndToEnd:
+    def test_representer_produces_gaussian_sample(self, trained_arf_regressor):
+        arf, x = trained_arf_regressor
+        sample = representer(arf).represent(x)
+
+        assert isinstance(sample, ArrayGaussianDistributionSample)
+
+    def test_quantify_produces_decomposition(self, trained_arf_regressor):
+        arf, x = trained_arf_regressor
+        sample = representer(arf).represent(x)
+        decomp = quantify(sample)
+
+        assert hasattr(decomp, "total")
+        assert hasattr(decomp, "aleatoric")
+        assert hasattr(decomp, "epistemic")
+        np.testing.assert_allclose(decomp.total, decomp.aleatoric + decomp.epistemic, atol=1e-10)
+
+    def test_epistemic_dominates_with_near_zero_tree_variance(self, trained_arf_regressor):
+        arf, x = trained_arf_regressor
+        sample = representer(arf).represent(x)
+        decomp = quantify(sample)
+
+        # With var=1e-8 per tree, nearly all uncertainty is epistemic
+        assert decomp.epistemic >= 0

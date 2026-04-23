@@ -2,7 +2,15 @@
 
 from __future__ import annotations
 
-from probly.lazy_types import FLAX_LIST, FLAX_MODULE, RIVER_ARF, SKLEARN_MODULE, TORCH_MODULE, TORCH_MODULE_LIST
+from probly.lazy_types import (
+    FLAX_LIST,
+    FLAX_MODULE,
+    RIVER_ARF,
+    RIVER_ARF_REGRESSOR,
+    SKLEARN_MODULE,
+    TORCH_MODULE,
+    TORCH_MODULE_LIST,
+)
 from probly.predictor import predict_raw
 
 from ._common import (
@@ -22,6 +30,7 @@ EnsemblePredictor.register(
 )
 
 EnsembleCategoricalDistributionPredictor.register(RIVER_ARF)
+EnsemblePredictor.register(RIVER_ARF_REGRESSOR)
 
 
 ## Torch
@@ -49,6 +58,11 @@ def _(_: type) -> None:
 
 ## River
 @predict_raw.delayed_register(RIVER_ARF)
+def _(_: type) -> None:
+    from . import river as river  # noqa: PLC0415
+
+
+@predict_raw.delayed_register(RIVER_ARF_REGRESSOR)
 def _(_: type) -> None:
     from . import river as river  # noqa: PLC0415
 

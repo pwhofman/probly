@@ -115,6 +115,16 @@ class GaussianDistribution[D](Distribution[D], ABC):
         """Get the var parameters."""
 
 
+class GaussianDistributionSample[T: GaussianDistribution](DistributionSample[T]):
+    """Sample type for empirical second-order Gaussian distributions."""
+
+    sample_space: ClassVar[type[GaussianDistribution]] = GaussianDistribution
+
+    @classmethod
+    def __instancehook__(cls, instance: object) -> bool:
+        return super().__instancehook__(instance)
+
+
 @flexdispatch
 def create_categorical_distribution[T](data: T) -> CategoricalDistribution:
     """Create a categorical distribution from backend-specific probability data."""
