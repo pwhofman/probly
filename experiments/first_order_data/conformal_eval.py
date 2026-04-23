@@ -112,7 +112,14 @@ def fold_coverage(
 
     Returns a dict mapping (method, strategy) to per-split metric tuples.
     """
-    y_hard = targets_soft.argmax(axis=1)
+    if args.label_mode == "sample":
+        # draw one label per row from the soft target distribution
+        label_rng = np.random.default_rng(args.seed)
+        cum = targets_soft.cumsum(axis=1)
+        u = label_rng.random(len(targets_soft))[:, None]
+        y_hard = (u < cum).argmax(axis=1)
+    else:
+        y_hard = targets_soft.argmax(axis=1)
     buckets = {name: quantile_buckets(vals, args.n_buckets) for name, vals in uncertainty.items()}
     region_ids = buckets[args.mondrian_by]
     model = CachedProbsModel(probs)
@@ -169,6 +176,11 @@ def parse_args() -> argparse.Namespace:
         choices=("split", "class", "uncertainty"),
         default=("split", "class", "uncertainty"),
     )
+    parser.add_argument(
+        "--label-mode",
+        choices=("argmax", "sample"),
+        default="argmax",
+    ) 
     parser.add_argument(
         "--mondrian-by",
         choices=UNCERTAINTY_COLUMNS,
