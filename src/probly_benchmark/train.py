@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
@@ -54,6 +54,13 @@ OPTIMIZERS = {
     "sgd": optim.SGD,
     "lamb": Lamb,
 }
+
+
+def _get_state_dict(model: nn.Module | list[nn.Module]) -> dict | list[dict]:
+    """Return state dict(s) for a model or list of models."""
+    if isinstance(model, list):
+        return [cast("nn.Module", m).state_dict() for m in model]
+    return model.state_dict()
 
 
 def get_optimizer(name: str, params: Iterable[nn.Parameter], **kwargs: Any) -> optim.Optimizer:  # noqa: ANN401
@@ -422,7 +429,9 @@ def _(
     The KL penalty is set to 1/N (N = dataset size) following
     Blundell et al., "Weight Uncertainty in Neural Networks", ICML 2015.
     """
-    kl_penalty = 1.0 / len(train_loader)
+    dataset = getattr(train_loader, "dataset", None)
+    dataset_size = len(dataset) if dataset is not None else len(train_loader) * cfg.batch_size
+    kl_penalty = 1.0 / dataset_size
     _training_loop(
         model,
         train_loader,
@@ -650,7 +659,7 @@ def main(cfg: DictConfig) -> None:
     run.log(data=test_metrics)
 
     checkpoint = {
-        "model_state_dict": model.state_dict(),
+        "model_state_dict": _get_state_dict(model),
         "config": OmegaConf.to_container(cfg, resolve=True, throw_on_missing=True),
         "metrics": test_metrics,
     }
