@@ -1500,6 +1500,7 @@ test = [
     { name = "pytest" },
     { name = "pytest-cov" },
     { name = "pytest-xdist" },
+    { name = "river" },
     { name = "scikit-learn" },
 ]
 torch = [
@@ -1587,6 +1588,7 @@ test = [
     { name = "pytest", specifier = ">=8.3.5" },
     { name = "pytest-cov", specifier = ">=6.0.0" },
     { name = "pytest-xdist", specifier = ">=3.6.1" },
+    { name = "river", specifier = ">=0.21" },
     { name = "scikit-learn", specifier = ">=1.5.2" },
 ]
 torch = [
