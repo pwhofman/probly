@@ -45,7 +45,6 @@ class _VectorScalingState:
     bias: np.ndarray
 
 
-@LogitClassifier.register_factory
 class SklearnIdentityLogitEstimator(ClassifierMixin, BaseEstimator):
     """Pass-through sklearn estimator returning provided logits unchanged."""
 
@@ -74,6 +73,9 @@ class SklearnIdentityLogitEstimator(ClassifierMixin, BaseEstimator):
             return (logits > 0).astype(int)
         indices = np.argmax(logits, axis=-1)
         return self.classes_[indices]
+
+
+LogitClassifier.register(SklearnIdentityLogitEstimator)
 
 
 class SklearnVectorScalingPredictor(BaseEstimator):

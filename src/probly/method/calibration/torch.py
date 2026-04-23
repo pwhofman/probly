@@ -122,13 +122,15 @@ def _apply_affine(logits: torch.Tensor, temperature: torch.Tensor, bias: torch.T
     return scaled + bias
 
 
-@LogitClassifier.register_factory
 class TorchIdentityLogitModel(nn.Module):
     """Pass-through torch model returning provided logits unchanged."""
 
     def forward(self, logits: torch.Tensor) -> torch.Tensor:
         """Return input logits unchanged."""
         return logits
+
+
+LogitClassifier.register(TorchIdentityLogitModel)
 
 
 class _TorchCalibrationPredictorBase[**In](_CalibrationPredictorBase[In, torch.Tensor], nn.Module, ABC):
