@@ -1476,7 +1476,7 @@ requires-dist = [
 all-ml = [
     { name = "flax", specifier = ">=0.12.4" },
     { name = "jax", specifier = ">=0.8.1" },
-    { name = "scikit-learn", specifier = ">=1.5.2" },
+    { name = "scikit-learn", specifier = ">=1.6.0" },
     { name = "torch", specifier = ">=2.6.0" },
     { name = "torchvision", specifier = ">=0.21.0" },
 ]
@@ -1502,7 +1502,7 @@ dev = [
     { name = "pytest-xdist", specifier = ">=3.6.1" },
     { name = "pytorch-optimizer", specifier = ">=3.0" },
     { name = "ruff", specifier = ">=0.15.11" },
-    { name = "scikit-learn", specifier = ">=1.5.2" },
+    { name = "scikit-learn", specifier = ">=1.6.0" },
     { name = "sigx", git = "https://github.com/Cortys/sigx.git?rev=master" },
     { name = "sphinx", specifier = ">=9.0.0" },
     { name = "sphinx-copybutton" },
@@ -1533,13 +1533,13 @@ lint = [
     { name = "sigx", git = "https://github.com/Cortys/sigx.git?rev=master" },
     { name = "ty", specifier = ">=0.0.29" },
 ]
-sklearn = [{ name = "scikit-learn", specifier = ">=1.5.2" }]
+sklearn = [{ name = "scikit-learn", specifier = ">=1.6.0" }]
 test = [
     { name = "packaging" },
     { name = "pytest", specifier = ">=8.3.5" },
     { name = "pytest-cov", specifier = ">=6.0.0" },
     { name = "pytest-xdist", specifier = ">=3.6.1" },
-    { name = "scikit-learn", specifier = ">=1.5.2" },
+    { name = "scikit-learn", specifier = ">=1.6.0" },
 ]
 torch = [
     { name = "torch", specifier = ">=2.6.0" },

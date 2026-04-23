@@ -64,7 +64,7 @@ jax = [
     "flax>=0.12.4"
 ]
 sklearn = [
-    "scikit-learn>=1.5.2"  # first cp313 wheels
+    "scikit-learn>=1.6.0"  # first cp313 wheels + FrozenEstimator support
 ]
 all_ml = [{ include-group = "torch" }, { include-group = "jax" }, { include-group = "sklearn" }]
 test = [
