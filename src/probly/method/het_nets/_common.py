@@ -10,7 +10,7 @@ from probly.representation.distribution.torch_categorical import (
     TorchCategoricalDistribution,
 )
 from probly.traverse_nn import nn_compose
-from pytraverse import CLONE, TRAVERSE_REVERSED, GlobalVariable, lazydispatch_traverser, traverse
+from pytraverse import CLONE, TRAVERSE_REVERSED, GlobalVariable, flexdispatch_traverser, traverse
 
 
 @runtime_checkable
@@ -18,7 +18,7 @@ class HetNetsPredictor[**In, Out: TorchCategoricalDistribution](LogitDistributio
     """A predictor that applies HetNets."""
 
 
-het_nets_traverser = lazydispatch_traverser[object](name="het_nets_traverser")
+het_nets_traverser = flexdispatch_traverser[object](name="het_nets_traverser")
 
 LAST_LAYER = GlobalVariable[bool]("LAST_LAYER")
 NUM_FACTORS = GlobalVariable[int]("NUM_FACTORS")
