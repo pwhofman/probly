@@ -296,3 +296,6 @@ experiments/**/model_cache/
 
 # Local data / model caches
 data/
+
+# Paper (synced via Overleaf git)
+paper/
