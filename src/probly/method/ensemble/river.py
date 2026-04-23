@@ -25,7 +25,7 @@ def predict_arf_ensemble(arf: ARFClassifier, x: dict[str, float]) -> list[ArrayC
     seen.update(arf.predict_proba_one(x))
     classes = sorted(seen, key=lambda c: (not isinstance(c, (int, float)), str(c)))
     if not classes:
-        classes = [0]
+        classes = [0, 1]
 
     class_idx = {c: i for i, c in enumerate(classes)}
     k = len(classes)
