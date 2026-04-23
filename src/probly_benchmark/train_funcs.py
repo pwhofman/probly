@@ -18,16 +18,37 @@ from probly.method.ddu import DDUPredictor
 from probly.method.dropconnect import DropConnectPredictor
 from probly.method.dropout import DropoutPredictor
 from probly.method.ensemble import EnsemblePredictor
+from probly.method.evidential.classification import EvidentialClassificationPredictor
 from probly.method.posterior_network import PosteriorNetworkPredictor
 from probly.method.subensemble import SubensemblePredictor
 from probly.train.bayesian.torch import ELBOLoss, collect_kl_divergence
 from probly.train.calibration.torch import ExpectedCalibrationError
-from probly.train.evidential.torch import postnet_loss
+from probly.train.evidential.torch import (
+    evidential_ce_loss,
+    evidential_kl_divergence,
+    evidential_log_loss,
+    evidential_mse_loss,
+    postnet_loss,
+)
 
 if TYPE_CHECKING:
     from torch.utils.data import DataLoader
 
     from probly.predictor import Predictor
+
+
+EVIDENTIAL_LOSSES = {
+    "mse": evidential_mse_loss,
+    "ce": evidential_ce_loss,
+    "log": evidential_log_loss,
+}
+
+
+def _evidential_lambda_t(kl_weight: float, annealing_epochs: int, epoch: int) -> float:
+    """Annealed KL weight: kl_weight * min(1, epoch / annealing_epochs), or fixed if annealing disabled."""
+    if annealing_epochs == 0:
+        return kl_weight
+    return kl_weight * min(1.0, epoch / annealing_epochs)
 
 
 @flexdispatch
@@ -138,6 +159,52 @@ def _(
             nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)
         optimizer.step()
     return loss.item()
+
+
+@train_epoch.register(EvidentialClassificationPredictor)
+def _(
+    model: EvidentialClassificationPredictor,
+    inputs: torch.Tensor,
+    targets: torch.Tensor,
+    optimizer: optim.Optimizer,
+    grad_clip_norm: float | None = None,
+    amp_enabled: bool = False,
+    scaler: GradScaler | None = None,
+    loss: str = "mse",
+    kl_weight: float = 1.0,
+    annealing_epochs: int = 10,
+    epoch: int = 0,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> torch.Tensor | float:
+    """Train an evidential classifier for one step with Sensoy et al. (2018) losses.
+
+    The total loss is ``base_loss(alpha, y) + lambda_t * KL(Dir(alpha_tilde) || Dir(1))``
+    where ``lambda_t = kl_weight * min(1, epoch / annealing_epochs)`` (fixed at
+    ``kl_weight`` when ``annealing_epochs == 0``).
+
+    Reference:
+        Sensoy et al., "Evidential Deep Learning to Quantify Classification Uncertainty",
+        NeurIPS 2018. https://arxiv.org/abs/1806.01768
+    """
+    base_loss_fn = EVIDENTIAL_LOSSES[loss]
+    lambda_t = _evidential_lambda_t(kl_weight, annealing_epochs, epoch)
+    optimizer.zero_grad()
+    with autocast(inputs.device.type, enabled=amp_enabled):
+        alpha = model(inputs)  # ty: ignore[call-non-callable]
+        loss_val = base_loss_fn(alpha, targets) + lambda_t * evidential_kl_divergence(alpha, targets)
+    if scaler is not None:
+        scaler.scale(loss_val).backward()
+        if grad_clip_norm is not None:
+            scaler.unscale_(optimizer)
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)  # ty: ignore[unresolved-attribute]
+        scaler.step(optimizer)
+        scaler.update()
+    else:
+        loss_val.backward()
+        if grad_clip_norm is not None:
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)  # ty: ignore[unresolved-attribute]
+        optimizer.step()
+    return loss_val.item()
 
 
 @train_epoch.register(DDUPredictor)
@@ -274,6 +341,39 @@ def _(
     return val_loss, val_acc
 
 
+@validate.register(EvidentialClassificationPredictor)
+@torch.no_grad()
+def _(
+    model: EvidentialClassificationPredictor,
+    val_loader: DataLoader,
+    device: torch.device,
+    amp_enabled: bool = False,
+    loss: str = "mse",
+    kl_weight: float = 1.0,
+    annealing_epochs: int = 10,
+    epoch: int = 0,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> tuple[float, float]:
+    """Validate an evidential classifier using the same loss as training at the current epoch."""
+    base_loss_fn = EVIDENTIAL_LOSSES[loss]
+    lambda_t = _evidential_lambda_t(kl_weight, annealing_epochs, epoch)
+    model.eval()  # ty: ignore[unresolved-attribute]
+    val_loss = 0.0
+    val_acc = 0.0
+    num_instances = 0
+    for inputs_, targets_ in val_loader:
+        inputs, targets = inputs_.to(device), targets_.to(device)
+        with autocast(device.type, enabled=amp_enabled):
+            alpha = model(inputs)  # ty: ignore[call-non-callable]
+            batch_loss = base_loss_fn(alpha, targets) + lambda_t * evidential_kl_divergence(alpha, targets)
+        val_loss += batch_loss.item()
+        val_acc += _accuracy(alpha, targets) * inputs.shape[0]
+        num_instances += inputs.shape[0]
+    val_loss /= len(val_loader)
+    val_acc /= num_instances
+    return val_loss, val_acc
+
+
 @validate.register(DDUPredictor)
 @torch.no_grad()
 def validate_ddu(
@@ -400,6 +500,37 @@ def _(
         inputs, targets = inputs_.to(device), targets_.to(device)
         with autocast(device.type, enabled=amp_enabled):
             alpha = model(inputs)
+            probs_ = alpha / alpha.sum(dim=1, keepdim=True)
+        all_probs.append(probs_)
+        all_labels.append(targets)
+
+    probs = torch.cat(all_probs)
+    labels = torch.cat(all_labels)
+
+    return _compute_metrics(probs, labels, n_bins)
+
+
+@evaluate.register(EvidentialClassificationPredictor)
+@torch.no_grad()
+def _(
+    model: EvidentialClassificationPredictor,
+    test_loader: DataLoader,
+    device: torch.device,
+    amp_enabled: bool = False,
+    n_bins: int = 10,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> dict[str, float]:
+    """Evaluate an evidential classifier on the test set.
+
+    Uses the mean of the predicted Dirichlet (alpha / alpha.sum) as class probabilities.
+    """
+    model.eval()  # ty: ignore[unresolved-attribute]
+    all_probs: list[torch.Tensor] = []
+    all_labels: list[torch.Tensor] = []
+    for inputs_, targets_ in test_loader:
+        inputs, targets = inputs_.to(device), targets_.to(device)
+        with autocast(device.type, enabled=amp_enabled):
+            alpha = model(inputs)  # ty: ignore[call-non-callable]
             probs_ = alpha / alpha.sum(dim=1, keepdim=True)
         all_probs.append(probs_)
         all_labels.append(targets)

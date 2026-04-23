@@ -29,6 +29,7 @@ from probly.method.dropconnect import dropconnect
 from probly.method.dropout import dropout
 from probly.method.efficient_credal_prediction import efficient_credal_prediction
 from probly.method.ensemble import ensemble
+from probly.method.evidential.classification import evidential_classification
 from probly.method.posterior_network import posterior_network
 from probly.method.subensemble import subensemble
 from probly_benchmark import models
@@ -44,6 +45,7 @@ METHODS = {
     "ddu": ddu,
     "dropout": dropout,
     "dropconnect": dropconnect,
+    "evidential_classification": evidential_classification,
     "posterior_network": posterior_network,
     "ensemble": ensemble,
     "credal_ensembling": credal_ensembling,

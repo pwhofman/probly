@@ -150,6 +150,20 @@ def get_scheduler(
     return factory(optimizer, **kwargs)
 
 
+def _maybe_compile_forward(model: nn.Module, device: torch.device) -> None:
+    """Compile ``model.forward`` in place unless the device is MPS.
+
+    Inductor's Metal backend currently generates invalid shader code for common
+    ResNet kernels (non-constant threadgroup array size, undefined ``Min``),
+    so compilation is skipped on MPS and a message is printed to surface the
+    deviation from the default CUDA/CPU path.
+    """
+    if device.type == "mps":
+        print("Skipping torch.compile on MPS (Inductor's Metal backend unsupported); using eager forward.")
+        return
+    model.forward = torch.compile(model.forward)
+
+
 def _training_loop(
     model: nn.Module,
     train_loader: DataLoader,
@@ -177,7 +191,7 @@ def _training_loop(
         val_fn: Validation function.
         log_prefix: Prefix for W&B log keys (e.g. ``"member_0/"``).
     """
-    model.forward = torch.compile(model.forward)
+    _maybe_compile_forward(model, device)
 
     optimizer = get_optimizer(
         cfg.optimizer.name,
@@ -220,6 +234,7 @@ def _training_loop(
                 grad_clip_norm=grad_clip_norm,
                 amp_enabled=amp_enabled,
                 scaler=scaler,
+                epoch=epoch,
                 **train_kwargs,
             )
             if scheduler is not None and step_per_iter:
@@ -229,7 +244,7 @@ def _training_loop(
         val_loss: float | None = None
         log_data = {f"{log_prefix}train_loss": running_loss}
         if val_loader:
-            val_loss, val_acc = val_fn(model, val_loader, device, amp_enabled, **train_kwargs)
+            val_loss, val_acc = val_fn(model, val_loader, device, amp_enabled, epoch=epoch, **train_kwargs)
             log_data[f"{log_prefix}val_loss"] = val_loss
             log_data[f"{log_prefix}val_acc"] = val_acc
         run.log(data=log_data)

@@ -12,4 +12,4 @@ if TYPE_CHECKING:
 
 def prior_network[**In, Out](base: Predictor[In, Out]) -> Predictor[In, Out]:
     """Create a Prior Network predictor from base model based on :cite:`malininPredictiveUncertaintyEstimation2018`."""
-    return evidential_classification(base)
+    return evidential_classification(base)  # ty: ignore[invalid-argument-type]
