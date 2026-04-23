@@ -25,7 +25,7 @@ from tqdm import tqdm
 import wandb
 import wandb.util
 
-from lazy_dispatch import lazydispatch
+from flextype import flexdispatch
 from probly.method.bayesian import BayesianPredictor
 from probly.method.credal_ensembling import CredalEnsemblingPredictor
 from probly.method.credal_relative_likelihood import CredalRelativeLikelihoodPredictor
@@ -241,7 +241,7 @@ def _training_loop(
         run.summary[f"{log_prefix}best_val_loss"] = best_tracker.best_loss
 
 
-@lazydispatch
+@flexdispatch
 def train_model(
     model: nn.Module,
     train_loader: DataLoader,

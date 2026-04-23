@@ -231,6 +231,7 @@ class ArrayAxisProtected[T: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplement
 
         return candidate_values
 
+    @override
     def __getitem__(self, index: ToIndices, /) -> Self:
         values = self.protected_values()
         indexed: dict[str, ArrayProtectedValue] = {}
@@ -255,6 +256,7 @@ class ArrayAxisProtected[T: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplement
 
         return self.with_protected_values(indexed)
 
+    @override
     def __setitem__(self, index: ToIndices, value: object, /) -> None:
         values = self.protected_values()
         candidate_values = self._coerce_assignment_value(value)

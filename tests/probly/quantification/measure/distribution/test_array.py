@@ -12,6 +12,9 @@ from probly.quantification.measure.distribution import (
     conditional_entropy,
     entropy,
     entropy_of_expected_value,
+    expected_max_probability_complement,
+    max_disagreement,
+    max_probability_complement_of_expected,
     mutual_information,
 )
 from probly.representation.distribution.array_categorical import (
@@ -250,3 +253,76 @@ def test_identity_holds_for_array_categorical_sample(sample_axis: int, base: Non
     decomposition_sum = conditional_entropy(sample, base=base) + mutual_information(sample, base=base)
 
     np.testing.assert_allclose(expected_entropy, decomposition_sum, rtol=1e-12, atol=1e-12)
+
+
+@pytest.mark.parametrize("sample_axis", [0, 1])
+def test_array_sample_zero_one_measures_match_manual(sample_axis: int) -> None:
+    base_probabilities = np.array(
+        [
+            [[0.70, 0.20, 0.10], [0.15, 0.35, 0.50]],
+            [[0.60, 0.30, 0.10], [0.20, 0.30, 0.50]],
+            [[0.80, 0.10, 0.10], [0.10, 0.40, 0.50]],
+        ],
+        dtype=float,
+    )
+    probabilities = np.moveaxis(base_probabilities, 0, sample_axis)
+    sample = ArrayCategoricalDistributionSample(
+        array=ArrayCategoricalDistribution(probabilities),
+        sample_axis=sample_axis,
+    )
+
+    measured_total = max_probability_complement_of_expected(sample)
+    measured_aleatoric = expected_max_probability_complement(sample)
+    measured_epistemic = max_disagreement(sample)
+
+    expected_mean = np.mean(probabilities, axis=sample_axis)
+    expected_total = 1.0 - np.max(expected_mean, axis=-1)
+    expected_aleatoric = np.mean(1.0 - np.max(probabilities, axis=-1), axis=sample_axis)
+    bma_argmax_expanded = np.expand_dims(np.argmax(expected_mean, axis=-1), axis=(sample_axis, -1))
+    per_sample_bma_prob = np.take_along_axis(probabilities, bma_argmax_expanded, axis=-1).squeeze(-1)
+    expected_epistemic = np.mean(np.max(probabilities, axis=-1) - per_sample_bma_prob, axis=sample_axis)
+
+    np.testing.assert_allclose(measured_total, expected_total, rtol=1e-12, atol=1e-12)
+    np.testing.assert_allclose(measured_aleatoric, expected_aleatoric, rtol=1e-12, atol=1e-12)
+    np.testing.assert_allclose(measured_epistemic, expected_epistemic, rtol=1e-12, atol=1e-12)
+
+
+def test_array_sample_zero_one_known_values() -> None:
+    probabilities = np.array(
+        [
+            [0.90, 0.10],
+            [0.20, 0.80],
+        ],
+        dtype=float,
+    )
+    sample = ArrayCategoricalDistributionSample(
+        array=ArrayCategoricalDistribution(probabilities),
+        sample_axis=0,
+    )
+
+    np.testing.assert_allclose(max_probability_complement_of_expected(sample), 0.45, rtol=1e-12, atol=1e-12)
+    np.testing.assert_allclose(expected_max_probability_complement(sample), 0.15, rtol=1e-12, atol=1e-12)
+    np.testing.assert_allclose(max_disagreement(sample), 0.30, rtol=1e-12, atol=1e-12)
+
+
+@pytest.mark.parametrize("sample_axis", [0, 1])
+def test_zero_one_identity_holds_for_array_categorical_sample(sample_axis: int) -> None:
+    base_probabilities = np.array(
+        [
+            [[0.70, 0.20, 0.10], [0.15, 0.35, 0.50]],
+            [[0.60, 0.30, 0.10], [0.20, 0.30, 0.50]],
+            [[0.80, 0.10, 0.10], [0.10, 0.40, 0.50]],
+        ],
+        dtype=float,
+    )
+    probabilities = np.moveaxis(base_probabilities, 0, sample_axis)
+    sample = ArrayCategoricalDistributionSample(
+        array=ArrayCategoricalDistribution(probabilities),
+        sample_axis=sample_axis,
+    )
+
+    total = max_probability_complement_of_expected(sample)
+    aleatoric = expected_max_probability_complement(sample)
+    epistemic = max_disagreement(sample)
+
+    np.testing.assert_allclose(total, aleatoric + epistemic, rtol=1e-12, atol=1e-12)

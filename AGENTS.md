@@ -10,6 +10,7 @@ This role of this file is to describe common mistakes and confusion points that 
 - Do not use special unicode characters where it is not necessary (comments, docstrings, variable names)
 - If you add new files you need to add them to git.
 - Tests are split by backend. Put backend-agnostic checks in `test_common.py`, and backend-specific checks in files like `test_array.py`, `test_torch.py`, or `test_jax.py`. In backend-specific test files, call `pytest.importorskip("<backend>")` at the top and avoid per-test skip decorators for missing optional deps.
+- Pickle default-state behavior is subtle: `object.__getstate__()` may return `None` even when an instance has a populated `__dict__`. Do not use `super().__getstate__()` as a drop-in replacement for pickle's default state extraction when implementing cooperative `__getstate__` wrappers.
 
 ## Useful Commands:
 
@@ -38,4 +39,4 @@ uv run pytest <path-to-file-or-directory>
 ```
 
 ## Example files to look at:
-Examples of how to use probly lives in the examples directory. You can find tutorials on how to use the pytraverser lazydispatch and so forth.
+Examples of how to use probly lives in the examples directory. You can find tutorials on how to use the pytraverser flexdispatch and so forth.

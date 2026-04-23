@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any, Literal, Protocol, Self, SupportsIndex, o
 
 import numpy as np
 
-from lazy_dispatch import lazydispatch
+from flextype import flexdispatch
 
 if TYPE_CHECKING:
     from numpy.typing import ArrayLike as NpArrayLike, DTypeLike, NDArray
@@ -399,7 +399,7 @@ class NumpyArrayLikeImplementation[DT: NumpyArrayLike | np.ndarray](
 NumpyArrayLikeImplementation.register(np.ndarray)
 
 
-@lazydispatch
+@flexdispatch
 def to_numpy_array_like[DT](
     array: object,
     *,

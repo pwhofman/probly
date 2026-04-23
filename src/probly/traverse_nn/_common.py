@@ -24,7 +24,7 @@ def is_first_layer(state: t.State) -> bool:
 
 layer_count_traverser = t.singledispatch_traverser[object](name="layer_count_traverser")
 
-nn_traverser = t.lazydispatch_traverser[object](name="nn_traverser")
+nn_traverser = t.flexdispatch_traverser[object](name="nn_traverser")
 
 
 def compose(

@@ -4,7 +4,6 @@ defaults:
   - recipe: ??? # user must specify a recipe.
 
 seed: 1
-
 wandb:
   enabled: true
   entity: "probly"

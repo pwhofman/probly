@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
-from lazy_dispatch import lazydispatch
+from flextype import flexdispatch
 from probly.representation.representation import Representation
 
 if TYPE_CHECKING:
@@ -30,7 +30,7 @@ class DDURepresentation(Representation, Protocol):
         """Density vectors."""
 
 
-@lazydispatch
+@flexdispatch
 def create_ddu_representation(softmax: CategoricalDistribution, densities: Iterable) -> DDURepresentation:
     """Create a DDU representation from a softmax distribution and density vector."""
     msg = (
