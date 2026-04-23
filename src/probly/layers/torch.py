@@ -1075,7 +1075,7 @@ class IntSoftmax(nn.Module):
 
 
 class HeteroscedasticLayer(nn.Module):
-    """A unified PyTorch implementation of the Heteroscedastic MC-Softmax Dense layer.
+    """A unified PyTorch implementation of the Heteroscedastic layer based on :cite:`collier2021hetnets`.
 
     Attributes:
         in_features: int, number of input features.
