@@ -11,7 +11,10 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+import inspect
+import logging
 from typing import TYPE_CHECKING, Any
+import warnings
 
 import torch
 from torch import nn
@@ -32,6 +35,8 @@ from probly_benchmark import models
 if TYPE_CHECKING:
     from torch.utils.data import DataLoader
 
+
+logger = logging.getLogger(__name__)
 
 METHODS = {
     "bayesian": bayesian,
@@ -89,6 +94,23 @@ class BuildContext:
 Builder = Callable[[Callable[..., nn.Module], dict[str, Any], BuildContext], nn.Module]
 
 
+def _filter_params(fn: Callable[..., Any], params: dict[str, Any]) -> dict[str, Any]:
+    """Return only the kwargs accepted by ``fn``, warning about dropped keys."""
+    sig = inspect.signature(fn)
+    accepts_var_keyword = any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values())
+    if accepts_var_keyword:
+        return params
+    accepted = set(sig.parameters)
+    dropped = {k for k in params if k not in accepted}
+    if dropped:
+        warnings.warn(
+            f"{fn.__name__} does not accept {dropped}; dropping from method params. "  # ty:ignore[unresolved-attribute]
+            "Check your recipe/method config for unintended overrides.",
+            stacklevel=3,
+        )
+    return {k: v for k, v in params.items() if k in accepted}
+
+
 def _default_builder(
     method_fn: Callable[..., nn.Module],
     params: dict[str, Any],
@@ -96,7 +118,7 @@ def _default_builder(
 ) -> nn.Module:
     """Build a model using only the YAML hyperparameters and a base network."""
     base = models.get_base_model(ctx.base_model_name, ctx.num_classes, ctx.pretrained)
-    return method_fn(base, predictor_type=ctx.model_type, **params)
+    return method_fn(base, predictor_type=ctx.model_type, **_filter_params(method_fn, params))
 
 
 def _posterior_network_builder(
@@ -133,7 +155,7 @@ def _posterior_network_builder(
         num_classes=ctx.num_classes,
         class_counts=class_counts,
         predictor_type=ctx.model_type,
-        **params,
+        **_filter_params(method_fn, params),
     )
 
 
