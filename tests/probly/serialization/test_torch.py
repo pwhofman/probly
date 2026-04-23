@@ -9,6 +9,7 @@ import pytest
 from flextype import registry_pickle
 from probly.calibrator import calibrate
 from probly.layers.torch import NormalInverseGammaLinear
+from probly.method.calibration import isotonic_regression, torch_identity_logit_model
 from probly.method.conformal import LACConformalSetPredictor, conformal_lac
 from probly.method.dropout import DropoutPredictor, dropout
 from probly.method.ensemble import ensemble
@@ -159,3 +160,31 @@ def test_torch_save_with_registry_pickle_preserves_random_predictor_registration
     assert type(restored) is type(wrapped)
     assert len(restored) == len(wrapped)
     assert all(isinstance(member, RandomPredictor) for member in restored)
+
+
+def test_torch_weights_only_roundtrip_restores_isotonic_calibration_state() -> None:
+    """Weights-only checkpoints should restore fitted isotonic calibration knots."""
+    logits = torch.randn(400)
+    labels = torch.bernoulli(torch.sigmoid(logits))
+
+    model = isotonic_regression(torch_identity_logit_model(), predictor_type=LogitClassifier)
+    calibrate(model, labels, logits)
+
+    state_dict = model.state_dict()
+    assert "_isotonic_x_knots" in state_dict
+    assert "_isotonic_y_knots" in state_dict
+    assert "_isotonic_num_knots" in state_dict
+
+    buffer = io.BytesIO()
+    torch.save(state_dict, buffer)
+
+    buffer.seek(0)
+    loaded_state_dict = torch.load(buffer, weights_only=True)
+
+    fresh = isotonic_regression(torch_identity_logit_model(), predictor_type=LogitClassifier)
+    fresh.load_state_dict(loaded_state_dict)
+
+    x_test = torch.linspace(-3.0, 3.0, 25)
+    original = predict(model, x_test)
+    restored = predict(fresh, x_test)
+    torch.testing.assert_close(original.probabilities, restored.probabilities)

@@ -2,16 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Literal, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 from flextype import flexdispatch
 from flextype.registry_meta import ProtocolRegistry
-
-type CalibratorName = Literal[
-    "conformal_calibrator",
-    "temperature_scaling_calibrator",
-    "isotonic_regression_calibrator",
-]
 
 
 @runtime_checkable
@@ -35,5 +29,5 @@ def calibrate[**In, Out](
     """Calibrate the predictor with the given arguments."""
     if hasattr(predictor, "calibrate"):
         return predictor.calibrate(*calib_args, **calib_kwargs)  # ty:ignore[call-non-callable]
-    msg = "Conformal calibration not implemented for this type of predictor."
+    msg = "Calibration not implemented for this type of predictor."
     raise NotImplementedError(msg)
