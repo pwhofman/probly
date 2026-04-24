@@ -21,7 +21,7 @@ from ._common import (
     LogBase,
     conditional_entropy,
     entropy,
-    entropy_of_expected_value,
+    entropy_of_expected_predictive_distribution,
     expected_max_probability_complement,
     max_disagreement,
     max_probability_complement_of_expected,
@@ -77,7 +77,10 @@ def array_dirichlet_entropy(distribution: ArrayDirichletDistribution | np.ndarra
 
 @entropy.register(ArrayGaussianDistribution)
 def array_gaussian_entropy(distribution: ArrayGaussianDistribution | np.ndarray, base: LogBase = None) -> np.ndarray:
-    """Compute the (differential) entropy of a Gaussian distribution represented as a numpy array."""
+    """Compute the (differential) entropy of a Gaussian distribution represented as a numpy array.
+
+    Takes either an `ArrayGaussianDistribution` or a single np.ndarray representing the variance.
+    """
     if isinstance(distribution, ArrayGaussianDistribution):
         var = distribution.var
         del distribution  # Avoid keeping a reference to the distribution for memory efficiency
@@ -95,8 +98,8 @@ def array_gaussian_entropy(distribution: ArrayGaussianDistribution | np.ndarray,
 # Entropy of expected value
 
 
-@entropy_of_expected_value.register(ArrayDirichletDistribution)
-def array_dirichlet_entropy_of_expected_value(
+@entropy_of_expected_predictive_distribution.register(ArrayDirichletDistribution)
+def array_dirichlet_entropy_of_expected_predictive_distribution(
     distribution: ArrayDirichletDistribution | np.ndarray, base: LogBase = None
 ) -> np.ndarray:
     """Compute the entropy of the expected value of a Dirichlet distribution."""
@@ -110,23 +113,26 @@ def array_dirichlet_entropy_of_expected_value(
     return array_categorical_entropy(expected_value, base=base)
 
 
-@entropy_of_expected_value.register(ArrayGaussianDistributionSample)
-def array_gaussian_sample_entropy_of_expected_value(
+@entropy_of_expected_predictive_distribution.register(ArrayGaussianDistributionSample)
+def array_gaussian_sample_entropy_of_expected_predictive_distribution(
     sample: ArrayGaussianDistributionSample, base: LogBase = None
 ) -> np.ndarray:
     """Compute the entropy of the expected Gaussian via the law of total variance."""
-    means = sample.array.mean
-    vars_ = sample.array.var
     axis = sample.sample_axis
-    total_var = np.mean(vars_, axis=axis) + np.var(means, axis=axis)
-    return array_gaussian_entropy(
-        ArrayGaussianDistribution(mean=np.mean(means, axis=axis), var=total_var),
-        base=base,
-    )
+    array = sample.array
+    del sample  # Avoid keeping a reference to the sample for memory efficiency
+
+    # We compute the entropy of the moment-matched Gaussian as an approximation.
+    # This is an overestimate of the true entropy of the expected value,
+    # which would require computing the entropy of a Gaussian mixture.
+    # Interpreting this value as total uncertainty, this means that epistemic uncertainty
+    # may be overestimated as-well, while aleatoric uncertainty is computed correctly.
+    var = np.mean(array.var, axis=axis) + np.var(array.mean, axis=axis)
+    return array_gaussian_entropy(var, base=base)
 
 
-@entropy_of_expected_value.register(ArrayCategoricalDistributionSample)
-def array_categorical_sample_entropy_of_expected_value(
+@entropy_of_expected_predictive_distribution.register(ArrayCategoricalDistributionSample)
+def array_categorical_sample_entropy_of_expected_predictive_distribution(
     sample: ArrayCategoricalDistributionSample, base: LogBase = None
 ) -> np.ndarray:
     """Compute the entropy of the expected value of a sample from a categorical distribution."""
@@ -171,8 +177,8 @@ def array_gaussian_sample_conditional_entropy(
 ) -> np.ndarray:
     """Compute the mean per-tree Gaussian entropy (aleatoric uncertainty)."""
     axis = sample.sample_axis
-    per_tree_entropies = array_gaussian_entropy(sample.array, base=base)
-    return np.mean(per_tree_entropies, axis=axis)
+    entropies = array_gaussian_entropy(sample.array, base=base)
+    return np.mean(entropies, axis=axis)
 
 
 @conditional_entropy.register(ArrayCategoricalDistributionSample)
@@ -201,9 +207,9 @@ def array_dirichlet_mutual_information(
     else:
         alphas = distribution
 
-    return array_dirichlet_entropy_of_expected_value(alphas, base=base) - array_dirichlet_conditional_entropy(
+    return array_dirichlet_entropy_of_expected_predictive_distribution(
         alphas, base=base
-    )
+    ) - array_dirichlet_conditional_entropy(alphas, base=base)
 
 
 @mutual_information.register(ArrayGaussianDistributionSample)
@@ -211,13 +217,13 @@ def array_gaussian_sample_mutual_information(
     sample: ArrayGaussianDistributionSample, base: LogBase = None
 ) -> np.ndarray:
     """Compute the epistemic uncertainty (total entropy minus aleatoric entropy)."""
-    return array_gaussian_sample_entropy_of_expected_value(
+    return array_gaussian_sample_entropy_of_expected_predictive_distribution(
         sample, base=base
     ) - array_gaussian_sample_conditional_entropy(sample, base=base)
 
 
-@entropy_of_expected_value.register(ArrayPointPredictionSample)
-def array_point_prediction_sample_entropy_of_expected_value(
+@entropy_of_expected_predictive_distribution.register(ArrayPointPredictionSample)
+def array_point_prediction_sample_entropy_of_expected_predictive_distribution(
     sample: ArrayPointPredictionSample, base: LogBase = None
 ) -> np.ndarray:
     """Compute the total uncertainty for a point-prediction ensemble.
@@ -247,7 +253,7 @@ def array_point_prediction_sample_mutual_information(
     sample: ArrayPointPredictionSample, base: LogBase = None
 ) -> np.ndarray:
     """Epistemic uncertainty equals total uncertainty for point predictions."""
-    return array_point_prediction_sample_entropy_of_expected_value(sample, base=base)
+    return array_point_prediction_sample_entropy_of_expected_predictive_distribution(sample, base=base)
 
 
 @mutual_information.register(ArrayCategoricalDistributionSample)
