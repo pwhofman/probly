@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 from typing import Any, cast
 
-import numpy as np
 from omegaconf import DictConfig, OmegaConf
 import torch
 from torch import nn
@@ -64,17 +63,17 @@ def _make_train_cfg(cfg: DictConfig) -> DictConfig:
     )
 
 
-def _entropy(probs: np.ndarray) -> np.ndarray:
+def _entropy(probs: torch.Tensor) -> torch.Tensor:
     """Shannon entropy per row.
 
     Args:
-        probs: Array of shape (n, n_classes).
+        probs: Tensor of shape (n, n_classes).
 
     Returns:
-        Array of shape (n,) with per-row entropy values.
+        Tensor of shape (n,) with per-row entropy values.
     """
-    p = np.clip(probs, 1e-10, 1.0)
-    return -np.sum(p * np.log(p), axis=-1)
+    p = probs.clamp(min=1e-10, max=1.0)
+    return -(p * p.log()).sum(dim=-1)
 
 
 class BenchmarkALEstimator:
@@ -142,7 +141,7 @@ class BenchmarkALEstimator:
         self.quantifier_name = quantifier or _DEFAULT_QUANTIFIERS.get(method_name)
         self.model: nn.Module | None = None
 
-    def fit(self, x: np.ndarray, y: np.ndarray) -> BenchmarkALEstimator:
+    def fit(self, x: torch.Tensor, y: torch.Tensor) -> BenchmarkALEstimator:
         """Build a fresh model and train it on (x, y).
 
         Uses build_model() and train_model() from the existing
@@ -151,8 +150,8 @@ class BenchmarkALEstimator:
         """
         import wandb  # noqa: PLC0415
 
-        x_t = torch.as_tensor(x, dtype=torch.float32)
-        y_t = torch.as_tensor(y, dtype=torch.long)
+        x_t = x.to(dtype=torch.float32)
+        y_t = y.to(dtype=torch.long)
         dataset = TensorDataset(x_t, y_t)
         train_loader = DataLoader(
             dataset,
@@ -196,92 +195,92 @@ class BenchmarkALEstimator:
         return self
 
     @torch.no_grad()
-    def _ensemble_softmax(self, x: np.ndarray) -> np.ndarray:
+    def _ensemble_softmax(self, x: torch.Tensor) -> torch.Tensor:
         """Return per-member softmax probabilities (n_samples, n_members, n_classes)."""
         model = cast("Any", self.model)
         members = list(model)
-        x_t = torch.as_tensor(x, dtype=torch.float32, device=self.device)
+        x_t = x.to(device=self.device)
         member_probs = []
         for member in members:
             member.eval()
-            parts: list[np.ndarray] = []
+            parts: list[torch.Tensor] = []
             for start in range(0, len(x_t), self.pred_batch_size):
                 batch = x_t[start : start + self.pred_batch_size]
                 out = F.softmax(member(batch), dim=-1)
-                parts.append(out.detach().cpu().numpy())
-            member_probs.append(np.concatenate(parts))
-        return np.stack(member_probs, axis=1)
+                parts.append(out.detach().cpu())
+            member_probs.append(torch.cat(parts))
+        return torch.stack(member_probs, dim=1)
 
     @torch.no_grad()
-    def _ddu_proba(self, x: np.ndarray) -> np.ndarray:
+    def _ddu_proba(self, x: torch.Tensor) -> torch.Tensor:
         """Return softmax probabilities for DDU (via encoder + classification_head)."""
         model = cast("Any", self.model)
         model.eval()
-        x_t = torch.as_tensor(x, dtype=torch.float32, device=self.device)
-        parts: list[np.ndarray] = []
+        x_t = x.to(device=self.device)
+        parts: list[torch.Tensor] = []
         for start in range(0, len(x_t), self.pred_batch_size):
             batch = x_t[start : start + self.pred_batch_size]
             features = model.encoder(batch)
             logits = model.classification_head(features)
-            parts.append(F.softmax(logits, dim=-1).detach().cpu().numpy())
-        return np.concatenate(parts)
+            parts.append(F.softmax(logits, dim=-1).detach().cpu())
+        return torch.cat(parts)
 
     @torch.no_grad()
-    def _dirichlet_proba(self, x: np.ndarray) -> np.ndarray:
+    def _dirichlet_proba(self, x: torch.Tensor) -> torch.Tensor:
         """Return Dirichlet mean probabilities for evidential/posterior_network."""
         model = cast("Any", self.model)
         model.eval()
-        x_t = torch.as_tensor(x, dtype=torch.float32, device=self.device)
-        parts: list[np.ndarray] = []
+        x_t = x.to(device=self.device)
+        parts: list[torch.Tensor] = []
         for start in range(0, len(x_t), self.pred_batch_size):
             batch = x_t[start : start + self.pred_batch_size]
             alpha = model(batch)
             probs = alpha / alpha.sum(dim=-1, keepdim=True)
-            parts.append(probs.detach().cpu().numpy())
-        return np.concatenate(parts)
+            parts.append(probs.detach().cpu())
+        return torch.cat(parts)
 
     @torch.no_grad()
-    def _single_softmax(self, x: np.ndarray) -> np.ndarray:
+    def _single_softmax(self, x: torch.Tensor) -> torch.Tensor:
         """Return softmax probabilities for a single model (dropout, efficient_credal)."""
         model = cast("Any", self.model)
         model.eval()
-        x_t = torch.as_tensor(x, dtype=torch.float32, device=self.device)
-        parts: list[np.ndarray] = []
+        x_t = x.to(device=self.device)
+        parts: list[torch.Tensor] = []
         for start in range(0, len(x_t), self.pred_batch_size):
             batch = x_t[start : start + self.pred_batch_size]
-            parts.append(F.softmax(model(batch), dim=-1).detach().cpu().numpy())
-        return np.concatenate(parts)
+            parts.append(F.softmax(model(batch), dim=-1).detach().cpu())
+        return torch.cat(parts)
 
     @torch.no_grad()
-    def _dropout_mean_proba(self, x: np.ndarray) -> np.ndarray:
+    def _dropout_mean_proba(self, x: torch.Tensor) -> torch.Tensor:
         """Average softmax over multiple stochastic forward passes (dropout active)."""
         model = cast("Any", self.model)
         model.train()  # keep dropout active
-        x_t = torch.as_tensor(x, dtype=torch.float32, device=self.device)
-        sample_probs: list[np.ndarray] = []
+        x_t = x.to(device=self.device)
+        sample_probs: list[torch.Tensor] = []
         for _ in range(self.num_samples):
-            parts: list[np.ndarray] = []
+            parts: list[torch.Tensor] = []
             for start in range(0, len(x_t), self.pred_batch_size):
                 batch = x_t[start : start + self.pred_batch_size]
-                parts.append(F.softmax(model(batch), dim=-1).detach().cpu().numpy())
-            sample_probs.append(np.concatenate(parts))
-        return np.mean(np.stack(sample_probs), axis=0)
+                parts.append(F.softmax(model(batch), dim=-1).detach().cpu())
+            sample_probs.append(torch.cat(parts))
+        return torch.stack(sample_probs).mean(dim=0)
 
-    def predict_proba(self, x: np.ndarray) -> np.ndarray:
+    def predict_proba(self, x: torch.Tensor) -> torch.Tensor:
         """Return class probabilities of shape (n_samples, n_classes)."""
         if isinstance(self.model, EnsemblePredictor):
-            return self._ensemble_softmax(x).mean(axis=1)
+            return self._ensemble_softmax(x).mean(dim=1)
         if self.method_name == "ddu":
             return self._ddu_proba(x)
         if self.method_name in ("evidential_classification", "posterior_network"):
             return self._dirichlet_proba(x)
         return self._single_softmax(x)
 
-    def predict(self, x: np.ndarray) -> np.ndarray:
+    def predict(self, x: torch.Tensor) -> torch.Tensor:
         """Return class predictions of shape (n_samples,)."""
-        return self.predict_proba(x).argmax(axis=-1)
+        return self.predict_proba(x).argmax(dim=-1)
 
-    def uncertainty_scores(self, x: np.ndarray) -> np.ndarray:  # noqa: PLR0911
+    def uncertainty_scores(self, x: torch.Tensor) -> torch.Tensor:  # noqa: PLR0911
         """Return per-sample uncertainty scores of shape (n_samples,).
 
         The scoring method depends on the quantifier name:
@@ -295,16 +294,16 @@ class BenchmarkALEstimator:
         if q == "entropy_of_expected_value":
             if isinstance(self.model, EnsemblePredictor):
                 member_probs = self._ensemble_softmax(x)
-                return _entropy(member_probs.mean(axis=1))
+                return _entropy(member_probs.mean(dim=1))
             # Dropout: stochastic forward passes
             return _entropy(self._dropout_mean_proba(x))
 
         if q == "mutual_information":
             member_probs = self._ensemble_softmax(x)
-            mean_probs = member_probs.mean(axis=1)
+            mean_probs = member_probs.mean(dim=1)
             total_entropy = _entropy(mean_probs)
-            member_entropies = np.array([_entropy(member_probs[:, i]) for i in range(member_probs.shape[1])])
-            return total_entropy - member_entropies.mean(axis=0)
+            member_entropies = torch.stack([_entropy(member_probs[:, i]) for i in range(member_probs.shape[1])])
+            return total_entropy - member_entropies.mean(dim=0)
 
         if q == "entropy":
             return _entropy(self.predict_proba(x))
@@ -315,8 +314,8 @@ class BenchmarkALEstimator:
         if q == "upper_entropy":
             if isinstance(self.model, EnsemblePredictor):
                 member_probs = self._ensemble_softmax(x)
-                per_member = np.array([_entropy(member_probs[:, i]) for i in range(member_probs.shape[1])])
-                return per_member.max(axis=0)
+                per_member = torch.stack([_entropy(member_probs[:, i]) for i in range(member_probs.shape[1])])
+                return per_member.max(dim=0).values
             # Efficient credal: entropy of the base prediction
             return _entropy(self.predict_proba(x))
 

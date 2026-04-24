@@ -5,9 +5,6 @@ from probly.evaluation.active_learning._torch_estimator import (
     TorchEnsembleEstimator as TorchEnsembleEstimator,
     TorchEstimator as TorchEstimator,
 )
-from probly.evaluation.active_learning._utils import (
-    _ProblyEstimator as _ProblyEstimator,
-)
 from probly.evaluation.active_learning.loop import (
     ALState as ALState,
     active_learning_steps as active_learning_steps,

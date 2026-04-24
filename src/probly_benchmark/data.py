@@ -490,8 +490,8 @@ def get_data_al(
     name: str,
     seed: int,
     **kwargs: Any,  # noqa: ANN401
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, int, int]:
-    """Load a dataset as numpy arrays for active learning.
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, int, int]:
+    """Load a dataset as torch tensors for active learning.
 
     Args:
         name: Dataset name (cifar10, fashion_mnist, openml).
@@ -507,20 +507,20 @@ def get_data_al(
             transform = TRANSFORMS_TEST["cifar10"]
             train_ds = torchvision.datasets.CIFAR10(root=DATA_PATH, train=True, download=True, transform=transform)
             test_ds = torchvision.datasets.CIFAR10(root=DATA_PATH, train=False, download=True, transform=transform)
-            x_train = np.stack([train_ds[i][0].numpy() for i in range(len(train_ds))]).astype(np.float32)
-            y_train = np.array([train_ds[i][1] for i in range(len(train_ds))], dtype=np.int64)
-            x_test = np.stack([test_ds[i][0].numpy() for i in range(len(test_ds))]).astype(np.float32)
-            y_test = np.array([test_ds[i][1] for i in range(len(test_ds))], dtype=np.int64)
+            x_train = torch.stack([train_ds[i][0] for i in range(len(train_ds))])
+            y_train = torch.tensor([train_ds[i][1] for i in range(len(train_ds))], dtype=torch.long)
+            x_test = torch.stack([test_ds[i][0] for i in range(len(test_ds))])
+            y_test = torch.tensor([test_ds[i][1] for i in range(len(test_ds))], dtype=torch.long)
             num_classes = 10
             in_features = x_train.shape[1]
         case "fashion_mnist":
             transform = T.Compose([T.ToImage(), T.ToDtype(torch.float32, scale=True)])
             train_ds = torchvision.datasets.FashionMNIST(root=DATA_PATH, train=True, download=True, transform=transform)
             test_ds = torchvision.datasets.FashionMNIST(root=DATA_PATH, train=False, download=True, transform=transform)
-            x_train = np.stack([train_ds[i][0].numpy() for i in range(len(train_ds))]).astype(np.float32)
-            y_train = np.array([train_ds[i][1] for i in range(len(train_ds))], dtype=np.int64)
-            x_test = np.stack([test_ds[i][0].numpy() for i in range(len(test_ds))]).astype(np.float32)
-            y_test = np.array([test_ds[i][1] for i in range(len(test_ds))], dtype=np.int64)
+            x_train = torch.stack([train_ds[i][0] for i in range(len(train_ds))])
+            y_train = torch.tensor([train_ds[i][1] for i in range(len(train_ds))], dtype=torch.long)
+            x_test = torch.stack([test_ds[i][0] for i in range(len(test_ds))])
+            y_test = torch.tensor([test_ds[i][1] for i in range(len(test_ds))], dtype=torch.long)
             num_classes = 10
             in_features = x_train.shape[1]
         case "openml":
@@ -536,10 +536,14 @@ def get_data_al(
             x = dataset.data.astype(np.float32)
             le = LabelEncoder()
             y = le.fit_transform(dataset.target)
-            x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=seed, stratify=y)
+            x_np_train, x_np_test, y_np_train, y_np_test = train_test_split(
+                x, y, test_size=0.2, random_state=seed, stratify=y
+            )
             scaler = StandardScaler()
-            x_train = scaler.fit_transform(x_train).astype(np.float32)
-            x_test = scaler.transform(x_test).astype(np.float32)
+            x_train = torch.from_numpy(scaler.fit_transform(x_np_train).astype(np.float32))
+            x_test = torch.from_numpy(scaler.transform(x_np_test).astype(np.float32))
+            y_train = torch.from_numpy(y_np_train.astype(np.int64))
+            y_test = torch.from_numpy(y_np_test.astype(np.int64))
             num_classes = len(le.classes_)
             in_features = x_train.shape[1]
         case _:

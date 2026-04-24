@@ -3,8 +3,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
-import numpy as np
+import torch
+
+if TYPE_CHECKING:
+    import numpy as np
 
 
 @dataclass
@@ -20,12 +24,12 @@ class ActiveLearningPool:
         y_test: Labels for the held-out test set.
     """
 
-    x_labeled: np.ndarray
-    y_labeled: np.ndarray
-    x_unlabeled: np.ndarray
-    y_unlabeled: np.ndarray
-    x_test: np.ndarray
-    y_test: np.ndarray
+    x_labeled: torch.Tensor
+    y_labeled: torch.Tensor
+    x_unlabeled: torch.Tensor
+    y_unlabeled: torch.Tensor
+    x_test: torch.Tensor
+    y_test: torch.Tensor
 
     @property
     def n_labeled(self) -> int:
@@ -39,17 +43,17 @@ class ActiveLearningPool:
 
     @staticmethod
     def from_dataset(
-        x: np.ndarray,
-        y: np.ndarray,
-        x_test: np.ndarray,
-        y_test: np.ndarray,
+        x: torch.Tensor,
+        y: torch.Tensor,
+        x_test: torch.Tensor,
+        y_test: torch.Tensor,
         initial_size: int,
         seed: int | None,
     ) -> ActiveLearningPool:
         """Create a pool by randomly splitting training data into labeled and unlabeled subsets.
 
-        Uses ``np.random.default_rng(seed)`` followed by ``rng.permutation`` so that
-        the split is fully reproducible for a given seed.
+        Uses ``torch.randperm`` with a seeded generator so that the split is
+        fully reproducible for a given seed.
 
         Args:
             x: Full training feature matrix.
@@ -64,8 +68,8 @@ class ActiveLearningPool:
             A new ``ActiveLearningPool`` with ``initial_size`` labeled samples and
             the remainder in the unlabeled pool.
         """
-        rng = np.random.default_rng(seed)
-        perm = rng.permutation(len(x))
+        g = torch.Generator().manual_seed(seed) if seed is not None else torch.Generator()
+        perm = torch.randperm(len(x), generator=g)
         labeled_idx = perm[:initial_size]
         unlabeled_idx = perm[initial_size:]
         return ActiveLearningPool(
@@ -87,9 +91,10 @@ class ActiveLearningPool:
             indices: Integer indices into the current ``x_unlabeled`` array
                 identifying which samples to label.
         """
-        self.x_labeled = np.concatenate([self.x_labeled, self.x_unlabeled[indices]], axis=0)
-        self.y_labeled = np.concatenate([self.y_labeled, self.y_unlabeled[indices]], axis=0)
-        mask = np.ones(len(self.x_unlabeled), dtype=bool)
-        mask[indices] = False
+        idx = torch.from_numpy(indices).long()
+        self.x_labeled = torch.cat([self.x_labeled, self.x_unlabeled[idx]], dim=0)
+        self.y_labeled = torch.cat([self.y_labeled, self.y_unlabeled[idx]], dim=0)
+        mask = torch.ones(len(self.x_unlabeled), dtype=torch.bool)
+        mask[idx] = False
         self.x_unlabeled = self.x_unlabeled[mask]
         self.y_unlabeled = self.y_unlabeled[mask]

@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Protocol, cast, runtime_checkable
 
 import numpy as np
-from scipy.spatial.distance import cdist
+import torch
 
 if TYPE_CHECKING:
     from probly.evaluation.active_learning.pool import ActiveLearningPool
@@ -15,15 +15,15 @@ if TYPE_CHECKING:
 class Estimator(Protocol):
     """Protocol for estimators usable by query strategies."""
 
-    def fit(self, x: np.ndarray, y: np.ndarray) -> None:
+    def fit(self, x: torch.Tensor, y: torch.Tensor) -> None:
         """Fit the estimator on labeled data."""
         ...
 
-    def predict(self, x: np.ndarray) -> np.ndarray:
+    def predict(self, x: torch.Tensor) -> torch.Tensor:
         """Return class predictions."""
         ...
 
-    def predict_proba(self, x: np.ndarray) -> np.ndarray:
+    def predict_proba(self, x: torch.Tensor) -> torch.Tensor:
         """Return class probabilities."""
         ...
 
@@ -45,7 +45,7 @@ class QueryStrategy(Protocol):
         ...
 
 
-def _badge_select(embeddings: np.ndarray, probs: np.ndarray, n: int) -> np.ndarray:
+def _badge_select(embeddings: torch.Tensor, probs: torch.Tensor, n: int) -> np.ndarray:
     """Select n indices via BADGE k-means++ initialization.
 
     Computes gradient embeddings from predicted probabilities and embeddings,
@@ -61,9 +61,9 @@ def _badge_select(embeddings: np.ndarray, probs: np.ndarray, n: int) -> np.ndarr
     """
     # Flatten multi-dimensional inputs (e.g. images) to 2D
     flat = embeddings.reshape(len(embeddings), -1)
-    predicted_class = np.argmax(probs, axis=1)
-    p_predicted = probs[np.arange(len(probs)), predicted_class]
-    grad_embeddings = flat * (1 - p_predicted)[:, np.newaxis]
+    predicted_class = probs.argmax(dim=1)
+    p_predicted = probs[torch.arange(len(probs)), predicted_class]
+    grad_embeddings = flat * (1 - p_predicted).unsqueeze(1)
 
     rng = np.random.default_rng()
     n_pool = len(grad_embeddings)
@@ -73,8 +73,8 @@ def _badge_select(embeddings: np.ndarray, probs: np.ndarray, n: int) -> np.ndarr
     chosen: list[int] = [first]
 
     for _ in range(1, n):
-        dists = cdist(grad_embeddings, grad_embeddings[chosen], metric="sqeuclidean")
-        min_dists = dists.min(axis=1)
+        dists = torch.cdist(grad_embeddings, grad_embeddings[chosen]).pow(2)
+        min_dists = dists.min(dim=1).values
         min_dists[chosen] = 0.0
         total = min_dists.sum()
         if total == 0.0:
@@ -84,7 +84,8 @@ def _badge_select(embeddings: np.ndarray, probs: np.ndarray, n: int) -> np.ndarr
                 break
             next_idx = int(rng.choice(remaining))
         else:
-            probs_sample = min_dists / total
+            probs_sample = min_dists.cpu().numpy()
+            probs_sample /= probs_sample.sum()
             next_idx = int(rng.choice(n_pool, p=probs_sample))
         chosen.append(next_idx)
 
@@ -143,9 +144,9 @@ class MarginSampling:
         """
         n = min(n, pool.n_unlabeled)
         probs = estimator.predict_proba(pool.x_unlabeled)
-        sorted_probs = np.sort(probs, axis=1)
+        sorted_probs = probs.sort(dim=1).values
         margin = sorted_probs[:, -1] - sorted_probs[:, -2]
-        return np.argpartition(margin, n)[:n]
+        return torch.topk(margin, n, largest=False).indices.cpu().numpy()
 
 
 class EntropyQuery:
@@ -168,9 +169,9 @@ class EntropyQuery:
         """
         n = min(n, pool.n_unlabeled)
         probs = estimator.predict_proba(pool.x_unlabeled)
-        probs = np.clip(probs, 1e-10, 1.0)
-        entropy = -np.sum(probs * np.log(probs), axis=1)
-        return np.argpartition(entropy, -n)[-n:]
+        probs = probs.clamp(min=1e-10, max=1.0)
+        entropy = -(probs * probs.log()).sum(dim=1)
+        return torch.topk(entropy, n, largest=True).indices.cpu().numpy()
 
 
 class MutualInfoQuery:
@@ -193,7 +194,7 @@ class MutualInfoQuery:
         """
         n = min(n, pool.n_unlabeled)
         scores = cast("Any", estimator).uncertainty_scores(pool.x_unlabeled)
-        return np.argpartition(scores, -n)[-n:]
+        return torch.topk(scores, n, largest=True).indices.cpu().numpy()
 
 
 class UncertaintyQuery:
@@ -216,7 +217,7 @@ class UncertaintyQuery:
         """
         n = min(n, pool.n_unlabeled)
         scores = cast("Any", estimator).uncertainty_scores(pool.x_unlabeled)
-        return np.argpartition(scores, -n)[-n:]
+        return torch.topk(scores, n, largest=True).indices.cpu().numpy()
 
 
 class BADGEQuery:

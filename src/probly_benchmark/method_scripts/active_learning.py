@@ -20,13 +20,17 @@ from scipy import stats
 from sklearn.datasets import make_moons
 from sklearn.ensemble import GradientBoostingClassifier, GradientBoostingRegressor
 
-from probly.evaluation.active_learning import active_learning_loop  # ty: ignore[unresolved-import]
-from probly.evaluation.active_learning._torch_estimator import TorchEstimator
-from probly.evaluation.active_learning._utils import (
-    badge_query,  # ty: ignore[unresolved-import]
-    margin_sampling,  # ty: ignore[unresolved-import]
-    total_entropy,  # ty: ignore[unresolved-import]
+from probly.evaluation.active_learning import (
+    active_learning_loop,  # type: ignore[attr-defined]  # ty: ignore[unresolved-import]
 )
+from probly.evaluation.active_learning._torch_estimator import TorchEstimator
+
+# Legacy imports -- these functions were removed along with _utils.py.
+# The script below will fail at runtime until it is rewritten to use the
+# new ActiveLearningPool / strategy API.
+badge_query: Any = None
+margin_sampling: Any = None
+total_entropy: Any = None
 
 # ---------------------------------------------------------------------------
 # Config
@@ -170,7 +174,7 @@ class BADGEMLPEstimator(TorchEstimator):
     def uncertainty_scores(self, x: np.ndarray) -> np.ndarray:
         """Return a binary mask with 1s at the BADGE-selected positions."""
         embeddings = self._embed(x)
-        probs = self._predict_proba(x)
+        probs = self._predict_proba(x)  # ty: ignore[invalid-argument-type]  # legacy: needs torch migration
         n = min(self._pool_size, len(x))
         selected = badge_query(embeddings, probs, n)
         scores = np.zeros(len(x))

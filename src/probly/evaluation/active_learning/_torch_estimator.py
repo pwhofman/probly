@@ -12,13 +12,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Literal, Self
 
+import torch
+from torch import nn
+
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
-
-    import torch
-    from torch import nn
-
-import numpy as np
 
 
 def _default_reset(model: nn.Module) -> None:
@@ -31,8 +29,6 @@ def _default_reset(model: nn.Module) -> None:
 
 def _resolve_device(device: torch.device | str | None) -> torch.device:
     """Return an explicit torch device, auto-detecting when *device* is None."""
-    import torch  # noqa: PLC0415
-
     if device is not None:
         return torch.device(device)
     if torch.cuda.is_available():
@@ -81,8 +77,6 @@ class TorchEstimator:
         device: torch.device | str | None = None,
         reset_fn: Callable[[nn.Module], None] | Literal["default"] | None = "default",
     ) -> None:
-        import torch  # noqa: PLC0415
-
         if optimizer_cls is None:
             optimizer_cls = torch.optim.Adam
 
@@ -110,27 +104,25 @@ class TorchEstimator:
         if task == "classification":
             self.predict_proba = self._predict_proba  # type: ignore[assignment]
 
-    def fit(self, x: np.ndarray, y: np.ndarray) -> Self:
+    def fit(self, x: torch.Tensor, y: torch.Tensor) -> Self:
         """Train the wrapped model on the provided data.
 
         Args:
-            x: Feature array of shape ``(n_samples, n_features)``.
-            y: Target array of shape ``(n_samples,)``.
+            x: Feature tensor of shape ``(n_samples, n_features)``.
+            y: Target tensor of shape ``(n_samples,)``.
 
         Returns:
             ``self`` for method chaining.
         """
-        import torch  # noqa: PLC0415
-
         if self.reset_fn is not None:
             self.reset_fn(self.model)
 
         self.model.train()
         optimizer = self.optimizer_cls(self.model.parameters(), **self.optimizer_kwargs)
 
-        x_t = torch.as_tensor(x, dtype=torch.float32, device=self.device)
+        x_t = x.to(dtype=torch.float32, device=self.device)
         y_dtype = torch.long if self.task == "classification" else torch.float32
-        y_t = torch.as_tensor(y, dtype=y_dtype, device=self.device)
+        y_t = y.to(dtype=y_dtype, device=self.device)
 
         n = len(x_t)
         for _ in range(self.n_epochs):
@@ -149,27 +141,25 @@ class TorchEstimator:
 
     def _predict_batched(
         self,
-        x: np.ndarray,
+        x: torch.Tensor,
         transform_fn: Callable[[torch.Tensor], torch.Tensor],
-    ) -> np.ndarray:
-        """Run batched inference, apply *transform_fn* per batch, return numpy."""
-        import torch  # noqa: PLC0415
-
+    ) -> torch.Tensor:
+        """Run batched inference, apply *transform_fn* per batch, return tensor."""
         self.model.eval()
-        x_t = torch.as_tensor(x, dtype=torch.float32, device=self.device)
-        parts: list[np.ndarray] = []
+        x_t = x.to(dtype=torch.float32, device=self.device)
+        parts: list[torch.Tensor] = []
         with torch.no_grad():
             for start in range(0, len(x_t), self.pred_batch_size):
                 batch = x_t[start : start + self.pred_batch_size]
                 out = transform_fn(self.model(batch))
-                parts.append(out.cpu().numpy())
-        return np.concatenate(parts, axis=0)
+                parts.append(out.cpu())
+        return torch.cat(parts, dim=0)
 
-    def predict(self, x: np.ndarray) -> np.ndarray:
-        """Return predictions as a numpy array.
+    def predict(self, x: torch.Tensor) -> torch.Tensor:
+        """Return predictions as a tensor.
 
         Args:
-            x: Feature array of shape ``(n_samples, n_features)``.
+            x: Feature tensor of shape ``(n_samples, n_features)``.
 
         Returns:
             For classification: integer class labels.
@@ -179,17 +169,15 @@ class TorchEstimator:
             return self._predict_batched(x, lambda out: out.argmax(dim=-1))
         return self._predict_batched(x, lambda out: out.squeeze(-1))
 
-    def _predict_proba(self, x: np.ndarray) -> np.ndarray:
+    def _predict_proba(self, x: torch.Tensor) -> torch.Tensor:
         """Return softmax probabilities of shape ``(n_samples, n_classes)``.
 
         Args:
-            x: Feature array of shape ``(n_samples, n_features)``.
+            x: Feature tensor of shape ``(n_samples, n_features)``.
 
         Returns:
-            Probability array.
+            Probability tensor.
         """
-        import torch  # noqa: PLC0415
-
         return self._predict_batched(x, lambda out: torch.softmax(out, dim=-1))
 
 
@@ -209,8 +197,6 @@ def _train_one_epoch(
     device: torch.device,
 ) -> None:
     """Run one epoch of mini-batch SGD on a single module in-place."""
-    import torch  # noqa: PLC0415
-
     n = len(x_t)
     perm = torch.randperm(n, device=device)
     for start in range(0, n, batch_size):
@@ -268,8 +254,6 @@ class TorchEnsembleEstimator:
         device: torch.device | str | None = None,
         reset_fn: Callable[[nn.Module], None] | Literal["default"] | None = "default",
     ) -> None:
-        import torch  # noqa: PLC0415
-
         from probly.method.ensemble import ensemble  # noqa: PLC0415
 
         if optimizer_cls is None:
@@ -301,21 +285,19 @@ class TorchEnsembleEstimator:
         if task == "classification":
             self.predict_proba = self._predict_proba  # type: ignore[assignment]
 
-    def fit(self, x: np.ndarray, y: np.ndarray) -> Self:
+    def fit(self, x: torch.Tensor, y: torch.Tensor) -> Self:
         """Train each ensemble member independently on the full labeled set.
 
         Args:
-            x: Feature array of shape ``(n_samples, n_features)``.
-            y: Target array of shape ``(n_samples,)``.
+            x: Feature tensor of shape ``(n_samples, n_features)``.
+            y: Target tensor of shape ``(n_samples,)``.
 
         Returns:
             ``self``
         """
-        import torch  # noqa: PLC0415
-
-        x_t = torch.as_tensor(x, dtype=torch.float32, device=self.device)
+        x_t = x.to(dtype=torch.float32, device=self.device)
         y_dtype = torch.long if self.task == "classification" else torch.float32
-        y_t = torch.as_tensor(y, dtype=y_dtype, device=self.device)
+        y_t = y.to(dtype=y_dtype, device=self.device)
 
         for member in self.members:
             if self.reset_fn is not None:
@@ -327,64 +309,60 @@ class TorchEnsembleEstimator:
 
         return self
 
-    def _predict_proba_raw(self, x: np.ndarray) -> np.ndarray:
-        """Return per-member softmax probabilities, shape ``(n_samples, n_classes)``."""
-        import torch  # noqa: PLC0415
-
-        x_t = torch.as_tensor(x, dtype=torch.float32, device=self.device)
+    def _predict_proba_raw(self, x: torch.Tensor) -> torch.Tensor:
+        """Return averaged softmax probabilities, shape ``(n_samples, n_classes)``."""
+        x_t = x.to(dtype=torch.float32, device=self.device)
         member_probs = []
         for member in self.members:
             member.eval()
-            parts: list[np.ndarray] = []
+            parts: list[torch.Tensor] = []
             with torch.no_grad():
                 for start in range(0, len(x_t), self.pred_batch_size):
                     batch = x_t[start : start + self.pred_batch_size]
                     out = torch.softmax(member(batch), dim=-1)
-                    parts.append(out.cpu().numpy())
-            member_probs.append(np.concatenate(parts, axis=0))
+                    parts.append(out.cpu())
+            member_probs.append(torch.cat(parts, dim=0))
         # Average across members: (K, n, n_classes) -> (n, n_classes)
-        return np.mean(np.stack(member_probs, axis=0), axis=0)
+        return torch.stack(member_probs, dim=0).mean(dim=0)
 
-    def _predict_proba(self, x: np.ndarray) -> np.ndarray:
+    def _predict_proba(self, x: torch.Tensor) -> torch.Tensor:
         """Return averaged softmax probabilities of shape ``(n_samples, n_classes)``.
 
         Args:
-            x: Feature array of shape ``(n_samples, n_features)``.
+            x: Feature tensor of shape ``(n_samples, n_features)``.
 
         Returns:
-            Averaged class probability array.
+            Averaged class probability tensor.
         """
         return self._predict_proba_raw(x)
 
-    def predict(self, x: np.ndarray) -> np.ndarray:
-        """Return predictions as a numpy array.
+    def predict(self, x: torch.Tensor) -> torch.Tensor:
+        """Return predictions as a tensor.
 
         Args:
-            x: Feature array of shape ``(n_samples, n_features)``.
+            x: Feature tensor of shape ``(n_samples, n_features)``.
 
         Returns:
             For classification: integer class labels.
             For regression: mean predictions across ensemble members.
         """
-        import torch  # noqa: PLC0415
-
         if self.task == "classification":
             probs = self._predict_proba_raw(x)
-            return probs.argmax(axis=-1)
+            return probs.argmax(dim=-1)
 
         # Regression: average raw outputs across members.
-        x_t = torch.as_tensor(x, dtype=torch.float32, device=self.device)
+        x_t = x.to(dtype=torch.float32, device=self.device)
         member_preds = []
         for member in self.members:
             member.eval()
-            parts: list[np.ndarray] = []
+            parts: list[torch.Tensor] = []
             with torch.no_grad():
                 for start in range(0, len(x_t), self.pred_batch_size):
                     batch = x_t[start : start + self.pred_batch_size]
                     out = member(batch).squeeze(-1)
-                    parts.append(out.cpu().numpy())
-            member_preds.append(np.concatenate(parts, axis=0))
-        return np.mean(np.stack(member_preds, axis=0), axis=0)
+                    parts.append(out.cpu())
+            member_preds.append(torch.cat(parts, dim=0))
+        return torch.stack(member_preds, dim=0).mean(dim=0)
 
 
 # ---------------------------------------------------------------------------
@@ -435,8 +413,6 @@ class MCDropoutEstimator:
         device: torch.device | str | None = None,
         reset_fn: Callable[[nn.Module], None] | Literal["default"] | None = "default",
     ) -> None:
-        import torch  # noqa: PLC0415
-
         from probly.method.dropout import dropout  # noqa: PLC0415
 
         if optimizer_cls is None:
@@ -467,93 +443,87 @@ class MCDropoutEstimator:
         if task == "classification":
             self.predict_proba = self._predict_proba  # type: ignore[assignment]
 
-    def fit(self, x: np.ndarray, y: np.ndarray) -> Self:
+    def fit(self, x: torch.Tensor, y: torch.Tensor) -> Self:
         """Train the dropout model on the provided data.
 
         Args:
-            x: Feature array of shape ``(n_samples, n_features)``.
-            y: Target array of shape ``(n_samples,)``.
+            x: Feature tensor of shape ``(n_samples, n_features)``.
+            y: Target tensor of shape ``(n_samples,)``.
 
         Returns:
             ``self``
         """
-        import torch  # noqa: PLC0415
-
         if self.reset_fn is not None:
             self.reset_fn(self.model)
 
         self.model.train()
         optimizer = self.optimizer_cls(self.model.parameters(), **self.optimizer_kwargs)
 
-        x_t = torch.as_tensor(x, dtype=torch.float32, device=self.device)
+        x_t = x.to(dtype=torch.float32, device=self.device)
         y_dtype = torch.long if self.task == "classification" else torch.float32
-        y_t = torch.as_tensor(y, dtype=y_dtype, device=self.device)
+        y_t = y.to(dtype=y_dtype, device=self.device)
 
         for _ in range(self.n_epochs):
             _train_one_epoch(self.model, x_t, y_t, optimizer, self.loss_fn, self.batch_size, self.task, self.device)
 
         return self
 
-    def _stochastic_probs(self, x: np.ndarray) -> np.ndarray:
+    def _stochastic_probs(self, x: torch.Tensor) -> torch.Tensor:
         """Return average softmax over ``num_samples`` stochastic passes.
 
         The model is kept in *train* mode so that dropout remains active.
 
         Returns:
-            Array of shape ``(n_samples, n_classes)``.
+            Tensor of shape ``(n_samples, n_classes)``.
         """
-        import torch  # noqa: PLC0415
-
         # Keep train mode to retain dropout stochasticity.
         self.model.train()
-        x_t = torch.as_tensor(x, dtype=torch.float32, device=self.device)
-        sample_probs: list[np.ndarray] = []
+        x_t = x.to(dtype=torch.float32, device=self.device)
+        sample_probs: list[torch.Tensor] = []
         for _ in range(self.num_samples):
-            parts: list[np.ndarray] = []
+            parts: list[torch.Tensor] = []
             with torch.no_grad():
                 for start in range(0, len(x_t), self.pred_batch_size):
                     batch = x_t[start : start + self.pred_batch_size]
                     out = torch.softmax(self.model(batch), dim=-1)
-                    parts.append(out.cpu().numpy())
-            sample_probs.append(np.concatenate(parts, axis=0))
+                    parts.append(out.cpu())
+            sample_probs.append(torch.cat(parts, dim=0))
         # shape: (num_samples, n, n_classes) -> average -> (n, n_classes)
-        return np.mean(np.stack(sample_probs, axis=0), axis=0)
+        return torch.stack(sample_probs, dim=0).mean(dim=0)
 
-    def _predict_proba(self, x: np.ndarray) -> np.ndarray:
+    def _predict_proba(self, x: torch.Tensor) -> torch.Tensor:
         """Return MC-averaged softmax probabilities of shape ``(n_samples, n_classes)``.
 
         Args:
-            x: Feature array of shape ``(n_samples, n_features)``.
+            x: Feature tensor of shape ``(n_samples, n_features)``.
 
         Returns:
-            Averaged class probability array.
+            Averaged class probability tensor.
         """
         return self._stochastic_probs(x)
 
-    def predict(self, x: np.ndarray) -> np.ndarray:
-        """Return predictions as a numpy array.
+    def predict(self, x: torch.Tensor) -> torch.Tensor:
+        """Return predictions as a tensor.
 
         Args:
-            x: Feature array of shape ``(n_samples, n_features)``.
+            x: Feature tensor of shape ``(n_samples, n_features)``.
 
         Returns:
             For classification: integer class labels.
             For regression: mean predictions across stochastic passes.
         """
-        import torch  # noqa: PLC0415
-
         if self.task == "classification":
-            return self._stochastic_probs(x).argmax(axis=-1)
+            return self._stochastic_probs(x).argmax(dim=-1)
 
         self.model.train()
-        x_t = torch.as_tensor(x, dtype=torch.float32, device=self.device)
-        sample_preds: list[np.ndarray] = []
+        x_t = x.to(dtype=torch.float32, device=self.device)
+        sample_preds: list[torch.Tensor] = []
         for _ in range(self.num_samples):
-            parts: list[np.ndarray] = []
+            parts: list[torch.Tensor] = []
             with torch.no_grad():
                 for start in range(0, len(x_t), self.pred_batch_size):
                     batch = x_t[start : start + self.pred_batch_size]
                     out = self.model(batch).squeeze(-1)
-                    parts.append(out.cpu().numpy())
-            sample_preds.append(np.concatenate(parts, axis=0))
-        return np.mean(np.stack(sample_preds, axis=0), axis=0)
+                    parts.append(out.cpu())
+            sample_preds.append(torch.cat(parts, dim=0))
+        return torch.stack(sample_preds, dim=0).mean(dim=0)

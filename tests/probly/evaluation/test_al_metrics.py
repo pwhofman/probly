@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import math
 
-import numpy as np
 import pytest
 
 torch = pytest.importorskip("torch")
@@ -21,14 +20,14 @@ from probly.evaluation.active_learning.metrics import (  # noqa: E402
 
 
 def test_accuracy_perfect():
-    y_pred = np.array([0, 1, 2, 1, 0])
-    y_true = np.array([0, 1, 2, 1, 0])
+    y_pred = torch.tensor([0, 1, 2, 1, 0])
+    y_true = torch.tensor([0, 1, 2, 1, 0])
     assert compute_accuracy(y_pred, y_true) == 1.0
 
 
 def test_accuracy_half_correct():
-    y_pred = np.array([0, 1, 0, 1])
-    y_true = np.array([0, 0, 1, 1])
+    y_pred = torch.tensor([0, 1, 0, 1])
+    y_true = torch.tensor([0, 0, 1, 1])
     assert compute_accuracy(y_pred, y_true) == pytest.approx(0.5)
 
 
@@ -37,29 +36,30 @@ def test_accuracy_half_correct():
 # ---------------------------------------------------------------------------
 
 
-def _make_one_hot_probs(y_true: np.ndarray, n_classes: int) -> np.ndarray:
+def _make_one_hot_probs(y_true: torch.Tensor, n_classes: int) -> torch.Tensor:
     """Build one-hot probability matrix matching labels exactly."""
-    probs = np.zeros((len(y_true), n_classes), dtype=np.float32)
-    probs[np.arange(len(y_true)), y_true] = 1.0
+    probs = torch.zeros(len(y_true), n_classes, dtype=torch.float32)
+    probs[torch.arange(len(y_true)), y_true] = 1.0
     return probs
 
 
 def test_ece_perfect_calibration_near_zero():
-    rng = np.random.default_rng(0)
+    g = torch.Generator().manual_seed(0)
     n = 100
     n_classes = 4
-    y_true = rng.integers(0, n_classes, size=n)
+    y_true = torch.randint(0, n_classes, (n,), generator=g)
     probs = _make_one_hot_probs(y_true, n_classes)
     ece = compute_ece(probs, y_true)
     assert ece < 0.05
 
 
 def test_ece_returns_float_in_unit_interval():
-    rng = np.random.default_rng(1)
+    g = torch.Generator().manual_seed(1)
     n = 50
     n_classes = 3
-    y_true = rng.integers(0, n_classes, size=n)
-    raw = rng.dirichlet(np.ones(n_classes), size=n).astype(np.float32)
+    y_true = torch.randint(0, n_classes, (n,), generator=g)
+    raw = torch.randn(n, n_classes, generator=g).exp()
+    raw = raw / raw.sum(dim=1, keepdim=True)
     ece = compute_ece(raw, y_true)
     assert isinstance(ece, float)
     assert 0.0 <= ece <= 1.0

@@ -8,7 +8,7 @@ import torch
 from probly.train.calibration.torch import ExpectedCalibrationError
 
 
-def compute_accuracy(y_pred: np.ndarray, y_true: np.ndarray) -> float:
+def compute_accuracy(y_pred: torch.Tensor, y_true: torch.Tensor) -> float:
     """Compute classification accuracy.
 
     Args:
@@ -18,14 +18,13 @@ def compute_accuracy(y_pred: np.ndarray, y_true: np.ndarray) -> float:
     Returns:
         Fraction of correct predictions in [0, 1].
     """
-    return float(np.mean(y_pred == y_true))
+    return float((y_pred == y_true).float().mean().item())
 
 
-def compute_ece(probs: np.ndarray, y_true: np.ndarray, n_bins: int = 10) -> float:
+def compute_ece(probs: torch.Tensor, y_true: torch.Tensor, n_bins: int = 10) -> float:
     """Compute Expected Calibration Error.
 
     Wraps probly.train.calibration.torch.ExpectedCalibrationError.
-    Converts numpy inputs to torch tensors, runs ECE, and returns a float.
 
     Args:
         probs: Class probability matrix of shape (n, n_classes).
@@ -35,11 +34,9 @@ def compute_ece(probs: np.ndarray, y_true: np.ndarray, n_bins: int = 10) -> floa
     Returns:
         ECE value in [0, 1].
     """
-    inputs = torch.as_tensor(probs, dtype=torch.float32)
-    targets = torch.as_tensor(y_true, dtype=torch.long)
     ece_fn = ExpectedCalibrationError(num_bins=n_bins)
     with torch.no_grad():
-        loss = ece_fn(inputs, targets)
+        loss = ece_fn(probs.float(), y_true.long())
     return float(loss.item())
 
 

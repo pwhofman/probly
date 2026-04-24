@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import dataclasses
 
-import numpy as np
 import pytest
 from sklearn.linear_model import LogisticRegression
+import torch
 
 from probly.evaluation.active_learning.loop import ALState, active_learning_steps
 from probly.evaluation.active_learning.pool import ActiveLearningPool
@@ -23,18 +23,18 @@ class _SklearnEstimator:
     def __init__(self, model) -> None:
         self._model = model
 
-    def fit(self, x, y):
-        self._model.fit(x, y)
+    def fit(self, x: torch.Tensor, y: torch.Tensor) -> None:
+        self._model.fit(x.numpy(), y.numpy())
 
-    def predict(self, x):
-        return self._model.predict(x)
+    def predict(self, x: torch.Tensor) -> torch.Tensor:
+        return torch.from_numpy(self._model.predict(x.numpy()))
 
-    def predict_proba(self, x):
-        return self._model.predict_proba(x)
+    def predict_proba(self, x: torch.Tensor) -> torch.Tensor:
+        return torch.from_numpy(self._model.predict_proba(x.numpy()).copy()).float()
 
-    def uncertainty_scores(self, x):
+    def uncertainty_scores(self, x: torch.Tensor) -> torch.Tensor:
         probs = self.predict_proba(x)
-        return 1.0 - np.max(probs, axis=1)
+        return 1.0 - probs.max(dim=1).values
 
 
 # ---------------------------------------------------------------------------
@@ -45,12 +45,12 @@ class _SklearnEstimator:
 @pytest.fixture
 def classification_data():
     """200 samples, 5 features, 3 classes, 150/50 train/test split."""
-    rng = np.random.default_rng(42)
+    g = torch.Generator().manual_seed(42)
     n_total = 200
     n_features = 5
     n_classes = 3
-    x = rng.standard_normal((n_total, n_features))
-    y = rng.integers(0, n_classes, size=n_total)
+    x = torch.randn(n_total, n_features, generator=g)
+    y = torch.randint(0, n_classes, (n_total,), generator=g)
     x_train, y_train = x[:150], y[:150]
     x_test, y_test = x[150:], y[150:]
     return x_train, y_train, x_test, y_test
