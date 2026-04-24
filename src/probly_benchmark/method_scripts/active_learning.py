@@ -20,7 +20,7 @@ from scipy import stats
 from sklearn.datasets import make_moons
 from sklearn.ensemble import GradientBoostingClassifier, GradientBoostingRegressor
 
-from probly.evaluation.active_learning import active_learning_loop
+from probly.evaluation.active_learning import active_learning_loop  # ty: ignore[unresolved-import]
 from probly.evaluation.active_learning._torch_estimator import TorchEstimator
 from probly.evaluation.active_learning._utils import badge_query, margin_sampling, total_entropy
 

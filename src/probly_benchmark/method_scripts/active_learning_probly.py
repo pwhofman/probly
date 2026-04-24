@@ -19,7 +19,7 @@ from sklearn.model_selection import train_test_split
 import torch
 from torch import nn
 
-from probly.evaluation.active_learning import active_learning_loop
+from probly.evaluation.active_learning import active_learning_loop  # ty: ignore[unresolved-import]
 from probly.method.credal_ensembling import credal_ensembling
 from probly.quantification.measure.distribution import entropy_of_expected_value, mutual_information
 from probly.representer import representer
@@ -88,7 +88,7 @@ for name, quantifier_fn in strategies.items():
     cep = credal_ensembling(mlp, num_members=5, predictor_type="logit_classifier")
     rep = representer(cep, alpha=0.0, distance="euclidean")
 
-    _, _, sc, nauc = active_learning_loop(  # ty: ignore[invalid-argument-type,too-many-positional-arguments,unknown-argument]
+    _, _, sc, nauc = active_learning_loop(
         rep,
         quantifier_fn,
         x_train,
