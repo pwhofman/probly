@@ -17,7 +17,6 @@ class TorchEfficientCredalPredictor(nn.Module):
 
         Args:
             predictor: The base model.
-            num_classes: Number of classes.
         """
         super().__init__()
         self.predictor = predictor

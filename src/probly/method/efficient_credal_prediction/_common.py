@@ -49,7 +49,6 @@ def efficient_credal_prediction[**In, Out: ProbabilityIntervalsCredalSet](
 
     Args:
         base: Predictor, The base model to be used for the efficient credal predictor.
-        num_classes: int, The number of classes to predict.
 
     Returns:
         Predictor, The efficient credal predictor.
