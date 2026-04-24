@@ -4,8 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
-from flextype import flexdispatch
-from probly.method.ensemble import EnsemblePredictor
+from probly.method.ensemble import EnsemblePredictor, ensemble
 from probly.method.method import predictor_transformation
 
 if TYPE_CHECKING:
@@ -15,16 +14,6 @@ if TYPE_CHECKING:
 @runtime_checkable
 class DarePredictor[**In, Out](EnsemblePredictor[In, Out], Protocol):
     """Protocol for dare predictors."""
-
-
-@flexdispatch
-def dare_generator[**In, Out](
-    base: Predictor[In, Out],
-    num_members: int,
-) -> DarePredictor[In, Out]:
-    """Generate a dare from a base model."""
-    msg = f"No dare generator is registered for type {type(base)}"
-    raise NotImplementedError(msg)
 
 
 @predictor_transformation(
@@ -44,4 +33,4 @@ def dare[**In, Out](
     Returns:
         Predictor, The dare predictor.
     """
-    return dare_generator(base, num_members=num_members)
+    return ensemble(base, num_members=num_members, reset_params=False)
