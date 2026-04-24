@@ -1,4 +1,4 @@
 name: "ddu"
 representer: "ddu"
-quantifier: "mahalanobis"
+quantifier: "ddu_entropy"
 sn_coeff: 3.0
