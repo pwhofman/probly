@@ -7,7 +7,7 @@ from river.forest import ARFClassifier, ARFRegressor
 
 from probly.predictor import predict_raw
 from probly.representation.distribution.array_categorical import ArrayCategoricalDistribution
-from probly.representation.distribution.array_gaussian import ArrayGaussianDistribution
+from probly.representation.distribution.array_point_prediction import ArrayPointPrediction
 
 from ._common import EnsembleCategoricalDistributionPredictor, EnsemblePredictor
 
@@ -45,15 +45,11 @@ def predict_arf_ensemble(arf: ARFClassifier, x: dict[str, float]) -> list[ArrayC
     return result
 
 
-_TREE_VAR = np.array([1e-8])
-"""Near-zero variance for individual tree predictions (no noise model)."""
-
-
 @predict_raw.register(ARFRegressor)
-def predict_arf_regressor_ensemble(arf: ARFRegressor, x: dict[str, float]) -> list[ArrayGaussianDistribution]:
-    """Extract per-tree Gaussian distributions from an ARF regressor.
+def predict_arf_regressor_ensemble(arf: ARFRegressor, x: dict[str, float]) -> list[ArrayPointPrediction]:
+    """Extract per-tree point predictions from an ARF regressor.
 
-    Each tree produces a point prediction wrapped as a near-degenerate Gaussian.
-    Epistemic uncertainty arises from disagreement across trees.
+    Each tree produces a deterministic point prediction. Epistemic uncertainty
+    arises from disagreement across trees; aleatoric uncertainty is zero.
     """
-    return [ArrayGaussianDistribution(mean=np.array([float(m.predict_one(x))]), var=_TREE_VAR) for m in arf.models]
+    return [ArrayPointPrediction(mean=np.array([float(m.predict_one(x))])) for m in arf.models]

@@ -19,6 +19,7 @@ from ._common import (
 from .array_categorical import ArrayCategoricalDistribution, ArrayCategoricalDistributionSample
 from .array_dirichlet import ArrayDirichletDistribution
 from .array_gaussian import ArrayGaussianDistribution, ArrayGaussianDistributionSample
+from .array_point_prediction import ArrayPointPrediction, ArrayPointPredictionSample
 
 
 ## Torch
@@ -43,6 +44,8 @@ __all__ = [
     "ArrayDirichletDistribution",
     "ArrayGaussianDistribution",
     "ArrayGaussianDistributionSample",
+    "ArrayPointPrediction",
+    "ArrayPointPredictionSample",
     "CategoricalDistribution",
     "CategoricalDistributionSample",
     "DirichletDistribution",

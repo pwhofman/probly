@@ -16,9 +16,9 @@ from probly.representation.distribution.array_categorical import (
     ArrayCategoricalDistribution,
     ArrayCategoricalDistributionSample,
 )
-from probly.representation.distribution.array_gaussian import (
-    ArrayGaussianDistribution,
-    ArrayGaussianDistributionSample,
+from probly.representation.distribution.array_point_prediction import (
+    ArrayPointPrediction,
+    ArrayPointPredictionSample,
 )
 from probly.representation.sample._common import create_sample
 from probly.representer import representer
@@ -137,33 +137,31 @@ def trained_arf_regressor():
 
 
 class TestRegressorPredictRaw:
-    def test_returns_list_of_gaussians(self, trained_arf_regressor):
+    def test_returns_list_of_point_predictions(self, trained_arf_regressor):
         arf, x = trained_arf_regressor
         result = predict_raw(arf, x)
 
         assert isinstance(result, list)
         assert len(result) == arf.n_models
-        for dist in result:
-            assert isinstance(dist, ArrayGaussianDistribution)
+        for pred in result:
+            assert isinstance(pred, ArrayPointPrediction)
 
-    def test_gaussians_have_valid_parameters(self, trained_arf_regressor):
+    def test_point_predictions_have_valid_parameters(self, trained_arf_regressor):
         arf, x = trained_arf_regressor
         result = predict_raw(arf, x)
 
-        for dist in result:
-            assert dist.mean.shape == (1,)
-            assert dist.var.shape == (1,)
-            assert np.all(dist.var > 0)
-            assert np.isfinite(dist.mean).all()
+        for pred in result:
+            assert pred.mean.shape == (1,)
+            assert np.isfinite(pred.mean).all()
 
 
 class TestRegressorCreateSample:
-    def test_create_sample_produces_gaussian_sample(self, trained_arf_regressor):
+    def test_create_sample_produces_point_prediction_sample(self, trained_arf_regressor):
         arf, x = trained_arf_regressor
         result = predict_raw(arf, x)
         sample = create_sample(result)
 
-        assert isinstance(sample, ArrayGaussianDistributionSample)
+        assert isinstance(sample, ArrayPointPredictionSample)
 
     def test_sample_shape(self, trained_arf_regressor):
         arf, x = trained_arf_regressor
@@ -171,16 +169,15 @@ class TestRegressorCreateSample:
         sample = create_sample(result)
 
         assert sample.array.mean.shape == (1, arf.n_models)
-        assert sample.array.var.shape == (1, arf.n_models)
         assert sample.sample_axis == 1
 
 
 class TestRegressorEndToEnd:
-    def test_representer_produces_gaussian_sample(self, trained_arf_regressor):
+    def test_representer_produces_point_prediction_sample(self, trained_arf_regressor):
         arf, x = trained_arf_regressor
         sample = representer(arf).represent(x)
 
-        assert isinstance(sample, ArrayGaussianDistributionSample)
+        assert isinstance(sample, ArrayPointPredictionSample)
 
     def test_quantify_produces_decomposition(self, trained_arf_regressor):
         arf, x = trained_arf_regressor
@@ -192,10 +189,16 @@ class TestRegressorEndToEnd:
         assert hasattr(decomp, "epistemic")
         np.testing.assert_allclose(decomp.total, decomp.aleatoric + decomp.epistemic, atol=1e-10)
 
-    def test_epistemic_dominates_with_near_zero_tree_variance(self, trained_arf_regressor):
+    def test_aleatoric_is_zero(self, trained_arf_regressor):
         arf, x = trained_arf_regressor
         sample = representer(arf).represent(x)
         decomp = quantify(sample)
 
-        # With var=1e-8 per tree, nearly all uncertainty is epistemic
-        assert decomp.epistemic >= 0
+        np.testing.assert_equal(decomp.aleatoric, 0.0)
+
+    def test_total_equals_epistemic(self, trained_arf_regressor):
+        arf, x = trained_arf_regressor
+        sample = representer(arf).represent(x)
+        decomp = quantify(sample)
+
+        np.testing.assert_allclose(decomp.total, decomp.epistemic, atol=1e-10)

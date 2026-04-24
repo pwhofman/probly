@@ -13,7 +13,9 @@ from probly.representation.sample._common import Sample
 if TYPE_CHECKING:
     from probly.representation.array_like import ArrayLike
 
-type DistributionType = Literal["gaussian", "dirichlet", "categorical", "empirical_second_order_categorical"]
+type DistributionType = Literal[
+    "gaussian", "dirichlet", "categorical", "empirical_second_order_categorical", "point_prediction"
+]
 
 
 class Distribution[T](Representation, ABC):
