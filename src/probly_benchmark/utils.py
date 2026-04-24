@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pathlib
 import random
+import secrets
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
@@ -16,17 +17,21 @@ from probly_benchmark.builders import BuildContext, build_model
 
 if TYPE_CHECKING:
     from omegaconf import DictConfig
+    from torch import nn
+    from torch.utils.data import DataLoader
 
     from probly.representation import Representation
     from probly.representer import Representer
 
 
-def set_seed(seed: int) -> None:
+def set_seed(seed: int | None) -> None:
     """Set seed for reproducibility.
 
     Args:
         seed: Seed for reproducibility.
     """
+    if seed is None:
+        seed = secrets.randbelow(2**32)
     random.seed(seed)
     np.random.seed(seed)  # noqa: NPY002
     np.random.default_rng(seed)
@@ -92,6 +97,47 @@ def collect_outputs_targets(
             outputs_ = rep.predict(inputs.to(device))
         outputs.append(outputs_)
         targets.append(targets_)
+
+    return torch.cat(outputs), torch.cat(targets)
+
+
+@torch.no_grad()
+def collect_outputs_targets_raw(
+    model: nn.Module,
+    loader: DataLoader,
+    device: torch.device,
+    amp_enabled: bool = False,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Collect raw model outputs (e.g. logits) and targets from a data loader.
+
+    Unlike :func:`collect_outputs_targets`, this helper does not go through a
+    ``Representer``. It calls ``model(inputs)`` directly and returns the
+    concatenated outputs on CPU, which is what callers need when they want the
+    model's raw tensor output (for example, logits for a downstream numpy
+    computation).
+
+    Args:
+        model: The model to evaluate.
+        loader: DataLoader to iterate over.
+        device: Device to run inference on.
+        amp_enabled: Whether to use automatic mixed precision.
+
+    Returns:
+        A tuple ``(outputs, targets)`` of CPU tensors.
+    """
+    model.eval()
+    outputs = []
+    targets = []
+
+    for inputs_, targets_ in tqdm(loader, desc="Batch"):
+        inputs = inputs_.to(device, non_blocking=True)
+        if amp_enabled:
+            with torch.amp.autocast(device.type):
+                outputs_ = model(inputs)
+        else:
+            outputs_ = model(inputs)
+        outputs.append(outputs_.detach().cpu())
+        targets.append(targets_.detach().cpu())
 
     return torch.cat(outputs), torch.cat(targets)
 

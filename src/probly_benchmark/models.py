@@ -7,6 +7,8 @@ from torch import nn
 from torch.nn import functional as F
 import torchvision.models as tm
 
+from probly_benchmark.resnet import ResNet18
+
 
 def get_base_model(name: str, num_classes: int, pretrained: bool = False) -> nn.Module:
     """Get a base model.
@@ -21,20 +23,27 @@ def get_base_model(name: str, num_classes: int, pretrained: bool = False) -> nn.
     """
     match name:
         case "resnet18":
-            model = tm.resnet18(weights="DEFAULT" if pretrained else None)
-            model.fc = nn.Linear(512, num_classes)
+            if pretrained:
+                msg = "Pretrained weights are not supported for the local ResNet18."
+                raise NotImplementedError(msg)
+            model = ResNet18()
+            model.linear = nn.Linear(model.linear.in_features, num_classes)
         case "resnet18_encoder":
-            model = tm.resnet18(weights="DEFAULT" if pretrained else None)
-            model.fc = nn.Identity()
+            if pretrained:
+                msg = "Pretrained weights are not supported for the local ResNet18."
+                raise NotImplementedError(msg)
+            model = ResNet18()
+            model.linear = nn.Identity()
         case "resnet50":
             model = tm.resnet50(weights="DEFAULT" if pretrained else None)
-            model.fc = nn.Linear(2048, num_classes)
+            if model.fc.out_features != num_classes:
+                model.fc = nn.Linear(model.fc.in_features, num_classes)
         case "resnet50_encoder":
             model = tm.resnet50(weights="DEFAULT" if pretrained else None)
             model.fc = nn.Identity()
         case "convnext_tiny":
             model = tm.convnext_tiny(weights="DEFAULT" if pretrained else None)
-            model.classifier[-1] = nn.Linear(768, num_classes)
+            model.classifier[-1] = nn.Linear(model.classifier[-1].in_features, num_classes)
         case "regnet_y_400mf":
             model = tm.regnet_y_400mf(weights="DEFAULT" if pretrained else None)
             model.fc = nn.Linear(model.fc.in_features, num_classes)

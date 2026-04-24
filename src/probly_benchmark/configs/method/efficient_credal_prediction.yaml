@@ -1,0 +1,4 @@
+# @package method
+name: "efficient_credal_prediction"
+train:
+  alpha: 0.5  # relative-likelihood threshold for the credal set
