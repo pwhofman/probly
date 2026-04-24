@@ -59,9 +59,11 @@ def _badge_select(embeddings: np.ndarray, probs: np.ndarray, n: int) -> np.ndarr
     Returns:
         Array of n integer indices.
     """
+    # Flatten multi-dimensional inputs (e.g. images) to 2D
+    flat = embeddings.reshape(len(embeddings), -1)
     predicted_class = np.argmax(probs, axis=1)
     p_predicted = probs[np.arange(len(probs)), predicted_class]
-    grad_embeddings = embeddings * (1 - p_predicted)[:, np.newaxis]
+    grad_embeddings = flat * (1 - p_predicted)[:, np.newaxis]
 
     rng = np.random.default_rng()
     n_pool = len(grad_embeddings)

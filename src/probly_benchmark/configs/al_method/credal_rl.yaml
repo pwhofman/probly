@@ -1,5 +1,0 @@
-name: "credal_rl"
-representer: "credal_relative_likelihood"
-quantifier: "upper_entropy"
-n_members: 5
-alpha: 0.6

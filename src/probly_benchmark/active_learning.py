@@ -3,32 +3,53 @@
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 import hydra
 from omegaconf import DictConfig, OmegaConf
+import torch
 import wandb
 import wandb.util
 
 from probly.evaluation.active_learning import (
     ActiveLearningPool,
+    BADGEQuery,
+    MarginSampling,
+    QueryStrategy,
+    RandomQuery,
+    UncertaintyQuery,
     active_learning_steps,
     compute_accuracy,
     compute_ece,
     compute_nauc,
 )
-from probly_benchmark.al_builders import build_al_estimator, build_query_strategy
+from probly_benchmark.al_estimator import BenchmarkALEstimator
 from probly_benchmark.data import get_data_al
 from probly_benchmark.utils import set_seed
 
 logger = logging.getLogger(__name__)
 
 
+def _build_query_strategy(cfg: DictConfig) -> QueryStrategy:
+    """Construct a query strategy from config."""
+    name = cfg.al_strategy.name.lower()
+    match name:
+        case "uncertainty":
+            return UncertaintyQuery()
+        case "margin":
+            return MarginSampling()
+        case "badge":
+            return BADGEQuery()
+        case "random":
+            return RandomQuery(seed=cfg.seed)
+        case _:
+            msg = f"Unknown AL strategy: {name!r}"
+            raise ValueError(msg)
+
+
 @hydra.main(version_base=None, config_path="configs/", config_name="active_learning")
 def main(cfg: DictConfig) -> float:
     """Run a single active learning experiment.
-
-    Args:
-        cfg: Hydra config.
 
     Returns:
         Final NAUC (for Hydra optimisation sweeps).
@@ -36,14 +57,13 @@ def main(cfg: DictConfig) -> float:
     set_seed(cfg.seed)
 
     # --- Data ---
-    dataset_kwargs = {}
+    dataset_kwargs: dict[str, Any] = {}
     if cfg.dataset.name == "openml":
         dataset_kwargs["openml_id"] = cfg.dataset.openml_id
 
     x_train, y_train, x_test, y_test, num_classes, in_features = get_data_al(
         cfg.dataset.name, seed=cfg.seed, **dataset_kwargs
     )
-    # Resolve num_classes if not set in config
     if cfg.dataset.num_classes is None:
         cfg.dataset.num_classes = num_classes
 
@@ -66,15 +86,44 @@ def main(cfg: DictConfig) -> float:
         seed=cfg.seed,
     )
 
-    # --- Model + Strategy ---
-    estimator = build_al_estimator(cfg, in_features=in_features if cfg.dataset.type == "tabular" else None)
-    strategy = build_query_strategy(cfg)
+    # --- Estimator ---
+    device = torch.device(cfg.device)
+    method_params: dict[str, Any] = (
+        OmegaConf.to_container(cfg.method.params, resolve=True) if cfg.method.get("params") else {}
+    )  # ty: ignore[invalid-assignment]
+    train_kwargs: dict[str, Any] = (
+        OmegaConf.to_container(cfg.method.train, resolve=True) if cfg.method.get("train") else {}
+    )  # ty: ignore[invalid-assignment]
+
+    estimator = BenchmarkALEstimator(
+        method_name=cfg.method.name,
+        method_params=method_params,
+        train_kwargs=train_kwargs,
+        cfg=cfg,
+        base_model_name=cfg.dataset.base_model,
+        model_type=cfg.model_type,
+        num_classes=num_classes,
+        device=device,
+        in_features=in_features if cfg.dataset.type == "tabular" else None,
+        quantifier=cfg.get("quantifier", None),
+        num_samples=cfg.get("num_samples", 10),
+    )
+
+    # --- Strategy ---
+    strategy = _build_query_strategy(cfg)
+
+    if cfg.al_strategy.name == "uncertainty" and not hasattr(estimator, "uncertainty_scores"):
+        msg = (
+            f"Strategy 'uncertainty' requires uncertainty_scores(), "
+            f"but method '{cfg.method.name}' does not provide one."
+        )
+        raise ValueError(msg)
 
     # --- WandB ---
     run_id = wandb.util.generate_id()
     run = wandb.init(
         id=run_id,
-        name=f"al_{cfg.al_method.name}_{cfg.dataset.name}_{run_id}",
+        name=f"al_{cfg.method.name}_{cfg.dataset.name}_{run_id}",
         entity=cfg.wandb.get("entity", None),
         project=cfg.wandb.project,
         config=OmegaConf.to_container(cfg, resolve=True, throw_on_missing=True),  # ty: ignore

@@ -1,4 +1,0 @@
-name: "efficient_credal"
-representer: "efficient_credal_prediction"
-quantifier: "upper_entropy"
-alpha: 0.5

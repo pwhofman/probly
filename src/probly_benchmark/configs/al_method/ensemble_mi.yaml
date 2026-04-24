@@ -1,4 +1,0 @@
-name: "ensemble_mi"
-representer: "ensemble"
-quantifier: "mutual_information"
-n_members: 5

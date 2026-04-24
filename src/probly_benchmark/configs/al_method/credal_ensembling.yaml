@@ -1,4 +1,0 @@
-name: "credal_ensembling"
-representer: "credal_ensembling"
-quantifier: "upper_entropy"
-n_members: 5

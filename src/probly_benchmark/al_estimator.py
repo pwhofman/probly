@@ -1,0 +1,324 @@
+"""BenchmarkALEstimator: AL estimator backed by the full benchmark training pipeline."""
+
+from __future__ import annotations
+
+import logging
+from typing import Any, cast
+
+import numpy as np
+from omegaconf import DictConfig, OmegaConf
+import torch
+from torch import nn
+import torch.nn.functional as F
+from torch.utils.data import DataLoader, TensorDataset
+
+from probly.method.ensemble import EnsemblePredictor
+from probly_benchmark.builders import BuildContext, build_model
+from probly_benchmark.train import train_model
+
+logger = logging.getLogger(__name__)
+
+# Default quantifier for each method (used by uncertainty_scores).
+_DEFAULT_QUANTIFIERS: dict[str, str] = {
+    "ensemble": "entropy_of_expected_value",
+    "credal_ensembling": "upper_entropy",
+    "credal_relative_likelihood": "upper_entropy",
+    "dropout": "entropy_of_expected_value",
+    "ddu": "ddu_entropy",
+    "efficient_credal_prediction": "upper_entropy",
+    "evidential_classification": "entropy",
+    "posterior_network": "entropy",
+}
+
+# Methods that need "probabilistic_classifier" predictor type instead of the
+# default "logit_classifier".
+_PROBABILISTIC_METHODS: set[str] = {"posterior_network"}
+
+
+def _to_device(model: nn.Module, device: torch.device) -> None:
+    """Move model (or ensemble members) to device."""
+    if isinstance(model, EnsemblePredictor):
+        for member in model:
+            member.to(device)
+    else:
+        model.to(device)
+
+
+def _make_train_cfg(cfg: DictConfig) -> DictConfig:
+    """Build a DictConfig shaped like train.py expects from the AL config.
+
+    The _training_loop in train.py reads cfg.epochs, cfg.optimizer,
+    cfg.scheduler, cfg.early_stopping, cfg.get("grad_clip_norm"),
+    and cfg.get("amp").
+    """
+    return OmegaConf.create(
+        {
+            "epochs": cfg.epochs,
+            "batch_size": cfg.batch_size,
+            "optimizer": OmegaConf.to_container(cfg.optimizer, resolve=True),
+            "scheduler": OmegaConf.to_container(cfg.scheduler, resolve=True),
+            "early_stopping": OmegaConf.to_container(cfg.early_stopping, resolve=True),
+            "grad_clip_norm": cfg.get("grad_clip_norm", None),
+            "amp": False,
+        }
+    )
+
+
+def _entropy(probs: np.ndarray) -> np.ndarray:
+    """Shannon entropy per row.
+
+    Args:
+        probs: Array of shape (n, n_classes).
+
+    Returns:
+        Array of shape (n,) with per-row entropy values.
+    """
+    p = np.clip(probs, 1e-10, 1.0)
+    return -np.sum(p * np.log(p), axis=-1)
+
+
+class BenchmarkALEstimator:
+    """AL estimator backed by the full benchmark training pipeline.
+
+    Each fit() call builds a fresh model via build_model() and
+    trains it with train_model() which handles method-specific
+    training (evidential loss, DDU GMM fitting, credal bounds, etc.)
+    via flexdispatch.
+
+    Satisfies the Estimator protocol from
+    probly.evaluation.active_learning.strategies.
+    """
+
+    def __init__(
+        self,
+        *,
+        method_name: str,
+        method_params: dict[str, Any],
+        train_kwargs: dict[str, Any],
+        cfg: DictConfig,
+        base_model_name: str,
+        model_type: str,
+        num_classes: int,
+        device: torch.device,
+        in_features: int | None = None,
+        quantifier: str | None = None,
+        num_samples: int = 10,
+        pred_batch_size: int = 512,
+    ) -> None:
+        """Initialize the estimator.
+
+        Args:
+            method_name: UQ method name (e.g. "ensemble", "ddu").
+            method_params: Parameters forwarded to build_model.
+            train_kwargs: Extra keyword arguments forwarded to train_model.
+            cfg: Training configuration (epochs, optimizer, scheduler, etc.).
+            base_model_name: Name of the base neural network architecture.
+            model_type: Predictor type (e.g. "logit_classifier").
+            num_classes: Number of output classes.
+            device: Torch device for training and inference.
+            in_features: Number of input features (unused, for compatibility).
+            quantifier: Override the default uncertainty quantifier.
+            num_samples: Number of stochastic forward passes for dropout.
+            pred_batch_size: Batch size used during prediction.
+        """
+        self.method_name = method_name
+        self.method_params = method_params
+        self.train_kwargs = train_kwargs
+        self.train_cfg = _make_train_cfg(cfg)
+        self.base_model_name = base_model_name
+        # Posterior network needs "probabilistic_classifier"; all others use the
+        # caller-provided model_type (typically "logit_classifier").
+        if method_name in _PROBABILISTIC_METHODS:
+            self.model_type = "probabilistic_classifier"
+        else:
+            self.model_type = model_type
+        self.num_classes = num_classes
+        self.device = device
+        self.in_features = in_features
+        self.num_samples = num_samples
+        self.pred_batch_size = pred_batch_size
+        self.batch_size = cfg.batch_size
+
+        self.quantifier_name = quantifier or _DEFAULT_QUANTIFIERS.get(method_name)
+        self.model: nn.Module | None = None
+
+    def fit(self, x: np.ndarray, y: np.ndarray) -> BenchmarkALEstimator:
+        """Build a fresh model and train it on (x, y).
+
+        Uses build_model() and train_model() from the existing
+        benchmark pipeline so that method-specific training logic
+        (DDU GMM fitting, evidential loss, etc.) is applied automatically.
+        """
+        import wandb  # noqa: PLC0415
+
+        x_t = torch.as_tensor(x, dtype=torch.float32)
+        y_t = torch.as_tensor(y, dtype=torch.long)
+        dataset = TensorDataset(x_t, y_t)
+        train_loader = DataLoader(
+            dataset,
+            batch_size=self.batch_size,
+            shuffle=True,
+        )
+
+        ctx = BuildContext(
+            base_model_name=self.base_model_name,
+            model_type=self.model_type,
+            num_classes=self.num_classes,
+            pretrained=False,
+            train_loader=train_loader,
+        )
+        model = build_model(self.method_name, dict(self.method_params), ctx)
+
+        # EfficientCredalPredictor registers lower/upper as None buffers.
+        # train.py reads model.lower.shape[0] to get num_classes before
+        # computing the actual bounds, so we pre-initialize them here.
+        if self.method_name == "efficient_credal_prediction":
+            model_ = cast("Any", model)
+            model_.lower = torch.zeros(self.num_classes)
+            model_.upper = torch.zeros(self.num_classes)
+
+        _to_device(model, self.device)
+
+        # Disabled wandb run for per-iteration training (no epoch-level logging).
+        run = wandb.init(mode="disabled")
+        train_model(
+            model,
+            train_loader,
+            None,  # no validation
+            self.train_cfg,
+            self.device,
+            run,
+            dict(self.train_kwargs),
+        )
+        run.finish()
+
+        self.model = model
+        return self
+
+    @torch.no_grad()
+    def _ensemble_softmax(self, x: np.ndarray) -> np.ndarray:
+        """Return per-member softmax probabilities (n_samples, n_members, n_classes)."""
+        model = cast("Any", self.model)
+        members = list(model)
+        x_t = torch.as_tensor(x, dtype=torch.float32, device=self.device)
+        member_probs = []
+        for member in members:
+            member.eval()
+            parts: list[np.ndarray] = []
+            for start in range(0, len(x_t), self.pred_batch_size):
+                batch = x_t[start : start + self.pred_batch_size]
+                out = F.softmax(member(batch), dim=-1)
+                parts.append(out.detach().cpu().numpy())
+            member_probs.append(np.concatenate(parts))
+        return np.stack(member_probs, axis=1)
+
+    @torch.no_grad()
+    def _ddu_proba(self, x: np.ndarray) -> np.ndarray:
+        """Return softmax probabilities for DDU (via encoder + classification_head)."""
+        model = cast("Any", self.model)
+        model.eval()
+        x_t = torch.as_tensor(x, dtype=torch.float32, device=self.device)
+        parts: list[np.ndarray] = []
+        for start in range(0, len(x_t), self.pred_batch_size):
+            batch = x_t[start : start + self.pred_batch_size]
+            features = model.encoder(batch)
+            logits = model.classification_head(features)
+            parts.append(F.softmax(logits, dim=-1).detach().cpu().numpy())
+        return np.concatenate(parts)
+
+    @torch.no_grad()
+    def _dirichlet_proba(self, x: np.ndarray) -> np.ndarray:
+        """Return Dirichlet mean probabilities for evidential/posterior_network."""
+        model = cast("Any", self.model)
+        model.eval()
+        x_t = torch.as_tensor(x, dtype=torch.float32, device=self.device)
+        parts: list[np.ndarray] = []
+        for start in range(0, len(x_t), self.pred_batch_size):
+            batch = x_t[start : start + self.pred_batch_size]
+            alpha = model(batch)
+            probs = alpha / alpha.sum(dim=-1, keepdim=True)
+            parts.append(probs.detach().cpu().numpy())
+        return np.concatenate(parts)
+
+    @torch.no_grad()
+    def _single_softmax(self, x: np.ndarray) -> np.ndarray:
+        """Return softmax probabilities for a single model (dropout, efficient_credal)."""
+        model = cast("Any", self.model)
+        model.eval()
+        x_t = torch.as_tensor(x, dtype=torch.float32, device=self.device)
+        parts: list[np.ndarray] = []
+        for start in range(0, len(x_t), self.pred_batch_size):
+            batch = x_t[start : start + self.pred_batch_size]
+            parts.append(F.softmax(model(batch), dim=-1).detach().cpu().numpy())
+        return np.concatenate(parts)
+
+    @torch.no_grad()
+    def _dropout_mean_proba(self, x: np.ndarray) -> np.ndarray:
+        """Average softmax over multiple stochastic forward passes (dropout active)."""
+        model = cast("Any", self.model)
+        model.train()  # keep dropout active
+        x_t = torch.as_tensor(x, dtype=torch.float32, device=self.device)
+        sample_probs: list[np.ndarray] = []
+        for _ in range(self.num_samples):
+            parts: list[np.ndarray] = []
+            for start in range(0, len(x_t), self.pred_batch_size):
+                batch = x_t[start : start + self.pred_batch_size]
+                parts.append(F.softmax(model(batch), dim=-1).detach().cpu().numpy())
+            sample_probs.append(np.concatenate(parts))
+        return np.mean(np.stack(sample_probs), axis=0)
+
+    def predict_proba(self, x: np.ndarray) -> np.ndarray:
+        """Return class probabilities of shape (n_samples, n_classes)."""
+        if isinstance(self.model, EnsemblePredictor):
+            return self._ensemble_softmax(x).mean(axis=1)
+        if self.method_name == "ddu":
+            return self._ddu_proba(x)
+        if self.method_name in ("evidential_classification", "posterior_network"):
+            return self._dirichlet_proba(x)
+        return self._single_softmax(x)
+
+    def predict(self, x: np.ndarray) -> np.ndarray:
+        """Return class predictions of shape (n_samples,)."""
+        return self.predict_proba(x).argmax(axis=-1)
+
+    def uncertainty_scores(self, x: np.ndarray) -> np.ndarray:  # noqa: PLR0911
+        """Return per-sample uncertainty scores of shape (n_samples,).
+
+        The scoring method depends on the quantifier name:
+        - entropy_of_expected_value: H(mean softmax) for ensembles/dropout.
+        - mutual_information: H(mean) - mean(H(member)) for ensembles.
+        - entropy: H(probs) for evidential, posterior_network, single models.
+        - ddu_entropy: H(softmax(classification_head(encoder(x)))).
+        - upper_entropy: max H(p) over the credal set members.
+        """
+        q = self.quantifier_name
+        if q == "entropy_of_expected_value":
+            if isinstance(self.model, EnsemblePredictor):
+                member_probs = self._ensemble_softmax(x)
+                return _entropy(member_probs.mean(axis=1))
+            # Dropout: stochastic forward passes
+            return _entropy(self._dropout_mean_proba(x))
+
+        if q == "mutual_information":
+            member_probs = self._ensemble_softmax(x)
+            mean_probs = member_probs.mean(axis=1)
+            total_entropy = _entropy(mean_probs)
+            member_entropies = np.array([_entropy(member_probs[:, i]) for i in range(member_probs.shape[1])])
+            return total_entropy - member_entropies.mean(axis=0)
+
+        if q == "entropy":
+            return _entropy(self.predict_proba(x))
+
+        if q == "ddu_entropy":
+            return _entropy(self._ddu_proba(x))
+
+        if q == "upper_entropy":
+            if isinstance(self.model, EnsemblePredictor):
+                member_probs = self._ensemble_softmax(x)
+                per_member = np.array([_entropy(member_probs[:, i]) for i in range(member_probs.shape[1])])
+                return per_member.max(axis=0)
+            # Efficient credal: entropy of the base prediction
+            return _entropy(self.predict_proba(x))
+
+        msg = f"Unknown quantifier: {q!r}"
+        raise ValueError(msg)

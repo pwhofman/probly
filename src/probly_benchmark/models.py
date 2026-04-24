@@ -12,7 +12,7 @@ import torchvision.models as tm
 from probly_benchmark.resnet import ResNet18
 
 
-def get_base_model(name: str, num_classes: int, pretrained: bool = False, **kwargs: Any) -> nn.Module:  # noqa: PLR0912, ANN401
+def get_base_model(name: str, num_classes: int, pretrained: bool = False, **kwargs: Any) -> nn.Module:  # noqa: PLR0912, PLR0915, C901, ANN401
     """Get a base model.
 
     Args:
@@ -51,6 +51,18 @@ def get_base_model(name: str, num_classes: int, pretrained: bool = False, **kwar
         case "regnet_y_400mf":
             model = tm.regnet_y_400mf(weights="DEFAULT" if pretrained else None)
             model.fc = nn.Linear(model.fc.in_features, num_classes)
+        case "lenet":
+            if pretrained:
+                msg = "Pretrained weights are not supported for LeNet."
+                raise NotImplementedError(msg)
+            model = LeNet(n_classes=num_classes)
+        case "lenet_encoder":
+            if pretrained:
+                msg = "Pretrained weights are not supported for LeNet."
+                raise NotImplementedError(msg)
+            model = LeNet(n_classes=num_classes)
+            # Drop Softmax and final Linear, keeping up to Tanh -> output 84-d
+            model.classifier = nn.Sequential(*list(model.classifier.children())[:-2])
         case "tabular_mlp":
             if pretrained:
                 msg = "Pretrained weights are not supported for TabularMLP."
@@ -60,6 +72,16 @@ def get_base_model(name: str, num_classes: int, pretrained: bool = False, **kwar
                 msg = "TabularMLP requires 'in_features' kwarg."
                 raise ValueError(msg)
             model = TabularMLP(in_features=in_features, n_classes=num_classes)
+        case "tabular_mlp_encoder":
+            if pretrained:
+                msg = "Pretrained weights are not supported for TabularMLP."
+                raise NotImplementedError(msg)
+            in_features = kwargs.get("in_features")
+            if in_features is None:
+                msg = "TabularMLP encoder requires 'in_features' kwarg."
+                raise ValueError(msg)
+            model = TabularMLP(in_features=in_features, n_classes=num_classes)
+            model.net[-1] = nn.Identity()  # drop classification head, output 1024-d
         case _:
             msg = f"Model {name} not recognized"
             raise ValueError(msg)

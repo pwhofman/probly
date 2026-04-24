@@ -1,6 +1,6 @@
 defaults:
   - _self_
-  - al_method: ???
+  - method: ???
   - al_strategy: uncertainty
   - al_dataset: ???
 
@@ -9,17 +9,32 @@ initial_size: 1000
 query_size: 1000
 n_iterations: 10
 
-# Training
-n_epochs: 50
+# Training (per AL iteration)
+epochs: 50
 batch_size: 128
-lr: 0.001
-device: "cuda"
-reset_model: true
+optimizer:
+  name: "adam"
+  params:
+    lr: 0.001
+scheduler:
+  name: "cosine"
+  params: {}
+early_stopping:
+  patience: 0
+grad_clip_norm: null
+model_type: "logit_classifier"
 
 # Experiment
 seed: 0
+device: "cuda"
 
-# WandB
+# Quantifier override (null = use default for method)
+quantifier: null
+
+# Dropout/MC sampling
+num_samples: 10
+
+# WandB (AL-level logging only)
 wandb:
   enabled: true
   project: "probly-active-learning"
