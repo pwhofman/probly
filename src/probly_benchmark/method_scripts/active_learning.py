@@ -22,7 +22,11 @@ from sklearn.ensemble import GradientBoostingClassifier, GradientBoostingRegress
 
 from probly.evaluation.active_learning import active_learning_loop  # ty: ignore[unresolved-import]
 from probly.evaluation.active_learning._torch_estimator import TorchEstimator
-from probly.evaluation.active_learning._utils import badge_query, margin_sampling, total_entropy
+from probly.evaluation.active_learning._utils import (
+    badge_query,  # ty: ignore[unresolved-import]
+    margin_sampling,  # ty: ignore[unresolved-import]
+    total_entropy,  # ty: ignore[unresolved-import]
+)
 
 # ---------------------------------------------------------------------------
 # Config
