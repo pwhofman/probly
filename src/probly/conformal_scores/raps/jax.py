@@ -16,7 +16,6 @@ def _(
     randomized: bool = True,
     lambda_reg: float = 0.1,
     k_reg: int = 0,
-    epsilon: float = 0.01,
 ) -> Array:
     """RAPS Nonconformity-Scores for JAX arrays."""
     probs_jnp = jnp.asarray(probs, dtype=float)
@@ -40,9 +39,8 @@ def _(
     # regularization penalty
     ranks = jnp.arange(1, n_classes + 1, dtype=probs_jnp.dtype).reshape((1,) * (probs_jnp.ndim - 1) + (n_classes,))
     penalty = lambda_reg * jnp.maximum(jnp.array(0.0, dtype=probs_jnp.dtype), ranks - k_reg - 1)
-    epsilon_penalty = epsilon * jnp.ones(probs_jnp.shape, dtype=probs_jnp.dtype)
 
-    reg_cumsum = cumsum_probs + penalty + epsilon_penalty
+    reg_cumsum = cumsum_probs + penalty
 
     # sort back to original order
     inv_idx = jnp.argsort(srt_idx, axis=-1)
