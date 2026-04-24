@@ -1,35 +1,18 @@
 defaults:
   - _self_
+  - recipe: ??? # user must specify a recipe.
   - method: ??? # user must specify a method.
 
 seed: 1
-dataset: "cifar10"
-base_model: "resnet50"
-pretrained: False
-epochs: 50
-batch_size: 512
-num_workers: 4
-pin_memory: true
-persistent_workers: true
 wandb:
   enabled: true
   entity: "probly"
   project: "test"
+
 validate : true
+
 # models will always be saved in wandb, but this option controls whether they are also saved to disk
 save_to_disk: false
-
-optimizer:
-    name: "adam"
-    params:
-        lr: 0.001
-
-scheduler:
-  name: "cosine"
-  params: {}
-
-early_stopping:
-  patience: 0  # set to > 0 to enable; number of epochs to wait without improvement
 
 grad_clip_norm: 1.0
 amp: true

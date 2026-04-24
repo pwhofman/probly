@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from probly.method.bayesian._common import bayesian
-from probly.method.ensemble import EnsemblePredictor
+from probly.method.ensemble import EnsemblePredictor, register_ensemble_members
 from probly.method.method import predictor_transformation
 from probly.predictor import ProbabilisticClassifier
 from pytraverse import GlobalVariable
@@ -42,7 +42,9 @@ def _resolve_param(
     return list(value)
 
 
-@predictor_transformation(permitted_predictor_types=(ProbabilisticClassifier,), preserve_predictor_type=False)
+@predictor_transformation(
+    permitted_predictor_types=(ProbabilisticClassifier,), post_transform=register_ensemble_members
+)
 @CredalBNNPredictor.register_factory
 def credal_bnn[**In, Out](
     base: Predictor[In, Out],

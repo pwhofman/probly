@@ -5,7 +5,8 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Literal, Protocol, Self
 
-from lazy_dispatch import lazydispatch
+from flextype import flexdispatch
+from probly.representation.array_like import ArrayLike
 from probly.representation.distribution import CategoricalDistribution
 from probly.representation.representation import Representation
 
@@ -72,29 +73,39 @@ class SingletonCredalSet[T: CategoricalDistribution](DiscreteCredalSet[T]):
 class ProbabilityIntervalsFactory[S: Sample, C: ProbabilityIntervalsCredalSet](Protocol):
     """Factory protocol for probability-interval credal sets."""
 
-    def __call__(self, sample: S, distribution_axis: int = -1) -> C:
+    def __call__(self, sample: S) -> C:
         """Create a probability-interval credal set from a sample."""
 
 
-def dispatch_on_sample(sample: Sample, **_kwargs: object) -> object:
-    """Dispatch on the concrete sample object itself."""
-    try:
-        return sample.samples
-    except Exception:  # noqa: BLE001
-        return None
-
-
-@lazydispatch(dispatch_on=dispatch_on_sample)
+@flexdispatch
 def create_probability_intervals[T: CategoricalDistribution](sample: Sample[T]) -> ProbabilityIntervalsCredalSet:
     """Create a probability-interval credal set from a sample."""
     msg = f"No probability intervals factory registered for sample type {type(sample)}"
     raise NotImplementedError(msg)
 
 
-@lazydispatch
-def create_convex_credal_set[T: CategoricalDistribution](
-    data: Sample[T], distribution_axis: int = -1
-) -> ConvexCredalSet[T]:
+@flexdispatch
+def create_convex_credal_set[T: CategoricalDistribution](sample: Sample[T]) -> ConvexCredalSet[T]:
     """Create a convex credal set from a sample."""
-    msg = f"No convex credal set factory registered for data type {type(data)}"
+    msg = f"No convex credal set factory registered for sample type {type(sample)}"
+    raise NotImplementedError(msg)
+
+
+@flexdispatch
+def create_probability_intervals_from_lower_upper_array[T: ArrayLike](
+    array: T,
+) -> ProbabilityIntervalsCredalSet:
+    """Create a probability-interval credal set from an array of lower and upper probabilities."""
+    msg = f"No probability intervals factory registered for array type {type(array)}"
+    raise NotImplementedError(msg)
+
+
+@flexdispatch
+def create_probability_intervals_from_bounds[T: ArrayLike](
+    array: T,
+    lower_bounds: T,
+    upper_bounds: T,
+) -> ProbabilityIntervalsCredalSet:
+    """Create a probability-interval credal set from an array of predictions and lower and upper bounds."""
+    msg = f"No probability intervals factory registered for array type {type(array)}"
     raise NotImplementedError(msg)

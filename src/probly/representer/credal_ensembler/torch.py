@@ -4,13 +4,19 @@ from __future__ import annotations
 
 import torch
 
-from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
+from probly.representation.distribution.torch_categorical import (
+    TorchCategoricalDistribution,
+    TorchCategoricalDistributionSample,
+)
 from probly.representation.sample.torch import TorchSample
-from probly.representer.credal_ensembler._common import compute_representative_set
+from probly.representer.credal_ensembler._common import (
+    compute_credal_ensembling_set,
+    compute_credal_net_set,
+)
 
 
-@compute_representative_set.register(TorchSample)
-def torch_compute_representative_set(
+@compute_credal_ensembling_set.register(TorchSample)
+def torch_compute_credal_ensembling_set(
     sample: TorchSample[TorchCategoricalDistribution],
     alpha: float,
     distance: str,
@@ -39,6 +45,22 @@ def torch_compute_representative_set(
         k = max(k, 1)  # Ensure at least one member is selected
         _, idx = torch.topk(dist, k=k, dim=sample_dim, largest=False)
         selected_probs = torch.gather(probs, dim=sample_dim, index=idx.unsqueeze(-1).expand(-1, -1, probs.shape[-1]))
-        return TorchSample(TorchCategoricalDistribution(selected_probs), sample_dim=-1)
+        return TorchCategoricalDistributionSample(
+            tensor=TorchCategoricalDistribution(selected_probs),
+            sample_dim=sample.sample_dim,
+        )
     msg = f"Distance {distance} not implemented for torch tensors."
     raise NotImplementedError(msg)
+
+
+@compute_credal_net_set.register(TorchSample)
+def torch_compute_credal_net_set(
+    sample: TorchSample[TorchCategoricalDistribution],
+) -> TorchSample[TorchCategoricalDistribution]:
+    """This function decouples the lower and upper bounds of the credal net."""
+    probs = sample.tensor.probabilities
+    probs = probs.reshape(*probs.shape[:-1], 2, probs.shape[-1] // 2)
+    return TorchCategoricalDistributionSample(
+        tensor=TorchCategoricalDistribution(probs),
+        sample_dim=sample.sample_dim,
+    )

@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any, Protocol, Self, overload, override, runti
 import torch
 from torch.overrides import handle_torch_function, has_torch_function_unary
 
-from lazy_dispatch import lazydispatch
+from flextype import flexdispatch
 from probly.representation.array_like import ArrayLike
 
 if TYPE_CHECKING:
@@ -245,7 +245,7 @@ class TorchLikeImplementation[DT](ArrayLike[DT], ABC):
 TorchLikeImplementation.register(torch.Tensor)
 
 
-@lazydispatch
+@flexdispatch
 def to_torch_like[DT](
     data: object,
     /,

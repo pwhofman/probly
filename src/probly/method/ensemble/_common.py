@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import Protocol, runtime_checkable
 
-from lazy_dispatch import lazydispatch
+from flextype import flexdispatch
 from probly.method.method import predictor_transformation
 from probly.predictor import (
     CategoricalDistributionPredictor,
@@ -55,7 +55,7 @@ class EnsembleDirichletDistributionPredictor[**In, Out: DirichletDistribution](E
         return NotImplemented
 
 
-@lazydispatch
+@flexdispatch
 def ensemble_generator[**In, Out](
     base: Predictor[In, Out], num_members: int, reset_params: bool = True
 ) -> EnsemblePredictor[In, Out]:
@@ -68,7 +68,6 @@ def register_ensemble_members(ensemble: EnsemblePredictor, t: type[Predictor] | 
     """Register the members of an ensemble predictor."""
     if t is None:
         return ensemble
-
     for member in ensemble:
         t.register_instance(member)
 

@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable
-from typing import Any, Literal, Protocol, runtime_checkable
+from contextvars import ContextVar
+from typing import Any, ClassVar, Literal, Protocol, runtime_checkable
 
-from lazy_dispatch import ProtocolRegistry, lazydispatch
+from flextype import ProtocolRegistry, flexdispatch
 from probly.representation import Representation
 from probly.representation.credal_set import CredalSet, ProbabilityIntervalsCredalSet
 from probly.representation.distribution import (
@@ -69,6 +70,30 @@ class RepresentationPredictor[**In, Out: Representation](Predictor[In, Out], Pro
         return NotImplemented
 
 
+@runtime_checkable  # ty:ignore[conflicting-metaclass]
+class RandomRepresentationPredictor[**In, Out: Representation](
+    RepresentationPredictor[In, Out], RandomPredictor[In, Out], Protocol
+):
+    """Protocol for non-deterministic predictors that return a distribution over outputs."""
+
+    _running_instancehook: ClassVar[ContextVar[object]] = ContextVar(
+        "RandomRepresentationPredictor._running_instancehook", default=NotImplemented
+    )
+    sample_space: ClassVar[type[Distribution]] = Distribution
+
+    @classmethod
+    def __instancehook__(cls, instance: object) -> bool:
+        if cls._running_instancehook.get() is instance:
+            return NotImplemented
+        try:
+            tok = cls._running_instancehook.set(instance)
+            if isinstance(instance, RepresentationPredictor) and isinstance(instance, RandomPredictor):
+                return True
+        finally:
+            cls._running_instancehook.reset(tok)
+        return NotImplemented
+
+
 @runtime_checkable
 class DistributionPredictor[**In, Out: Distribution](RepresentationPredictor[In, Out], Protocol):
     """Protocol for predictors that return a distribution over outputs."""
@@ -78,6 +103,17 @@ class DistributionPredictor[**In, Out: Distribution](RepresentationPredictor[In,
 @runtime_checkable
 class CategoricalDistributionPredictor[**In, Out: CategoricalDistribution](DistributionPredictor[In, Out], Protocol):
     """Protocol for predictors that return a categorical distribution over outputs expressed as probabilities."""
+
+    @classmethod
+    def __instancehook__(cls, instance: object) -> bool:
+        predict_proba_method = getattr(instance, "predict_proba", None)
+        if (
+            predict_proba_method is not None
+            and callable(predict_proba_method)
+            and not hasattr(instance, "predict_representation")
+        ):
+            return True
+        return NotImplemented
 
 
 @predictor_registry.multi_register(["logit_distribution_predictor", "logit_classifier"])
@@ -105,7 +141,7 @@ class ProbabilityIntervalPredictor[**In, Out: ProbabilityIntervalsCredalSet](Cre
 # Prediction functions
 
 
-@lazydispatch
+@flexdispatch
 def predict_raw[**In, Out](predictor: Predictor[In, Out], /, *args: In.args, **kwargs: In.kwargs) -> Any:  # noqa: ANN401
     """Calls a predictor and returns the result as-is.
 
@@ -125,7 +161,7 @@ def predict_raw[**In, Out](predictor: Predictor[In, Out], /, *args: In.args, **k
     raise NotImplementedError(msg)
 
 
-@lazydispatch
+@flexdispatch
 def predict[**In, Out](predictor: Predictor[In, Out], /, *args: In.args, **kwargs: In.kwargs) -> Out:
     """Calls a predictor via `predict_raw` and returns the result as specified in the predictor's signature.
 
@@ -156,8 +192,9 @@ def predict_categorical_distribution[**In, Out: CategoricalDistribution](
 
 
 @predict.register(LogitDistributionPredictor)
+@flexdispatch
 def predict_categorical_distribution_from_logit[**In, Out: CategoricalDistribution](
-    predictor: CategoricalDistributionPredictor[In, Out], *args: In.args, **kwargs: In.kwargs
+    predictor: LogitDistributionPredictor[In, Out], *args: In.args, **kwargs: In.kwargs
 ) -> Out:
     """Predict for a categorical distribution predictor."""
     return create_categorical_distribution_from_logits(predict_raw(predictor, *args, **kwargs))  # ty:ignore[invalid-return-type]

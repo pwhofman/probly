@@ -17,6 +17,7 @@ from probly_benchmark.builders import BuildContext, build_model
 if TYPE_CHECKING:
     from omegaconf import DictConfig
 
+    from probly.representation import Representation
     from probly.representer import Representer
 
 
@@ -66,7 +67,7 @@ def collect_outputs_targets(
     loader: torch.utils.data.DataLoader,
     device: torch.device,
     amp_enabled: bool = False,
-) -> tuple[list[Any], torch.Tensor]:
+) -> tuple[Representation, torch.Tensor]:
     """Collect representer outputs and targets from a data loader.
 
     Args:
@@ -83,7 +84,7 @@ def collect_outputs_targets(
     outputs = []
     targets = []
 
-    for inputs, targets_ in tqdm(loader, desc="Predicting"):
+    for inputs, targets_ in tqdm(loader, desc="Batch"):
         if amp_enabled:
             with torch.amp.autocast(device.type):
                 outputs_ = rep.predict(inputs.to(device))
@@ -92,7 +93,7 @@ def collect_outputs_targets(
         outputs.append(outputs_)
         targets.append(targets_)
 
-    return outputs, torch.cat(targets)
+    return torch.cat(outputs), torch.cat(targets)
 
 
 def resolve_artifact_name(cfg: DictConfig) -> str:
@@ -149,11 +150,12 @@ def load_model_from_wandb(
     method_params = cfg["method"].get("params") or {}
     ctx = BuildContext(
         base_model_name=cfg["base_model"],
+        model_type=cfg["model_type"],
         num_classes=num_classes,
         pretrained=cfg.get("pretrained", False),
         train_loader=None,
     )
-    model: torch.nn.Module = build_model(cfg["method"]["name"], method_params, ctx)
+    model = build_model(cfg["method"]["name"], method_params, ctx)
     model.load_state_dict(checkpoint["model_state_dict"])
     model.to(device)
     model.eval()

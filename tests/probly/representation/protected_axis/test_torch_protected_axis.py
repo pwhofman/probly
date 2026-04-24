@@ -21,6 +21,13 @@ class SingleTensor(TorchAxisProtected[Any]):
 
 
 @dataclass(frozen=True, slots=True)
+class ReductionTensor(TorchAxisProtected[Any]):
+    tensor: torch.Tensor
+    protected_axes: ClassVar[dict[str, int]] = {"tensor": 1}
+    permitted_functions: ClassVar[set[Any]] = {torch.mean, torch.sum}
+
+
+@dataclass(frozen=True, slots=True)
 class PairTensor(TorchAxisProtected[Any]):
     first: torch.Tensor
     second: torch.Tensor
@@ -53,6 +60,48 @@ def test_single_field_torch_functions_preserve_type() -> None:
     assert tuple(stacked.tensor.shape) == (2, 2, 3)
 
 
+def test_reshape_method_preserves_protected_axes() -> None:
+    x = SingleTensor(torch.arange(24.0).reshape(2, 3, 4))
+
+    reshaped = x.reshape(6)
+    assert isinstance(reshaped, SingleTensor)
+    assert tuple(reshaped.tensor.shape) == (6, 4)
+    assert reshaped.shape == (6,)
+    assert reshaped.protected_shape == (4,)
+
+    reshaped_with_tuple = x.reshape((1, 6))
+    assert isinstance(reshaped_with_tuple, SingleTensor)
+    assert tuple(reshaped_with_tuple.tensor.shape) == (1, 6, 4)
+    assert reshaped_with_tuple.shape == (1, 6)
+    assert reshaped_with_tuple.protected_shape == (4,)
+
+
+def test_unpermitted_torch_reductions_return_notimplemented() -> None:
+    x = SingleTensor(torch.arange(24.0).reshape(2, 3, 4))
+
+    with pytest.raises(TypeError):
+        _ = torch.sum(x)
+
+    with pytest.raises(TypeError):
+        _ = torch.mean(x)
+
+
+def test_permitted_torch_reductions_reduce_only_batch_axes() -> None:
+    x = ReductionTensor(torch.arange(24.0).reshape(2, 3, 4))
+
+    summed = torch.sum(x)
+    assert isinstance(summed, ReductionTensor)
+    assert torch.equal(summed.tensor, torch.sum(x.tensor, dim=(0, 1)))
+    assert summed.shape == ()
+    assert summed.protected_shape == (4,)
+
+    meaned = torch.mean(x, dim=1)
+    assert isinstance(meaned, ReductionTensor)
+    assert torch.equal(meaned.tensor, torch.mean(x.tensor, dim=1))
+    assert meaned.shape == (2,)
+    assert meaned.protected_shape == (4,)
+
+
 def test_multi_field_tensor_conversion_and_cat() -> None:
     x = PairTensor(torch.ones((2, 2)), torch.ones((2, 2)) * 2)
 
@@ -63,6 +112,15 @@ def test_multi_field_tensor_conversion_and_cat() -> None:
     assert isinstance(cat, PairTensor)
     assert tuple(cat.first.shape) == (4, 2)
     assert tuple(cat.second.shape) == (4, 2)
+
+
+def test_reshape_method_applies_to_all_fields() -> None:
+    x = PairTensor(torch.arange(6.0).reshape(2, 3), torch.arange(6.0).reshape(2, 3) + 10)
+
+    reshaped = x.reshape(3, 2)
+    assert isinstance(reshaped, PairTensor)
+    assert tuple(reshaped.first.shape) == (3, 2)
+    assert tuple(reshaped.second.shape) == (3, 2)
 
 
 def test_multi_field_index_and_assignment() -> None:

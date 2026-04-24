@@ -37,6 +37,7 @@ class TorchAxisProtectedCreator(Protocol):
 @runtime_checkable
 class _SupportsProtectedInternals(Protocol):
     protected_axes: dict[str, int]
+    permitted_functions: set[Callable[..., Any]]
 
     def protected_values(self) -> dict[str, TorchProtectedValue]:
         """Return protected field values."""
@@ -53,6 +54,8 @@ class TorchAxisProtectedInternals:
     values: dict[str, TorchProtectedValue]
     protected_axes: dict[str, int]
     primary_name: str
+    owner_type: type[Any]
+    permitted_functions: set[Callable[..., Any]]
 
     @property
     def primary_value(self) -> TorchProtectedValue:
@@ -92,11 +95,15 @@ def torch_axis_protected_internals(obj: object) -> TorchAxisProtectedInternals |
 
     primary_name = next(iter(protected_axes))
     create: TorchAxisProtectedCreator = obj.with_protected_values
+    owner_type = type(obj)
+    permitted_functions = set(getattr(owner_type, "permitted_functions", set()))
     return TorchAxisProtectedInternals(
         create=create,
         values=dict(values),
         protected_axes=dict(protected_axes),
         primary_name=primary_name,
+        owner_type=owner_type,
+        permitted_functions=permitted_functions,
     )
 
 
@@ -160,6 +167,23 @@ def _extract_protected_value_sequence_internals(values: tuple[object, ...]) -> P
         return ProtectedValueSequenceInternals(False, None, {})
 
     return ProtectedValueSequenceInternals(True, template, values_by_field)
+
+
+def _is_permitted_function(internals: TorchAxisProtectedInternals, func: Callable) -> bool:
+    return func in internals.permitted_functions
+
+
+def _normalize_batch_reduction_dims(dim: object, batch_ndim: int) -> int | tuple[int, ...]:
+    if dim is None:
+        return tuple(range(batch_ndim))
+    if isinstance(dim, int):
+        return normalize_axis(dim, batch_ndim)
+    if isinstance(dim, (tuple, list, torch.Size)) and all(isinstance(item, int) for item in dim):
+        dim_tuple = cast("tuple[int, ...]", tuple(dim))
+        return normalize_axes(dim_tuple, batch_ndim)
+
+    msg = "reduction dim must be None, an int, or a tuple/list of ints."
+    raise TypeError(msg)
 
 
 class _TorchFunction(Protocol):
@@ -286,6 +310,79 @@ def protected_clone_function(
     del args
     memory_format = kwargs.get("memory_format", torch.preserve_format)
     return _apply_unary(internals, lambda _name, value, _axes: func(value, memory_format=memory_format))
+
+
+@torch_function.multi_register([torch.mean, torch.sum])
+@torch_internals_override(torch_param_pos=0)
+def protected_batch_reduction_function(  # noqa: PLR0912
+    func: Callable,
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
+    internals: TorchAxisProtectedInternals,
+) -> Any:  # noqa: ANN401
+    if not _is_permitted_function(internals, func):
+        return NotImplemented
+
+    dim = args[1] if len(args) > 1 else kwargs.get("dim")
+    out = kwargs.get("out")
+    out_internals = torch_axis_protected_internals(out)
+    if out_internals is not None and out_internals.protected_axes != internals.protected_axes:
+        msg = "out must use the same protected_axes layout as input values."
+        raise ValueError(msg)
+
+    if out is not None and out_internals is None and len(internals.protected_axes) != 1:
+        msg = "non-protected out is only supported for single-field protected objects."
+        raise TypeError(msg)
+
+    mutable_args = list(args)
+    mutable_kwargs = dict(kwargs)
+    results: dict[str, TorchProtectedValue] = {}
+
+    for name, axes_count in internals.protected_axes.items():
+        value = internals.values[name]
+        batch_ndim = value_ndim(value) - axes_count
+        mapped_dim = _normalize_batch_reduction_dims(dim, batch_ndim)
+
+        field_args = list(mutable_args)
+        field_kwargs = dict(mutable_kwargs)
+
+        if len(field_args) == 0:
+            msg = "torch reduction call is missing the input argument."
+            raise TypeError(msg)
+
+        field_args[0] = value
+        if len(field_args) > 1:
+            field_args[1] = mapped_dim
+        else:
+            field_kwargs["dim"] = mapped_dim
+
+        if out is not None:
+            if out_internals is not None:
+                field_kwargs["out"] = out_internals.values[name]
+            else:
+                field_kwargs["out"] = out
+
+        result = func(*tuple(field_args), **field_kwargs)
+
+        if out is not None:
+            continue
+
+        if axes_count == 0 and not hasattr(result, "ndim"):
+            result = torch.as_tensor(result)
+
+        original_shape = value_shape(value)
+        result_shape = value_shape(result)
+        if protected_shape(result_shape, axes_count) != protected_shape(original_shape, axes_count):
+            msg = f"Reduction modified protected trailing axes for field {name!r}."
+            raise ValueError(msg)
+
+        results[name] = cast("TorchProtectedValue", result)
+
+    if out is not None:
+        return out
+
+    _validate_batch_sync(results, internals.protected_axes)
+    return internals.create(results)
 
 
 @torch_function.register(torch.transpose)

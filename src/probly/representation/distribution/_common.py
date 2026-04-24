@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from contextvars import ContextVar
 from typing import TYPE_CHECKING, Any, ClassVar, Literal
 
-from lazy_dispatch import lazydispatch
+from flextype import flexdispatch
 from probly.representation.representation import Representation
 from probly.representation.sample._common import Sample
 
@@ -115,7 +115,7 @@ class GaussianDistribution[D](Distribution[D], ABC):
         """Get the var parameters."""
 
 
-@lazydispatch
+@flexdispatch
 def create_categorical_distribution[T](data: T) -> CategoricalDistribution:
     """Create a categorical distribution from backend-specific probability data."""
     msg = f"No categorical distribution factory registered for data type {type(data)}"
@@ -128,8 +128,15 @@ def _(data: CategoricalDistribution) -> CategoricalDistribution:
     return data
 
 
-@lazydispatch
+@flexdispatch
 def create_categorical_distribution_from_logits[T](data: T) -> CategoricalDistribution:
     """Create a categorical distribution from backend-specific logit data."""
     msg = f"No categorical distribution factory from logits registered for data type {type(data)}"
+    raise NotImplementedError(msg)
+
+
+@flexdispatch
+def create_dirichlet_distribution_from_alphas[T](alphas: T) -> DirichletDistribution:
+    """Create a Dirichlet distribution from backend-specific alpha data."""
+    msg = f"No Dirichlet distribution factory registered for alphas type {type(alphas)}"
     raise NotImplementedError(msg)

@@ -4,12 +4,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from lazy_dispatch.singledispatch import lazydispatch
+from flextype.singledispatch import lazydispatch
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from lazy_dispatch.isinstance import LazyType
+    from flextype.isinstance import LazyType
 
 
 @lazydispatch
