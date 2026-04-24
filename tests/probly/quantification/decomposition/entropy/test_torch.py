@@ -10,7 +10,7 @@ import torch
 from probly.quantification import SecondOrderEntropyDecomposition, quantify
 from probly.quantification.measure.distribution import (
     conditional_entropy,
-    entropy_of_expected_value,
+    entropy_of_expected_predictive_distribution,
     mutual_information,
 )
 from probly.representation.distribution.torch_categorical import (
@@ -47,7 +47,9 @@ def test_torch_distribution_sample_decomposition_matches_measure_functions() -> 
 
     decomposition = quantify(sample)
 
-    assert torch.allclose(decomposition.total, entropy_of_expected_value(sample), rtol=1e-12, atol=1e-12)
+    assert torch.allclose(
+        decomposition.total, entropy_of_expected_predictive_distribution(sample), rtol=1e-12, atol=1e-12
+    )
     assert torch.allclose(decomposition.aleatoric, conditional_entropy(sample), rtol=1e-12, atol=1e-12)
     assert torch.allclose(decomposition.epistemic, mutual_information(sample), rtol=1e-12, atol=1e-12)
     assert torch.allclose(

@@ -33,7 +33,7 @@ __all__ = [
     "array_gaussian_entropy",
     "conditional_entropy",
     "entropy",
-    "entropy_of_expected_value",
+    "entropy_of_expected_predictive_distribution",
     "expected_max_probability_complement",
     "max_disagreement",
     "max_probability_complement_of_expected",
