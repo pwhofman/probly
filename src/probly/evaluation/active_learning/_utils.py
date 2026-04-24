@@ -352,7 +352,7 @@ class _ProblyEstimator:
 
         if isinstance(self.representer, CredalEnsemblingRepresenter) and self.representer.alpha > 0.0:
             from probly.representer.credal_ensembler._common import (  # noqa: PLC0415
-                compute_representative_set,
+                compute_representative_set,  # ty: ignore[unresolved-import]
             )
 
             filtered = cast(
