@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import json
 import logging
+from pathlib import Path
 from typing import Any
 
 import hydra
@@ -134,6 +136,7 @@ def main(cfg: DictConfig) -> float:
 
     # --- AL Loop ---
     accuracy_scores: list[float] = []
+    iterations: list[dict[str, float | int]] = []
 
     for state in active_learning_steps(
         pool,
@@ -147,6 +150,7 @@ def main(cfg: DictConfig) -> float:
         acc = compute_accuracy(preds, pool.y_test)
         ece = compute_ece(probs, pool.y_test)
         accuracy_scores.append(acc)
+        iterations.append({"iteration": state.iteration, "labeled_size": pool.n_labeled, "accuracy": acc, "ece": ece})
 
         run.log(
             {
@@ -170,6 +174,23 @@ def main(cfg: DictConfig) -> float:
     run.summary["nauc"] = nauc
     run.summary["final_accuracy"] = final_acc
     logger.info("Done. NAUC=%.4f | Final acc=%.4f", nauc, final_acc)
+
+    # --- Save results to JSON in Hydra's output directory ---
+    from hydra.core.hydra_config import HydraConfig  # noqa: PLC0415
+
+    out_dir = Path(HydraConfig.get().runtime.output_dir)
+    results = {
+        "method": cfg.method.name,
+        "dataset": cfg.dataset.name,
+        "strategy": cfg.al_strategy.name,
+        "seed": cfg.seed,
+        "nauc": nauc,
+        "final_accuracy": final_acc,
+        "iterations": iterations,
+    }
+    results_path = out_dir / "results.json"
+    results_path.write_text(json.dumps(results, indent=2))
+    logger.info("Results saved to %s", results_path)
 
     run.finish()
     return nauc

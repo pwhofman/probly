@@ -12,7 +12,8 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader, TensorDataset
 
 from probly.method.ensemble import EnsemblePredictor
-from probly_benchmark.builders import BuildContext, build_model
+from probly_benchmark.builders import BuildContext, build_model, get_method
+from probly_benchmark.models import get_base_model
 from probly_benchmark.train import train_model
 
 logger = logging.getLogger(__name__)
@@ -166,7 +167,38 @@ class BenchmarkALEstimator:
             pretrained=False,
             train_loader=train_loader,
         )
-        model = build_model(self.method_name, dict(self.method_params), ctx)
+        # build_model's _default_builder doesn't forward kwargs to
+        # get_base_model, so TabularMLP never receives in_features.
+        # Work around by building the base model ourselves when in_features
+        # is set, then applying the method function directly.
+        if self.in_features is not None:
+            method_fn = get_method(self.method_name)
+            if self.method_name == "posterior_network":
+                encoder = get_base_model(
+                    f"{self.base_model_name}_encoder",
+                    self.num_classes,
+                    pretrained=False,
+                    in_features=self.in_features,
+                )
+                targets = [y_t[i].item() for i in range(len(y_t))]
+                class_counts = [targets.count(c) for c in range(self.num_classes)]
+                model = method_fn(
+                    encoder,
+                    num_classes=self.num_classes,
+                    class_counts=class_counts,
+                    predictor_type=self.model_type,
+                    **dict(self.method_params),
+                )
+            else:
+                base = get_base_model(
+                    self.base_model_name,
+                    self.num_classes,
+                    pretrained=False,
+                    in_features=self.in_features,
+                )
+                model = method_fn(base, predictor_type=self.model_type, **dict(self.method_params))
+        else:
+            model = build_model(self.method_name, dict(self.method_params), ctx)
 
         # EfficientCredalPredictor registers lower/upper as None buffers.
         # train.py reads model.lower.shape[0] to get num_classes before
