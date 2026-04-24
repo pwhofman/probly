@@ -448,6 +448,33 @@ def _(
     return _compute_metrics(probs, labels, n_bins)
 
 
+@evaluate.register(EfficientCredalPredictor)
+@torch.no_grad()
+def evaluate_single_model(
+    model: Predictor,
+    test_loader: DataLoader,
+    device: torch.device,
+    amp_enabled: bool = False,
+    n_bins: int = 10,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> dict[str, float]:
+    """Evaluate methods with a single model on the test set."""
+    model.eval()  # ty:ignore[unresolved-attribute]
+    all_probs: list[torch.Tensor] = []
+    all_labels: list[torch.Tensor] = []
+    for inputs_, targets_ in test_loader:
+        inputs, targets = inputs_.to(device), targets_.to(device)
+        with autocast(device.type, enabled=amp_enabled):
+            sample_probs = F.softmax(model(inputs), dim=1)  # ty:ignore[call-non-callable]
+        all_probs.append(sample_probs)
+        all_labels.append(targets)
+
+    probs = torch.cat(all_probs)
+    labels = torch.cat(all_labels)
+
+    return _compute_metrics(probs, labels, n_bins)
+
+
 @evaluate.register((DropConnectPredictor, DropoutPredictor))
 @torch.no_grad()
 def _(
@@ -556,15 +583,14 @@ def evaluate_ddu(
 
     Uses softmax of the classification logits as class probabilities.
     """
-    model_ = cast("Any", model)
-    model_.eval()
+    model.eval()
     all_probs: list[torch.Tensor] = []
     all_labels: list[torch.Tensor] = []
     for inputs_, targets_ in test_loader:
         inputs, targets = inputs_.to(device), targets_.to(device)
         with autocast(device.type, enabled=amp_enabled):
-            features = model_.encoder(inputs)
-            logits = model_.classification_head(features)
+            features = model.encoder(inputs)  # ty:ignore[call-non-callable]
+            logits = model.classification_head(features)  # ty:ignore[call-non-callable]
         all_probs.append(F.softmax(logits, dim=1))
         all_labels.append(targets)
     probs = torch.cat(all_probs)
