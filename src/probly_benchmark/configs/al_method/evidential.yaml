@@ -1,0 +1,6 @@
+name: "evidential"
+representer: "evidential_classification"
+quantifier: "entropy"
+loss: "mse"
+kl_weight: 0.1
+annealing_epochs: 10

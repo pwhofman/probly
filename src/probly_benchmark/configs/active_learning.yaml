@@ -1,0 +1,25 @@
+defaults:
+  - _self_
+  - al_method: ???
+  - al_strategy: uncertainty
+  - al_dataset: ???
+
+# AL loop
+initial_size: 1000
+query_size: 1000
+n_iterations: 10
+
+# Training
+n_epochs: 50
+batch_size: 128
+lr: 0.001
+device: "cuda"
+reset_model: true
+
+# Experiment
+seed: 0
+
+# WandB
+wandb:
+  enabled: true
+  project: "probly-active-learning"

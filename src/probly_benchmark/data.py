@@ -8,6 +8,7 @@ import ssl
 from typing import Any, NamedTuple
 import warnings
 
+import numpy as np
 import torch
 from torch.utils.data import DataLoader, Subset, random_split
 import torchvision
@@ -483,3 +484,65 @@ def load_mnist(batch_size: int = 128) -> tuple[DataLoader, DataLoader]:
     test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False)
 
     return train_loader, test_loader
+
+
+def get_data_al(
+    name: str,
+    seed: int,
+    **kwargs: Any,  # noqa: ANN401
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, int, int]:
+    """Load a dataset as numpy arrays for active learning.
+
+    Args:
+        name: Dataset name (cifar10, fashion_mnist, openml).
+        seed: Random seed for train/test splitting (OpenML only).
+        **kwargs: Extra arguments. ``openml_id`` is required for OpenML datasets.
+
+    Returns:
+        Tuple of (x_train, y_train, x_test, y_test, num_classes, in_features).
+    """
+    name = name.lower()
+    match name:
+        case "cifar10":
+            transform = TRANSFORMS_TEST["cifar10"]
+            train_ds = torchvision.datasets.CIFAR10(root=DATA_PATH, train=True, download=True, transform=transform)
+            test_ds = torchvision.datasets.CIFAR10(root=DATA_PATH, train=False, download=True, transform=transform)
+            x_train = np.stack([train_ds[i][0].numpy() for i in range(len(train_ds))]).astype(np.float32)
+            y_train = np.array([train_ds[i][1] for i in range(len(train_ds))], dtype=np.int64)
+            x_test = np.stack([test_ds[i][0].numpy() for i in range(len(test_ds))]).astype(np.float32)
+            y_test = np.array([test_ds[i][1] for i in range(len(test_ds))], dtype=np.int64)
+            num_classes = 10
+            in_features = x_train.shape[1]
+        case "fashion_mnist":
+            transform = T.Compose([T.ToImage(), T.ToDtype(torch.float32, scale=True)])
+            train_ds = torchvision.datasets.FashionMNIST(root=DATA_PATH, train=True, download=True, transform=transform)
+            test_ds = torchvision.datasets.FashionMNIST(root=DATA_PATH, train=False, download=True, transform=transform)
+            x_train = np.stack([train_ds[i][0].numpy() for i in range(len(train_ds))]).astype(np.float32)
+            y_train = np.array([train_ds[i][1] for i in range(len(train_ds))], dtype=np.int64)
+            x_test = np.stack([test_ds[i][0].numpy() for i in range(len(test_ds))]).astype(np.float32)
+            y_test = np.array([test_ds[i][1] for i in range(len(test_ds))], dtype=np.int64)
+            num_classes = 10
+            in_features = x_train.shape[1]
+        case "openml":
+            from sklearn.datasets import fetch_openml  # noqa: PLC0415
+            from sklearn.model_selection import train_test_split  # noqa: PLC0415
+            from sklearn.preprocessing import LabelEncoder, StandardScaler  # noqa: PLC0415
+
+            openml_id = kwargs.get("openml_id")
+            if openml_id is None:
+                msg = "openml_id is required for OpenML datasets."
+                raise ValueError(msg)
+            dataset = fetch_openml(data_id=openml_id, as_frame=False, parser="auto")
+            x = dataset.data.astype(np.float32)
+            le = LabelEncoder()
+            y = le.fit_transform(dataset.target)
+            x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=seed, stratify=y)
+            scaler = StandardScaler()
+            x_train = scaler.fit_transform(x_train).astype(np.float32)
+            x_test = scaler.transform(x_test).astype(np.float32)
+            num_classes = len(le.classes_)
+            in_features = x_train.shape[1]
+        case _:
+            msg = f"Dataset {name} not recognized for active learning."
+            raise ValueError(msg)
+    return x_train, y_train, x_test, y_test, num_classes, in_features

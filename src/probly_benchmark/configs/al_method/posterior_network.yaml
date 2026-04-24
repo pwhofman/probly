@@ -1,0 +1,6 @@
+name: "posterior_network"
+representer: "posterior_network"
+quantifier: "entropy"
+latent_dim: 6
+num_flows: 6
+entropy_weight: 1e-5

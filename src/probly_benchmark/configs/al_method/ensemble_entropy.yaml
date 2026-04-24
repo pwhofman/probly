@@ -1,0 +1,4 @@
+name: "ensemble_entropy"
+representer: "ensemble"
+quantifier: "entropy_of_expected_value"
+n_members: 5

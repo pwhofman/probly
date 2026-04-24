@@ -1,0 +1,4 @@
+name: "ddu"
+representer: "ddu"
+quantifier: "mahalanobis"
+sn_coeff: 3.0

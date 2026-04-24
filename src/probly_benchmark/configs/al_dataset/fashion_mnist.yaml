@@ -1,0 +1,6 @@
+# @package _global_
+dataset:
+  name: "fashion_mnist"
+  base_model: "lenet"
+  num_classes: 10
+  type: "image"

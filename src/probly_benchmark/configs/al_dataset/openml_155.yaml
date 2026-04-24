@@ -1,0 +1,7 @@
+# @package _global_
+dataset:
+  name: "openml"
+  openml_id: 155
+  base_model: "tabular_mlp"
+  num_classes: null
+  type: "tabular"
