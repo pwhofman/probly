@@ -35,6 +35,7 @@ from probly.method.bayesian import BayesianPredictor
 from probly.method.credal_ensembling import CredalEnsemblingPredictor
 from probly.method.credal_relative_likelihood import CredalRelativeLikelihoodPredictor
 from probly.method.credal_wrapper import CredalWrapperPredictor
+from probly.method.dare import DarePredictor
 from probly.method.ddu import DDUPredictor
 from probly.method.ensemble import EnsemblePredictor
 from probly.method.subensemble import SubensemblePredictor
@@ -47,6 +48,7 @@ from probly_benchmark.train_funcs import (
     evaluate,
     train_epoch,
     train_epoch_cross_entropy,
+    train_epoch_dare,
     validate,
     validate_cross_entropy,
 )
@@ -315,6 +317,32 @@ def _(
             run,
             train_kwargs,
             train_fn=train_epoch_cross_entropy,
+            val_fn=validate_cross_entropy,
+            log_prefix=f"member_{i}/",
+        )
+
+
+@train_model.register(DarePredictor)
+def _(
+    model: DarePredictor,
+    train_loader: DataLoader,
+    val_loader: DataLoader | None,
+    cfg: DictConfig,
+    device: torch.device,
+    run: Any,  # noqa: ANN401
+    train_kwargs: dict[str, Any],
+) -> None:
+    """Train a DARE ensemble: each member with cross-entropy minus the anti-regularizer."""
+    for i, member in enumerate(model):
+        _training_loop(
+            member,
+            train_loader,
+            val_loader,
+            cfg,
+            device,
+            run,
+            train_kwargs,
+            train_fn=train_epoch_dare,
             val_fn=validate_cross_entropy,
             log_prefix=f"member_{i}/",
         )
