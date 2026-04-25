@@ -13,4 +13,4 @@ def _convert_torch_tensor_idx(idx: torch.Tensor) -> ArrayIndex | bool | int:
         if idx.dtype == torch.bool:
             return bool(idx)
         return 0
-    return ArrayIndex(ndim=idx.ndim, is_boolean=idx.dtype == torch.bool)
+    return ArrayIndex(index=idx, ndim=idx.ndim, is_boolean=idx.dtype == torch.bool)

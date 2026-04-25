@@ -12,6 +12,7 @@ from probly.representation.sample._common import Sample, SampleAxis, create_samp
 from probly.representation.sample.array import ArraySample
 from probly.representation.sample.axis_tracking import track_axis
 from probly.representation.sample.torch_functions import TorchSampleInternals, torch_function, torch_sample_internals
+from probly.representation.torch_functions import torch_average
 from probly.representation.torch_like import TorchLike, TorchLikeImplementation, to_torch_like
 
 if TYPE_CHECKING:
@@ -28,6 +29,7 @@ class TorchSample[D: TorchLike | torch.Tensor](TorchLikeImplementation[D], Sampl
 
     tensor: D
     sample_dim: int
+    weights: torch.Tensor | None = None
 
     def __post_init__(self) -> None:
         """Validate the sample_dim."""
@@ -44,11 +46,16 @@ class TorchSample[D: TorchLike | torch.Tensor](TorchLikeImplementation[D], Sampl
             msg = "tensor must be a TorchLike object."
             raise TypeError(msg)
 
+        if self.weights is not None and self.weights.shape != (self.sample_size,):
+            msg = f"weights must have shape ({self.sample_size},), but got {self.weights.shape}."
+            raise ValueError(msg)
+
     @override
     @classmethod
     def from_iterable(
         cls,
         samples: Iterable[ArrayLike[D]],
+        weights: Iterable[float] | None = None,
         sample_dim: SampleAxis | None = None,
         sample_axis: SampleAxis | None = "auto",
         dtype: torch.dtype | None = None,
@@ -57,6 +64,7 @@ class TorchSample[D: TorchLike | torch.Tensor](TorchLikeImplementation[D], Sampl
 
         Args:
             samples: The predictions to create the sample from.
+            weights: Optional weights for the samples.
             sample_dim: The dimension along which samples are organized.
             sample_axis: Alias for sample_dim for compatibility.
             dtype: Desired data type of the array.
@@ -93,7 +101,11 @@ class TorchSample[D: TorchLike | torch.Tensor](TorchLikeImplementation[D], Sampl
         if dtype is not None:
             samples = samples.to(dtype=dtype)
 
-        return cls(tensor=samples, sample_dim=sample_dim)  # ty:ignore[invalid-argument-type]
+        return cls(
+            tensor=samples,  # ty:ignore[invalid-argument-type]
+            sample_dim=sample_dim,
+            weights=torch.as_tensor(weights, device=samples.device) if weights is not None else None,
+        )
 
     def __len__(self) -> int:
         """Return the len of the array."""
@@ -192,16 +204,29 @@ class TorchSample[D: TorchLike | torch.Tensor](TorchLikeImplementation[D], Sampl
     @override
     def sample_mean(self) -> D:
         """Compute the mean of the sample."""
-        return torch.mean(self.tensor, dim=self.sample_dim)  # ty:ignore[no-matching-overload]
+        return torch_average(self.tensor, dim=self.sample_dim, weights=self.weights)  # ty:ignore[invalid-return-type, invalid-argument-type]
 
     @override
-    def sample_std(self, ddof: int = 1) -> D:
+    def sample_std(self, ddof: int = 0) -> D:
         """Compute the standard deviation of the sample."""
+        if self.weights is not None:
+            return torch.sqrt(self.sample_var(ddof=ddof))  # ty:ignore[invalid-return-type, invalid-argument-type]
+
         return torch.std(self.tensor, dim=self.sample_dim, correction=ddof)  # ty:ignore[no-matching-overload]
 
     @override
-    def sample_var(self, ddof: int = 1) -> D:
+    def sample_var(self, ddof: int = 0) -> D:
         """Compute the variance of the sample."""
+        tensor = self.tensor
+        weights = self.weights
+        if self.weights is not None:
+            if ddof != 0:
+                msg = "Weighted samples do not support ddof > 0."
+                raise ValueError(msg)
+            average = torch_average(tensor, dim=self.sample_dim, weights=weights, keepdim=True)  # ty:ignore[invalid-argument-type]
+            variance = torch_average((tensor - average) ** 2, dim=self.sample_dim, weights=weights)  # ty:ignore[unsupported-operator]
+            return variance  # ty:ignore[invalid-return-type]
+
         return torch.var(self.tensor, dim=self.sample_dim, correction=ddof)  # ty:ignore[no-matching-overload]
 
     @override
@@ -212,7 +237,21 @@ class TorchSample[D: TorchLike | torch.Tensor](TorchLikeImplementation[D], Sampl
             other_tensor = torch.stack(list(other.samples), dim=self.sample_dim)  # ty:ignore[invalid-argument-type]
 
         concatenated = torch.cat((self.tensor, other_tensor), dim=self.sample_dim)  # ty:ignore[no-matching-overload]
-        return type(self)(tensor=concatenated, sample_dim=self.sample_dim)
+
+        weights = self.weights
+        other_weights = other.weights if isinstance(other, TorchSample) else None
+
+        if weights is not None or other_weights is not None:
+            if weights is None:
+                weights = torch.ones(self.sample_size, device=self.tensor.device)
+            other_weights = (
+                torch.ones(other.sample_size, device=other_tensor.device)
+                if other_weights is None
+                else torch.as_tensor(other_weights, device=other_tensor.device)
+            )
+            weights = torch.cat((weights, other_weights), dim=0)
+
+        return type(self)(tensor=concatenated, sample_dim=self.sample_dim, weights=weights)
 
     def move_sample_dim(self, new_sample_dim: int) -> TorchSample:
         """Return a new TorchSample with the sample dimension moved to new_sample_dim.
@@ -224,7 +263,7 @@ class TorchSample[D: TorchLike | torch.Tensor](TorchLikeImplementation[D], Sampl
             A new TorchSample with the sample dimension moved.
         """
         moved_array = torch.moveaxis(self.tensor, self.sample_dim, new_sample_dim)  # ty:ignore[no-matching-overload]
-        return type(self)(tensor=moved_array, sample_dim=new_sample_dim)
+        return type(self)(tensor=moved_array, sample_dim=new_sample_dim, weights=self.weights)
 
     def move_sample_axis(self, new_sample_axis: int) -> TorchSample:
         """Alias for :meth:`TorchSample.move_sample_dim`."""
@@ -237,12 +276,21 @@ class TorchSample[D: TorchLike | torch.Tensor](TorchLikeImplementation[D], Sampl
         if not hasattr(new_tensor, "ndim"):
             return new_tensor
 
-        new_sample_dim = track_axis(index, self.sample_dim, self.tensor.ndim, torch_indexing=True)
+        track_result = track_axis(index, self.sample_dim, self.tensor.ndim, torch_indexing=True)
 
-        if new_sample_dim is None:
+        if track_result is None:
             return new_tensor  # ty:ignore[invalid-return-type]
 
-        return type(self)(tensor=new_tensor, sample_dim=new_sample_dim)
+        weights = self.weights
+
+        if weights is not None:
+            weights_index = track_result.index
+            if weights_index is NotImplemented:
+                msg = "Weighted samples do not support this indexing operation."
+                raise IndexError(msg)
+            weights = weights[weights_index]  # ty:ignore[invalid-argument-type]
+
+        return type(self)(tensor=new_tensor, sample_dim=track_result.new_axis, weights=weights)
 
     def __setitem__(self, index: ToIndices, value: object) -> None:
         """Set a sample by index."""
@@ -265,7 +313,11 @@ class TorchSample[D: TorchLike | torch.Tensor](TorchLikeImplementation[D], Sampl
     @override
     def detach(self) -> Self:
         """Return a detached copy of the sample tensor wrapper."""
-        return type(self)(tensor=cast("Any", self.tensor).detach(), sample_dim=self.sample_dim)
+        return type(self)(
+            tensor=cast("Any", self.tensor).detach(),
+            sample_dim=self.sample_dim,
+            weights=self.weights.detach() if self.weights is not None else None,
+        )
 
     @classmethod
     def __torch_function__(
@@ -290,11 +342,12 @@ class TorchSample[D: TorchLike | torch.Tensor](TorchLikeImplementation[D], Sampl
             A copy of the TorchSample.
         """
         tensor = self.tensor.to(*args, **kwargs)  # ty:ignore[no-matching-overload]
+        weights = self.weights.to(*args, **kwargs) if self.weights is not None else None
 
-        if tensor is self.tensor:
+        if tensor is self.tensor and weights is self.weights:
             return self
 
-        return type(self)(tensor=tensor, sample_dim=self.sample_dim)
+        return type(self)(tensor=tensor, sample_dim=self.sample_dim, weights=weights)
 
     def __torch_like__(
         self,
@@ -315,6 +368,7 @@ def _[D: TorchLike](sample: TorchSample[D]) -> TorchSampleInternals[D]:
         create=type(sample),
         tensor=sample.tensor,
         sample_dim=sample.sample_dim,
+        weights=sample.weights,
     )
 
 

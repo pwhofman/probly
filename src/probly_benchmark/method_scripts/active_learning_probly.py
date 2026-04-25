@@ -21,7 +21,7 @@ from torch import nn
 
 from probly.evaluation.active_learning import active_learning_loop  # ty: ignore[unresolved-import]
 from probly.method.credal_ensembling import credal_ensembling
-from probly.quantification.measure.distribution import entropy_of_expected_value, mutual_information
+from probly.quantification.measure.distribution import entropy_of_expected_predictive_distribution, mutual_information
 from probly.representer import representer
 
 logging.basicConfig(level=logging.INFO)
@@ -79,7 +79,7 @@ N_CLASSES = len(np.unique(y_train))
 # ---------------------------------------------------------------------------
 
 strategies = {
-    "credal_entropy_of_expected": entropy_of_expected_value,
+    "credal_entropy_of_expected": entropy_of_expected_predictive_distribution,
     "credal_mutual_information": mutual_information,
 }
 

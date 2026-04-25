@@ -268,10 +268,10 @@ def _(
     val_loader: DataLoader,
     device: torch.device,
     amp_enabled: bool = False,
-    **kwargs: Any,  # noqa: ANN401, ARG001
+    **kwargs: Any,  # noqa: ANN401
 ) -> tuple[float, float]:
     """Validate a Bayesian predictor."""
-    criterion = ELBOLoss()
+    criterion = ELBOLoss(kl_penalty=kwargs.get("kl_penalty", 1e-5))
     model.eval()
     val_loss, val_acc = 0.0, 0.0
     num_instances = 0

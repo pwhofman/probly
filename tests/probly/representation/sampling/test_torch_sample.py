@@ -9,8 +9,15 @@ pytest.importorskip("torch")
 import torch
 
 from probly.representation.array_like import to_numpy_array_like
+from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
 from probly.representation.sample.array import ArraySample
 from probly.representation.sample.torch import TorchSample
+from probly.representation.torch_functions import torch_average
+
+
+def assert_weights_equal(sample: TorchSample, expected: torch.Tensor) -> None:
+    assert sample.weights is not None
+    assert torch.equal(sample.weights, expected)
 
 
 class TestTorchSample:
@@ -40,6 +47,47 @@ class TestTorchSample:
         assert isinstance(res, TorchSample)
         assert res.sample_axis == torch_tensor_sample_2d.sample_axis
         assert res.sample_size == 2 * torch_tensor_sample_2d.sample_size
+
+    def test_from_iterable_preserves_weights(self) -> None:
+        weights = torch.tensor([0.1, 0.2, 0.3])
+
+        sample = TorchSample.from_iterable(torch.arange(6).reshape((3, 2)), sample_axis=0, weights=weights)
+
+        assert_weights_equal(sample, weights)
+
+    def test_constructor_rejects_wrong_weight_shape(self) -> None:
+        with pytest.raises(ValueError, match="weights must have shape"):
+            TorchSample(torch.arange(12).reshape((3, 4)), sample_dim=1, weights=torch.tensor([0.1, 0.2, 0.3]))
+
+    def test_sample_move_dim_preserves_weights(self) -> None:
+        weights = torch.tensor([0.1, 0.2, 0.3, 0.4])
+        sample = TorchSample(torch.arange(12).reshape((3, 4)), sample_dim=1, weights=weights)
+
+        moved_sample = sample.move_sample_dim(0)
+
+        assert moved_sample.sample_dim == 0
+        assert_weights_equal(moved_sample, weights)
+
+    def test_sample_concat_combines_weights(self) -> None:
+        left = TorchSample(torch.arange(12).reshape((3, 4)), sample_dim=1, weights=torch.tensor([0.1, 0.2, 0.3, 0.4]))
+        right = TorchSample(
+            torch.arange(12, 24).reshape((4, 3)), sample_dim=0, weights=torch.tensor([0.5, 0.6, 0.7, 0.8])
+        )
+
+        result = left.concat(right)
+
+        assert result.sample_dim == 1
+        assert_weights_equal(result, torch.tensor([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]))
+
+    def test_sample_concat_fills_missing_weights_with_ones(self) -> None:
+        left = TorchSample(torch.arange(12).reshape((3, 4)), sample_dim=1)
+        right = TorchSample(
+            torch.arange(12, 24).reshape((3, 4)), sample_dim=1, weights=torch.tensor([0.5, 0.6, 0.7, 0.8])
+        )
+
+        result = left.concat(right)
+
+        assert_weights_equal(result, torch.tensor([1.0, 1.0, 1.0, 1.0, 0.5, 0.6, 0.7, 0.8]))
 
     def test_sample_slicing(self, torch_tensor_sample_2d: TorchSample) -> None:
         indexed_sample = torch_tensor_sample_2d[:, :3]
@@ -73,6 +121,95 @@ class TestTorchSample:
         assert indexed_sample.sample_dim == 1
         assert torch.equal(indexed_sample.tensor, sample.tensor[index])
 
+    def test_weighted_non_sample_slice_preserves_weights(self) -> None:
+        weights = torch.tensor([0.1, 0.2, 0.3, 0.4])
+        sample = TorchSample(torch.arange(12).reshape((3, 4)), sample_dim=1, weights=weights)
+
+        indexed_sample = sample[:2, :]
+
+        assert isinstance(indexed_sample, TorchSample)
+        assert indexed_sample.sample_dim == 1
+        assert_weights_equal(indexed_sample, weights)
+
+    def test_weighted_sample_dim_slice_indexes_weights(self) -> None:
+        weights = torch.tensor([0.1, 0.2, 0.3, 0.4])
+        sample = TorchSample(torch.arange(12).reshape((3, 4)), sample_dim=1, weights=weights)
+
+        indexed_sample = sample[:, 1:3]
+
+        assert isinstance(indexed_sample, TorchSample)
+        assert indexed_sample.sample_dim == 1
+        assert_weights_equal(indexed_sample, torch.tensor([0.2, 0.3]))
+
+    def test_weighted_integer_before_sample_dim_preserves_weights(self) -> None:
+        weights = torch.tensor([0.1, 0.2, 0.3, 0.4])
+        sample = TorchSample(torch.arange(12).reshape((3, 4)), sample_dim=1, weights=weights)
+
+        indexed_sample = sample[0, :]
+
+        assert isinstance(indexed_sample, TorchSample)
+        assert indexed_sample.sample_dim == 0
+        assert_weights_equal(indexed_sample, weights)
+
+    def test_weighted_integer_on_sample_dim_returns_tensor(self) -> None:
+        sample = TorchSample(torch.arange(12).reshape((3, 4)), sample_dim=1, weights=torch.tensor([0.1, 0.2, 0.3, 0.4]))
+
+        indexed_sample = sample[:, 2]
+
+        assert isinstance(indexed_sample, torch.Tensor)
+
+    def test_weighted_1d_integer_index_on_sample_dim_indexes_weights(self) -> None:
+        weights = torch.tensor([0.1, 0.2, 0.3, 0.4])
+        sample = TorchSample(torch.arange(12).reshape((3, 4)), sample_dim=1, weights=weights)
+
+        indexed_sample = sample[:, torch.tensor([3, 1])]
+
+        assert isinstance(indexed_sample, TorchSample)
+        assert_weights_equal(indexed_sample, torch.tensor([0.4, 0.2]))
+
+    def test_weighted_1d_boolean_index_on_sample_dim_indexes_weights(self) -> None:
+        weights = torch.tensor([0.1, 0.2, 0.3, 0.4])
+        sample = TorchSample(torch.arange(12).reshape((3, 4)), sample_dim=1, weights=weights)
+
+        indexed_sample = sample[:, torch.tensor([True, False, True, False])]
+
+        assert isinstance(indexed_sample, TorchSample)
+        assert_weights_equal(indexed_sample, torch.tensor([0.1, 0.3]))
+
+    def test_weighted_newaxis_preserves_weights(self) -> None:
+        weights = torch.tensor([0.1, 0.2, 0.3, 0.4])
+        sample = TorchSample(torch.arange(12).reshape((3, 4)), sample_dim=1, weights=weights)
+
+        indexed_sample = sample[None, :, :]
+
+        assert isinstance(indexed_sample, TorchSample)
+        assert indexed_sample.sample_dim == 2
+        assert_weights_equal(indexed_sample, weights)
+
+    def test_weighted_ellipsis_sample_dim_slice_indexes_weights(self) -> None:
+        weights = torch.tensor([0.1, 0.2, 0.3, 0.4])
+        sample = TorchSample(torch.arange(12).reshape((3, 4)), sample_dim=1, weights=weights)
+
+        indexed_sample = sample[..., 1:3]
+
+        assert isinstance(indexed_sample, TorchSample)
+        assert_weights_equal(indexed_sample, torch.tensor([0.2, 0.3]))
+
+    def test_weighted_multidimensional_integer_index_on_sample_dim_returns_tensor(self) -> None:
+        sample = TorchSample(torch.arange(12).reshape((3, 4)), sample_dim=1, weights=torch.tensor([0.1, 0.2, 0.3, 0.4]))
+
+        indexed_sample = sample[:, torch.tensor([[0, 1]])]
+
+        assert isinstance(indexed_sample, torch.Tensor)
+        assert indexed_sample.shape == (3, 1, 2)
+
+    def test_unweighted_complex_indexing_still_works(self) -> None:
+        sample = TorchSample(torch.arange(12).reshape((3, 4)), sample_dim=1)
+
+        indexed_sample = sample[:, torch.tensor([[0, 1]])]
+
+        assert isinstance(indexed_sample, torch.Tensor)
+
     def test_sample_setitem(self, torch_tensor_sample_2d: TorchSample) -> None:
         torch_tensor_sample_2d[:, 0] = -1
 
@@ -87,6 +224,97 @@ class TestTorchSample:
         assert converted.sample_axis == torch_tensor_sample_2d.sample_dim
         assert np.array_equal(np.asarray(converted.array), np.asarray(torch_tensor_sample_2d.tensor))
 
+    def test_detach_preserves_weights(self) -> None:
+        weights = torch.tensor([0.1, 0.2, 0.3, 0.4])
+        sample = TorchSample(torch.arange(12).reshape((3, 4)), sample_dim=1, weights=weights)
+
+        detached = sample.detach()
+
+        assert detached.tensor is not sample.tensor
+        assert_weights_equal(detached, weights)
+
+    def test_to_preserves_weights(self) -> None:
+        sample = TorchSample(torch.arange(12).reshape((3, 4)), sample_dim=1, weights=torch.tensor([0.1, 0.2, 0.3, 0.4]))
+
+        converted = sample.to(dtype=torch.float64)
+
+        assert converted.tensor.dtype == torch.float64
+        assert converted.weights is not None
+        assert converted.weights.dtype == torch.float64
+        assert torch.allclose(converted.weights, torch.tensor([0.1, 0.2, 0.3, 0.4], dtype=torch.float64))
+
+    def test_sample_mean_uses_weights(self) -> None:
+        weights = torch.tensor([0.1, 0.2, 0.3, 0.4])
+        sample = TorchSample(torch.arange(12, dtype=torch.float32).reshape((3, 4)), sample_dim=1, weights=weights)
+
+        result = sample.sample_mean()
+
+        assert torch.allclose(result, torch_average(sample.tensor, dim=1, weights=weights))
+
+    def test_sample_mean_of_categorical_distribution_preserves_distribution_type(self) -> None:
+        probabilities = torch.arange(24, dtype=torch.float64).reshape((2, 3, 4)) + 1.0
+        sample = TorchSample(TorchCategoricalDistribution(probabilities), sample_dim=0)
+
+        result = sample.sample_mean()
+
+        assert isinstance(result, TorchCategoricalDistribution)
+        assert result.shape == (3,)
+        assert torch.allclose(result.unnormalized_probabilities, torch.mean(probabilities, dim=0))
+
+    def test_weighted_sample_mean_of_categorical_distribution_uses_weights(self) -> None:
+        probabilities = torch.arange(24, dtype=torch.float64).reshape((2, 3, 4)) + 1.0
+        weights = torch.tensor([0.25, 0.75], dtype=torch.float64)
+        sample = TorchSample(TorchCategoricalDistribution(probabilities), sample_dim=0, weights=weights)
+
+        result = sample.sample_mean()
+
+        assert isinstance(result, TorchCategoricalDistribution)
+        assert result.shape == (3,)
+        assert torch.allclose(
+            result.unnormalized_probabilities,
+            torch_average(probabilities, dim=0, weights=weights),
+        )
+
+    def test_torch_average_supports_tuple_dim_weights(self) -> None:
+        tensor = torch.arange(24, dtype=torch.float32).reshape((2, 3, 4))
+        weights = torch.arange(1, 9, dtype=torch.float32).reshape((2, 4))
+        expected = torch.sum(tensor * weights[:, None, :], dim=(0, 2)) / torch.sum(weights)
+
+        result = torch_average(tensor, dim=(0, 2), weights=weights)
+
+        assert torch.allclose(result, expected)
+
+    def test_torch_average_supports_axis_alias(self) -> None:
+        tensor = torch.arange(6, dtype=torch.float32).reshape((2, 3))
+
+        result = torch_average(tensor, axis=1)
+
+        assert torch.allclose(result, torch.mean(tensor, dim=1))
+
+    def test_torch_average_dispatches_to_torch_sample(self) -> None:
+        sample = TorchSample(torch.arange(12, dtype=torch.float32).reshape((3, 4)), sample_dim=1)
+
+        result = torch_average(sample, dim=0)
+
+        assert isinstance(result, TorchSample)
+        assert result.sample_dim == 0
+        assert torch.allclose(result.tensor, torch.mean(sample.tensor, dim=0))
+
+    def test_sample_var_and_std_use_weights(self) -> None:
+        weights = torch.tensor([0.1, 0.2, 0.3, 0.4])
+        sample = TorchSample(torch.arange(12, dtype=torch.float32).reshape((3, 4)), sample_dim=1, weights=weights)
+        average = torch_average(sample.tensor, dim=1, weights=weights, keepdim=True)
+        expected_var = torch_average((sample.tensor - average) ** 2, dim=1, weights=weights)
+
+        assert torch.allclose(sample.sample_var(), expected_var)
+        assert torch.allclose(sample.sample_std(), torch.sqrt(expected_var))
+
+    def test_weighted_sample_var_rejects_ddof(self) -> None:
+        sample = TorchSample(torch.arange(12, dtype=torch.float32).reshape((3, 4)), sample_dim=1, weights=torch.ones(4))
+
+        with pytest.raises(ValueError, match="ddof"):
+            sample.sample_var(ddof=1)
+
     def test_to_numpy_array_like_uses_array_like(self, torch_tensor_sample_2d: TorchSample) -> None:
         converted = to_numpy_array_like(torch_tensor_sample_2d)
 
@@ -95,13 +323,28 @@ class TestTorchSample:
 
     def test_torch_function_is_not_implemented(self, torch_tensor_sample_2d: TorchSample) -> None:
         result = TorchSample.__torch_function__(
-            torch.mean,
+            torch.prod,
             (TorchSample,),
             (torch_tensor_sample_2d,),
             {},
         )
 
         assert result is NotImplemented
+
+    def test_torch_function_mean_reduces_sample_dim(self) -> None:
+        sample = TorchSample(torch.arange(12, dtype=torch.float32).reshape((3, 4)), sample_dim=1)
+
+        result = torch.mean(sample, dim=1)
+
+        assert isinstance(result, torch.Tensor)
+        assert torch.allclose(result, torch.mean(sample.tensor, dim=1))
+
+    def test_torch_function_sum_tracks_sample_dim(self, torch_tensor_sample_2d: TorchSample) -> None:
+        result = torch.sum(torch_tensor_sample_2d, dim=0)
+
+        assert isinstance(result, TorchSample)
+        assert result.sample_dim == 0
+        assert torch.equal(result.tensor, torch.sum(torch_tensor_sample_2d.tensor, dim=0))
 
     def test_torch_function_transpose(self, torch_tensor_sample_2d: TorchSample) -> None:
         result = torch.transpose(torch_tensor_sample_2d, 0, 1)
@@ -110,12 +353,30 @@ class TestTorchSample:
         assert result.sample_dim == 0
         assert torch.equal(result.tensor, torch.transpose(torch_tensor_sample_2d.tensor, 0, 1))
 
+    def test_torch_function_transpose_preserves_weights(self) -> None:
+        weights = torch.tensor([0.1, 0.2, 0.3, 0.4])
+        sample = TorchSample(torch.arange(12).reshape((3, 4)), sample_dim=1, weights=weights)
+
+        result = torch.transpose(sample, 0, 1)
+
+        assert isinstance(result, TorchSample)
+        assert_weights_equal(result, weights)
+
     def test_torch_function_permute(self, torch_tensor_sample_2d: TorchSample) -> None:
         result = torch.permute(torch_tensor_sample_2d, (1, 0))
 
         assert isinstance(result, TorchSample)
         assert result.sample_dim == 0
         assert torch.equal(result.tensor, torch.permute(torch_tensor_sample_2d.tensor, (1, 0)))
+
+    def test_torch_function_permute_preserves_weights(self) -> None:
+        weights = torch.tensor([0.1, 0.2, 0.3, 0.4])
+        sample = TorchSample(torch.arange(12).reshape((3, 4)), sample_dim=1, weights=weights)
+
+        result = torch.permute(sample, (1, 0))
+
+        assert isinstance(result, TorchSample)
+        assert_weights_equal(result, weights)
 
     def test_torch_function_adjoint(self, torch_tensor_sample_2d: TorchSample) -> None:
         result = torch.adjoint(torch_tensor_sample_2d)
@@ -134,6 +395,37 @@ class TestTorchSample:
         assert torch.equal(
             result.tensor, torch.cat((torch_tensor_sample_2d.tensor, torch_tensor_sample_2d.tensor), dim=1)
         )
+
+    def test_torch_function_cat_combines_weights(self) -> None:
+        left = TorchSample(torch.arange(12).reshape((3, 4)), sample_dim=1, weights=torch.tensor([0.1, 0.2, 0.3, 0.4]))
+        right = TorchSample(
+            torch.arange(12, 24).reshape((3, 4)), sample_dim=1, weights=torch.tensor([0.5, 0.6, 0.7, 0.8])
+        )
+
+        result = torch.cat((left, right), dim=1)
+
+        assert isinstance(result, TorchSample)
+        assert_weights_equal(result, torch.tensor([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]))
+
+    def test_torch_function_cat_fills_missing_weights_with_ones(self) -> None:
+        left = TorchSample(torch.arange(12).reshape((3, 4)), sample_dim=1)
+        right = TorchSample(
+            torch.arange(12, 24).reshape((3, 4)), sample_dim=1, weights=torch.tensor([0.5, 0.6, 0.7, 0.8])
+        )
+
+        result = torch.cat((left, right), dim=1)
+
+        assert isinstance(result, TorchSample)
+        assert_weights_equal(result, torch.tensor([1.0, 1.0, 1.0, 1.0, 0.5, 0.6, 0.7, 0.8]))
+
+    def test_torch_function_cat_weighted_non_sample_dim_raises(self) -> None:
+        left = TorchSample(torch.arange(12).reshape((3, 4)), sample_dim=1, weights=torch.tensor([0.1, 0.2, 0.3, 0.4]))
+        right = TorchSample(
+            torch.arange(12, 24).reshape((3, 4)), sample_dim=1, weights=torch.tensor([0.5, 0.6, 0.7, 0.8])
+        )
+
+        with pytest.raises(ValueError, match="sample dimension"):
+            torch.cat((left, right), dim=0)
 
     def test_torch_function_cat_drops_type_for_mismatched_sample_dim(self, torch_tensor_sample_2d: TorchSample) -> None:
         other = TorchSample(torch.arange(12, 24).reshape((3, 4)), sample_dim=0)
@@ -195,3 +487,11 @@ class TestTorchSample:
         assert torch.equal(
             out.tensor, torch.stack((torch_tensor_sample_2d.tensor, torch_tensor_sample_2d.tensor), dim=0)
         )
+
+    def test_torch_function_stack_with_weights_raises(self) -> None:
+        weights = torch.tensor([0.1, 0.2, 0.3, 0.4])
+        left = TorchSample(torch.arange(12).reshape((3, 4)), sample_dim=1, weights=weights)
+        right = TorchSample(torch.arange(12, 24).reshape((3, 4)), sample_dim=1, weights=weights)
+
+        with pytest.raises(ValueError, match="stack"):
+            torch.stack((left, right), dim=0)
