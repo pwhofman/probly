@@ -5,7 +5,13 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from probly.representation.sample.axis_tracking import track_axis
+from probly.representation.array_like import ToIndices
+from probly.representation.sample.axis_tracking import track_axis as track_axis_result
+
+
+def track_axis(index: ToIndices, special_axis: int, ndim: int, torch_indexing: bool = False) -> object:
+    result = track_axis_result(index, special_axis, ndim, torch_indexing=torch_indexing)
+    return None if result is None else result.new_axis
 
 
 class TestBasicIndexing:

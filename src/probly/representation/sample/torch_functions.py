@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 class TorchSampleCreator[D: TorchLike](Protocol):
     """Protocol for creating sample tensors."""
 
-    def __call__(self, tensor: D, sample_dim: int) -> Any:  # noqa: ANN401
+    def __call__(self, tensor: D, sample_dim: int, weights: torch.Tensor | None) -> Any:  # noqa: ANN401
         """Create a sample tensor from a torch tensor and a sample dimension."""
 
 
@@ -30,6 +30,7 @@ class TorchSampleInternals[D: TorchLike]:
     create: TorchSampleCreator[D]
     tensor: D
     sample_dim: int
+    weights: torch.Tensor | None = None
 
 
 @singledispatch
@@ -68,6 +69,7 @@ class _BoundTorchFunctionWithInternals[D: TorchLike](Protocol):
         create_sample: TorchSampleCreator[D],
         tensor: TorchLike[D],
         sample_dim: int,
+        weights: torch.Tensor | None,
     ) -> Any:  # noqa: ANN401
         ...
 
@@ -166,6 +168,7 @@ def torch_internals_override(
                 internals.create,
                 internals.tensor,
                 internals.sample_dim,
+                internals.weights,
             )
 
         return torch_function_override(wrapper)
@@ -174,10 +177,11 @@ def torch_internals_override(
 
 
 def _extract_sample_tensor_sequence_internals(
-    tensors: tuple[Any, ...],
-) -> tuple[list[Any], bool, TorchSampleCreator | None, int | None, int | None]:
+    tensors: tuple[TorchLike, ...],
+) -> tuple[list[TorchLike], list[torch.Tensor | None], bool, TorchSampleCreator | None, int | None, int | None]:
     """Extract internals from a sequence of tensors or sample tensors."""
-    cast_tensors: list[Any] = []
+    cast_tensors: list[TorchLike] = []
+    weights: list[torch.Tensor | None] = []
     has_sample_tensors = False
     sample_dims: set[int] = set()
     create_sample: TorchSampleCreator | None = None
@@ -188,10 +192,12 @@ def _extract_sample_tensor_sequence_internals(
 
         if internals is None:
             cast_tensors.append(tensor)
+            weights.append(None)
             continue
 
         has_sample_tensors = True
         cast_tensors.append(internals.tensor)
+        weights.append(internals.weights)
         sample_dims.add(internals.sample_dim)
 
         if create_sample is None:
@@ -199,9 +205,9 @@ def _extract_sample_tensor_sequence_internals(
             sample_ndim = internals.tensor.ndim
 
     if len(sample_dims) == 1:
-        return cast_tensors, has_sample_tensors, create_sample, next(iter(sample_dims)), sample_ndim
+        return cast_tensors, weights, has_sample_tensors, create_sample, next(iter(sample_dims)), sample_ndim
 
-    return cast_tensors, has_sample_tensors, None, None, None
+    return cast_tensors, weights, has_sample_tensors, None, None, None
 
 
 @torch_function.register(torch.transpose)
@@ -213,6 +219,7 @@ def torch_transpose_function(
     create_sample: TorchSampleCreator,
     tensor: TorchLike,
     sample_dim: int,
+    weights: torch.Tensor | None,
 ) -> Any:  # noqa: ANN401
     """Implementation of torch.transpose for sample tensors."""
     if len(args) > 2:
@@ -238,7 +245,7 @@ def torch_transpose_function(
 
     res = func(*args, **kwargs)
 
-    return create_sample(res, sample_dim=new_sample_dim)
+    return create_sample(res, sample_dim=new_sample_dim, weights=weights)
 
 
 @torch_function.register(torch.permute)
@@ -250,6 +257,7 @@ def torch_permute_function(
     create_sample: TorchSampleCreator,
     tensor: TorchLike,
     sample_dim: int,
+    weights: torch.Tensor | None,
 ) -> Any:  # noqa: ANN401
     """Implementation of torch.permute for sample tensors."""
     dims = args[1] if len(args) > 1 else kwargs.get("dims")
@@ -265,7 +273,7 @@ def torch_permute_function(
     new_sample_dim = normalized_dims.index(sample_dim)
     res = func(*args, **kwargs)
 
-    return create_sample(res, sample_dim=new_sample_dim)
+    return create_sample(res, sample_dim=new_sample_dim, weights=weights)
 
 
 @torch_function.register(torch.adjoint)
@@ -277,6 +285,7 @@ def torch_adjoint_function(
     create_sample: TorchSampleCreator,
     tensor: TorchLike,
     sample_dim: int,
+    weights: torch.Tensor | None,
 ) -> Any:  # noqa: ANN401
     """Implementation of torch.adjoint for sample tensors."""
     a_ndim = tensor.ndim
@@ -290,7 +299,7 @@ def torch_adjoint_function(
 
     res = func(*args, **kwargs)
 
-    return create_sample(res, sample_dim=new_sample_dim)
+    return create_sample(res, sample_dim=new_sample_dim, weights=weights)
 
 
 @torch_function.multi_register([torch.cat, torch.concat, torch.concatenate])
@@ -312,50 +321,7 @@ def torch_cat_function(
 
     out = mutable_kwargs.get("out")
     out_internals = torch_sample_internals(out)
-    cast_tensors, has_sample_tensors, create_sample, sample_dim, _ = _extract_sample_tensor_sequence_internals(tensors)
-
-    if not has_sample_tensors and out_internals is None:
-        return NotImplemented
-
-    if len(mutable_args) > 0:
-        mutable_args[0] = cast_tensors
-    else:
-        mutable_kwargs["tensors"] = cast_tensors
-
-    if out_internals is not None:
-        mutable_kwargs["out"] = out_internals.tensor
-
-    res = func(*tuple(mutable_args), **mutable_kwargs)
-
-    if out is not None:
-        return out
-
-    if create_sample is None or sample_dim is None:
-        return res
-
-    return create_sample(res, sample_dim=sample_dim)
-
-
-@torch_function.register(torch.stack)
-@torch_function_override
-def torch_stack_function(
-    func: Callable,
-    args: tuple[Any, ...],
-    kwargs: dict[str, Any],
-) -> Any:  # noqa: ANN401
-    """Implementation of torch.stack for sample tensors."""
-    mutable_kwargs = dict(kwargs)
-    mutable_args = list(args)
-
-    tensors = tuple(mutable_args[0]) if len(mutable_args) > 0 else tuple(mutable_kwargs["tensors"])
-    dim = mutable_kwargs.get("dim", mutable_args[1] if len(mutable_args) > 1 else 0)
-
-    if not isinstance(dim, int):
-        return NotImplemented
-
-    out = mutable_kwargs.get("out")
-    out_internals = torch_sample_internals(out)
-    cast_tensors, has_sample_tensors, create_sample, sample_dim, sample_ndim = (
+    cast_tensors, weights, has_sample_tensors, create_sample, sample_dim, sample_ndim = (
         _extract_sample_tensor_sequence_internals(tensors)
     )
 
@@ -378,6 +344,69 @@ def torch_stack_function(
     if create_sample is None or sample_dim is None:
         return res
 
+    if sample_ndim is not None:
+        dim = dim if dim >= 0 else sample_ndim + dim
+
+    if any(w is not None for w in weights):
+        if dim != sample_dim:
+            msg = "Weighted samples only support cat along the sample dimension."
+            raise ValueError(msg)
+
+        weights = torch.concatenate(
+            [w if w is not None else torch.ones(cast_tensors[i].shape[sample_dim]) for i, w in enumerate(weights)]
+        )
+    else:
+        weights = None
+
+    return create_sample(res, sample_dim=sample_dim, weights=weights)
+
+
+@torch_function.register(torch.stack)
+@torch_function_override
+def torch_stack_function(
+    func: Callable,
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
+) -> Any:  # noqa: ANN401
+    """Implementation of torch.stack for sample tensors."""
+    mutable_kwargs = dict(kwargs)
+    mutable_args = list(args)
+
+    tensors = tuple(mutable_args[0]) if len(mutable_args) > 0 else tuple(mutable_kwargs["tensors"])
+    dim = mutable_kwargs.get("dim", mutable_args[1] if len(mutable_args) > 1 else 0)
+
+    if not isinstance(dim, int):
+        return NotImplemented
+
+    out = mutable_kwargs.get("out")
+    out_internals = torch_sample_internals(out)
+    cast_tensors, weights, has_sample_tensors, create_sample, sample_dim, sample_ndim = (
+        _extract_sample_tensor_sequence_internals(tensors)
+    )
+
+    if not has_sample_tensors and out_internals is None:
+        return NotImplemented
+
+    if len(mutable_args) > 0:
+        mutable_args[0] = cast_tensors
+    else:
+        mutable_kwargs["tensors"] = cast_tensors
+
+    if out_internals is not None:
+        mutable_kwargs["out"] = out_internals.tensor
+
+    res = func(*tuple(mutable_args), **mutable_kwargs)
+
+    if out is not None:
+        return out
+
+    if create_sample is None or sample_dim is None:
+        return res
+
+    if any(w is not None for w in weights):
+        msg = "Weighted samples do not support stack."
+        raise ValueError(msg)
+
     input_ndim = sample_ndim
     if input_ndim is None:
         return res
@@ -385,4 +414,4 @@ def torch_stack_function(
     axis = dim if dim >= 0 else input_ndim + dim + 1
     new_sample_dim = sample_dim + 1 if axis <= sample_dim else sample_dim
 
-    return create_sample(res, sample_dim=new_sample_dim)
+    return create_sample(res, sample_dim=new_sample_dim, weights=None)

@@ -7,7 +7,6 @@ from river.forest import ARFClassifier, ARFRegressor
 
 from probly.predictor import predict_raw
 from probly.representation.distribution.array_categorical import ArrayCategoricalDistribution
-from probly.representation.distribution.array_point_prediction import ArrayPointPrediction
 
 from ._common import EnsembleCategoricalDistributionPredictor, EnsemblePredictor
 
@@ -18,13 +17,16 @@ EnsemblePredictor.register(ARFRegressor)
 @predict_raw.register(ARFClassifier)
 def predict_arf_ensemble(arf: ARFClassifier, x: dict[str, float]) -> list[ArrayCategoricalDistribution]:
     """Extract aligned per-tree categorical distributions from an ARF."""
+    if len(arf) == 0 and hasattr(arf, "_init_ensemble"):
+        arf._init_ensemble(sorted(x.keys()))  # noqa: SLF001
+
     per_tree_dicts = [m.predict_proba_one(x) for m in arf.models]
 
     # Infer common class order from all trees and the ensemble itself
     seen: set = set()
     for pt in per_tree_dicts:
         seen.update(pt)
-    seen.update(arf.predict_proba_one(x))
+
     classes = sorted(seen, key=lambda c: (not isinstance(c, (int, float)), str(c)))
     if not classes:
         classes = [0, 1]
@@ -46,10 +48,10 @@ def predict_arf_ensemble(arf: ARFClassifier, x: dict[str, float]) -> list[ArrayC
 
 
 @predict_raw.register(ARFRegressor)
-def predict_arf_regressor_ensemble(arf: ARFRegressor, x: dict[str, float]) -> list[ArrayPointPrediction]:
+def predict_arf_regressor_ensemble(arf: ARFRegressor, x: dict[str, float]) -> list[np.ndarray]:
     """Extract per-tree point predictions from an ARF regressor.
 
     Each tree produces a deterministic point prediction. Epistemic uncertainty
     arises from disagreement across trees; aleatoric uncertainty is zero.
     """
-    return [ArrayPointPrediction(mean=np.array([float(m.predict_one(x))])) for m in arf.models]
+    return [np.array([float(m.predict_one(x))]) for m in arf.models]

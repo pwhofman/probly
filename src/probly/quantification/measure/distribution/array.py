@@ -15,7 +15,6 @@ from probly.representation.distribution.array_gaussian import (
     ArrayGaussianDistribution,
     ArrayGaussianDistributionSample,
 )
-from probly.representation.distribution.array_point_prediction import ArrayPointPredictionSample
 
 from ._common import (
     LogBase,
@@ -220,40 +219,6 @@ def array_gaussian_sample_mutual_information(
     return array_gaussian_sample_entropy_of_expected_predictive_distribution(
         sample, base=base
     ) - array_gaussian_sample_conditional_entropy(sample, base=base)
-
-
-@entropy_of_expected_predictive_distribution.register(ArrayPointPredictionSample)
-def array_point_prediction_sample_entropy_of_expected_predictive_distribution(
-    sample: ArrayPointPredictionSample, base: LogBase = None
-) -> np.ndarray:
-    """Compute the total uncertainty for a point-prediction ensemble.
-
-    Uses the entropy of a Gaussian with variance equal to the ensemble variance,
-    preserving comparability with the Gaussian entropy pipeline.
-    """
-    means = sample.array.mean
-    axis = sample.sample_axis
-    ensemble_var = np.var(means, axis=axis)
-    return array_gaussian_entropy(ensemble_var, base=base)
-
-
-@conditional_entropy.register(ArrayPointPredictionSample)
-def array_point_prediction_sample_conditional_entropy(
-    sample: ArrayPointPredictionSample, base: LogBase = None
-) -> np.ndarray:
-    """Aleatoric uncertainty is zero for point predictions."""
-    del base
-    means = sample.array.mean
-    axis = sample.sample_axis
-    return np.zeros_like(np.mean(means, axis=axis))
-
-
-@mutual_information.register(ArrayPointPredictionSample)
-def array_point_prediction_sample_mutual_information(
-    sample: ArrayPointPredictionSample, base: LogBase = None
-) -> np.ndarray:
-    """Epistemic uncertainty equals total uncertainty for point predictions."""
-    return array_point_prediction_sample_entropy_of_expected_predictive_distribution(sample, base=base)
 
 
 @mutual_information.register(ArrayCategoricalDistributionSample)

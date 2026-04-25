@@ -2,13 +2,21 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 import pytest
 
 pytest.importorskip("jax")
 import jax
 from jax import numpy as jnp
 
-from probly.representation.sample.axis_tracking import track_axis
+from probly.representation.array_like import ToIndices
+from probly.representation.sample.axis_tracking import track_axis as track_axis_result
+
+
+def track_axis(index: ToIndices, special_axis: int, ndim: int, torch_indexing: bool = False) -> object:
+    result = track_axis_result(index, special_axis, ndim, torch_indexing=torch_indexing)
+    return None if result is None else result.new_axis
 
 
 class TestArrayIndexSemantics:
@@ -70,7 +78,10 @@ class TestJittedIndexSemantics:
         def _tracked_axis(idx: jax.Array) -> int:
             # Ensure this index type is accepted by jax itself.
             _ = jnp.zeros((2, 3, 4))[(0, slice(None), idx)]
-            return track_axis((0, slice(None), idx), special_axis=1, ndim=3, torch_indexing=False)
+            return cast(
+                "int",
+                track_axis((0, slice(None), idx), special_axis=1, ndim=3, torch_indexing=False),
+            )
 
         assert int(_tracked_axis(jnp.array([0, 2], dtype=jnp.int32))) == 1
 
@@ -79,6 +90,9 @@ class TestJittedIndexSemantics:
         def _tracked_axis(idx: jax.Array) -> int:
             # Ensure this index type is accepted by jax itself.
             _ = jnp.zeros((2, 3, 4))[(idx, slice(None), jnp.array([0, 2], dtype=jnp.int32))]
-            return track_axis((idx, slice(None), jnp.array([0, 2], dtype=jnp.int32)), special_axis=1, ndim=3)
+            return cast(
+                "int",
+                track_axis((idx, slice(None), jnp.array([0, 2], dtype=jnp.int32)), special_axis=1, ndim=3),
+            )
 
         assert int(_tracked_axis(jnp.array(0, dtype=jnp.int32))) == 1

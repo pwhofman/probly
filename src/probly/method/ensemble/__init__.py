@@ -26,11 +26,10 @@ EnsemblePredictor.register(
     (
         TORCH_MODULE_LIST,
         FLAX_LIST,
+        RIVER_ARF_REGRESSOR,
     )
 )
-
 EnsembleCategoricalDistributionPredictor.register(RIVER_ARF_CLASSIFIER)
-EnsemblePredictor.register(RIVER_ARF_REGRESSOR)
 
 
 ## Torch

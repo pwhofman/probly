@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from types import EllipsisType
+from types import EllipsisType, NotImplementedType
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -19,8 +19,17 @@ if TYPE_CHECKING:
 class ArrayIndex:
     """Marker for an advanced indexing array, which can be either integer or boolean and of any shape."""
 
+    index: object
     ndim: int
     is_boolean: bool
+
+
+@dataclass(frozen=True, slots=True)
+class AxisTrackingResult:
+    """Result of tracking an axis through an indexing operation."""
+
+    new_axis: int
+    index: ToIndex | NotImplementedType
 
 
 type _BasicIndexElement = slice | int | None
@@ -45,14 +54,14 @@ def convert_idx(idx: ToIndex) -> _InternalIndexElement:  # noqa: PLR0911
             if idx.dtype == bool:
                 return bool(idx)
             return 0  # use 0 as a sentinel for any 0d integer index
-        return ArrayIndex(ndim=idx.ndim, is_boolean=idx.dtype == bool)  # ty:ignore[invalid-argument-type]
+        return ArrayIndex(index=idx, ndim=idx.ndim, is_boolean=idx.dtype == bool)  # ty:ignore[invalid-argument-type]
 
     idx = np.asanyarray(idx)
     if idx.ndim == 0:
         if idx.dtype == bool:
             return bool(idx)
         return 0  # use 0 as a sentinel for any 0d integer index
-    return ArrayIndex(ndim=idx.ndim, is_boolean=idx.dtype == bool)
+    return ArrayIndex(index=idx, ndim=idx.ndim, is_boolean=idx.dtype == bool)
 
 
 @convert_idx.delayed_register(TORCH_TENSOR)
@@ -260,7 +269,7 @@ def track_axis(
     special_axis: int,
     ndim: int,
     torch_indexing: bool = False,
-) -> int | None:
+) -> AxisTrackingResult | None:
     """Track the new position of a 'special' axis after a NumPy-style __getitem__ indexing operation.
 
     Args:
@@ -276,7 +285,7 @@ def track_axis(
     """
     # Handle structured arrays (field access)
     if isinstance(index, str) or (isinstance(index, list) and all(isinstance(i, str) for i in index)):
-        return special_axis
+        return AxisTrackingResult(new_axis=special_axis, index=slice(None))
 
     normalized_index = _normalize_index(index, ndim, torch_indexing=torch_indexing)
     basic_index, advanced_index = _split_index(normalized_index, torch_indexing=torch_indexing)
@@ -291,4 +300,4 @@ def track_axis(
     if len(advanced_index) > 0:
         new_axis = _track_axis_advanced(advanced_index, new_axis)
 
-    return new_axis
+    return AxisTrackingResult(new_axis=new_axis, index=NotImplemented) if new_axis is not None else None
