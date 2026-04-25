@@ -252,3 +252,42 @@ def test_uncertainty_scores_unknown_measure_raises() -> None:
     est.measure = "this_does_not_exist"
     with pytest.raises(KeyError):
         est.uncertainty_scores(torch.zeros(5, 4))
+
+
+from probly.method.ddu import ddu  # noqa: E402  # ty: ignore[unresolved-import]
+
+
+def test_embed_plain_classifier_uses_last_linear() -> None:
+    """Plain ``nn.Module`` falls through to the last-Linear forward pre-hook.
+
+    ``_embed_one`` doesn't require the model to be a registered probly
+    predictor — it just installs a forward pre-hook on the last
+    ``nn.Linear``. The TabularMLP's last ``Linear`` maps
+    ``hidden_dim=1024`` → ``num_classes``, so the captured embedding
+    has shape ``(batch, 1024)``.
+    """
+    base = _tiny_classifier(num_classes=3, in_features=4)
+    est = _make_estimator_with_predictor(base)
+    emb = est.embed(torch.zeros(5, 4))
+    assert emb.shape == (5, 1024)
+
+
+def test_embed_ensemble_averages_members() -> None:
+    base = _tiny_classifier(num_classes=3, in_features=4)
+    pred = ensemble(base, num_members=2, predictor_type="logit_classifier")
+    est = _make_estimator_with_predictor(pred)  # ty: ignore[invalid-argument-type]
+    emb = est.embed(torch.zeros(5, 4))
+    assert emb.shape == (5, 1024)
+
+
+def test_embed_ddu_uses_encoder_attribute() -> None:
+    """DDU exposes an .encoder attribute; embed should run that, not the last Linear."""
+    base = _tiny_classifier(num_classes=3, in_features=4)
+    pred = ddu(base, predictor_type="logit_classifier")
+    # DDUPredictor protocol guarantees an .encoder attribute.
+    assert hasattr(pred, "encoder")
+    est = _make_estimator_with_predictor(pred)  # ty: ignore[invalid-argument-type]
+    emb = est.embed(torch.zeros(5, 4))
+    # Just assert no crash and a 2D tensor of the right batch size.
+    assert emb.ndim == 2
+    assert emb.shape[0] == 5

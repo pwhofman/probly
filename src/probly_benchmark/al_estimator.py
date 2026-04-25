@@ -432,13 +432,30 @@ class BenchmarkALEstimator:
             handle.remove()
 
     @torch.no_grad()
+    def _encoder_features(self, encoder: nn.Module, x_t: torch.Tensor) -> torch.Tensor:
+        """Run ``encoder`` in eval mode batched and return its output on CPU.
+
+        Args:
+            encoder: A ``nn.Module`` that accepts ``x_t`` and returns features.
+            x_t: Input tensor already on ``self.device``.
+        """
+        encoder.eval()
+        parts: list[torch.Tensor] = []
+        for start in range(0, len(x_t), self.pred_batch_size):
+            batch = x_t[start : start + self.pred_batch_size]
+            parts.append(encoder(batch).detach().cpu())
+        return torch.cat(parts)
+
+    @torch.no_grad()
     def embed(self, x: torch.Tensor) -> torch.Tensor:
         """Return penultimate-layer embeddings used by BADGE.
 
-        For ensembles, embeddings are averaged across members. For methods with
-        an explicit ``encoder`` attribute (DDU, posterior network) the encoder
-        output is used. For all other methods, a forward pre-hook on the last
-        ``nn.Linear`` captures its input.
+        Dispatch is protocol-driven (no method-name strings):
+
+        - :class:`EnsemblePredictor` -> average ``_embed_one`` across members.
+        - Predictors with an ``encoder`` attribute (DDU, posterior_network) ->
+          run the encoder directly (avoids capturing flow internals).
+        - Otherwise -> forward pre-hook on the last ``nn.Linear``.
 
         Args:
             x: Input tensor of shape ``(n, ...)``.
@@ -446,23 +463,17 @@ class BenchmarkALEstimator:
         Returns:
             Tensor of shape ``(n, emb_dim)`` on CPU.
         """
-        model = cast("Any", self.model)
         x_t = x.to(device=self.device)
 
         if isinstance(self.model, EnsemblePredictor):
-            members = list(model)
+            members = list(cast("Any", self.model))
             embs = [self._embed_one(member, x_t) for member in members]
             return torch.stack(embs).mean(dim=0)
 
-        if self.method_name in ("ddu", "posterior_network"):
-            model.eval()
-            parts: list[torch.Tensor] = []
-            for start in range(0, len(x_t), self.pred_batch_size):
-                batch = x_t[start : start + self.pred_batch_size]
-                parts.append(model.encoder(batch).detach().cpu())
-            return torch.cat(parts)
+        if hasattr(self.model, "encoder"):
+            return self._encoder_features(cast("Any", self.model).encoder, x_t)
 
-        return self._embed_one(model, x_t)
+        return self._embed_one(cast("Any", self.model), x_t)
 
     def uncertainty_scores(self, x: torch.Tensor) -> torch.Tensor:
         """Return per-sample uncertainty scores of shape (n_samples,).
