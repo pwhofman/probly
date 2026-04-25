@@ -154,7 +154,7 @@ def test_uacqr_prediction_set_uses_ensemble_uncertainty_scaling() -> None:
     output = representer(calibrated).predict(x_test)
     prediction = predictor.predict(x_test)
     mean_prediction = prediction.mean(axis=0)
-    std_prediction = prediction.std(axis=0, ddof=1)
+    std_prediction = prediction.std(axis=0, ddof=0)
     expected_lower = mean_prediction[:, 0] - calibrated.conformal_quantile * std_prediction[:, 0]
     expected_upper = mean_prediction[:, 1] + calibrated.conformal_quantile * std_prediction[:, 1]
 

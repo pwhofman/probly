@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 from flax import nnx
+import jax.numpy as jnp
 
+from probly.predictor._common import predict, predict_raw
 from probly.traverse_nn import nn_compose, nn_traverser, reset_traverser
 from pytraverse import CLONE, traverse
 
@@ -28,3 +30,9 @@ def generate_flax_ensemble(
     if reset_params:
         return nnx.List([_clone_reset(obj) for _ in range(num_members)])
     return nnx.List([_clone(obj) for _ in range(num_members)])
+
+
+@predict_raw.register(nnx.List)
+def predict_nnx_list[**In](predictor: nnx.List, *args: In.args, **kwargs: In.kwargs) -> jnp.ndarray:
+    """Predict for a flax nnx list ensemble."""
+    return jnp.stack([predict(p, *args, **kwargs) for p in predictor], axis=0)

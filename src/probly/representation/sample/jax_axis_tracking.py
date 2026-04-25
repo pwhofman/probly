@@ -14,4 +14,4 @@ def _convert_jax_array_idx(idx: jax.Array) -> ArrayIndex | bool | int:
         if idx.dtype == jnp.bool_:
             return bool(idx)
         return 0
-    return ArrayIndex(ndim=idx.ndim, is_boolean=idx.dtype == jnp.bool_)
+    return ArrayIndex(index=idx, ndim=idx.ndim, is_boolean=idx.dtype == jnp.bool_)

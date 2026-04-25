@@ -11,6 +11,7 @@ import torch
 from probly.representation.distribution import create_categorical_distribution
 from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
 from probly.representation.sample.torch import TorchSample
+from probly.representation.torch_functions import torch_average
 
 
 def test_create_categorical_distribution_from_torch_tensor() -> None:
@@ -175,3 +176,29 @@ def test_stack_preserves_distribution_type() -> None:
     assert isinstance(stacked, TorchCategoricalDistribution)
     assert stacked.shape == (2, 2, 3)
     assert tuple(stacked.probabilities.shape) == (2, 2, 3, 4)
+
+
+def test_mean_preserves_distribution_type_and_class_axis() -> None:
+    probabilities = torch.arange(24, dtype=torch.float64).reshape((2, 3, 4)) + 1.0
+    dist = TorchCategoricalDistribution(probabilities)
+
+    meaned = torch.mean(dist, dim=0)
+
+    assert isinstance(meaned, TorchCategoricalDistribution)
+    assert meaned.shape == (3,)
+    assert torch.allclose(meaned.unnormalized_probabilities, torch.mean(probabilities, dim=0))
+
+
+def test_average_preserves_distribution_type_and_uses_weights() -> None:
+    probabilities = torch.arange(24, dtype=torch.float64).reshape((2, 3, 4)) + 1.0
+    weights = torch.tensor([0.25, 0.75], dtype=torch.float64)
+    dist = TorchCategoricalDistribution(probabilities)
+
+    averaged = torch_average(dist, dim=0, weights=weights)
+
+    assert isinstance(averaged, TorchCategoricalDistribution)
+    assert averaged.shape == (3,)
+    assert torch.allclose(
+        averaged.unnormalized_probabilities,
+        torch_average(probabilities, dim=0, weights=weights),
+    )
