@@ -3,3 +3,8 @@
 __pycache__/
 *.pyc
 uv.lock
+
+# Transient experiment outputs (keep PDFs, .tex, manifest, .gitkeep tracked)
+results/*.parquet
+results/*.png
+results/*.csv
