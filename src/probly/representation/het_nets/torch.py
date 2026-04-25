@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 @create_het_nets_representation.register(TorchSample)
 @dataclass(frozen=True, slots=True)
-class HetNetsRepresentation(HetNetsRepresentation, TorchAxisProtected):
+class TorchHetNetsRepresentation(HetNetsRepresentation, TorchAxisProtected):
     """HetNets representation backed by torch tensors.
 
     Args:
