@@ -1,5 +1,5 @@
 {
-  "git_sha": "490c0bbe2cd20472f92e9b43fcf9b33c7a530b26",
+  "git_sha": "b3c30692d39a07283d25d577238435dd98e8f460",
   "n_seeds": 10,
   "n_steps": 3000,
   "methods": [
@@ -12,6 +12,6 @@
     "sea_drift",
     "agrawal_stationary"
   ],
-  "elapsed_seconds": 52.8,
+  "elapsed_seconds": 55.7,
   "n_combinations": 90
 }

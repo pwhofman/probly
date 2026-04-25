@@ -36,7 +36,7 @@ class ProblyUQDetector:
         self,
         warmup: tuple[int, int] = (500, 1500),
         smoothing_win: int = 50,
-        k: float = 4.0,
+        k: float = 3.0,
         min_consec: int = 5,
     ) -> None:
         self._warmup = warmup

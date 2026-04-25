@@ -1,13 +1,15 @@
-\begin{tabular}{llrrl}
+\begin{tabular}{llllc}
     \toprule
     Method & Stream & probly-UQ latency & Tailored latency & Tailored detector \\
     \midrule
-        arf & sea_drift & 510 $\pm$ 381 & -172 $\pm$ 262 & ADWIN (native, per-tree) \\
-        arf & stagger_drift & 25 $\pm$ 11 & -11 $\pm$ 46 & ADWIN (native, per-tree) \\
-        deep_ensemble & sea_drift & 303 $\pm$ 273 & -384 $\pm$ 84 & PageHinkley on error* \\
-        deep_ensemble & stagger_drift & 20 $\pm$ 3 & 46 $\pm$ 199 & PageHinkley on error* \\
-        mc_dropout & sea_drift & 55 $\pm$ nan & 153 $\pm$ 555 & PageHinkley on error* \\
-        mc_dropout & stagger_drift & 32 $\pm$ 12 & -86 $\pm$ 269 & PageHinkley on error* \\
+        arf & sea_drift & 252 $\pm$ 31 (2/10 TP, 1 FA) & 52 (1/10 TP, 2 FA) & ADWIN (native, per-tree) \\
+        arf & stagger_drift & 23 $\pm$ 10 (9/10 TP, 1 FA) & 17 $\pm$ 0 (7/10 TP, 3 FA) & ADWIN (native, per-tree) \\
+        deep_ensemble & sea_drift & 357 $\pm$ 284 (5/10 TP, 1 FA) & \textit{none} (3/10 FA) & PageHinkley on error* \\
+        deep_ensemble & stagger_drift & 19 $\pm$ 4 (10/10 TP, 0 FA) & 139 $\pm$ 27 (8/10 TP, 2 FA) & PageHinkley on error* \\
+        mc_dropout & sea_drift & 767 $\pm$ 119 (4/10 TP, 1 FA) & 471 $\pm$ 106 (2/10 TP, 1 FA) & PageHinkley on error* \\
+        mc_dropout & stagger_drift & 30 $\pm$ 10 (10/10 TP, 0 FA) & 143 $\pm$ 39 (5/10 TP, 5 FA) & PageHinkley on error* \\
     \bottomrule
 \end{tabular}
-% *PageHinkley-on-error requires labels at inference; probly-UQ does not.
+% Cells: latency_mean $\pm$ std (n_tp/n_seeds TP, n_fa FA).
+% TP = alarm at or after true drift; FA = alarm before true drift.
+% PageHinkley-on-error requires labels at inference; probly-UQ does not.
