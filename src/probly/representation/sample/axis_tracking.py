@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from types import EllipsisType, NotImplementedType
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
 
@@ -264,6 +264,47 @@ def _track_axis_advanced(  # noqa: C901, PLR0912, PLR0915
     return new_special_axis
 
 
+def _track_weight_index(  # noqa: PLR0911
+    index: tuple[_InternalIndexElement, ...],
+    special_axis: int,
+) -> ToIndex | NotImplementedType:
+    """Track the one-dimensional index that applies to weights for the special axis."""
+    consumed_axes = 0
+
+    for idx in index:
+        if idx is None or isinstance(idx, bool) or idx is Ellipsis:
+            continue
+
+        if isinstance(idx, slice):
+            if consumed_axes == special_axis:
+                return idx
+            consumed_axes += 1
+            continue
+
+        if isinstance(idx, int):
+            if consumed_axes == special_axis:
+                return idx
+            consumed_axes += 1
+            continue
+
+        if isinstance(idx, ArrayIndex):
+            if idx.is_boolean:
+                if consumed_axes <= special_axis < consumed_axes + idx.ndim:
+                    if idx.ndim == 1 and consumed_axes == special_axis:
+                        return cast("ToIndex", idx.index)
+                    return NotImplemented
+                consumed_axes += idx.ndim
+                continue
+
+            if consumed_axes == special_axis:
+                if idx.ndim == 1:
+                    return cast("ToIndex", idx.index)
+                return NotImplemented
+            consumed_axes += 1
+
+    return slice(None)
+
+
 def track_axis(
     index: ToIndices,
     special_axis: int,
@@ -300,4 +341,9 @@ def track_axis(
     if len(advanced_index) > 0:
         new_axis = _track_axis_advanced(advanced_index, new_axis)
 
-    return AxisTrackingResult(new_axis=new_axis, index=NotImplemented) if new_axis is not None else None
+    if new_axis is None:
+        return None
+
+    weight_index = _track_weight_index(normalized_index, special_axis)
+
+    return AxisTrackingResult(new_axis=new_axis, index=weight_index)

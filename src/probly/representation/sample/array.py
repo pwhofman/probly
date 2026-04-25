@@ -265,9 +265,9 @@ class ArraySample[D: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplementation[D
             return new_array
 
         weights = self.weights
-        weights_index = track_result.index
 
         if weights is not None:
+            weights_index = track_result.index
             if weights_index is NotImplemented:
                 msg = "Weighted samples do not support this indexing operation."
                 raise IndexError(msg)

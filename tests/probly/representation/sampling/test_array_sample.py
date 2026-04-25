@@ -129,6 +129,101 @@ class TestArraySample:
         assert isinstance(indexed_sample, np.ndarray)
         assert indexed_sample.shape == (3,)
 
+    def test_weighted_non_sample_slice_preserves_weights(self) -> None:
+        weights = np.array([0.1, 0.2, 0.3, 0.4])
+        sample = ArraySample(np.arange(12).reshape((3, 4)), sample_axis=1, weights=weights)
+
+        indexed_sample = sample[:2, :]
+
+        assert isinstance(indexed_sample, ArraySample)
+        assert indexed_sample.sample_axis == 1
+        assert_weights_equal(indexed_sample, weights)
+
+    def test_weighted_sample_axis_slice_indexes_weights(self) -> None:
+        weights = np.array([0.1, 0.2, 0.3, 0.4])
+        sample = ArraySample(np.arange(12).reshape((3, 4)), sample_axis=1, weights=weights)
+
+        indexed_sample = sample[:, 1:3]
+
+        assert isinstance(indexed_sample, ArraySample)
+        assert indexed_sample.sample_axis == 1
+        assert_weights_equal(indexed_sample, np.array([0.2, 0.3]))
+
+    def test_weighted_integer_before_sample_axis_preserves_weights(self) -> None:
+        weights = np.array([0.1, 0.2, 0.3, 0.4])
+        sample = ArraySample(np.arange(12).reshape((3, 4)), sample_axis=1, weights=weights)
+
+        indexed_sample = sample[0, :]
+
+        assert isinstance(indexed_sample, ArraySample)
+        assert indexed_sample.sample_axis == 0
+        assert_weights_equal(indexed_sample, weights)
+
+    def test_weighted_integer_on_sample_axis_returns_array(self) -> None:
+        sample = ArraySample(np.arange(12).reshape((3, 4)), sample_axis=1, weights=np.array([0.1, 0.2, 0.3, 0.4]))
+
+        indexed_sample = sample[:, 2]
+
+        assert isinstance(indexed_sample, np.ndarray)
+
+    def test_weighted_1d_integer_index_on_sample_axis_indexes_weights(self) -> None:
+        weights = np.array([0.1, 0.2, 0.3, 0.4])
+        sample = ArraySample(np.arange(12).reshape((3, 4)), sample_axis=1, weights=weights)
+
+        indexed_sample = sample[:, np.array([3, 1])]
+
+        assert isinstance(indexed_sample, ArraySample)
+        assert_weights_equal(indexed_sample, np.array([0.4, 0.2]))
+
+    def test_weighted_1d_boolean_index_on_sample_axis_indexes_weights(self) -> None:
+        weights = np.array([0.1, 0.2, 0.3, 0.4])
+        sample = ArraySample(np.arange(12).reshape((3, 4)), sample_axis=1, weights=weights)
+
+        indexed_sample = sample[:, np.array([True, False, True, False])]
+
+        assert isinstance(indexed_sample, ArraySample)
+        assert_weights_equal(indexed_sample, np.array([0.1, 0.3]))
+
+    def test_weighted_newaxis_preserves_weights(self) -> None:
+        weights = np.array([0.1, 0.2, 0.3, 0.4])
+        sample = ArraySample(np.arange(12).reshape((3, 4)), sample_axis=1, weights=weights)
+
+        indexed_sample = sample[None, :, :]
+
+        assert isinstance(indexed_sample, ArraySample)
+        assert indexed_sample.sample_axis == 2
+        assert_weights_equal(indexed_sample, weights)
+
+    def test_weighted_ellipsis_sample_axis_slice_indexes_weights(self) -> None:
+        weights = np.array([0.1, 0.2, 0.3, 0.4])
+        sample = ArraySample(np.arange(12).reshape((3, 4)), sample_axis=1, weights=weights)
+
+        indexed_sample = sample[..., 1:3]
+
+        assert isinstance(indexed_sample, ArraySample)
+        assert_weights_equal(indexed_sample, np.array([0.2, 0.3]))
+
+    def test_weighted_multidimensional_integer_index_on_sample_axis_returns_array(self) -> None:
+        sample = ArraySample(np.arange(12).reshape((3, 4)), sample_axis=1, weights=np.array([0.1, 0.2, 0.3, 0.4]))
+
+        indexed_sample = sample[:, np.array([[0, 1]])]
+
+        assert isinstance(indexed_sample, np.ndarray)
+        assert indexed_sample.shape == (3, 1, 2)
+
+    def test_weighted_multidimensional_boolean_index_touching_sample_axis_raises(self) -> None:
+        sample = ArraySample(np.arange(12).reshape((3, 4)), sample_axis=0, weights=np.array([0.1, 0.2, 0.3]))
+
+        with pytest.raises(IndexError, match="Weighted samples"):
+            sample[np.array([[True, False, True, False], [False, True, False, True], [True, False, False, True]])]
+
+    def test_unweighted_complex_indexing_still_works(self) -> None:
+        sample = ArraySample(np.arange(12).reshape((3, 4)), sample_axis=1)
+
+        indexed_sample = sample[:, np.array([[0, 1]])]
+
+        assert isinstance(indexed_sample, np.ndarray)
+
     def test_ufunc_call(self, array_sample_2d: ArraySample[int]) -> None:
         result = array_sample_2d + 5
 

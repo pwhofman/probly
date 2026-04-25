@@ -5,6 +5,8 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
+from probly.representation.sample.array import ArraySample
+
 pytest.importorskip("river")
 
 from river.datasets import synth
@@ -15,10 +17,6 @@ from probly.quantification import quantify
 from probly.representation.distribution.array_categorical import (
     ArrayCategoricalDistribution,
     ArrayCategoricalDistributionSample,
-)
-from probly.representation.distribution.array_point_prediction import (
-    ArrayPointPrediction,
-    ArrayPointPredictionSample,
 )
 from probly.representation.sample._common import create_sample
 from probly.representer import representer
@@ -136,39 +134,20 @@ def trained_arf_regressor():
     return arf, last_x
 
 
-class TestRegressorPredictRaw:
-    def test_returns_list_of_point_predictions(self, trained_arf_regressor):
-        arf, x = trained_arf_regressor
-        result = predict_raw(arf, x)
-
-        assert isinstance(result, list)
-        assert len(result) == arf.n_models
-        for pred in result:
-            assert isinstance(pred, ArrayPointPrediction)
-
-    def test_point_predictions_have_valid_parameters(self, trained_arf_regressor):
-        arf, x = trained_arf_regressor
-        result = predict_raw(arf, x)
-
-        for pred in result:
-            assert pred.mean.shape == (1,)
-            assert np.isfinite(pred.mean).all()
-
-
 class TestRegressorCreateSample:
     def test_create_sample_produces_point_prediction_sample(self, trained_arf_regressor):
         arf, x = trained_arf_regressor
         result = predict_raw(arf, x)
         sample = create_sample(result)
 
-        assert isinstance(sample, ArrayPointPredictionSample)
+        assert isinstance(sample, ArraySample)
 
     def test_sample_shape(self, trained_arf_regressor):
         arf, x = trained_arf_regressor
         result = predict_raw(arf, x)
         sample = create_sample(result)
 
-        assert sample.array.mean.shape == (1, arf.n_models)
+        assert sample.array.shape == (1, arf.n_models)
         assert sample.sample_axis == 1
 
 
@@ -177,28 +156,4 @@ class TestRegressorEndToEnd:
         arf, x = trained_arf_regressor
         sample = representer(arf).represent(x)
 
-        assert isinstance(sample, ArrayPointPredictionSample)
-
-    def test_quantify_produces_decomposition(self, trained_arf_regressor):
-        arf, x = trained_arf_regressor
-        sample = representer(arf).represent(x)
-        decomp = quantify(sample)
-
-        assert hasattr(decomp, "total")
-        assert hasattr(decomp, "aleatoric")
-        assert hasattr(decomp, "epistemic")
-        np.testing.assert_allclose(decomp.total, decomp.aleatoric + decomp.epistemic, atol=1e-10)
-
-    def test_aleatoric_is_zero(self, trained_arf_regressor):
-        arf, x = trained_arf_regressor
-        sample = representer(arf).represent(x)
-        decomp = quantify(sample)
-
-        np.testing.assert_equal(decomp.aleatoric, 0.0)
-
-    def test_total_equals_epistemic(self, trained_arf_regressor):
-        arf, x = trained_arf_regressor
-        sample = representer(arf).represent(x)
-        decomp = quantify(sample)
-
-        np.testing.assert_allclose(decomp.total, decomp.epistemic, atol=1e-10)
+        assert isinstance(sample, ArraySample)

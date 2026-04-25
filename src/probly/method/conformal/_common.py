@@ -237,6 +237,9 @@ def predict_uacqr_conformal_set[**In, T](
     if isinstance(cast("Any", predictor).predictor, IterablePredictor) or isinstance(prediction, Sample):
         sample = create_sample(prediction, sample_axis=0)
         mean_prediction = sample.sample_mean()
+        # For UACQR, we use the population std, instead of the sample std as specified in the original paper
+        # (see https://arxiv.org/pdf/2306.08693v2, Section 3.1). We treat this as authoritative.
+        # However, in the reference implementation, the authors use the sample std (https://github.com/rrross/UACQR/blob/main/uacqr.py#L340-L341).
         std_prediction = sample.sample_std()
         lower = mean_prediction[..., 0] - quantile * std_prediction[..., 0]
         upper = mean_prediction[..., 1] + quantile * std_prediction[..., 1]
@@ -341,7 +344,7 @@ def conformal_cqr_r[**In, T, Out](base: Predictor[In, Out]) -> CQRrConformalSetP
 
 @predictor_transformation(permitted_predictor_types=(IterablePredictor,), preserve_predictor_type=False)
 @UACQRConformalSetPredictor.register_factory
-def conformal_uacqr[**In, T, Out](base: Predictor[In, Out]) -> UACQRConformalSetPredictor[In, T]:
+def conformal_uacqr[**In, T, Out](base: IterablePredictor[In, Out]) -> UACQRConformalSetPredictor[In, T]:
     """Create a UACQR conformal predictor wrapper."""
     return conformal_generator(base, uacqr_score)  # ty:ignore[invalid-argument-type]
 

@@ -16,6 +16,12 @@ def track_axis(index: ToIndices, special_axis: int, ndim: int, torch_indexing: b
     return None if result is None else result.new_axis
 
 
+def weight_index(index: ToIndices, special_axis: int, ndim: int, torch_indexing: bool = True) -> object:
+    result = track_axis_result(index, special_axis, ndim, torch_indexing=torch_indexing)
+    assert result is not None
+    return result.index
+
+
 class TestTensorIndexSemantics:
     def test_torch_tensor_index_supported_in_numpy_jax_mode(self) -> None:
         idx = (0, slice(None), torch.tensor([0, 2]))
@@ -121,3 +127,21 @@ class TestTensorSubclassSupport:
 
             assert track_axis(idx, special_axis=0, ndim=2, torch_indexing=True) == 1
             assert track_axis(idx, special_axis=1, ndim=2, torch_indexing=True) == 2
+
+
+class TestWeightIndexTracking:
+    def test_1d_integer_tensor_on_sample_axis_indexes_weights(self) -> None:
+        idx = torch.tensor([3, 1])
+
+        result = weight_index((slice(None), idx), special_axis=1, ndim=2)
+
+        assert isinstance(result, torch.Tensor)
+        assert torch.equal(result, idx)
+
+    def test_1d_boolean_tensor_on_sample_axis_indexes_weights(self) -> None:
+        idx = torch.tensor([True, False, True, False])
+
+        result = weight_index((slice(None), idx), special_axis=1, ndim=2)
+
+        assert isinstance(result, torch.Tensor)
+        assert torch.equal(result, idx)

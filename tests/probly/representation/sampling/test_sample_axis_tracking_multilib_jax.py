@@ -19,6 +19,12 @@ def track_axis(index: ToIndices, special_axis: int, ndim: int, torch_indexing: b
     return None if result is None else result.new_axis
 
 
+def weight_index(index: ToIndices, special_axis: int, ndim: int, torch_indexing: bool = False) -> object:
+    result = track_axis_result(index, special_axis, ndim, torch_indexing=torch_indexing)
+    assert result is not None
+    return result.index
+
+
 class TestArrayIndexSemantics:
     def test_jax_array_index_supported_in_numpy_jax_mode(self) -> None:
         idx = (0, slice(None), jnp.array([0, 2]))
@@ -96,3 +102,19 @@ class TestJittedIndexSemantics:
             )
 
         assert int(_tracked_axis(jnp.array(0, dtype=jnp.int32))) == 1
+
+
+class TestWeightIndexTracking:
+    def test_1d_integer_jax_array_on_sample_axis_indexes_weights(self) -> None:
+        idx = jnp.array([3, 1])
+
+        result = weight_index((slice(None), idx), special_axis=1, ndim=2)
+
+        assert result is idx
+
+    def test_1d_boolean_jax_array_on_sample_axis_indexes_weights(self) -> None:
+        idx = jnp.array([True, False, True, False])
+
+        result = weight_index((slice(None), idx), special_axis=1, ndim=2)
+
+        assert result is idx

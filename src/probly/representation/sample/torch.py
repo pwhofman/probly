@@ -280,9 +280,9 @@ class TorchSample[D: TorchLike | torch.Tensor](TorchLikeImplementation[D], Sampl
             return new_tensor  # ty:ignore[invalid-return-type]
 
         weights = self.weights
-        weights_index = track_result.index
 
         if weights is not None:
+            weights_index = track_result.index
             if weights_index is NotImplemented:
                 msg = "Weighted samples do not support this indexing operation."
                 raise IndexError(msg)

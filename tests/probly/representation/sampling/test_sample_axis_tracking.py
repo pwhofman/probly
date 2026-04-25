@@ -14,6 +14,12 @@ def track_axis(index: ToIndices, special_axis: int, ndim: int, torch_indexing: b
     return None if result is None else result.new_axis
 
 
+def weight_index(index: ToIndices, special_axis: int, ndim: int, torch_indexing: bool = False) -> object:
+    result = track_axis_result(index, special_axis, ndim, torch_indexing=torch_indexing)
+    assert result is not None
+    return result.index
+
+
 class TestBasicIndexing:
     def test_basic_slice_preserves_axis(self) -> None:
         assert track_axis((slice(None), slice(None)), 0, 2) == 0
@@ -250,3 +256,42 @@ class TestBooleanScalarModeSemantics:
         idx = np.array(True)
         assert track_axis(idx, special_axis=0, ndim=2, torch_indexing=False) == 1
         assert track_axis(idx, special_axis=1, ndim=2, torch_indexing=False) == 2
+
+
+class TestWeightIndexTracking:
+    def test_basic_slice_on_non_sample_axis_preserves_all_weights(self) -> None:
+        assert weight_index((slice(1, 3), slice(None)), special_axis=1, ndim=2) == slice(None)
+
+    def test_basic_slice_on_sample_axis_indexes_weights(self) -> None:
+        assert weight_index((slice(None), slice(1, 3)), special_axis=1, ndim=2) == slice(1, 3)
+
+    def test_ellipsis_expansion_indexes_sample_axis(self) -> None:
+        assert weight_index((Ellipsis, slice(1, 3)), special_axis=2, ndim=3) == slice(1, 3)
+
+    def test_integer_before_sample_axis_preserves_all_weights(self) -> None:
+        assert weight_index((0, slice(None)), special_axis=1, ndim=2) == slice(None)
+
+    def test_newaxis_before_sample_axis_preserves_all_weights(self) -> None:
+        assert weight_index((None, slice(None), slice(None)), special_axis=1, ndim=2) == slice(None)
+
+    def test_1d_integer_index_on_sample_axis_indexes_weights(self) -> None:
+        idx = np.array([3, 1])
+
+        result = weight_index((slice(None), idx), special_axis=1, ndim=2)
+
+        assert np.array_equal(np.asarray(result), idx)
+
+    def test_1d_boolean_index_on_sample_axis_indexes_weights(self) -> None:
+        idx = np.array([True, False, True, False])
+
+        result = weight_index((slice(None), idx), special_axis=1, ndim=2)
+
+        assert np.array_equal(np.asarray(result), idx)
+
+    def test_advanced_index_on_non_sample_axis_preserves_all_weights(self) -> None:
+        assert weight_index((np.array([0, 2]), slice(None)), special_axis=1, ndim=2) == slice(None)
+
+    def test_multidimensional_boolean_index_touching_sample_axis_is_unsupported(self) -> None:
+        idx = np.array([[True, False], [False, True]])
+
+        assert weight_index((idx, slice(None)), special_axis=0, ndim=3) is NotImplemented

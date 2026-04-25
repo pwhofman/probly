@@ -119,6 +119,95 @@ class TestTorchSample:
         assert indexed_sample.sample_dim == 1
         assert torch.equal(indexed_sample.tensor, sample.tensor[index])
 
+    def test_weighted_non_sample_slice_preserves_weights(self) -> None:
+        weights = torch.tensor([0.1, 0.2, 0.3, 0.4])
+        sample = TorchSample(torch.arange(12).reshape((3, 4)), sample_dim=1, weights=weights)
+
+        indexed_sample = sample[:2, :]
+
+        assert isinstance(indexed_sample, TorchSample)
+        assert indexed_sample.sample_dim == 1
+        assert_weights_equal(indexed_sample, weights)
+
+    def test_weighted_sample_dim_slice_indexes_weights(self) -> None:
+        weights = torch.tensor([0.1, 0.2, 0.3, 0.4])
+        sample = TorchSample(torch.arange(12).reshape((3, 4)), sample_dim=1, weights=weights)
+
+        indexed_sample = sample[:, 1:3]
+
+        assert isinstance(indexed_sample, TorchSample)
+        assert indexed_sample.sample_dim == 1
+        assert_weights_equal(indexed_sample, torch.tensor([0.2, 0.3]))
+
+    def test_weighted_integer_before_sample_dim_preserves_weights(self) -> None:
+        weights = torch.tensor([0.1, 0.2, 0.3, 0.4])
+        sample = TorchSample(torch.arange(12).reshape((3, 4)), sample_dim=1, weights=weights)
+
+        indexed_sample = sample[0, :]
+
+        assert isinstance(indexed_sample, TorchSample)
+        assert indexed_sample.sample_dim == 0
+        assert_weights_equal(indexed_sample, weights)
+
+    def test_weighted_integer_on_sample_dim_returns_tensor(self) -> None:
+        sample = TorchSample(torch.arange(12).reshape((3, 4)), sample_dim=1, weights=torch.tensor([0.1, 0.2, 0.3, 0.4]))
+
+        indexed_sample = sample[:, 2]
+
+        assert isinstance(indexed_sample, torch.Tensor)
+
+    def test_weighted_1d_integer_index_on_sample_dim_indexes_weights(self) -> None:
+        weights = torch.tensor([0.1, 0.2, 0.3, 0.4])
+        sample = TorchSample(torch.arange(12).reshape((3, 4)), sample_dim=1, weights=weights)
+
+        indexed_sample = sample[:, torch.tensor([3, 1])]
+
+        assert isinstance(indexed_sample, TorchSample)
+        assert_weights_equal(indexed_sample, torch.tensor([0.4, 0.2]))
+
+    def test_weighted_1d_boolean_index_on_sample_dim_indexes_weights(self) -> None:
+        weights = torch.tensor([0.1, 0.2, 0.3, 0.4])
+        sample = TorchSample(torch.arange(12).reshape((3, 4)), sample_dim=1, weights=weights)
+
+        indexed_sample = sample[:, torch.tensor([True, False, True, False])]
+
+        assert isinstance(indexed_sample, TorchSample)
+        assert_weights_equal(indexed_sample, torch.tensor([0.1, 0.3]))
+
+    def test_weighted_newaxis_preserves_weights(self) -> None:
+        weights = torch.tensor([0.1, 0.2, 0.3, 0.4])
+        sample = TorchSample(torch.arange(12).reshape((3, 4)), sample_dim=1, weights=weights)
+
+        indexed_sample = sample[None, :, :]
+
+        assert isinstance(indexed_sample, TorchSample)
+        assert indexed_sample.sample_dim == 2
+        assert_weights_equal(indexed_sample, weights)
+
+    def test_weighted_ellipsis_sample_dim_slice_indexes_weights(self) -> None:
+        weights = torch.tensor([0.1, 0.2, 0.3, 0.4])
+        sample = TorchSample(torch.arange(12).reshape((3, 4)), sample_dim=1, weights=weights)
+
+        indexed_sample = sample[..., 1:3]
+
+        assert isinstance(indexed_sample, TorchSample)
+        assert_weights_equal(indexed_sample, torch.tensor([0.2, 0.3]))
+
+    def test_weighted_multidimensional_integer_index_on_sample_dim_returns_tensor(self) -> None:
+        sample = TorchSample(torch.arange(12).reshape((3, 4)), sample_dim=1, weights=torch.tensor([0.1, 0.2, 0.3, 0.4]))
+
+        indexed_sample = sample[:, torch.tensor([[0, 1]])]
+
+        assert isinstance(indexed_sample, torch.Tensor)
+        assert indexed_sample.shape == (3, 1, 2)
+
+    def test_unweighted_complex_indexing_still_works(self) -> None:
+        sample = TorchSample(torch.arange(12).reshape((3, 4)), sample_dim=1)
+
+        indexed_sample = sample[:, torch.tensor([[0, 1]])]
+
+        assert isinstance(indexed_sample, torch.Tensor)
+
     def test_sample_setitem(self, torch_tensor_sample_2d: TorchSample) -> None:
         torch_tensor_sample_2d[:, 0] = -1
 
