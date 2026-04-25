@@ -13,6 +13,12 @@ from torch.utils.data import DataLoader, TensorDataset
 
 from probly.method.ensemble import EnsemblePredictor
 from probly.predictor import IterablePredictor, RandomPredictor, predict
+from probly.representation.credal_set.torch import (
+    TorchConvexCredalSet,
+    TorchProbabilityIntervalsCredalSet,
+)
+from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
+from probly.representation.sample.torch import TorchSample
 from probly.representer.sampler import IterableSampler, Sampler
 from probly_benchmark.builders import BuildContext, build_model
 from probly_benchmark.train import train_model
@@ -63,6 +69,43 @@ def _make_train_cfg(cfg: DictConfig) -> DictConfig:
             "amp": False,
         }
     )
+
+
+def _probabilities_from_representation(rep: Any) -> torch.Tensor:  # noqa: ANN401
+    """Return per-sample class probabilities from a probly Representation.
+
+    Dispatches by representation type:
+    - ``TorchCategoricalDistribution`` -> its own ``probabilities``.
+    - ``TorchSample`` whose ``tensor`` is a ``TorchCategoricalDistribution`` ->
+      mean of the per-sample probabilities along ``rep.sample_dim``.
+    - ``TorchProbabilityIntervalsCredalSet`` -> midpoint of lower / upper bounds.
+    - ``TorchConvexCredalSet`` -> mean over the vertex axis.
+
+    Args:
+        rep: A probly Representation as returned by ``predict()`` or
+            ``Sampler.represent()`` / ``IterableSampler.represent()``.
+
+    Returns:
+        Tensor of shape ``(n, n_classes)``.
+
+    Raises:
+        NotImplementedError: If ``rep`` is none of the supported types, or
+            is a ``TorchSample`` whose ``tensor`` is not a
+            ``TorchCategoricalDistribution``.
+    """
+    if isinstance(rep, TorchCategoricalDistribution):
+        return rep.probabilities
+    if isinstance(rep, TorchSample):
+        if not isinstance(rep.tensor, TorchCategoricalDistribution):
+            msg = f"TorchSample with non-CategoricalDistribution tensor {type(rep.tensor).__name__} is not supported."
+            raise NotImplementedError(msg)
+        return rep.tensor.probabilities.mean(dim=rep.sample_dim)
+    if isinstance(rep, TorchProbabilityIntervalsCredalSet):
+        return (rep.lower_bounds + rep.upper_bounds) * 0.5
+    if isinstance(rep, TorchConvexCredalSet):
+        return rep.tensor.probabilities.mean(dim=-2)
+    msg = f"No probability extraction for representation {type(rep).__name__}"
+    raise NotImplementedError(msg)
 
 
 def _entropy(probs: torch.Tensor) -> torch.Tensor:

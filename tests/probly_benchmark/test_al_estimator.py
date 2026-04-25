@@ -94,3 +94,62 @@ def test_representation_plain_classifier_returns_categorical() -> None:
     rep = est._representation(torch.zeros(2, 4))  # noqa: SLF001
     assert isinstance(rep, TorchCategoricalDistribution)
     assert rep.probabilities.shape == (2, 3)
+
+
+from probly.representation.credal_set.torch import (  # noqa: E402  # ty: ignore[unresolved-import]
+    TorchConvexCredalSet,
+    TorchProbabilityIntervalsCredalSet,
+)
+from probly_benchmark.al_estimator import _probabilities_from_representation  # noqa: E402
+
+
+def test_probabilities_from_categorical() -> None:
+    rep = TorchCategoricalDistribution(torch.tensor([[0.1, 0.6, 0.3], [0.5, 0.2, 0.3]]))
+    probs = _probabilities_from_representation(rep)
+    assert torch.allclose(probs, rep.probabilities)
+
+
+def test_probabilities_from_sample() -> None:
+    sample_tensor = torch.tensor(
+        [
+            [[0.2, 0.5, 0.3], [0.4, 0.4, 0.2]],
+            [[0.4, 0.3, 0.3], [0.6, 0.2, 0.2]],
+        ]
+    )  # (num_samples=2, batch=2, classes=3)
+    rep = TorchSample(
+        tensor=TorchCategoricalDistribution(sample_tensor),
+        sample_dim=0,
+    )
+    probs = _probabilities_from_representation(rep)
+    expected = sample_tensor.mean(dim=0)
+    assert torch.allclose(probs, expected)
+
+
+def test_probabilities_from_intervals_credal_set() -> None:
+    rep = TorchProbabilityIntervalsCredalSet(
+        lower_bounds=torch.tensor([[0.1, 0.2, 0.3]]),
+        upper_bounds=torch.tensor([[0.3, 0.4, 0.5]]),
+    )
+    probs = _probabilities_from_representation(rep)
+    expected = torch.tensor([[0.2, 0.3, 0.4]])  # midpoints
+    assert torch.allclose(probs, expected)
+
+
+def test_probabilities_from_convex_credal_set() -> None:
+    vertices = torch.tensor(
+        [
+            [[0.1, 0.6, 0.3], [0.3, 0.4, 0.3], [0.5, 0.2, 0.3]],
+        ]
+    )  # (batch=1, n_vertices=3, classes=3)
+    rep = TorchConvexCredalSet(tensor=TorchCategoricalDistribution(vertices))
+    probs = _probabilities_from_representation(rep)
+    expected = vertices.mean(dim=-2)
+    assert torch.allclose(probs, expected)
+
+
+def test_probabilities_from_unknown_raises() -> None:
+    class Unknown:
+        pass
+
+    with pytest.raises(NotImplementedError, match="No probability extraction"):
+        _probabilities_from_representation(Unknown())
