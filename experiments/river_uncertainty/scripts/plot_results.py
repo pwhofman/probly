@@ -136,10 +136,8 @@ def main() -> None:
     fig = build_stream_figure(records, args.stream)
 
     pdf_path = output_dir / f"{args.stream}.pdf"
-    png_path = output_dir / f"{args.stream}.png"
     fig.savefig(pdf_path, bbox_inches="tight")
-    fig.savefig(png_path, bbox_inches="tight", dpi=180)
-    print(f"Wrote {pdf_path} and {png_path}")
+    print(f"Wrote {pdf_path}")
 
 
 if __name__ == "__main__":
