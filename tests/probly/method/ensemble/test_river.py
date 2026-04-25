@@ -157,3 +157,13 @@ class TestRegressorEndToEnd:
         sample = representer(arf).represent(x)
 
         assert isinstance(sample, ArraySample)
+
+    def test_quantify_produces_variance(self, trained_arf_regressor):
+        arf, x = trained_arf_regressor
+        sample = representer(arf).represent(x)
+
+        variance = quantify(sample)
+        expected_variance = sample.sample_var()
+
+        np.testing.assert_allclose(variance, expected_variance, atol=1e-10)
+        assert np.all(np.asarray(variance) >= 0)
