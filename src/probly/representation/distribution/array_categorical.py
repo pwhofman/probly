@@ -34,7 +34,7 @@ class ArrayCategoricalDistribution(
 
     unnormalized_probabilities: np.ndarray
     protected_axes: ClassVar[dict[str, int]] = {"unnormalized_probabilities": 1}
-    permitted_functions: ClassVar[set[Callable]] = {np.mean}
+    permitted_functions: ClassVar[set[Callable]] = {np.mean, np.average}
 
     def __post_init__(self) -> None:
         """Validate the concentration parameters."""

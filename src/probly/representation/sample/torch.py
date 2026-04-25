@@ -12,6 +12,7 @@ from probly.representation.sample._common import Sample, SampleAxis, create_samp
 from probly.representation.sample.array import ArraySample
 from probly.representation.sample.axis_tracking import track_axis
 from probly.representation.sample.torch_functions import TorchSampleInternals, torch_function, torch_sample_internals
+from probly.representation.torch_functions import torch_average
 from probly.representation.torch_like import TorchLike, TorchLikeImplementation, to_torch_like
 
 if TYPE_CHECKING:
@@ -203,27 +204,28 @@ class TorchSample[D: TorchLike | torch.Tensor](TorchLikeImplementation[D], Sampl
     @override
     def sample_mean(self) -> D:
         """Compute the mean of the sample."""
-        if self.weights is not None:
-            msg = "Weighted sample mean is not implemented."
-            raise NotImplementedError(msg)
-
-        return torch.mean(self.tensor, dim=self.sample_dim)  # ty:ignore[no-matching-overload]
+        return torch_average(self.tensor, dim=self.sample_dim, weights=self.weights)  # ty:ignore[invalid-return-type, invalid-argument-type]
 
     @override
     def sample_std(self, ddof: int = 0) -> D:
         """Compute the standard deviation of the sample."""
         if self.weights is not None:
-            msg = "Weighted sample std is not implemented."
-            raise NotImplementedError(msg)
+            return torch.sqrt(self.sample_var(ddof=ddof))  # ty:ignore[invalid-return-type, invalid-argument-type]
 
         return torch.std(self.tensor, dim=self.sample_dim, correction=ddof)  # ty:ignore[no-matching-overload]
 
     @override
     def sample_var(self, ddof: int = 0) -> D:
         """Compute the variance of the sample."""
+        tensor = self.tensor
+        weights = self.weights
         if self.weights is not None:
-            msg = "Weighted sample variance is not implemented."
-            raise NotImplementedError(msg)
+            if ddof != 0:
+                msg = "Weighted samples do not support ddof > 0."
+                raise ValueError(msg)
+            average = torch_average(tensor, dim=self.sample_dim, weights=weights, keepdim=True)  # ty:ignore[invalid-argument-type]
+            variance = torch_average((tensor - average) ** 2, dim=self.sample_dim, weights=weights)  # ty:ignore[unsupported-operator]
+            return variance  # ty:ignore[invalid-return-type]
 
         return torch.var(self.tensor, dim=self.sample_dim, correction=ddof)  # ty:ignore[no-matching-overload]
 

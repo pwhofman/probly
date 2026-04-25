@@ -5,6 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
+from probly.representation.distribution.array_categorical import ArrayCategoricalDistribution
 from probly.representation.sample import ArraySample
 
 
@@ -100,6 +101,30 @@ class TestArraySample:
         result = sample.sample_mean()
 
         assert np.allclose(result, np.average(sample.array, axis=1, weights=weights))
+
+    def test_sample_mean_of_categorical_distribution_preserves_distribution_type(self) -> None:
+        probabilities = np.arange(24, dtype=float).reshape((2, 3, 4)) + 1.0
+        sample = ArraySample(ArrayCategoricalDistribution(probabilities), sample_axis=0)
+
+        result = sample.sample_mean()
+
+        assert isinstance(result, ArrayCategoricalDistribution)
+        assert result.shape == (3,)
+        np.testing.assert_allclose(result.unnormalized_probabilities, np.mean(probabilities, axis=0))
+
+    def test_weighted_sample_mean_of_categorical_distribution_uses_weights(self) -> None:
+        probabilities = np.arange(24, dtype=float).reshape((2, 3, 4)) + 1.0
+        weights = np.array([0.25, 0.75])
+        sample = ArraySample(ArrayCategoricalDistribution(probabilities), sample_axis=0, weights=weights)
+
+        result = sample.sample_mean()
+
+        assert isinstance(result, ArrayCategoricalDistribution)
+        assert result.shape == (3,)
+        np.testing.assert_allclose(
+            result.unnormalized_probabilities,
+            np.average(probabilities, axis=0, weights=weights),
+        )
 
     def test_sample_var_and_std_use_weights(self) -> None:
         weights = np.array([0.1, 0.2, 0.3, 0.4])

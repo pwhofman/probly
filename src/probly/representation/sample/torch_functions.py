@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any, Protocol, overload
 
 import torch
 
+from probly.representation.torch_functions import torch_average
 from probly.utils import switchdispatch
 
 if TYPE_CHECKING:
@@ -208,6 +209,111 @@ def _extract_sample_tensor_sequence_internals(
         return cast_tensors, weights, has_sample_tensors, create_sample, next(iter(sample_dims)), sample_ndim
 
     return cast_tensors, weights, has_sample_tensors, None, None, None
+
+
+def track_sample_dim_after_reduction(
+    original_sample_dim: int,
+    original_ndim: int,
+    dim: int | tuple[int, ...] | list[int] | torch.Size | None,
+    keepdim: bool,
+) -> int | None:
+    """Track the sample dimension after a reduction operation."""
+    if dim is None:
+        return None
+
+    dims: tuple[int, ...] = tuple(dim) if isinstance(dim, (tuple, list, torch.Size)) else (dim,)
+    dims = tuple(d if d >= 0 else original_ndim + d for d in dims)
+
+    if keepdim:
+        return original_sample_dim
+
+    if original_sample_dim in dims:
+        return None
+
+    new_sample_dim = original_sample_dim
+    for d in dims:
+        if d < original_sample_dim:
+            new_sample_dim -= 1
+
+    return new_sample_dim
+
+
+def _torch_reduction_input(args: tuple[Any, ...], kwargs: dict[str, Any]) -> tuple[object, str | int] | None:
+    """Return the primary tensor argument and where it was found."""
+    if len(args) > 0:
+        return args[0], 0
+    if "input" in kwargs:
+        return kwargs["input"], "input"
+    if "tensor" in kwargs:
+        return kwargs["tensor"], "tensor"
+    return None
+
+
+@torch_function.multi_register(
+    [
+        torch_average,
+        torch.mean,
+        torch.sum,
+    ],
+)
+@torch_function_override
+def torch_reduction_function(
+    func: Callable,
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
+) -> Any:  # noqa: ANN401
+    """Implementation of dimension-reducing torch functions with a keepdim kwarg."""
+    input_location = _torch_reduction_input(args, kwargs)
+    out = kwargs.get("out")
+    input_internals = torch_sample_internals(input_location[0]) if input_location is not None else None
+    out_internals = torch_sample_internals(out)
+
+    if input_internals is None and out_internals is None:
+        return NotImplemented
+
+    mutable_args = list(args)
+    mutable_kwargs = dict(kwargs)
+
+    if input_internals is not None and input_location is not None:
+        location = input_location[1]
+        if isinstance(location, int):
+            mutable_args[location] = input_internals.tensor
+        else:
+            mutable_kwargs[location] = input_internals.tensor
+
+    if out_internals is not None:
+        mutable_kwargs["out"] = out_internals.tensor
+
+    if func is torch_average and input_internals is not None and input_internals.weights is not None:
+        mutable_kwargs.setdefault("weights", input_internals.weights)
+
+    dim = args[1] if len(args) > 1 else kwargs.get("dim", kwargs.get("axis"))
+    keepdim = kwargs.get("keepdim", False)
+
+    if not isinstance(dim, (int, tuple, list, torch.Size)) and dim is not None:
+        return NotImplemented
+    if not isinstance(keepdim, bool):
+        return NotImplemented
+
+    res = func(*tuple(mutable_args), **mutable_kwargs)
+
+    if out_internals is not None:
+        return out
+
+    new_sample_dim = (
+        None
+        if input_internals is None
+        else track_sample_dim_after_reduction(
+            input_internals.sample_dim,
+            input_internals.tensor.ndim,
+            dim,
+            keepdim,
+        )
+    )
+    if input_internals is None or new_sample_dim is None:
+        return res
+
+    return input_internals.create(res, sample_dim=new_sample_dim, weights=input_internals.weights)
 
 
 @torch_function.register(torch.transpose)

@@ -9,8 +9,10 @@ pytest.importorskip("torch")
 import torch
 
 from probly.representation.array_like import to_numpy_array_like
+from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
 from probly.representation.sample.array import ArraySample
 from probly.representation.sample.torch import TorchSample
+from probly.representation.torch_functions import torch_average
 
 
 def assert_weights_equal(sample: TorchSample, expected: torch.Tensor) -> None:
@@ -241,15 +243,77 @@ class TestTorchSample:
         assert converted.weights.dtype == torch.float64
         assert torch.allclose(converted.weights, torch.tensor([0.1, 0.2, 0.3, 0.4], dtype=torch.float64))
 
-    def test_weighted_statistics_raise_not_implemented(self) -> None:
+    def test_sample_mean_uses_weights(self) -> None:
+        weights = torch.tensor([0.1, 0.2, 0.3, 0.4])
+        sample = TorchSample(torch.arange(12, dtype=torch.float32).reshape((3, 4)), sample_dim=1, weights=weights)
+
+        result = sample.sample_mean()
+
+        assert torch.allclose(result, torch_average(sample.tensor, dim=1, weights=weights))
+
+    def test_sample_mean_of_categorical_distribution_preserves_distribution_type(self) -> None:
+        probabilities = torch.arange(24, dtype=torch.float64).reshape((2, 3, 4)) + 1.0
+        sample = TorchSample(TorchCategoricalDistribution(probabilities), sample_dim=0)
+
+        result = sample.sample_mean()
+
+        assert isinstance(result, TorchCategoricalDistribution)
+        assert result.shape == (3,)
+        assert torch.allclose(result.unnormalized_probabilities, torch.mean(probabilities, dim=0))
+
+    def test_weighted_sample_mean_of_categorical_distribution_uses_weights(self) -> None:
+        probabilities = torch.arange(24, dtype=torch.float64).reshape((2, 3, 4)) + 1.0
+        weights = torch.tensor([0.25, 0.75], dtype=torch.float64)
+        sample = TorchSample(TorchCategoricalDistribution(probabilities), sample_dim=0, weights=weights)
+
+        result = sample.sample_mean()
+
+        assert isinstance(result, TorchCategoricalDistribution)
+        assert result.shape == (3,)
+        assert torch.allclose(
+            result.unnormalized_probabilities,
+            torch_average(probabilities, dim=0, weights=weights),
+        )
+
+    def test_torch_average_supports_tuple_dim_weights(self) -> None:
+        tensor = torch.arange(24, dtype=torch.float32).reshape((2, 3, 4))
+        weights = torch.arange(1, 9, dtype=torch.float32).reshape((2, 4))
+        expected = torch.sum(tensor * weights[:, None, :], dim=(0, 2)) / torch.sum(weights)
+
+        result = torch_average(tensor, dim=(0, 2), weights=weights)
+
+        assert torch.allclose(result, expected)
+
+    def test_torch_average_supports_axis_alias(self) -> None:
+        tensor = torch.arange(6, dtype=torch.float32).reshape((2, 3))
+
+        result = torch_average(tensor, axis=1)
+
+        assert torch.allclose(result, torch.mean(tensor, dim=1))
+
+    def test_torch_average_dispatches_to_torch_sample(self) -> None:
+        sample = TorchSample(torch.arange(12, dtype=torch.float32).reshape((3, 4)), sample_dim=1)
+
+        result = torch_average(sample, dim=0)
+
+        assert isinstance(result, TorchSample)
+        assert result.sample_dim == 0
+        assert torch.allclose(result.tensor, torch.mean(sample.tensor, dim=0))
+
+    def test_sample_var_and_std_use_weights(self) -> None:
+        weights = torch.tensor([0.1, 0.2, 0.3, 0.4])
+        sample = TorchSample(torch.arange(12, dtype=torch.float32).reshape((3, 4)), sample_dim=1, weights=weights)
+        average = torch_average(sample.tensor, dim=1, weights=weights, keepdim=True)
+        expected_var = torch_average((sample.tensor - average) ** 2, dim=1, weights=weights)
+
+        assert torch.allclose(sample.sample_var(), expected_var)
+        assert torch.allclose(sample.sample_std(), torch.sqrt(expected_var))
+
+    def test_weighted_sample_var_rejects_ddof(self) -> None:
         sample = TorchSample(torch.arange(12, dtype=torch.float32).reshape((3, 4)), sample_dim=1, weights=torch.ones(4))
 
-        with pytest.raises(NotImplementedError, match="Weighted sample mean"):
-            sample.sample_mean()
-        with pytest.raises(NotImplementedError, match="Weighted sample variance"):
-            sample.sample_var()
-        with pytest.raises(NotImplementedError, match="Weighted sample std"):
-            sample.sample_std()
+        with pytest.raises(ValueError, match="ddof"):
+            sample.sample_var(ddof=1)
 
     def test_to_numpy_array_like_uses_array_like(self, torch_tensor_sample_2d: TorchSample) -> None:
         converted = to_numpy_array_like(torch_tensor_sample_2d)
@@ -259,13 +323,28 @@ class TestTorchSample:
 
     def test_torch_function_is_not_implemented(self, torch_tensor_sample_2d: TorchSample) -> None:
         result = TorchSample.__torch_function__(
-            torch.mean,
+            torch.prod,
             (TorchSample,),
             (torch_tensor_sample_2d,),
             {},
         )
 
         assert result is NotImplemented
+
+    def test_torch_function_mean_reduces_sample_dim(self) -> None:
+        sample = TorchSample(torch.arange(12, dtype=torch.float32).reshape((3, 4)), sample_dim=1)
+
+        result = torch.mean(sample, dim=1)
+
+        assert isinstance(result, torch.Tensor)
+        assert torch.allclose(result, torch.mean(sample.tensor, dim=1))
+
+    def test_torch_function_sum_tracks_sample_dim(self, torch_tensor_sample_2d: TorchSample) -> None:
+        result = torch.sum(torch_tensor_sample_2d, dim=0)
+
+        assert isinstance(result, TorchSample)
+        assert result.sample_dim == 0
+        assert torch.equal(result.tensor, torch.sum(torch_tensor_sample_2d.tensor, dim=0))
 
     def test_torch_function_transpose(self, torch_tensor_sample_2d: TorchSample) -> None:
         result = torch.transpose(torch_tensor_sample_2d, 0, 1)
