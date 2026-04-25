@@ -5,12 +5,14 @@ from __future__ import annotations
 import dataclasses
 
 import pytest
-from sklearn.linear_model import LogisticRegression
-import torch
 
-from probly.evaluation.active_learning.loop import ALState, active_learning_steps
-from probly.evaluation.active_learning.pool import ActiveLearningPool
-from probly.evaluation.active_learning.strategies import RandomQuery
+torch = pytest.importorskip("torch")
+
+from sklearn.linear_model import LogisticRegression  # noqa: E402
+
+from probly.evaluation.active_learning.loop import ALState, active_learning_steps  # noqa: E402
+from probly.evaluation.active_learning.pool import ActiveLearningPool  # noqa: E402
+from probly.evaluation.active_learning.strategies import RandomQuery  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Test helper estimator

@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
-from sklearn.linear_model import LogisticRegression
-import torch
 
-from probly.evaluation.active_learning.pool import ActiveLearningPool
-from probly.evaluation.active_learning.strategies import (
+torch = pytest.importorskip("torch")
+
+from sklearn.linear_model import LogisticRegression  # noqa: E402
+
+from probly.evaluation.active_learning.pool import ActiveLearningPool  # noqa: E402
+from probly.evaluation.active_learning.strategies import (  # noqa: E402
     BADGEQuery,
     EntropyQuery,
     MarginSampling,
