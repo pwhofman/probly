@@ -45,7 +45,12 @@ class QueryStrategy(Protocol):
         ...
 
 
-def _badge_select(embeddings: torch.Tensor, probs: torch.Tensor, n: int) -> np.ndarray:
+def _badge_select(
+    embeddings: torch.Tensor,
+    probs: torch.Tensor,
+    n: int,
+    seed: int | None = None,
+) -> np.ndarray:
     """Select n indices via BADGE k-means++ initialization.
 
     Computes gradient embeddings from predicted probabilities and embeddings,
@@ -55,6 +60,8 @@ def _badge_select(embeddings: torch.Tensor, probs: torch.Tensor, n: int) -> np.n
         embeddings: Feature embeddings of shape (n_pool, emb_dim).
         probs: Predicted class probabilities of shape (n_pool, n_classes).
         n: Number of indices to select.
+        seed: Seed for the random number generator. Pass None for
+            non-deterministic selection.
 
     Returns:
         Array of n integer indices.
@@ -65,7 +72,7 @@ def _badge_select(embeddings: torch.Tensor, probs: torch.Tensor, n: int) -> np.n
     p_predicted = probs[torch.arange(len(probs)), predicted_class]
     grad_embeddings = flat * (1 - p_predicted).unsqueeze(1)
 
-    rng = np.random.default_rng()
+    rng = np.random.default_rng(seed)
     n_pool = len(grad_embeddings)
 
     # k-means++ initialization
@@ -174,34 +181,12 @@ class EntropyQuery:
         return torch.topk(entropy, n, largest=True).indices.cpu().numpy()
 
 
-class MutualInfoQuery:
-    """Selects samples with the highest estimator-provided uncertainty scores.
-
-    Delegates scoring to estimator.uncertainty_scores(), which may implement
-    mutual information or any other UQ-based measure from probly.
-    """
-
-    def select(self, estimator: Estimator, pool: ActiveLearningPool, n: int) -> np.ndarray:
-        """Return n indices with the highest uncertainty scores from the estimator.
-
-        Args:
-            estimator: Fitted estimator with an uncertainty_scores method.
-            pool: The current active learning pool.
-            n: Number of samples to select.
-
-        Returns:
-            Array of n integer indices into pool.x_unlabeled.
-        """
-        n = min(n, pool.n_unlabeled)
-        scores = cast("Any", estimator).uncertainty_scores(pool.x_unlabeled)
-        return torch.topk(scores, n, largest=True).indices.cpu().numpy()
-
-
 class UncertaintyQuery:
     """Selects samples with the highest estimator-provided uncertainty scores.
 
-    Like MutualInfoQuery, delegates scoring to estimator.uncertainty_scores().
-    Suitable for any probly UQ method that provides its own per-sample scoring.
+    Delegates scoring to estimator.uncertainty_scores(). Suitable for any probly
+    UQ method that provides its own per-sample scoring (e.g. mutual information
+    or any other UQ-based measure).
     """
 
     def select(self, estimator: Estimator, pool: ActiveLearningPool, n: int) -> np.ndarray:
@@ -226,7 +211,20 @@ class BADGEQuery:
     Implements Batch Active learning by Diverse Gradient Embeddings (Ash et al.,
     2020). If the estimator has an embed() method it is used for embeddings;
     otherwise pool.x_unlabeled is used directly.
+
+    Args:
+        seed: Seed for the k-means++ initialization. Pass None for
+            non-deterministic selection.
     """
+
+    def __init__(self, seed: int | None = None) -> None:
+        """Store the seed used for k-means++ initialization.
+
+        Args:
+            seed: Seed for the random number generator. Pass None for
+                non-deterministic selection.
+        """
+        self._seed = seed
 
     def select(self, estimator: Estimator, pool: ActiveLearningPool, n: int) -> np.ndarray:
         """Return n indices chosen by BADGE k-means++ on gradient embeddings.
@@ -242,4 +240,4 @@ class BADGEQuery:
         n = min(n, pool.n_unlabeled)
         probs = estimator.predict_proba(pool.x_unlabeled)
         embeddings = cast("Any", estimator).embed(pool.x_unlabeled) if hasattr(estimator, "embed") else pool.x_unlabeled
-        return _badge_select(embeddings, probs, n)
+        return _badge_select(embeddings, probs, n, seed=self._seed)

@@ -41,7 +41,7 @@ def _build_query_strategy(cfg: DictConfig) -> QueryStrategy:
         case "margin":
             return MarginSampling()
         case "badge":
-            return BADGEQuery()
+            return BADGEQuery(seed=cfg.seed)
         case "random":
             return RandomQuery(seed=cfg.seed)
         case _:

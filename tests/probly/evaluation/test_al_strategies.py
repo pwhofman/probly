@@ -14,7 +14,6 @@ from probly.evaluation.active_learning.strategies import (  # noqa: E402
     BADGEQuery,
     EntropyQuery,
     MarginSampling,
-    MutualInfoQuery,
     RandomQuery,
     UncertaintyQuery,
 )
@@ -150,26 +149,6 @@ def test_margin_sampling_selects_uncertain_samples(estimator, pool):
     remaining_margin = margins[mask].mean().item()
 
     assert selected_margin <= remaining_margin
-
-
-# ---------------------------------------------------------------------------
-# MutualInfoQuery tests
-# ---------------------------------------------------------------------------
-
-
-def test_mutual_info_query_correct_count(estimator, pool):
-    """MutualInfoQuery must return exactly n indices."""
-    strategy = MutualInfoQuery()
-    indices = strategy.select(estimator, pool, n=10)
-    assert len(indices) == 10
-
-
-def test_mutual_info_query_valid_indices(estimator, pool):
-    """MutualInfoQuery indices must be valid positions in the unlabeled pool."""
-    strategy = MutualInfoQuery()
-    indices = strategy.select(estimator, pool, n=10)
-    assert np.all(indices >= 0)
-    assert np.all(indices < pool.n_unlabeled)
 
 
 # ---------------------------------------------------------------------------

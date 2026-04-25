@@ -1,10 +1,5 @@
 """Active learning module with composable pool, strategies, and iterator."""
 
-from probly.evaluation.active_learning._torch_estimator import (
-    MCDropoutEstimator as MCDropoutEstimator,
-    TorchEnsembleEstimator as TorchEnsembleEstimator,
-    TorchEstimator as TorchEstimator,
-)
 from probly.evaluation.active_learning.loop import (
     ALState as ALState,
     active_learning_steps as active_learning_steps,
@@ -22,7 +17,6 @@ from probly.evaluation.active_learning.strategies import (
     EntropyQuery as EntropyQuery,
     Estimator as Estimator,
     MarginSampling as MarginSampling,
-    MutualInfoQuery as MutualInfoQuery,
     QueryStrategy as QueryStrategy,
     RandomQuery as RandomQuery,
     UncertaintyQuery as UncertaintyQuery,
