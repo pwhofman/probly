@@ -386,13 +386,8 @@ class BenchmarkALEstimator:
 
     def predict_proba(self, x: torch.Tensor) -> torch.Tensor:
         """Return class probabilities of shape (n_samples, n_classes)."""
-        if isinstance(self.model, EnsemblePredictor):
-            return self._ensemble_softmax(x).mean(dim=1)
-        if self.method_name == "ddu":
-            return self._ddu_proba(x)
-        if self.method_name in ("evidential_classification", "posterior_network"):
-            return self._dirichlet_proba(x)
-        return self._single_softmax(x)
+        rep = self._representation(x)
+        return _probabilities_from_representation(rep).detach().cpu()
 
     def predict(self, x: torch.Tensor) -> torch.Tensor:
         """Return class predictions of shape (n_samples,)."""

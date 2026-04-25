@@ -205,3 +205,21 @@ def test_measures_table_has_expected_entries() -> None:
     assert expected.issubset(_MEASURES.keys())
     for fn in _MEASURES.values():
         assert callable(fn)
+
+
+def test_predict_proba_returns_correct_shape_for_dropout() -> None:
+    base = _tiny_classifier(num_classes=3, in_features=4)
+    pred = dropout(base, p=0.5, predictor_type="logit_classifier")
+    est = _make_estimator_with_predictor(pred)
+    probs = est.predict_proba(torch.zeros(5, 4))
+    assert probs.shape == (5, 3)
+    assert torch.allclose(probs.sum(dim=-1), torch.ones(5), atol=1e-5)
+
+
+def test_predict_proba_returns_correct_shape_for_ensemble() -> None:
+    base = _tiny_classifier(num_classes=3, in_features=4)
+    pred = ensemble(base, num_members=2, predictor_type="logit_classifier")
+    est = _make_estimator_with_predictor(pred)  # ty: ignore[invalid-argument-type]
+    probs = est.predict_proba(torch.zeros(5, 4))
+    assert probs.shape == (5, 3)
+    assert torch.allclose(probs.sum(dim=-1), torch.ones(5), atol=1e-5)
