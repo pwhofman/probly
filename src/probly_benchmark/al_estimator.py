@@ -8,7 +8,6 @@ from typing import Any, cast
 from omegaconf import DictConfig, OmegaConf
 import torch
 from torch import nn
-import torch.nn.functional as F
 from torch.utils.data import DataLoader, TensorDataset
 
 from probly.method.ensemble import EnsemblePredictor
@@ -30,22 +29,6 @@ from probly_benchmark.builders import BuildContext, build_model
 from probly_benchmark.train import train_model
 
 logger = logging.getLogger(__name__)
-
-# Default quantifier for each method (used by uncertainty_scores).
-_DEFAULT_QUANTIFIERS: dict[str, str] = {
-    "ensemble": "entropy_of_expected_value",
-    "credal_ensembling": "upper_entropy",
-    "credal_relative_likelihood": "upper_entropy",
-    "dropout": "entropy_of_expected_value",
-    "ddu": "ddu_entropy",
-    "efficient_credal_prediction": "upper_entropy",
-    "evidential_classification": "entropy",
-    "posterior_network": "entropy",
-}
-
-# Methods that need "probabilistic_classifier" predictor type instead of the
-# default "logit_classifier".
-_PROBABILISTIC_METHODS: set[str] = {"posterior_network"}
 
 
 def _to_device(model: nn.Module, device: torch.device) -> None:
@@ -142,19 +125,6 @@ def _default_measure_for(rep: Any) -> str:  # noqa: ANN401
     raise NotImplementedError(msg)
 
 
-def _entropy(probs: torch.Tensor) -> torch.Tensor:
-    """Shannon entropy per row.
-
-    Args:
-        probs: Tensor of shape (n, n_classes).
-
-    Returns:
-        Tensor of shape (n,) with per-row entropy values.
-    """
-    p = probs.clamp(min=1e-10, max=1.0)
-    return -(p * p.log()).sum(dim=-1)
-
-
 class BenchmarkALEstimator:
     """AL estimator backed by the full benchmark training pipeline.
 
@@ -209,12 +179,7 @@ class BenchmarkALEstimator:
         self.train_kwargs = train_kwargs
         self.train_cfg = _make_train_cfg(cfg)
         self.base_model_name = base_model_name
-        # Posterior network needs "probabilistic_classifier"; all others use the
-        # caller-provided model_type (typically "logit_classifier").
-        if method_name in _PROBABILISTIC_METHODS:
-            self.model_type = "probabilistic_classifier"
-        else:
-            self.model_type = model_type
+        self.model_type = model_type
         self.num_classes = num_classes
         self.device = device
         self.in_features = in_features
@@ -313,78 +278,6 @@ class BenchmarkALEstimator:
 
         self.model = model
         return self
-
-    @torch.no_grad()
-    def _ensemble_softmax(self, x: torch.Tensor) -> torch.Tensor:
-        """Return per-member softmax probabilities (n_samples, n_members, n_classes)."""
-        model = cast("Any", self.model)
-        members = list(model)
-        x_t = x.to(device=self.device)
-        member_probs = []
-        for member in members:
-            member.eval()
-            parts: list[torch.Tensor] = []
-            for start in range(0, len(x_t), self.pred_batch_size):
-                batch = x_t[start : start + self.pred_batch_size]
-                out = F.softmax(member(batch), dim=-1)
-                parts.append(out.detach().cpu())
-            member_probs.append(torch.cat(parts))
-        return torch.stack(member_probs, dim=1)
-
-    @torch.no_grad()
-    def _ddu_proba(self, x: torch.Tensor) -> torch.Tensor:
-        """Return softmax probabilities for DDU (via encoder + classification_head)."""
-        model = cast("Any", self.model)
-        model.eval()
-        x_t = x.to(device=self.device)
-        parts: list[torch.Tensor] = []
-        for start in range(0, len(x_t), self.pred_batch_size):
-            batch = x_t[start : start + self.pred_batch_size]
-            features = model.encoder(batch)
-            logits = model.classification_head(features)
-            parts.append(F.softmax(logits, dim=-1).detach().cpu())
-        return torch.cat(parts)
-
-    @torch.no_grad()
-    def _dirichlet_proba(self, x: torch.Tensor) -> torch.Tensor:
-        """Return Dirichlet mean probabilities for evidential/posterior_network."""
-        model = cast("Any", self.model)
-        model.eval()
-        x_t = x.to(device=self.device)
-        parts: list[torch.Tensor] = []
-        for start in range(0, len(x_t), self.pred_batch_size):
-            batch = x_t[start : start + self.pred_batch_size]
-            alpha = model(batch)
-            probs = alpha / alpha.sum(dim=-1, keepdim=True)
-            parts.append(probs.detach().cpu())
-        return torch.cat(parts)
-
-    @torch.no_grad()
-    def _single_softmax(self, x: torch.Tensor) -> torch.Tensor:
-        """Return softmax probabilities for a single model (dropout, efficient_credal)."""
-        model = cast("Any", self.model)
-        model.eval()
-        x_t = x.to(device=self.device)
-        parts: list[torch.Tensor] = []
-        for start in range(0, len(x_t), self.pred_batch_size):
-            batch = x_t[start : start + self.pred_batch_size]
-            parts.append(F.softmax(model(batch), dim=-1).detach().cpu())
-        return torch.cat(parts)
-
-    @torch.no_grad()
-    def _dropout_mean_proba(self, x: torch.Tensor) -> torch.Tensor:
-        """Average softmax over multiple stochastic forward passes (dropout active)."""
-        model = cast("Any", self.model)
-        model.train()  # keep dropout active
-        x_t = x.to(device=self.device)
-        sample_probs: list[torch.Tensor] = []
-        for _ in range(self.num_samples):
-            parts: list[torch.Tensor] = []
-            for start in range(0, len(x_t), self.pred_batch_size):
-                batch = x_t[start : start + self.pred_batch_size]
-                parts.append(F.softmax(model(batch), dim=-1).detach().cpu())
-            sample_probs.append(torch.cat(parts))
-        return torch.stack(sample_probs).mean(dim=0)
 
     def predict_proba(self, x: torch.Tensor) -> torch.Tensor:
         """Return class probabilities of shape (n_samples, n_classes)."""
