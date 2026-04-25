@@ -1,0 +1,13 @@
+\begin{tabular}{llrrl}
+    \toprule
+    Method & Stream & probly-UQ latency & Tailored latency & Tailored detector \\
+    \midrule
+        arf & sea_drift & 510 $\pm$ 381 & -172 $\pm$ 262 & ADWIN (native, per-tree) \\
+        arf & stagger_drift & 25 $\pm$ 11 & -11 $\pm$ 46 & ADWIN (native, per-tree) \\
+        deep_ensemble & sea_drift & 303 $\pm$ 273 & -384 $\pm$ 84 & PageHinkley on error* \\
+        deep_ensemble & stagger_drift & 20 $\pm$ 3 & 46 $\pm$ 199 & PageHinkley on error* \\
+        mc_dropout & sea_drift & 55 $\pm$ nan & 153 $\pm$ 555 & PageHinkley on error* \\
+        mc_dropout & stagger_drift & 32 $\pm$ 12 & -86 $\pm$ 269 & PageHinkley on error* \\
+    \bottomrule
+\end{tabular}
+% *PageHinkley-on-error requires labels at inference; probly-UQ does not.
