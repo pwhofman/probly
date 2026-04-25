@@ -254,7 +254,7 @@ def test_uncertainty_scores_unknown_measure_raises() -> None:
         est.uncertainty_scores(torch.zeros(5, 4))
 
 
-from probly.method.ddu import ddu  # noqa: E402  # ty: ignore[unresolved-import]
+from probly.method.ddu import ddu  # noqa: E402
 
 
 def test_embed_plain_classifier_uses_last_linear() -> None:

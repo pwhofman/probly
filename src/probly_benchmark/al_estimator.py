@@ -22,6 +22,7 @@ from probly.representation.credal_set.torch import (
     TorchConvexCredalSet,
     TorchProbabilityIntervalsCredalSet,
 )
+from probly.representation.ddu.torch import TorchDDURepresentation
 from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
 from probly.representation.sample.torch import TorchSample
 from probly.representer.sampler import IterableSampler, Sampler
@@ -222,7 +223,19 @@ class BenchmarkALEstimator:
             return Sampler(self.model, num_samples=self.num_samples, sample_axis=0).represent(x_d)
         if isinstance(self.model, IterablePredictor):
             return IterableSampler(self.model, sample_axis=0).represent(x_d)
-        return predict(self.model, x_d)
+        rep = predict(self.model, x_d)
+        # Reduce second-order / structured representations down to a plain
+        # TorchCategoricalDistribution so downstream probability extraction and
+        # probly's measure registry work without per-method special cases.
+        # Posterior-network / evidential -> Dirichlet -> mean categorical.
+        if isinstance(rep, torch.distributions.Dirichlet):
+            alpha = rep.concentration
+            return TorchCategoricalDistribution(alpha / alpha.sum(dim=-1, keepdim=True))
+        # DDU -> softmax categorical (densities are dropped — the benchmark
+        # uses entropy of the softmax, matching the original implementation).
+        if isinstance(rep, TorchDDURepresentation):
+            return rep.softmax
+        return rep
 
     def fit(self, x: torch.Tensor, y: torch.Tensor) -> BenchmarkALEstimator:
         """Build a fresh model and train it on (x, y).
