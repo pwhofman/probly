@@ -1,9 +1,13 @@
 # @package method
 name: "bayesian"
 params:
-  posterior_std: 0.05
+  posterior_std: 0.002
   prior_mean: 0.0
-  prior_std: 1.0
-  use_base_weights: false
+  prior_std: 0.002
+  # Initialize the posterior mean from the base model weights so that
+  # finetuning starts from the pretrained optimum rather than from scratch.
+  # Osawa et al., "Practical Deep Learning with Bayesian Principles", NeurIPS 2019
+  # https://arxiv.org/abs/1906.02506
+  use_base_weights: true
 train:
   samples: 1

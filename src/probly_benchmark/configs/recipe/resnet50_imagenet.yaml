@@ -1,14 +1,15 @@
 # @package _global_
-dataset: "imagenet_shards"
+dataset: "imagenet"
 base_model: "resnet50"
 model_type: "logit_classifier"
-pretrained: True
+pretrained: true
 epochs: 20
 batch_size: 2048
 num_workers: 16
 pin_memory: true
 persistent_workers: true
 prefetch_factor: 4
+val_split: 0.1
 
 # hyperparams based on
 # https://arxiv.org/pdf/2110.00476
@@ -27,3 +28,11 @@ scheduler:
 
 early_stopping:
   patience: 0  # set to > 0 to enable; number of epochs to wait without improvement
+
+# Params of methods specific to this recipe
+method:
+  params:
+    # Ensemble methods
+    reset_params: false
+    # Posterior network
+    latent_dim: 32
