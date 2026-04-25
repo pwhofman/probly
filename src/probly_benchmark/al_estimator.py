@@ -115,7 +115,10 @@ class BenchmarkALEstimator:
             model_type: Predictor type (e.g. "logit_classifier").
             num_classes: Number of output classes.
             device: Torch device for training and inference.
-            in_features: Number of input features (unused, for compatibility).
+            in_features: Number of input features for tabular base models. Forwarded
+                to ``BuildContext`` so ``TabularMLP`` (and similar tabular encoders)
+                receives its required ``in_features`` kwarg. Ignored by base models
+                that infer their input shape (e.g. CNN backbones).
             quantifier: Override the default uncertainty quantifier.
             num_samples: Number of stochastic forward passes for dropout.
             pred_batch_size: Batch size used during prediction.
