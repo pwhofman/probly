@@ -146,7 +146,10 @@ class _OnlineMLP:
         if not self._classes:
             return 0
         probs = self.predict_proba(x)
-        return int(self._classes[int(np.argmax(probs))])
+        # Module output dim is max(len(self._classes), 2) so untrained slots may
+        # spuriously dominate; restrict argmax to columns we've actually seen.
+        idx = int(np.argmax(probs[: len(self._classes)]))
+        return int(self._classes[idx])
 
     @property
     def class_order(self) -> list[Any]:
@@ -168,7 +171,7 @@ class _DeepEnsembleWrapper:
     def predict_one(self, x: dict[str, float]) -> int:
         sample = self._stacked_probs(x, dropout_active=False)
         mean = sample.mean(axis=0)
-        order = self._members[0].class_order or [0, 1]
+        order = self._class_universe()
         return int(order[int(np.argmax(mean))])
 
     def _class_universe(self) -> list[Any]:
