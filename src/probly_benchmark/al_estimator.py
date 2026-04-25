@@ -12,6 +12,8 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader, TensorDataset
 
 from probly.method.ensemble import EnsemblePredictor
+from probly.predictor import IterablePredictor, RandomPredictor, predict
+from probly.representer.sampler import IterableSampler, Sampler
 from probly_benchmark.builders import BuildContext, build_model
 from probly_benchmark.train import train_model
 
@@ -143,6 +145,40 @@ class BenchmarkALEstimator:
 
         self.quantifier_name = quantifier or _DEFAULT_QUANTIFIERS.get(method_name)
         self.model: nn.Module | None = None
+
+    def _representation(self, x: torch.Tensor) -> Any:  # noqa: ANN401
+        """Return a probly Representation for the predictor on input ``x``.
+
+        Stochastic predictors (dropout, dropconnect, bayesian) are wrapped with
+        ``Sampler`` so multiple forward passes are aggregated into a Sample.
+        Ensemble predictors are wrapped with ``IterableSampler`` so per-member
+        predictions are aggregated into a Sample. Everything else goes through
+        ``probly.predict`` directly.
+
+        With ``sample_axis=0`` the resulting ``TorchSample`` has the sample
+        dimension at axis 0 (e.g. ``(num_samples, batch, n_classes)``), which
+        matches what the downstream measure functions expect when invoked
+        with the default ``sample_dim``.
+
+        Args:
+            x: Input tensor of shape ``(n, ...)``.
+
+        Returns:
+            A probly :class:`Representation`. For predictors that produce a
+            ``CategoricalDistribution`` (the typical ``logit_classifier`` /
+            ``probabilistic_classifier`` case) this is either a
+            ``TorchCategoricalDistribution`` or a ``TorchSample`` whose
+            ``tensor`` is a ``TorchCategoricalDistribution``. For credal-set
+            predictors it's a ``TorchProbabilityIntervalsCredalSet`` /
+            ``TorchConvexCredalSet``. The return type is intentionally broad
+            here; downstream helpers narrow it via ``isinstance``.
+        """
+        x_d = x.to(device=self.device)
+        if isinstance(self.model, RandomPredictor):
+            return Sampler(self.model, num_samples=self.num_samples, sample_axis=0).represent(x_d)
+        if isinstance(self.model, IterablePredictor):
+            return IterableSampler(self.model, sample_axis=0).represent(x_d)
+        return predict(self.model, x_d)
 
     def fit(self, x: torch.Tensor, y: torch.Tensor) -> BenchmarkALEstimator:
         """Build a fresh model and train it on (x, y).
