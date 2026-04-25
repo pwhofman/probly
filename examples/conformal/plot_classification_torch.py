@@ -16,10 +16,12 @@ boolean inclusion mask (the conformal prediction set).
 
 from __future__ import annotations
 
+import numpy as np
+from sklearn.ensemble import RandomForestClassifier
 import torch
 from torch import nn
-from sklearn.datasets import load_iris
-from sklearn.model_selection import train_test_split
+from sklearn.datasets import load_digits
+from sklearn.model_selection import KFold, train_test_split
 
 from probly.calibrator import calibrate
 from probly.metrics._common import average_set_size, empirical_coverage_classification
@@ -32,8 +34,8 @@ torch.manual_seed(42)
 # %%
 # Data preparation
 # ----------------
-
-X, y = load_iris(return_X_y=True)
+ALPHA = 0.05
+X, y = load_digits(return_X_y=True)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 X_train, X_calib, y_train, y_calib = train_test_split(X_train, y_train, test_size=0.25, random_state=42)
 
@@ -62,7 +64,7 @@ class SimpleNet(nn.Module, LogitClassifier):
         return self.fc2(self.relu(self.fc1(x)))
 
 
-model = SimpleNet(4, 3)
+model = SimpleNet(64, 10)
 
 optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 loss_fn = nn.CrossEntropyLoss()
@@ -78,7 +80,7 @@ model.eval()
 # LAC score
 # ---------
 
-calibrated_model = calibrate(conformal_lac(model), 0.05, y_calib_t, X_calib_t)
+calibrated_model = calibrate(conformal_lac(model), ALPHA, y_calib_t, X_calib_t)
 output = representer(calibrated_model).predict(X_test_t)
 lac_cov = empirical_coverage_classification(output, y_test_t)
 lac_size = average_set_size(output)
@@ -88,7 +90,7 @@ print(f"LAC  — coverage: {lac_cov:.3f}, avg set size: {lac_size:.3f}")
 # APS score
 # ---------
 
-calibrated_model = calibrate(conformal_aps(model), 0.05, y_calib_t, X_calib_t)
+calibrated_model = calibrate(conformal_aps(model, randomized=True), ALPHA, y_calib_t, X_calib_t)
 output = representer(calibrated_model).predict(X_test_t)
 aps_cov = empirical_coverage_classification(output, y_test_t)
 aps_size = average_set_size(output)
@@ -98,7 +100,7 @@ print(f"APS  — coverage: {aps_cov:.3f}, avg set size: {aps_size:.3f}")
 # RAPS score
 # ----------
 
-calibrated_model = calibrate(conformal_raps(model), 0.05, y_calib_t, X_calib_t)
+calibrated_model = calibrate(conformal_raps(model, randomized=True, lambda_reg=0.1, k_reg=0), ALPHA, y_calib_t, X_calib_t)
 output = representer(calibrated_model).predict(X_test_t)
 raps_cov = empirical_coverage_classification(output, y_test_t)
 raps_size = average_set_size(output)
@@ -108,22 +110,35 @@ print(f"RAPS — coverage: {raps_cov:.3f}, avg set size: {raps_size:.3f}")
 # SAPS score
 # ----------
 
-calibrated_model = calibrate(conformal_saps(model), 0.05, y_calib_t, X_calib_t)
+calibrated_model = calibrate(conformal_saps(model, randomized=True, lambda_val=0.1), ALPHA, y_calib_t, X_calib_t)
 output = representer(calibrated_model).predict(X_test_t)
 saps_cov = empirical_coverage_classification(output, y_test_t)
 saps_size = average_set_size(output)
 print(f"SAPS — coverage: {saps_cov:.3f}, avg set size: {saps_size:.3f}")
 
 # %%
-# Summary
-# -------
+# Summary (Averaged over multiple runs)
+# --------------------------------------
+res = {
+    "LAC": [],
+    "APS": [],
+    "RAPS": [],
+    "SAPS": [],
+}
+for fold, (train_idx, test_idx) in enumerate(KFold(n_splits=5, shuffle=True, random_state=42).split(X)):
+    X_train, y_train = X[train_idx], y[train_idx]
+    X_test, y_test = X[test_idx], y[test_idx]
+    X_train, X_calib, y_train, y_calib = train_test_split(X_train, y_train, test_size=0.25, random_state=fold)
 
-print("\n{:<6} {:>10} {:>14}".format("Score", "Coverage", "Avg set size"))
-print("-" * 32)
-for name, cov, sz in [
-    ("LAC", lac_cov, lac_size),
-    ("APS", aps_cov, aps_size),
-    ("RAPS", raps_cov, raps_size),
-    ("SAPS", saps_cov, saps_size),
-]:
-    print(f"{name:<6} {cov:>10.3f} {sz:>14.3f}")
+    fold_model = RandomForestClassifier(random_state=fold)
+    fold_model.fit(X_train, y_train)
+    for name, conformal_func in [("LAC", conformal_lac), ("APS", conformal_aps), ("RAPS", conformal_raps), ("SAPS", conformal_saps)]:
+        calibrated_model = calibrate(conformal_func(fold_model), ALPHA, y_calib, X_calib)
+        output = representer(calibrated_model).predict(X_test)
+        cov = empirical_coverage_classification(output, y_test)
+        size = average_set_size(output)
+        res[name].append((cov, size))
+
+for name, vals in res.items():
+    covs, sizes = zip(*vals)
+    print(f"{name} — coverage: {np.mean(covs):.3f} ± {np.std(covs):.3f}, avg set size: {np.mean(sizes):.3f} ± {np.std(sizes):.3f}")

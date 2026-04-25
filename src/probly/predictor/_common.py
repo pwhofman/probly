@@ -192,8 +192,9 @@ def predict_categorical_distribution[**In, Out: CategoricalDistribution](
 
 
 @predict.register(LogitDistributionPredictor)
+@flexdispatch
 def predict_categorical_distribution_from_logit[**In, Out: CategoricalDistribution](
-    predictor: CategoricalDistributionPredictor[In, Out], *args: In.args, **kwargs: In.kwargs
+    predictor: LogitDistributionPredictor[In, Out], *args: In.args, **kwargs: In.kwargs
 ) -> Out:
     """Predict for a categorical distribution predictor."""
     return create_categorical_distribution_from_logits(predict_raw(predictor, *args, **kwargs))  # ty:ignore[invalid-return-type]

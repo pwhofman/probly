@@ -64,7 +64,7 @@ jax = [
     "flax>=0.12.4"
 ]
 sklearn = [
-    "scikit-learn>=1.5.2"  # first cp313 wheels
+    "scikit-learn>=1.6.0"  # first cp313 wheels + FrozenEstimator support
 ]
 all_ml = [{ include-group = "torch" }, { include-group = "jax" }, { include-group = "sklearn" }]
 test = [
@@ -81,7 +81,7 @@ test = [
 lint = [
     "ruff>=0.15.11",                                         # for linting
     "prek>=0.3.8",                                          # for running the linters pre-commit hooks
-    "ty>=0.0.29",                                           # for static type checking
+    "ty>=0.0.32",                                           # for static type checking
     "sigx @ git+https://github.com/Cortys/sigx.git@master",
 ]
 docs = [

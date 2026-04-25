@@ -17,7 +17,6 @@ def compute_raps_score_torch(
     randomized: bool = True,
     lambda_reg: float = 0.1,
     k_reg: int = 0,
-    epsilon: float = 0.01,
 ) -> torch.Tensor:
     """RAPS Nonconformity-Scores for PyTorch tensors."""
     probs_torch = torch.as_tensor(probs, dtype=torch.float)
@@ -45,9 +44,8 @@ def compute_raps_score_torch(
     ranks = torch.arange(1, n_classes + 1, device=probs_torch.device, dtype=probs_torch.dtype)
     ranks = ranks.view((1,) * (probs_torch.ndim - 1) + (-1,))
     penalty = lambda_reg * torch.clamp(ranks - k_reg - 1, min=0)
-    epsilon_penalty = epsilon * torch.ones_like(probs_torch)
 
-    reg_cumsum = cumsum_probs + penalty + epsilon_penalty
+    reg_cumsum = cumsum_probs + penalty
 
     # sort back to original positions
     inv_idx = torch.argsort(srt_idx, dim=-1)
@@ -73,7 +71,6 @@ def _(
     randomized: bool = True,
     lambda_reg: float = 0.1,
     k_reg: int = 0,
-    epsilon: float = 0.01,
 ) -> torch.Tensor:
     """RAPS Nonconformity-Scores for TorchSamples."""
     return _raps_score_dispatch(
@@ -82,7 +79,6 @@ def _(
         randomized=randomized,
         lambda_reg=lambda_reg,
         k_reg=k_reg,
-        epsilon=epsilon,
     )
 
 
@@ -93,7 +89,6 @@ def _(
     randomized: bool = True,
     lambda_reg: float = 0.1,
     k_reg: int = 0,
-    epsilon: float = 0.01,
 ) -> torch.Tensor:
     """RAPS Nonconformity-Scores for TorchCategoricalDistributions."""
     return compute_raps_score_torch(
@@ -102,5 +97,4 @@ def _(
         randomized=randomized,
         lambda_reg=lambda_reg,
         k_reg=k_reg,
-        epsilon=epsilon,
     )
