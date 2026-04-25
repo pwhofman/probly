@@ -5,45 +5,32 @@ from __future__ import annotations
 import torch
 from torch import nn
 
-
-class RegularizerDare(nn.Module):
-    """Implementation of the DARE anti-regularization term."""
-
-    def __init__(self, threshold: float) -> None:
-        """Initialize the DARE regularizer.
-
-        Args:
-            threshold: The threshold for the anti-regularization.
-        """
-        super().__init__()
-        self.threshold: float = threshold
+EPS_LOG = torch.finfo(torch.float32).eps
 
 
-def dare_loss_step(
+def dare_regularizer(
     model: nn.Module,
-    device: str,
-    loss: float,
-    regularizer: RegularizerDare,
-) -> float:
-    """Perform a DARE training loss calculation following Algorithm 1.
+    device: torch.device | str,
+    loss: torch.Tensor,
+    threshold: torch.Tensor | float,
+) -> torch.Tensor:
+    """Compute the DARE anti-regularization term following Algorithm 1.
 
     Args:
         model: The DARE model.
         device: The device of the model.
-        loss: The loss value for the epoch.
-        regularizer: The DARE regularizer.
+        loss: The current loss value, used for the switching condition.
+        threshold: The threshold at or below which anti-regularization activates.
 
     Returns:
-        The anti-regularized loss value for the epoch.
+        The anti-regularization term when loss <= threshold, else 0.0.
     """
-    # DARE switching logic
-    if loss < regularizer.threshold:
-        anti_reg = torch.empty(1, device=device)
+    if loss <= threshold:
+        anti_reg = torch.zeros((), device=device)
         d = 0
         for param in model.parameters():
             if param.requires_grad:
-                anti_reg += torch.sum(torch.log(param.pow(2) + 1e-10))
+                anti_reg = anti_reg + torch.sum(torch.log(param.pow(2) + EPS_LOG))
                 d += param.numel()
-        total_loss = loss - (anti_reg.item() / d)
-        return total_loss
-    return loss
+        return anti_reg / d
+    return torch.zeros((), device=device)
