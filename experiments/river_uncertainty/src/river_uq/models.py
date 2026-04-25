@@ -3,7 +3,7 @@
 All wrappers expose:
 - learn_one(x, y) -> None
 - predict_one(x) -> int (predicted class label)
-- epistemic_decomposition(x) -> Decomposition with .total, .aleatoric, .epistemic
+- epistemic_decomposition(x) -> AleatoricEpistemicTotalDecomposition with .total, .aleatoric, .epistemic
 
 Three kinds:
 - "arf"            wraps river.forest.ARFClassifier; UQ via probly.representer
@@ -14,7 +14,7 @@ Three kinds:
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Any, Protocol
+from typing import Any, Hashable, Protocol, cast
 
 import numpy as np
 import torch
@@ -22,7 +22,7 @@ from river.forest import ARFClassifier
 from torch import nn
 
 from probly.quantification import quantify
-from probly.quantification.decomposition import Decomposition
+from probly.quantification.decomposition import AleatoricEpistemicTotalDecomposition
 from probly.representation.distribution.array_categorical import (
     ArrayCategoricalDistribution,
     ArrayCategoricalDistributionSample,
@@ -40,7 +40,7 @@ class ModelWrapper(Protocol):
 
     def learn_one(self, x: dict[str, float], y: int) -> None: ...
     def predict_one(self, x: dict[str, float]) -> int: ...
-    def epistemic_decomposition(self, x: dict[str, float]) -> Decomposition: ...
+    def epistemic_decomposition(self, x: dict[str, float]) -> AleatoricEpistemicTotalDecomposition: ...
 
 
 # ---------- ARF ----------
@@ -55,12 +55,12 @@ class _ARFWrapper:
         self._arf.learn_one(x, y)
 
     def predict_one(self, x: dict[str, float]) -> int:
-        pred = self._arf.predict_one(x)
+        pred = self._arf.predict_one(cast("dict[Hashable, Any]", x))
         return int(pred) if pred is not None else 0
 
-    def epistemic_decomposition(self, x: dict[str, float]) -> Decomposition:
+    def epistemic_decomposition(self, x: dict[str, float]) -> AleatoricEpistemicTotalDecomposition:
         sample = representer(self._arf).represent(x)
-        return quantify(sample)
+        return cast("AleatoricEpistemicTotalDecomposition", quantify(sample))
 
     @property
     def n_drifts_detected(self) -> int:
@@ -102,7 +102,7 @@ class _OnlineMLP:
         needs_init = self._module is None
         if not needs_init:
             assert self._module is not None
-            last = self._module[-1]
+            last = cast("nn.Sequential", self._module)[-1]
             assert isinstance(last, nn.Linear)
             if last.out_features < target_n_classes:
                 needs_init = True
@@ -197,13 +197,13 @@ class _DeepEnsembleWrapper:
                 out[row] = 1.0 / len(classes)
         return out
 
-    def epistemic_decomposition(self, x: dict[str, float]) -> Decomposition:
+    def epistemic_decomposition(self, x: dict[str, float]) -> AleatoricEpistemicTotalDecomposition:
         stacked = self._stacked_probs(x, dropout_active=False)
         sample = ArrayCategoricalDistributionSample(
             array=ArrayCategoricalDistribution(unnormalized_probabilities=stacked),
             sample_axis=0,
         )
-        return quantify(sample)
+        return cast("AleatoricEpistemicTotalDecomposition", quantify(sample))
 
 
 # ---------- MC Dropout ----------
@@ -220,7 +220,7 @@ class _MCDropoutWrapper:
     def predict_one(self, x: dict[str, float]) -> int:
         return self._mlp.predict_one(x)
 
-    def epistemic_decomposition(self, x: dict[str, float]) -> Decomposition:
+    def epistemic_decomposition(self, x: dict[str, float]) -> AleatoricEpistemicTotalDecomposition:
         classes = self._mlp.class_order or [0, 1]
         rows = np.stack(
             [self._mlp.predict_proba(x, dropout_active=True) for _ in range(self._n_passes)]
@@ -235,7 +235,7 @@ class _MCDropoutWrapper:
             array=ArrayCategoricalDistribution(unnormalized_probabilities=rows),
             sample_axis=0,
         )
-        return quantify(sample)
+        return cast("AleatoricEpistemicTotalDecomposition", quantify(sample))
 
 
 # ---------- Factory ----------

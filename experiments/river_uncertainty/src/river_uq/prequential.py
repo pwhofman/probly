@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Final
+from typing import Any, Final, cast
 
 import pandas as pd
 
@@ -97,4 +97,4 @@ def run_prequential(
             }
         )
 
-    return pd.DataFrame(rows, columns=EXPECTED_COLUMNS)
+    return pd.DataFrame(rows, columns=cast("Any", EXPECTED_COLUMNS))

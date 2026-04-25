@@ -6,6 +6,8 @@ latency for the probly-UQ detector and the tailored baseline.
 
 from __future__ import annotations
 
+from typing import cast
+
 import numpy as np
 import pandas as pd
 
@@ -36,7 +38,8 @@ def build_latency_table(records: pd.DataFrame) -> pd.DataFrame:
         Aggregated DataFrame with one row per (method, stream).
     """
     out_rows: list[dict] = []
-    for (method, stream), grp in records.groupby(["method", "stream"]):
+    for key, grp in records.groupby(["method", "stream"]):
+        method, stream = cast("tuple[str, str]", key)
         per_seed = []
         for seed, sg in grp.groupby("seed"):
             true_t = sg["true_drift_t"].iloc[0]
