@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from types import EllipsisType
-from typing import TYPE_CHECKING
+from types import EllipsisType, NotImplementedType
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
 
@@ -19,8 +19,17 @@ if TYPE_CHECKING:
 class ArrayIndex:
     """Marker for an advanced indexing array, which can be either integer or boolean and of any shape."""
 
+    index: object
     ndim: int
     is_boolean: bool
+
+
+@dataclass(frozen=True, slots=True)
+class AxisTrackingResult:
+    """Result of tracking an axis through an indexing operation."""
+
+    new_axis: int
+    index: ToIndex | NotImplementedType
 
 
 type _BasicIndexElement = slice | int | None
@@ -45,14 +54,14 @@ def convert_idx(idx: ToIndex) -> _InternalIndexElement:  # noqa: PLR0911
             if idx.dtype == bool:
                 return bool(idx)
             return 0  # use 0 as a sentinel for any 0d integer index
-        return ArrayIndex(ndim=idx.ndim, is_boolean=idx.dtype == bool)  # ty:ignore[invalid-argument-type]
+        return ArrayIndex(index=idx, ndim=idx.ndim, is_boolean=idx.dtype == bool)  # ty:ignore[invalid-argument-type]
 
     idx = np.asanyarray(idx)
     if idx.ndim == 0:
         if idx.dtype == bool:
             return bool(idx)
         return 0  # use 0 as a sentinel for any 0d integer index
-    return ArrayIndex(ndim=idx.ndim, is_boolean=idx.dtype == bool)
+    return ArrayIndex(index=idx, ndim=idx.ndim, is_boolean=idx.dtype == bool)
 
 
 @convert_idx.delayed_register(TORCH_TENSOR)
@@ -255,12 +264,53 @@ def _track_axis_advanced(  # noqa: C901, PLR0912, PLR0915
     return new_special_axis
 
 
+def _track_weight_index(  # noqa: PLR0911
+    index: tuple[_InternalIndexElement, ...],
+    special_axis: int,
+) -> ToIndex | NotImplementedType:
+    """Track the one-dimensional index that applies to weights for the special axis."""
+    consumed_axes = 0
+
+    for idx in index:
+        if idx is None or isinstance(idx, bool) or idx is Ellipsis:
+            continue
+
+        if isinstance(idx, slice):
+            if consumed_axes == special_axis:
+                return idx
+            consumed_axes += 1
+            continue
+
+        if isinstance(idx, int):
+            if consumed_axes == special_axis:
+                return idx
+            consumed_axes += 1
+            continue
+
+        if isinstance(idx, ArrayIndex):
+            if idx.is_boolean:
+                if consumed_axes <= special_axis < consumed_axes + idx.ndim:
+                    if idx.ndim == 1 and consumed_axes == special_axis:
+                        return cast("ToIndex", idx.index)
+                    return NotImplemented
+                consumed_axes += idx.ndim
+                continue
+
+            if consumed_axes == special_axis:
+                if idx.ndim == 1:
+                    return cast("ToIndex", idx.index)
+                return NotImplemented
+            consumed_axes += 1
+
+    return slice(None)
+
+
 def track_axis(
     index: ToIndices,
     special_axis: int,
     ndim: int,
     torch_indexing: bool = False,
-) -> int | None:
+) -> AxisTrackingResult | None:
     """Track the new position of a 'special' axis after a NumPy-style __getitem__ indexing operation.
 
     Args:
@@ -276,7 +326,7 @@ def track_axis(
     """
     # Handle structured arrays (field access)
     if isinstance(index, str) or (isinstance(index, list) and all(isinstance(i, str) for i in index)):
-        return special_axis
+        return AxisTrackingResult(new_axis=special_axis, index=slice(None))
 
     normalized_index = _normalize_index(index, ndim, torch_indexing=torch_indexing)
     basic_index, advanced_index = _split_index(normalized_index, torch_indexing=torch_indexing)
@@ -291,4 +341,9 @@ def track_axis(
     if len(advanced_index) > 0:
         new_axis = _track_axis_advanced(advanced_index, new_axis)
 
-    return new_axis
+    if new_axis is None:
+        return None
+
+    weight_index = _track_weight_index(normalized_index, special_axis)
+
+    return AxisTrackingResult(new_axis=new_axis, index=weight_index)

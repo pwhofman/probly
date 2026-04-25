@@ -289,3 +289,13 @@ server_scripts/
 
 # Artifacts
 artifacts/
+
+# Experiments scratch env
+experiments/uv.lock
+experiments/**/model_cache/
+
+# Local data / model caches
+data/
+
+# Paper (synced via Overleaf git)
+paper/

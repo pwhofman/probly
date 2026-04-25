@@ -6,7 +6,7 @@ from ._common import (
     SecondOrderDistributionLike,
     conditional_entropy,
     entropy,
-    entropy_of_expected_value,
+    entropy_of_expected_predictive_distribution,
     expected_max_probability_complement,
     max_disagreement,
     max_probability_complement_of_expected,
@@ -16,7 +16,7 @@ from .array import array_categorical_entropy, array_dirichlet_entropy, array_gau
 
 
 @entropy.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
-@entropy_of_expected_value.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
+@entropy_of_expected_predictive_distribution.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 @conditional_entropy.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 @mutual_information.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 @max_probability_complement_of_expected.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
@@ -33,7 +33,7 @@ __all__ = [
     "array_gaussian_entropy",
     "conditional_entropy",
     "entropy",
-    "entropy_of_expected_value",
+    "entropy_of_expected_predictive_distribution",
     "expected_max_probability_complement",
     "max_disagreement",
     "max_probability_complement_of_expected",

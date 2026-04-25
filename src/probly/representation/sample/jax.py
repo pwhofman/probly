@@ -28,6 +28,7 @@ class JaxArraySample(Sample[jax.Array]):
 
     array: jax.Array
     sample_axis: int
+    weights: jax.Array | None = None
 
     def __post_init__(self) -> None:
         """Validate the sample_axis."""
@@ -44,11 +45,16 @@ class JaxArraySample(Sample[jax.Array]):
             msg = "array must be a JAX array."
             raise TypeError(msg)
 
+        if self.weights is not None and self.weights.shape != (self.sample_size,):
+            msg = f"weights must have shape ({self.sample_size},) but got {self.weights.shape}."
+            raise ValueError(msg)
+
     @override
     @classmethod
     def from_iterable(
         cls,
         samples: Iterable[jax.Array],
+        weights: Iterable[float] | None = None,
         sample_axis: SampleAxis = "auto",
         dtype: DTypeLike | None = None,
     ) -> Self:  # ty: ignore[invalid-method-override]
@@ -56,6 +62,7 @@ class JaxArraySample(Sample[jax.Array]):
 
         Args:
             samples: The predictions to create the sample from.
+            weights: Optional weights for the samples.
             sample_axis: The dimension along which samples are organized.
             dtype: Desired data type of the array.
 
@@ -67,7 +74,7 @@ class JaxArraySample(Sample[jax.Array]):
                 if samples.ndim == 0:
                     msg = "Cannot infer sample_axis for 0-dimensional array."
                     raise ValueError(msg)
-                sample_axis = 0 if samples.ndim == 1 else 1
+                sample_axis = -1
             if sample_axis != 0:
                 samples = jnp.moveaxis(samples, 0, sample_axis)
             if dtype is not None:
@@ -79,13 +86,12 @@ class JaxArraySample(Sample[jax.Array]):
                 if len(samples) == 0:
                     msg = "Cannot infer sample_axis for empty samples."
                     raise ValueError(msg)
-                first_sample = samples[0]
-                sample_axis = (
-                    (0 if first_sample.ndim == 0 else 1) if isinstance(first_sample, (np.ndarray, jax.Array)) else 0
-                )
+                sample_axis = -1
             samples = jnp.stack(samples, axis=sample_axis, dtype=dtype)  # ty: ignore[invalid-argument-type]
 
-        return cls(array=samples, sample_axis=sample_axis)
+        return cls(
+            array=samples, sample_axis=sample_axis, weights=jnp.asarray(weights) if weights is not None else None
+        )
 
     @override
     @classmethod
@@ -97,6 +103,7 @@ class JaxArraySample(Sample[jax.Array]):
     ) -> Self:  # ty: ignore[invalid-method-override]
         if isinstance(sample, JaxArraySample):
             sample_array = sample.array
+            sample_weights = sample.weights
 
             if dtype is not None:
                 sample_array = sample_array.astype(dtype)
@@ -105,9 +112,9 @@ class JaxArraySample(Sample[jax.Array]):
             if sample_axis not in ("auto", in_sample_axis):
                 sample_array = jnp.moveaxis(sample_array, in_sample_axis, sample_axis)
                 in_sample_axis = sample_axis
-            return cls(array=sample_array, sample_axis=in_sample_axis)
+            return cls(array=sample_array, sample_axis=in_sample_axis, weights=sample_weights)
 
-        return cls.from_iterable(sample.samples, sample_axis=sample_axis, dtype=dtype)
+        return cls.from_iterable(sample.samples, weights=sample.weights, sample_axis=sample_axis, dtype=dtype)
 
     def __len__(self) -> int:
         """Return the len of the array."""
@@ -166,15 +173,31 @@ class JaxArraySample(Sample[jax.Array]):
 
     def sample_mean(self) -> jax.Array:
         """Compute the mean of the sample."""
+        if self.weights is not None:
+            return jnp.average(self.array, axis=self.sample_axis, weights=self.weights)
+
         return jnp.mean(self.array, axis=self.sample_axis)
 
-    def sample_std(self, ddof: int = 1) -> jax.Array:
+    def sample_std(self, ddof: int = 0) -> jax.Array:
         """Compute the standard deviation of the sample."""
+        if self.weights is not None:
+            return jnp.sqrt(self.sample_var(ddof=ddof))
+
         return jnp.std(self.array, axis=self.sample_axis, ddof=ddof)
 
-    def sample_var(self, ddof: int = 1) -> jax.Array:
+    def sample_var(self, ddof: int = 0) -> jax.Array:
         """Compute the variance of the sample."""
-        return jnp.var(self.array, axis=self.sample_axis, ddof=ddof)
+        array = self.array
+        weights = self.weights
+        if self.weights is not None:
+            if ddof != 0:
+                msg = "Weighted samples do not support ddof > 0."
+                raise ValueError(msg)
+            average = jnp.average(array, axis=self.sample_axis, weights=weights, keepdims=True)
+            variance = jnp.average((array - average) ** 2, axis=self.sample_axis, weights=weights)
+            return variance
+
+        return jnp.var(array, axis=self.sample_axis, ddof=ddof)
 
     @override
     def concat(self, other: Sample[jax.Array]) -> Self:
@@ -185,7 +208,16 @@ class JaxArraySample(Sample[jax.Array]):
 
         concatenated = jnp.concatenate((self.array, other_array), axis=self.sample_axis)
 
-        return type(self)(array=concatenated, sample_axis=self.sample_axis)
+        weights = self.weights
+        other_weights = other.weights
+
+        if weights is not None or other_weights is not None:
+            if weights is None:
+                weights = jnp.ones(self.sample_size)
+            other_weights = jnp.ones(other.sample_size) if other_weights is None else jnp.asarray(other_weights)
+            weights = jnp.concatenate((weights, other_weights), axis=0)
+
+        return type(self)(array=concatenated, sample_axis=self.sample_axis, weights=weights)
 
     def move_sample_axis(self, new_sample_axis: int) -> JaxArraySample:
         """Return a new JaxArraySample with the sample dimension moved to new_sample_axis.
@@ -197,7 +229,7 @@ class JaxArraySample(Sample[jax.Array]):
             A new ArraySample with the sample dimension moved.
         """
         moved_array = jnp.moveaxis(self.array, self.sample_axis, new_sample_axis)
-        return type(self)(array=moved_array, sample_axis=new_sample_axis)
+        return type(self)(array=moved_array, sample_axis=new_sample_axis, weights=self.weights)
 
     def __array__(self, dtype: npt.DTypeLike | None = None, copy: bool | None = None) -> np.ndarray:
         """Get the underlying numpy array.
@@ -217,7 +249,11 @@ class JaxArraySample(Sample[jax.Array]):
         Returns:
             A copy of the JaxArraySample.
         """
-        return type(self)(array=self.array.copy(), sample_axis=self.sample_axis)
+        return type(self)(
+            array=self.array.copy(),
+            sample_axis=self.sample_axis,
+            weights=self.weights.copy() if self.weights is not None else None,
+        )
 
     def to_device(
         self,
@@ -241,7 +277,11 @@ class JaxArraySample(Sample[jax.Array]):
         if device == self.device:
             return self
 
-        return type(self)(array=self.array.to_device(device), sample_axis=self.sample_axis)
+        return type(self)(
+            array=self.array.to_device(device),
+            sample_axis=self.sample_axis,
+            weights=self.weights.to_device(device) if self.weights is not None else None,
+        )
 
 
 create_sample.register(

@@ -11,6 +11,7 @@ from .decomposition import (
     SecondOrderEntropyDecomposition,
     SecondOrderZeroOneDecomposition,
 )
+from .measure import quantify_sample_variance
 from .notion import (
     AleatoricUncertainty,
     EpistemicUncertainty,
@@ -35,4 +36,5 @@ __all__ = [
     "TotalUncertainty",
     "notion_registry",
     "quantify",
+    "quantify_sample_variance",
 ]

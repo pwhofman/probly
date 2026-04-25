@@ -10,6 +10,7 @@ from ._common import (
     DistributionSample,
     DistributionType,
     GaussianDistribution,
+    GaussianDistributionSample,
     SecondOrderDistribution,
     create_categorical_distribution,
     create_categorical_distribution_from_logits,
@@ -17,7 +18,7 @@ from ._common import (
 )
 from .array_categorical import ArrayCategoricalDistribution, ArrayCategoricalDistributionSample
 from .array_dirichlet import ArrayDirichletDistribution
-from .array_gaussian import ArrayGaussianDistribution
+from .array_gaussian import ArrayGaussianDistribution, ArrayGaussianDistributionSample
 
 
 ## Torch
@@ -41,6 +42,7 @@ __all__ = [
     "ArrayCategoricalDistributionSample",
     "ArrayDirichletDistribution",
     "ArrayGaussianDistribution",
+    "ArrayGaussianDistributionSample",
     "CategoricalDistribution",
     "CategoricalDistributionSample",
     "DirichletDistribution",
@@ -48,6 +50,7 @@ __all__ = [
     "DistributionSample",
     "DistributionType",
     "GaussianDistribution",
+    "GaussianDistributionSample",
     "SecondOrderDistribution",
     "create_categorical_distribution",
     "create_categorical_distribution_from_logits",

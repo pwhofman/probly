@@ -41,6 +41,7 @@ class ArraySample[D: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplementation[D
 
     array: D
     sample_axis: int
+    weights: np.ndarray | None = None
 
     def __post_init__(self) -> None:
         """Validate the sample_axis."""
@@ -57,11 +58,16 @@ class ArraySample[D: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplementation[D
             msg = "array must be a NumpyArrayLike (or ndarray)."
             raise TypeError(msg)
 
+        if self.weights is not None and self.weights.shape != (self.sample_size,):
+            msg = f"weights must have shape ({self.sample_size},), but got {self.weights.shape}."
+            raise ValueError(msg)
+
     @override
     @classmethod
     def from_iterable(
         cls,
         samples: Iterable[D],
+        weights: Iterable[float] | None = None,
         sample_axis: SampleAxis = "auto",
         dtype: DTypeLike | None = None,
         **_kwargs: Unpack[SampleParams],
@@ -70,6 +76,7 @@ class ArraySample[D: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplementation[D
 
         Args:
             samples: The predictions to create the sample from.
+            weights: Optional weights for the samples.
             sample_axis: The dimension along which samples are organized.
             dtype: Desired data type of the array.
 
@@ -86,7 +93,9 @@ class ArraySample[D: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplementation[D
             if sample_axis != 0:
                 samples = np.moveaxis(sample_array, 0, sample_axis)  # ty:ignore[invalid-argument-type]
         else:
-            samples = [to_numpy_array_like(s, dtype=dtype) for s in samples]  # ty:ignore[invalid-assignment]
+            # Preserve NumpyArrayLike subtypes (e.g. ArrayGaussianDistribution) so np.stack
+            # can use their __array_function__; to_numpy_array_like would flatten them to ndarray.
+            samples = [s if isinstance(s, NumpyArrayLike) else to_numpy_array_like(s, dtype=dtype) for s in samples]  # ty:ignore[invalid-assignment]
             if sample_axis == "auto":
                 if len(samples) == 0:  # ty:ignore[invalid-argument-type]
                     msg = "Cannot infer sample_axis for empty samples."
@@ -94,7 +103,7 @@ class ArraySample[D: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplementation[D
                 sample_axis = -1
             samples = np.stack(samples, axis=sample_axis, dtype=dtype)  # ty:ignore[no-matching-overload]
 
-        return cls(array=samples, sample_axis=sample_axis)
+        return cls(array=samples, sample_axis=sample_axis, weights=np.asarray(weights) if weights is not None else None)
 
     @override
     @classmethod
@@ -108,6 +117,7 @@ class ArraySample[D: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplementation[D
 
         if isinstance(sample, ArraySample):
             sample_array: D = sample.array  # ty:ignore[invalid-assignment]
+            sample_weights: np.ndarray | None = sample.weights
 
             if dtype is not None:
                 sample_array = cast("Any", sample_array).astype(dtype)
@@ -116,9 +126,9 @@ class ArraySample[D: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplementation[D
             if sample_axis not in ("auto", in_sample_axis):
                 sample_array = np.moveaxis(sample_array, in_sample_axis, sample_axis)  # ty:ignore[invalid-argument-type]
                 in_sample_axis = sample_axis
-            return cls(array=sample_array, sample_axis=in_sample_axis)
+            return cls(array=sample_array, sample_axis=in_sample_axis, weights=sample_weights)
 
-        return cls.from_iterable(sample.samples, sample_axis=sample_axis, dtype=dtype)
+        return cls.from_iterable(sample.samples, sample_axis=sample_axis, weights=sample.weights, dtype=dtype)
 
     @override
     def __len__(self) -> int:
@@ -176,17 +186,32 @@ class ArraySample[D: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplementation[D
     @override
     def sample_mean(self) -> D:
         """Compute the mean of the sample."""
+        if self.weights is not None:
+            return np.average(self.array, axis=self.sample_axis, weights=self.weights)
         return np.mean(self.array, axis=self.sample_axis)
 
     @override
-    def sample_std(self, ddof: int = 1) -> D:
+    def sample_std(self, ddof: int = 0) -> D:
         """Compute the standard deviation of the sample."""
+        if self.weights is not None:
+            return np.sqrt(self.sample_var(ddof=ddof))  # ty:ignore[invalid-return-type]
+
         return np.std(self.array, axis=self.sample_axis, ddof=ddof)
 
     @override
-    def sample_var(self, ddof: int = 1) -> D:
+    def sample_var(self, ddof: int = 0) -> D:
         """Compute the variance of the sample."""
-        return np.var(self.array, axis=self.sample_axis, ddof=ddof)
+        array = self.array
+        weights = self.weights
+        if self.weights is not None:
+            if ddof != 0:
+                msg = "Weighted samples do not support ddof > 0."
+                raise ValueError(msg)
+            average = np.average(array, axis=self.sample_axis, weights=weights, keepdims=True)
+            variance = np.average((array - average) ** 2, axis=self.sample_axis, weights=weights)
+            return variance
+
+        return np.var(array, axis=self.sample_axis, ddof=ddof)
 
     @override
     def concat(self, other: Sample[D]) -> Self:
@@ -197,7 +222,16 @@ class ArraySample[D: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplementation[D
 
         concatenated = np.concatenate((self.array, other_array), axis=self.sample_axis)
 
-        return type(self)(array=concatenated, sample_axis=self.sample_axis)
+        weights = self.weights
+        other_weights = other.weights
+
+        if weights is not None or other_weights is not None:
+            if weights is None:
+                weights = np.ones(self.sample_size)
+            other_weights = np.ones(other.sample_size) if other_weights is None else np.asarray(other_weights)
+            weights = np.concatenate((weights, other_weights), axis=0)
+
+        return type(self)(array=concatenated, sample_axis=self.sample_axis, weights=weights)
 
     def move_sample_axis(self, new_sample_axis: int) -> ArraySample[D]:
         """Return a new ArraySample with the sample dimension moved to new_sample_axis.
@@ -209,7 +243,7 @@ class ArraySample[D: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplementation[D
             A new ArraySample with the sample dimension moved.
         """
         moved_array = np.moveaxis(self.array, self.sample_axis, new_sample_axis)  # ty:ignore[invalid-argument-type]
-        return type(self)(array=moved_array, sample_axis=new_sample_axis)
+        return type(self)(array=moved_array, sample_axis=new_sample_axis, weights=self.weights)
 
     def __getitem__(self, index: ToIndices) -> NumpyArrayLikeImplementation[D] | D:
         """Get a sample by index.
@@ -225,12 +259,21 @@ class ArraySample[D: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplementation[D
         if not hasattr(new_array, "ndim"):
             return new_array
 
-        new_sample_axis = track_axis(index, self.sample_axis, self.array.ndim)
+        track_result = track_axis(index, self.sample_axis, self.array.ndim)
 
-        if new_sample_axis is None:
+        if track_result is None:
             return new_array
 
-        return type(self)(array=new_array, sample_axis=new_sample_axis)
+        weights = self.weights
+
+        if weights is not None:
+            weights_index = track_result.index
+            if weights_index is NotImplemented:
+                msg = "Weighted samples do not support this indexing operation."
+                raise IndexError(msg)
+            weights = weights[weights_index]
+
+        return type(self)(array=new_array, sample_axis=track_result.new_axis, weights=weights)
 
     def __setitem__(self, index: ToIndices, value: object) -> None:
         """Set a sample by index.
@@ -293,7 +336,7 @@ class ArraySample[D: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplementation[D
             return outs
 
         if new_sample_axis is not None and isinstance(result, np.ndarray):
-            return type(self)(result, sample_axis=new_sample_axis)
+            return type(self)(result, sample_axis=new_sample_axis, weights=self.weights)
         return result
 
     def __array_function__(
@@ -329,7 +372,7 @@ class ArraySample[D: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplementation[D
             A copy of the ArraySample.
         """
         copied_array = cast("Any", self.array).copy(order=order)
-        return type(self)(array=copied_array, sample_axis=self.sample_axis)
+        return type(self)(array=copied_array, sample_axis=self.sample_axis, weights=self.weights)
 
     def __eq__(self, value: Any) -> Self:  # noqa: ANN401, PYI032  # ty:ignore[invalid-method-override]
         """Vectorized equality comparison."""
@@ -384,7 +427,11 @@ class ArraySample[D: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplementation[D
 
         tensor = to_torch_like(self.array, dtype=dtype, device=device, copy=copy)
 
-        return TorchSample(cast("Any", tensor), sample_dim=self.sample_axis)
+        return TorchSample(
+            cast("Any", tensor),
+            sample_dim=self.sample_axis,
+            weights=to_torch_like(self.weights) if self.weights is not None else None,  # ty:ignore[invalid-argument-type]
+        )
 
 
 @array_sample_internals.register(ArraySample)
@@ -394,6 +441,7 @@ def _[D: NumpyArrayLike](array: ArraySample[D]) -> ArraySampleInternals[D]:
         create=type(array),
         array=array.array,
         sample_axis=array.sample_axis,
+        weights=array.weights,
     )
 
 

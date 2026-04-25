@@ -7,7 +7,19 @@ import pytest
 pytest.importorskip("torch")
 import torch
 
-from probly.representation.sample.axis_tracking import track_axis
+from probly.representation.array_like import ToIndices
+from probly.representation.sample.axis_tracking import track_axis as track_axis_result
+
+
+def track_axis(index: ToIndices, special_axis: int, ndim: int, torch_indexing: bool = False) -> object:
+    result = track_axis_result(index, special_axis, ndim, torch_indexing=torch_indexing)
+    return None if result is None else result.new_axis
+
+
+def weight_index(index: ToIndices, special_axis: int, ndim: int, torch_indexing: bool = True) -> object:
+    result = track_axis_result(index, special_axis, ndim, torch_indexing=torch_indexing)
+    assert result is not None
+    return result.index
 
 
 class TestTensorIndexSemantics:
@@ -115,3 +127,21 @@ class TestTensorSubclassSupport:
 
             assert track_axis(idx, special_axis=0, ndim=2, torch_indexing=True) == 1
             assert track_axis(idx, special_axis=1, ndim=2, torch_indexing=True) == 2
+
+
+class TestWeightIndexTracking:
+    def test_1d_integer_tensor_on_sample_axis_indexes_weights(self) -> None:
+        idx = torch.tensor([3, 1])
+
+        result = weight_index((slice(None), idx), special_axis=1, ndim=2)
+
+        assert isinstance(result, torch.Tensor)
+        assert torch.equal(result, idx)
+
+    def test_1d_boolean_tensor_on_sample_axis_indexes_weights(self) -> None:
+        idx = torch.tensor([True, False, True, False])
+
+        result = weight_index((slice(None), idx), special_axis=1, ndim=2)
+
+        assert isinstance(result, torch.Tensor)
+        assert torch.equal(result, idx)
