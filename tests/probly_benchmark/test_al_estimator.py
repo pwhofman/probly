@@ -153,3 +153,55 @@ def test_probabilities_from_unknown_raises() -> None:
 
     with pytest.raises(NotImplementedError, match="No probability extraction"):
         _probabilities_from_representation(Unknown())
+
+
+from probly_benchmark.al_estimator import _MEASURES, _default_measure_for  # noqa: E402
+
+
+def test_default_measure_for_categorical() -> None:
+    rep = TorchCategoricalDistribution(torch.ones(2, 3) / 3)
+    assert _default_measure_for(rep) == "entropy"
+
+
+def test_default_measure_for_sample() -> None:
+    rep = TorchSample(
+        tensor=TorchCategoricalDistribution(torch.ones(2, 1, 3) / 3),
+        sample_dim=0,
+    )
+    assert _default_measure_for(rep) == "entropy_of_expected_predictive_distribution"
+
+
+def test_default_measure_for_intervals() -> None:
+    rep = TorchProbabilityIntervalsCredalSet(
+        lower_bounds=torch.tensor([[0.1, 0.2, 0.3]]),
+        upper_bounds=torch.tensor([[0.3, 0.4, 0.5]]),
+    )
+    assert _default_measure_for(rep) == "upper_entropy"
+
+
+def test_default_measure_for_convex() -> None:
+    rep = TorchConvexCredalSet(
+        tensor=TorchCategoricalDistribution(torch.ones(1, 2, 3) / 3),
+    )
+    assert _default_measure_for(rep) == "upper_entropy"
+
+
+def test_default_measure_for_unknown_raises() -> None:
+    class Unknown:
+        pass
+
+    with pytest.raises(NotImplementedError, match="No default measure"):
+        _default_measure_for(Unknown())  # ty: ignore[invalid-argument-type]
+
+
+def test_measures_table_has_expected_entries() -> None:
+    expected = {
+        "entropy",
+        "entropy_of_expected_predictive_distribution",
+        "mutual_information",
+        "upper_entropy",
+        "lower_entropy",
+    }
+    assert expected.issubset(_MEASURES.keys())
+    for fn in _MEASURES.values():
+        assert callable(fn)

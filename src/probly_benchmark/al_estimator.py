@@ -13,6 +13,12 @@ from torch.utils.data import DataLoader, TensorDataset
 
 from probly.method.ensemble import EnsemblePredictor
 from probly.predictor import IterablePredictor, RandomPredictor, predict
+from probly.quantification.measure.credal_set import lower_entropy, upper_entropy
+from probly.quantification.measure.distribution import (
+    entropy,
+    entropy_of_expected_predictive_distribution,
+    mutual_information,
+)
 from probly.representation.credal_set.torch import (
     TorchConvexCredalSet,
     TorchProbabilityIntervalsCredalSet,
@@ -105,6 +111,34 @@ def _probabilities_from_representation(rep: Any) -> torch.Tensor:  # noqa: ANN40
     if isinstance(rep, TorchConvexCredalSet):
         return rep.tensor.probabilities.mean(dim=-2)
     msg = f"No probability extraction for representation {type(rep).__name__}"
+    raise NotImplementedError(msg)
+
+
+_MEASURES: dict[str, Any] = {
+    "entropy": entropy,
+    "entropy_of_expected_predictive_distribution": entropy_of_expected_predictive_distribution,
+    "mutual_information": mutual_information,
+    "upper_entropy": upper_entropy,
+    "lower_entropy": lower_entropy,
+}
+
+# Default measure per Representation type. The order is evaluated by isinstance,
+# so more specific types must come before less specific ones (none here at the
+# moment, but worth noting if you add subclasses later).
+_DEFAULT_MEASURE_BY_REP: dict[type, str] = {
+    TorchCategoricalDistribution: "entropy",
+    TorchSample: "entropy_of_expected_predictive_distribution",
+    TorchProbabilityIntervalsCredalSet: "upper_entropy",
+    TorchConvexCredalSet: "upper_entropy",
+}
+
+
+def _default_measure_for(rep: Any) -> str:  # noqa: ANN401
+    """Return the default measure name for a probly Representation instance."""
+    for rep_type, measure_name in _DEFAULT_MEASURE_BY_REP.items():
+        if isinstance(rep, rep_type):
+            return measure_name
+    msg = f"No default measure for representation {type(rep).__name__}"
     raise NotImplementedError(msg)
 
 
