@@ -153,6 +153,7 @@ _SKIP_XREF_NAMES = frozenset(
         "Out",
         # Common attribute names with many targets
         "type",
+        "shape",
     }
 )
 

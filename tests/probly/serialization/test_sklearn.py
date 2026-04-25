@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import numpy as np
 import pytest
 
 from flextype import registry_pickle
+from probly.calibrator import calibrate
+from probly.method.calibration import isotonic_regression, sklearn_identity_logit_estimator
 from probly.method.conformal import conformal_lac
 from probly.method.ensemble import ensemble
-from probly.predictor import RandomPredictor
+from probly.predictor import LogitClassifier, RandomPredictor
 
 pytest.importorskip("sklearn")
 
@@ -88,3 +91,21 @@ def test_registry_pickle_roundtrip_for_sklearn_conformal_wrapper(
     wrapped = conformal_lac(sklearn_logistic_regression)
     restored = registry_pickle.loads(registry_pickle.dumps(wrapped))
     assert type(restored) is type(wrapped)
+
+
+def test_registry_pickle_roundtrip_for_sklearn_isotonic_calibrator() -> None:
+    """Isotonic calibration wrappers should preserve fitted calibration state after round-trip."""
+    rng = np.random.default_rng(11)
+    true_logits = rng.normal(size=1200)
+    labels = rng.binomial(1, 1.0 / (1.0 + np.exp(-true_logits))).astype(int)
+    distorted = (5.0 * true_logits - 2.0).reshape(-1, 1)
+
+    wrapped = isotonic_regression(sklearn_identity_logit_estimator(), predictor_type=LogitClassifier)
+    calibrate(wrapped, labels, distorted)
+
+    restored = registry_pickle.loads(registry_pickle.dumps(wrapped))
+    assert type(restored) is type(wrapped)
+
+    probs_original = wrapped.predict_proba(distorted)
+    probs_restored = restored.predict_proba(distorted)
+    np.testing.assert_allclose(probs_restored, probs_original)

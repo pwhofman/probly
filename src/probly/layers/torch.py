@@ -272,7 +272,7 @@ class BayesLinear(nn.Module):
         if not use_base_weights:
             self.weight_mu = nn.Parameter(torch.empty((self.out_features, self.in_features)))
         else:
-            self.weight_mu = nn.Parameter(base_layer.weight.data)
+            self.weight_mu = nn.Parameter(base_layer.weight.data.clone())
         self.weight_rho = nn.Parameter(torch.full((self.out_features, self.in_features), rho))
 
         # prior weights
@@ -284,7 +284,7 @@ class BayesLinear(nn.Module):
         else:
             self.register_buffer(
                 "weight_prior_mu",
-                base_layer.weight.data,
+                base_layer.weight.data.clone(),
             )
         self.register_buffer(
             "weight_prior_sigma",
@@ -296,7 +296,7 @@ class BayesLinear(nn.Module):
             if not use_base_weights:
                 self.bias_mu = nn.Parameter(torch.empty((self.out_features,)))
             else:
-                self.bias_mu = nn.Parameter(base_layer.bias.data)
+                self.bias_mu = nn.Parameter(base_layer.bias.data.clone())
             self.bias_rho = nn.Parameter(
                 torch.full((self.out_features,), rho),
             )
@@ -310,7 +310,7 @@ class BayesLinear(nn.Module):
             else:
                 self.register_buffer(
                     "bias_prior_mu",
-                    base_layer.bias.data,
+                    base_layer.bias.data.clone(),
                 )
             self.register_buffer(
                 "bias_prior_sigma",
@@ -436,7 +436,7 @@ class BayesConv2d(nn.Module):
                 torch.empty((self.out_channels, self.in_channels // self.groups, *self.kernel_size)),
             )
         else:
-            self.weight_mu = nn.Parameter(base_layer.weight.data)
+            self.weight_mu = nn.Parameter(base_layer.weight.data.clone())
         self.weight_rho = nn.Parameter(
             torch.full((self.out_channels, self.in_channels // self.groups, *self.kernel_size), rho),
         )
@@ -453,7 +453,7 @@ class BayesConv2d(nn.Module):
         else:
             self.register_buffer(
                 "weight_prior_mu",
-                base_layer.weight.data,
+                base_layer.weight.data.clone(),
             )
 
         self.register_buffer(
@@ -467,7 +467,7 @@ class BayesConv2d(nn.Module):
                 self.bias_mu = nn.Parameter(torch.empty((self.out_channels,)))
             else:
                 self.bias_mu = nn.Parameter(
-                    base_layer.bias.data if base_layer.bias is not None else torch.empty((self.out_channels,))
+                    base_layer.bias.data.clone() if base_layer.bias is not None else torch.empty((self.out_channels,))
                 )
             self.bias_rho = nn.Parameter(torch.full((self.out_channels,), rho))
 
@@ -480,7 +480,7 @@ class BayesConv2d(nn.Module):
             else:
                 self.register_buffer(
                     "bias_prior_mu",
-                    base_layer.bias.data
+                    base_layer.bias.data.clone()
                     if base_layer.bias is not None
                     else torch.full((self.out_channels,), prior_mean),
                 )
