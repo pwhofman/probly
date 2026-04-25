@@ -36,7 +36,7 @@ def total_entropy(probs: np.ndarray, base: float = 2) -> np.ndarray:
     return te
 
 
-def margin(probs: np.ndarray) -> np.ndarray:
+def margin_sampling(probs: np.ndarray) -> np.ndarray:
     """Compute negative margin as an uncertainty measure for active learning.
 
     The margin is the difference between the two highest class probabilities
