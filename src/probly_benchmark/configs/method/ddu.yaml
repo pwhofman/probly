@@ -1,0 +1,9 @@
+# @package method
+name: "ddu"
+params:
+  # Lipschitz coefficient for spectral normalization applied to all Conv2d and
+  # Linear layers except the classification head. Weights whose spectral norm
+  # exceeds this value are rescaled to it.
+  # Mukhoti et al., "Deep Deterministic Uncertainty: A Simple Baseline",
+  # CVPR 2023 (https://arxiv.org/abs/2102.11582), Section 3.
+  sn_coeff: 3.0

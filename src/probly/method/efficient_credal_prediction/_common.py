@@ -34,7 +34,6 @@ class EfficientCredalPredictor[**In, Out: ProbabilityIntervalsCredalSet](Represe
 @flexdispatch
 def efficient_credal_prediction_generator[**In, Out: ProbabilityIntervalsCredalSet](
     base: Predictor,
-    num_classes: int,
 ) -> EfficientCredalPredictor[In, Out]:
     """Generate an efficient credal predictor from a base model."""
     msg = f"No efficient credal prediction generator is registered for type {type(base)}"
@@ -45,18 +44,16 @@ def efficient_credal_prediction_generator[**In, Out: ProbabilityIntervalsCredalS
 @EfficientCredalPredictor.register_factory
 def efficient_credal_prediction[**In, Out: ProbabilityIntervalsCredalSet](
     base: Predictor,
-    num_classes: int,
 ) -> EfficientCredalPredictor[In, Out]:
     """Create an efficient credal predictor from a base predictor based on :cite:`hofmanefficient`.
 
     Args:
         base: Predictor, The base model to be used for the efficient credal predictor.
-        num_classes: int, The number of classes to predict.
 
     Returns:
         Predictor, The efficient credal predictor.
     """
-    return efficient_credal_prediction_generator(base, num_classes)
+    return efficient_credal_prediction_generator(base)
 
 
 @predict.register(EfficientCredalPredictor)
