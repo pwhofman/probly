@@ -107,7 +107,7 @@ def main(cfg: DictConfig) -> float:
         num_classes=num_classes,
         device=device,
         in_features=in_features if cfg.dataset.type == "tabular" else None,
-        quantifier=cfg.get("quantifier", None),
+        measure=cfg.get("measure", None),
         num_samples=cfg.get("num_samples", 10),
     )
 

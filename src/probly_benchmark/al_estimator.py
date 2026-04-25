@@ -179,7 +179,7 @@ class BenchmarkALEstimator:
         num_classes: int,
         device: torch.device,
         in_features: int | None = None,
-        quantifier: str | None = None,
+        measure: str | None = None,
         num_samples: int = 10,
         pred_batch_size: int = 512,
     ) -> None:
@@ -198,7 +198,9 @@ class BenchmarkALEstimator:
                 to ``BuildContext`` so ``TabularMLP`` (and similar tabular encoders)
                 receives its required ``in_features`` kwarg. Ignored by base models
                 that infer their input shape (e.g. CNN backbones).
-            quantifier: Override the default uncertainty quantifier.
+            measure: Override the default uncertainty measure name. Must be a
+                key in ``_MEASURES`` (e.g. ``"entropy"``,
+                ``"mutual_information"``, ``"upper_entropy"``).
             num_samples: Number of stochastic forward passes for dropout.
             pred_batch_size: Batch size used during prediction.
         """
@@ -220,7 +222,7 @@ class BenchmarkALEstimator:
         self.pred_batch_size = pred_batch_size
         self.batch_size = cfg.batch_size
 
-        self.quantifier_name = quantifier or _DEFAULT_QUANTIFIERS.get(method_name)
+        self.measure = measure
         self.model: nn.Module | None = None
 
     def _representation(self, x: torch.Tensor) -> Any:  # noqa: ANN401
@@ -462,44 +464,14 @@ class BenchmarkALEstimator:
 
         return self._embed_one(model, x_t)
 
-    def uncertainty_scores(self, x: torch.Tensor) -> torch.Tensor:  # noqa: PLR0911
+    def uncertainty_scores(self, x: torch.Tensor) -> torch.Tensor:
         """Return per-sample uncertainty scores of shape (n_samples,).
 
-        The scoring method depends on the quantifier name:
-        - entropy_of_expected_value: H(mean softmax) for ensembles/dropout.
-        - mutual_information: H(mean) - mean(H(member)) for ensembles.
-        - entropy: H(probs) for evidential, posterior_network, single models.
-        - ddu_entropy: H(softmax(classification_head(encoder(x)))).
-        - upper_entropy: max H(p) over the credal set members.
+        Uses ``self.measure`` if set, otherwise picks the default measure
+        for the Representation type returned by ``self._representation(x)``.
+        Both the explicit and default measures must be keys in
+        :data:`_MEASURES`.
         """
-        q = self.quantifier_name
-        if q == "entropy_of_expected_value":
-            if isinstance(self.model, EnsemblePredictor):
-                member_probs = self._ensemble_softmax(x)
-                return _entropy(member_probs.mean(dim=1))
-            # Dropout: stochastic forward passes
-            return _entropy(self._dropout_mean_proba(x))
-
-        if q == "mutual_information":
-            member_probs = self._ensemble_softmax(x)
-            mean_probs = member_probs.mean(dim=1)
-            total_entropy = _entropy(mean_probs)
-            member_entropies = torch.stack([_entropy(member_probs[:, i]) for i in range(member_probs.shape[1])])
-            return total_entropy - member_entropies.mean(dim=0)
-
-        if q == "entropy":
-            return _entropy(self.predict_proba(x))
-
-        if q == "ddu_entropy":
-            return _entropy(self._ddu_proba(x))
-
-        if q == "upper_entropy":
-            if isinstance(self.model, EnsemblePredictor):
-                member_probs = self._ensemble_softmax(x)
-                per_member = torch.stack([_entropy(member_probs[:, i]) for i in range(member_probs.shape[1])])
-                return per_member.max(dim=0).values
-            # Efficient credal: entropy of the base prediction
-            return _entropy(self.predict_proba(x))
-
-        msg = f"Unknown quantifier: {q!r}"
-        raise ValueError(msg)
+        rep = self._representation(x)
+        measure_name = self.measure or _default_measure_for(rep)
+        return _MEASURES[measure_name](rep).detach().cpu()

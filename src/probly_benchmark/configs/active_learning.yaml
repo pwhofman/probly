@@ -28,8 +28,9 @@ model_type: "logit_classifier"
 seed: 0
 device: "cuda"
 
-# Quantifier override (null = use default for method)
-quantifier: null
+# Uncertainty measure override (null = use default for the predictor's
+# representation type — see al_estimator._DEFAULT_MEASURE_BY_REP).
+measure: null
 
 # Dropout/MC sampling
 num_samples: 10

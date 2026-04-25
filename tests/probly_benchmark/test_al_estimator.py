@@ -191,7 +191,7 @@ def test_default_measure_for_unknown_raises() -> None:
         pass
 
     with pytest.raises(NotImplementedError, match="No default measure"):
-        _default_measure_for(Unknown())  # ty: ignore[invalid-argument-type]
+        _default_measure_for(Unknown())
 
 
 def test_measures_table_has_expected_entries() -> None:
@@ -223,3 +223,32 @@ def test_predict_proba_returns_correct_shape_for_ensemble() -> None:
     probs = est.predict_proba(torch.zeros(5, 4))
     assert probs.shape == (5, 3)
     assert torch.allclose(probs.sum(dim=-1), torch.ones(5), atol=1e-5)
+
+
+def test_uncertainty_scores_dropout_default_is_eoepd() -> None:
+    """Default measure for a TorchSample is entropy_of_expected_predictive_distribution."""
+    base = _tiny_classifier(num_classes=3, in_features=4)
+    pred = dropout(base, p=0.5, predictor_type="logit_classifier")
+    est = _make_estimator_with_predictor(pred)
+    scores = est.uncertainty_scores(torch.zeros(5, 4))
+    assert scores.shape == (5,)
+    assert (scores >= 0).all()
+
+
+def test_uncertainty_scores_explicit_measure_overrides_default() -> None:
+    base = _tiny_classifier(num_classes=3, in_features=4)
+    pred = dropout(base, p=0.5, predictor_type="logit_classifier")
+    est = _make_estimator_with_predictor(pred)
+    est.measure = "mutual_information"
+    scores = est.uncertainty_scores(torch.zeros(5, 4))
+    assert scores.shape == (5,)
+    assert (scores >= -1e-6).all()  # MI is non-negative
+
+
+def test_uncertainty_scores_unknown_measure_raises() -> None:
+    base = _tiny_classifier(num_classes=3, in_features=4)
+    pred = dropout(base, p=0.5, predictor_type="logit_classifier")
+    est = _make_estimator_with_predictor(pred)
+    est.measure = "this_does_not_exist"
+    with pytest.raises(KeyError):
+        est.uncertainty_scores(torch.zeros(5, 4))
