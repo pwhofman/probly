@@ -21,6 +21,7 @@ class RegularizerDare(nn.Module):
 
 def dare_loss_step(
     model: nn.Module,
+    device: str,
     loss: float,
     regularizer: RegularizerDare,
 ) -> float:
@@ -28,21 +29,21 @@ def dare_loss_step(
 
     Args:
         model: The DARE model.
+        device: The device of the model.
         loss: The loss value for the epoch.
         regularizer: The DARE regularizer.
 
     Returns:
         The anti-regularized loss value for the epoch.
     """
-
     # DARE switching logic
     if loss < regularizer.threshold:
-        anti_reg = 0.0
+        anti_reg = torch.empty(1, device=device)
         d = 0
         for param in model.parameters():
             if param.requires_grad:
                 anti_reg += torch.sum(torch.log(param.pow(2) + 1e-10))
                 d += param.numel()
-        total_loss = loss - (anti_reg / d)
+        total_loss = loss - (anti_reg.item() / d)
         return total_loss
     return loss
