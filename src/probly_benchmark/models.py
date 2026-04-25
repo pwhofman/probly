@@ -33,7 +33,7 @@ def get_base_model(name: str, num_classes: int, pretrained: bool = False) -> nn.
                 msg = "Pretrained weights are not supported for the local ResNet18."
                 raise NotImplementedError(msg)
             model = ResNet18()
-            model.linear = nn.Identity()
+            model.linear = nn.Identity()  # ty: ignore[invalid-assignment]
         case "resnet50":
             model = tm.resnet50(weights="DEFAULT" if pretrained else None)
             if model.fc.out_features != num_classes:
