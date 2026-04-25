@@ -13,7 +13,9 @@ from probly.representation.sample._common import Sample
 if TYPE_CHECKING:
     from probly.representation.array_like import ArrayLike
 
-type DistributionType = Literal["gaussian", "dirichlet", "categorical", "empirical_second_order_categorical"]
+type DistributionType = Literal[
+    "gaussian", "dirichlet", "categorical", "empirical_second_order_categorical", "point_prediction"
+]
 
 
 class Distribution[T](Representation, ABC):
@@ -113,6 +115,16 @@ class GaussianDistribution[D](Distribution[D], ABC):
     @abstractmethod
     def var(self) -> D:
         """Get the var parameters."""
+
+
+class GaussianDistributionSample[T: GaussianDistribution](DistributionSample[T]):
+    """Sample type for empirical second-order Gaussian distributions."""
+
+    sample_space: ClassVar[type[GaussianDistribution]] = GaussianDistribution
+
+    @classmethod
+    def __instancehook__(cls, instance: object) -> bool:
+        return super().__instancehook__(instance)
 
 
 @flexdispatch

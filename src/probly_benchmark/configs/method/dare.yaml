@@ -1,0 +1,7 @@
+# @package method
+name: "dare"
+params:
+  num_members: 10
+  reset_params: true
+train:
+  threshold: 1.0  # threshold below which the anti-regularizer activates (in paper 0.25, for imagenet 1 more suitable)

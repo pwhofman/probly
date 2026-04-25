@@ -7,7 +7,7 @@ import numpy as np
 from probly.quantification import SecondOrderEntropyDecomposition, quantify
 from probly.quantification.measure.distribution import (
     conditional_entropy,
-    entropy_of_expected_value,
+    entropy_of_expected_predictive_distribution,
     mutual_information,
 )
 from probly.representation.distribution.array_categorical import (
@@ -57,7 +57,9 @@ def test_array_second_order_distribution_decomposition_matches_measure_functions
 
     decomposition = quantify(distribution)
 
-    np.testing.assert_allclose(decomposition.total, entropy_of_expected_value(distribution), rtol=1e-12, atol=1e-12)
+    np.testing.assert_allclose(
+        decomposition.total, entropy_of_expected_predictive_distribution(distribution), rtol=1e-12, atol=1e-12
+    )
     np.testing.assert_allclose(decomposition.aleatoric, conditional_entropy(distribution), rtol=1e-12, atol=1e-12)
     np.testing.assert_allclose(decomposition.epistemic, mutual_information(distribution), rtol=1e-12, atol=1e-12)
     np.testing.assert_allclose(
@@ -78,7 +80,9 @@ def test_array_distribution_sample_decomposition_matches_measure_functions() -> 
 
     decomposition = quantify(sample)
 
-    np.testing.assert_allclose(decomposition.total, entropy_of_expected_value(sample), rtol=1e-12, atol=1e-12)
+    np.testing.assert_allclose(
+        decomposition.total, entropy_of_expected_predictive_distribution(sample), rtol=1e-12, atol=1e-12
+    )
     np.testing.assert_allclose(decomposition.aleatoric, conditional_entropy(sample), rtol=1e-12, atol=1e-12)
     np.testing.assert_allclose(decomposition.epistemic, mutual_information(sample), rtol=1e-12, atol=1e-12)
     np.testing.assert_allclose(

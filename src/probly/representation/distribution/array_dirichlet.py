@@ -13,7 +13,7 @@ from probly.representation.distribution.array_categorical import ArrayCategorica
 from probly.representation.sample import ArraySample
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Callable, Iterator
 
     from numpy.typing import DTypeLike
 
@@ -31,6 +31,7 @@ class ArrayDirichletDistribution(
 
     alphas: np.ndarray
     protected_axes: ClassVar[dict[str, int]] = {"alphas": 1}
+    permitted_functions: ClassVar[set[Callable]] = {np.mean, np.sum, np.average}
     permitted_ufuncs: ClassVar[dict[np.ufunc, list[str]]] = {
         np.add: ["__call__"],
         np.subtract: ["__call__"],

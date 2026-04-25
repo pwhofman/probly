@@ -12,7 +12,7 @@ from torch.distributions.kl import kl_divergence
 from probly.quantification.measure.distribution import (
     conditional_entropy,
     entropy,
-    entropy_of_expected_value,
+    entropy_of_expected_predictive_distribution,
     expected_max_probability_complement,
     max_disagreement,
     max_probability_complement_of_expected,
@@ -96,7 +96,7 @@ def test_torch_categorical_second_order_measures_match_torch(sample_axis: int, b
         sample_dim=sample_axis,
     )
 
-    measured_entropy_of_expected = entropy_of_expected_value(sample, base=base)
+    measured_entropy_of_expected = entropy_of_expected_predictive_distribution(sample, base=base)
     measured_conditional_entropy = conditional_entropy(sample, base=base)
     measured_mutual_information = mutual_information(sample, base=base)
 
@@ -141,7 +141,7 @@ def test_identity_holds_for_torch_categorical_sample(sample_axis: int, base: Non
         sample_dim=sample_axis,
     )
 
-    expected_entropy = entropy_of_expected_value(sample, base=base)
+    expected_entropy = entropy_of_expected_predictive_distribution(sample, base=base)
     decomposition_sum = conditional_entropy(sample, base=base) + mutual_information(sample, base=base)
 
     rtol, atol = _tol(base)

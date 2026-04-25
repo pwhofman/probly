@@ -15,6 +15,7 @@ from probly.representation.distribution._common import (
     create_categorical_distribution_from_logits,
 )
 from probly.representation.sample.torch import TorchSample
+from probly.representation.torch_functions import torch_average
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
@@ -36,7 +37,7 @@ class TorchCategoricalDistribution(
 
     unnormalized_probabilities: torch.Tensor
     protected_axes: ClassVar[dict[str, int]] = {"unnormalized_probabilities": 1}
-    permitted_functions: ClassVar[set[Callable]] = {torch.mean}
+    permitted_functions: ClassVar[set[Callable]] = {torch.mean, torch_average}
 
     def __post_init__(self) -> None:
         """Validate the concentration parameters."""

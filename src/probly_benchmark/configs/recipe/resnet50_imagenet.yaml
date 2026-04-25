@@ -35,4 +35,4 @@ method:
     # Ensemble methods
     reset_params: false
     # Posterior network
-    latent_dim: 32
+    latent_dim: 512 # 6 for cifar10 in paper, classes x100 for imagenet, so 512

@@ -11,7 +11,7 @@ from scipy.stats import dirichlet, entropy as scipy_entropy, norm
 from probly.quantification.measure.distribution import (
     conditional_entropy,
     entropy,
-    entropy_of_expected_value,
+    entropy_of_expected_predictive_distribution,
     expected_max_probability_complement,
     max_disagreement,
     max_probability_complement_of_expected,
@@ -127,7 +127,7 @@ def test_array_sample_second_order_measures_match_scipy(
         sample_axis=sample_axis,
     )
 
-    measured_entropy_of_expected = entropy_of_expected_value(sample, base=base)
+    measured_entropy_of_expected = entropy_of_expected_predictive_distribution(sample, base=base)
     measured_conditional_entropy = conditional_entropy(sample, base=base)
     measured_mutual_information = mutual_information(sample, base=base)
 
@@ -151,7 +151,9 @@ def test_array_sample_second_order_measures_match_scipy(
 
 
 @pytest.mark.parametrize("base", CATEGORICAL_BASES)
-def test_array_dirichlet_entropy_of_expected_value_matches_scipy(base: None | float | Literal["normalize"]) -> None:
+def test_array_dirichlet_entropy_of_expected_predictive_distribution_matches_scipy(
+    base: None | float | Literal["normalize"],
+) -> None:
     alphas = np.array(
         [
             [2.0, 3.0, 5.0],
@@ -161,7 +163,7 @@ def test_array_dirichlet_entropy_of_expected_value_matches_scipy(base: None | fl
     )
     distribution = ArrayDirichletDistribution(alphas)
 
-    measured = entropy_of_expected_value(distribution, base=base)
+    measured = entropy_of_expected_predictive_distribution(distribution, base=base)
     expected_mean = alphas / np.sum(alphas, axis=-1, keepdims=True)
     expected = scipy_entropy(expected_mean, axis=-1, base=_resolve_categorical_base(base, expected_mean.shape[-1]))
 
@@ -176,7 +178,7 @@ def test_array_dirichlet_conditional_entropy_and_mutual_information_known_points
     concentrated = ArrayDirichletDistribution(np.array([1000.0, 1000.0, 1000.0], dtype=float))
     concentrated_conditional = conditional_entropy(concentrated, base=base)
     concentrated_mutual_information = mutual_information(concentrated, base=base)
-    concentrated_entropy_of_expected = entropy_of_expected_value(concentrated, base=base)
+    concentrated_entropy_of_expected = entropy_of_expected_predictive_distribution(concentrated, base=base)
 
     np.testing.assert_allclose(concentrated_entropy_of_expected, expected_uniform_entropy, atol=1e-12)
     assert concentrated_conditional == pytest.approx(expected_uniform_entropy, abs=2e-3)
@@ -186,7 +188,7 @@ def test_array_dirichlet_conditional_entropy_and_mutual_information_known_points
     corner_like = ArrayDirichletDistribution(np.array([1e-3, 1e-3, 1e-3], dtype=float))
     corner_like_conditional = conditional_entropy(corner_like, base=base)
     corner_like_mutual_information = mutual_information(corner_like, base=base)
-    corner_like_entropy_of_expected = entropy_of_expected_value(corner_like, base=base)
+    corner_like_entropy_of_expected = entropy_of_expected_predictive_distribution(corner_like, base=base)
 
     np.testing.assert_allclose(corner_like_entropy_of_expected, expected_uniform_entropy, atol=1e-12)
     assert corner_like_conditional >= 0.0
@@ -226,7 +228,7 @@ def test_identity_holds_for_array_dirichlet(base: None | float) -> None:
     )
     distribution = ArrayDirichletDistribution(alphas)
 
-    expected_entropy = entropy_of_expected_value(distribution, base=base)
+    expected_entropy = entropy_of_expected_predictive_distribution(distribution, base=base)
     decomposition_sum = conditional_entropy(distribution, base=base) + mutual_information(distribution, base=base)
 
     np.testing.assert_allclose(expected_entropy, decomposition_sum, rtol=1e-10, atol=1e-12)
@@ -249,7 +251,7 @@ def test_identity_holds_for_array_categorical_sample(sample_axis: int, base: Non
         sample_axis=sample_axis,
     )
 
-    expected_entropy = entropy_of_expected_value(sample, base=base)
+    expected_entropy = entropy_of_expected_predictive_distribution(sample, base=base)
     decomposition_sum = conditional_entropy(sample, base=base) + mutual_information(sample, base=base)
 
     np.testing.assert_allclose(expected_entropy, decomposition_sum, rtol=1e-12, atol=1e-12)

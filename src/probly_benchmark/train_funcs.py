@@ -14,6 +14,7 @@ from probly.method.bayesian import BayesianPredictor
 from probly.method.credal_ensembling import CredalEnsemblingPredictor
 from probly.method.credal_relative_likelihood import CredalRelativeLikelihoodPredictor
 from probly.method.credal_wrapper import CredalWrapperPredictor
+from probly.method.dare import DarePredictor
 from probly.method.ddu import DDUPredictor
 from probly.method.dropconnect import DropConnectPredictor
 from probly.method.dropout import DropoutPredictor
@@ -24,6 +25,7 @@ from probly.method.posterior_network import PosteriorNetworkPredictor
 from probly.method.subensemble import SubensemblePredictor
 from probly.train.bayesian.torch import ELBOLoss, collect_kl_divergence
 from probly.train.calibration.torch import ExpectedCalibrationError
+from probly.train.dare.torch import dare_regularizer
 from probly.train.evidential.torch import (
     evidential_ce_loss,
     evidential_kl_divergence,
@@ -126,6 +128,46 @@ def train_epoch_cross_entropy(
         loss.backward()
         if grad_clip_norm is not None:
             nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)  # ty: ignore[unresolved-attribute]
+        optimizer.step()
+    return loss.item()
+
+
+def train_epoch_dare(
+    model: nn.Module,
+    inputs: torch.Tensor,
+    targets: torch.Tensor,
+    optimizer: optim.Optimizer,
+    threshold: float,
+    grad_clip_norm: float | None = None,
+    amp_enabled: bool = False,
+    scaler: GradScaler | None = None,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> float:
+    """Train a DARE ensemble member for one step with cross-entropy minus the anti-regularizer.
+
+    Backward target is ``CE(outputs, targets) - dare_regularizer(model, ..., threshold)``;
+    the regularizer activates only when the current CE is at or below ``threshold``
+    (Algorithm 1 of arXiv:2304.04042). Returns raw CE so logged training loss is
+    comparable across methods.
+    """
+    criterion = nn.CrossEntropyLoss()
+    optimizer.zero_grad()
+    with autocast(inputs.device.type, enabled=amp_enabled):
+        outputs = model(inputs)
+        loss = criterion(outputs, targets)
+        reg = dare_regularizer(model, inputs.device, loss.detach(), threshold)
+        total = loss - reg
+    if scaler is not None:
+        scaler.scale(total).backward()
+        if grad_clip_norm is not None:
+            scaler.unscale_(optimizer)
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)
+        scaler.step(optimizer)
+        scaler.update()
+    else:
+        total.backward()
+        if grad_clip_norm is not None:
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)
         optimizer.step()
     return loss.item()
 
@@ -604,6 +646,7 @@ def evaluate_ddu(
         CredalEnsemblingPredictor,
         CredalRelativeLikelihoodPredictor,
         CredalWrapperPredictor,
+        DarePredictor,
         SubensemblePredictor,
     )
 )
