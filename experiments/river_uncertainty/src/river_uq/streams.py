@@ -60,8 +60,7 @@ class _AbruptAgrawalDrift:
 
     Parameterised by ``(pre_fn, post_fn)``. The input distribution is
     unchanged; the labeling rule flips at ``DRIFT_T``. Whether this drift is
-    detectable by an EU-based detector depends on the function pair (see
-    ``scripts/scan_agrawal_functions.py`` for an empirical map).
+    detectable by an EU-based detector depends on the function pair.
     """
 
     def __init__(self, seed: int, pre_fn: int, post_fn: int) -> None:
@@ -174,6 +173,8 @@ _BUILDERS = {
     "electricity": (_electricity, None),
 }
 
+STREAM_NAMES: Final[tuple[str, ...]] = tuple(_BUILDERS)
+
 
 def build_stream(
     name: str,
@@ -183,7 +184,7 @@ def build_stream(
     """Build a named stream.
 
     Args:
-        name: One of ``"stagger_drift"``, ``"sea_drift"``, ``"agrawal_stationary"``.
+        name: One of the names listed in :data:`STREAM_NAMES`.
         seed: Stream seed (also used to seed the post-drift sub-stream as ``seed+1``).
         n: Number of samples to take.
 
