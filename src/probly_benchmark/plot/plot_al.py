@@ -15,6 +15,10 @@ Usage:
     # Use a different results directory
     uv run python -m probly_benchmark.plot.plot_al --dir=outputs/2026-04-24
 
+    # Restrict to a subset of methods or strategies (comma-separated)
+    uv run python -m probly_benchmark.plot.plot_al --methods=dropout,evidential_classification --output=tier1.png
+    uv run python -m probly_benchmark.plot.plot_al --strategies=margin,badge,uncertainty --output=strats.png
+
     # Pass specific files (no aggregation)
     uv run python -m probly_benchmark.plot.plot_al results1.json results2.json
 """
@@ -48,6 +52,8 @@ def plot_learning_curves(
     *result_paths: str | Path,
     metric: str = "accuracy",
     output: str | Path | None = None,
+    methods: set[str] | None = None,
+    strategies: set[str] | None = None,
 ) -> None:
     """Plot AL learning curves, aggregating over seeds when multiple runs share a config.
 
@@ -55,12 +61,21 @@ def plot_learning_curves(
         *result_paths: Paths to results.json files.
         metric: Which metric to plot ("accuracy" or "ece").
         output: Save figure to this path. Shows interactively if None.
+        methods: If given, keep only runs whose ``method`` is in this set.
+        strategies: If given, keep only runs whose ``strategy`` is in this set.
     """
-    # Group runs by (method, strategy)
+    # Group runs by (method, strategy), applying optional filters
     groups: dict[str, list[dict]] = defaultdict(list)
     for path in result_paths:
         data = load_results(path)
+        if methods is not None and data["method"] not in methods:
+            continue
+        if strategies is not None and data["strategy"] not in strategies:
+            continue
         groups[_group_key(data)].append(data)
+    if not groups:
+        msg = "No results match the given --methods / --strategies filters."
+        raise ValueError(msg)
 
     fig, ax = plt.subplots(figsize=(10, 6))
 
@@ -102,6 +117,8 @@ if __name__ == "__main__":
     metric = "accuracy"
     output = None
     results_dir = "outputs"
+    methods: set[str] | None = None
+    strategies: set[str] | None = None
 
     for arg in sys.argv[1:]:
         if arg.startswith("--metric="):
@@ -110,6 +127,10 @@ if __name__ == "__main__":
             output = arg.split("=", 1)[1]
         elif arg.startswith("--dir="):
             results_dir = arg.split("=", 1)[1]
+        elif arg.startswith("--methods="):
+            methods = {m.strip() for m in arg.split("=", 1)[1].split(",") if m.strip()}
+        elif arg.startswith("--strategies="):
+            strategies = {s.strip() for s in arg.split("=", 1)[1].split(",") if s.strip()}
         elif arg == "--help":
             print(__doc__)
             sys.exit(0)
@@ -125,4 +146,4 @@ if __name__ == "__main__":
         print(f"Found {len(discovered)} result files under {results_dir}/")
         paths = [str(p) for p in discovered]
 
-    plot_learning_curves(*paths, metric=metric, output=output)
+    plot_learning_curves(*paths, metric=metric, output=output, methods=methods, strategies=strategies)

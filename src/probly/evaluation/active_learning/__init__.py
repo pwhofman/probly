@@ -13,8 +13,8 @@ from probly.evaluation.active_learning.pool import (
     ActiveLearningPool as ActiveLearningPool,
 )
 from probly.evaluation.active_learning.strategies import (
+    BadgeEstimator as BadgeEstimator,
     BADGEQuery as BADGEQuery,
-    EntropyQuery as EntropyQuery,
     Estimator as Estimator,
     MarginSampling as MarginSampling,
     QueryStrategy as QueryStrategy,

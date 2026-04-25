@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Protocol, cast, runtime_checkable
+import warnings
 
 import numpy as np
 import torch
@@ -25,6 +26,19 @@ class Estimator(Protocol):
 
     def predict_proba(self, x: torch.Tensor) -> torch.Tensor:
         """Return class probabilities."""
+        ...
+
+
+@runtime_checkable
+class BadgeEstimator(Estimator, Protocol):
+    """Protocol for estimators usable by :class:`BADGEQuery`.
+
+    Extends :class:`Estimator` with an ``embed`` method that returns
+    penultimate-layer features used to build BADGE gradient embeddings.
+    """
+
+    def embed(self, x: torch.Tensor) -> torch.Tensor:
+        """Return penultimate-layer embeddings of shape ``(n, emb_dim)``."""
         ...
 
 
@@ -156,31 +170,6 @@ class MarginSampling:
         return torch.topk(margin, n, largest=False).indices.cpu().numpy()
 
 
-class EntropyQuery:
-    """Selects unlabeled samples with the highest Shannon entropy of predicted probs.
-
-    Higher entropy means the model is more uncertain about the predicted class
-    distribution over all classes.
-    """
-
-    def select(self, estimator: Estimator, pool: ActiveLearningPool, n: int) -> np.ndarray:
-        """Return n indices with the highest predicted class entropy.
-
-        Args:
-            estimator: Fitted estimator with a predict_proba method.
-            pool: The current active learning pool.
-            n: Number of samples to select.
-
-        Returns:
-            Array of n integer indices into pool.x_unlabeled.
-        """
-        n = min(n, pool.n_unlabeled)
-        probs = estimator.predict_proba(pool.x_unlabeled)
-        probs = probs.clamp(min=1e-10, max=1.0)
-        entropy = -(probs * probs.log()).sum(dim=1)
-        return torch.topk(entropy, n, largest=True).indices.cpu().numpy()
-
-
 class UncertaintyQuery:
     """Selects samples with the highest estimator-provided uncertainty scores.
 
@@ -209,8 +198,9 @@ class BADGEQuery:
     """Selects a diverse uncertain batch via BADGE gradient embedding k-means++.
 
     Implements Batch Active learning by Diverse Gradient Embeddings (Ash et al.,
-    2020). If the estimator has an embed() method it is used for embeddings;
-    otherwise pool.x_unlabeled is used directly.
+    2020). If the estimator implements :class:`BadgeEstimator` (has an
+    ``embed`` method) it is used for embeddings; otherwise ``pool.x_unlabeled``
+    is used directly and a :class:`UserWarning` is emitted.
 
     Args:
         seed: Seed for the k-means++ initialization. Pass None for
@@ -239,5 +229,16 @@ class BADGEQuery:
         """
         n = min(n, pool.n_unlabeled)
         probs = estimator.predict_proba(pool.x_unlabeled)
-        embeddings = cast("Any", estimator).embed(pool.x_unlabeled) if hasattr(estimator, "embed") else pool.x_unlabeled
+        if isinstance(estimator, BadgeEstimator):
+            embeddings = estimator.embed(pool.x_unlabeled)
+        else:
+            warnings.warn(
+                f"BADGEQuery received estimator of type {type(estimator).__name__} which "
+                "does not implement BadgeEstimator (no .embed() method). Falling back to "
+                "pool.x_unlabeled as embeddings; BADGE was designed for penultimate-layer "
+                "features and selection quality may degrade.",
+                UserWarning,
+                stacklevel=2,
+            )
+            embeddings = pool.x_unlabeled
         return _badge_select(embeddings, probs, n, seed=self._seed)

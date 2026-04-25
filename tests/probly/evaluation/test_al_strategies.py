@@ -12,7 +12,6 @@ from sklearn.linear_model import LogisticRegression  # noqa: E402
 from probly.evaluation.active_learning.pool import ActiveLearningPool  # noqa: E402
 from probly.evaluation.active_learning.strategies import (  # noqa: E402
     BADGEQuery,
-    EntropyQuery,
     MarginSampling,
     RandomQuery,
     UncertaintyQuery,
@@ -84,7 +83,7 @@ def estimator(pool):
 
 @pytest.mark.parametrize(
     "strategy_cls",
-    [RandomQuery, MarginSampling, EntropyQuery, UncertaintyQuery],
+    [RandomQuery, MarginSampling, UncertaintyQuery],
 )
 def test_select_returns_correct_count(strategy_cls, estimator, pool):
     """select() must return exactly n indices."""
@@ -95,7 +94,7 @@ def test_select_returns_correct_count(strategy_cls, estimator, pool):
 
 @pytest.mark.parametrize(
     "strategy_cls",
-    [RandomQuery, MarginSampling, EntropyQuery, UncertaintyQuery],
+    [RandomQuery, MarginSampling, UncertaintyQuery],
 )
 def test_select_returns_valid_indices(strategy_cls, estimator, pool):
     """All returned indices must be valid positions into pool.x_unlabeled."""
@@ -107,7 +106,7 @@ def test_select_returns_valid_indices(strategy_cls, estimator, pool):
 
 @pytest.mark.parametrize(
     "strategy_cls",
-    [RandomQuery, MarginSampling, EntropyQuery, UncertaintyQuery],
+    [RandomQuery, MarginSampling, UncertaintyQuery],
 )
 def test_select_returns_unique_indices(strategy_cls, estimator, pool):
     """All returned indices must be distinct."""
