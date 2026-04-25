@@ -12,8 +12,7 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader, TensorDataset
 
 from probly.method.ensemble import EnsemblePredictor
-from probly_benchmark.builders import BuildContext, build_model, get_method
-from probly_benchmark.models import get_base_model
+from probly_benchmark.builders import BuildContext, build_model
 from probly_benchmark.train import train_model
 
 logger = logging.getLogger(__name__)
@@ -145,9 +144,9 @@ class BenchmarkALEstimator:
     def fit(self, x: torch.Tensor, y: torch.Tensor) -> BenchmarkALEstimator:
         """Build a fresh model and train it on (x, y).
 
-        Uses build_model() and train_model() from the existing
-        benchmark pipeline so that method-specific training logic
-        (DDU GMM fitting, evidential loss, etc.) is applied automatically.
+        Uses build_model() and train_model() from the existing benchmark
+        pipeline so that method-specific training logic (DDU GMM fitting,
+        evidential loss, etc.) is applied automatically.
         """
         import wandb  # noqa: PLC0415
 
@@ -166,43 +165,14 @@ class BenchmarkALEstimator:
             num_classes=self.num_classes,
             pretrained=False,
             train_loader=train_loader,
+            in_features=self.in_features,
         )
-        # build_model's _default_builder doesn't forward kwargs to
-        # get_base_model, so TabularMLP never receives in_features.
-        # Work around by building the base model ourselves when in_features
-        # is set, then applying the method function directly.
-        if self.in_features is not None:
-            method_fn = get_method(self.method_name)
-            if self.method_name == "posterior_network":
-                encoder = get_base_model(
-                    f"{self.base_model_name}_encoder",
-                    self.num_classes,
-                    pretrained=False,
-                    in_features=self.in_features,
-                )
-                targets = [y_t[i].item() for i in range(len(y_t))]
-                class_counts = [targets.count(c) for c in range(self.num_classes)]
-                model = method_fn(
-                    encoder,
-                    num_classes=self.num_classes,
-                    class_counts=class_counts,
-                    predictor_type=self.model_type,
-                    **dict(self.method_params),
-                )
-            else:
-                base = get_base_model(
-                    self.base_model_name,
-                    self.num_classes,
-                    pretrained=False,
-                    in_features=self.in_features,
-                )
-                model = method_fn(base, predictor_type=self.model_type, **dict(self.method_params))
-        else:
-            model = build_model(self.method_name, dict(self.method_params), ctx)
+        model = build_model(self.method_name, dict(self.method_params), ctx)
 
-        # EfficientCredalPredictor registers lower/upper as None buffers.
-        # train.py reads model.lower.shape[0] to get num_classes before
-        # computing the actual bounds, so we pre-initialize them here.
+        # Workaround: EfficientCredalPredictor registers lower/upper as None
+        # buffers, but train.py reads model.lower.shape[0] before the bounds
+        # are computed. Pre-init zero buffers here so the read works. Should
+        # be fixed inside the predictor's __init__ instead.
         if self.method_name == "efficient_credal_prediction":
             model_ = cast("Any", model)
             model_.lower = torch.zeros(self.num_classes)
@@ -311,6 +281,75 @@ class BenchmarkALEstimator:
     def predict(self, x: torch.Tensor) -> torch.Tensor:
         """Return class predictions of shape (n_samples,)."""
         return self.predict_proba(x).argmax(dim=-1)
+
+    @torch.no_grad()
+    def _embed_one(self, m: nn.Module, x_t: torch.Tensor) -> torch.Tensor:
+        """Capture the input to the last nn.Linear via a forward pre-hook.
+
+        Args:
+            m: A torch module containing at least one ``nn.Linear``.
+            x_t: Input tensor already on ``self.device``.
+
+        Returns:
+            Tensor of shape ``(len(x_t), penultimate_dim)`` on CPU.
+        """
+        last_linear: nn.Linear | None = None
+        for module in m.modules():
+            if isinstance(module, nn.Linear):
+                last_linear = module
+        if last_linear is None:
+            msg = f"No nn.Linear found in model for {self.method_name}; cannot embed"
+            raise RuntimeError(msg)
+
+        captured: list[torch.Tensor] = []
+
+        def hook(_module: nn.Module, inputs: tuple[torch.Tensor, ...]) -> None:
+            captured.append(inputs[0].detach().cpu())
+
+        handle = last_linear.register_forward_pre_hook(hook)
+        try:
+            m.eval()
+            parts: list[torch.Tensor] = []
+            for start in range(0, len(x_t), self.pred_batch_size):
+                captured.clear()
+                m(x_t[start : start + self.pred_batch_size])
+                parts.append(captured[0])
+            return torch.cat(parts)
+        finally:
+            handle.remove()
+
+    @torch.no_grad()
+    def embed(self, x: torch.Tensor) -> torch.Tensor:
+        """Return penultimate-layer embeddings used by BADGE.
+
+        For ensembles, embeddings are averaged across members. For methods with
+        an explicit ``encoder`` attribute (DDU, posterior network) the encoder
+        output is used. For all other methods, a forward pre-hook on the last
+        ``nn.Linear`` captures its input.
+
+        Args:
+            x: Input tensor of shape ``(n, ...)``.
+
+        Returns:
+            Tensor of shape ``(n, emb_dim)`` on CPU.
+        """
+        model = cast("Any", self.model)
+        x_t = x.to(device=self.device)
+
+        if isinstance(self.model, EnsemblePredictor):
+            members = list(model)
+            embs = [self._embed_one(member, x_t) for member in members]
+            return torch.stack(embs).mean(dim=0)
+
+        if self.method_name in ("ddu", "posterior_network"):
+            model.eval()
+            parts: list[torch.Tensor] = []
+            for start in range(0, len(x_t), self.pred_batch_size):
+                batch = x_t[start : start + self.pred_batch_size]
+                parts.append(model.encoder(batch).detach().cpu())
+            return torch.cat(parts)
+
+        return self._embed_one(model, x_t)
 
     def uncertainty_scores(self, x: torch.Tensor) -> torch.Tensor:  # noqa: PLR0911
         """Return per-sample uncertainty scores of shape (n_samples,).
