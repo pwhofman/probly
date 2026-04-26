@@ -20,6 +20,7 @@ from probly.method.dropout import DropoutPredictor
 from probly.method.efficient_credal_prediction import EfficientCredalPredictor
 from probly.method.ensemble import EnsemblePredictor
 from probly.method.evidential.classification import EvidentialClassificationPredictor
+from probly.method.het_nets import HetNetsPredictor
 from probly.method.posterior_network import PosteriorNetworkPredictor
 from probly.method.subensemble import SubensemblePredictor
 from probly.train.bayesian.torch import ELBOLoss, collect_kl_divergence
@@ -98,7 +99,7 @@ def _(
     return loss.item()
 
 
-@train_epoch.register((DropConnectPredictor, DropoutPredictor, EfficientCredalPredictor))
+@train_epoch.register((DropConnectPredictor, DropoutPredictor, EfficientCredalPredictor, HetNetsPredictor))
 def train_epoch_cross_entropy(
     model: Predictor,
     inputs: torch.Tensor,
@@ -288,7 +289,7 @@ def _(
     return val_loss, val_acc
 
 
-@validate.register((DropConnectPredictor, DropoutPredictor, EfficientCredalPredictor))
+@validate.register((DropConnectPredictor, DropoutPredictor, EfficientCredalPredictor, HetNetsPredictor))
 @torch.no_grad()
 def validate_cross_entropy(
     model: Predictor,
@@ -448,7 +449,7 @@ def _(
     return _compute_metrics(probs, labels, n_bins)
 
 
-@evaluate.register(EfficientCredalPredictor)
+@evaluate.register((EfficientCredalPredictor, HetNetsPredictor))
 @torch.no_grad()
 def evaluate_single_model(
     model: Predictor,

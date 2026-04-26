@@ -11,7 +11,6 @@ from probly.layers.torch import HeteroscedasticLayer
 from ._common import (
     IS_PARAMETER_EFFICIENT,
     LAST_LAYER,
-    MULTILABEL,
     NUM_FACTORS,
     TEMPERATURE,
     het_nets_traverser,
@@ -40,7 +39,6 @@ def drop_in_place_het_layer(obj: nn.Linear, state: State) -> tuple[nn.Module, St
             num_factors=state[NUM_FACTORS],
             temperature=state[TEMPERATURE],
             is_parameter_efficient=state[IS_PARAMETER_EFFICIENT],
-            multilabel=state[MULTILABEL],
         ), state
     return obj, state
 

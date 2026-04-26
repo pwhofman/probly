@@ -80,7 +80,7 @@ class CredalSetEntropyDecomposition[T](AdditiveDecomposition[T, T, T]):
 @quantify.register(HetNetsRepresentation)
 @dataclass(frozen=True, slots=True)
 class HetNetsDecomposition[T](AdditiveDecomposition[T, T, T]):
-    """Entropy-based decomposition for PyTorch HetNets representations.
+    """Entropy-based decomposition for HetNets representations.
 
     Since HetNets primarily capture aleatoric uncertainty, the epistemic
     uncertainty is assumed to be zero, and total uncertainty equals aleatoric.
@@ -96,4 +96,18 @@ class HetNetsDecomposition[T](AdditiveDecomposition[T, T, T]):
     @property
     def _aleatoric(self) -> T:
         """The aleatoric uncertainty of the decomposition."""
-        return conditional_entropy(self.representation.distribution)  # ty:ignore[invalid-return-type]
+        return conditional_entropy(self.representation)  # ty:ignore[invalid-return-type]
+
+    @override
+    @property
+    def _epistemic(self) -> T:
+        """HetNets capture only aleatoric uncertainty."""
+        msg = "HetNets capture only aleatoric uncertainty."
+        raise ValueError(msg)
+
+    @override
+    @property
+    def _total(self) -> T:
+        """HetNets capture only aleatoric uncertainty."""
+        msg = "HetNets capture only aleatoric uncertainty."
+        raise ValueError(msg)

@@ -2,24 +2,42 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any
 
 from flextype import flexdispatch
-from probly.representation.representation import Representation
+from probly.representation.distribution._common import (
+    CategoricalDistribution,
+    CategoricalDistributionSample,
+)
+from probly.utils.iterable import first_element
 
 if TYPE_CHECKING:
-    from probly.representation.sample import Sample
+    from collections.abc import Iterable
 
 
-@runtime_checkable
-class HetNetsRepresentation(Representation, Protocol):
-    """Representation of a HetNets model output."""
+class HetNetsRepresentation[T: CategoricalDistribution](CategoricalDistributionSample[T]):
+    """A sample of categorical distributions produced by a HetNets model.
 
-    distribution: Sample
+    HetNets only capture aleatoric uncertainty, so the dispatch on this class
+    selects an aleatoric-only quantification.
+    """
+
+    @classmethod
+    def __instancehook__(cls, instance: object) -> bool:
+        """Disable the structural instance hook inherited from ``CategoricalDistributionSample``.
+
+        ``HetNetsRepresentation`` should only match its own subclasses; without this override the
+        parent hook would mark every sample of categorical distributions as a HetNets sample,
+        causing ``quantify`` to dispatch to ``HetNetsDecomposition`` for all categorical samples.
+        """
+        del instance
+        return NotImplemented
 
 
-@flexdispatch
-def create_het_nets_representation(het_nets_output: Sample) -> HetNetsRepresentation:
-    """Create a HetNets representation from a HetNets output."""
-    msg = f"No HetNets representation factory registered for output type {type(het_nets_output)}"
+@flexdispatch(dispatch_on=first_element)
+def create_het_nets_representation(
+    samples: Iterable[Any],
+    **_kwargs: Any,  # noqa: ANN401
+) -> HetNetsRepresentation:
+    msg = f"No HetNets representation factory registered for sample element type {type(first_element(samples))}"
     raise NotImplementedError(msg)

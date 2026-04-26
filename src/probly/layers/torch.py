@@ -1083,7 +1083,6 @@ class HeteroscedasticLayer(nn.Module):
         num_factors: int, number of factors.
         temperature: float, temperature scaling.
         is_parameter_efficient: bool, whether to use parameter efficient routing.
-        multilabel: bool, whether to use multilabel classification.
         mu_layer: nn.Linear, deterministic mean parameter transformation.
         diag_layer: nn.Linear, diagonal correction variance transformation.
         v_layer: nn.Linear, covariance factor parameterization routing.
@@ -1097,7 +1096,6 @@ class HeteroscedasticLayer(nn.Module):
         num_factors: int = 15,
         temperature: float = 1.0,
         is_parameter_efficient: bool = False,
-        multilabel: bool = False,
     ) -> None:
         """Initialize the HeteroscedasticLayer.
 
@@ -1106,9 +1104,7 @@ class HeteroscedasticLayer(nn.Module):
             num_classes: int, number of classes.
             num_factors: int, number of factors.
             temperature: float, temperature scaling.
-            num_mc_samples: int, number of Monte Carlo samples.
             is_parameter_efficient: bool, whether to use parameter efficient routing.
-            multilabel: bool, whether to use multilabel classification.
         """
         super().__init__()
         self.in_features = in_features
@@ -1116,7 +1112,6 @@ class HeteroscedasticLayer(nn.Module):
         self.num_factors = num_factors
         self.temperature = temperature
         self.is_parameter_efficient = is_parameter_efficient
-        self.multilabel = multilabel
 
         self.mu_layer = nn.Linear(in_features, num_classes)
         self.diag_layer = nn.Linear(in_features, num_classes)
@@ -1141,18 +1136,18 @@ class HeteroscedasticLayer(nn.Module):
             nn.init.xavier_normal_(self.V_matrix)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Execute the Monte Carlo forward pass to compute log expected probabilities.
+        """Draw a single utility sample and return temperature-scaled logits.
 
-        Samples from a multivariate normal distribution parameterized by the input features.
-        The covariance matrix is modeled using a low-rank approximation plus a diagonal term,
-        capturing both feature-wise uncertainty and correlations between classes.
+        Samples once from a multivariate normal whose covariance is parameterized by a low-rank
+        factor plus a diagonal term derived from the input. Each call yields a different sample
+        because ``torch.randn`` is invoked fresh; the outer sampler turns repeated calls into a
+        Monte Carlo sample of categorical distributions.
 
         Args:
             x: Input tensor of shape (batch_size, in_features).
 
         Returns:
-            Logarithm of the probabilities for a single Monte Carlo sample,
-            of shape (batch_size, num_classes).
+            Temperature-scaled utility logits of shape (batch_size, num_classes).
         """
         batch_size = x.size(0)
 
@@ -1164,18 +1159,11 @@ class HeteroscedasticLayer(nn.Module):
 
         if self.is_parameter_efficient:
             v_x = self.v_layer(x)
-            v_global = self.V_matrix.unsqueeze(0)
             scaled_eps_r = (eps_r * v_x).unsqueeze(-1)
-            low_rank_noise = torch.matmul(v_global, scaled_eps_r).squeeze(-1)
+            low_rank_noise = torch.matmul(self.V_matrix, scaled_eps_r).squeeze(-1)
         else:
-            v_x_full = self.v_layer(x)
-            v_x_full = v_x_full.view(batch_size, self.num_classes, self.num_factors)
-            eps_r_expanded = eps_r.unsqueeze(-1)
-            low_rank_noise = torch.matmul(v_x_full, eps_r_expanded).squeeze(-1)
+            v_x_full = self.v_layer(x).view(batch_size, self.num_classes, self.num_factors)
+            low_rank_noise = torch.matmul(v_x_full, eps_r.unsqueeze(-1)).squeeze(-1)
 
-        utilities = mu + (diag_scale * eps_k) + low_rank_noise
-        utilities = utilities / self.temperature
-
-        probs = torch.sigmoid(utilities) if self.multilabel else F.softmax(utilities, dim=-1)
-
-        return torch.log(probs + 1e-7)
+        utilities = mu + diag_scale * eps_k + low_rank_noise
+        return utilities / self.temperature

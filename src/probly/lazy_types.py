@@ -7,6 +7,7 @@ TORCH_MODULE_LIST = "torch.nn.modules.container.ModuleList"
 TORCH_TENSOR = "torch.Tensor"
 TORCH_TENSOR_LIKE = "probly.representation.torch_like.TorchLikeImplementation"
 TORCH_SAMPLE = "probly.representation.sample.torch.TorchSample"
+TORCH_CATEGORICAL_DISTRIBUTION = "probly.representation.distribution.torch_categorical.TorchCategoricalDistribution"
 
 FLAX_MODULE = "flax.nnx.module.Module"
 FLAX_LIST = "flax.nnx.list.List"
