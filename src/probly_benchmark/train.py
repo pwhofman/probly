@@ -31,6 +31,8 @@ import wandb
 import wandb.util
 
 from flextype import flexdispatch
+from probly.layers.torch import BatchEnsembleConv2d, BatchEnsembleLinear
+from probly.method.batchensemble import BatchEnsemblePredictor
 from probly.method.bayesian import BayesianPredictor
 from probly.method.credal_ensembling import CredalEnsemblingPredictor
 from probly.method.credal_relative_likelihood import CredalRelativeLikelihoodPredictor
@@ -47,9 +49,11 @@ from probly_benchmark.train_funcs import (
     EarlyStopping,
     evaluate,
     train_epoch,
+    train_epoch_batchensemble,
     train_epoch_cross_entropy,
     train_epoch_dare,
     validate,
+    validate_batchensemble,
     validate_cross_entropy,
 )
 
@@ -70,8 +74,12 @@ def _get_state_dict(model: nn.Module | list[nn.Module]) -> dict | list[dict]:
     return model.state_dict()
 
 
-def get_optimizer(name: str, params: Iterable[nn.Parameter], **kwargs: Any) -> optim.Optimizer:  # noqa: ANN401
-    """Get optimizer function."""
+def get_optimizer(
+    name: str,
+    params: Iterable[nn.Parameter] | list[dict[str, Any]],
+    **kwargs: Any,  # noqa: ANN401
+) -> optim.Optimizer:
+    """Get optimizer function. ``params`` may be parameter iterables or param-group dicts."""
     name = name.lower()
     if name not in OPTIMIZERS:
         msg = f"Unknown optimizer: {name}"
@@ -177,6 +185,7 @@ def _training_loop(  # noqa: PLR0912
     train_fn: Callable[..., float],
     val_fn: Callable[..., tuple[float, float]],
     log_prefix: str = "",
+    param_groups: list[dict[str, Any]] | None = None,
 ) -> None:
     """Run the training loop for a single model.
 
@@ -192,12 +201,16 @@ def _training_loop(  # noqa: PLR0912
         train_fn: Per-batch training function.
         val_fn: Validation function.
         log_prefix: Prefix for W&B log keys (e.g. ``"member_0/"``).
+        param_groups: Optional list of parameter-group dicts forwarded to the optimizer
+            in place of ``model.parameters()``. Each dict can override the optimizer's
+            default ``lr`` / ``weight_decay`` for a subset of parameters; used by
+            BatchEnsemble to apply a slower lr and disable weight decay on fast weights.
     """
     _maybe_compile_forward(model, device)
 
     optimizer = get_optimizer(
         cfg.optimizer.name,
-        model.parameters(),
+        param_groups if param_groups is not None else model.parameters(),
         **cfg.optimizer.get("params", {}),
     )
     scheduler = get_scheduler(
@@ -327,6 +340,76 @@ def _(
             val_fn=validate_cross_entropy,
             log_prefix=f"member_{i}/",
         )
+
+
+def _split_batchensemble_params(
+    model: nn.Module,
+) -> tuple[list[nn.Parameter], list[nn.Parameter], list[nn.Parameter]]:
+    """Split parameters into ``(shared, fast_with_wd, fast_no_wd)`` for the BatchEnsemble optimizer.
+
+    Mirrors the imagenet baseline: shared kernel and non-BE params get the recipe's lr and
+    weight decay, per-member bias gets the slower lr with weight decay, and ``r`` / ``s``
+    get the slower lr with weight decay disabled.
+    """
+    fast_no_wd_ids: set[int] = set()
+    fast_wd_ids: set[int] = set()
+    for module in model.modules():
+        if isinstance(module, BatchEnsembleLinear | BatchEnsembleConv2d):
+            fast_no_wd_ids.add(id(module.r))
+            fast_no_wd_ids.add(id(module.s))
+            fast_wd_ids.add(id(module.bias))
+
+    shared: list[nn.Parameter] = []
+    fast_wd: list[nn.Parameter] = []
+    fast_no_wd: list[nn.Parameter] = []
+    for p in model.parameters():
+        if id(p) in fast_no_wd_ids:
+            fast_no_wd.append(p)
+        elif id(p) in fast_wd_ids:
+            fast_wd.append(p)
+        else:
+            shared.append(p)
+    return shared, fast_wd, fast_no_wd
+
+
+@train_model.register(BatchEnsemblePredictor)
+def _(
+    model: nn.Module,
+    train_loader: DataLoader,
+    val_loader: DataLoader | None,
+    cfg: DictConfig,
+    device: torch.device,
+    run: Any,  # noqa: ANN401
+    train_kwargs: dict[str, Any],
+) -> None:
+    """Train a BatchEnsemble predictor with the recipe of :cite:`wen2020batchensemble`.
+
+    The shared kernel uses the recipe's full lr and weight decay; ``r``, ``s``, and per-member
+    biases use ``fast_weight_lr_multiplier * base_lr``; ``r`` and ``s`` have weight decay disabled.
+    """
+    fast_lr_mult = train_kwargs.get("fast_weight_lr_multiplier", 0.25)
+    base_lr = float(cfg.optimizer.params.lr)
+    fast_lr = base_lr * fast_lr_mult
+
+    shared, fast_wd, fast_no_wd = _split_batchensemble_params(model)
+    param_groups: list[dict[str, Any]] = [{"params": shared}]
+    if fast_wd:
+        param_groups.append({"params": fast_wd, "lr": fast_lr})
+    if fast_no_wd:
+        param_groups.append({"params": fast_no_wd, "lr": fast_lr, "weight_decay": 0.0})
+
+    _training_loop(
+        model,
+        train_loader,
+        val_loader,
+        cfg,
+        device,
+        run,
+        train_kwargs,
+        train_fn=train_epoch_batchensemble,
+        val_fn=validate_batchensemble,
+        param_groups=param_groups,
+    )
 
 
 @train_model.register(DarePredictor)

@@ -10,6 +10,8 @@ from torch.amp import GradScaler, autocast
 import torch.nn.functional as F
 
 from flextype import flexdispatch
+from probly.method.batchensemble import BatchEnsemblePredictor
+from probly.method.batchensemble.torch import tile_inputs as tile_be_inputs
 from probly.method.bayesian import BayesianPredictor
 from probly.method.credal_ensembling import CredalEnsemblingPredictor
 from probly.method.credal_relative_likelihood import CredalRelativeLikelihoodPredictor
@@ -21,6 +23,7 @@ from probly.method.dropout import DropoutPredictor
 from probly.method.efficient_credal_prediction import EfficientCredalPredictor
 from probly.method.ensemble import EnsemblePredictor
 from probly.method.evidential.classification import EvidentialClassificationPredictor
+from probly.method.natural_posterior_network import NaturalPosteriorNetworkPredictor
 from probly.method.posterior_network import PosteriorNetworkPredictor
 from probly.method.subensemble import SubensemblePredictor
 from probly.train.bayesian.torch import ELBOLoss, collect_kl_divergence
@@ -96,6 +99,45 @@ def _(
         loss.backward()
         if grad_clip_norm is not None:
             nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)
+        optimizer.step()
+    return loss.item()
+
+
+@train_epoch.register(BatchEnsemblePredictor)
+def train_epoch_batchensemble(
+    model: Predictor,
+    inputs: torch.Tensor,
+    targets: torch.Tensor,
+    optimizer: optim.Optimizer,
+    grad_clip_norm: float | None = None,
+    amp_enabled: bool = False,
+    scaler: GradScaler | None = None,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> torch.Tensor | float:
+    """Train a BatchEnsemble predictor for one step with per-member cross-entropy on a tiled batch.
+
+    Mirrors the imagenet baseline: tile ``inputs`` by ``num_members``, run the forward,
+    take mean CE on the ``[E*B, num_classes]`` output. Called directly (not via ``predict``)
+    so the loss operates on a plain tensor.
+    """
+    num_members = int(model.num_members)  # ty: ignore[unresolved-attribute]
+    criterion = nn.CrossEntropyLoss()
+    optimizer.zero_grad()
+    with autocast(inputs.device.type, enabled=amp_enabled):
+        inputs_tiled = torch.tile(inputs, (num_members,) + (1,) * (inputs.dim() - 1))
+        outputs = model(inputs_tiled)  # ty: ignore[call-non-callable]  # [E*B, num_classes]
+        loss = criterion(outputs, targets.repeat(num_members))
+    if scaler is not None:
+        scaler.scale(loss).backward()
+        if grad_clip_norm is not None:
+            scaler.unscale_(optimizer)
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)  # ty: ignore[unresolved-attribute]
+        scaler.step(optimizer)
+        scaler.update()
+    else:
+        loss.backward()
+        if grad_clip_norm is not None:
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)  # ty: ignore[unresolved-attribute]
         optimizer.step()
     return loss.item()
 
@@ -189,6 +231,43 @@ def _(
     with autocast(inputs.device.type, enabled=amp_enabled):
         alpha = model(inputs)
         loss = postnet_loss(alpha, targets, entropy_weight=entropy_weight)
+    if scaler is not None:
+        scaler.scale(loss).backward()
+        if grad_clip_norm is not None:
+            scaler.unscale_(optimizer)
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)
+        scaler.step(optimizer)
+        scaler.update()
+    else:
+        loss.backward()
+        if grad_clip_norm is not None:
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)
+        optimizer.step()
+    return loss.item()
+
+
+@train_epoch.register(NaturalPosteriorNetworkPredictor)
+def _(
+    model: NaturalPosteriorNetworkPredictor,
+    inputs: torch.Tensor,
+    targets: torch.Tensor,
+    optimizer: optim.Optimizer,
+    grad_clip_norm: float | None = None,
+    amp_enabled: bool = False,
+    scaler: GradScaler | None = None,
+    entropy_weight: float = 1e-5,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> torch.Tensor | float:
+    """Train a natural posterior network for one epoch with the Bayesian loss.
+
+    Uses :func:`postnet_loss` with ``reduction="mean"`` -- the loss form is
+    identical (expected categorical NLL under Dirichlet plus an entropy
+    regularizer); the NatPN paper applies it with mean reduction.
+    """
+    optimizer.zero_grad()
+    with autocast(inputs.device.type, enabled=amp_enabled):
+        alpha = model(inputs)
+        loss = postnet_loss(alpha, targets, entropy_weight=entropy_weight, reduction="mean")
     if scaler is not None:
         scaler.scale(loss).backward()
         if grad_clip_norm is not None:
@@ -330,6 +409,36 @@ def _(
     return val_loss, val_acc
 
 
+@validate.register(BatchEnsemblePredictor)
+@torch.no_grad()
+def validate_batchensemble(
+    model: Predictor,
+    val_loader: DataLoader,
+    device: torch.device,
+    amp_enabled: bool = False,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> tuple[float, float]:
+    """Validate a BatchEnsemble predictor with per-member CE loss and ensemble-averaged accuracy."""
+    num_members = int(model.num_members)  # ty: ignore[unresolved-attribute]
+    criterion = nn.CrossEntropyLoss()
+    model.eval()  # ty: ignore[unresolved-attribute]
+    val_loss = 0.0
+    val_acc = 0.0
+    num_instances = 0
+    for inputs_, targets_ in val_loader:
+        inputs, targets = inputs_.to(device), targets_.to(device)
+        with autocast(device.type, enabled=amp_enabled):
+            inputs_tiled = tile_be_inputs(inputs, num_members)
+            outputs = model(inputs_tiled)  # ty: ignore[call-non-callable]  # [E*B, C]
+            val_loss += criterion(outputs, targets.repeat(num_members)).item()
+            ensemble_probs = F.softmax(outputs.view(num_members, -1, outputs.shape[-1]), dim=-1).mean(dim=0)
+            val_acc += _accuracy(ensemble_probs, targets) * inputs.shape[0]
+            num_instances += inputs.shape[0]
+    val_loss /= len(val_loader)
+    val_acc /= num_instances
+    return val_loss, val_acc
+
+
 @validate.register((DropConnectPredictor, DropoutPredictor, EfficientCredalPredictor))
 @torch.no_grad()
 def validate_cross_entropy(
@@ -377,6 +486,33 @@ def _(
         with autocast(device.type, enabled=amp_enabled):
             alpha = model(inputs)
             val_loss += postnet_loss(alpha, targets, entropy_weight=entropy_weight).item()
+            val_acc += _accuracy(alpha, targets) * inputs.shape[0]
+            num_instances += inputs.shape[0]
+    val_loss /= len(val_loader)
+    val_acc /= num_instances
+    return val_loss, val_acc
+
+
+@validate.register(NaturalPosteriorNetworkPredictor)
+@torch.no_grad()
+def _(
+    model: NaturalPosteriorNetworkPredictor,
+    val_loader: DataLoader,
+    device: torch.device,
+    amp_enabled: bool = False,
+    entropy_weight: float = 1e-5,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> tuple[float, float]:
+    """Validate a natural posterior network with the mean-reduced Bayesian loss."""
+    model.eval()
+    val_loss = 0.0
+    val_acc = 0.0
+    num_instances = 0
+    for inputs_, targets_ in val_loader:
+        inputs, targets = inputs_.to(device), targets_.to(device)
+        with autocast(device.type, enabled=amp_enabled):
+            alpha = model(inputs)
+            val_loss += postnet_loss(alpha, targets, entropy_weight=entropy_weight, reduction="mean").item()
             val_acc += _accuracy(alpha, targets) * inputs.shape[0]
             num_instances += inputs.shape[0]
     val_loss /= len(val_loader)
@@ -580,6 +716,37 @@ def _(
     return _compute_metrics(probs, labels, n_bins)
 
 
+@evaluate.register(NaturalPosteriorNetworkPredictor)
+@torch.no_grad()
+def _(
+    model: NaturalPosteriorNetworkPredictor,
+    test_loader: DataLoader,
+    device: torch.device,
+    amp_enabled: bool = False,
+    n_bins: int = 10,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> dict[str, float]:
+    """Evaluate a natural posterior network on the test set.
+
+    Uses the mean of the predicted Dirichlet (alpha / alpha.sum) as the class probabilities.
+    """
+    model.eval()
+    all_probs: list[torch.Tensor] = []
+    all_labels: list[torch.Tensor] = []
+    for inputs_, targets_ in test_loader:
+        inputs, targets = inputs_.to(device), targets_.to(device)
+        with autocast(device.type, enabled=amp_enabled):
+            alpha = model(inputs)
+            probs_ = alpha / alpha.sum(dim=1, keepdim=True)
+        all_probs.append(probs_)
+        all_labels.append(targets)
+
+    probs = torch.cat(all_probs)
+    labels = torch.cat(all_labels)
+
+    return _compute_metrics(probs, labels, n_bins)
+
+
 @evaluate.register(EvidentialClassificationPredictor)
 @torch.no_grad()
 def _(
@@ -638,6 +805,50 @@ def evaluate_ddu(
     probs = torch.cat(all_probs)
     labels = torch.cat(all_labels)
     return _compute_metrics(probs, labels, n_bins)
+
+
+@evaluate.register(BatchEnsemblePredictor)
+@torch.no_grad()
+def evaluate_batchensemble(
+    model: Predictor,
+    test_loader: DataLoader,
+    device: torch.device,
+    amp_enabled: bool = False,
+    n_bins: int = 10,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> dict[str, float]:
+    """Evaluate a BatchEnsemble predictor, returning per-member and ensemble-level metrics.
+
+    Per-member metrics are keyed as ``member_<i>/accuracy``, ``member_<i>/nll``,
+    ``member_<i>/ece``; the ensemble prediction is the mean softmax over members.
+    """
+    num_members = int(model.num_members)  # ty: ignore[unresolved-attribute]
+    model.eval()  # ty: ignore[unresolved-attribute]
+    all_member_probs: list[list[torch.Tensor]] = [[] for _ in range(num_members)]
+    all_labels: list[torch.Tensor] = []
+    for inputs_, targets_ in test_loader:
+        inputs, targets = inputs_.to(device), targets_.to(device)
+        with autocast(device.type, enabled=amp_enabled):
+            inputs_tiled = tile_be_inputs(inputs, num_members)
+            outputs = model(inputs_tiled)  # ty: ignore[call-non-callable]  # [E*B, C]
+            probs = F.softmax(outputs, dim=-1).view(num_members, -1, outputs.shape[-1])
+        for j in range(num_members):
+            all_member_probs[j].append(probs[j])
+        all_labels.append(targets)
+
+    labels = torch.cat(all_labels)
+
+    metrics: dict[str, float] = {}
+    member_probs_cat: list[torch.Tensor] = []
+    for j, member_batches in enumerate(all_member_probs):
+        probs_j = torch.cat(member_batches)
+        member_probs_cat.append(probs_j)
+        for key, value in _compute_metrics(probs_j, labels, n_bins).items():
+            metrics[f"member_{j}/{key}"] = value
+
+    ensemble_probs = torch.stack(member_probs_cat).mean(dim=0)
+    metrics.update(_compute_metrics(ensemble_probs, labels, n_bins))
+    return metrics
 
 
 @evaluate.register(
