@@ -1088,33 +1088,401 @@ class IRDHead(nn.Module):
 # ======================================================================================================================
 
 
+def pack_interval(x: torch.Tensor, channel_dim: int = 1) -> torch.Tensor:
+    """Promote ``x`` to a packed interval tensor with ``lo == hi == x``.
+
+    Doubles ``x`` along ``channel_dim``. Call once at the network entry,
+    before the first interval layer. Analogous to BatchEnsemble's
+    ``tile_inputs`` (which doubles the batch dim instead).
+    """
+    return torch.cat([x, x], dim=channel_dim)
+
+
+def unpack_interval(x: torch.Tensor, channel_dim: int = 1) -> tuple[torch.Tensor, torch.Tensor]:
+    """Split a packed interval tensor on ``channel_dim`` into its ``(lo, hi)`` halves."""
+    c = x.shape[channel_dim]
+    if c % 2 != 0:
+        msg = f"Cannot unpack interval tensor: dim {channel_dim} has odd size {c}."
+        raise ValueError(msg)
+    return x.split(c // 2, dim=channel_dim)
+
+
+class IntConv2d(nn.Module):
+    """Interval-arithmetic 2D convolution based on :cite:`wang2024credalnet`.
+
+    Has paired center and radius kernels (and biases); the radius weight and
+    bias are clamped to non-negative values inside ``forward``. Inputs and
+    outputs are packed ``(B, 2 * C, H, W)`` (lower half then upper). The
+    first interval layer must be fed via ``pack_interval(x)`` on a
+    non-negative input (e.g. ``[0, 1]``-normalized images); subsequent
+    layers receive non-negative input from the preceding ``ReLU``.
+    """
+
+    def __init__(
+        self,
+        in_channels: int,
+        out_channels: int,
+        kernel_size: int | tuple[int, int],
+        stride: int | tuple[int, int] = 1,
+        padding: int | tuple[int, int] = 0,
+        bias: bool = True,
+    ) -> None:
+        """Initialize the IntConv2d layer."""
+        super().__init__()
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+        self.kernel_size: tuple[int, int] = (kernel_size, kernel_size) if isinstance(kernel_size, int) else kernel_size
+        self.stride: tuple[int, int] = (stride, stride) if isinstance(stride, int) else stride
+        self.padding: tuple[int, int] = (padding, padding) if isinstance(padding, int) else padding
+        self.use_bias = bias
+
+        weight_shape = (out_channels, in_channels, self.kernel_size[0], self.kernel_size[1])
+        self.center_weight = nn.Parameter(torch.empty(weight_shape))
+        self.radius_weight = nn.Parameter(torch.empty(weight_shape))
+
+        if bias:
+            self.center_bias = nn.Parameter(torch.zeros(out_channels))
+            self.radius_bias = nn.Parameter(torch.zeros(out_channels))
+        else:
+            self.register_parameter("center_bias", None)
+            self.register_parameter("radius_bias", None)
+
+        self.reset_parameters()
+
+    def reset_parameters(self) -> None:
+        """Initialize parameters: Glorot uniform for centers, half-normal for radii."""
+        init.xavier_uniform_(self.center_weight)
+        init.xavier_normal_(self.radius_weight)
+        with torch.no_grad():
+            self.radius_weight.abs_()
+        if self.use_bias:
+            init.zeros_(self.center_bias)
+            init.zeros_(self.radius_bias)
+
+    def _conv(self, x: torch.Tensor, weight: torch.Tensor) -> torch.Tensor:
+        return F.conv2d(x, weight, bias=None, stride=self.stride, padding=self.padding)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Run the interval convolution on a packed input."""
+        if x.shape[1] != 2 * self.in_channels:
+            msg = (
+                f"IntConv2d({self.in_channels}, {self.out_channels}) expected packed input with "
+                f"{2 * self.in_channels} channels, got {x.shape[1]}. Call ``pack_interval(x)`` "
+                "to prepare a regular tensor for the first interval layer."
+            )
+            raise ValueError(msg)
+        lo = x[:, : self.in_channels]
+        hi = x[:, self.in_channels :]
+
+        radius_weight = F.relu(self.radius_weight)
+        w_lo = self.center_weight - radius_weight
+        w_hi = self.center_weight + radius_weight
+        w_lo_pos, w_lo_neg = torch.clamp(w_lo, min=0.0), torch.clamp(w_lo, max=0.0)
+        w_hi_pos, w_hi_neg = torch.clamp(w_hi, min=0.0), torch.clamp(w_hi, max=0.0)
+
+        lo_out = self._conv(lo, w_lo_pos) + self._conv(hi, w_lo_neg)
+        hi_out = self._conv(lo, w_hi_neg) + self._conv(hi, w_hi_pos)
+
+        if self.use_bias:
+            radius_bias = F.relu(self.radius_bias)
+            b_lo = (self.center_bias - radius_bias).view(1, -1, 1, 1)
+            b_hi = (self.center_bias + radius_bias).view(1, -1, 1, 1)
+            lo_out = lo_out + b_lo
+            hi_out = hi_out + b_hi
+
+        return torch.cat([lo_out, hi_out], dim=1)
+
+    def extra_repr(self) -> str:
+        """Configuration summary for the module repr."""
+        return (
+            f"in_channels={self.in_channels}, out_channels={self.out_channels}, "
+            f"kernel_size={self.kernel_size}, stride={self.stride}, padding={self.padding}, "
+            f"bias={self.use_bias}"
+        )
+
+
+class IntLinear(nn.Module):
+    """Interval-arithmetic linear layer based on :cite:`wang2024credalnet`.
+
+    1D analogue of :class:`IntConv2d`. Inputs and outputs are packed
+    ``(..., 2 * features)`` (lower half then upper); the same non-negativity
+    constraint on the radius weight and bias is applied inside ``forward``.
+    """
+
+    def __init__(self, in_features: int, out_features: int, bias: bool = True) -> None:
+        """Initialize the IntLinear layer."""
+        super().__init__()
+        self.in_features = in_features
+        self.out_features = out_features
+        self.use_bias = bias
+
+        self.center_weight = nn.Parameter(torch.empty(out_features, in_features))
+        self.radius_weight = nn.Parameter(torch.empty(out_features, in_features))
+
+        if bias:
+            self.center_bias = nn.Parameter(torch.zeros(out_features))
+            self.radius_bias = nn.Parameter(torch.zeros(out_features))
+        else:
+            self.register_parameter("center_bias", None)
+            self.register_parameter("radius_bias", None)
+
+        self.reset_parameters()
+
+    def reset_parameters(self) -> None:
+        """Initialize parameters: Glorot uniform for centers, half-normal for radii."""
+        init.xavier_uniform_(self.center_weight)
+        init.xavier_normal_(self.radius_weight)
+        with torch.no_grad():
+            self.radius_weight.abs_()
+        if self.use_bias:
+            init.zeros_(self.center_bias)
+            init.zeros_(self.radius_bias)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Run the interval linear transform on a packed input."""
+        if x.shape[-1] != 2 * self.in_features:
+            msg = (
+                f"IntLinear({self.in_features}, {self.out_features}) expected packed input with "
+                f"{2 * self.in_features} features, got {x.shape[-1]}."
+            )
+            raise ValueError(msg)
+        lo = x[..., : self.in_features]
+        hi = x[..., self.in_features :]
+
+        radius_weight = F.relu(self.radius_weight)
+        w_lo = self.center_weight - radius_weight
+        w_hi = self.center_weight + radius_weight
+        w_lo_pos, w_lo_neg = torch.clamp(w_lo, min=0.0), torch.clamp(w_lo, max=0.0)
+        w_hi_pos, w_hi_neg = torch.clamp(w_hi, min=0.0), torch.clamp(w_hi, max=0.0)
+
+        lo_out = F.linear(lo, w_lo_pos) + F.linear(hi, w_lo_neg)
+        hi_out = F.linear(lo, w_hi_neg) + F.linear(hi, w_hi_pos)
+
+        if self.use_bias:
+            radius_bias = F.relu(self.radius_bias)
+            lo_out = lo_out + (self.center_bias - radius_bias)
+            hi_out = hi_out + (self.center_bias + radius_bias)
+
+        return torch.cat([lo_out, hi_out], dim=-1)
+
+    def extra_repr(self) -> str:
+        """Configuration summary for the module repr."""
+        return f"in_features={self.in_features}, out_features={self.out_features}, bias={self.use_bias}"
+
+
+class IntBatchNorm2d(nn.Module):
+    """Interval-valued batch normalization for 2D feature maps based on :cite:`wang2024credalnet`.
+
+    Inputs and outputs are packed ``(B, 2C, H, W)``. Splits into
+    ``center = (lo + hi)/2`` and ``radius = (hi - lo)/2``, normalizes each
+    with its own batch stats and affine, and recombines as
+    ``lo = c_n - |r_n|``, ``hi = c_n + |r_n|``. The abs preserves
+    ``lo <= hi`` after the radius affine flips sign.
+    """
+
+    def __init__(
+        self,
+        num_features: int,
+        eps: float = 1e-5,
+        momentum: float = 0.1,
+        affine: bool = True,
+        track_running_stats: bool = True,
+    ) -> None:
+        """Initialize the IntBatchNorm2d layer."""
+        super().__init__()
+        self.num_features = num_features
+        self.eps = eps
+        self.momentum = momentum
+        self.affine = affine
+        self.track_running_stats = track_running_stats
+
+        if affine:
+            self.center_weight = nn.Parameter(torch.ones(num_features))
+            self.center_bias = nn.Parameter(torch.zeros(num_features))
+            self.radius_weight = nn.Parameter(torch.ones(num_features))
+            self.radius_bias = nn.Parameter(torch.zeros(num_features))
+        else:
+            self.register_parameter("center_weight", None)
+            self.register_parameter("center_bias", None)
+            self.register_parameter("radius_weight", None)
+            self.register_parameter("radius_bias", None)
+
+        if track_running_stats:
+            self.register_buffer("center_running_mean", torch.zeros(num_features))
+            self.register_buffer("center_running_var", torch.ones(num_features))
+            self.register_buffer("radius_running_mean", torch.zeros(num_features))
+            self.register_buffer("radius_running_var", torch.ones(num_features))
+        else:
+            self.center_running_mean = None
+            self.center_running_var = None
+            self.radius_running_mean = None
+            self.radius_running_var = None
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Run interval batch normalization on a packed input."""
+        if x.shape[1] != 2 * self.num_features:
+            msg = (
+                f"IntBatchNorm2d({self.num_features}) expected packed input with "
+                f"{2 * self.num_features} channels, got {x.shape[1]}."
+            )
+            raise ValueError(msg)
+        lo = x[:, : self.num_features]
+        hi = x[:, self.num_features :]
+
+        center = 0.5 * (lo + hi)
+        radius = 0.5 * (hi - lo)
+
+        center_n = F.batch_norm(
+            center,
+            running_mean=self.center_running_mean,
+            running_var=self.center_running_var,
+            weight=self.center_weight,
+            bias=self.center_bias,
+            training=self.training or not self.track_running_stats,
+            momentum=self.momentum,
+            eps=self.eps,
+        )
+        radius_n = F.batch_norm(
+            radius,
+            running_mean=self.radius_running_mean,
+            running_var=self.radius_running_var,
+            weight=self.radius_weight,
+            bias=self.radius_bias,
+            training=self.training or not self.track_running_stats,
+            momentum=self.momentum,
+            eps=self.eps,
+        )
+
+        radius_n_abs = torch.abs(radius_n)
+        return torch.cat([center_n - radius_n_abs, center_n + radius_n_abs], dim=1)
+
+    def extra_repr(self) -> str:
+        """Expose key configuration in the module repr."""
+        return (
+            f"num_features={self.num_features}, eps={self.eps}, momentum={self.momentum}, "
+            f"affine={self.affine}, track_running_stats={self.track_running_stats}"
+        )
+
+
+class IntBatchNorm1d(nn.Module):
+    """Interval-valued batch normalization for 1D features based on :cite:`wang2024credalnet`.
+
+    1D analogue of :class:`IntBatchNorm2d`, used after :class:`IntLinear` on
+    flattened features. Inputs and outputs are packed ``(B, 2 * num_features)``.
+    """
+
+    def __init__(
+        self,
+        num_features: int,
+        eps: float = 1e-5,
+        momentum: float = 0.1,
+        affine: bool = True,
+        track_running_stats: bool = True,
+    ) -> None:
+        """Initialize the IntBatchNorm1d layer."""
+        super().__init__()
+        self.num_features = num_features
+        self.eps = eps
+        self.momentum = momentum
+        self.affine = affine
+        self.track_running_stats = track_running_stats
+
+        if affine:
+            self.center_weight = nn.Parameter(torch.ones(num_features))
+            self.center_bias = nn.Parameter(torch.zeros(num_features))
+            self.radius_weight = nn.Parameter(torch.ones(num_features))
+            self.radius_bias = nn.Parameter(torch.zeros(num_features))
+        else:
+            self.register_parameter("center_weight", None)
+            self.register_parameter("center_bias", None)
+            self.register_parameter("radius_weight", None)
+            self.register_parameter("radius_bias", None)
+
+        if track_running_stats:
+            self.register_buffer("center_running_mean", torch.zeros(num_features))
+            self.register_buffer("center_running_var", torch.ones(num_features))
+            self.register_buffer("radius_running_mean", torch.zeros(num_features))
+            self.register_buffer("radius_running_var", torch.ones(num_features))
+        else:
+            self.center_running_mean = None
+            self.center_running_var = None
+            self.radius_running_mean = None
+            self.radius_running_var = None
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Run interval batch normalization on a packed 1D input."""
+        if x.shape[-1] != 2 * self.num_features:
+            msg = (
+                f"IntBatchNorm1d({self.num_features}) expected packed input with "
+                f"{2 * self.num_features} features, got {x.shape[-1]}."
+            )
+            raise ValueError(msg)
+        lo = x[..., : self.num_features]
+        hi = x[..., self.num_features :]
+
+        center = 0.5 * (lo + hi)
+        radius = 0.5 * (hi - lo)
+
+        center_n = F.batch_norm(
+            center,
+            running_mean=self.center_running_mean,
+            running_var=self.center_running_var,
+            weight=self.center_weight,
+            bias=self.center_bias,
+            training=self.training or not self.track_running_stats,
+            momentum=self.momentum,
+            eps=self.eps,
+        )
+        radius_n = F.batch_norm(
+            radius,
+            running_mean=self.radius_running_mean,
+            running_var=self.radius_running_var,
+            weight=self.radius_weight,
+            bias=self.radius_bias,
+            training=self.training or not self.track_running_stats,
+            momentum=self.momentum,
+            eps=self.eps,
+        )
+
+        radius_n_abs = torch.abs(radius_n)
+        return torch.cat([center_n - radius_n_abs, center_n + radius_n_abs], dim=-1)
+
+    def extra_repr(self) -> str:
+        """Expose key configuration in the module repr."""
+        return (
+            f"num_features={self.num_features}, eps={self.eps}, momentum={self.momentum}, "
+            f"affine={self.affine}, track_running_stats={self.track_running_stats}"
+        )
+
+
 class IntSoftmax(nn.Module):
-    """Implementation of the interval softmax layer."""
+    """Interval SoftMax head based on :cite:`wang2024credalnet`.
+
+    Applies Eq. 7 of the paper in ``(lo, hi)`` parameterization, then the
+    Section 3.3 reachability clip so the output is always a valid (reachable)
+    probability interval. Inputs and outputs are packed ``(B, 2C)``.
+    """
 
     def __init__(self) -> None:
         """Initialize the IntSoftmax layer."""
         super().__init__()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Forward pass of the IntSoftmax layer."""
-        # Extract number of classes
-        n_classes = int(x.shape[-1] / 2)
+        """Apply Eq. 7 then the Section 3.3 reachability clip on a packed input."""
+        n_classes = x.shape[-1] // 2
+        lo = x[..., :n_classes]
+        hi = x[..., n_classes:]
 
-        # Extract center and the radius
-        center = x[:, :n_classes]
-        radius = x[:, n_classes:]
-
-        # Ensure the nonnegativity of radius
-        radius_nonneg = F.softplus(radius)
-
-        # Compute upper and lower probabilities
+        center = 0.5 * (lo + hi)
         exp_center = torch.exp(center)
         exp_center_sum = torch.sum(exp_center, dim=-1, keepdim=True)
 
-        lo = torch.exp(center - radius_nonneg) / (exp_center_sum - exp_center + torch.exp(center - radius_nonneg))
-        hi = torch.exp(center + radius_nonneg) / (exp_center_sum - exp_center + torch.exp(center + radius_nonneg))
+        lo_probs = torch.exp(lo) / (exp_center_sum - exp_center + torch.exp(lo))
+        hi_probs = torch.exp(hi) / (exp_center_sum - exp_center + torch.exp(hi))
 
-        # Generate output
-        output = torch.cat([lo, hi], dim=-1)
+        sum_lo = lo_probs.sum(dim=-1, keepdim=True)
+        sum_hi = hi_probs.sum(dim=-1, keepdim=True)
+        lo_clipped = torch.maximum(lo_probs, 1.0 - (sum_hi - hi_probs))
+        hi_clipped = torch.minimum(hi_probs, 1.0 - (sum_lo - lo_probs))
 
-        return output
+        return torch.cat([lo_clipped, hi_clipped], dim=-1)
