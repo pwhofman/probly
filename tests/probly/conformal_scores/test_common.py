@@ -56,14 +56,13 @@ def test_raps_score_class_curries_configuration() -> None:
     probs = np.array([[0.2, 0.5, 0.3], [0.1, 0.2, 0.7]], dtype=float)
     labels = np.array([0, 1], dtype=int)
 
-    score = RAPSScore(randomized=False, lambda_reg=0.2, k_reg=1, epsilon=0.05)
+    score = RAPSScore(randomized=False, lambda_reg=0.2, k_reg=1)
     expected = compute_raps_score_numpy(
         probs,
         labels,
         randomized=False,
         lambda_reg=0.2,
         k_reg=1,
-        epsilon=0.05,
     )
     np.testing.assert_allclose(score(probs, labels), expected)
 
@@ -104,7 +103,6 @@ def test_classification_scores_support_multi_axis_batch_shapes() -> None:
         randomized=False,
         lambda_reg=0.2,
         k_reg=1,
-        epsilon=0.05,
     )
     raps_flat = compute_raps_score_numpy(
         flat_probs,
@@ -112,7 +110,6 @@ def test_classification_scores_support_multi_axis_batch_shapes() -> None:
         randomized=False,
         lambda_reg=0.2,
         k_reg=1,
-        epsilon=0.05,
     ).reshape(labels.shape)
     np.testing.assert_allclose(raps_scores, raps_flat)
 

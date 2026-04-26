@@ -17,7 +17,7 @@ import numpy as np
 import torch
 from torch import nn
 from sklearn.datasets import load_diabetes
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import KFold, train_test_split
 
 from probly.calibrator import calibrate
 from probly.metrics._common import average_interval_size, empirical_coverage_regression
@@ -108,3 +108,41 @@ plt.title("Conformal Regression Intervals — Absolute Error Score (PyTorch)")
 plt.legend()
 plt.tight_layout()
 plt.show()
+
+# %%
+# Summary (Averaged over multiple runs)
+# --------------------------------------
+res = {"Absolute Error": []}
+for fold, (train_idx, test_idx) in enumerate(KFold(n_splits=5, shuffle=True, random_state=42).split(X)):
+    torch.manual_seed(fold)
+    X_train, y_train = X[train_idx], y[train_idx]
+    X_test, y_test = X[test_idx], y[test_idx]
+    X_train, X_calib, y_train, y_calib = train_test_split(X_train, y_train, test_size=0.25, random_state=fold)
+
+    X_train_t = torch.tensor(X_train, dtype=torch.float32)
+    y_train_t = torch.tensor(y_train, dtype=torch.float32)
+    X_calib_t = torch.tensor(X_calib, dtype=torch.float32)
+    y_calib_t = torch.tensor(y_calib, dtype=torch.float32)
+    X_test_t = torch.tensor(X_test, dtype=torch.float32)
+    y_test_t = torch.tensor(y_test, dtype=torch.float32)
+
+    fold_model = SimpleNet(X_train_t.shape[1])
+    fold_optimizer = torch.optim.Adam(fold_model.parameters(), lr=0.01)
+    fold_model.train()
+    for _ in range(300):
+        fold_optimizer.zero_grad()
+        loss_fn(fold_model(X_train_t), y_train_t).backward()
+        fold_optimizer.step()
+    fold_model.eval()
+
+    with torch.no_grad():
+        calibrated_model = calibrate(conformal_absolute_error(fold_model), 0.05, y_calib_t, X_calib_t)
+        output = representer(calibrated_model).predict(X_test_t)
+
+    cov = empirical_coverage_regression(output, y_test_t)
+    size = average_interval_size(output)
+    res["Absolute Error"].append((cov, size))
+
+for name, vals in res.items():
+    covs, sizes = zip(*vals)
+    print(f"{name} — coverage: {np.mean(covs):.3f} ± {np.std(covs):.3f}, avg interval size: {np.mean(sizes):.1f} ± {np.std(sizes):.1f}")

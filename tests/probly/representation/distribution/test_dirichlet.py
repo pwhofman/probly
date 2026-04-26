@@ -232,3 +232,37 @@ def test_reshape_with_none_inserts_before_class_axis() -> None:
     assert isinstance(reshaped, ArrayDirichletDistribution)
     assert reshaped.shape == (6, 1)
     assert reshaped.alphas.shape == (6, 1, 4)
+
+
+def test_mean_preserves_distribution_type_and_class_axis() -> None:
+    alphas = np.arange(24, dtype=float).reshape((2, 3, 4)) + 1.0
+    dist = ArrayDirichletDistribution(alphas=alphas)
+
+    meaned = np.mean(dist, axis=0)
+
+    assert isinstance(meaned, ArrayDirichletDistribution)
+    assert meaned.shape == (3,)
+    np.testing.assert_allclose(meaned.alphas, np.mean(alphas, axis=0))
+
+
+def test_sum_preserves_distribution_type_and_class_axis() -> None:
+    alphas = np.arange(24, dtype=float).reshape((2, 3, 4)) + 1.0
+    dist = ArrayDirichletDistribution(alphas=alphas)
+
+    summed = np.sum(dist, axis=1)
+
+    assert isinstance(summed, ArrayDirichletDistribution)
+    assert summed.shape == (2,)
+    np.testing.assert_allclose(summed.alphas, np.sum(alphas, axis=1))
+
+
+def test_average_preserves_distribution_type_and_uses_weights() -> None:
+    alphas = np.arange(24, dtype=float).reshape((2, 3, 4)) + 1.0
+    weights = np.array([0.25, 0.75])
+    dist = ArrayDirichletDistribution(alphas=alphas)
+
+    averaged = np.average(dist, axis=0, weights=weights)
+
+    assert isinstance(averaged, ArrayDirichletDistribution)
+    assert averaged.shape == (3,)
+    np.testing.assert_allclose(averaged.alphas, np.average(alphas, axis=0, weights=weights))

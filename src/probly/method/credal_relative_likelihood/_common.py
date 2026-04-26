@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Protocol
 
 from probly.method.ensemble import EnsemblePredictor, register_ensemble_members
 from probly.method.method import predictor_transformation
-from probly.predictor import ProbabilisticClassifier
+from probly.predictor import LogitClassifier
 from probly.traverse_nn import nn_compose, reset_traverser
 from pytraverse import TRAVERSE_REVERSED, GlobalVariable, flexdispatch_traverser, traverse
 
@@ -26,9 +26,7 @@ TOBIAS_VALUE = GlobalVariable[int]("TOBIAS_VALUE", default=100)
 credal_relative_likelihood_traverser = flexdispatch_traverser[object](name="credal_relative_likelihood_traverser")
 
 
-@predictor_transformation(
-    permitted_predictor_types=(ProbabilisticClassifier,), post_transform=register_ensemble_members
-)
+@predictor_transformation(permitted_predictor_types=(LogitClassifier,), post_transform=register_ensemble_members)
 @CredalRelativeLikelihoodPredictor.register_factory
 def credal_relative_likelihood[**In, Out](
     base: Predictor[In, Out], num_members: int, reset_params: bool = True, tobias_value: int = 100

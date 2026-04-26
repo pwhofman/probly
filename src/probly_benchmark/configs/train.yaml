@@ -1,15 +1,13 @@
 defaults:
   - _self_
-  - recipe: ??? # user must specify a recipe.
   - method: ??? # user must specify a method.
+  - recipe: ??? # user must specify a recipe.
 
 seed: 1
 wandb:
   enabled: true
   entity: "probly"
   project: "test"
-
-validate : true
 
 # models will always be saved in wandb, but this option controls whether they are also saved to disk
 save_to_disk: false

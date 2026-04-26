@@ -1,5 +1,6 @@
 defaults:
   - _self_
+  - recipe: ???
   - method: ???
 
 dataset: "cifar10"
