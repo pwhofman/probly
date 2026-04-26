@@ -119,9 +119,6 @@ class DCICDataset(torch.utils.data.Dataset):
     num_classes: int
     """Number of classes."""
 
-    data: list[Image.Image]
-    """List of images."""
-
     targets: list[torch.Tensor]
     """List of labels."""
 
@@ -161,13 +158,8 @@ class DCICDataset(torch.utils.data.Dataset):
         unique_labels = {label for labels in self.image_labels.values() for label in labels}
         self.label_mappings = {label: idx for idx, label in enumerate(unique_labels)}
         self.num_classes = len({label for labels in self.image_labels.values() for label in labels})
-        self.data = []
         self.targets = []
         for img_path in self.image_paths:
-            full_img_path = Path(self.root) / img_path
-
-            image = Image.open(full_img_path).convert("RGB").copy()
-            self.data.append(image)
             labels = self.image_labels[img_path]
             label_indices = [self.label_mappings[label] for label in labels]
             dist = torch.bincount(torch.tensor(label_indices), minlength=self.num_classes).float()
@@ -184,7 +176,7 @@ class DCICDataset(torch.utils.data.Dataset):
             The number of instances in the dataset.
 
         """
-        return len(self.data)
+        return len(self.image_paths)
 
     def __getitem__(self, index: int) -> tuple[Any, torch.Tensor]:
         """Returned indexed item in the dataset.
@@ -195,7 +187,9 @@ class DCICDataset(torch.utils.data.Dataset):
         Returns:
             The (image, target) tuple within the dataset.
         """
-        image = self.data[index]
+        image_path = Path(self.root) / self.image_paths[index]
+        with Image.open(image_path) as image_file:
+            image = image_file.convert("RGB")
         if self.transform:
             image = self.transform(image)
         target = self.targets[index]
@@ -223,6 +217,77 @@ class Benthic(DCICDataset):
             first_order: Whether to use first order data or class labels. Defaults to True.
         """
         super().__init__(Path(root) / "Benthic", transform, first_order=first_order)
+
+
+class CIFAR10HDCIC(DCICDataset):
+    """Implementation of the DCIC version of the CIFAR10H dataset.
+
+    Targets and labels are the same as in the original CIFAR10H dataset.
+    This variant uses the DCIC file structure and predefined folds.
+    The dataset can be found at https://zenodo.org/records/7180818.
+    """
+
+    def __init__(
+        self,
+        root: Path | str,
+        transform: Callable[..., Any] | None = None,
+        *,
+        first_order: bool = True,
+    ) -> None:
+        """Initialize an instance of the DCIC-version of the CIFAR10H dataset class.
+
+        Args:
+            root: Root directory of the dataset.
+            transform: Optional transform to apply to the data.
+            first_order: Whether to use first order data or class labels. Defaults to True.
+        """
+        super().__init__(Path(root) / "CIFAR10H", transform, first_order=first_order)
+
+
+class MiceBone(DCICDataset):
+    """Implementation of the MiceBone dataset.
+
+    The dataset can be found at https://zenodo.org/records/7180818.
+    """
+
+    def __init__(
+        self,
+        root: Path | str,
+        transform: Callable[..., Any] | None = None,
+        *,
+        first_order: bool = True,
+    ) -> None:
+        """Initialize an instance of the MiceBone dataset class.
+
+        Args:
+            root: Root directory of the dataset.
+            transform: Optional transform to apply to the data.
+            first_order: Whether to use first order data or class labels. Defaults to True.
+        """
+        super().__init__(Path(root) / "MiceBone", transform, first_order=first_order)
+
+
+class Pig(DCICDataset):
+    """Implementation of the Pig dataset.
+
+    The dataset can be found at https://zenodo.org/records/7180818.
+    """
+
+    def __init__(
+        self,
+        root: Path | str,
+        transform: Callable[..., Any] | None = None,
+        *,
+        first_order: bool = True,
+    ) -> None:
+        """Initialize an instance of the Pig dataset class.
+
+        Args:
+            root: Root directory of the dataset.
+            transform: Optional transform to apply to the data.
+            first_order: Whether to use first order data or class labels. Defaults to True.
+        """
+        super().__init__(Path(root) / "Pig", transform, first_order=first_order)
 
 
 class Plankton(DCICDataset):
@@ -269,6 +334,52 @@ class QualityMRI(DCICDataset):
             first_order: Whether to use first order data or class labels. Defaults to True.
         """
         super().__init__(Path(root) / "QualityMRI", transform, first_order=first_order)
+
+
+class Synthetic(DCICDataset):
+    """Implementation of the Synthetic dataset.
+
+    The dataset can be found at https://zenodo.org/records/7180818.
+    """
+
+    def __init__(
+        self,
+        root: Path | str,
+        transform: Callable[..., Any] | None = None,
+        *,
+        first_order: bool = True,
+    ) -> None:
+        """Initialize an instance of the Synthetic dataset class.
+
+        Args:
+            root: Root directory of the dataset.
+            transform: Optional transform to apply to the data.
+            first_order: Whether to use first order data or class labels. Defaults to True.
+        """
+        super().__init__(Path(root) / "Synthetic", transform, first_order=first_order)
+
+
+class Turkey(DCICDataset):
+    """Implementation of the Turkey dataset.
+
+    The dataset can be found at https://zenodo.org/records/7180818.
+    """
+
+    def __init__(
+        self,
+        root: Path | str,
+        transform: Callable[..., Any] | None = None,
+        *,
+        first_order: bool = True,
+    ) -> None:
+        """Initialize an instance of the Turkey dataset class.
+
+        Args:
+            root: Root directory of the dataset.
+            transform: Optional transform to apply to the data.
+            first_order: Whether to use first order data or class labels. Defaults to True.
+        """
+        super().__init__(Path(root) / "Turkey", transform, first_order=first_order)
 
 
 class Treeversity1(DCICDataset):
