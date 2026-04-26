@@ -839,9 +839,20 @@ def _(
     run.summary["efficient_credal_alpha"] = alpha
 
 
+def _adjust_batch_size_for_method(cfg: DictConfig) -> None:
+    """Divide ``cfg.batch_size`` by ``num_members`` for BatchEnsemble (which tiles inputs)."""
+    if cfg.method.name.lower() == "batchensemble":
+        n = int(cfg.method.params.num_members)
+        original = int(cfg.batch_size)
+        cfg.batch_size = original // n
+        print(f"BatchEnsemble: scaled batch_size {original} -> {cfg.batch_size} (num_members={n})")
+
+
 @hydra.main(version_base=None, config_path="configs/", config_name="train")
-def main(cfg: DictConfig) -> None:
+def main(cfg: DictConfig) -> None:  # noqa: PLR0915
     """Run the training script."""
+    _adjust_batch_size_for_method(cfg)
+
     print("=== Training configuration ===")
     print(OmegaConf.to_yaml(cfg))
 

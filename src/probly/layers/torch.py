@@ -1089,7 +1089,7 @@ class IRDHead(nn.Module):
 
 
 class IntSoftmax(nn.Module):
-    """Implementation of the integer softmax layer."""
+    """Implementation of the interval softmax layer."""
 
     def __init__(self) -> None:
         """Initialize the IntSoftmax layer."""
