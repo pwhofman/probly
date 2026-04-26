@@ -1,9 +1,7 @@
 # @package _global_
-model_type: "probabilistic_classifier"
-method:
-  name: "posterior_network"
-  params:
-    latent_dim: 6
-    num_flows: 6
-  train:
-    entropy_weight: 1e-5
+name: "posterior_network"
+params:
+  latent_dim: 6
+  num_flows: 6
+train:
+  entropy_weight: 1e-5

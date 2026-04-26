@@ -71,6 +71,40 @@ def _append_result(results_file: Path, result: dict[str, Any]) -> None:
             fcntl.flock(f.fileno(), fcntl.LOCK_UN)
 
 
+def _resolve_al_overrides(
+    cfg: DictConfig,
+) -> tuple[dict[str, Any], dict[str, Any], int, str | None]:
+    """Resolve method params/train with optional ``active_learning`` overrides.
+
+    If ``cfg.method.active_learning`` exists, its ``params`` and ``train``
+    sub-keys are deep-merged on top of the shared ``cfg.method.params`` and
+    ``cfg.method.train`` respectively.  ``num_samples`` and ``measure`` are
+    taken from the AL section if present, otherwise from the top-level config.
+
+    Returns:
+        Tuple of ``(method_params, train_kwargs, num_samples, measure)``.
+    """
+    al = cfg.method.get("active_learning")
+
+    def _merge(key: str) -> dict[str, Any]:
+        base = cfg.method.get(key)
+        override = al.get(key) if al else None
+        if base and override:
+            return OmegaConf.to_container(OmegaConf.merge(base, override), resolve=True)  # ty: ignore[invalid-return-type]
+        if override:
+            return OmegaConf.to_container(override, resolve=True)  # ty: ignore[invalid-return-type]
+        if base:
+            return OmegaConf.to_container(base, resolve=True)  # ty: ignore[invalid-return-type]
+        return {}
+
+    return (
+        _merge("params"),
+        _merge("train"),
+        int(al.get("num_samples", cfg.num_samples)) if al else cfg.num_samples,
+        al.get("measure", cfg.measure) if al else cfg.measure,
+    )
+
+
 def _build_estimator(
     cfg: DictConfig,
     *,
@@ -99,9 +133,7 @@ def _build_estimator(
     strategy = cfg.al_strategy.name
     base_model_name = cfg.dataset.base_model
 
-    method_params: dict[str, Any] = (
-        OmegaConf.to_container(cfg.method.params, resolve=True) if cfg.method.get("params") else {}
-    )  # ty: ignore[invalid-assignment]
+    method_params, train_kwargs, num_samples, measure = _resolve_al_overrides(cfg)
 
     if method in _BASELINE_METHODS and strategy in _BASELINE_STRATEGIES:
         num_members = int(method_params.get("num_members", 1)) if method == "ensemble" else 1
@@ -116,9 +148,6 @@ def _build_estimator(
         )
 
     if strategy in _UQ_STRATEGIES and method != "plain":
-        train_kwargs: dict[str, Any] = (
-            OmegaConf.to_container(cfg.method.train, resolve=True) if cfg.method.get("train") else {}
-        )  # ty: ignore[invalid-assignment]
         return UQALEstimator(
             method_name=method,
             method_params=method_params,
@@ -129,8 +158,8 @@ def _build_estimator(
             num_classes=num_classes,
             device=device,
             in_features=in_features,
-            measure=cfg.get("measure", None),
-            num_samples=cfg.get("num_samples", 10),
+            measure=measure,
+            num_samples=num_samples,
         )
 
     msg = (

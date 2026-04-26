@@ -41,9 +41,13 @@ def load_results(path: str | Path) -> list[dict[str, Any]]:
     return json.loads(Path(path).read_text())
 
 
-def _group_key(run: dict[str, Any]) -> str:
-    """Create a grouping key from method + strategy."""
-    return f"{run['method']} / {run['strategy']}"
+# Linestyle per AL strategy. Methods get colors from the matplotlib cycle.
+_STRATEGY_LINESTYLES: dict[str, str] = {
+    "random": ":",
+    "uncertainty": "-",
+    "margin": "--",
+    "badge": "-.",
+}
 
 
 def plot_learning_curves(
@@ -56,6 +60,9 @@ def plot_learning_curves(
 ) -> None:
     """Plot AL learning curves, aggregating over seeds when multiple runs share a config.
 
+    Each method gets a distinct color; each strategy gets a distinct linestyle
+    (random=dotted, uncertainty=solid, margin=dashed, badge=dash-dot).
+
     Args:
         results_file: Path to the shared JSON file containing a list of run dicts.
         metric: Which metric to plot ("accuracy" or "ece").
@@ -66,20 +73,25 @@ def plot_learning_curves(
     runs = load_results(results_file)
 
     # Group runs by (method, strategy), applying optional filters
-    groups: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    groups: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
     for run in runs:
         if methods is not None and run["method"] not in methods:
             continue
         if strategies is not None and run["strategy"] not in strategies:
             continue
-        groups[_group_key(run)].append(run)
+        groups[(run["method"], run["strategy"])].append(run)
     if not groups:
         msg = "No results match the given --methods / --strategies filters."
         raise ValueError(msg)
 
+    # Stable color per method (sorted for reproducibility across runs).
+    methods_present = sorted({m for m, _ in groups})
+    cmap = plt.get_cmap("tab20" if len(methods_present) > 10 else "tab10")
+    method_colors: dict[str, Any] = {m: cmap(i % cmap.N) for i, m in enumerate(methods_present)}
+
     fig, ax = plt.subplots(figsize=(10, 6))
 
-    for label, group_runs in sorted(groups.items()):
+    for (method, strategy), group_runs in sorted(groups.items()):
         # Collect per-seed curves (all should have the same labeled_size steps)
         all_x = [it["labeled_size"] for it in group_runs[0]["iterations"]]
         all_y = np.array([[it[metric] for it in r["iterations"]] for r in group_runs])
@@ -87,14 +99,27 @@ def plot_learning_curves(
         naucs = [r["nauc"] for r in group_runs]
         mean_nauc = np.mean(naucs)
 
+        color = method_colors[method]
+        linestyle = _STRATEGY_LINESTYLES.get(strategy, "-")
+        label = f"{method} / {strategy}"
+
         if len(group_runs) > 1:
             std_y = all_y.std(axis=0)
-            ax.fill_between(all_x, mean_y - std_y, mean_y + std_y, alpha=0.15)
+            ax.fill_between(all_x, mean_y - std_y, mean_y + std_y, alpha=0.12, color=color)
             full_label = f"{label} (NAUC={mean_nauc:.3f}, n={len(group_runs)})"
         else:
             full_label = f"{label} (NAUC={mean_nauc:.3f})"
 
-        ax.plot(all_x, mean_y, marker="o", markersize=3, linewidth=1.5, label=full_label)
+        ax.plot(
+            all_x,
+            mean_y,
+            marker="o",
+            markersize=3,
+            linewidth=1.5,
+            color=color,
+            linestyle=linestyle,
+            label=full_label,
+        )
 
     ax.set_xlabel("Labeled samples")
     ax.set_ylabel(metric.replace("_", " ").title())

@@ -36,7 +36,7 @@ COMMON="al_dataset=openml_6 \
     epochs=20 \
     device=cpu"
 
-SEEDS=(0 1 2 3 4 5 6 7 8 9)
+SEEDS=(0 1 2)
 
 # Block 1: traditional AL strategies on UQ-free baselines.
 BASELINE_METHODS=(plain ensemble)
