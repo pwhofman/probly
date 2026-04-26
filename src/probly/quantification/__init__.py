@@ -11,6 +11,7 @@ from .decomposition import (
     SecondOrderEntropyDecomposition,
     SecondOrderZeroOneDecomposition,
 )
+from .duq import duq_uncertainty
 from .measure import quantify_sample_variance
 from .notion import (
     AleatoricUncertainty,
@@ -34,6 +35,7 @@ __all__ = [
     "SecondOrderEntropyDecomposition",
     "SecondOrderZeroOneDecomposition",
     "TotalUncertainty",
+    "duq_uncertainty",
     "notion_registry",
     "quantify",
     "quantify_sample_variance",
