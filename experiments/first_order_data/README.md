@@ -245,6 +245,27 @@ Each per-member `predictions.csv` contains:
 `ensemble_predictions.csv` has the same columns plus the ensemble uncertainty columns:
 `total_uncertainty`, `aleatoric_uncertainty`, `epistemic_uncertainty`.
 
+### Pre-uploaded model outputs
+
+Pretrained ResNet-18 ensemble runs are available on Zenodo:
+<https://zenodo.org/records/19712415>.
+
+The record contains two fold1 DCIC runs, one trained with softmax cross entropy
+(`alpha-1`) and one trained with entmax (`alpha-1-5`). Each run has a
+`*_predictions.tar.gz` archive with CSV predictions and summaries, and a larger
+`*_checkpoints.tar.gz` archive with the `model.pt` files.
+
+To use the uploaded predictions with the helpers in this directory, extract the
+prediction archive under [out/image](out/image):
+
+```bash
+mkdir -p out/image
+tar -xzf <run_name>_predictions.tar.gz -C out/image
+```
+
+The checkpoint archive is only needed if you want the trained model weights (so e.g. test models on different data).
+Extracting the matching checkpoint archive into the same `out/image` directory reconstructs the full run directory.
+
 ### Results evaluation
 
 The evaluation scripts use the completed run directories under `out/image/...`.
