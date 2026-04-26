@@ -16,7 +16,7 @@ from pytraverse import TRAVERSE_REVERSED, GlobalVariable, flexdispatch_traverser
 
 @runtime_checkable
 class CredalNetPredictor[**In, Out: ProbabilityIntervalsCredalSet](RepresentationPredictor[In, Out], Protocol):
-    """A predictor that applies the Credal Bayesian Neural Network transformation."""
+    """A predictor that predicts according to a credal interval net."""
 
 
 REPLACED = GlobalVariable[bool]("REPLACED", default=False)

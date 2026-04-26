@@ -21,38 +21,22 @@ class TestInvalidArgs:
         with pytest.raises(ValueError, match=msg):
             batchensemble(dummy_predictor, num_members=num_members)
 
-    def test_s_std(self, dummy_predictor: ValidPredictor) -> None:
-        num_members = 2
-        s_std = -0.1
-        msg = (
-            f"The initial standard deviation of the input modulation s must be greater than 0, but got {s_std} instead."
-        )
+    def test_invalid_init(self, dummy_predictor: ValidPredictor) -> None:
+        msg = "init must be 'normal' or 'random_sign', got 'gaussian'."
         with pytest.raises(ValueError, match=msg):
-            batchensemble(dummy_predictor, num_members=num_members, s_std=s_std)
+            batchensemble(dummy_predictor, num_members=2, init="gaussian")  # ty: ignore[invalid-argument-type]
 
-    def test_s_mean(self, dummy_predictor: ValidPredictor) -> None:
-        num_members = 2
-        s_mean = -0.1
-        msg = f"The initial mean of the input modulation s must be greater than 0, but got {s_mean} instead."
-        with pytest.raises(ValueError, match=msg):
-            batchensemble(dummy_predictor, num_members=num_members, s_mean=s_mean)
-
-    def test_r_std(self, dummy_predictor: ValidPredictor) -> None:
-        num_members = 2
+    def test_normal_r_std_must_be_positive(self, dummy_predictor: ValidPredictor) -> None:
         r_std = -0.1
-        msg = (
-            "The initial standard deviation of the output modulation r must be greater than 0, "
-            f"but got {r_std} instead."
-        )
+        msg = f"r_std must be greater than 0 when init='normal', got {r_std}."
         with pytest.raises(ValueError, match=msg):
-            batchensemble(dummy_predictor, num_members=num_members, r_std=r_std)
+            batchensemble(dummy_predictor, num_members=2, init="normal", r_std=r_std)
 
-    def test_r_mean(self, dummy_predictor: ValidPredictor) -> None:
-        num_members = 2
-        r_mean = -0.1
-        msg = f"The initial mean of the output modulation r must be greater than 0, but got {r_mean} instead."
+    def test_normal_s_std_must_be_positive(self, dummy_predictor: ValidPredictor) -> None:
+        s_std = -0.1
+        msg = f"s_std must be greater than 0 when init='normal', got {s_std}."
         with pytest.raises(ValueError, match=msg):
-            batchensemble(dummy_predictor, num_members=num_members, r_mean=r_mean)
+            batchensemble(dummy_predictor, num_members=2, init="normal", s_std=s_std)
 
 
 class InvalidPredictor(Predictor):

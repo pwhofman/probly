@@ -2,13 +2,31 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from flax import nnx
 from flax.nnx import rnglib
 from flax.nnx.module import first_from
 import jax
 import jax.numpy as jnp
+
+
+def _init_fast_weight(
+    key: jax.Array,
+    shape: tuple[int, ...],
+    init_method: Literal["random_sign", "normal"],
+    mean: float,
+    std: float,
+    dtype: Any,  # noqa: ANN401
+) -> jax.Array:
+    """Sample a BatchEnsemble fast-weight tensor using random signs or Gaussian noise."""
+    if init_method == "random_sign":
+        signs = jax.random.bernoulli(key, p=0.5, shape=shape)
+        return (signs.astype(dtype) * 2.0) - 1.0
+    if init_method == "normal":
+        return mean + std * jax.random.normal(key, shape, dtype=dtype)
+    msg = f"Unknown init {init_method!r}; expected 'random_sign' or 'normal'."
+    raise ValueError(msg)
 
 
 class DropConnectLinear(nnx.Module):
@@ -171,29 +189,21 @@ class DropConnectLinear(nnx.Module):
 
 
 class BatchEnsembleLinear(nnx.Linear):
-    """Implements a BatchEnsemble Linear layer.
+    """BatchEnsemble Linear layer based on :cite:`wen2020batchensemble`.
+
+    The effective weight for ensemble member ``i`` is the Hadamard product ``W * (r_i s_i^T)``;
+    ``r`` modulates the input features and ``s`` the output features.
 
     Attributes:
         kernel: nnx.Param, weight matrix of the layer.
-        bias: nnx.Param, bias of the layer.
+        bias: nnx.Param of shape ``[num_members, out_features]`` (or None if the base layer had no bias).
         in_features: int, number of input features.
         out_features: int, number of output features.
         use_bias: bool, whether to add bias to the output.
-        dtype: typing.Optional[flax.typing.Dtype], the dtype of the computation (default: infer from input and params).
-        param_dtype: flax.typing.Dtype, the dtype passed to parameter initializers.
-        precision: flax.typing.PrecisionLike, numerical precision of the computation see ``jax.lax.Precision``
-            for details.
-        dot_general: flax.typing.DotGeneralT, dot product function.
-        promote_dtype: flax.typing.PromoteDtypeFn, function to promote the dtype of the arrays to the desired
-            dtype. The function should accept a tuple of ``(inputs, kernel, bias)``
-            and a ``dtype`` keyword argument, and return a tuple of arrays with the
-            promoted dtype.
-        preferred_element_type: flax.typing.Dtype, Optional parameter controls the data type output by
-            the dot product. This argument is passed to ``dot_general`` function.
-            See ``jax.lax.dot`` for details.
         num_members: int, number of batch ensemble members.
-        s: nnx.Param, rank-one factor for input features
-        r: nnx.Param, rank-one factor for output features
+        r: nnx.Param, rank-one factor on the input features.
+        s: nnx.Param, rank-one factor on the output features.
+
     """
 
     def __init__(
@@ -202,12 +212,27 @@ class BatchEnsembleLinear(nnx.Linear):
         rngs: nnx.Rngs | int = 1,
         num_members: int = 1,
         use_base_weights: bool = False,
-        s_mean: float = 1.0,
-        s_std: float = 0.01,
+        init: Literal["random_sign", "normal"] = "normal",
         r_mean: float = 1.0,
-        r_std: float = 0.01,
+        r_std: float = 0.5,
+        s_mean: float = 1.0,
+        s_std: float = 0.5,
     ) -> None:
-        """Initialize a BatchEnsembleLinear layer based on a given Linear layer."""
+        """Initialize a BatchEnsembleLinear layer based on a given Linear layer.
+
+        Args:
+            base_layer: The base ``nnx.Linear`` layer to wrap.
+            rngs: ``nnx.Rngs`` or seed used to initialize new parameters.
+            num_members: Number of ensemble members.
+            use_base_weights: If True, share the base layer's kernel; otherwise initialize a fresh kernel.
+            init: Initialization scheme for ``r`` and ``s`` - ``"normal"`` (Gaussian, imagenet
+                default) or ``"random_sign"`` ({-1, +1}, paper Appendix B).
+            r_mean: Mean of the Gaussian initialization of ``r`` when ``init="normal"``.
+            r_std: Standard deviation of the Gaussian initialization of ``r`` when ``init="normal"``.
+            s_mean: Mean of the Gaussian initialization of ``s`` when ``init="normal"``.
+            s_std: Standard deviation of the Gaussian initialization of ``s`` when ``init="normal"``.
+
+        """
         if isinstance(rngs, int):
             rngs = nnx.Rngs(rngs)
 
@@ -219,11 +244,6 @@ class BatchEnsembleLinear(nnx.Linear):
             self.kernel = nnx.Param(
                 kernel_init(kernel_key, (base_layer.in_features, base_layer.out_features), base_layer.param_dtype),
             )
-
-        if base_layer.bias is not None:
-            self.bias = base_layer.bias
-        else:
-            self.bias = nnx.data(None)
 
         self.in_features = base_layer.in_features
         self.out_features = base_layer.out_features
@@ -237,25 +257,45 @@ class BatchEnsembleLinear(nnx.Linear):
 
         self.num_members = num_members
 
-        s_key = rngs.params()
-        s_init = s_mean + s_std * jax.random.normal(s_key, (self.num_members, base_layer.in_features))
-        self.s = nnx.Param(s_init)
+        if base_layer.bias is not None:
+            base_bias = base_layer.bias.value
+            bias_init = jnp.broadcast_to(base_bias[None, :], (num_members, self.out_features))
+            self.bias = nnx.Param(bias_init)
+        else:
+            self.bias = nnx.data(None)
 
         r_key = rngs.params()
-        r_init = r_mean + r_std * jax.random.normal(r_key, (self.num_members, base_layer.out_features))
-        self.r = nnx.Param(r_init)
+        self.r = nnx.Param(
+            _init_fast_weight(r_key, (num_members, self.in_features), init, r_mean, r_std, base_layer.param_dtype),
+        )
+        s_key = rngs.params()
+        self.s = nnx.Param(
+            _init_fast_weight(s_key, (num_members, self.out_features), init, s_mean, s_std, base_layer.param_dtype),
+        )
 
     def __call__(self, inputs: jax.Array, out_sharding: Any = None) -> jax.Array:  # noqa: ANN401
         """Forward pass of the BatchEnsembleLinear layer.
 
+        The layer expects an input of shape ``[E * B, in_features]`` with rows
+        ``[k * B, (k + 1) * B)`` belonging to ensemble member ``k``.
+
         Args:
-            inputs: jax.Array, the input of shape [B, in_features] or [E, B, in_features].
-                where B is the batch size and E is the ensemble_size.
+            inputs: jax.Array, the input of shape ``[E * B, in_features]``.
             out_sharding: Optional sharding specification for the output array.
 
         Returns:
-            jax.Array, Output of shape [E, B, out_features].
+            jax.Array, Output of shape ``[E * B, out_features]``.
+
         """
+        if inputs.ndim != 2:
+            msg = f"Expected 2D input [E*B, in_features], got {inputs.ndim}D array of shape {inputs.shape}."
+            raise ValueError(msg)
+        eb = inputs.shape[0]
+        if eb % self.num_members != 0:
+            msg = f"Batch size {eb} is not divisible by num_members={self.num_members}."
+            raise ValueError(msg)
+        b = eb // self.num_members
+
         kernel = self.kernel[...]
         bias = self.bias[...] if self.bias is not None else None
 
@@ -265,16 +305,10 @@ class BatchEnsembleLinear(nnx.Linear):
         if self.preferred_element_type is not None:
             dot_general_kwargs["preferred_element_type"] = self.preferred_element_type
 
-        if inputs.ndim == 2:
-            # If this is the first layer, expand to ensemble dimension
-            inputs = jnp.expand_dims(inputs, axis=0)
-            inputs = jnp.repeat(inputs, self.num_members, axis=0)
-        elif inputs.ndim == 3 and inputs.shape[0] != self.num_members:
-            msg = f"Expected first dim={self.num_members}, got {inputs.shape[0]}"
-            raise ValueError(msg)
-        # Apply s
-        inputs *= self.s[:, None, :]
-        # Linear transformation
+        # View as [E, B, in_features] and apply r modulation
+        inputs = inputs.reshape(self.num_members, b, -1)
+        inputs = inputs * self.r[:, None, :]
+        # Linear transformation (operates on the trailing in_features dim)
         y = self.dot_general(
             inputs,
             kernel,
@@ -282,59 +316,40 @@ class BatchEnsembleLinear(nnx.Linear):
             precision=self.precision,
             **dot_general_kwargs,
         )
-        # Apply r
-        y = y * self.r[:, None, :]
-        # Add bias
-        if self.use_bias:
-            y += jnp.reshape(self.bias, (1,) * (y.ndim - 1) + (-1,))  # ty: ignore[invalid-argument-type]
-        return y
+        # Apply s (output modulation)
+        y = y * self.s[:, None, :]
+        # Add per-member bias
+        if bias is not None:
+            y = y + bias[:, None, :]
+        # Fold back to [E*B, out_features]
+        return y.reshape(eb, -1)
 
 
 class BatchEnsembleConv(nnx.Conv):
-    """Implements a BatchEnsemble convolutional layer.
+    """BatchEnsemble convolutional layer based on :cite:`wen2020batchensemble`.
+
+    The effective weight for ensemble member ``i`` is the Hadamard product ``W * (r_i s_i^T)``,
+    realised by channel-scaling the input by ``r_i`` and the output by ``s_i`` around a
+    shared convolution.
 
     Attributes:
-        kernel_shape: Sequence[int], (in_features, out_features, kernel_size)
+        kernel_shape: Sequence[int], (kernel_size, in_features, out_features).
         kernel: nnx.Param, weight matrix of the layer.
-        bias: nnx.Param, bias of the layer.
+        bias: nnx.Param of shape ``[num_members, out_features]`` (or None if the base layer had no bias).
         in_features: int, number of input features.
         out_features: int, number of output features.
         kernel_size: int or Sequence[int], size of the kernel.
-        strides: tp.Union[None, int, tp.Sequence[int]], representing the inter-window strides.
-        padding: flax.typing.PaddingLike, either the string ``'SAME'``, the string ``'VALID'``, the string
-          ``'CIRCULAR'`` (periodic boundary conditions), the string `'REFLECT'`
-          (reflection across the padding boundary), or a sequence of ``n``
-          ``(low, high)`` integer pairs that give the padding to apply before and after each
-          spatial dimension. A single int is interpreted as applying the same padding
-          in all dims and passing a single int in a sequence causes the same padding
-          to be used on both sides. ``'CAUSAL'`` padding for a 1D convolution will
-          left-pad the convolution axis, resulting in same-sized output.
-        input_dilation: tp.Union[None, int, tp.Sequence[int]], giving the
-          dilation factor to apply in each spatial dimension of ``inputs``
-          (default: 1). Convolution with input dilation ``d`` is equivalent to
-          transposed convolution with stride ``d``.
-        kernel_dilation: tp.Union[None, int, tp.Sequence[int]], giving the
-          dilation factor to apply in each spatial dimension of the convolution
-          kernel (default: 1). Convolution with kernel dilation
-          is also known as 'atrous convolution'.
-        feature_group_count: int, If specified divides the input features into groups.
+        strides: int or Sequence[int], the inter-window strides.
+        padding: flax.typing.PaddingLike, see ``nnx.Conv`` for the accepted forms.
+        input_dilation: int or Sequence[int], dilation applied to the inputs.
+        kernel_dilation: int or Sequence[int], dilation applied to the kernel ('atrous' convolution).
+        feature_group_count: int, group count for grouped convolution.
         use_bias: bool, whether to add bias to the output.
-        mask: typing.Optional[Array], Optional .
-        dtype: typing.Optional[flax.typing.Dtype], the dtype of the computation (default: infer from input and params).
-        param_dtype: flax.typing.Dtype, the dtype passed to parameter initializers.
-        precision: flax.typing.PrecisionLike, numerical precision of the computation see ``jax.lax.Precision``
-            for details.
-        conv_general_dilated: flax.typing.DotGeneralT, dot product function.
-        promote_dtype: flax.typing.PromoteDtypeFn, function to promote the dtype of the arrays to the desired
-            dtype. The function should accept a tuple of ``(inputs, kernel, bias)``
-            and a ``dtype`` keyword argument, and return a tuple of arrays with the
-            promoted dtype.
-        preferred_element_type: flax.typing.Dtype, Optional parameter controls the data type output by
-            the dot product. This argument is passed to ``dot_general`` function.
-            See ``jax.lax.dot`` for details.
+        mask: optional weight mask.
         num_members: int, number of batch ensemble members.
-        s: nnx.Param, rank-one factor for input features.
-        r: nnx.Param, rank-one factor for output features.
+        r: nnx.Param, rank-one factor on the input channels.
+        s: nnx.Param, rank-one factor on the output channels.
+
     """
 
     def __init__(
@@ -343,12 +358,27 @@ class BatchEnsembleConv(nnx.Conv):
         rngs: nnx.Rngs | int = 1,
         num_members: int = 1,
         use_base_weights: bool = False,
-        s_mean: float = 1.0,
-        s_std: float = 0.01,
+        init: Literal["random_sign", "normal"] = "normal",
         r_mean: float = 1.0,
-        r_std: float = 0.01,
+        r_std: float = 0.5,
+        s_mean: float = 1.0,
+        s_std: float = 0.5,
     ) -> None:
-        """Initialize a BatchEnsembleLinear layer based on a given Linear layer."""
+        """Initialize a BatchEnsembleConv layer based on a given Conv layer.
+
+        Args:
+            base_layer: The base ``nnx.Conv`` layer to wrap.
+            rngs: ``nnx.Rngs`` or seed used to initialize new parameters.
+            num_members: Number of ensemble members.
+            use_base_weights: If True, share the base layer's kernel; otherwise initialize a fresh kernel.
+            init: Initialization scheme for ``r`` and ``s`` - ``"normal"`` (Gaussian, imagenet
+                default) or ``"random_sign"`` ({-1, +1}, paper Appendix B).
+            r_mean: Mean of the Gaussian initialization of ``r`` when ``init="normal"``.
+            r_std: Standard deviation of the Gaussian initialization of ``r`` when ``init="normal"``.
+            s_mean: Mean of the Gaussian initialization of ``s`` when ``init="normal"``.
+            s_std: Standard deviation of the Gaussian initialization of ``s`` when ``init="normal"``.
+
+        """
         if isinstance(rngs, int):
             rngs = nnx.Rngs(rngs)
         self.kernel_shape = base_layer.kernel_shape
@@ -360,11 +390,6 @@ class BatchEnsembleConv(nnx.Conv):
             self.kernel = nnx.Param(
                 kernel_init(kernel_key, self.kernel_shape, base_layer.param_dtype),
             )
-
-        if base_layer.bias is not None:
-            self.bias = base_layer.bias
-        else:
-            self.bias = nnx.data(None)
 
         self.in_features = base_layer.in_features
         self.out_features = base_layer.out_features
@@ -384,12 +409,22 @@ class BatchEnsembleConv(nnx.Conv):
         self.preferred_element_type = base_layer.preferred_element_type
 
         self.num_members = num_members
-        s_key = rngs.params()
+
+        if base_layer.bias is not None:
+            base_bias = base_layer.bias.value
+            bias_init = jnp.broadcast_to(base_bias[None, :], (num_members, self.out_features))
+            self.bias = nnx.Param(bias_init)
+        else:
+            self.bias = nnx.data(None)
+
         r_key = rngs.params()
-        s_init = s_mean + s_std * jax.random.normal(s_key, (num_members, self.in_features))
-        self.s = nnx.Param(s_init)
-        r_init = r_mean + r_std * jax.random.normal(r_key, (num_members, self.out_features))
-        self.r = nnx.Param(r_init)
+        self.r = nnx.Param(
+            _init_fast_weight(r_key, (num_members, self.in_features), init, r_mean, r_std, base_layer.param_dtype),
+        )
+        s_key = rngs.params()
+        self.s = nnx.Param(
+            _init_fast_weight(s_key, (num_members, self.out_features), init, s_mean, s_std, base_layer.param_dtype),
+        )
 
     def __call__(
         self,
@@ -398,40 +433,48 @@ class BatchEnsembleConv(nnx.Conv):
     ) -> jax.Array:
         """Forward pass of the BatchEnsembleConv layer.
 
+        The layer expects an input of shape ``[E * B, *spatial, in_features]`` with rows
+        ``[k * B, (k + 1) * B)`` belonging to ensemble member ``k``.
+
         Args:
-            inputs: jax.Array, the input of shape [B, kernel_size(n-dimensional), in_features]
-                or [E, B, kernel_size(n-dimensional), in_features],
-                where B is the batch size and E is the ensemble_size.
+            inputs: jax.Array, the input of shape ``[E * B, *spatial, in_features]``.
             out_sharding: Optional sharding specification for the output array.
 
         Returns:
-            jax.Array, Output of shape [E, B, kernel_size(n-dimensional), out_features].
-        """
-        if inputs.ndim == self.kernel.ndim:
-            # If this is the first layer, expand to ensemble dimension
-            inputs = jnp.repeat(inputs[None, ...], self.num_members, axis=0)
-        elif inputs.ndim == (self.kernel.ndim + 1) and inputs.shape[0] != self.num_members:
-            msg = f"Expected first dim={self.num_members}, got {inputs.shape[0]}"
-            raise ValueError(msg)
+            jax.Array, Output of shape ``[E * B, *spatial_out, out_features]``.
 
-        # flax: ensemble size, batch size, (kernel size), channel size
-        s_r_dim = (slice(None),) + (None,) * (self.kernel.ndim - 1) + (slice(None),)  # ensemble size, ..., channel size
-        # Apply s
-        inputs *= self.s[s_r_dim]
-        # Reshape to n-dimensional Convolution (ensemble_size * batch_size)
-        x = inputs.reshape(inputs.shape[0] * inputs.shape[1], *inputs.shape[2:])
-        # Convolutional Transformation
-        y = super().__call__(x, out_sharding=out_sharding)
-        # Remove bias
-        if self.use_bias:
-            bias = self.bias.reshape((1,) * (y.ndim - self.bias.ndim) + self.bias.shape)  # ty: ignore[unresolved-attribute]
-            y -= bias
-        # Reshape back to (ensemble_size, batch_size, (kernel_size), channel_size)
-        y = y.reshape(inputs.shape[0], inputs.shape[1], *y.shape[1:])
-        # Apply r
-        y *= self.r[s_r_dim]
-        # Add bias
-        if self.use_bias:
-            bias = self.bias.reshape((1,) * (y.ndim - self.bias.ndim) + self.bias.shape)  # ty: ignore[unresolved-attribute]
-            y += bias
-        return y
+        """
+        if inputs.ndim != self.kernel.ndim:
+            msg = (
+                f"Expected {self.kernel.ndim}D input [E*B, *spatial, in_features], "
+                f"got {inputs.ndim}D array of shape {inputs.shape}."
+            )
+            raise ValueError(msg)
+        eb = inputs.shape[0]
+        if eb % self.num_members != 0:
+            msg = f"Batch size {eb} is not divisible by num_members={self.num_members}."
+            raise ValueError(msg)
+        b = eb // self.num_members
+
+        # View as [E, B, *spatial, in_features] for r broadcasting
+        inputs = inputs.reshape(self.num_members, b, *inputs.shape[1:])
+        r_s_dim = (slice(None),) + (None,) * (self.kernel.ndim - 1) + (slice(None),)
+        inputs = inputs * self.r[r_s_dim]
+        # Fold back to [E*B, *spatial, in_features] for the shared convolution
+        inputs = inputs.reshape(eb, *inputs.shape[2:])
+
+        # Run the parent's convolution without its bias (we apply per-member bias post-s)
+        saved_use_bias = self.use_bias
+        self.use_bias = False
+        try:
+            y = super().__call__(inputs, out_sharding=out_sharding)
+        finally:
+            self.use_bias = saved_use_bias
+
+        # View as [E, B, *spatial_out, out_features] to apply s and per-member bias
+        y = y.reshape(self.num_members, b, *y.shape[1:])
+        y = y * self.s[r_s_dim]
+        if self.bias is not None:
+            bias_dim = (slice(None),) + (None,) * (y.ndim - 2) + (slice(None),)
+            y = y + self.bias[bias_dim]
+        return y.reshape(eb, *y.shape[2:])
