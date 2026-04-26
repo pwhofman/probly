@@ -2,8 +2,8 @@
 name: "batchensemble"
 params:
   # ImageNet baseline (Wen et al., 2020) trains an ensemble of size 4.
-  num_members: 4
-  use_base_weights: false
+  num_members: 10
+  use_base_weights: true
   # Hyperparameters below match the official imagenet baseline:
   # google/uncertainty-baselines/blob/main/baselines/imagenet/batchensemble.py
   # The flag `random_sign_init=-0.5` there resolves to RandomNormal(mean=1.0, std=0.5).
