@@ -22,6 +22,7 @@ from torch import nn
 from torch.utils.data import Subset
 from tqdm import tqdm
 
+from probly.method.batchensemble import batchensemble
 from probly.method.bayesian import bayesian
 from probly.method.credal_ensembling import credal_ensembling
 from probly.method.credal_relative_likelihood import credal_relative_likelihood
@@ -44,6 +45,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 METHODS = {
+    "batchensemble": batchensemble,
     "bayesian": bayesian,
     "dare": dare,
     "ddu": ddu,
