@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Literal, override
 import numpy as np
 
 from probly.representation._protected_axis.array import ArrayAxisProtected
-from probly.representation.distribution._common import GaussianDistribution
+from probly.representation.distribution._common import GaussianDistribution, GaussianDistributionSample
 from probly.representation.sample.array import ArraySample
 
 if TYPE_CHECKING:
@@ -145,3 +145,17 @@ class ArrayGaussianDistribution(ArrayAxisProtected[np.ndarray], GaussianDistribu
         hash gives per-instance identity semantics.
         """
         return object.__hash__(self)
+
+
+class ArrayGaussianDistributionSample(  # ty:ignore[conflicting-metaclass]
+    GaussianDistributionSample[ArrayGaussianDistribution],
+    ArraySample[ArrayGaussianDistribution],
+):
+    """Sample type for empirical second-order Gaussian distributions."""
+
+    sample_space: ClassVar[type[GaussianDistribution]] = ArrayGaussianDistribution
+
+    @override
+    @classmethod
+    def __instancehook__(cls, instance: object) -> bool:
+        return super().__instancehook__(instance)

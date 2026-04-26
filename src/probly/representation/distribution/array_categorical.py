@@ -12,6 +12,7 @@ from probly.representation.distribution._common import (
     CategoricalDistribution,
     CategoricalDistributionSample,
     create_categorical_distribution,
+    create_categorical_distribution_from_logits,
 )
 from probly.representation.sample import ArraySample
 
@@ -33,7 +34,7 @@ class ArrayCategoricalDistribution(
 
     unnormalized_probabilities: np.ndarray
     protected_axes: ClassVar[dict[str, int]] = {"unnormalized_probabilities": 1}
-    permitted_functions: ClassVar[set[Callable]] = {np.mean}
+    permitted_functions: ClassVar[set[Callable]] = {np.mean, np.average}
 
     def __post_init__(self) -> None:
         """Validate the concentration parameters."""
@@ -153,3 +154,11 @@ def _create_array_categorical_distribution_from_instance(
     data: ArrayCategoricalDistribution,
 ) -> ArrayCategoricalDistribution:
     return data
+
+
+@create_categorical_distribution_from_logits.register(np.ndarray)
+def _create_array_categorical_distribution_from_logits(
+    data: np.ndarray,
+) -> ArrayCategoricalDistribution:
+    unnormalized_probs = np.exp(data - np.max(data, axis=-1, keepdims=True))
+    return ArrayCategoricalDistribution(unnormalized_probabilities=unnormalized_probs)

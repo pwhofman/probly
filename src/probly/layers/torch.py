@@ -1082,7 +1082,6 @@ class HeteroscedasticLayer(nn.Module):
         num_classes: int, number of classes.
         num_factors: int, number of factors.
         temperature: float, temperature scaling.
-        num_mc_samples: int, number of Monte Carlo samples.
         is_parameter_efficient: bool, whether to use parameter efficient routing.
         multilabel: bool, whether to use multilabel classification.
         mu_layer: nn.Linear, deterministic mean parameter transformation.
@@ -1097,7 +1096,6 @@ class HeteroscedasticLayer(nn.Module):
         num_classes: int,
         num_factors: int = 15,
         temperature: float = 1.0,
-        num_mc_samples: int = 1000,
         is_parameter_efficient: bool = False,
         multilabel: bool = False,
     ) -> None:
@@ -1117,7 +1115,6 @@ class HeteroscedasticLayer(nn.Module):
         self.num_classes = num_classes
         self.num_factors = num_factors
         self.temperature = temperature
-        self.num_mc_samples = num_mc_samples
         self.is_parameter_efficient = is_parameter_efficient
         self.multilabel = multilabel
 
@@ -1154,7 +1151,7 @@ class HeteroscedasticLayer(nn.Module):
             x: Input tensor of shape (batch_size, in_features).
 
         Returns:
-            Logarithm of the expected probabilities across Monte Carlo samples,
+            Logarithm of the probabilities for a single Monte Carlo sample,
             of shape (batch_size, num_classes).
         """
         batch_size = x.size(0)
@@ -1162,25 +1159,23 @@ class HeteroscedasticLayer(nn.Module):
         mu = self.mu_layer(x)
         diag_scale = F.softplus(self.diag_layer(x))
 
-        eps_k = torch.randn(self.num_mc_samples, batch_size, self.num_classes, device=x.device, dtype=x.dtype)
-        eps_r = torch.randn(self.num_mc_samples, batch_size, self.num_factors, device=x.device, dtype=x.dtype)
+        eps_k = torch.randn(batch_size, self.num_classes, device=x.device, dtype=x.dtype)
+        eps_r = torch.randn(batch_size, self.num_factors, device=x.device, dtype=x.dtype)
 
         if self.is_parameter_efficient:
             v_x = self.v_layer(x)
-            v_global = self.V_matrix.unsqueeze(0).unsqueeze(0)
-            scaled_eps_r = (eps_r * v_x.unsqueeze(0)).unsqueeze(-1)
+            v_global = self.V_matrix.unsqueeze(0)
+            scaled_eps_r = (eps_r * v_x).unsqueeze(-1)
             low_rank_noise = torch.matmul(v_global, scaled_eps_r).squeeze(-1)
         else:
             v_x_full = self.v_layer(x)
             v_x_full = v_x_full.view(batch_size, self.num_classes, self.num_factors)
-            v_x_expanded = v_x_full.unsqueeze(0).expand(self.num_mc_samples, -1, -1, -1)
             eps_r_expanded = eps_r.unsqueeze(-1)
-            low_rank_noise = torch.matmul(v_x_expanded, eps_r_expanded).squeeze(-1)
+            low_rank_noise = torch.matmul(v_x_full, eps_r_expanded).squeeze(-1)
 
-        utilities = mu.unsqueeze(0) + (diag_scale.unsqueeze(0) * eps_k) + low_rank_noise
+        utilities = mu + (diag_scale * eps_k) + low_rank_noise
         utilities = utilities / self.temperature
 
         probs = torch.sigmoid(utilities) if self.multilabel else F.softmax(utilities, dim=-1)
-        expected_probs = torch.mean(probs, dim=0)
 
-        return torch.log(expected_probs + 1e-7)
+        return torch.log(probs + 1e-7)

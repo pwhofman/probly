@@ -307,7 +307,7 @@ def protected_astype_function(
     return _apply_unary(internals, lambda _name, value, _axes: func(value, dtype=dtype, copy=copy))
 
 
-@array_function.multi_register([np.mean, np.sum])
+@array_function.multi_register([np.mean, np.sum, np.average])
 @array_internals_override("a")
 def protected_batch_reduction_function(  # noqa: PLR0912
     func: Callable,

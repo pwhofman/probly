@@ -13,7 +13,6 @@ from ._common import (
     LAST_LAYER,
     MULTILABEL,
     NUM_FACTORS,
-    NUM_MC_SAMPLES,
     TEMPERATURE,
     het_nets_traverser,
 )
@@ -40,7 +39,6 @@ def drop_in_place_het_layer(obj: nn.Linear, state: State) -> tuple[nn.Module, St
             num_classes=num_classes,
             num_factors=state[NUM_FACTORS],
             temperature=state[TEMPERATURE],
-            num_mc_samples=state[NUM_MC_SAMPLES],
             is_parameter_efficient=state[IS_PARAMETER_EFFICIENT],
             multilabel=state[MULTILABEL],
         ), state

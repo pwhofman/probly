@@ -10,7 +10,7 @@ from probly.quantification.decomposition.decomposition import AdditiveDecomposit
 from probly.quantification.measure.credal_set import lower_entropy, upper_entropy
 from probly.quantification.measure.distribution import (
     conditional_entropy,
-    entropy_of_expected_value,
+    entropy_of_expected_predictive_distribution,
     mutual_information,
 )
 from probly.representation.credal_set import CategoricalCredalSet
@@ -36,7 +36,7 @@ class SecondOrderEntropyDecomposition[T](AdditiveDecomposition[T, T, T]):
     @property
     def _total(self) -> T:
         """The total uncertainty of the decomposition."""
-        return entropy_of_expected_value(self.distribution)  # ty:ignore[invalid-return-type]
+        return entropy_of_expected_predictive_distribution(self.distribution)  # ty:ignore[invalid-return-type]
 
     @override
     @property

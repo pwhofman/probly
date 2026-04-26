@@ -25,7 +25,9 @@ type SecondOrderDistributionLike = SecondOrderDistribution | Sample[Distribution
 
 
 @flexdispatch
-def entropy_of_expected_value(distribution: SecondOrderDistributionLike, base: LogBase = None) -> ArrayLike:
+def entropy_of_expected_predictive_distribution(
+    distribution: SecondOrderDistributionLike, base: LogBase = None
+) -> ArrayLike:
     """Compute the entropy of the expected value of a second-order distribution."""
     msg = f"Entropy of expected value is not supported for distributions of type {type(distribution)}."
     raise NotImplementedError(msg)
