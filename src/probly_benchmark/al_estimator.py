@@ -278,19 +278,70 @@ class BenchmarkALEstimator:
 
         # Disabled wandb run for per-iteration training (no epoch-level logging).
         run = wandb.init(mode="disabled")
-        train_model(
-            model,
-            train_loader,
-            None,  # no validation
-            self.train_cfg,
-            self.device,
-            run,
-            dict(self.train_kwargs),
-        )
+        if self.method_name == "plain":
+            # Plain (UQ-free) baseline trains with vanilla cross-entropy. Done
+            # inline rather than via the shared ``train_model`` flexdispatch so
+            # we don't have to register an ``nn.Module`` fallback in
+            # ``train_funcs.train_epoch`` — that would silently catch any
+            # unregistered model in colleagues' workflows where
+            # ``NotImplementedError`` is the intended safety net.
+            self._train_plain_cross_entropy(model, train_loader)
+        else:
+            train_model(
+                model,
+                train_loader,
+                None,  # no validation
+                self.train_cfg,
+                self.device,
+                run,
+                dict(self.train_kwargs),
+            )
         run.finish()
 
         self.model = model
         return self
+
+    def _train_plain_cross_entropy(self, model: nn.Module, train_loader: DataLoader) -> None:
+        """Vanilla cross-entropy training for the ``plain`` baseline.
+
+        Uses the same optimizer / scheduler / epochs settings as the rest of
+        the pipeline (read from ``self.train_cfg``) so the plain baseline is
+        comparable to the wrapped methods.
+
+        Args:
+            model: The base ``nn.Module`` to train. Already on ``self.device``.
+            train_loader: Loader over the labeled pool for this AL iteration.
+        """
+        from probly_benchmark.train import get_optimizer, get_scheduler  # noqa: PLC0415
+
+        cfg = self.train_cfg
+        optimizer = get_optimizer(
+            cfg.optimizer["name"],
+            model.parameters(),
+            **cfg.optimizer.get("params", {}),
+        )
+        scheduler = get_scheduler(
+            cfg.scheduler["name"],
+            optimizer,
+            cfg.epochs,
+            len(train_loader),
+            **cfg.scheduler.get("params", {}),
+        )
+        step_per_iter = getattr(scheduler, "_step_per_iter", False)
+        criterion = nn.CrossEntropyLoss()
+        for _epoch in range(cfg.epochs):
+            model.train()
+            for inputs_, targets_ in train_loader:
+                inputs = inputs_.to(self.device, non_blocking=True)
+                targets = targets_.to(self.device, non_blocking=True)
+                optimizer.zero_grad()
+                loss = criterion(model(inputs), targets)
+                loss.backward()
+                optimizer.step()
+                if scheduler is not None and step_per_iter:
+                    scheduler.step()
+            if scheduler is not None and not step_per_iter:
+                scheduler.step()
 
     def predict_proba(self, x: torch.Tensor) -> torch.Tensor:
         """Return class probabilities of shape (n_samples, n_classes)."""

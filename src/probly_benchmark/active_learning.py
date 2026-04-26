@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import fcntl
 import json
 import logging
 from pathlib import Path
@@ -30,6 +31,33 @@ from probly_benchmark.data import get_data_al
 from probly_benchmark.utils import set_seed
 
 logger = logging.getLogger(__name__)
+
+
+def _append_result(results_file: Path, result: dict[str, Any]) -> None:
+    """Append ``result`` to a shared JSON list at ``results_file``.
+
+    The file holds a list of run dicts. Existing entries with the same
+    ``(method, dataset, strategy, seed)`` key are replaced so re-runs
+    overwrite previous results. Uses POSIX advisory locking
+    (:func:`fcntl.flock`) to serialize concurrent writers (e.g. Hydra
+    multirun with multiple workers writing to the same file).
+    """
+    results_file.parent.mkdir(parents=True, exist_ok=True)
+    key = (result["method"], result["dataset"], result["strategy"], result["seed"])
+
+    with results_file.open("a+") as f:
+        fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+        try:
+            f.seek(0)
+            content = f.read()
+            existing: list[dict[str, Any]] = json.loads(content) if content.strip() else []
+            existing = [r for r in existing if (r["method"], r["dataset"], r["strategy"], r["seed"]) != key]
+            existing.append(result)
+            f.seek(0)
+            f.truncate()
+            json.dump(existing, f, indent=2)
+        finally:
+            fcntl.flock(f.fileno(), fcntl.LOCK_UN)
 
 
 def _build_query_strategy(cfg: DictConfig) -> QueryStrategy:
@@ -175,22 +203,28 @@ def main(cfg: DictConfig) -> float:
     run.summary["final_accuracy"] = final_acc
     logger.info("Done. NAUC=%.4f | Final acc=%.4f", nauc, final_acc)
 
-    # --- Save results to JSON in Hydra's output directory ---
-    from hydra.core.hydra_config import HydraConfig  # noqa: PLC0415
+    # --- Append results to the shared local JSON file (opt-in) ---
+    # Off by default; cluster runs use wandb as the source of truth.
+    # Enable locally with ``save_results=true`` (override ``results_file`` to
+    # change the path). Resolved relative to Hydra's original cwd because
+    # Hydra chdir's into the per-run output dir.
+    if cfg.get("save_results", False):
+        from hydra.utils import get_original_cwd  # noqa: PLC0415
 
-    out_dir = Path(HydraConfig.get().runtime.output_dir)
-    results = {
-        "method": cfg.method.name,
-        "dataset": cfg.dataset.name,
-        "strategy": cfg.al_strategy.name,
-        "seed": cfg.seed,
-        "nauc": nauc,
-        "final_accuracy": final_acc,
-        "iterations": iterations,
-    }
-    results_path = out_dir / "results.json"
-    results_path.write_text(json.dumps(results, indent=2))
-    logger.info("Results saved to %s", results_path)
+        results_file = Path(cfg.results_file)
+        if not results_file.is_absolute():
+            results_file = Path(get_original_cwd()) / results_file
+        results = {
+            "method": cfg.method.name,
+            "dataset": cfg.dataset.name,
+            "strategy": cfg.al_strategy.name,
+            "seed": cfg.seed,
+            "nauc": nauc,
+            "final_accuracy": final_acc,
+            "iterations": iterations,
+        }
+        _append_result(results_file, results)
+        logger.info("Results appended to %s", results_file)
 
     run.finish()
     return nauc

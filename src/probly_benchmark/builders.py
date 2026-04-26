@@ -14,7 +14,7 @@ import copy
 from dataclasses import dataclass
 import inspect
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 import warnings
 
 import torch
@@ -42,6 +42,40 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+
+def _plain(base: nn.Module, predictor_type: str | None = None, **_kwargs: Any) -> nn.Module:  # noqa: ANN401
+    """No-op UQ wrapper: type the base model under ``predictor_type`` and return it.
+
+    Used as a UQ-free baseline for AL strategies that don't depend on UQ
+    scoring (``random``, ``margin``, ``badge``) and for ``uncertainty`` as
+    a softmax-entropy reference.
+
+    Probly's ``predict`` flexdispatch routes by the predictor's registered
+    type (see ``predictor_registry``). Real UQ methods register their
+    result via ``@predictor_transformation``; here we mirror just the
+    registration step so that the bare base model dispatches to the
+    standard logit-classifier handler (logits -> softmax categorical).
+
+    Args:
+        base: Base ``nn.Module`` returning logits of shape ``(n, num_classes)``.
+        predictor_type: Predictor-type name (e.g. ``"logit_classifier"``) or
+            type. If given, the base is registered as that type. ``None`` means
+            no registration; rely on whatever typing the base already has.
+
+    Returns:
+        The (possibly re-registered) base model.
+    """
+    if predictor_type is not None:
+        from probly.predictor import predictor_registry  # noqa: PLC0415
+
+        ptype = predictor_registry[cast("Any", predictor_type)] if isinstance(predictor_type, str) else predictor_type
+        if ptype is None:
+            msg = f"Unknown predictor_type {predictor_type!r}"
+            raise ValueError(msg)
+        return ptype.register_instance(base)
+    return base
+
+
 METHODS = {
     "bayesian": bayesian,
     "ddu": ddu,
@@ -55,6 +89,7 @@ METHODS = {
     "credal_wrapper": credal_wrapper,
     "efficient_credal_prediction": efficient_credal_prediction,
     "subensemble": subensemble,
+    "plain": _plain,
 }
 
 
