@@ -6,15 +6,15 @@ from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 import numpy as np
 
-from probly.method.conformal_credal_set_prediction.calibrate import calibrate_raw_conformal
-from probly.method.conformal_credal_set_prediction.quantile import calculate_quantile
+from probly.calibrator._common import calibrate
 from probly.predictor import CredalPredictor, Predictor, predict
 from probly.representation.credal_set import CategoricalCredalSet
 from probly.representation.credal_set.array import ArrayDistanceBasedCredalSet
 from probly.representation.distribution import ArrayCategoricalDistribution
+from probly.utils.quantile._common import calculate_quantile
 
 if TYPE_CHECKING:
-    from probly.method.conformal_credal_set_prediction.scores import NonConformityFunction
+    from probly.conformal_scores._common import NonConformityScore
 
 
 @runtime_checkable
@@ -22,7 +22,7 @@ class ConformalCredalSetPredictor[**In, Out: CategoricalCredalSet](CredalPredict
     """Protocol for predictors that output conformalized credal sets."""
 
     quantile: float | None
-    non_conformity_score: NonConformityFunction | None
+    non_conformity_score: NonConformityScore | None
 
 
 class ConformalCredalSet[**In](ConformalCredalSetPredictor[In, CategoricalCredalSet]):
@@ -38,7 +38,7 @@ class ConformalCredalSet[**In](ConformalCredalSetPredictor[In, CategoricalCredal
         self.model = model
         self.k = k_classes
         self.quantile: float | None = None
-        self.non_conformity_score: NonConformityFunction | None = None
+        self.non_conformity_score: NonConformityScore | None = None
 
     def predict(self, *args: In.args, **kwargs: In.kwargs) -> ArrayDistanceBasedCredalSet:
         """Predict the credal set for the given inputs.
@@ -98,10 +98,10 @@ def conformal_credal_set_prediction[**In, Out: CategoricalCredalSet](
     return conformal_credal_set_generator(model, k_classes=k_classes)
 
 
-@calibrate_raw_conformal.register(ConformalCredalSet)
+@calibrate.register(ConformalCredalSet)
 def conformal_credal_set_calibration[In, Out](
     predictor: ConformalCredalSet[In],
-    non_conformity_score: NonConformityFunction,
+    non_conformity_score: NonConformityScore,
     x_calib: In,
     y_calib: Out,
     alpha: float,
