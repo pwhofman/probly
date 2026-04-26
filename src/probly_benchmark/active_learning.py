@@ -26,11 +26,22 @@ from probly.evaluation.active_learning import (
     compute_ece,
     compute_nauc,
 )
-from probly_benchmark.al_estimator import BenchmarkALEstimator
+from probly_benchmark.al_estimator import BaselineALEstimator, UQALEstimator
 from probly_benchmark.data import get_data_al
 from probly_benchmark.utils import set_seed
 
 logger = logging.getLogger(__name__)
+
+
+# Methods trained as plain cross-entropy baselines. Everything else goes
+# through :class:`UQALEstimator` (probly's full UQ pipeline).
+_BASELINE_METHODS = frozenset({"plain", "ensemble"})
+# Strategies that consume only ``predict_proba`` / ``embed`` from a
+# baseline-trained model. ``ensemble`` overlaps both sets via the
+# ``ensemble`` method-name; the dispatch in :func:`_build_estimator`
+# routes ``ensemble x uncertainty`` through :class:`UQALEstimator`.
+_BASELINE_STRATEGIES = frozenset({"random", "margin", "badge"})
+_UQ_STRATEGIES = frozenset({"random", "uncertainty"})
 
 
 def _append_result(results_file: Path, result: dict[str, Any]) -> None:
@@ -58,6 +69,79 @@ def _append_result(results_file: Path, result: dict[str, Any]) -> None:
             json.dump(existing, f, indent=2)
         finally:
             fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+
+
+def _build_estimator(
+    cfg: DictConfig,
+    *,
+    num_classes: int,
+    in_features: int | None,
+    device: torch.device,
+) -> BaselineALEstimator | UQALEstimator:
+    """Construct the AL estimator from the config.
+
+    Routes ``(method, strategy)`` to the appropriate estimator and rejects
+    nonsensical combinations (e.g. ``efficient_credal_prediction x margin``
+    or ``plain x uncertainty``).
+
+    Args:
+        cfg: Hydra config.
+        num_classes: Number of output classes.
+        in_features: Input feature dimension for tabular base models;
+            ``None`` for image base models.
+        device: Torch device for training and inference.
+
+    Raises:
+        ValueError: If ``(cfg.method.name, cfg.al_strategy.name)`` is not
+            a supported combination.
+    """
+    method = cfg.method.name
+    strategy = cfg.al_strategy.name
+    base_model_name = cfg.dataset.base_model
+
+    method_params: dict[str, Any] = (
+        OmegaConf.to_container(cfg.method.params, resolve=True) if cfg.method.get("params") else {}
+    )  # ty: ignore[invalid-assignment]
+
+    if method in _BASELINE_METHODS and strategy in _BASELINE_STRATEGIES:
+        num_members = int(method_params.get("num_members", 1)) if method == "ensemble" else 1
+        return BaselineALEstimator(
+            method_name=method,
+            cfg=cfg,
+            base_model_name=base_model_name,
+            num_classes=num_classes,
+            device=device,
+            in_features=in_features,
+            num_members=num_members,
+        )
+
+    if strategy in _UQ_STRATEGIES and method != "plain":
+        train_kwargs: dict[str, Any] = (
+            OmegaConf.to_container(cfg.method.train, resolve=True) if cfg.method.get("train") else {}
+        )  # ty: ignore[invalid-assignment]
+        return UQALEstimator(
+            method_name=method,
+            method_params=method_params,
+            train_kwargs=train_kwargs,
+            cfg=cfg,
+            base_model_name=base_model_name,
+            model_type=cfg.model_type,
+            num_classes=num_classes,
+            device=device,
+            in_features=in_features,
+            measure=cfg.get("measure", None),
+            num_samples=cfg.get("num_samples", 10),
+        )
+
+    msg = (
+        f"Method {method!r} does not support strategy {strategy!r}. "
+        f"Baselines (plain, ensemble) support {sorted(_BASELINE_STRATEGIES)}; "
+        f"UQ methods support {sorted(_UQ_STRATEGIES)}. "
+        f"`plain` is a baseline only and has no uncertainty measure; "
+        f"UQ methods do not naturally expose the class probabilities or "
+        f"embeddings that margin/badge require."
+    )
+    raise ValueError(msg)
 
 
 def _build_query_strategy(cfg: DictConfig) -> QueryStrategy:
@@ -118,36 +202,15 @@ def main(cfg: DictConfig) -> float:
 
     # --- Estimator ---
     device = torch.device(cfg.device)
-    method_params: dict[str, Any] = (
-        OmegaConf.to_container(cfg.method.params, resolve=True) if cfg.method.get("params") else {}
-    )  # ty: ignore[invalid-assignment]
-    train_kwargs: dict[str, Any] = (
-        OmegaConf.to_container(cfg.method.train, resolve=True) if cfg.method.get("train") else {}
-    )  # ty: ignore[invalid-assignment]
-
-    estimator = BenchmarkALEstimator(
-        method_name=cfg.method.name,
-        method_params=method_params,
-        train_kwargs=train_kwargs,
-        cfg=cfg,
-        base_model_name=cfg.dataset.base_model,
-        model_type=cfg.model_type,
+    estimator = _build_estimator(
+        cfg,
         num_classes=num_classes,
-        device=device,
         in_features=in_features if cfg.dataset.type == "tabular" else None,
-        measure=cfg.get("measure", None),
-        num_samples=cfg.get("num_samples", 10),
+        device=device,
     )
 
     # --- Strategy ---
     strategy = _build_query_strategy(cfg)
-
-    if cfg.al_strategy.name == "uncertainty" and not hasattr(estimator, "uncertainty_scores"):
-        msg = (
-            f"Strategy 'uncertainty' requires uncertainty_scores(), "
-            f"but method '{cfg.method.name}' does not provide one."
-        )
-        raise ValueError(msg)
 
     # --- WandB ---
     run_id = wandb.util.generate_id()
