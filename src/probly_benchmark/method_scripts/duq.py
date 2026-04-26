@@ -24,3 +24,4 @@ logger.info(output)
 logger.info(output.shape)
 quantification = quantify(output)
 logger.info(quantification)
+logger.info(quantification.total)  # ty:ignore[unresolved-attribute]

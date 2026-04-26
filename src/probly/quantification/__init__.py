@@ -1,5 +1,7 @@
 """Quantification methods for uncertainty."""
 
+from probly.quantification.decomposition.duq import duq_uncertainty
+
 from ._quantification import QuantificationResult, Quantifier, quantify
 from .decomposition import (
     AdditiveDecomposition,
@@ -11,7 +13,6 @@ from .decomposition import (
     SecondOrderEntropyDecomposition,
     SecondOrderZeroOneDecomposition,
 )
-from .duq import duq_uncertainty
 from .measure import quantify_sample_variance
 from .notion import (
     AleatoricUncertainty,

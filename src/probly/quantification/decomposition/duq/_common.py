@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, override
 
 from flextype import flexdispatch
 from probly.quantification._quantification import quantify
+from probly.quantification.decomposition import AdditiveDecomposition
 from probly.representation.duq import DUQRepresentation
 
 if TYPE_CHECKING:
@@ -34,6 +36,32 @@ def duq_uncertainty(representation: DUQRepresentation) -> ArrayLike:
 
 
 @quantify.register(DUQRepresentation)
-def _quantify_duq(representation: DUQRepresentation) -> ArrayLike:
-    """Quantify the uncertainty of a DUQ representation."""
-    return duq_uncertainty(representation)
+@dataclass(frozen=True, slots=True)
+class DUQDecomposition[T](AdditiveDecomposition[T, T, T]):
+    """Base class for entropy-based decomposition methods."""
+
+    representation: DUQRepresentation
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "_caching", True)
+        object.__setattr__(self, "_cache", {})
+
+    @override
+    @property
+    def _total(self) -> T:
+        """The total uncertainty of the decomposition."""
+        return duq_uncertainty(self.representation)  # ty:ignore[invalid-return-type]
+
+    @override
+    @property
+    def _aleatoric(self) -> T:
+        """The aleatoric uncertainty of the decomposition."""
+        msg = "Only total uncertainty is supported."
+        raise ValueError(msg)
+
+    @override
+    @property
+    def _epistemic(self) -> T:
+        """The epistemic uncertainty of the decomposition."""
+        msg = "Only total uncertainty is supported."
+        raise ValueError(msg)
