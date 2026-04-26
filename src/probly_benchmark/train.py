@@ -174,7 +174,7 @@ def _maybe_compile_forward(model: nn.Module, device: torch.device) -> None:
     model.forward = torch.compile(model.forward)
 
 
-def _training_loop(
+def _training_loop(  # noqa: PLR0912
     model: nn.Module,
     train_loader: DataLoader,
     val_loader: DataLoader | None,
@@ -233,6 +233,13 @@ def _training_loop(
     amp_enabled = cfg.get("amp", False)
     scaler = GradScaler(device.type) if amp_enabled else None
 
+    epoch_key = "epoch"
+    if log_prefix:
+        wandb.define_metric(f"{log_prefix}*", step_metric=epoch_key)
+    else:
+        for _m in ("train_loss", "val_loss", "val_acc"):
+            wandb.define_metric(_m, step_metric=epoch_key)
+
     for epoch in tqdm(range(cfg.epochs), desc=f"{log_prefix}Epoch"):
         model.train()
         running_loss = 0.0
@@ -257,7 +264,7 @@ def _training_loop(
         running_loss /= len(train_loader)
 
         val_loss: float | None = None
-        log_data = {f"{log_prefix}train_loss": running_loss}
+        log_data = {epoch_key: epoch, f"{log_prefix}train_loss": running_loss}
         if val_loader:
             val_loss, val_acc = val_fn(model, val_loader, device, amp_enabled, epoch=epoch, **train_kwargs)
             log_data[f"{log_prefix}val_loss"] = val_loss
@@ -484,6 +491,9 @@ def _training_loop_relative_likelihood(  # noqa: PLR0912
     amp_enabled = cfg.get("amp", False)
     scaler = GradScaler(device.type) if amp_enabled else None
 
+    epoch_key = "epoch"
+    wandb.define_metric(f"{log_prefix}*", step_metric=epoch_key)
+
     stopped = False
     for epoch in tqdm(range(cfg.epochs), desc=f"{log_prefix}Epoch"):
         model.train()
@@ -523,6 +533,7 @@ def _training_loop_relative_likelihood(  # noqa: PLR0912
 
         val_loss: float | None = None
         log_data = {
+            epoch_key: epoch,
             f"{log_prefix}train_loss": running_loss,
             f"{log_prefix}relative_likelihood": relative_likelihood,
         }
