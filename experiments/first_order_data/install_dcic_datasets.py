@@ -50,7 +50,7 @@ def main():
     parser.add_argument(
         "--dest",
         type=Path,
-        default=Path(__file__).resolve().parents[1] / "data" / "image",
+        default=Path(__file__).resolve().parent / "data" / "image",
         help="Directory that will contain the dataset folders.",
     )
     args = parser.parse_args()

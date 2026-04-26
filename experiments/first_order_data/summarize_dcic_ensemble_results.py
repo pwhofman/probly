@@ -6,7 +6,7 @@ import csv
 import json
 from pathlib import Path
 
-from first_order_data.utils import coverage_convex_hull_relaxed, coverage_convex_hull
+from utils import coverage_convex_hull_relaxed, coverage_convex_hull
 import numpy as np
 
 from probly.representation.credal_set.array import ArrayProbabilityIntervalsCredalSet

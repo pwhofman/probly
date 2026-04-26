@@ -6,7 +6,7 @@ import argparse
 from collections.abc import Mapping
 from pathlib import Path
 
-from first_order_data.summarize_dcic_ensemble_results import (
+from summarize_dcic_ensemble_results import (
     UNCERTAINTY_COLUMNS,
     load_json,
     load_prediction_csv,

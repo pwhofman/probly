@@ -1,5 +1,14 @@
 # First-order Data Experiments
 
+Run commands in this directory:
+
+```bash
+cd experiments/first_order_data
+uv sync
+```
+
+By default, downloaded datasets are stored in [data/image](data/image), and run outputs are stored in [out/image](out/image), both relative to this directory.
+
 ## Image dataset overview (DCIC Datasets)
 
 | Dataset       |  size | classes | avg. entropy | type                                                                | input size |
@@ -201,15 +210,15 @@ One run of the runner trains an ensemble for one held-out fold per dataset.
 
 Run one dataset with a `resnet18` ensemble:
 
-    uv run first_order_data/run_dcic_ensemble.py --dataset CIFAR10H --encoder resnet18 --ensemble-size 5
+    uv run python run_dcic_ensemble.py --dataset CIFAR10H --encoder resnet18 --ensemble-size 5
 
 Fine-tune the full encoder instead of only the head:
 
-    uv run first_order_data/run_dcic_ensemble.py --dataset Benthic --encoder convnext_tiny --ensemble-size 3 --finetune
+    uv run python run_dcic_ensemble.py --dataset Benthic --encoder convnext_tiny --ensemble-size 3 --finetune
 
 Run a single held-out fold:
 
-    uv run first_order_data/run_dcic_ensemble.py --dataset CIFAR10H --encoder resnet18 --ensemble-size 5 --test-fold fold1
+    uv run python run_dcic_ensemble.py --dataset CIFAR10H --encoder resnet18 --ensemble-size 5 --test-fold fold1
 
 ### Outputs
 
@@ -246,10 +255,10 @@ The evaluation scripts use the completed run directories under `out/image/...`.
 - `iter_dataset_rows(run_dir)` to iterate over dataset-level result rows programmatically
 - `get_latex_table(run_dir)` to render the same metrics as a LaTeX table
 
-From the `experiments/` directory, for example:
+From this directory, for example:
 
 ```bash
-uv run first_order_data/summarize_dcic_ensemble_results.py \
+uv run python summarize_dcic_ensemble_results.py \
   --run-dir out/image/resnet18_softmax_finetune_pretrained_ens25_ep25_bs32_lr0-001_wd0-0001_seed42_test-fold1_alpha-1 \
   --convex-hull-epsilon 0.01
 ```
@@ -263,7 +272,7 @@ uv run first_order_data/summarize_dcic_ensemble_results.py \
 Example:
 
 ```bash
-uv run first_order_data/conformal_eval.py \
+uv run python conformal_eval.py \
   --run-dir out/image/resnet18_softmax_finetune_pretrained_ens25_ep25_bs32_lr0-001_wd0-0001_seed42_test-fold1_alpha-1 \
   --label-mode sample
 ```
