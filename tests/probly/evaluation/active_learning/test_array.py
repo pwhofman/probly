@@ -6,10 +6,7 @@ import numpy as np
 import pytest
 from sklearn.linear_model import LogisticRegression
 
-from probly.evaluation.active_learning.loop import active_learning_steps
-from probly.evaluation.active_learning.pool import from_dataset
-from probly.evaluation.active_learning.strategies import RandomQuery
-
+from ._loop_suite import LoopSuite
 from ._metrics_suite import MetricsSuite
 from ._pool_suite import PoolSuite
 from ._strategies_suite import StrategySuite
@@ -106,6 +103,15 @@ class _NumpyEstimator:
 
 
 @pytest.fixture
+def margin_fn():
+    def _margin(probs):
+        sorted_probs = np.sort(probs, axis=1)
+        return sorted_probs[:, -1] - sorted_probs[:, -2]
+
+    return _margin
+
+
+@pytest.fixture
 def make_estimator():
     return _NumpyEstimator
 
@@ -127,16 +133,5 @@ class TestMetrics(MetricsSuite):
     pass
 
 
-# ---------------------------------------------------------------------------
-# Loop integration test
-# ---------------------------------------------------------------------------
-
-
-def test_loop_numpy_end_to_end(classification_data, make_estimator):
-    """Full AL loop with numpy arrays."""
-    x_train, y_train, x_test, y_test = classification_data
-    pool = from_dataset(x_train, y_train, x_test, y_test, initial_size=50, seed=0)
-    est = make_estimator()
-    states = list(active_learning_steps(pool, est, RandomQuery(seed=1), query_size=10, n_iterations=3))
-    assert len(states) == 4
-    assert [s.iteration for s in states] == [0, 1, 2, 3]
+class TestLoop(LoopSuite):
+    pass

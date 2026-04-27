@@ -8,10 +8,7 @@ torch = pytest.importorskip("torch")
 
 from sklearn.linear_model import LogisticRegression  # noqa: E402
 
-from probly.evaluation.active_learning.loop import active_learning_steps  # noqa: E402
-from probly.evaluation.active_learning.pool import from_dataset  # noqa: E402
-from probly.evaluation.active_learning.strategies import RandomQuery  # noqa: E402
-
+from ._loop_suite import LoopSuite  # noqa: E402
 from ._metrics_suite import MetricsSuite  # noqa: E402
 from ._pool_suite import PoolSuite  # noqa: E402
 from ._strategies_suite import StrategySuite  # noqa: E402
@@ -112,6 +109,15 @@ class _TorchEstimator:
 
 
 @pytest.fixture
+def margin_fn():
+    def _margin(probs):
+        sorted_probs = probs.sort(dim=1).values
+        return (sorted_probs[:, -1] - sorted_probs[:, -2]).numpy()
+
+    return _margin
+
+
+@pytest.fixture
 def make_estimator():
     return _TorchEstimator
 
@@ -133,16 +139,5 @@ class TestMetrics(MetricsSuite):
     pass
 
 
-# ---------------------------------------------------------------------------
-# Loop integration test
-# ---------------------------------------------------------------------------
-
-
-def test_loop_torch_end_to_end(classification_data, make_estimator):
-    """Full AL loop with torch tensors."""
-    x_train, y_train, x_test, y_test = classification_data
-    pool = from_dataset(x_train, y_train, x_test, y_test, initial_size=50, seed=0)
-    est = make_estimator()
-    states = list(active_learning_steps(pool, est, RandomQuery(seed=1), query_size=10, n_iterations=3))
-    assert len(states) == 4
-    assert [s.iteration for s in states] == [0, 1, 2, 3]
+class TestLoop(LoopSuite):
+    pass

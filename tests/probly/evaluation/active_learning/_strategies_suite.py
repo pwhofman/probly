@@ -52,6 +52,19 @@ class StrategySuite:
         indices_b = RandomQuery(seed=99).select(estimator, pool, n=10)
         assert not np.array_equal(np.sort(indices_a), np.sort(indices_b))
 
+    def test_margin_sampling_selects_uncertain_samples(self, estimator, pool, margin_fn):
+        """MarginSampling should select samples with smaller margin than average."""
+        n = 10
+        strategy = MarginSampling()
+        indices = strategy.select(estimator, pool, n=n)
+        probs = estimator.predict_proba(pool.x_unlabeled)
+        margins = margin_fn(probs)
+        selected_margin = float(np.mean(margins[indices]))
+        remaining_mask = np.ones(len(margins), dtype=bool)
+        remaining_mask[indices] = False
+        remaining_margin = float(np.mean(margins[remaining_mask]))
+        assert selected_margin <= remaining_margin
+
     def test_badge_query_correct_count(self, estimator, pool):
         strategy = BADGEQuery()
         indices = strategy.select(estimator, pool, n=10)
