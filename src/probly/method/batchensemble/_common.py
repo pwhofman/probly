@@ -75,7 +75,7 @@ def batchensemble(
     s_std: float = S_STD.default,
     rngs: Rngs | int = RNGS.default,
 ) -> BatchEnsemblePredictor:
-    """Create a BatchEnsemble predictor from a base predictor based on :cite:`wen2020batchensemble`.
+    """Create a BatchEnsemble predictor from a base predictor based on :cite:`wenBatchEnsemble2020`.
 
     Replaces all linear and convolutional layers with their BatchEnsemble counterparts and tags
     the result with ``num_members`` so :func:`predict` can tile inputs and wrap outputs as a

@@ -174,7 +174,7 @@ def _maybe_compile_forward(model: nn.Module, device: torch.device) -> None:
     model.forward = torch.compile(model.forward)
 
 
-def _training_loop(
+def _training_loop(  # noqa: PLR0912
     model: nn.Module,
     train_loader: DataLoader,
     val_loader: DataLoader | None,
@@ -233,6 +233,13 @@ def _training_loop(
     amp_enabled = cfg.get("amp", False)
     scaler = GradScaler(device.type) if amp_enabled else None
 
+    epoch_key = "epoch"
+    if log_prefix:
+        wandb.define_metric(f"{log_prefix}*", step_metric=epoch_key)
+    else:
+        for _m in ("train_loss", "val_loss", "val_acc"):
+            wandb.define_metric(_m, step_metric=epoch_key)
+
     for epoch in tqdm(range(cfg.epochs), desc=f"{log_prefix}Epoch"):
         model.train()
         running_loss = 0.0
@@ -257,7 +264,7 @@ def _training_loop(
         running_loss /= len(train_loader)
 
         val_loss: float | None = None
-        log_data = {f"{log_prefix}train_loss": running_loss}
+        log_data = {epoch_key: epoch, f"{log_prefix}train_loss": running_loss}
         if val_loader:
             val_loss, val_acc = val_fn(model, val_loader, device, amp_enabled, epoch=epoch, **train_kwargs)
             log_data[f"{log_prefix}val_loss"] = val_loss
@@ -375,7 +382,7 @@ def _(
     run: Any,  # noqa: ANN401
     train_kwargs: dict[str, Any],
 ) -> None:
-    """Train a BatchEnsemble predictor with the recipe of :cite:`wen2020batchensemble`.
+    """Train a BatchEnsemble predictor with the recipe of :cite:`wenBatchEnsemble2020`.
 
     The shared kernel uses the recipe's full lr and weight decay; ``r``, ``s``, and per-member
     biases use ``fast_weight_lr_multiplier * base_lr``; ``r`` and ``s`` have weight decay disabled.
@@ -451,7 +458,7 @@ def _compute_log_likelihood(
     return -total_loss / total_samples
 
 
-def _training_loop_relative_likelihood(  # noqa: PLR0912, PLR0915
+def _training_loop_relative_likelihood(  # noqa: PLR0912
     model: nn.Module,
     train_loader: DataLoader,
     val_loader: DataLoader | None,
@@ -484,8 +491,7 @@ def _training_loop_relative_likelihood(  # noqa: PLR0912, PLR0915
     amp_enabled = cfg.get("amp", False)
     scaler = GradScaler(device.type) if amp_enabled else None
 
-    epoch_key = f"{log_prefix.rstrip('/')}_epoch"
-    wandb.define_metric(epoch_key, hidden=True)
+    epoch_key = "epoch"
     wandb.define_metric(f"{log_prefix}*", step_metric=epoch_key)
 
     stopped = False
@@ -598,14 +604,6 @@ def _(
     alpha = train_kwargs.get("alpha", 0.5)
     batch_check = train_kwargs.get("batch_check", False)
     num_remaining = len(members) - 1
-
-    # Pre-register per-member epoch keys and relative_likelihood charts so that
-    # W&B creates the chart panels before any data arrives.  The epoch key is
-    # hidden so it does not show up as its own chart in the dashboard.
-    for _i in range(1, len(members)):
-        _ek = f"member_{_i}_epoch"
-        wandb.define_metric(_ek, hidden=True)
-        wandb.define_metric(f"member_{_i}/relative_likelihood", step_metric=_ek)
 
     # Train first member fully (standard training loop)
     _training_loop(
