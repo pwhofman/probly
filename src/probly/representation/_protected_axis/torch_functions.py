@@ -17,6 +17,7 @@ from probly.representation._protected_axis._common_functions import (
     value_ndim,
     value_shape,
 )
+from probly.representation.torch_functions import torch_average
 from probly.representation.torch_like import TorchLike
 from probly.utils import switchdispatch
 
@@ -312,7 +313,7 @@ def protected_clone_function(
     return _apply_unary(internals, lambda _name, value, _axes: func(value, memory_format=memory_format))
 
 
-@torch_function.multi_register([torch.mean, torch.sum])
+@torch_function.multi_register([torch.mean, torch.sum, torch_average])
 @torch_internals_override(torch_param_pos=0)
 def protected_batch_reduction_function(  # noqa: PLR0912
     func: Callable,
@@ -323,7 +324,7 @@ def protected_batch_reduction_function(  # noqa: PLR0912
     if not _is_permitted_function(internals, func):
         return NotImplemented
 
-    dim = args[1] if len(args) > 1 else kwargs.get("dim")
+    dim = args[1] if len(args) > 1 else kwargs.get("dim", kwargs.get("axis"))
     out = kwargs.get("out")
     out_internals = torch_axis_protected_internals(out)
     if out_internals is not None and out_internals.protected_axes != internals.protected_axes:
@@ -353,6 +354,8 @@ def protected_batch_reduction_function(  # noqa: PLR0912
         field_args[0] = value
         if len(field_args) > 1:
             field_args[1] = mapped_dim
+        elif "axis" in field_kwargs and "dim" not in field_kwargs:
+            field_kwargs["axis"] = mapped_dim
         else:
             field_kwargs["dim"] = mapped_dim
 

@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 class ArraySampleCreator[D: NumpyArrayLike](Protocol):
     """Protocol for creating sample arrays."""
 
-    def __call__(self, array: D, sample_axis: int) -> Any:  # noqa: ANN401
+    def __call__(self, array: D, sample_axis: int, weights: np.ndarray | None) -> Any:  # noqa: ANN401
         """Create a sample array from a numpy array and a sample axis."""
 
 
@@ -31,6 +31,7 @@ class ArraySampleInternals[D: NumpyArrayLike]:
     create: ArraySampleCreator[D]
     array: D
     sample_axis: int
+    weights: np.ndarray | None = None
 
 
 @singledispatch
@@ -67,6 +68,7 @@ class _BoundArrayFunctionWithInternals(Protocol):
         create_sample: ArraySampleCreator,
         array: NumpyArrayLike,
         sample_axis: int,
+        weights: np.ndarray | None,
     ) -> Any:  # noqa: ANN401
         ...
 
@@ -142,7 +144,14 @@ def array_internals_override(
 
             params.arguments[param_name] = internals.array
 
-            return f(func, params, internals.create, internals.array, internals.sample_axis)
+            return f(
+                func,
+                params,
+                internals.create,
+                internals.array,
+                internals.sample_axis,
+                internals.weights,
+            )
 
         return array_function_override(wrapper)
 
@@ -185,6 +194,7 @@ def array_copy_function(
     create_sample: ArraySampleCreator,
     array: NumpyArrayLike,
     sample_axis: int,
+    weights: np.ndarray | None,
 ) -> Any:  # noqa: ANN401
     """Implementation of np.copy for sample arrays."""
     order: Order = params.arguments.get("order", "C")
@@ -195,7 +205,7 @@ def array_copy_function(
     if sample_axis is None or not subok:
         return res
 
-    return create_sample(res, sample_axis=sample_axis)
+    return create_sample(res, sample_axis=sample_axis, weights=weights)
 
 
 @array_function.multi_register(
@@ -259,7 +269,7 @@ def array_reduction_function(
     new_sample_axis = track_sample_axis_after_reduction(a_internals.sample_axis, a_internals.array.ndim, axis, keepdims)
 
     if new_sample_axis is not None:
-        return a_internals.create(res, sample_axis=new_sample_axis)
+        return a_internals.create(res, sample_axis=new_sample_axis, weights=a_internals.weights)
 
     return res
 
@@ -272,6 +282,7 @@ def array_transpose(
     create_sample: ArraySampleCreator,
     array: NumpyArrayLike,
     sample_axis: int,
+    weights: np.ndarray | None,
 ) -> Any:  # noqa: ANN401
     """Implementation of np.transpose for sample arrays."""
     axes = params.arguments.get("axes", None)
@@ -281,7 +292,7 @@ def array_transpose(
     new_sample_axis = axes.index(sample_axis)
     res = func(array, axes=axes)
 
-    return create_sample(res, sample_axis=new_sample_axis)
+    return create_sample(res, sample_axis=new_sample_axis, weights=weights)
 
 
 @array_function.register(np.matrix_transpose)
@@ -292,6 +303,7 @@ def array_matrix_transpose(
     create_sample: ArraySampleCreator,
     array: NumpyArrayLike,
     sample_axis: int,
+    weights: np.ndarray | None,
 ) -> Any:  # noqa: ANN401
     """Implementation of np.matrix_transpose for sample arrays."""
     a_ndim = array.ndim
@@ -305,7 +317,7 @@ def array_matrix_transpose(
 
     res = func(array)
 
-    return create_sample(res, sample_axis=new_sample_axis)
+    return create_sample(res, sample_axis=new_sample_axis, weights=weights)
 
 
 @array_function.multi_register(
@@ -323,11 +335,12 @@ def array_sample_axis_preserving_function(
     create_sample: ArraySampleCreator,
     array: NumpyArrayLike,  # noqa: ARG001
     sample_axis: int,
+    weights: np.ndarray | None,
 ) -> Any:  # noqa: ANN401
     """Implementation of sample-axis-preserving array functions."""
     res = func(*params.args, **params.kwargs)
 
-    return create_sample(res, sample_axis=sample_axis)
+    return create_sample(res, sample_axis=sample_axis, weights=weights)
 
 
 @array_function.register(np.reshape)
@@ -338,6 +351,7 @@ def array_reshape_function(  # noqa: PLR0912
     create_sample: ArraySampleCreator,
     array: NumpyArrayLike,
     sample_axis: int,
+    weights: np.ndarray | None,
 ) -> Any:  # noqa: ANN401
     """Implementation of np.reshape for sample arrays."""
     order: Literal["C", "F", "A"] = params.arguments.get("order", "C")
@@ -388,7 +402,7 @@ def array_reshape_function(  # noqa: PLR0912
     if new_sample_axis is None:
         return res
 
-    return create_sample(res, sample_axis=new_sample_axis)
+    return create_sample(res, sample_axis=new_sample_axis, weights=weights)
 
 
 @array_function.register(np.swapaxes)
@@ -399,6 +413,7 @@ def array_swapaxes_function(
     create_sample: ArraySampleCreator,
     array: NumpyArrayLike,
     sample_axis: int,
+    weights: np.ndarray | None,
 ) -> Any:  # noqa: ANN401
     """Implementation of np.swapaxes for sample arrays."""
     axis1 = params.arguments["axis1"]
@@ -417,7 +432,7 @@ def array_swapaxes_function(
 
     res = func(array, axis1, axis2)
 
-    return create_sample(res, sample_axis=new_sample_axis)
+    return create_sample(res, sample_axis=new_sample_axis, weights=weights)
 
 
 @array_function.register(np.expand_dims)
@@ -428,6 +443,7 @@ def array_expand_dims_function(
     create_sample: ArraySampleCreator,
     array: NumpyArrayLike,
     sample_axis: int,
+    weights: np.ndarray | None,
 ) -> Any:  # noqa: ANN401
     """Implementation of np.expand_dims for sample arrays."""
     axis = params.arguments["axis"]
@@ -444,7 +460,7 @@ def array_expand_dims_function(
 
     res = func(array, axis)
 
-    return create_sample(res, sample_axis=new_sample_axis)
+    return create_sample(res, sample_axis=new_sample_axis, weights=weights)
 
 
 @array_function.register(np.squeeze)
@@ -455,6 +471,7 @@ def array_squeeze_function(
     create_sample: ArraySampleCreator,
     array: NumpyArrayLike,
     sample_axis: int,
+    weights: np.ndarray | None,
 ) -> Any:  # noqa: ANN401
     """Implementation of np.squeeze for sample arrays."""
     axis = params.arguments.get("axis", None)
@@ -480,7 +497,7 @@ def array_squeeze_function(
     if new_sample_axis is None:
         return res
 
-    return create_sample(res, sample_axis=new_sample_axis)
+    return create_sample(res, sample_axis=new_sample_axis, weights=weights)
 
 
 @array_function.register(np.apply_along_axis)
@@ -491,6 +508,7 @@ def array_apply_along_axis_function(
     create_sample: ArraySampleCreator,
     array: NumpyArrayLike,
     sample_axis: int,
+    weights: np.ndarray | None,
 ) -> Any:  # noqa: ANN401
     """Implementation of np.apply_along_axis for sample arrays."""
     func1d = params.arguments["func1d"]
@@ -506,14 +524,15 @@ def array_apply_along_axis_function(
 
     new_sample_axis = sample_axis if sample_axis < axis else res.ndim - arr_ndim + sample_axis
 
-    return create_sample(res, sample_axis=new_sample_axis)
+    return create_sample(res, sample_axis=new_sample_axis, weights=weights)
 
 
 def _extract_sample_array_sequence_internals(
-    arrays: tuple[Any, ...],
-) -> tuple[list[Any], bool, ArraySampleCreator | None, int | None, int | None]:
+    arrays: tuple[NumpyArrayLike, ...],
+) -> tuple[list[NumpyArrayLike], list[np.ndarray | None], bool, ArraySampleCreator | None, int | None, int | None]:
     """Extract the internals of a sequence of sample arrays."""
-    cast_arrays: list[Any] = []
+    cast_arrays: list[NumpyArrayLike] = []
+    weights: list[np.ndarray | None] = []
     has_sample_arrays = False
     sample_axes: set[int] = set()
     create_sample: ArraySampleCreator | None = None
@@ -524,10 +543,12 @@ def _extract_sample_array_sequence_internals(
 
         if internals is None:
             cast_arrays.append(array)
+            weights.append(None)
             continue
 
         has_sample_arrays = True
         cast_arrays.append(internals.array)
+        weights.append(internals.weights)
         sample_axes.add(internals.sample_axis)
 
         if create_sample is None:
@@ -535,9 +556,9 @@ def _extract_sample_array_sequence_internals(
             sample_ndim = internals.array.ndim
 
     if len(sample_axes) == 1:
-        return cast_arrays, has_sample_arrays, create_sample, next(iter(sample_axes)), sample_ndim
+        return cast_arrays, weights, has_sample_arrays, create_sample, next(iter(sample_axes)), sample_ndim
 
-    return cast_arrays, has_sample_arrays, None, None, None
+    return cast_arrays, weights, has_sample_arrays, None, None, None
 
 
 @array_function.register(np.concatenate)
@@ -553,7 +574,9 @@ def array_concatenate_function(
     out = kwargs.get("out")
     out_internals = array_sample_internals(out)
 
-    cast_arrays, has_sample_arrays, create_sample, sample_axis, _ = _extract_sample_array_sequence_internals(arrays)
+    cast_arrays, weights, has_sample_arrays, create_sample, sample_axis, sample_ndim = (
+        _extract_sample_array_sequence_internals(arrays)
+    )
 
     if not has_sample_arrays and out_internals is None:
         return NotImplemented
@@ -569,7 +592,21 @@ def array_concatenate_function(
     if create_sample is None or sample_axis is None or axis is None:
         return res
 
-    return create_sample(res, sample_axis=sample_axis)
+    if sample_ndim is not None:
+        axis = axis if axis >= 0 else sample_ndim + axis
+
+    if any(w is not None for w in weights):
+        if axis != sample_axis:
+            msg = "Weighted samples only support concatenate along the sample axis."
+            raise ValueError(msg)
+
+        weights = np.concatenate(
+            [w if w is not None else np.ones(cast_arrays[i].shape[sample_axis]) for i, w in enumerate(weights)]
+        )
+    else:
+        weights = None
+
+    return create_sample(res, sample_axis=sample_axis, weights=weights)
 
 
 @array_function.register(np.stack)
@@ -584,8 +621,8 @@ def array_stack_function(
     out = params.arguments.get("out", None)
     out_internals = array_sample_internals(out)
 
-    cast_arrays, has_sample_arrays, create_sample, sample_axis, sample_ndim = _extract_sample_array_sequence_internals(
-        arrays
+    cast_arrays, weights, has_sample_arrays, create_sample, sample_axis, sample_ndim = (
+        _extract_sample_array_sequence_internals(arrays)
     )
 
     if not has_sample_arrays and out_internals is None:
@@ -604,13 +641,17 @@ def array_stack_function(
     if create_sample is None or sample_axis is None:
         return res
 
+    if any(w is not None for w in weights):
+        msg = "Weighted samples do not support stack."
+        raise ValueError(msg)
+
     input_ndim = sample_ndim
     if input_ndim is None:
         return res
     axis = axis if axis >= 0 else input_ndim + axis + 1
     new_sample_axis = sample_axis + 1 if axis <= sample_axis else sample_axis
 
-    return create_sample(res, sample_axis=new_sample_axis)
+    return create_sample(res, sample_axis=new_sample_axis, weights=None)
 
 
 #     np.argsort,

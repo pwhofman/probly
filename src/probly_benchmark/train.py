@@ -2,21 +2,27 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
+
+from probly.method.efficient_credal_prediction import EfficientCredalPredictor
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
 
     from torch.utils.data import DataLoader
 
+    from probly.method.ddu.torch import GaussianMixtureHead
+
 
 import pathlib
-import secrets
 import tempfile
 
 import hydra
+import numpy as np
 from omegaconf import DictConfig, OmegaConf
 from pytorch_optimizer import Lamb
+import scipy.optimize
+import scipy.special
 import torch
 from torch import nn, optim
 from torch.amp import GradScaler
@@ -25,20 +31,29 @@ import wandb
 import wandb.util
 
 from flextype import flexdispatch
+from probly.layers.torch import BatchEnsembleConv2d, BatchEnsembleLinear
+from probly.method.batchensemble import BatchEnsemblePredictor
+from probly.method.bayesian import BayesianPredictor
 from probly.method.credal_ensembling import CredalEnsemblingPredictor
 from probly.method.credal_relative_likelihood import CredalRelativeLikelihoodPredictor
 from probly.method.credal_wrapper import CredalWrapperPredictor
+from probly.method.dare import DarePredictor
+from probly.method.ddu import DDUPredictor
 from probly.method.ensemble import EnsemblePredictor
 from probly.method.subensemble import SubensemblePredictor
 from probly_benchmark import data, metadata, utils
 from probly_benchmark.builders import BuildContext, build_model
 from probly_benchmark.paths import CHECKPOINT_PATH
 from probly_benchmark.train_funcs import (
+    BestModelTracker,
     EarlyStopping,
     evaluate,
     train_epoch,
+    train_epoch_batchensemble,
     train_epoch_cross_entropy,
+    train_epoch_dare,
     validate,
+    validate_batchensemble,
     validate_cross_entropy,
 )
 
@@ -52,8 +67,19 @@ OPTIMIZERS = {
 }
 
 
-def get_optimizer(name: str, params: Iterable[nn.Parameter], **kwargs: Any) -> optim.Optimizer:  # noqa: ANN401
-    """Get optimizer function."""
+def _get_state_dict(model: nn.Module | list[nn.Module]) -> dict | list[dict]:
+    """Return state dict(s) for a model or list of models."""
+    if isinstance(model, list):
+        return [cast("nn.Module", m).state_dict() for m in model]
+    return model.state_dict()
+
+
+def get_optimizer(
+    name: str,
+    params: Iterable[nn.Parameter] | list[dict[str, Any]],
+    **kwargs: Any,  # noqa: ANN401
+) -> optim.Optimizer:
+    """Get optimizer function. ``params`` may be parameter iterables or param-group dicts."""
     name = name.lower()
     if name not in OPTIMIZERS:
         msg = f"Unknown optimizer: {name}"
@@ -92,6 +118,7 @@ def _make_warmup_cosine(
 
 SCHEDULERS: dict[str, Callable[..., optim.lr_scheduler.LRScheduler] | None] = {
     "cosine": optim.lr_scheduler.CosineAnnealingLR,
+    "multistep": optim.lr_scheduler.MultiStepLR,
     "step": optim.lr_scheduler.StepLR,
     "plateau": optim.lr_scheduler.ReduceLROnPlateau,
     "warmup_cosine": _make_warmup_cosine,
@@ -133,7 +160,21 @@ def get_scheduler(
     return factory(optimizer, **kwargs)
 
 
-def _training_loop(
+def _maybe_compile_forward(model: nn.Module, device: torch.device) -> None:
+    """Compile ``model.forward`` in place unless the device is MPS.
+
+    Inductor's Metal backend currently generates invalid shader code for common
+    ResNet kernels (non-constant threadgroup array size, undefined ``Min``),
+    so compilation is skipped on MPS and a message is printed to surface the
+    deviation from the default CUDA/CPU path.
+    """
+    if device.type == "mps":
+        print("Skipping torch.compile on MPS (Inductor's Metal backend unsupported); using eager forward.")
+        return
+    model.forward = torch.compile(model.forward)
+
+
+def _training_loop(  # noqa: PLR0912
     model: nn.Module,
     train_loader: DataLoader,
     val_loader: DataLoader | None,
@@ -142,8 +183,9 @@ def _training_loop(
     run: Any,  # noqa: ANN401
     train_kwargs: dict[str, Any],
     train_fn: Callable[..., float],
-    val_fn: Callable[..., float],
+    val_fn: Callable[..., tuple[float, float]],
     log_prefix: str = "",
+    param_groups: list[dict[str, Any]] | None = None,
 ) -> None:
     """Run the training loop for a single model.
 
@@ -159,12 +201,16 @@ def _training_loop(
         train_fn: Per-batch training function.
         val_fn: Validation function.
         log_prefix: Prefix for W&B log keys (e.g. ``"member_0/"``).
+        param_groups: Optional list of parameter-group dicts forwarded to the optimizer
+            in place of ``model.parameters()``. Each dict can override the optimizer's
+            default ``lr`` / ``weight_decay`` for a subset of parameters; used by
+            BatchEnsemble to apply a slower lr and disable weight decay on fast weights.
     """
-    model.forward = torch.compile(model.forward)
+    _maybe_compile_forward(model, device)
 
     optimizer = get_optimizer(
         cfg.optimizer.name,
-        model.parameters(),
+        param_groups if param_groups is not None else model.parameters(),
         **cfg.optimizer.get("params", {}),
     )
     scheduler = get_scheduler(
@@ -175,17 +221,32 @@ def _training_loop(
         **cfg.scheduler.get("params", {}),
     )
     step_per_iter = getattr(scheduler, "_step_per_iter", False)
-    early_stopping = EarlyStopping(patience=cfg.early_stopping.patience) if cfg.early_stopping.patience else None
+    min_delta = cfg.early_stopping.get("min_delta", 0.0)
+    early_stopping = (
+        EarlyStopping(patience=cfg.early_stopping.patience, min_delta=min_delta)
+        if cfg.early_stopping.patience
+        else None
+    )
+    best_tracker = BestModelTracker(min_delta=min_delta) if val_loader is not None else None
 
     grad_clip_norm = cfg.get("grad_clip_norm", None)
     amp_enabled = cfg.get("amp", False)
     scaler = GradScaler(device.type) if amp_enabled else None
 
+    epoch_key = "epoch"
+    if log_prefix:
+        wandb.define_metric(f"{log_prefix}*", step_metric=epoch_key)
+    else:
+        for _m in ("train_loss", "val_loss", "val_acc"):
+            wandb.define_metric(_m, step_metric=epoch_key)
+
     for epoch in tqdm(range(cfg.epochs), desc=f"{log_prefix}Epoch"):
         model.train()
         running_loss = 0.0
         for inputs_, targets_ in tqdm(train_loader):
-            inputs = inputs_.to(device, non_blocking=True).contiguous(memory_format=torch.channels_last)
+            inputs = inputs_.to(device, non_blocking=True)
+            if device.type == "cuda":
+                inputs = inputs.contiguous(memory_format=torch.channels_last)
             targets = targets_.to(device, non_blocking=True)
             running_loss += train_fn(
                 model,
@@ -195,6 +256,7 @@ def _training_loop(
                 grad_clip_norm=grad_clip_norm,
                 amp_enabled=amp_enabled,
                 scaler=scaler,
+                epoch=epoch,
                 **train_kwargs,
             )
             if scheduler is not None and step_per_iter:
@@ -202,8 +264,15 @@ def _training_loop(
         running_loss /= len(train_loader)
 
         val_loss: float | None = None
+        log_data = {epoch_key: epoch, f"{log_prefix}train_loss": running_loss}
         if val_loader:
-            val_loss = val_fn(model, val_loader, device, amp_enabled, **train_kwargs)
+            val_loss, val_acc = val_fn(model, val_loader, device, amp_enabled, epoch=epoch, **train_kwargs)
+            log_data[f"{log_prefix}val_loss"] = val_loss
+            log_data[f"{log_prefix}val_acc"] = val_acc
+        run.log(data=log_data)
+
+        if best_tracker is not None and val_loss is not None:
+            best_tracker.update(val_loss, model)
 
         if scheduler is not None and not step_per_iter:
             if isinstance(scheduler, optim.lr_scheduler.ReduceLROnPlateau):
@@ -211,17 +280,16 @@ def _training_loop(
             else:
                 scheduler.step()
 
-        log_data = {f"{log_prefix}train_loss": running_loss}
-        if val_loss is not None:
-            log_data[f"{log_prefix}val_loss"] = val_loss
-        run.log(data=log_data)
-
         if early_stopping is not None and val_loss is not None and early_stopping.should_stop(val_loss):
             run.summary[f"{log_prefix}early_stopped"] = True
             print(f"Early stopping at epoch {epoch}")
             break
     else:
         run.summary[f"{log_prefix}early_stopped"] = False
+
+    if best_tracker is not None and best_tracker.best_state_dict is not None:
+        model.load_state_dict(best_tracker.best_state_dict)
+        run.summary[f"{log_prefix}best_val_loss"] = best_tracker.best_loss
 
 
 @flexdispatch
@@ -274,6 +342,102 @@ def _(
         )
 
 
+def _split_batchensemble_params(
+    model: nn.Module,
+) -> tuple[list[nn.Parameter], list[nn.Parameter], list[nn.Parameter]]:
+    """Split parameters into ``(shared, fast_with_wd, fast_no_wd)`` for the BatchEnsemble optimizer.
+
+    Mirrors the imagenet baseline: shared kernel and non-BE params get the recipe's lr and
+    weight decay, per-member bias gets the slower lr with weight decay, and ``r`` / ``s``
+    get the slower lr with weight decay disabled.
+    """
+    fast_no_wd_ids: set[int] = set()
+    fast_wd_ids: set[int] = set()
+    for module in model.modules():
+        if isinstance(module, BatchEnsembleLinear | BatchEnsembleConv2d):
+            fast_no_wd_ids.add(id(module.r))
+            fast_no_wd_ids.add(id(module.s))
+            fast_wd_ids.add(id(module.bias))
+
+    shared: list[nn.Parameter] = []
+    fast_wd: list[nn.Parameter] = []
+    fast_no_wd: list[nn.Parameter] = []
+    for p in model.parameters():
+        if id(p) in fast_no_wd_ids:
+            fast_no_wd.append(p)
+        elif id(p) in fast_wd_ids:
+            fast_wd.append(p)
+        else:
+            shared.append(p)
+    return shared, fast_wd, fast_no_wd
+
+
+@train_model.register(BatchEnsemblePredictor)
+def _(
+    model: nn.Module,
+    train_loader: DataLoader,
+    val_loader: DataLoader | None,
+    cfg: DictConfig,
+    device: torch.device,
+    run: Any,  # noqa: ANN401
+    train_kwargs: dict[str, Any],
+) -> None:
+    """Train a BatchEnsemble predictor with the recipe of :cite:`wenBatchEnsemble2020`.
+
+    The shared kernel uses the recipe's full lr and weight decay; ``r``, ``s``, and per-member
+    biases use ``fast_weight_lr_multiplier * base_lr``; ``r`` and ``s`` have weight decay disabled.
+    """
+    fast_lr_mult = train_kwargs.get("fast_weight_lr_multiplier", 0.25)
+    base_lr = float(cfg.optimizer.params.lr)
+    fast_lr = base_lr * fast_lr_mult
+
+    shared, fast_wd, fast_no_wd = _split_batchensemble_params(model)
+    param_groups: list[dict[str, Any]] = [{"params": shared}]
+    if fast_wd:
+        param_groups.append({"params": fast_wd, "lr": fast_lr})
+    if fast_no_wd:
+        param_groups.append({"params": fast_no_wd, "lr": fast_lr, "weight_decay": 0.0})
+
+    _training_loop(
+        model,
+        train_loader,
+        val_loader,
+        cfg,
+        device,
+        run,
+        train_kwargs,
+        train_fn=train_epoch_batchensemble,
+        val_fn=validate_batchensemble,
+        param_groups=param_groups,
+    )
+
+
+@train_model.register(DarePredictor)
+def _(
+    model: DarePredictor,
+    train_loader: DataLoader,
+    val_loader: DataLoader | None,
+    cfg: DictConfig,
+    device: torch.device,
+    run: Any,  # noqa: ANN401
+    train_kwargs: dict[str, Any],
+) -> None:
+    """Train a DARE ensemble: each member with cross-entropy minus the anti-regularizer."""
+    for i, member in enumerate(model):
+        _training_loop(
+            member,
+            train_loader,
+            val_loader,
+            cfg,
+            device,
+            run,
+            train_kwargs,
+            train_fn=train_epoch_dare,
+            val_fn=validate_cross_entropy,
+            log_prefix=f"member_{i}/",
+        )
+
+
 @torch.no_grad()
 def _compute_log_likelihood(
     model: nn.Module,
@@ -302,15 +466,13 @@ def _training_loop_relative_likelihood(  # noqa: PLR0912
     device: torch.device,
     run: Any,  # noqa: ANN401
     train_fn: Callable[..., float],
-    val_fn: Callable[..., float],
+    val_fn: Callable[..., tuple[float, float]],
     max_ll: float,
     alpha: float,
     batch_check: bool = False,
     log_prefix: str = "",
 ) -> None:
     """Training loop that stops when the relative likelihood reaches ``alpha``."""
-    model.forward = torch.compile(model.forward)
-
     optimizer = get_optimizer(
         cfg.optimizer.name,
         model.parameters(),
@@ -329,12 +491,17 @@ def _training_loop_relative_likelihood(  # noqa: PLR0912
     amp_enabled = cfg.get("amp", False)
     scaler = GradScaler(device.type) if amp_enabled else None
 
+    epoch_key = "epoch"
+    wandb.define_metric(f"{log_prefix}*", step_metric=epoch_key)
+
     stopped = False
     for epoch in tqdm(range(cfg.epochs), desc=f"{log_prefix}Epoch"):
         model.train()
         running_loss = 0.0
         for inputs_, targets_ in tqdm(train_loader):
-            inputs = inputs_.to(device, non_blocking=True).contiguous(memory_format=torch.channels_last)
+            inputs = inputs_.to(device, non_blocking=True)
+            if device.type == "cuda":
+                inputs = inputs.contiguous(memory_format=torch.channels_last)
             targets = targets_.to(device, non_blocking=True)
             running_loss += train_fn(
                 model,
@@ -365,22 +532,22 @@ def _training_loop_relative_likelihood(  # noqa: PLR0912
             relative_likelihood = torch.exp(torch.tensor(current_ll - max_ll)).item()
 
         val_loss: float | None = None
+        log_data = {
+            epoch_key: epoch,
+            f"{log_prefix}train_loss": running_loss,
+            f"{log_prefix}relative_likelihood": relative_likelihood,
+        }
         if val_loader:
-            val_loss = val_fn(model, val_loader, device, amp_enabled)
+            val_loss, val_acc = val_fn(model, val_loader, device, amp_enabled)
+            log_data[f"{log_prefix}val_loss"] = val_loss
+            log_data[f"{log_prefix}val_acc"] = val_acc
+        run.log(data=log_data)
 
         if scheduler is not None and not step_per_iter:
             if isinstance(scheduler, optim.lr_scheduler.ReduceLROnPlateau):
                 scheduler.step(val_loss)  # ty: ignore[invalid-argument-type]
             else:
                 scheduler.step()
-
-        log_data = {
-            f"{log_prefix}train_loss": running_loss,
-            f"{log_prefix}relative_likelihood": relative_likelihood,
-        }
-        if val_loss is not None:
-            log_data[f"{log_prefix}val_loss"] = val_loss
-        run.log(data=log_data)
 
         if stopped or relative_likelihood >= alpha:
             run.summary[f"{log_prefix}rl_stopped"] = True
@@ -389,6 +556,37 @@ def _training_loop_relative_likelihood(  # noqa: PLR0912
             break
     else:
         run.summary[f"{log_prefix}rl_stopped"] = False
+
+
+@train_model.register(BayesianPredictor)
+def _(
+    model: nn.Module,
+    train_loader: DataLoader,
+    val_loader: DataLoader | None,
+    cfg: DictConfig,
+    device: torch.device,
+    run: Any,  # noqa: ANN401
+    train_kwargs: dict[str, Any],
+) -> None:
+    """Train a BayesianPredictor with ELBO loss.
+
+    The KL penalty is set to 1/N (N = dataset size) following
+    Blundell et al., "Weight Uncertainty in Neural Networks", ICML 2015.
+    """
+    dataset = getattr(train_loader, "dataset", None)
+    dataset_size = len(dataset) if dataset is not None else len(train_loader) * cfg.batch_size
+    kl_penalty = 1.0 / dataset_size
+    _training_loop(
+        model,
+        train_loader,
+        val_loader,
+        cfg,
+        device,
+        run,
+        {**train_kwargs, "kl_penalty": kl_penalty},
+        train_fn=train_epoch,  # ty: ignore[invalid-argument-type]
+        val_fn=validate,
+    )
 
 
 @train_model.register(CredalRelativeLikelihoodPredictor)
@@ -449,16 +647,217 @@ def _(
         )
 
 
+@torch.no_grad()
+def _fit_ddu_density_head(
+    model: DDUPredictor,
+    train_loader: DataLoader,
+    device: torch.device,
+    amp_enabled: bool = False,
+) -> None:
+    """Fit the GMM density head of a DDU predictor on the full training set.
+
+    Iterates through ``train_loader`` to extract encoder features batch-by-batch
+    (on ``device``), accumulates them on CPU to avoid GPU memory exhaustion, then
+    calls ``density_head.fit`` on CPU before moving the fitted buffers back to
+    ``device``.
+
+    Args:
+        model: Trained DDU predictor with ``.encoder`` and ``.density_head`` attributes.
+        train_loader: Training data loader used to collect features.
+        device: Device on which the encoder runs.
+        amp_enabled: Whether to use automatic mixed precision during feature extraction.
+    """
+    model.eval()
+    all_features: list[torch.Tensor] = []
+    all_labels: list[torch.Tensor] = []
+    for inputs_, targets_ in tqdm(train_loader, desc="Fitting DDU density head"):
+        inputs = inputs_.to(device, non_blocking=True)
+        if device.type == "cuda":
+            inputs = inputs.contiguous(memory_format=torch.channels_last)
+        targets = targets_.to(device, non_blocking=True)
+        with torch.amp.autocast(device.type, enabled=amp_enabled):
+            features = model.encoder(inputs)
+        all_features.append(features.detach().cpu())
+        all_labels.append(targets.detach().cpu())
+    features_cat = torch.cat(all_features)
+    labels_cat = torch.cat(all_labels)
+    density_head: GaussianMixtureHead = model.density_head
+    density_head_device = density_head.means.device
+    density_head.cpu()
+    density_head.fit(features_cat, labels_cat)
+    density_head.to(density_head_device)
+
+
+@train_model.register(DDUPredictor)
+def _(
+    model: nn.Module,
+    train_loader: DataLoader,
+    val_loader: DataLoader | None,
+    cfg: DictConfig,
+    device: torch.device,
+    run: Any,  # noqa: ANN401
+    train_kwargs: dict[str, Any],
+) -> None:
+    """Train a DDU predictor and fit the GMM density head post-training.
+
+    Phase 1 trains the spectrally-normalised network end-to-end with standard
+    cross-entropy exactly as described in Mukhoti et al., CVPR 2023
+    (https://arxiv.org/abs/2102.11582).  Phase 2 fits the per-class Gaussian
+    density estimator (GDA) on all training features extracted from the frozen
+    encoder, which is used at inference time for epistemic uncertainty scoring.
+    """
+    _training_loop(
+        model,
+        train_loader,
+        val_loader,
+        cfg,
+        device,
+        run,
+        train_kwargs,
+        train_fn=train_epoch,  # ty: ignore[invalid-argument-type]
+        val_fn=validate,
+    )
+    amp_enabled = cfg.get("amp", False)
+    _fit_ddu_density_head(model, train_loader, device, amp_enabled)
+    run.summary["ddu_gmm_fitted"] = True
+
+
+def _compute_efficient_credal_prediction_bounds(
+    logits_train: torch.Tensor,
+    targets_train: torch.Tensor,
+    num_classes: int,
+    alpha: float,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Compute per-class additive logit bounds via classwise relative-likelihood optimisation.
+
+    For each class ``k`` and each direction (min/max), find the optimal additive
+    logit perturbation ``x`` on column ``k`` that keeps the mean training
+    relative likelihood at least ``alpha``. The relative likelihood is
+    ``exp(ll(logits + x * e_k) - ll(logits))`` where ``ll`` is the mean
+    per-sample log-likelihood.
+
+    Based on :cite:`hofmanefficient` and the reference implementation at
+    https://github.com/pwhofman/efficient-credal-prediction/blob/main/models.py.
+
+    Args:
+        logits_train: Training logits, shape ``(N, num_classes)``.
+        targets_train: Integer training targets, shape ``(N,)``.
+        num_classes: Number of classes.
+        alpha: Relative-likelihood threshold in ``[0, 1]``.
+
+    Returns:
+        Tuple ``(lower, upper)`` of ``numpy.ndarray`` with shape ``(num_classes,)``
+        and dtype ``float64``. ``lower[k]`` is the most-negative logit
+        perturbation on class ``k`` that keeps the relative likelihood at least
+        ``alpha``; ``upper[k]`` is the most-positive.
+    """
+    logits_np = logits_train.detach().cpu().numpy().astype(np.float64)
+    targets_np = targets_train.detach().cpu().numpy().astype(np.int64)
+
+    def _mean_log_likelihood(logits: np.ndarray, targets: np.ndarray) -> float:
+        log_probs = scipy.special.log_softmax(logits, axis=1)
+        return float(log_probs[np.arange(len(targets)), targets].mean())
+
+    mll = _mean_log_likelihood(logits_np, targets_np)
+
+    lower = np.zeros(num_classes, dtype=np.float64)
+    upper = np.zeros(num_classes, dtype=np.float64)
+
+    for k in tqdm(range(num_classes), desc="Credal bounds"):
+        for direction in (1, -1):
+
+            def fun(x: np.ndarray, direction: int = direction) -> float:
+                return float(direction * x[0])
+
+            def const(x: np.ndarray, k: int = k) -> float:
+                perturbed = logits_np.copy()
+                perturbed[:, k] += x[0]
+                return float(np.exp(_mean_log_likelihood(perturbed, targets_np) - mll) - alpha)
+
+            res = scipy.optimize.minimize(
+                fun,
+                x0=np.array([0.0]),
+                constraints=[{"type": "ineq", "fun": const}],
+                bounds=[(-1e4, 1e4)],
+            )
+            if not res.success:
+                print(f"scipy.optimize.minimize did not converge for class {k} direction {direction}: {res.message}")
+            if direction == 1:
+                lower[k] = float(res.x[0])
+            else:
+                upper[k] = float(res.x[0])
+
+    return lower, upper
+
+
+@train_model.register(EfficientCredalPredictor)
+def _(
+    model: nn.Module,
+    train_loader: DataLoader,
+    val_loader: DataLoader | None,
+    cfg: DictConfig,
+    device: torch.device,
+    run: Any,  # noqa: ANN401
+    train_kwargs: dict[str, Any],
+) -> None:
+    """Train an EfficientCredalPredictor.
+
+    First train the base predictor with cross-entropy, then compute classwise
+    additive logit bounds on the training set and store them in the predictor's
+    ``lower`` and ``upper`` buffers.
+    """
+    _training_loop(
+        model,
+        train_loader,
+        val_loader,
+        cfg,
+        device,
+        run,
+        train_kwargs,
+        train_fn=train_epoch,  # ty: ignore[invalid-argument-type]
+        val_fn=validate,
+    )
+    model_ = cast("Any", model)
+    amp_enabled = cfg.get("amp", False)
+    alpha = train_kwargs.get("alpha", 0.5)
+    num_classes = int(model_.lower.shape[0])
+
+    logits_train, targets_train = utils.collect_outputs_targets_raw(
+        model_.predictor,
+        train_loader,
+        device,
+        amp_enabled,
+    )
+    lower, upper = _compute_efficient_credal_prediction_bounds(
+        logits_train,
+        targets_train,
+        num_classes=num_classes,
+        alpha=alpha,
+    )
+    model_.lower.copy_(torch.from_numpy(lower).to(model_.lower))
+    model_.upper.copy_(torch.from_numpy(upper).to(model_.upper))
+    run.summary["efficient_credal_alpha"] = alpha
+
+
+def _adjust_batch_size_for_method(cfg: DictConfig) -> None:
+    """Divide ``cfg.batch_size`` by ``num_members`` for BatchEnsemble (which tiles inputs)."""
+    if cfg.method.name.lower() == "batchensemble":
+        n = int(cfg.method.params.num_members)
+        original = int(cfg.batch_size)
+        cfg.batch_size = original // n
+        print(f"BatchEnsemble: scaled batch_size {original} -> {cfg.batch_size} (num_members={n})")
+
+
 @hydra.main(version_base=None, config_path="configs/", config_name="train")
-def main(cfg: DictConfig) -> None:
+def main(cfg: DictConfig) -> None:  # noqa: PLR0915
     """Run the training script."""
+    _adjust_batch_size_for_method(cfg)
+
     print("=== Training configuration ===")
     print(OmegaConf.to_yaml(cfg))
 
     run_id = wandb.util.generate_id()
     seed = cfg.get("seed", None)
-    if seed is None:
-        seed = secrets.randbelow(2**32)
     utils.set_seed(seed)
 
     run = wandb.init(
@@ -475,9 +874,11 @@ def main(cfg: DictConfig) -> None:
     device = utils.get_device(cfg.get("device", None))
     print(f"Running on device: {device}")
 
-    train_loader, val_loader, test_loader = data.get_data_train(
+    loaders = data.get_data_train(
         cfg.dataset,
-        use_validation=cfg.validate,
+        seed,
+        val_split=cfg.val_split,
+        cal_split=cfg.get("cal_split", 0.0),
         batch_size=cfg.batch_size,
         num_workers=cfg.num_workers,
         pin_memory=cfg.pin_memory,
@@ -486,6 +887,9 @@ def main(cfg: DictConfig) -> None:
         shuffle=True,
         seed=seed,
     )
+    train_loader = loaders.train
+    val_loader = loaders.validation
+    test_loader = loaders.test
 
     num_classes = metadata.DATASETS[cfg.dataset].num_classes
 
@@ -503,18 +907,22 @@ def main(cfg: DictConfig) -> None:
         pretrained=cfg.pretrained,
         train_loader=train_loader,
     )
-    model = build_model(cfg.method.name, method_kwargs, context).to(device)
-    # channels_last layout gives a large speedup for conv nets on recent NVIDIA GPUs.
-    # only
-    # model = model.to(memory_format=torch.channels_last) # noqa: ERA001
-    model = model.to(device)
+    model = build_model(cfg.method.name, method_kwargs, context)
+    if isinstance(model, EnsemblePredictor):
+        for member in model:
+            member.to(device)
+    else:
+        model = model.to(device)
 
-    if not cfg.validate:
+    if cfg.val_split == 0:
         if cfg.scheduler.name.lower() == "plateau":
-            msg = "ReduceLROnPlateau scheduler requires `validate: true` in the config."
+            msg = "ReduceLROnPlateau scheduler requires `val_split > 0` in the config."
             raise ValueError(msg)
         if cfg.early_stopping.patience:
-            msg = "Early stopping requires `validate: true` in the config. Disable early stopping or enable validation."
+            msg = (
+                "Early stopping requires `val_split > 0` in the config. "
+                "Disable early stopping or set a validation split."
+            )
             raise ValueError(msg)
 
     train_model(model, train_loader, val_loader, cfg, device, run, train_kwargs)
@@ -524,7 +932,7 @@ def main(cfg: DictConfig) -> None:
     run.log(data=test_metrics)
 
     checkpoint = {
-        "model_state_dict": model.state_dict(),
+        "model_state_dict": _get_state_dict(model),
         "config": OmegaConf.to_container(cfg, resolve=True, throw_on_missing=True),
         "metrics": test_metrics,
     }

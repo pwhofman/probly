@@ -14,7 +14,7 @@ from ._common import (
     LogBase,
     conditional_entropy,
     entropy,
-    entropy_of_expected_value,
+    entropy_of_expected_predictive_distribution,
     expected_max_probability_complement,
     max_disagreement,
     max_probability_complement_of_expected,
@@ -44,8 +44,8 @@ def torch_categorical_entropy(distribution: TorchCategoricalDistribution, base: 
 # Entropy of expected value
 
 
-@entropy_of_expected_value.register(TorchCategoricalDistributionSample)
-def torch_categorical_sample_entropy_of_expected_value(
+@entropy_of_expected_predictive_distribution.register(TorchCategoricalDistributionSample)
+def torch_categorical_sample_entropy_of_expected_predictive_distribution(
     sample: TorchCategoricalDistributionSample, base: LogBase = None
 ) -> torch.Tensor:
     """Compute the entropy of the expected value of a sample from a categorical distribution."""

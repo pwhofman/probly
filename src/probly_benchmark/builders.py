@@ -10,20 +10,31 @@ register a custom builder in :data:`BUILDERS`.
 from __future__ import annotations
 
 from collections.abc import Callable
+import copy
 from dataclasses import dataclass
+import inspect
+import logging
 from typing import TYPE_CHECKING, Any
+import warnings
 
 import torch
 from torch import nn
 from torch.utils.data import Subset
+from tqdm import tqdm
 
+from probly.method.batchensemble import batchensemble
 from probly.method.bayesian import bayesian
 from probly.method.credal_ensembling import credal_ensembling
 from probly.method.credal_relative_likelihood import credal_relative_likelihood
 from probly.method.credal_wrapper import credal_wrapper
+from probly.method.dare import dare
+from probly.method.ddu import ddu
 from probly.method.dropconnect import dropconnect
 from probly.method.dropout import dropout
+from probly.method.efficient_credal_prediction import efficient_credal_prediction
 from probly.method.ensemble import ensemble
+from probly.method.evidential.classification import evidential_classification
+from probly.method.natural_posterior_network import natural_posterior_network
 from probly.method.posterior_network import posterior_network
 from probly.method.subensemble import subensemble
 from probly_benchmark import models
@@ -32,15 +43,23 @@ if TYPE_CHECKING:
     from torch.utils.data import DataLoader
 
 
+logger = logging.getLogger(__name__)
+
 METHODS = {
+    "batchensemble": batchensemble,
     "bayesian": bayesian,
+    "dare": dare,
+    "ddu": ddu,
     "dropout": dropout,
     "dropconnect": dropconnect,
+    "evidential_classification": evidential_classification,
+    "natural_posterior_network": natural_posterior_network,
     "posterior_network": posterior_network,
     "ensemble": ensemble,
     "credal_ensembling": credal_ensembling,
     "credal_relative_likelihood": credal_relative_likelihood,
     "credal_wrapper": credal_wrapper,
+    "efficient_credal_prediction": efficient_credal_prediction,
     "subensemble": subensemble,
 }
 
@@ -87,6 +106,23 @@ class BuildContext:
 Builder = Callable[[Callable[..., nn.Module], dict[str, Any], BuildContext], nn.Module]
 
 
+def _filter_params(fn: Callable[..., Any], params: dict[str, Any]) -> dict[str, Any]:
+    """Return only the kwargs accepted by ``fn``, warning about dropped keys."""
+    sig = inspect.signature(fn)
+    accepts_var_keyword = any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values())
+    if accepts_var_keyword:
+        return params
+    accepted = set(sig.parameters)
+    dropped = {k for k in params if k not in accepted}
+    if dropped:
+        warnings.warn(
+            f"{fn.__name__} does not accept {dropped}; dropping from method params. "  # ty:ignore[unresolved-attribute]
+            "Check your recipe/method config for unintended overrides.",
+            stacklevel=3,
+        )
+    return {k: v for k, v in params.items() if k in accepted}
+
+
 def _default_builder(
     method_fn: Callable[..., nn.Module],
     params: dict[str, Any],
@@ -94,7 +130,7 @@ def _default_builder(
 ) -> nn.Module:
     """Build a model using only the YAML hyperparameters and a base network."""
     base = models.get_base_model(ctx.base_model_name, ctx.num_classes, ctx.pretrained)
-    return method_fn(base, predictor_type=ctx.model_type, **params)
+    return method_fn(base, predictor_type=ctx.model_type, **_filter_params(method_fn, params))
 
 
 def _posterior_network_builder(
@@ -131,11 +167,38 @@ def _posterior_network_builder(
         num_classes=ctx.num_classes,
         class_counts=class_counts,
         predictor_type=ctx.model_type,
-        **params,
+        **_filter_params(method_fn, params),
+    )
+
+
+def _natural_posterior_network_builder(
+    method_fn: Callable[..., nn.Module],
+    params: dict[str, Any],
+    ctx: BuildContext,
+) -> nn.Module:
+    """Build a Natural Posterior Network.
+
+    Like the PostNet builder, this needs an encoder that outputs features
+    rather than class logits, so we ask ``get_base_model`` for the
+    ``<name>_encoder`` variant. Unlike PostNet, NatPN does not need
+    ``class_counts`` -- the per-class evidence is produced by the trainable
+    classifier head, not from training-set frequencies.
+    """
+    encoder = models.get_base_model(
+        f"{ctx.base_model_name}_encoder",
+        ctx.num_classes,
+        ctx.pretrained,
+    )
+    return method_fn(
+        encoder,
+        num_classes=ctx.num_classes,
+        predictor_type=ctx.model_type,
+        **_filter_params(method_fn, params),
     )
 
 
 BUILDERS: dict[str, Builder] = {
+    "natural_posterior_network": _natural_posterior_network_builder,
     "posterior_network": _posterior_network_builder,
 }
 
@@ -155,33 +218,60 @@ def build_model(name: str, params: dict[str, Any], ctx: BuildContext) -> nn.Modu
 def _class_counts(loader: DataLoader, num_classes: int) -> list[int]:
     """Return per-class sample counts for the dataset behind ``loader``.
 
-    Unwraps ``torch.utils.data.Subset`` layers (so the validation-enabled
-    path in :func:`probly_benchmark.data.get_data_train` is handled), and
-    tolerates the shapes that ``dataset.targets`` can take across torchvision
-    datasets (tensor, numpy array, Python list). Falls back to iterating
-    labels from the loader when no ``.targets`` attribute is exposed.
-    """
-    ds: Any = loader.dataset
-    indices: list[int] | None = None
-    while isinstance(ds, Subset):
-        indices = list(ds.indices) if indices is None else [ds.indices[i] for i in indices]
-        ds = ds.dataset
+    Prefers a ``dataset.targets`` fast path, unwrapping ``torch.utils.data.Subset``
+    layers (so the validation-enabled path in
+    :func:`probly_benchmark.data.get_data_train` is handled) and tolerating the
+    shapes that ``targets`` can take across torchvision datasets (tensor, numpy
+    array, Python list).
 
-    targets = getattr(ds, "targets", None)
-    if targets is None:
+    When that fast path is unavailable (e.g. webdataset's ``WebLoader_Length``,
+    which exposes no ``.dataset``, or datasets without ``.targets``), iterates
+    a ``copy.deepcopy`` of the loader to count labels. The deepcopy keeps the
+    original loader's first-epoch shuffle state intact. If deepcopying fails
+    (some loaders hold un-pickleable handles), iterates the original loader
+    directly and prints a message noting the potential RNG shift. If iteration
+    itself fails, falls back to uniform counts of 1 and prints a message.
+    """
+    ds: Any = getattr(loader, "dataset", None)
+    indices: list[int] | None = None
+    if ds is not None:
+        while isinstance(ds, Subset):
+            indices = list(ds.indices) if indices is None else [ds.indices[i] for i in indices]
+            ds = ds.dataset
+
+    targets = getattr(ds, "targets", None) if ds is not None else None
+    if targets is not None:
+        if isinstance(targets, torch.Tensor) or hasattr(targets, "tolist"):
+            targets = targets.tolist()
+        if indices is not None:
+            targets = [targets[i] for i in indices]
         counts = [0] * num_classes
-        for _, y in loader:
-            for c in y.tolist():
-                counts[c] += 1
+        for c in targets:
+            counts[c] += 1
         return counts
 
-    if isinstance(targets, torch.Tensor) or hasattr(targets, "tolist"):
-        targets = targets.tolist()
+    try:
+        iter_loader = copy.deepcopy(loader)
+    except Exception as exc:  # noqa: BLE001  # loaders may hold many un-pickleable internals
+        print(
+            f"[_class_counts] Could not deepcopy loader of type "
+            f"{type(loader).__name__!r} to avoid disturbing training state "
+            f"({type(exc).__name__}: {exc}). Iterating the original loader; "
+            "this may shift its first-epoch RNG state."
+        )
+        iter_loader = loader
 
-    if indices is not None:
-        targets = [targets[i] for i in indices]
-
-    counts = [0] * num_classes
-    for c in targets:
-        counts[c] += 1
+    try:
+        counts = [0] * num_classes
+        for _, y in tqdm(iter_loader, desc="Batch"):
+            for c in y.tolist():
+                counts[c] += 1
+    except Exception as exc:  # noqa: BLE001  # streaming/worker errors take many forms
+        print(
+            f"[_class_counts] Could not iterate loader to count classes "
+            f"({type(exc).__name__}: {exc}). Falling back to uniform counts = 1; "
+            "the posterior network class_counts buffer will be approximate."
+        )
+        return [1] * num_classes
+    print(f"COUNTS: {counts}")
     return counts

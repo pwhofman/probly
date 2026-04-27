@@ -14,7 +14,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 model = LeNet(n_classes=5)
-cep = efficient_credal_prediction(model, num_classes=5, predictor_type="logit_classifier")
+cep = efficient_credal_prediction(model, predictor_type="logit_classifier")
 rep = representer(cep)
 logger.info(rep)
 inputs = torch.randn(3, 1, 28, 28)

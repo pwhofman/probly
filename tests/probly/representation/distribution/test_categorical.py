@@ -183,6 +183,32 @@ def test_stack_preserves_distribution_type() -> None:
     assert stacked.probabilities.shape == (2, 2, 3, 4)
 
 
+def test_mean_preserves_distribution_type_and_class_axis() -> None:
+    probabilities = np.arange(24, dtype=float).reshape((2, 3, 4)) + 1.0
+    dist = ArrayCategoricalDistribution(probabilities)
+
+    meaned = np.mean(dist, axis=0)
+
+    assert isinstance(meaned, ArrayCategoricalDistribution)
+    assert meaned.shape == (3,)
+    np.testing.assert_allclose(meaned.unnormalized_probabilities, np.mean(probabilities, axis=0))
+
+
+def test_average_preserves_distribution_type_and_uses_weights() -> None:
+    probabilities = np.arange(24, dtype=float).reshape((2, 3, 4)) + 1.0
+    weights = np.array([0.25, 0.75])
+    dist = ArrayCategoricalDistribution(probabilities)
+
+    averaged = np.average(dist, axis=0, weights=weights)
+
+    assert isinstance(averaged, ArrayCategoricalDistribution)
+    assert averaged.shape == (3,)
+    np.testing.assert_allclose(
+        averaged.unnormalized_probabilities,
+        np.average(probabilities, axis=0, weights=weights),
+    )
+
+
 def test_hash_is_identity_based_and_distinguishes_instances() -> None:
     probabilities = np.array([[0.2, 0.8]], dtype=float)
     dist_a = ArrayCategoricalDistribution(probabilities.copy())

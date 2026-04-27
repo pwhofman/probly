@@ -34,15 +34,12 @@ def main(cfg: DictConfig) -> None:
         device,
     )
 
-    # Replace
-    _, _, id_loader = data.get_data_train(
+    id_loader, ood_loader = data.get_data_ood(
         cfg.dataset,
-        use_validation=False,
-        batch_size=cfg.batch_size,
-    )
-    _, _, ood_loader = data.get_data_train(
-        cfg.dataset,
-        use_validation=False,
+        cfg.ood_dataset,
+        cfg.seed,
+        val_split=cfg.val_split,
+        cal_split=cfg.get("cal_split", 0.0),
         batch_size=cfg.batch_size,
     )
 

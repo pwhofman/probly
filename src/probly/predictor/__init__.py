@@ -35,7 +35,7 @@ Predictor.register(
 )
 
 
-@predict_categorical_distribution_from_logit.delayed_register(SKLEARN_MODULE)
+@predict_raw.delayed_register(SKLEARN_MODULE)
 def _(_: type[object]) -> None:
     from . import sklearn as sklearn  # noqa: PLC0415
 

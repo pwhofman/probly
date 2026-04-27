@@ -12,6 +12,7 @@ pytest.importorskip("torch")
 import torch
 
 from probly.representation._protected_axis.torch import TorchAxisProtected
+from probly.representation.torch_functions import torch_average
 
 
 @dataclass(frozen=True, slots=True)
@@ -24,7 +25,7 @@ class SingleTensor(TorchAxisProtected[Any]):
 class ReductionTensor(TorchAxisProtected[Any]):
     tensor: torch.Tensor
     protected_axes: ClassVar[dict[str, int]] = {"tensor": 1}
-    permitted_functions: ClassVar[set[Any]] = {torch.mean, torch.sum}
+    permitted_functions: ClassVar[set[Any]] = {torch.mean, torch.sum, torch_average}
 
 
 @dataclass(frozen=True, slots=True)
@@ -100,6 +101,25 @@ def test_permitted_torch_reductions_reduce_only_batch_axes() -> None:
     assert torch.equal(meaned.tensor, torch.mean(x.tensor, dim=1))
     assert meaned.shape == (2,)
     assert meaned.protected_shape == (4,)
+
+
+def test_permitted_torch_average_reduces_only_batch_axes() -> None:
+    x = ReductionTensor(torch.arange(24.0).reshape(2, 3, 4))
+    weights = torch.tensor([0.25, 0.75])
+
+    averaged = torch_average(x, dim=0, weights=weights)
+
+    assert isinstance(averaged, ReductionTensor)
+    assert torch.allclose(averaged.tensor, torch_average(x.tensor, dim=0, weights=weights))
+    assert averaged.shape == (3,)
+    assert averaged.protected_shape == (4,)
+
+
+def test_unpermitted_torch_average_returns_notimplemented() -> None:
+    x = SingleTensor(torch.arange(24.0).reshape(2, 3, 4))
+
+    with pytest.raises(TypeError):
+        _ = torch_average(x, dim=0)
 
 
 def test_multi_field_tensor_conversion_and_cat() -> None:

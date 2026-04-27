@@ -111,6 +111,7 @@ class CategoricalDistributionPredictor[**In, Out: CategoricalDistribution](Distr
             predict_proba_method is not None
             and callable(predict_proba_method)
             and not hasattr(instance, "predict_representation")
+            and not isinstance(instance, LogitDistributionPredictor)
         ):
             return True
         return NotImplemented
@@ -192,7 +193,6 @@ def predict_categorical_distribution[**In, Out: CategoricalDistribution](
 
 
 @predict.register(LogitDistributionPredictor)
-@flexdispatch
 def predict_categorical_distribution_from_logit[**In, Out: CategoricalDistribution](
     predictor: LogitDistributionPredictor[In, Out], *args: In.args, **kwargs: In.kwargs
 ) -> Out:

@@ -1,14 +1,15 @@
 # @package _global_
-dataset: "imagenet_shards"
+dataset: "imagenet"
 base_model: "resnet50"
 model_type: "logit_classifier"
-pretrained: True
+pretrained: true
 epochs: 20
 batch_size: 2048
 num_workers: 16
 pin_memory: true
 persistent_workers: true
 prefetch_factor: 4
+val_split: 0.1
 
 # hyperparams based on
 # https://arxiv.org/pdf/2110.00476
@@ -27,3 +28,14 @@ scheduler:
 
 early_stopping:
   patience: 0  # set to > 0 to enable; number of epochs to wait without improvement
+
+# Params of methods specific to this recipe
+method:
+  params:
+    # Ensemble methods
+    reset_params: false
+    # Posterior network
+    # H must stay small: log p(z) is dominated by -D/2*log(2pi) - 0.5*||z||^2,
+    # so for D much larger than ~32 the alpha = 1 + exp(log p(z)) * N_c term
+    # underflows to 1 and there is no learning signal. Paper uses 6 for CIFAR-10.
+    latent_dim: 16
