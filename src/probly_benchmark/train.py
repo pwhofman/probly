@@ -706,6 +706,10 @@ def _(
     density estimator (GDA) on all training features extracted from the frozen
     encoder, which is used at inference time for epistemic uncertainty scoring.
     """
+    # The density head buffer is ~16 GB at ImageNet scale and is unused during training
+    # Parking it on CPU during training decreases footprint sufficiently to use H200 cards
+    density_device = next(model.density_head.buffers()).device
+    model.density_head.to("cpu")
     _training_loop(
         model,
         train_loader,
@@ -717,6 +721,8 @@ def _(
         train_fn=train_epoch,  # ty: ignore[invalid-argument-type]
         val_fn=validate,
     )
+    model.density_head.to(density_device)
+
     amp_enabled = cfg.get("amp", False)
     _fit_ddu_density_head(model, train_loader, device, amp_enabled)
     run.summary["ddu_gmm_fitted"] = True
