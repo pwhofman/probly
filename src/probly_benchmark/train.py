@@ -382,7 +382,7 @@ def _(
     run: Any,  # noqa: ANN401
     train_kwargs: dict[str, Any],
 ) -> None:
-    """Train a BatchEnsemble predictor with the recipe of :cite:`wen2020batchensemble`.
+    """Train a BatchEnsemble predictor with the recipe of :cite:`wenBatchEnsemble2020`.
 
     The shared kernel uses the recipe's full lr and weight decay; ``r``, ``s``, and per-member
     biases use ``fast_weight_lr_multiplier * base_lr``; ``r`` and ``s`` have weight decay disabled.
