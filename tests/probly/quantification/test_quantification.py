@@ -89,6 +89,16 @@ def test_measure_falls_back_to_registered_decomposition_total() -> None:
     np.testing.assert_allclose(uncertainty, expected, rtol=1e-12, atol=1e-12)
 
 
+def test_measure_prefers_registered_decomposition_for_distribution_sample() -> None:
+    sample = _array_categorical_sample()
+
+    uncertainty = measure(sample)
+
+    expected = entropy_of_expected_predictive_distribution(sample)
+
+    np.testing.assert_allclose(uncertainty, expected, rtol=1e-12, atol=1e-12)
+
+
 def test_quantify_prefers_registered_decomposition_for_distribution_sample() -> None:
     quantification = quantify(_array_categorical_sample())
 

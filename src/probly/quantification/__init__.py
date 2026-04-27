@@ -1,6 +1,13 @@
 """Quantification methods for uncertainty."""
 
-from ._quantification import QuantificationResult, Quantifier, decompose, measure as _measure, quantify
+from ._quantification import (
+    QuantificationResult,
+    Quantifier,
+    decompose,
+    measure as _measure,  # to avoid name clash with later .measure import
+    measure_atomic,
+    quantify,
+)
 from .decomposition import (
     AdditiveDecomposition,
     AleatoricDecomposition,
@@ -44,6 +51,7 @@ __all__ = [
     "TotalUncertainty",
     "decompose",
     "measure",
+    "measure_atomic",
     "measure_sample_variance",
     "notion_registry",
     "quantify",
