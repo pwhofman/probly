@@ -3,5 +3,5 @@ dataset:
   name: "openml"
   openml_id: 155
   base_model: "tabular_mlp"
-  num_classes: null
+  num_classes: 10
   type: "tabular"
