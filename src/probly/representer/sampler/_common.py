@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable
+import contextlib
 from typing import Any, Literal, override
 
-from probly.predictor import IterablePredictor, Predictor, RandomPredictor, predict
-from probly.predictor._common import RandomRepresentationPredictor
+from flextype import RegistrationError, copy_explicit_registry_classes
+from probly.predictor import IterablePredictor, Predictor, RandomPredictor, RandomRepresentationPredictor, predict
 from probly.representation.sample import Sample, SampleFactory, create_sample
 from probly.representer._representer import Representer, representer
 from probly.traverse_nn import nn_compose
+from probly.traverse_nn._common import FLATTEN_SEQUENTIAL
 from pytraverse import CLONE, GlobalVariable, flexdispatch_traverser, function_traverser, traverse_with_state
 
 type SamplingStrategy = Literal["sequential"]
@@ -24,18 +26,25 @@ def get_sampling_predictor[**In, Out](
     predictor: Predictor[In, Out],
 ) -> tuple[Predictor[In, Out], Callable[[], None]]:
     """Get the predictor to be used for sampling."""
-    predictor, state = traverse_with_state(
+    sampling_predictor, state = traverse_with_state(
         predictor,
         nn_compose(sampling_preparation_traverser, function_traverser),
-        init={CLONE: False, CLEANUP_FUNCS: set()},
+        init={CLONE: False, CLEANUP_FUNCS: set(), FLATTEN_SEQUENTIAL: False},
     )
+
+    if sampling_predictor is not predictor:
+        with contextlib.suppress(RegistrationError):
+            copy_explicit_registry_classes(predictor, sampling_predictor)
+
+    del predictor
+
     cleanup_funcs = state[CLEANUP_FUNCS]
 
     def cleanup() -> None:
         for func in cleanup_funcs:
             func()
 
-    return predictor, cleanup
+    return sampling_predictor, cleanup
 
 
 @IterablePredictor.register_factory
@@ -88,12 +97,15 @@ class IterableSampler[**In, Out, S: Sample](Representer[Any, In, Out, S]):
         """Predict multiple outputs from the ensemble predictor."""
         return predict(self.predictor, *args, **kwargs)
 
+    def _create_sample(self, predictions: Iterable[Out]) -> S:
+        """Create a sample from the ensemble predictions."""
+        return self.sample_factory(predictions, sample_axis=self.sample_axis)
+
     @override
     def represent(self, *args: In.args, **kwargs: In.kwargs) -> S:
         """Sample from the ensemble predictor for a given input."""
-        return self.sample_factory(
+        return self._create_sample(
             self._predict(*args, **kwargs),
-            sample_axis=self.sample_axis,
         )
 
 

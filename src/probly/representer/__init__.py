@@ -8,6 +8,7 @@ from .credal_ensembler import (
     CredalWrapperRepresenter,
 )
 from .credal_net import CredalNetRepresenter
+from .het_nets import HetNetsRepresenter
 from .sampler import IterableSampler, Sampler
 
 __all__ = [
@@ -16,6 +17,7 @@ __all__ = [
     "CredalNetRepresenter",
     "CredalRelativeLikelihoodRepresenter",
     "CredalWrapperRepresenter",
+    "HetNetsRepresenter",
     "IterableSampler",
     "Representer",
     "Sampler",
