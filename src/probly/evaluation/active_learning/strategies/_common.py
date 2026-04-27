@@ -106,6 +106,37 @@ def uncertainty_select(scores: ArrayLike, n: int) -> ArrayLike:
 
 
 @flexdispatch
+def badge_embed(estimator: object, x_unlabeled: ArrayLike) -> ArrayLike:
+    """Extract embeddings for BADGE selection.
+
+    Dispatches on the estimator type. If the estimator implements
+    :class:`BadgeEstimator`, uses its ``embed`` method. Otherwise falls back
+    to using ``x_unlabeled`` directly with a warning.
+
+    Args:
+        estimator: A fitted estimator.
+        x_unlabeled: The unlabeled feature matrix (used as fallback embeddings).
+
+    Returns:
+        Embeddings of shape (n_pool, emb_dim).
+    """
+    warnings.warn(
+        f"BADGEQuery received estimator of type {type(estimator).__name__} which "
+        "does not implement BadgeEstimator (no .embed() method). Falling back to "
+        "pool.x_unlabeled as embeddings; BADGE was designed for penultimate-layer "
+        "features and selection quality may degrade.",
+        UserWarning,
+        stacklevel=3,
+    )
+    return x_unlabeled
+
+
+@badge_embed.register(BadgeEstimator)
+def _badge_embed_badge(estimator: BadgeEstimator, x_unlabeled: ArrayLike) -> ArrayLike:
+    return estimator.embed(x_unlabeled)
+
+
+@flexdispatch
 def badge_select(
     embeddings: ArrayLike,
     probs: ArrayLike,
@@ -271,16 +302,5 @@ class BADGEQuery:
         """
         n = min(n, pool.n_unlabeled)
         probs = estimator.predict_proba(pool.x_unlabeled)
-        if isinstance(estimator, BadgeEstimator):
-            embeddings = estimator.embed(pool.x_unlabeled)
-        else:
-            warnings.warn(
-                f"BADGEQuery received estimator of type {type(estimator).__name__} which "
-                "does not implement BadgeEstimator (no .embed() method). Falling back to "
-                "pool.x_unlabeled as embeddings; BADGE was designed for penultimate-layer "
-                "features and selection quality may degrade.",
-                UserWarning,
-                stacklevel=2,
-            )
-            embeddings = pool.x_unlabeled
+        embeddings = badge_embed(estimator, pool.x_unlabeled)
         return badge_select(embeddings, probs, n, seed=self._seed)
