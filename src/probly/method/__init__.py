@@ -10,6 +10,7 @@ from probly.method.efficient_credal_prediction import efficient_credal_predictio
 from probly.method.ensemble import ensemble
 from probly.method.evidential.classification import evidential_classification
 from probly.method.evidential.regression import evidential_regression
+from probly.method.SNGP import sngp
 from probly.method.subensemble import subensemble
 
 __all__ = [
@@ -26,5 +27,6 @@ __all__ = [
     "ensemble",
     "evidential_classification",
     "evidential_regression",
+    "sngp",
     "subensemble",
 ]
