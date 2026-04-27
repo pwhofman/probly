@@ -5,8 +5,8 @@ from __future__ import annotations
 from typing import Protocol, runtime_checkable
 
 from probly.method.method import predictor_transformation
-from probly.predictor import Predictor, RandomPredictor
-from probly.representation.distribution import GaussianDistribution
+from probly.predictor import Predictor, RandomPredictor, predict, predict_raw
+from probly.representation.distribution import GaussianDistribution, create_gaussian_distribution
 from probly.traverse_nn import nn_compose
 from pytraverse import CLONE, TRAVERSE_REVERSED, GlobalVariable, flexdispatch_traverser, traverse
 
@@ -74,3 +74,13 @@ def sngp[**In, Out: GaussianDistribution](
             MOMENTUM: momentum,
         },
     )
+
+
+@predict.register(SNGPPredictor)
+def _[**In](
+    predictor: SNGPPredictor[In, GaussianDistribution], *args: In.args, **kwargs: In.kwargs
+) -> GaussianDistribution:
+    """Predict method for SNGP predictors."""
+    logits, variance = predict_raw(predictor, *args, **kwargs)
+    distribution = create_gaussian_distribution(logits, variance)
+    return distribution

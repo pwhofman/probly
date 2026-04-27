@@ -152,3 +152,10 @@ def create_dirichlet_distribution_from_alphas[T](alphas: T) -> DirichletDistribu
     """Create a Dirichlet distribution from backend-specific alpha data."""
     msg = f"No Dirichlet distribution factory registered for alphas type {type(alphas)}"
     raise NotImplementedError(msg)
+
+
+@flexdispatch
+def create_gaussian_distribution[T](mean: T, var: T) -> GaussianDistribution:
+    """Create a Gaussian distribution from backend-specific mean and var data."""
+    msg = f"No Gaussian distribution factory registered for mean and var types {type(mean)} and {type(var)}"
+    raise NotImplementedError(msg)
