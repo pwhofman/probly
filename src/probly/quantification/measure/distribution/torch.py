@@ -8,6 +8,7 @@ from probly.representation.distribution.torch_categorical import (
     TorchCategoricalDistribution,
     TorchCategoricalDistributionSample,
 )
+from probly.representation.distribution.torch_dirichlet import TorchDirichletDistribution
 from probly.utils.torch import torch_entropy
 
 from ._common import (
@@ -41,7 +42,35 @@ def torch_categorical_entropy(distribution: TorchCategoricalDistribution, base: 
     return entropy / torch.log(torch.tensor(base))
 
 
+@entropy.register(TorchDirichletDistribution)
+def torch_dirichlet_entropy(distribution: TorchDirichletDistribution, base: LogBase = None) -> torch.Tensor:
+    """Compute the differential entropy of a torch Dirichlet distribution."""
+    alphas = distribution.alphas
+    alpha_0 = torch.sum(alphas, dim=-1)
+    num_classes = alphas.shape[-1]
+
+    log_beta = torch.sum(torch.lgamma(alphas), dim=-1) - torch.lgamma(alpha_0)
+    digamma_sum = (alpha_0 - num_classes) * torch.digamma(alpha_0)
+    digamma_individual = torch.sum((alphas - 1) * torch.digamma(alphas), dim=-1)
+    result = log_beta + digamma_sum - digamma_individual
+
+    if base is None or base == torch.e:
+        return result
+    if base == "normalize":
+        msg = "Entropy normalization is not supported for Dirichlet distributions."
+        raise ValueError(msg)
+    return result / torch.log(torch.as_tensor(base, dtype=result.dtype, device=result.device))
+
+
 # Entropy of expected value
+
+
+@entropy_of_expected_predictive_distribution.register(TorchDirichletDistribution)
+def torch_dirichlet_entropy_of_expected_predictive_distribution(
+    distribution: TorchDirichletDistribution, base: LogBase = None
+) -> torch.Tensor:
+    """Compute the entropy of the expected value of a torch Dirichlet distribution."""
+    return torch_categorical_entropy(distribution.canonical_element, base=base)
 
 
 @entropy_of_expected_predictive_distribution.register(TorchCategoricalDistributionSample)
@@ -59,6 +88,22 @@ def torch_categorical_sample_entropy_of_expected_predictive_distribution(
 # Conditional entropy
 
 
+@conditional_entropy.register(TorchDirichletDistribution)
+def torch_dirichlet_conditional_entropy(distribution: TorchDirichletDistribution, base: LogBase = None) -> torch.Tensor:
+    """Compute the expected categorical entropy under a torch Dirichlet distribution."""
+    alphas = distribution.alphas
+    alpha_0 = torch.sum(alphas, dim=-1, keepdim=True)
+    mean = alphas / alpha_0
+    result = torch.digamma(alpha_0 + 1.0).squeeze(-1) - torch.sum(mean * torch.digamma(alphas + 1.0), dim=-1)
+
+    if base is None or base == torch.e:
+        return result
+    if base == "normalize":
+        msg = "Entropy normalization is not supported for Dirichlet distributions."
+        raise ValueError(msg)
+    return result / torch.log(torch.as_tensor(base, dtype=result.dtype, device=result.device))
+
+
 @conditional_entropy.register(TorchCategoricalDistributionSample)
 def torch_categorical_sample_conditional_entropy(
     sample: TorchCategoricalDistributionSample, base: LogBase = None
@@ -72,6 +117,14 @@ def torch_categorical_sample_conditional_entropy(
 
 
 # Mutual information
+
+
+@mutual_information.register(TorchDirichletDistribution)
+def torch_dirichlet_mutual_information(distribution: TorchDirichletDistribution, base: LogBase = None) -> torch.Tensor:
+    """Compute mutual information of a torch Dirichlet distribution."""
+    return torch_dirichlet_entropy_of_expected_predictive_distribution(
+        distribution, base=base
+    ) - torch_dirichlet_conditional_entropy(distribution, base=base)
 
 
 @mutual_information.register(TorchCategoricalDistributionSample)

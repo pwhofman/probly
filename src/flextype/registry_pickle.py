@@ -6,7 +6,7 @@ import io
 import pickle
 from typing import TYPE_CHECKING, Any, cast
 
-from flextype.registry_meta import RegistryMeta, iter_registry_classes
+from flextype.registry_meta import RegistryMeta, get_explicit_registry_classes
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
@@ -15,15 +15,6 @@ if TYPE_CHECKING:
 
 
 _REGISTRY_STATE_MARKER = "flextype.registry_pickle.state.v1"
-
-
-def _collect_explicit_registry_classes(instance: object) -> list[RegistryMeta[Any]]:
-    """Collect all registry classes where `instance` was explicitly registered."""
-    return [
-        registry_class
-        for registry_class in iter_registry_classes()
-        if registry_class.is_explicit_instance_registered(instance)
-    ]
 
 
 def _normalize_reduce(
@@ -149,7 +140,7 @@ class RegistryPickler(pickle.Pickler):
 
     def reducer_override(self, obj: object, /) -> Any:  # noqa: ANN401
         """Wrap reducer state for explicitly registered instances."""
-        registered_classes = _collect_explicit_registry_classes(obj)
+        registered_classes = get_explicit_registry_classes(obj)
         if len(registered_classes) == 0:
             return NotImplemented
 
