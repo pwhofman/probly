@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, ClassVar, override
 
 from probly.representation._protected_axis.torch import TorchAxisProtected
 from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
@@ -27,3 +27,9 @@ class TorchDDURepresentation(DDURepresentation, TorchAxisProtected):
     softmax: TorchCategoricalDistribution
     densities: torch.Tensor
     protected_axes: ClassVar[dict[str, int]] = {"softmax": 0, "densities": 1}
+
+    @override
+    @property
+    def canonical_element(self) -> TorchCategoricalDistribution:
+        """Return the canonical element of the DDU representation, which is the softmax distribution."""
+        return self.softmax
