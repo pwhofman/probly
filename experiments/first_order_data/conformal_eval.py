@@ -7,25 +7,17 @@ from collections.abc import Mapping
 from pathlib import Path
 
 from summarize_dcic_ensemble_results import (
-    UNCERTAINTY_COLUMNS,
     load_json,
     load_prediction_csv,
 )
 import numpy as np
 import numpy.typing as npt
+from torch import nn
 
-from probly.conformal_prediction import (
-    APSScore,
-    ClassConditionalClassifier,
-    ClassificationScore,
-    ConformalClassifier,
-    LACScore,
-    MondrianConformalClassifier,
-    RAPSScore,
-    SplitConformalClassifier,
-    average_set_size,
-    empirical_coverage,
-)
+from probly.calibrator import calibrate
+from probly.metrics._common import average_set_size, empirical_coverage_classification
+from probly.method.conformal import conformal_aps, conformal_lac, conformal_raps
+from probly.representer import representer
 
 type FloatArray = npt.NDArray[np.floating]
 type IntArray = npt.NDArray[np.integer]
@@ -35,14 +27,15 @@ type MetricRow = tuple[float, float, float]  # (hard_coverage, soft_coverage, av
 type ResultRows = dict[tuple[str, str], list[MetricRow]]
 
 
-class CachedProbsModel:
+class CachedProbsModel(nn.Module):
     """Caches ensemble probabilities so probly's CP API can work with them without needing to re-run the models."""
 
     def __init__(self, probs: FloatArray):
         """Stores cached probability rows."""
+        super().__init__()
         self.probs = np.asarray(probs, dtype=float)
 
-    def __call__(self, x: npt.ArrayLike) -> FloatArray:
+    def forward(self, x: npt.ArrayLike) -> FloatArray:
         """Return probabilities for cached row indices."""
         return self.predict_proba(x)
 
@@ -51,50 +44,15 @@ class CachedProbsModel:
         return self.probs[np.asarray(x, dtype=int)]
 
 
-# NOTE: randomize (in APSScore and RAPSScore) substracts random score: cumulative - U * class_probability
-# -> calibration set consists of smaller scores, but prediction compares larger scores
-# -> prediction sets become too small -> very low coverage; Thus currently choice of randomize=False
-def make_score(name: str, model: CachedProbsModel, seed: int) -> ClassificationScore:
+def make_predictor(name: str, model: CachedProbsModel) -> object:
     if name == "lac":
-        return LACScore(model=model)
+        return conformal_lac(model)
     if name == "aps":
-        return APSScore(model=model, randomize=False, random_state=seed)
+        return conformal_aps(model, randomized=True)
     if name == "raps":
-        return RAPSScore(model=model, randomize=False, random_state=seed)
-    msg = f"Unknown score '{name}'"
+        return conformal_raps(model, randomized=True)
+    msg = f"Unknown method '{name}'"
     raise ValueError(msg)
-
-
-def make_predictor(
-    strategy: str,
-    model: CachedProbsModel,
-    score: ClassificationScore,
-    region_ids: IntArray,
-) -> ConformalClassifier:
-    if strategy == "split":
-        return SplitConformalClassifier(model=model, score=score)
-    if strategy == "class":
-        # class_func is only called during calibration, where y_cal is provided
-        return ClassConditionalClassifier(
-            model=model,
-            score=score,
-            class_func=lambda _x, y: np.asarray(y, dtype=int),
-        )
-    if strategy == "uncertainty":
-        return MondrianConformalClassifier(
-            model=model,
-            score=score,
-            region_func=lambda x: region_ids[np.asarray(x, dtype=int)],
-        )
-    msg = f"Unknown strategy '{strategy}'"
-    raise ValueError(msg)
-
-
-def quantile_buckets(values: FloatArray, n_buckets: int) -> IntArray:
-    """maps each value to an quantile bucket id in [0, n_buckets)"""
-    bucket_edges = np.linspace(0, 1, n_buckets + 1)
-    inner_edges = np.quantile(values, bucket_edges[1:-1])
-    return np.clip(np.digitize(values, inner_edges), 0, n_buckets - 1).astype(int)
 
 
 def soft_empirical_coverage(prediction_sets: BoolArray, targets_soft: FloatArray) -> float:
@@ -120,8 +78,6 @@ def fold_coverage(
         y_hard = (u < cum).argmax(axis=1)
     else:
         y_hard = targets_soft.argmax(axis=1)
-    buckets = {name: quantile_buckets(vals, args.n_buckets) for name, vals in uncertainty.items()}
-    region_ids = buckets[args.mondrian_by]
     model = CachedProbsModel(probs)
     n_samples = len(y_hard)
     rng = np.random.default_rng(args.seed)
@@ -136,18 +92,16 @@ def fold_coverage(
         targets_soft_test = targets_soft[idx_test]
 
         for method in args.methods:
-            for strategy in args.conditioning:
-                score = make_score(method, model, seed)
-                cp = make_predictor(strategy, model, score, region_ids)
-                cp.calibrate(x_cal=idx_cal, y_cal=y_cal, alpha=args.alpha)
-                sets = cp.predict(x_test=idx_test, alpha=args.alpha)
-                rows[(method, strategy)].append(
-                    (
-                        float(empirical_coverage(sets, y_test)),
-                        soft_empirical_coverage(sets, targets_soft_test),
-                        float(average_set_size(sets)),
-                    )
+            predictor = make_predictor(method, model)
+            calibrated = calibrate(predictor, args.alpha, y_cal, idx_cal)
+            sets = np.asarray(representer(calibrated).predict(idx_test).array, dtype=bool)
+            rows[(method, "split")].append(
+                (
+                    float(empirical_coverage_classification(sets, y_test)),
+                    soft_empirical_coverage(sets, targets_soft_test),
+                    float(average_set_size(sets)),
                 )
+                    )
     return rows
 
 
@@ -168,24 +122,18 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--alpha", type=float, default=0.1)  # miscoverage rate, target coverage = 1 - alpha
     parser.add_argument("--num-splits", type=int, default=20)  # number of CAL/TEST splits to average over
     parser.add_argument("--seed", type=int, default=0)  # seed for the bootstrap RNG
-    parser.add_argument("--n-buckets", type=int, default=10)  # number of uncertainty quantile buckets (Mondrian)
     parser.add_argument("--methods", nargs="+", choices=("lac", "aps", "raps"), default=("lac", "aps", "raps"))
     parser.add_argument(
         "--conditioning",
         nargs="+",
-        choices=("split", "class", "uncertainty"),
-        default=("split", "class", "uncertainty"),
+        choices=("split",),
+        default=("split",),
     )
     parser.add_argument(
         "--label-mode",
         choices=("argmax", "sample"),
         default="argmax",
     )
-    parser.add_argument(
-        "--mondrian-by",
-        choices=UNCERTAINTY_COLUMNS,
-        default="epistemic_uncertainty",
-    )  # uncertainty column to bucket by for the Mondrian predictor
     return parser.parse_args()
 
 

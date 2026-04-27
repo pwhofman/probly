@@ -284,7 +284,7 @@ uv run python summarize_dcic_ensemble_results.py \
   --convex-hull-epsilon 0.01
 ```
 
-`conformal_eval.py` uses the cached `ensemble_predictions.csv` files in one run directory and evaluates conformal prediction methods without retraining. It combines LAC / APS / RAPS scores with split, class-conditional, and Mondrian-by-uncertainty conditioning over repeated calibration/test splits, and reports:
+`conformal_eval.py` uses the cached `ensemble_predictions.csv` files in one run directory and evaluates conformal prediction methods without retraining. It currently uses the public split-conformal API. It evaluates LAC / APS / RAPS over repeated calibration/test splits and reports:
 
 - hard empirical coverage against a sampled or argmax hard label
 - soft empirical coverage against the full target distribution
