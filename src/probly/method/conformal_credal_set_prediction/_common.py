@@ -2,15 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable, Self, cast
+from abc import ABC
+from flextype import flexdispatch
+from probly.method.method import predictor_transformation
 
-import numpy as np
-
-from probly.calibrator._common import calibrate
+from probly.conformal_scores.total_variation._common import tv_score_func
 from probly.predictor import CredalPredictor, Predictor, predict
-from probly.representation.credal_set import CategoricalCredalSet
-from probly.representation.credal_set.array import ArrayDistanceBasedCredalSet
-from probly.representation.distribution import ArrayCategoricalDistribution
+from probly.representation.credal_set.array import DistanceBasedCredalSet, create_distance_based_credal_set
 from probly.utils.quantile._common import calculate_quantile
 
 if TYPE_CHECKING:
@@ -18,107 +17,103 @@ if TYPE_CHECKING:
 
 
 @runtime_checkable
-class ConformalCredalSetPredictor[**In, Out: CategoricalCredalSet](CredalPredictor[In, Out], Protocol):
+class ConformalCredalSetPredictor[**In, Out: DistanceBasedCredalSet](CredalPredictor[In, Out], Protocol):
     """Protocol for predictors that output conformalized credal sets."""
 
+    predictor: Predictor
     quantile: float | None
     non_conformity_score: NonConformityScore | None
 
+    def calibrate(self, alpha: float, y_calib: Out, *calib_args: In.args, **calib_kwargs: In.kwargs) -> Self:
+        """Calibrate the predictor on calibration data."""
+        ...
 
-class ConformalCredalSet[**In](ConformalCredalSetPredictor[In, CategoricalCredalSet]):
+@runtime_checkable
+class TVConformalCredalSetPredictor[**In, T](ConformalCredalSetPredictor[In, T], Protocol):
+    """Conformal Credal Set predictor for TV."""
+
+
+class _ConformalCredalSetPredictorBase[**In, Out](ABC):
     """Concrete implementation of a ConformalCredalSetPredictor."""
+    predictor: Predictor[In, Out]
+    quantile: float | None
+    non_conformity_score: NonConformityScore[Out, Out] | None
 
-    def __init__(self, model: Predictor[In, Any], k_classes: int) -> None:
-        """Initialize the predictor.
+    def __init__(self, predictor: Predictor[In, Out], non_conformity_score: NonConformityScore[Out, Out]) -> None:
+        super().__init__()
+        self.predictor = predictor
+        self.quantile = None
+        self.non_conformity_score = non_conformity_score
 
-        Args:
-            model: The base model to wrap.
-            k_classes: Number of classes.
-        """
-        self.model = model
-        self.k = k_classes
-        self.quantile: float | None = None
-        self.non_conformity_score: NonConformityScore | None = None
+    def _require_score(self) -> NonConformityScore[Out, Out]:
+        if self.non_conformity_score is None:
+            msg = "No non_conformity_score configured for this conformal predictor."
+            raise ValueError(msg)
+        return self.non_conformity_score
 
-    def predict(self, *args: In.args, **kwargs: In.kwargs) -> ArrayDistanceBasedCredalSet:
-        """Predict the credal set for the given inputs.
+    def _require_calibrated(self) -> tuple[float, NonConformityScore[Out, Out]]:
+        quantile = self.quantile
+        if quantile is None:
+            msg = "Conformal predictor is not calibrated. Please call calibrate() before prediction."
+            raise ValueError(msg)
+        score = self._require_score()
+        return quantile, score
 
-        Returns:
-            The predicted credal set.
-
-        Raises:
-            RuntimeError: If the predictor is not calibrated.
-        """
-        if self.quantile is None:
-            msg = "Predictor must be calibrated before calling predict()."
-            raise RuntimeError(msg)
-
-        preds = predict(self.model, *args, **kwargs)
-        probs = np.asarray(preds)
-
-        return ArrayDistanceBasedCredalSet(
-            nominal=ArrayCategoricalDistribution(probs),
-            radius=np.full(len(probs), self.quantile),
-        )
-
-    @property
-    def is_calibrated(self) -> bool:
-        """Check if the predictor is calibrated."""
-        return self.quantile is not None
+    def calibrate(self, alpha: float, y_calib: Out, *calib_args: In.args, **calib_kwargs: In.kwargs) -> Self:
+        """Calibrate the predictor using calibration data."""
+        score = self._require_score()
+        prediction = predict(self.predictor, *calib_args, **calib_kwargs)
+        scores = score(prediction, y_calib)
+        self.quantile = calculate_quantile(scores, alpha)
+        return self
 
 
-def conformal_credal_set_generator[**In, Out: CategoricalCredalSet](
-    model: Predictor[In, Any], k_classes: int
-) -> ConformalCredalSetPredictor[In, Out]:
-    """Generate a conformal credal set predictor form a base model.
-
-    Args:
-        model: The base model.
-        k_classes: Number of classes.
-
-    Returns:
-        The generated predictor.
-    """
-    return ConformalCredalSet(model, k_classes=k_classes)  # type: ignore[return-value]
+@flexdispatch
+def calibrated_state(_: object) -> tuple[float, NonConformityScore[Any, Any]]:
+    msg = "Predictor is not a conformal predictor or is not calibrated."
+    raise ValueError(msg)
 
 
-@ConformalCredalSetPredictor.register_factory
-def conformal_credal_set_prediction[**In, Out: CategoricalCredalSet](
-    model: Predictor[In, Any], k_classes: int
-) -> ConformalCredalSetPredictor[In, Out]:
-    """Create a conformalized credal set predictor.
+@calibrated_state.register(_ConformalCredalSetPredictorBase)
+def _[**In, Out](
+    predictor: _ConformalCredalSetPredictorBase[In, Out],
+) -> tuple[float, NonConformityScore[Out, Out]]:
+    return predictor._require_calibrated()  # noqa: SLF001
 
-    Args:
-        model: The base model.
-        k_classes: Number of classes.
+@predict.register(TVConformalCredalSetPredictor)
+def predict_total_variation_conformal_credal_set[**In, T](
+    predictor: TVConformalCredalSetPredictor[In, T],
+    *args: In.args,
+    **kwargs: In.kwargs,
+) -> DistanceBasedCredalSet:
+    """Predict a total variation conformal credal set."""
+    quantile, score = calibrated_state(predictor)
+    prediction = predict(cast("Any", predictor).predictor, *args, **kwargs)
+    score = score(prediction)
+    return create_distance_based_credal_set(score)
 
-    Returns:
-        The conformalized predictor.
-    """
-    return conformal_credal_set_generator(model, k_classes=k_classes)
+@flexdispatch
+def conformal_credal_set_generator[**In, T, Out](
+    base: Predictor[In, Out],
+    non_conformity_score: NonConformityScore[Out, T],
+) -> ConformalCredalSetPredictor[In, DistanceBasedCredalSet]:
+    """Generate a backend-specific conformal set predictor wrapper."""
+    msg = f"No conformal generator is registered for type {type(base)}"
+    raise NotImplementedError(msg)
 
+@predictor_transformation(
+    permitted_predictor_types=None, preserve_predictor_type=False
+)
+@TVConformalCredalSetPredictor.register_factory
+def conformal_total_variation[**In, T, Out](
+    base: Predictor[In, Out]
+) -> TVConformalCredalSetPredictor[In, T]:
+    return conformal_credal_set_generator(base, tv_score_func)
 
-@calibrate.register(ConformalCredalSet)
-def conformal_credal_set_calibration[In, Out](
-    predictor: ConformalCredalSet[In],
-    non_conformity_score: NonConformityScore,
-    x_calib: In,
-    y_calib: Out,
-    alpha: float,
-) -> ConformalCredalSet[In]:
-    """Calibrate a conformal credal set predictor."""
-    prediction = predict(predictor.model, x_calib)
-    probs = np.asarray(prediction)
-
-    y_calib_np = np.asarray(y_calib)
-    if y_calib_np.ndim == 1:
-        n_samples = len(y_calib_np)
-        y_one_hot = np.zeros((n_samples, predictor.k))
-        y_one_hot[np.arange(n_samples), y_calib_np.astype(int)] = 1.0
-        y_calib_np = y_one_hot
-
-    scores = non_conformity_score(probs, y_calib_np)
-    quantile = calculate_quantile(scores, alpha)
-    predictor.quantile = quantile
-    predictor.non_conformity_score = non_conformity_score
-    return predictor
+__all__= [
+    "ConformalCredalSetPredictor",
+    "_ConformalCredalSetPredictorBase",
+    "TVConformalCredalSetPredictor",
+    "conformal_total_variation",
+    "conformal_credal_set_generator"
+]
