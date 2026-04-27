@@ -110,7 +110,7 @@ def badge_embed(estimator: object, x_unlabeled: ArrayLike) -> ArrayLike:
     """Extract embeddings for BADGE selection.
 
     Dispatches on the estimator type. If the estimator implements
-    :class:`BadgeEstimator`, uses its ``embed`` method. Otherwise falls back
+    :class:`BadgeEstimator`, uses its ``embed`` method. Otherwise, falls back
     to using ``x_unlabeled`` directly with a warning.
 
     Args:
