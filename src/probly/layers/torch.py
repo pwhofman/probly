@@ -1197,7 +1197,7 @@ class SNGPLayer(nn.Module):
         self.b_L = nn.Parameter(torch.empty(num_inducing).uniform_(0, 2 * math.pi), requires_grad=False)
 
         # Bayesian Linear Classifier
-        self.beta = nn.Linear(num_inducing, num_classes)
+        self.sngp = nn.Linear(num_inducing, num_classes)
 
         # Precision Matrix Buffer (Non-gradient state)
         self.register_buffer("precision_matrix", torch.eye(num_inducing) * ridge_penalty)
@@ -1227,7 +1227,7 @@ class SNGPLayer(nn.Module):
     def forward(self, x: torch.Tensor, update_covariance: bool = True) -> tuple[torch.Tensor, torch.Tensor]:
         """Forward pass of the SNGP layer."""
         phi = self.compute_rff(x)
-        logits = self.beta(phi)
+        logits = self.sngp(phi)
 
         if self.training and update_covariance:
             self.update_precision_matrix(phi, logits)
