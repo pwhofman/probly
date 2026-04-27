@@ -123,5 +123,6 @@ def compute_nauc(scores: list[float]) -> float:
     actual_auc = float(np.trapezoid(s_valid, x=x_valid))
     ideal_auc = float(x_valid[-1] - x_valid[0])
     if ideal_auc == 0.0:
+        # Only one unique x position: all values equal, return 1.0.
         return 1.0
     return actual_auc / ideal_auc

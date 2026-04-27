@@ -10,7 +10,7 @@ import numpy as np
 from flextype import flexdispatch
 
 if TYPE_CHECKING:
-    from probly.evaluation.active_learning.pool._common import ActiveLearningPool
+    from probly.evaluation.active_learning.pool import ActiveLearningPool
     from probly.representation.array_like import ArrayLike
 
 
@@ -132,6 +132,12 @@ class RandomQuery:
     """
 
     def __init__(self, seed: int | None = None) -> None:
+        """Initialize the random number generator.
+
+        Args:
+            seed: Seed for the random number generator. Pass None for
+                non-deterministic selection.
+        """
         self._rng = np.random.default_rng(seed)
 
     def select(self, estimator: Estimator, pool: ActiveLearningPool, n: int) -> np.ndarray:  # noqa: ARG002
@@ -210,6 +216,12 @@ class BADGEQuery:
     """
 
     def __init__(self, seed: int | None = None) -> None:
+        """Store the seed used for k-means++ initialization.
+
+        Args:
+            seed: Seed for the random number generator. Pass None for
+                non-deterministic selection.
+        """
         self._seed = seed
 
     def select(self, estimator: Estimator, pool: ActiveLearningPool, n: int) -> np.ndarray:

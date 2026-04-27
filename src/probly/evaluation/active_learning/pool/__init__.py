@@ -14,8 +14,6 @@ def _(_: type) -> None:
 
 __all__ = [
     "ActiveLearningPool",
-    "NumpyActiveLearningPool",
-    "TorchActiveLearningPool",
     "from_dataset",
     "query",
 ]
