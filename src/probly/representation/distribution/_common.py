@@ -7,7 +7,7 @@ from contextvars import ContextVar
 from typing import TYPE_CHECKING, Any, ClassVar, Literal
 
 from flextype import flexdispatch
-from probly.representation.representation import Representation
+from probly.representation.representation import CanonicalRepresentation, Representation
 from probly.representation.sample._common import Sample
 
 if TYPE_CHECKING:
@@ -90,7 +90,7 @@ class SecondOrderDistribution[T: Distribution](Distribution[T]):
     """Base class for second-order distributions."""
 
 
-class DirichletDistribution[T: CategoricalDistribution](SecondOrderDistribution[T]):
+class DirichletDistribution[T: CategoricalDistribution](SecondOrderDistribution[T], CanonicalRepresentation[T]):
     """Base class for Dirichlet distributions."""
 
     type: Literal["dirichlet"] = "dirichlet"

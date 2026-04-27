@@ -221,7 +221,7 @@ class TestBatchEnsembleTransformation:
         batchensemble_model = batchensemble(model, num_members)
         # The traversed model preserves the input's class and is tagged with num_members.
         assert isinstance(batchensemble_model, type(model))
-        assert batchensemble_model.num_members == num_members  # ty: ignore[unresolved-attribute]
+        assert batchensemble_model.num_members == num_members
 
         count_linear_original = count_layers(model, nnx.Linear)
         count_conv_original = count_layers(model, nnx.Conv)
@@ -241,7 +241,7 @@ class TestBatchEnsembleTransformation:
         # Type-preserving: the result is the same class as the input.
         assert isinstance(model, type(flax_custom_model))
         assert not isinstance(model, nnx.Sequential)
-        assert model.num_members == num_members  # ty: ignore[unresolved-attribute]
+        assert model.num_members == num_members
 
         count_linear_original = count_layers(flax_custom_model, nnx.Linear)
         count_conv_original = count_layers(flax_custom_model, nnx.Conv)

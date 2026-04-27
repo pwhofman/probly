@@ -951,7 +951,7 @@ def evaluate_duq(
     for inputs_, targets_ in test_loader:
         inputs, targets = inputs_.to(device), targets_.to(device)
         with autocast(device.type, enabled=amp_enabled):
-            kernel_values = model(inputs)  # ty:ignore[call-non-callable]
+            kernel_values = model(inputs)
             probs = kernel_values / kernel_values.sum(dim=-1, keepdim=True).clamp(
                 min=torch.finfo(kernel_values.dtype).eps
             )

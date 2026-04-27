@@ -383,7 +383,7 @@ def _(
     run: Any,  # noqa: ANN401
     train_kwargs: dict[str, Any],
 ) -> None:
-    """Train a BatchEnsemble predictor with the recipe of :cite:`wenBatchEnsemble2020`.
+    """Train a BatchEnsemble predictor with the recipe of :cite:`wen2020batchensemble`.
 
     The shared kernel uses the recipe's full lr and weight decay; ``r``, ``s``, and per-member
     biases use ``fast_weight_lr_multiplier * base_lr``; ``r`` and ``s`` have weight decay disabled.
@@ -742,6 +742,10 @@ def _(
     density estimator (GDA) on all training features extracted from the frozen
     encoder, which is used at inference time for epistemic uncertainty scoring.
     """
+    # The density head buffer is ~16 GB at ImageNet scale and is unused during training
+    # Parking it on CPU during training decreases footprint sufficiently to use H200 cards
+    density_device = next(model.density_head.buffers()).device  # ty: ignore[unresolved-attribute]
+    model.density_head.to("cpu")
     _training_loop(
         model,
         train_loader,
@@ -753,6 +757,8 @@ def _(
         train_fn=train_epoch,  # ty: ignore[invalid-argument-type]
         val_fn=validate,
     )
+    model.density_head.to(density_device)
+
     amp_enabled = cfg.get("amp", False)
     _fit_ddu_density_head(model, train_loader, device, amp_enabled)
     run.summary["ddu_gmm_fitted"] = True
@@ -856,7 +862,7 @@ def _(
     model_ = cast("Any", model)
     amp_enabled = cfg.get("amp", False)
     alpha = train_kwargs.get("alpha", 0.5)
-    num_classes = int(model_.lower.shape[0])
+    num_classes = metadata.DATASETS[cfg.dataset].num_classes
 
     logits_train, targets_train = utils.collect_outputs_targets_raw(
         model_.predictor,

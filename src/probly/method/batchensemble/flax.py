@@ -37,9 +37,9 @@ def predict_batchensemble(
     ``[E*B, ...]`` array, and reshapes the output to ``[E, B, ...]`` with
     ``sample_axis=0``.
     """
-    num_members = int(predictor.num_members)  # ty: ignore[unresolved-attribute]
+    num_members = int(predictor.num_members)
     b = x.shape[0]
-    raw = predictor(tile_inputs(x, num_members))  # ty: ignore[call-non-callable]
+    raw = predictor(tile_inputs(x, num_members))
     out = raw.reshape(num_members, b, *raw.shape[1:])
     return JaxArraySample(array=out, sample_axis=0)
 

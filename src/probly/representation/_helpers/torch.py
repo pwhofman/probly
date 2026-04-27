@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 from probly.representation.credal_set.torch import TorchConvexCredalSet, TorchProbabilityIntervalsCredalSet
 from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
+from probly.representation.distribution.torch_dirichlet import TorchDirichletDistribution
 from probly.representation.sample.torch import TorchSample
 
 from ._common import compute_mean_probs
@@ -22,6 +23,12 @@ def _(sample: TorchSample) -> torch.Tensor:
 def _(distribution: TorchCategoricalDistribution) -> torch.Tensor:
     """Compute the mean probabilities of a TorchCategoricalDistribution."""
     return distribution.probabilities.mean(dim=-2)
+
+
+@compute_mean_probs.register(TorchDirichletDistribution)
+def _(distribution: TorchDirichletDistribution) -> torch.Tensor:
+    """Compute the expected categorical probabilities of a TorchDirichletDistribution."""
+    return distribution.mean
 
 
 @compute_mean_probs.register(TorchProbabilityIntervalsCredalSet)
