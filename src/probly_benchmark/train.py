@@ -708,7 +708,7 @@ def _(
     """
     # The density head buffer is ~16 GB at ImageNet scale and is unused during training
     # Parking it on CPU during training decreases footprint sufficiently to use H200 cards
-    density_device = next(model.density_head.buffers()).device
+    density_device = next(model.density_head.buffers()).device  # ty: ignore[unresolved-attribute]
     model.density_head.to("cpu")
     _training_loop(
         model,
