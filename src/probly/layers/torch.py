@@ -1333,4 +1333,7 @@ class SNGPLayer(nn.Module):
             phi_fp32 = phi.float()
             variance = torch.sum(phi_fp32 * torch.matmul(phi_fp32, covariance_matrix), dim=-1)
 
+        # Expand the variance to match the shape of the mean (logits)
+        variance = variance.unsqueeze(-1).expand_as(logits)
+
         return logits, variance
