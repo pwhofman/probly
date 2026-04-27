@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 
 
 @decompose.register(SecondOrderDistribution | DistributionSample)
-@dataclass(frozen=True, slots=True, repr=False)
+@dataclass(frozen=True, slots=True, weakref_slot=True, repr=False)
 class SecondOrderEntropyDecomposition[T](AdditiveDecomposition[T, T, T]):
     """Base class for entropy-based decomposition methods."""
 
@@ -52,7 +52,7 @@ class SecondOrderEntropyDecomposition[T](AdditiveDecomposition[T, T, T]):
 
 
 @decompose.register(CategoricalCredalSet)
-@dataclass(frozen=True, slots=True, repr=False)
+@dataclass(frozen=True, slots=True, weakref_slot=True, repr=False)
 class CredalSetEntropyDecomposition[T](AdditiveDecomposition[T, T, T]):
     """Entropy decomposition for categorical credal sets.
 
@@ -74,7 +74,7 @@ class CredalSetEntropyDecomposition[T](AdditiveDecomposition[T, T, T]):
 
 
 @decompose.register(HetNetsRepresentation)
-@dataclass(frozen=True, slots=True, repr=False)
+@dataclass(frozen=True, slots=True, weakref_slot=True, repr=False)
 class LabelNoiseEntropyDecomposition[T](CachingDecomposition, AleatoricDecomposition[T]):
     """Entropy decomposition for HetNets representations.
 
