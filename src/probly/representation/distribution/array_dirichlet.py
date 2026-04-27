@@ -61,6 +61,12 @@ class ArrayDirichletDistribution(
         return cls(alphas=np.asarray(alphas, dtype=dtype))
 
     @override
+    @property
+    def canonical_element(self) -> ArrayCategoricalDistribution:
+        """Return the expected categorical distribution."""
+        return ArrayCategoricalDistribution(self.alphas / np.sum(self.alphas, axis=-1, keepdims=True))
+
+    @override
     def sample(
         self,
         num_samples: int = 1,

@@ -189,7 +189,7 @@ class DropConnectLinear(nnx.Module):
 
 
 class BatchEnsembleLinear(nnx.Linear):
-    """BatchEnsemble Linear layer based on :cite:`wen2020batchensemble`.
+    """BatchEnsemble Linear layer based on :cite:`wenBatchEnsemble2020`.
 
     The effective weight for ensemble member ``i`` is the Hadamard product ``W * (r_i s_i^T)``;
     ``r`` modulates the input features and ``s`` the output features.
@@ -326,7 +326,7 @@ class BatchEnsembleLinear(nnx.Linear):
 
 
 class BatchEnsembleConv(nnx.Conv):
-    """BatchEnsemble convolutional layer based on :cite:`wen2020batchensemble`.
+    """BatchEnsemble convolutional layer based on :cite:`wenBatchEnsemble2020`.
 
     The effective weight for ensemble member ``i`` is the Hadamard product ``W * (r_i s_i^T)``,
     realised by channel-scaling the input by ``r_i`` and the output by ``s_i`` around a
