@@ -1,45 +1,56 @@
-"""==========================================
-Active Learning with PyTorch — Margin vs Random
-==========================================
+"""=============================================
+Active Learning with PyTorch — BADGE Selection
+=============================================
 
-Compare margin sampling against random query selection using a small
-PyTorch neural network on the Digits dataset.
+Demonstrate the :class:`~probly.evaluation.active_learning.BADGEQuery`
+strategy using a PyTorch MLP on the Digits dataset.
 
-This example mirrors the sklearn version but demonstrates the torch-backed
-active learning pipeline. The same strategies, pool, and metrics work
-transparently with torch tensors.
+BADGE (Batch Active learning by Diverse Gradient Embeddings) selects batches
+that are both uncertain *and* diverse by running k-means++ on gradient
+embeddings. It requires a :class:`~probly.evaluation.active_learning.BadgeEstimator`
+that exposes penultimate-layer features via ``embed()``.
+
+This example compares three strategies:
+
+1. **BADGE** -- diverse uncertain batches via gradient embeddings.
+2. **Margin Sampling** -- smallest margin between top-2 class probabilities.
+3. **Random** -- uniform baseline.
+
+All three operate on torch tensors end-to-end. The pool, strategies, and
+metrics dispatch to their torch implementations automatically.
 """
 
 from __future__ import annotations
 
 import matplotlib.pyplot as plt
-import numpy as np
 import torch
 import torch.nn as nn
 from sklearn.datasets import load_digits
 from sklearn.model_selection import train_test_split
 
 from probly.evaluation.active_learning import (
+    BADGEQuery,
     MarginSampling,
     RandomQuery,
     active_learning_steps,
     compute_accuracy,
+    compute_ece,
     compute_nauc,
     from_dataset,
 )
 
 SEED = 42
-INITIAL_SIZE = 50
-QUERY_SIZE = 50
-N_ITERATIONS = 10
+INITIAL_SIZE = 30
+QUERY_SIZE = 30
+N_ITERATIONS = 15
 TRAIN_EPOCHS = 30
 LEARNING_RATE = 1e-2
-
 
 # %%
 # Data preparation
 # ----------------
-# Load Digits, split 80/20, and convert to float32 tensors.
+# Load Digits, split 80/20, and convert to float32 tensors. We start with
+# only 30 labeled samples so the differences between strategies are visible.
 
 X, y = load_digits(return_X_y=True)
 x_train_np, x_test_np, y_train_np, y_test_np = train_test_split(
@@ -53,100 +64,140 @@ y_test = torch.from_numpy(y_test_np).long()
 
 
 # %%
-# Estimator wrapper
-# -----------------
-# A small two-layer network wrapped to satisfy the
-# :class:`~probly.evaluation.active_learning.Estimator` protocol.
+# BadgeEstimator implementation
+# -----------------------------
+# BADGE needs penultimate-layer embeddings. We build a simple MLP and expose
+# the hidden representation via ``embed()``. This satisfies the
+# :class:`~probly.evaluation.active_learning.BadgeEstimator` protocol:
+# ``fit``, ``predict``, ``predict_proba``, and ``embed``.
 
 
-class TorchEstimator:
-    """Small MLP estimator for the active learning loop."""
+class TorchBadgeEstimator:
+    """Two-layer MLP with an ``embed`` method for BADGE."""
 
     def __init__(self, n_features: int, n_classes: int) -> None:
         self._n_features = n_features
         self._n_classes = n_classes
-        self._model: nn.Module | None = None
+        self._backbone: nn.Sequential | None = None
+        self._head: nn.Linear | None = None
 
-    def _build(self) -> nn.Sequential:
-        return nn.Sequential(
-            nn.Linear(self._n_features, 64),
-            nn.ReLU(),
-            nn.Linear(64, self._n_classes),
-        )
+    def _build(self) -> tuple[nn.Sequential, nn.Linear]:
+        backbone = nn.Sequential(nn.Linear(self._n_features, 64), nn.ReLU())
+        head = nn.Linear(64, self._n_classes)
+        return backbone, head
 
     def fit(self, x: torch.Tensor, y: torch.Tensor) -> None:
-        self._model = self._build()
-        optimizer = torch.optim.Adam(self._model.parameters(), lr=LEARNING_RATE)
+        self._backbone, self._head = self._build()
+        model = nn.Sequential(self._backbone, self._head)
+        optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
         loss_fn = nn.CrossEntropyLoss()
-        self._model.train()
+        model.train()
         for _ in range(TRAIN_EPOCHS):
             optimizer.zero_grad()
-            loss_fn(self._model(x), y).backward()
+            loss_fn(model(x), y).backward()
             optimizer.step()
 
     @torch.no_grad()
     def predict(self, x: torch.Tensor) -> torch.Tensor:
-        assert self._model is not None
-        self._model.eval()
-        return self._model(x).argmax(dim=1)
+        return self._head(self._backbone(x)).argmax(dim=1)  # type: ignore[misc]
 
     @torch.no_grad()
     def predict_proba(self, x: torch.Tensor) -> torch.Tensor:
-        assert self._model is not None
-        self._model.eval()
-        return torch.softmax(self._model(x), dim=1)
+        return torch.softmax(self._head(self._backbone(x)), dim=1)  # type: ignore[misc]
+
+    @torch.no_grad()
+    def embed(self, x: torch.Tensor) -> torch.Tensor:
+        """Return 64-dim penultimate-layer features for BADGE."""
+        return self._backbone(x)  # type: ignore[return-value]
 
 
 # %%
 # Run active learning
 # -------------------
-# Same two strategies, now operating on torch tensors end-to-end.
-# The pool, strategies, and metrics all dispatch to their torch
-# implementations automatically.
+# Three strategies compared: BADGE uses the gradient embeddings from
+# ``embed()`` for diverse batch selection, margin sampling picks the most
+# confused samples, and random is the baseline.
 
 torch.manual_seed(SEED)
 
 strategies = {
-    "Margin Sampling": MarginSampling(),
+    "BADGE": BADGEQuery(seed=SEED),
+    "Margin": MarginSampling(),
     "Random": RandomQuery(seed=SEED),
 }
 
-results: dict[str, dict[str, list[float]]] = {}
+results: dict[str, dict] = {}
 
 for name, strategy in strategies.items():
-    pool = from_dataset(x_train, y_train, x_test, y_test, initial_size=INITIAL_SIZE, seed=SEED)
-    estimator = TorchEstimator(n_features=x_train.shape[1], n_classes=10)
+    pool = from_dataset(
+        x_train, y_train, x_test, y_test, initial_size=INITIAL_SIZE, seed=SEED,
+    )
+    estimator = TorchBadgeEstimator(n_features=x_train.shape[1], n_classes=10)
 
     accuracies: list[float] = []
+    eces: list[float] = []
     labeled_sizes: list[int] = []
 
     for state in active_learning_steps(
         pool, estimator, strategy, query_size=QUERY_SIZE, n_iterations=N_ITERATIONS,
     ):
-        acc = compute_accuracy(
-            state.estimator.predict(state.pool.x_test), state.pool.y_test,
-        )
-        accuracies.append(acc)
+        preds = state.estimator.predict(state.pool.x_test)
+        probs = state.estimator.predict_proba(state.pool.x_test)
+        accuracies.append(compute_accuracy(preds, state.pool.y_test))
+        eces.append(compute_ece(probs, state.pool.y_test))
         labeled_sizes.append(state.pool.n_labeled)
 
+    # NAUC (normalized area under the accuracy curve) summarizes how quickly
+    # a strategy reaches good accuracy. Higher is better.
     nauc = compute_nauc(accuracies)
-    results[name] = {"accuracies": accuracies, "labeled_sizes": labeled_sizes}
-    print(f"{name:20s}  final acc: {accuracies[-1]:.3f}  NAUC: {nauc:.3f}")
+    results[name] = {
+        "accuracies": accuracies,
+        "eces": eces,
+        "labeled_sizes": labeled_sizes,
+    }
+    print(f"{name:8s}  final acc: {accuracies[-1]:.3f}  ECE: {eces[-1]:.3f}  NAUC: {nauc:.3f}")
+
 
 # %%
-# Plot accuracy curves
-# --------------------
-# Both strategies start from the same initial labeled set. Margin sampling
-# queries the most uncertain samples, reaching higher accuracy with fewer
-# labels.
+# Plot accuracy and calibration
+# -----------------------------
+# BADGE and margin sampling both outperform random selection. BADGE's
+# diversity-aware selection can be particularly effective in early iterations
+# where exploring different regions of the feature space matters most.
+# The ECE panel shows how calibration evolves as the labeled set grows.
 
-fig, ax = plt.subplots(figsize=(8, 5))
+fig, (ax_acc, ax_ece) = plt.subplots(1, 2, figsize=(12, 5))
+
 for name, data in results.items():
-    ax.plot(data["labeled_sizes"], data["accuracies"], marker="o", label=name)
-ax.set_xlabel("Labeled samples")
-ax.set_ylabel("Test accuracy")
-ax.set_title("Active learning on Digits (PyTorch)")
-ax.legend()
-ax.grid(alpha=0.25)
+    ax_acc.plot(data["labeled_sizes"], data["accuracies"], marker="o", label=name)
+    ax_ece.plot(data["labeled_sizes"], data["eces"], marker="o", label=name)
+
+ax_acc.set_xlabel("Labeled samples")
+ax_acc.set_ylabel("Test accuracy")
+ax_acc.set_title("Accuracy")
+ax_acc.legend()
+ax_acc.grid(alpha=0.25)
+
+ax_ece.set_xlabel("Labeled samples")
+ax_ece.set_ylabel("ECE")
+ax_ece.set_title("Expected Calibration Error")
+ax_ece.legend()
+ax_ece.grid(alpha=0.25)
+
+fig.suptitle("Active learning on Digits (PyTorch)", fontsize=14, y=1.02)
 plt.tight_layout()
 plt.show()
+
+# %%
+# Next steps
+# ----------
+# This example implements ``embed()`` by hooking the penultimate layer.
+# For richer uncertainty estimates, combine with probly's UQ transformations:
+#
+# - Use ``probly.method.dropout`` to add MC dropout for
+#   :class:`~probly.evaluation.active_learning.UncertaintyQuery`.
+# - Use ``probly.method.ensemble`` for deep ensembles that naturally provide
+#   diverse uncertainty scores.
+#
+# These transformations produce probly representations that can drive
+# uncertainty-based query strategies through the same active learning loop.
