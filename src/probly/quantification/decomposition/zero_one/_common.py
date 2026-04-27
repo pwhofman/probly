@@ -32,10 +32,6 @@ class SecondOrderZeroOneDecomposition[T](AdditiveDecomposition[T, T, T]):
 
     distribution: SecondOrderDistributionLike
 
-    def __post_init__(self) -> None:
-        object.__setattr__(self, "_caching", True)
-        object.__setattr__(self, "_cache", {})
-
     @override
     @property
     def _total(self) -> T:

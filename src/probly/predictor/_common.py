@@ -74,7 +74,11 @@ class RepresentationPredictor[**In, Out: Representation](Predictor[In, Out], Pro
 class RandomRepresentationPredictor[**In, Out: Representation](
     RepresentationPredictor[In, Out], RandomPredictor[In, Out], Protocol
 ):
-    """Protocol for non-deterministic predictors that return a distribution over outputs."""
+    """Protocol for non-deterministic predictors that return a distribution over outputs.
+
+    The reason this intersection type is defined explicitly is to allow of representer dispatch precedence for random
+    representation predictors over regular representation predictors.
+    """
 
     _running_instancehook: ClassVar[ContextVar[object]] = ContextVar(
         "RandomRepresentationPredictor._running_instancehook", default=NotImplemented
