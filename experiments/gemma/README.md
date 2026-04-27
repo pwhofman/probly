@@ -1,6 +1,6 @@
 # Gemma 4 Experiment
 
-Semantic entropy and calibration experiments with Google Gemma 4 using probly.
+Semantic entropy, spectral uncertainty, and calibration experiments with Google Gemma 4 using probly.
 
 ## Setup
 
@@ -32,6 +32,18 @@ Measures how semantically diverse the model's responses are across multiple samp
 ```bash
 uv run python experiments/semantic_entropy.py --num-samples 10 --seed 42
 uv run python experiments/semantic_entropy.py --nli-model microsoft/deberta-v2-xlarge-mnli
+```
+
+## Spectral uncertainty
+
+Computes Von Neumann entropy from kernel matrices built on sentence embeddings
+(Walha et al., 2025). Runs side-by-side with semantic entropy for comparison and
+decomposes total uncertainty into aleatoric and epistemic components via
+clarification-based two-stage sampling.
+
+```bash
+uv run python experiments/spectral_uncertainty.py --num-samples 10 --seed 42
+uv run python experiments/spectral_uncertainty.py --gamma 2.0 --num-clarifications 8
 ```
 
 ## Calibration experiment
