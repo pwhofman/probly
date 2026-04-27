@@ -44,6 +44,15 @@ def _sample_probabilities(
     return sample_values.unnormalized_probabilities
 
 
+def _probability_interval_center(lower_bounds: torch.Tensor, upper_bounds: torch.Tensor) -> torch.Tensor:
+    slack = upper_bounds - lower_bounds
+    slack_sum = torch.sum(slack, dim=-1, keepdim=True)
+    remaining = 1 - torch.sum(lower_bounds, dim=-1, keepdim=True)
+    denominator = torch.where(slack_sum != 0, slack_sum, torch.ones_like(slack_sum))
+    weights = torch.where(slack_sum != 0, slack / denominator, torch.zeros_like(slack))
+    return lower_bounds + remaining * weights
+
+
 class TorchCategoricalCredalSet(CategoricalCredalSet, ABC):
     """Base class for torch-backed categorical credal sets."""
 
@@ -96,6 +105,12 @@ class TorchConvexCredalSet(
         """Get the number of classes."""
         return self.tensor.num_classes
 
+    @override
+    @property
+    def canonical_element(self) -> TorchCategoricalDistribution:
+        """Return the barycenter over the convex set vertices."""
+        return TorchCategoricalDistribution(torch.mean(self.tensor.unnormalized_probabilities, dim=-2))
+
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
 class TorchProbabilityIntervalsCredalSet(
@@ -128,6 +143,12 @@ class TorchProbabilityIntervalsCredalSet(
     def num_classes(self) -> int:
         """Get the number of classes."""
         return self.lower_bounds.shape[-1]
+
+    @override
+    @property
+    def canonical_element(self) -> TorchCategoricalDistribution:
+        """Return a feasible center distribution of the probability intervals."""
+        return TorchCategoricalDistribution(_probability_interval_center(self.lower_bounds, self.upper_bounds))
 
     @override
     def numpy(self, *, force: bool = False) -> NDArray[Any]:

@@ -25,6 +25,7 @@ from probly.predictor import (
     ProbabilisticClassifier,
     RepresentationPredictor,
     predict,
+    predict_single,
 )
 from probly.representation.conformal_set._common import (
     ConformalSet,
@@ -159,6 +160,16 @@ def _[**In, Out](
     predictor: _ConformalPredictorBase[In, Out],
 ) -> tuple[float, NonConformityScore[Out, Out]]:
     return predictor._require_calibrated()  # noqa: SLF001
+
+
+@predict_single.register(ConformalSetPredictor)
+def predict_single_conformal_set[**In, T, Out: ConformalSet](
+    predictor: ConformalSetPredictor[In, T, Out],
+    *args: In.args,
+    **kwargs: In.kwargs,
+) -> object:
+    """Return a single prediction from the wrapped predictor, not the conformal set."""
+    return predict_single(predictor.predictor, *args, **kwargs)
 
 
 @predict.register(ClassificationConformalSetPredictor)

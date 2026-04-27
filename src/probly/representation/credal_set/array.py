@@ -43,6 +43,14 @@ def _sample_probabilities(sample: ArraySample[ArrayCategoricalDistribution]) -> 
     return sample_values.unnormalized_probabilities
 
 
+def _probability_interval_center(lower_bounds: np.ndarray, upper_bounds: np.ndarray) -> np.ndarray:
+    slack = upper_bounds - lower_bounds
+    slack_sum = np.sum(slack, axis=-1, keepdims=True)
+    remaining = 1 - np.sum(lower_bounds, axis=-1, keepdims=True)
+    weights = np.divide(slack, slack_sum, out=np.zeros_like(slack, dtype=float), where=slack_sum != 0)
+    return lower_bounds + remaining * weights
+
+
 class ArrayCategoricalCredalSet(CategoricalCredalSet, ABC):
     """Base class for NumPy-backed categorical credal sets."""
 
@@ -101,6 +109,12 @@ class ArrayDiscreteCredalSet(
         return self.array.num_classes
 
     @override
+    @property
+    def canonical_element(self) -> ArrayCategoricalDistribution:
+        """Return the barycenter over the finite set of distributions."""
+        return ArrayCategoricalDistribution(np.mean(self.array.unnormalized_probabilities, axis=-2))
+
+    @override
     def lower(self) -> np.ndarray:
         """Return the lower probabilities of the credal set."""
         return np.min(self.array.unnormalized_probabilities, axis=0)
@@ -141,6 +155,12 @@ class ArrayConvexCredalSet(
     def num_classes(self) -> int:
         """Return the number of classes in the credal set."""
         return self.array.num_classes
+
+    @override
+    @property
+    def canonical_element(self) -> ArrayCategoricalDistribution:
+        """Return the barycenter over the convex set vertices."""
+        return ArrayCategoricalDistribution(np.mean(self.array.unnormalized_probabilities, axis=-2))
 
     @override
     def lower(self) -> np.ndarray:
@@ -192,6 +212,12 @@ class ArrayDistanceBasedCredalSet(
     def num_classes(self) -> int:
         """Return the number of classes in the credal set."""
         return self.nominal.num_classes
+
+    @override
+    @property
+    def canonical_element(self) -> ArrayCategoricalDistribution:
+        """Return the nominal distribution at the center of the credal set."""
+        return self.nominal
 
     @override
     def lower(self) -> np.ndarray:
@@ -272,6 +298,12 @@ class ArrayProbabilityIntervalsCredalSet(
         return self.lower_bounds.shape[-1]
 
     @override
+    @property
+    def canonical_element(self) -> ArrayCategoricalDistribution:
+        """Return a feasible center distribution of the probability intervals."""
+        return ArrayCategoricalDistribution(_probability_interval_center(self.lower_bounds, self.upper_bounds))
+
+    @override
     def lower(self) -> np.ndarray:
         """Return the lower probabilities of the credal set."""
         return self.lower_bounds
@@ -308,6 +340,12 @@ class ArraySingletonCredalSet(
     def num_classes(self) -> int:
         """Return the number of classes in the credal set."""
         return self.array.num_classes
+
+    @override
+    @property
+    def canonical_element(self) -> ArrayCategoricalDistribution:
+        """Return the singleton distribution."""
+        return self.array
 
     @override
     def lower(self) -> np.ndarray:

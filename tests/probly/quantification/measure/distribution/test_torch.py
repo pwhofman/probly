@@ -22,6 +22,7 @@ from probly.representation.distribution.torch_categorical import (
     TorchCategoricalDistribution,
     TorchCategoricalDistributionSample,
 )
+from probly.representation.distribution.torch_dirichlet import TorchDirichletDistribution
 
 CATEGORICAL_BASES: tuple[None | float | str, ...] = (None, 2.0, "normalize")
 
@@ -77,6 +78,57 @@ def test_torch_categorical_entropy_normalize_maps_to_unit_interval() -> None:
     assert measured[1] == pytest.approx(0.0, abs=1e-6)
     assert torch.all(measured >= 0.0)
     assert torch.all(measured <= 1.0)
+
+
+@pytest.mark.parametrize("base", [None, 2.0])
+def test_torch_dirichlet_entropy_matches_torch_distribution(base: None | float) -> None:
+    alphas = torch.tensor([[1.0, 2.0, 3.0], [2.0, 3.0, 4.0]], dtype=torch.float64)
+    distribution = TorchDirichletDistribution(alphas)
+
+    measured = entropy(distribution, base=base)
+    expected = torch.distributions.Dirichlet(alphas).entropy()
+    if base is not None:
+        expected = expected / torch.log(torch.tensor(base, dtype=expected.dtype))
+
+    assert torch.allclose(measured, expected, rtol=1e-12, atol=1e-12)
+
+
+@pytest.mark.parametrize("base", CATEGORICAL_BASES)
+def test_torch_dirichlet_second_order_measures(base: None | float | str) -> None:
+    alphas = torch.tensor([[1.0, 2.0, 3.0], [10.0, 5.0, 1.0]], dtype=torch.float64)
+    distribution = TorchDirichletDistribution(alphas)
+
+    measured_entropy_of_expected = entropy_of_expected_predictive_distribution(distribution, base=base)
+
+    expected_mean = alphas / alphas.sum(dim=-1, keepdim=True)
+    expected_entropy_of_expected = Categorical(probs=expected_mean).entropy()
+    expected_conditional_entropy = torch.digamma(alphas.sum(dim=-1) + 1.0) - torch.sum(
+        expected_mean * torch.digamma(alphas + 1.0), dim=-1
+    )
+
+    divisor = _base_divisor(
+        base,
+        alphas.shape[-1],
+        dtype=expected_entropy_of_expected.dtype,
+        device=expected_entropy_of_expected.device,
+    )
+    expected_entropy_of_expected = expected_entropy_of_expected / divisor
+    if base == "normalize":
+        assert torch.allclose(measured_entropy_of_expected, expected_entropy_of_expected, rtol=1e-7, atol=1e-7)
+        with pytest.raises(ValueError, match="Entropy normalization is not supported for Dirichlet"):
+            conditional_entropy(distribution, base=base)
+        with pytest.raises(ValueError, match="Entropy normalization is not supported for Dirichlet"):
+            mutual_information(distribution, base=base)
+        return
+    measured_conditional_entropy = conditional_entropy(distribution, base=base)
+    measured_mutual_information = mutual_information(distribution, base=base)
+    expected_conditional_entropy = expected_conditional_entropy / divisor
+    expected_mutual_information = expected_entropy_of_expected - expected_conditional_entropy
+
+    rtol, atol = _tol(base)
+    assert torch.allclose(measured_entropy_of_expected, expected_entropy_of_expected, rtol=rtol, atol=atol)
+    assert torch.allclose(measured_conditional_entropy, expected_conditional_entropy, rtol=rtol, atol=atol)
+    assert torch.allclose(measured_mutual_information, expected_mutual_information, rtol=rtol, atol=atol)
 
 
 @pytest.mark.parametrize("base", CATEGORICAL_BASES)
