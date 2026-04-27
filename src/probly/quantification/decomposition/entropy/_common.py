@@ -23,6 +23,7 @@ from probly.representation.het_nets._common import HetNetsRepresentation
 
 if TYPE_CHECKING:
     from probly.quantification.measure.distribution import SecondOrderDistributionLike
+    from probly.quantification.measure.distribution._common import LogBase
 
 
 @decompose.register(SecondOrderDistribution | DistributionSample)
@@ -31,24 +32,25 @@ class SecondOrderEntropyDecomposition[T](AdditiveDecomposition[T, T, T]):
     """Base class for entropy-based decomposition methods."""
 
     distribution: SecondOrderDistributionLike
+    base: LogBase = None
 
     @override
     @property
     def _total(self) -> T:
         """The total uncertainty of the decomposition."""
-        return entropy_of_expected_predictive_distribution(self.distribution)  # ty:ignore[invalid-return-type]
+        return entropy_of_expected_predictive_distribution(self.distribution, base=self.base)  # ty:ignore[invalid-return-type]
 
     @override
     @property
     def _aleatoric(self) -> T:
         """The aleatoric uncertainty of the decomposition."""
-        return conditional_entropy(self.distribution)  # ty:ignore[invalid-return-type]
+        return conditional_entropy(self.distribution, base=self.base)  # ty:ignore[invalid-return-type]
 
     @override
     @property
     def _epistemic(self) -> T:
         """The epistemic uncertainty of the decomposition."""
-        return mutual_information(self.distribution)  # ty:ignore[invalid-return-type]
+        return mutual_information(self.distribution, base=self.base)  # ty:ignore[invalid-return-type]
 
 
 @decompose.register(CategoricalCredalSet)
@@ -61,16 +63,17 @@ class CredalSetEntropyDecomposition[T](AdditiveDecomposition[T, T, T]):
     """
 
     credal_set: CategoricalCredalSet
+    base: LogBase = None
 
     @override
     @property
     def _total(self) -> T:
-        return upper_entropy(self.credal_set)  # ty:ignore[invalid-return-type]
+        return upper_entropy(self.credal_set, base=self.base)  # ty:ignore[invalid-return-type]
 
     @override
     @property
     def _aleatoric(self) -> T:
-        return lower_entropy(self.credal_set)  # ty:ignore[invalid-return-type]
+        return lower_entropy(self.credal_set, base=self.base)  # ty:ignore[invalid-return-type]
 
 
 @decompose.register(HetNetsRepresentation)
@@ -82,9 +85,10 @@ class LabelNoiseEntropyDecomposition[T](CachingDecomposition, AleatoricDecomposi
     """
 
     distribution: SecondOrderDistributionLike
+    base: LogBase = None
 
     @override
     @property
     def _aleatoric(self) -> T:
         """The aleatoric uncertainty of the decomposition."""
-        return conditional_entropy(self.distribution)  # ty:ignore[invalid-return-type]
+        return conditional_entropy(self.distribution, base=self.base)  # ty:ignore[invalid-return-type]
