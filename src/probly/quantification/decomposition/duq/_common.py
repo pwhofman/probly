@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, override
 
 from flextype import flexdispatch
 from probly.quantification._quantification import decompose
-from probly.quantification.decomposition import CachingDecomposition, TotalDecomposition
+from probly.quantification.decomposition.decomposition import CachingDecomposition, TotalDecomposition
 from probly.representation.duq import DUQRepresentation
 
 if TYPE_CHECKING:

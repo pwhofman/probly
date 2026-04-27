@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, override
 
 from flextype import flexdispatch
 from probly.quantification._quantification import decompose
-from probly.quantification.decomposition import AleatoricEpistemicDecomposition, CachingDecomposition
+from probly.quantification.decomposition.decomposition import AleatoricEpistemicDecomposition, CachingDecomposition
 from probly.quantification.measure.distribution import entropy
 from probly.representation.ddu import DDURepresentation
 
