@@ -7,7 +7,11 @@ import math
 
 import torch
 
-from probly.representation.credal_set.torch import TorchConvexCredalSet, TorchProbabilityIntervalsCredalSet
+from probly.representation.credal_set.torch import (
+    TorchConvexCredalSet,
+    TorchDistanceBasedCredalSet,
+    TorchProbabilityIntervalsCredalSet,
+)
 from probly.utils.torch import torch_entropy
 
 from ._common import LogBase, generalized_hartley, lower_entropy, upper_entropy
@@ -73,6 +77,34 @@ def torch_intervals_lower_entropy(credal_set: TorchProbabilityIntervalsCredalSet
             rem = rem - fill
         best = torch.minimum(best, torch_entropy(p))
     return _apply_base(best, credal_set.num_classes, base)
+
+
+@upper_entropy.register(TorchDistanceBasedCredalSet)
+def torch_distance_based_upper_entropy(
+    credal_set: TorchDistanceBasedCredalSet,
+    base: LogBase = None,
+) -> torch.Tensor:
+    """Compute the upper entropy of a distance-based credal set.
+
+    Pragmatic upper entropy: entropy of nominal + radius.
+    """
+    p = credal_set.nominal.probabilities
+    ent = _apply_base(torch_entropy(p), credal_set.num_classes, base)
+    return ent + credal_set.radius
+
+
+@lower_entropy.register(TorchDistanceBasedCredalSet)
+def torch_distance_based_lower_entropy(
+    credal_set: TorchDistanceBasedCredalSet,
+    base: LogBase = None,
+) -> torch.Tensor:
+    """Compute the lower entropy of a distance-based credal set.
+
+    Pragmatic lower entropy: max(0, entropy of nominal - radius).
+    """
+    p = credal_set.nominal.probabilities
+    ent = _apply_base(torch_entropy(p), credal_set.num_classes, base)
+    return torch.clamp(ent - credal_set.radius, min=0.0)
 
 
 @upper_entropy.register(TorchConvexCredalSet)
