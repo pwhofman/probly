@@ -1,4 +1,4 @@
-# @package _global_
+# @package method
 name: "posterior_network"
 params:
   latent_dim: 6
