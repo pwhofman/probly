@@ -1,0 +1,9 @@
+# @package method
+name: "natural_posterior_network"
+params:
+    latent_dim: 16
+    num_flows: 8
+    certainty_budget: "normal"   # one of "constant" | "exp-half" | "exp" | "normal"
+    alpha_prior: 1.0             # uniform Dirichlet prior strength per class
+train:
+    entropy_weight: 1e-5

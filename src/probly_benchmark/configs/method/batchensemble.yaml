@@ -1,0 +1,23 @@
+# @package method
+name: "batchensemble"
+params:
+  # ImageNet baseline (Wen et al., 2020) trains an ensemble of size 4.
+  num_members: 10
+  use_base_weights: true
+  # Hyperparameters below match the official imagenet baseline:
+  # google/uncertainty-baselines/blob/main/baselines/imagenet/batchensemble.py
+  # The flag `random_sign_init=-0.5` there resolves to RandomNormal(mean=1.0, std=0.5).
+  init: "normal"
+  r_mean: 1.0
+  r_std: 0.5
+  s_mean: 1.0
+  s_std: 0.5
+train:
+  # `train_epoch_batchensemble` already takes mean per-member CE on outputs of shape
+  # [num_members, B, num_classes]. The optimizer is built with three parameter groups
+  # in `train_model.register(BatchEnsemblePredictor)`:
+  #   - shared kernel + non-BE params: optimizer's default lr / weight_decay
+  #   - per-member bias: lr = base_lr * fast_weight_lr_multiplier, default weight_decay
+  #   - r, s (fast weights):           lr = base_lr * fast_weight_lr_multiplier, weight_decay = 0
+  # matching baselines/imagenet/batchensemble.py from google/uncertainty-baselines.
+  fast_weight_lr_multiplier: 0.25

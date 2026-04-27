@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Literal, Protocol, Self
 from flextype import flexdispatch
 from probly.representation.array_like import ArrayLike
 from probly.representation.distribution import CategoricalDistribution
-from probly.representation.representation import Representation
+from probly.representation.representation import CanonicalRepresentation, Representation
 
 if TYPE_CHECKING:
     from probly.representation.sample._common import Sample
@@ -23,7 +23,7 @@ class CredalSet(Representation):
     type: CredalSetType
 
 
-class CategoricalCredalSet[T: CategoricalDistribution](CredalSet, ABC):
+class CategoricalCredalSet[T: CategoricalDistribution](CredalSet, CanonicalRepresentation[T], ABC):
     """Base class for credal sets."""
 
     type = "categorical"
