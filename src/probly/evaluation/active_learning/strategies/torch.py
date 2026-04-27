@@ -70,7 +70,5 @@ def _random_select_torch(
     n: int,
     rng: np.random.Generator,
 ) -> torch.Tensor:
-    import numpy as np  # noqa: PLC0415
-
-    indices = np.asarray(rng.choice(n_pool, size=n, replace=False))
+    indices = rng.choice(n_pool, size=n, replace=False)
     return torch.from_numpy(indices).long()

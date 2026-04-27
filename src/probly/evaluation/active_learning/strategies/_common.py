@@ -52,10 +52,10 @@ class BadgeEstimator(Estimator, Protocol):
         ...
 
 
-class QueryStrategy(Protocol):
+class QueryStrategy[E: Estimator](Protocol):
     """Protocol for active learning query strategies."""
 
-    def select(self, estimator: Estimator, pool: ActiveLearningPool, n: int) -> ArrayLike:
+    def select(self, estimator: E, pool: ActiveLearningPool, n: int) -> ArrayLike:
         """Return n indices into pool.x_unlabeled to query next.
 
         Args:
