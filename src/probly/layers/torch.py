@@ -1118,3 +1118,98 @@ class IntSoftmax(nn.Module):
         output = torch.cat([lo, hi], dim=-1)
 
         return output
+
+
+class HeteroscedasticLayer(nn.Module):
+    """A unified PyTorch implementation of the Heteroscedastic layer based on :cite:`collier2021hetnets`.
+
+    Attributes:
+        in_features: int, number of input features.
+        num_classes: int, number of classes.
+        num_factors: int, number of factors.
+        temperature: float, temperature scaling.
+        is_parameter_efficient: bool, whether to use parameter efficient routing.
+        mu_layer: nn.Linear, deterministic mean parameter transformation.
+        diag_layer: nn.Linear, diagonal correction variance transformation.
+        v_layer: nn.Linear, covariance factor parameterization routing.
+        V_matrix: torch.nn.Parameter, global homoscedastic matrix (if parameter efficient).
+    """
+
+    def __init__(
+        self,
+        in_features: int,
+        num_classes: int,
+        num_factors: int = 15,
+        temperature: float = 1.0,
+        is_parameter_efficient: bool = False,
+    ) -> None:
+        """Initialize the HeteroscedasticLayer.
+
+        Args:
+            in_features: int, number of input features.
+            num_classes: int, number of classes.
+            num_factors: int, number of factors.
+            temperature: float, temperature scaling.
+            is_parameter_efficient: bool, whether to use parameter efficient routing.
+        """
+        super().__init__()
+        self.in_features = in_features
+        self.num_classes = num_classes
+        self.num_factors = num_factors
+        self.temperature = temperature
+        self.is_parameter_efficient = is_parameter_efficient
+
+        self.mu_layer = nn.Linear(in_features, num_classes)
+        self.diag_layer = nn.Linear(in_features, num_classes)
+
+        if self.is_parameter_efficient:
+            self.v_layer = nn.Linear(in_features, num_factors)
+            self.V_matrix = nn.Parameter(torch.Tensor(num_classes, num_factors))
+        else:
+            self.v_layer = nn.Linear(in_features, num_classes * num_factors)
+
+        nn.init.xavier_uniform_(self.mu_layer.weight)
+        nn.init.zeros_(self.mu_layer.bias)
+
+        nn.init.xavier_uniform_(self.diag_layer.weight)
+        bias_init_val = math.log(math.exp(1.0) - 1.0)
+        nn.init.constant_(self.diag_layer.bias, bias_init_val)
+
+        nn.init.xavier_uniform_(self.v_layer.weight)
+        nn.init.zeros_(self.v_layer.bias)
+
+        if self.is_parameter_efficient:
+            nn.init.xavier_normal_(self.V_matrix)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Draw a single utility sample and return temperature-scaled logits.
+
+        Samples once from a multivariate normal whose covariance is parameterized by a low-rank
+        factor plus a diagonal term derived from the input. Each call yields a different sample
+        because ``torch.randn`` is invoked fresh; the outer sampler turns repeated calls into a
+        Monte Carlo sample of categorical distributions.
+
+        Args:
+            x: Input tensor of shape (batch_size, in_features).
+
+        Returns:
+            Temperature-scaled utility logits of shape (batch_size, num_classes).
+        """
+        batch_size = x.size(0)
+
+        mu = self.mu_layer(x)
+        diag_scale = F.softplus(self.diag_layer(x))
+
+        eps_k = torch.randn(batch_size, self.num_classes, device=x.device, dtype=x.dtype)
+        eps_r = torch.randn(batch_size, self.num_factors, device=x.device, dtype=x.dtype)
+
+        if self.is_parameter_efficient:
+            v_x = self.v_layer(x)
+            scaled_eps_r = (eps_r * v_x).unsqueeze(-1)
+            low_rank_noise = torch.matmul(self.V_matrix, scaled_eps_r).squeeze(-1)
+        else:
+            v_x_full = self.v_layer(x).view(batch_size, self.num_classes, self.num_factors)
+            low_rank_noise = torch.matmul(v_x_full, eps_r.unsqueeze(-1)).squeeze(-1)
+
+        utilities = mu + diag_scale * eps_k + low_rank_noise
+        return utilities / self.temperature
