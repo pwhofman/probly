@@ -826,7 +826,7 @@ def _(
     model_ = cast("Any", model)
     amp_enabled = cfg.get("amp", False)
     alpha = train_kwargs.get("alpha", 0.5)
-    num_classes = int(model_.lower.shape[0])
+    num_classes = metadata.DATASETS[cfg.dataset].num_classes
 
     logits_train, targets_train = utils.collect_outputs_targets_raw(
         model_.predictor,
