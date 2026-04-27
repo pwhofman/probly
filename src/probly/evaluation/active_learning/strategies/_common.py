@@ -76,7 +76,7 @@ class QueryStrategy[E: Estimator](Protocol):
 
 
 @flexdispatch
-def margin_select(probs: object, n: int) -> object:
+def margin_select(probs: ArrayLike, n: int) -> ArrayLike:
     """Select n indices with the smallest margin between top-2 class probabilities.
 
     Args:
@@ -91,7 +91,7 @@ def margin_select(probs: object, n: int) -> object:
 
 
 @flexdispatch
-def uncertainty_select(scores: object, n: int) -> object:
+def uncertainty_select(scores: ArrayLike, n: int) -> ArrayLike:
     """Select n indices with the highest uncertainty scores.
 
     Args:
@@ -107,11 +107,11 @@ def uncertainty_select(scores: object, n: int) -> object:
 
 @flexdispatch
 def badge_select(
-    embeddings: object,
-    probs: object,
+    embeddings: ArrayLike,
+    probs: ArrayLike,
     n: int,
     seed: int | None = None,
-) -> object:
+) -> ArrayLike:
     """Select n indices via BADGE gradient embedding k-means++.
 
     Args:
@@ -128,7 +128,7 @@ def badge_select(
 
 
 @flexdispatch
-def random_select(x_ref: object, n_pool: int, n: int, rng: np.random.Generator) -> object:
+def random_select(x_ref: ArrayLike, n_pool: int, n: int, rng: np.random.Generator) -> ArrayLike:
     """Select n unique random indices, returning the backend's native index type.
 
     Dispatches on the type of ``x_ref`` (a reference array from the pool, used
@@ -186,7 +186,7 @@ class RandomQuery:
             Array of n unique integer indices into pool.x_unlabeled.
         """
         n = min(n, pool.n_unlabeled)
-        return random_select(pool.x_unlabeled, pool.n_unlabeled, n, self._rng)  # ty:ignore[invalid-return-type]
+        return random_select(pool.x_unlabeled, pool.n_unlabeled, n, self._rng)
 
 
 class MarginSampling:
@@ -209,7 +209,7 @@ class MarginSampling:
         """
         n = min(n, pool.n_unlabeled)
         probs = estimator.predict_proba(pool.x_unlabeled)
-        return margin_select(probs, n)  # ty:ignore[invalid-return-type]
+        return margin_select(probs, n)
 
 
 class UncertaintyQuery:
@@ -233,7 +233,7 @@ class UncertaintyQuery:
         """
         n = min(n, pool.n_unlabeled)
         scores = estimator.uncertainty_scores(pool.x_unlabeled)
-        return uncertainty_select(scores, n)  # ty:ignore[invalid-return-type]
+        return uncertainty_select(scores, n)
 
 
 class BADGEQuery:
@@ -283,4 +283,4 @@ class BADGEQuery:
                 stacklevel=2,
             )
             embeddings = pool.x_unlabeled
-        return badge_select(embeddings, probs, n, seed=self._seed)  # ty:ignore[invalid-return-type]
+        return badge_select(embeddings, probs, n, seed=self._seed)
