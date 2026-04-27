@@ -93,4 +93,4 @@ def _[**In, Out](predictor: CredalNetPredictor[In, Out], *args: In.args, **kwarg
     """
     raw = predict_raw(predictor, *args, **kwargs)
     n_classes = raw.shape[-1] // 2
-    return intersection_probability(raw[..., :n_classes], raw[..., n_classes:])  # ty:ignore[invalid-return-type]
+    return intersection_probability(raw[..., :n_classes], raw[..., n_classes:])
