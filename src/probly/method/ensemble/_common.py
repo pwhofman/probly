@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import Protocol, runtime_checkable
+from typing import Protocol, cast, runtime_checkable
 
 from flextype import flexdispatch
 from probly.method.method import predictor_transformation
@@ -14,8 +14,11 @@ from probly.predictor import (
     Predictor,
     predict,
     predict_raw,
+    predict_single,
+    to_single_prediction,
 )
 from probly.representation.distribution import CategoricalDistribution, DirichletDistribution
+from probly.representation.sample import create_sample
 
 
 @runtime_checkable
@@ -99,3 +102,12 @@ def ensemble[**In, Out](
 def predict_list[**In, Out](predictor: EnsemblePredictor[In, Out], *args: In.args, **kwargs: In.kwargs) -> list[Out]:
     """Predict for a list of predictors."""
     return [predict(p, *args, **kwargs) for p in predictor]
+
+
+@predict_single.register(EnsemblePredictor)
+def predict_single_ensemble[**In, Out](
+    predictor: EnsemblePredictor[In, Out], *args: In.args, **kwargs: In.kwargs
+) -> Out:
+    """Predict a single output by averaging the ensemble member predictions."""
+    sample = create_sample(predict(predictor, *args, **kwargs), sample_axis=0)
+    return cast("Out", to_single_prediction(sample))

@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterable
 from contextvars import ContextVar
-from typing import Any, ClassVar, Literal, Protocol, runtime_checkable
+from typing import Any, ClassVar, Literal, Protocol, overload, runtime_checkable
 
 from flextype import ProtocolRegistry, flexdispatch
-from probly.representation import Representation
+from probly.representation import CanonicalRepresentation, Representation
 from probly.representation.credal_set import CredalSet, ProbabilityIntervalsCredalSet
 from probly.representation.distribution import (
     CategoricalDistribution,
@@ -45,6 +45,11 @@ class Predictor[**In, Out](ProtocolRegistry, Protocol, structural_checking=False
         return NotImplemented
 
 
+@runtime_checkable
+class SinglePredictionPredictor[**In, Out](ProtocolRegistry, Protocol, structural_checking=False):
+    """Protocol for predictors that return a single prediction."""
+
+
 predictor_registry = switch[PredictorName, type[Predictor]]()
 
 
@@ -53,8 +58,8 @@ class RandomPredictor[**In, Out](Predictor[In, Out], Protocol):
     """Protocol for non-deterministic predictors."""
 
 
-@runtime_checkable
-class IterablePredictor[**In, Out](Predictor[In, Iterable[Out]], Protocol):
+@runtime_checkable  # ty:ignore[conflicting-metaclass]
+class IterablePredictor[**In, Out](Predictor[In, Iterable[Out]], SinglePredictionPredictor[In, Out], Protocol):
     """Protocol for predictors that return an iterable of outputs."""
 
 
@@ -198,3 +203,48 @@ def predict_categorical_distribution_from_logit[**In, Out: CategoricalDistributi
 ) -> Out:
     """Predict for a categorical distribution predictor."""
     return create_categorical_distribution_from_logits(predict_raw(predictor, *args, **kwargs))  # ty:ignore[invalid-return-type]
+
+
+@flexdispatch
+def to_single_prediction[Out](prediction: Out) -> Out:
+    """Convert a prediction-like value to a single concrete prediction.
+
+    The default behavior is identity. Representations with sample, set, or second-order
+    distribution semantics register reductions here so :func:`predict_single` can stay
+    small while remaining extensible for custom prediction values.
+
+    Args:
+        prediction: The prediction-like value to convert.
+
+    Returns:
+        A prediction without sample, set, or second-order prediction semantics.
+    """
+    return prediction
+
+
+@to_single_prediction.register(CanonicalRepresentation)
+def to_single_prediction_canonical[Out](prediction: CanonicalRepresentation[Out]) -> Out:
+    """Return the canonical element of a canonical representation."""
+    return prediction.canonical_element
+
+
+@overload
+def predict_single[**In, Out](
+    predictor: SinglePredictionPredictor[In, Out], /, *args: In.args, **kwargs: In.kwargs
+) -> Out: ...
+@overload
+def predict_single[**In, Out](predictor: Predictor[In, Out], /, *args: In.args, **kwargs: In.kwargs) -> Out: ...
+
+
+@flexdispatch
+def predict_single[**In, Out](
+    predictor: Predictor[In, Out] | SinglePredictionPredictor[In, Out], /, *args: In.args, **kwargs: In.kwargs
+) -> Out:
+    """Calls a predictor and returns the a single prediction result.
+
+    This function is mostly identical to `predict`. However, for (representation) predictors that either directly
+    return a representation or domain-specific raw data intended to be converted to a representation,
+    `predict_single` will extract a single (concrete) prediction from the (implicitly) returned representation.
+    Useful for cases where the caller wants to make a decision without considering the uncertainty representation.
+    """
+    return to_single_prediction(predict(predictor, *args, **kwargs))
