@@ -81,8 +81,8 @@ class RBFCentroidHead(nn.Module):
         # Initial counts and sums follow the reference implementation:
         # counts start at a small positive value and embeddings are seeded with
         # small Gaussian noise so that early centroids are well-defined.
-        self.register_buffer("centroid_counts", torch.full((num_classes,), 12.0))
-        sums = torch.empty(centroid_size, num_classes).normal_(0.0, 0.05) * 12.0
+        self.register_buffer("centroid_counts", torch.full((num_classes,), 13.0))
+        sums = torch.empty(centroid_size, num_classes).normal_(0.0, 0.05) * 13.0
         self.register_buffer("centroids_sum", sums)
 
     def embed(self, features: torch.Tensor) -> torch.Tensor:

@@ -408,7 +408,7 @@ def train_epoch_duq(
     grad_clip_norm: float | None = None,
     amp_enabled: bool = False,  # noqa: ARG001
     scaler: GradScaler | None = None,  # noqa: ARG001
-    gradient_penalty: float = 0.0,
+    gradient_penalty: float = 0.5,
     **kwargs: Any,  # noqa: ANN401, ARG001
 ) -> torch.Tensor | float:
     """Train a DUQ predictor for one step :cite:`vanamersfoortDUQ2020`.
