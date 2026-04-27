@@ -1,4 +1,4 @@
-"""Query strategies for pool-based active learning."""
+"""Protocols, dispatched select functions, and strategy classes for active learning."""
 
 from __future__ import annotations
 
@@ -6,25 +6,27 @@ from typing import TYPE_CHECKING, Any, Protocol, cast, runtime_checkable
 import warnings
 
 import numpy as np
-import torch
+
+from flextype import flexdispatch
 
 if TYPE_CHECKING:
-    from probly.evaluation.active_learning.pool import ActiveLearningPool
+    from probly.evaluation.active_learning.pool._common import ActiveLearningPool
+    from probly.representation.array_like import ArrayLike
 
 
 @runtime_checkable
 class Estimator(Protocol):
     """Protocol for estimators usable by query strategies."""
 
-    def fit(self, x: torch.Tensor, y: torch.Tensor) -> None:
+    def fit(self, x: ArrayLike, y: ArrayLike) -> None:
         """Fit the estimator on labeled data."""
         ...
 
-    def predict(self, x: torch.Tensor) -> torch.Tensor:
+    def predict(self, x: ArrayLike) -> ArrayLike:
         """Return class predictions."""
         ...
 
-    def predict_proba(self, x: torch.Tensor) -> torch.Tensor:
+    def predict_proba(self, x: ArrayLike) -> ArrayLike:
         """Return class probabilities."""
         ...
 
@@ -37,7 +39,7 @@ class BadgeEstimator(Estimator, Protocol):
     penultimate-layer features used to build BADGE gradient embeddings.
     """
 
-    def embed(self, x: torch.Tensor) -> torch.Tensor:
+    def embed(self, x: ArrayLike) -> ArrayLike:
         """Return penultimate-layer embeddings of shape ``(n, emb_dim)``."""
         ...
 
@@ -59,58 +61,66 @@ class QueryStrategy(Protocol):
         ...
 
 
-def _badge_select(
-    embeddings: torch.Tensor,
-    probs: torch.Tensor,
+# ---------------------------------------------------------------------------
+# Dispatched select functions
+# ---------------------------------------------------------------------------
+
+
+@flexdispatch
+def margin_select(probs: object, n: int) -> np.ndarray:
+    """Select n indices with the smallest margin between top-2 class probabilities.
+
+    Args:
+        probs: Class probability matrix of shape (n_pool, n_classes).
+        n: Number of indices to select.
+
+    Returns:
+        Array of n integer indices.
+    """
+    msg = f"No margin_select implementation registered for type {type(probs)}"
+    raise NotImplementedError(msg)
+
+
+@flexdispatch
+def uncertainty_select(scores: object, n: int) -> np.ndarray:
+    """Select n indices with the highest uncertainty scores.
+
+    Args:
+        scores: Per-sample uncertainty scores of shape (n_pool,).
+        n: Number of indices to select.
+
+    Returns:
+        Array of n integer indices.
+    """
+    msg = f"No uncertainty_select implementation registered for type {type(scores)}"
+    raise NotImplementedError(msg)
+
+
+@flexdispatch
+def badge_select(
+    embeddings: object,
+    probs: object,
     n: int,
     seed: int | None = None,
 ) -> np.ndarray:
-    """Select n indices via BADGE k-means++ initialization.
-
-    Computes gradient embeddings from predicted probabilities and embeddings,
-    then runs k-means++ to select a diverse uncertain batch.
+    """Select n indices via BADGE gradient embedding k-means++.
 
     Args:
         embeddings: Feature embeddings of shape (n_pool, emb_dim).
         probs: Predicted class probabilities of shape (n_pool, n_classes).
         n: Number of indices to select.
-        seed: Seed for the random number generator. Pass None for
-            non-deterministic selection.
+        seed: Seed for the random number generator.
 
     Returns:
         Array of n integer indices.
     """
-    # Flatten multi-dimensional inputs (e.g. images) to 2D
-    flat = embeddings.reshape(len(embeddings), -1)
-    predicted_class = probs.argmax(dim=1)
-    p_predicted = probs[torch.arange(len(probs)), predicted_class]
-    grad_embeddings = flat * (1 - p_predicted).unsqueeze(1)
+    msg = f"No badge_select implementation registered for type {type(embeddings)}"
+    raise NotImplementedError(msg)
 
-    rng = np.random.default_rng(seed)
-    n_pool = len(grad_embeddings)
 
-    # k-means++ initialization
-    first = int(rng.integers(0, n_pool))
-    chosen: list[int] = [first]
-
-    for _ in range(1, n):
-        dists = torch.cdist(grad_embeddings, grad_embeddings[chosen]).pow(2)
-        min_dists = dists.min(dim=1).values
-        min_dists[chosen] = 0.0
-        total = min_dists.sum()
-        if total == 0.0:
-            # All remaining distances are zero; pick uniformly from unchosen
-            remaining = np.setdiff1d(np.arange(n_pool), chosen)
-            if len(remaining) == 0:
-                break
-            next_idx = int(rng.choice(remaining))
-        else:
-            probs_sample = min_dists.cpu().numpy()
-            probs_sample /= probs_sample.sum()
-            next_idx = int(rng.choice(n_pool, p=probs_sample))
-        chosen.append(next_idx)
-
-    return np.array(chosen)
+# ---------------------------------------------------------------------------
+# Strategy classes (thin wrappers around dispatched functions)
+# ---------------------------------------------------------------------------
 
 
 class RandomQuery:
@@ -122,12 +132,6 @@ class RandomQuery:
     """
 
     def __init__(self, seed: int | None = None) -> None:
-        """Initialize the random number generator.
-
-        Args:
-            seed: Seed for the random number generator. Pass None for
-                non-deterministic selection.
-        """
         self._rng = np.random.default_rng(seed)
 
     def select(self, estimator: Estimator, pool: ActiveLearningPool, n: int) -> np.ndarray:  # noqa: ARG002
@@ -165,9 +169,7 @@ class MarginSampling:
         """
         n = min(n, pool.n_unlabeled)
         probs = estimator.predict_proba(pool.x_unlabeled)
-        sorted_probs = probs.sort(dim=1).values
-        margin = sorted_probs[:, -1] - sorted_probs[:, -2]
-        return torch.topk(margin, n, largest=False).indices.cpu().numpy()
+        return margin_select(probs, n)
 
 
 class UncertaintyQuery:
@@ -191,7 +193,7 @@ class UncertaintyQuery:
         """
         n = min(n, pool.n_unlabeled)
         scores = cast("Any", estimator).uncertainty_scores(pool.x_unlabeled)
-        return torch.topk(scores, n, largest=True).indices.cpu().numpy()
+        return uncertainty_select(scores, n)
 
 
 class BADGEQuery:
@@ -208,12 +210,6 @@ class BADGEQuery:
     """
 
     def __init__(self, seed: int | None = None) -> None:
-        """Store the seed used for k-means++ initialization.
-
-        Args:
-            seed: Seed for the random number generator. Pass None for
-                non-deterministic selection.
-        """
         self._seed = seed
 
     def select(self, estimator: Estimator, pool: ActiveLearningPool, n: int) -> np.ndarray:
@@ -241,4 +237,4 @@ class BADGEQuery:
                 stacklevel=2,
             )
             embeddings = pool.x_unlabeled
-        return _badge_select(embeddings, probs, n, seed=self._seed)
+        return badge_select(embeddings, probs, n, seed=self._seed)

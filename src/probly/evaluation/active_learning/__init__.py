@@ -11,6 +11,13 @@ from probly.evaluation.active_learning.metrics import (
 )
 from probly.evaluation.active_learning.pool import (
     ActiveLearningPool as ActiveLearningPool,
+    from_dataset as from_dataset,
+)
+from probly.evaluation.active_learning.pool.array import (
+    NumpyActiveLearningPool as NumpyActiveLearningPool,
+)
+from probly.evaluation.active_learning.pool.torch import (
+    TorchActiveLearningPool as TorchActiveLearningPool,
 )
 from probly.evaluation.active_learning.strategies import (
     BadgeEstimator as BadgeEstimator,

@@ -5,11 +5,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from probly.evaluation.active_learning.pool import query
+
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from probly.evaluation.active_learning.pool import ActiveLearningPool
-    from probly.evaluation.active_learning.strategies import Estimator, QueryStrategy
+    from probly.evaluation.active_learning.pool._common import ActiveLearningPool
+    from probly.evaluation.active_learning.strategies._common import Estimator, QueryStrategy
 
 
 @dataclass
@@ -55,6 +57,6 @@ def active_learning_steps(
             break
         effective_n = min(query_size, pool.n_unlabeled)
         indices = query_strategy.select(estimator, pool, n=effective_n)
-        pool.query(indices)
+        query(pool, indices)
         estimator.fit(pool.x_labeled, pool.y_labeled)
         yield ALState(iteration=i + 1, pool=pool, estimator=estimator)
