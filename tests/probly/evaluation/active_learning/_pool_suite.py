@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from probly.evaluation.active_learning.pool import from_dataset, query
 
 
@@ -83,3 +85,26 @@ class PoolSuite:
         x_train, y_train, x_test, y_test = classification_data
         pool = from_dataset(x_train, y_train, x_test, y_test, initial_size=50, seed=0)
         assert pool.n_unlabeled == len(pool.x_unlabeled)
+
+    def test_from_dataset_rejects_zero_initial_size(self, classification_data):
+        """initial_size=0 must raise ValueError."""
+        x_train, y_train, x_test, y_test = classification_data
+        with pytest.raises(ValueError, match="initial_size must be in"):
+            from_dataset(x_train, y_train, x_test, y_test, initial_size=0, seed=0)
+
+    def test_from_dataset_rejects_oversized_initial(self, classification_data):
+        """initial_size >= len(x) must raise ValueError."""
+        x_train, y_train, x_test, y_test = classification_data
+        with pytest.raises(ValueError, match="initial_size must be in"):
+            from_dataset(x_train, y_train, x_test, y_test, initial_size=150, seed=0)
+
+    def test_query_empty_indices(self, classification_data, index_fn):
+        """Querying with empty indices should be a no-op."""
+        x_train, y_train, x_test, y_test = classification_data
+        pool = from_dataset(x_train, y_train, x_test, y_test, initial_size=20, seed=0)
+        before = pool.n_labeled
+        # Use index_fn([0])[:0] to get an empty integer-typed array (index_fn([])
+        # may default to float dtype in some backends).
+        empty = index_fn([0])[:0]
+        query(pool, empty)
+        assert pool.n_labeled == before

@@ -16,7 +16,13 @@ if TYPE_CHECKING:
 
 @runtime_checkable
 class Estimator(Protocol):
-    """Protocol for estimators usable by query strategies."""
+    """Protocol for estimators usable by query strategies.
+
+    Implement this for basic strategies (:class:`RandomQuery`,
+    :class:`MarginSampling`). For :class:`UncertaintyQuery`, implement
+    :class:`UncertaintyEstimator` instead. For :class:`BADGEQuery` with
+    proper gradient embeddings, implement :class:`BadgeEstimator`.
+    """
 
     def fit(self, x: ArrayLike, y: ArrayLike) -> None:
         """Fit the estimator on labeled data."""
@@ -53,6 +59,7 @@ class BadgeEstimator(Estimator, Protocol):
         ...
 
 
+@runtime_checkable
 class QueryStrategy[E: Estimator](Protocol):
     """Protocol for active learning query strategies."""
 
@@ -133,6 +140,7 @@ def badge_embed(estimator: object, x_unlabeled: ArrayLike) -> ArrayLike:
 
 @badge_embed.register(BadgeEstimator)
 def _badge_embed_badge(estimator: BadgeEstimator, x_unlabeled: ArrayLike) -> ArrayLike:
+    """Use the estimator's penultimate-layer embeddings for BADGE selection."""
     return estimator.embed(x_unlabeled)
 
 

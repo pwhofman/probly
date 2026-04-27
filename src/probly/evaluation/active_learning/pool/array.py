@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from ._common import from_dataset, query
+from ._common import _validate_initial_size, from_dataset, query
 
 
 @dataclass
@@ -49,6 +49,7 @@ def _from_dataset_numpy(
     initial_size: int,
     seed: int | None,
 ) -> NumpyActiveLearningPool:
+    _validate_initial_size(len(x), initial_size)
     rng = np.random.default_rng(seed)
     perm = rng.permutation(len(x))
     labeled_idx = perm[:initial_size]

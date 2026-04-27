@@ -112,6 +112,16 @@ class _NumpyEstimator:
         return 1.0 - probs.max(axis=1)
 
 
+class _NumpyBadgeEstimator(_NumpyEstimator):
+    def embed(self, x):
+        return x  # identity embedding for testing
+
+
+@pytest.fixture
+def make_badge_estimator():
+    return _NumpyBadgeEstimator
+
+
 @pytest.fixture
 def margin_fn():
     def _margin(probs):

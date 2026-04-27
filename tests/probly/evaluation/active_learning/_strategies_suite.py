@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import warnings
+
 import numpy as np
 import pytest
 
@@ -70,13 +72,46 @@ class StrategySuite:
 
     def test_badge_query_correct_count(self, estimator, pool, to_numpy):
         strategy = BADGEQuery()
-        indices = to_numpy(strategy.select(estimator, pool, n=10))
+        with pytest.warns(UserWarning, match="does not implement BadgeEstimator"):
+            indices = to_numpy(strategy.select(estimator, pool, n=10))
         assert len(indices) == 10
 
     def test_badge_query_unique_indices(self, estimator, pool, to_numpy):
         strategy = BADGEQuery()
-        indices = to_numpy(strategy.select(estimator, pool, n=10))
+        with pytest.warns(UserWarning, match="does not implement BadgeEstimator"):
+            indices = to_numpy(strategy.select(estimator, pool, n=10))
         assert len(indices) == len(np.unique(indices))
+
+    def test_badge_query_uses_embeddings(self, pool, make_badge_estimator, to_numpy):
+        """BADGEQuery uses embed() when estimator implements BadgeEstimator."""
+        est = make_badge_estimator()
+        est.fit(pool.x_labeled, pool.y_labeled)
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")  # fail if warning is raised
+            strategy = BADGEQuery()
+            indices = to_numpy(strategy.select(est, pool, n=10))
+        assert len(indices) == 10
+        assert len(indices) == len(np.unique(indices))
+
+    def test_uncertainty_query_selects_uncertain_samples(self, pool, make_estimator, to_numpy):
+        """UncertaintyQuery should select samples with higher uncertainty than average."""
+        est = make_estimator()
+        est.fit(pool.x_labeled, pool.y_labeled)
+        n = 10
+        strategy = UncertaintyQuery()
+        indices = to_numpy(strategy.select(est, pool, n=n))
+        scores = to_numpy(est.uncertainty_scores(pool.x_unlabeled))
+        selected_score = float(np.mean(scores[indices]))
+        remaining_mask = np.ones(len(scores), dtype=bool)
+        remaining_mask[indices] = False
+        remaining_score = float(np.mean(scores[remaining_mask]))
+        assert selected_score >= remaining_score
+
+    def test_select_with_zero_n(self, estimator, pool, to_numpy):
+        """Requesting n=0 samples should return an empty array."""
+        strategy = RandomQuery(seed=0)
+        indices = to_numpy(strategy.select(estimator, pool, n=0))
+        assert len(indices) == 0
 
     def test_clamping_returns_pool_size(self, estimator, pool, to_numpy):
         strategy = RandomQuery(seed=0)

@@ -106,9 +106,10 @@ def compute_nauc(scores: Sequence[float]) -> float:
     """Compute normalized area under the score curve.
 
     Normalizes by the ideal AUC, which is the area under a constant curve at
-    max(scores). NaN entries (e.g. from an exhausted pool) are excluded while
-    preserving their original iteration indices so that x-axis spacing remains
-    correct.
+    1.0 spanning the same x-axis range. A NAUC of 0.8 means the observed
+    curve covers 80% of the best possible area. NaN entries (e.g. from an
+    exhausted pool) are excluded while preserving their original iteration
+    indices so that x-axis spacing remains correct.
 
     Args:
         scores: Per-iteration scores in [0, 1], higher-is-better.

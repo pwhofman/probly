@@ -42,6 +42,13 @@ class ActiveLearningPool(Protocol):
     def n_unlabeled(self) -> int: ...
 
 
+def _validate_initial_size(n_samples: int, initial_size: int) -> None:
+    """Validate that initial_size is in [1, n_samples - 1]."""
+    if initial_size < 1 or initial_size >= n_samples:
+        msg = f"initial_size must be in [1, {n_samples - 1}], got {initial_size}"
+        raise ValueError(msg)
+
+
 @flexdispatch
 def from_dataset(
     x: object,
@@ -61,12 +68,16 @@ def from_dataset(
         x_test: Test feature matrix (kept as-is).
         y_test: Test label array (kept as-is).
         initial_size: Number of samples to place in the initial labeled set.
+            Must be at least 1 and less than the number of training samples.
         seed: Seed for the random number generator. Pass ``None`` for a
             non-deterministic split.
 
     Returns:
         A backend-specific ``ActiveLearningPool`` with ``initial_size`` labeled
         samples and the remainder in the unlabeled pool.
+
+    Raises:
+        ValueError: If ``initial_size`` is not in ``[1, len(x) - 1]``.
     """
     msg = f"No from_dataset implementation registered for type {type(x)}"
     raise NotImplementedError(msg)

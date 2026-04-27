@@ -39,6 +39,13 @@ def test_nauc_single_value_is_nan():
     assert math.isnan(result)
 
 
+def test_nauc_with_nan_entries():
+    """NaN entries should be excluded while preserving x-axis spacing."""
+    result = compute_nauc([0.5, float("nan"), 0.7, 0.9])
+    assert 0.0 <= result <= 1.0
+    assert not math.isnan(result)
+
+
 # ---------------------------------------------------------------------------
 # ALState
 # ---------------------------------------------------------------------------

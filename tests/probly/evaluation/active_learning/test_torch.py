@@ -123,6 +123,16 @@ class _TorchEstimator:
         return 1.0 - probs.max(dim=1).values
 
 
+class _TorchBadgeEstimator(_TorchEstimator):
+    def embed(self, x):
+        return x  # identity embedding for testing
+
+
+@pytest.fixture
+def make_badge_estimator():
+    return _TorchBadgeEstimator
+
+
 @pytest.fixture
 def margin_fn():
     def _margin(probs):

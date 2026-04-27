@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 import torch
 
-from ._common import from_dataset, query
+from ._common import _validate_initial_size, from_dataset, query
 
 
 @dataclass
@@ -49,6 +49,7 @@ def _from_dataset_torch(
     initial_size: int,
     seed: int | None,
 ) -> TorchActiveLearningPool:
+    _validate_initial_size(len(x), initial_size)
     g = torch.Generator().manual_seed(seed) if seed is not None else torch.Generator()
     perm = torch.randperm(len(x), generator=g)
     labeled_idx = perm[:initial_size]
