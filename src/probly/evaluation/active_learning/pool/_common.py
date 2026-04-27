@@ -45,9 +45,9 @@ class ActiveLearningPool(Protocol):
 @flexdispatch
 def from_dataset(
     x: object,
-    y: object,
-    x_test: object,
-    y_test: object,
+    y: ArrayLike,
+    x_test: ArrayLike,
+    y_test: ArrayLike,
     initial_size: int,
     seed: int | None,
 ) -> ActiveLearningPool:
@@ -73,7 +73,7 @@ def from_dataset(
 
 
 @flexdispatch
-def query(pool: object, indices: object) -> None:
+def query(pool: ActiveLearningPool, indices: object) -> None:
     """Move samples from the unlabeled pool into the labeled set.
 
     Dispatches on the type of ``pool``.

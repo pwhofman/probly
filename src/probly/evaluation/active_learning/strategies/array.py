@@ -10,6 +10,7 @@ from ._common import badge_select, margin_select, random_select, uncertainty_sel
 
 @margin_select.register(np.ndarray)
 def _margin_select_numpy(probs: np.ndarray, n: int) -> np.ndarray:
+    """Numpy implementation of margin sampling selection."""
     sorted_probs = np.sort(probs, axis=1)
     margin = sorted_probs[:, -1] - sorted_probs[:, -2]
     return np.argpartition(margin, n)[:n]
@@ -17,6 +18,7 @@ def _margin_select_numpy(probs: np.ndarray, n: int) -> np.ndarray:
 
 @uncertainty_select.register(np.ndarray)
 def _uncertainty_select_numpy(scores: np.ndarray, n: int) -> np.ndarray:
+    """Numpy implementation of uncertainty sampling selection."""
     return np.argpartition(scores, -n)[-n:]
 
 
@@ -27,6 +29,7 @@ def _badge_select_numpy(
     n: int,
     seed: int | None = None,
 ) -> np.ndarray:
+    """Numpy implementation of BADGE selection."""
     flat = embeddings.reshape(len(embeddings), -1)
     predicted_class = probs.argmax(axis=1)
     p_predicted = probs[np.arange(len(probs)), predicted_class]
@@ -63,4 +66,5 @@ def _random_select_numpy(
     n: int,
     rng: np.random.Generator,
 ) -> np.ndarray:
+    """Numpy implementation of random selection."""
     return rng.choice(n_pool, size=n, replace=False)

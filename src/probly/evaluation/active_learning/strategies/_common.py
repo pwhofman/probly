@@ -31,6 +31,7 @@ class Estimator(Protocol):
         ...
 
 
+@runtime_checkable
 class UncertaintyEstimator(Estimator, Protocol):
     """Protocol for estimators that provide uncertainty scores."""
 
@@ -127,7 +128,7 @@ def badge_select(
 
 
 @flexdispatch
-def random_select(x_ref: object, n_pool: int, n: int, rng: object) -> object:
+def random_select(x_ref: object, n_pool: int, n: int, rng: np.random.Generator) -> object:
     """Select n unique random indices, returning the backend's native index type.
 
     Dispatches on the type of ``x_ref`` (a reference array from the pool, used
@@ -257,7 +258,7 @@ class BADGEQuery:
         """
         self._seed = seed
 
-    def select(self, estimator: BadgeEstimator | Estimator, pool: ActiveLearningPool, n: int) -> ArrayLike:
+    def select(self, estimator: Estimator, pool: ActiveLearningPool, n: int) -> ArrayLike:
         """Return n indices chosen by BADGE k-means++ on gradient embeddings.
 
         Args:

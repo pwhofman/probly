@@ -10,12 +10,12 @@ from probly.evaluation.active_learning.pool import query
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from probly.evaluation.active_learning.pool._common import ActiveLearningPool
-    from probly.evaluation.active_learning.strategies._common import Estimator, QueryStrategy
+    from probly.evaluation.active_learning.pool import ActiveLearningPool
+    from probly.evaluation.active_learning.strategies import Estimator, QueryStrategy
 
 
 @dataclass
-class ALState:
+class ALState[E: Estimator]:
     """State yielded after each active learning iteration.
 
     Attributes:
@@ -26,16 +26,16 @@ class ALState:
 
     iteration: int
     pool: ActiveLearningPool
-    estimator: Estimator
+    estimator: E
 
 
-def active_learning_steps(
+def active_learning_steps[E: Estimator](
     pool: ActiveLearningPool,
-    estimator: Estimator,
-    query_strategy: QueryStrategy,
+    estimator: E,
+    query_strategy: QueryStrategy[E],
     query_size: int = 1000,
     n_iterations: int = 10,
-) -> Iterator[ALState]:
+) -> Iterator[ALState[E]]:
     """Yield AL state after initial training and each query-retrain cycle.
 
     Args:

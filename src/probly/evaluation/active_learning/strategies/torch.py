@@ -14,6 +14,7 @@ from ._common import badge_select, margin_select, random_select, uncertainty_sel
 
 @margin_select.register(torch.Tensor)
 def _margin_select_torch(probs: torch.Tensor, n: int) -> torch.Tensor:
+    """Torch implementation of margin sampling selection."""
     sorted_probs = probs.sort(dim=1).values
     margin = sorted_probs[:, -1] - sorted_probs[:, -2]
     return torch.topk(margin, n, largest=False).indices
@@ -21,6 +22,7 @@ def _margin_select_torch(probs: torch.Tensor, n: int) -> torch.Tensor:
 
 @uncertainty_select.register(torch.Tensor)
 def _uncertainty_select_torch(scores: torch.Tensor, n: int) -> torch.Tensor:
+    """Torch implementation of uncertainty sampling selection."""
     return torch.topk(scores, n, largest=True).indices
 
 
@@ -31,6 +33,7 @@ def _badge_select_torch(
     n: int,
     seed: int | None = None,
 ) -> torch.Tensor:
+    """Torch implementation of BADGE selection."""
     flat = embeddings.reshape(len(embeddings), -1)
     predicted_class = probs.argmax(dim=1)
     p_predicted = probs[torch.arange(len(probs), device=probs.device), predicted_class]
@@ -70,5 +73,6 @@ def _random_select_torch(
     n: int,
     rng: np.random.Generator,
 ) -> torch.Tensor:
+    """Torch implementation of random selection."""
     indices = rng.choice(n_pool, size=n, replace=False)
     return torch.from_numpy(indices).long()

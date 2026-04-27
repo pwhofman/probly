@@ -2,9 +2,14 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 
 from flextype import flexdispatch
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 
 @flexdispatch
@@ -97,7 +102,7 @@ except ImportError:
 # ---------------------------------------------------------------------------
 
 
-def compute_nauc(scores: list[float]) -> float:
+def compute_nauc(scores: Sequence[float]) -> float:
     """Compute normalized area under the score curve.
 
     Normalizes by the ideal AUC, which is the area under a constant curve at

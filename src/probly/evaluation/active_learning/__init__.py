@@ -27,6 +27,7 @@ from probly.evaluation.active_learning.strategies import (
     MarginSampling as MarginSampling,
     QueryStrategy as QueryStrategy,
     RandomQuery as RandomQuery,
+    UncertaintyEstimator as UncertaintyEstimator,
     UncertaintyQuery as UncertaintyQuery,
 )
 
@@ -36,7 +37,7 @@ if TYPE_CHECKING:
     )
 
 
-def __getattr__(name: str) -> type:
+def __getattr__(name: str) -> object:
     if name == "TorchActiveLearningPool":
         from probly.evaluation.active_learning.pool.torch import TorchActiveLearningPool  # noqa: PLC0415
 
