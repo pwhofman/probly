@@ -68,8 +68,8 @@ def get_base_model(  # noqa: PLR0912, PLR0915, C901
                 msg = "Pretrained weights are not supported for LeNet."
                 raise NotImplementedError(msg)
             model = LeNet(n_classes=num_classes)
-            # Drop Softmax and final Linear, keeping up to Tanh -> output 84-d
-            model.classifier = nn.Sequential(*list(model.classifier.children())[:-2])
+            # Drop final Linear, keeping up to Tanh -> output 84-d
+            model.classifier = nn.Sequential(*list(model.classifier.children())[:-1])
         case "tabular_mlp":
             if pretrained:
                 msg = "Pretrained weights are not supported for TabularMLP."
@@ -86,7 +86,7 @@ def get_base_model(  # noqa: PLR0912, PLR0915, C901
                 msg = "TabularMLP encoder requires 'in_features' kwarg."
                 raise ValueError(msg)
             model = TabularMLP(in_features=in_features, n_classes=num_classes)
-            model.net[-1] = nn.Identity()  # drop classification head, output 1024-d
+            model.lin_out = nn.Identity()  # ty: ignore[invalid-assignment]  # drop classification head, output 1024-d
         case _:
             msg = f"Model {name} not recognized"
             raise ValueError(msg)
@@ -121,7 +121,6 @@ class LeNet(nn.Module):
             nn.Linear(120, 84),
             nn.Tanh(),
             nn.Linear(84, n_classes),
-            nn.Softmax(dim=-1),
         )
 
     def forward(self, x: torch.Tensor) -> nn.Module:
@@ -191,14 +190,12 @@ class TabularMLP(nn.Module):
             hidden_dim: Number of hidden units in each layer.
         """
         super().__init__()
-        self.net = nn.Sequential(
-            nn.Linear(in_features, hidden_dim),
-            nn.ReLU(),
-            nn.Linear(hidden_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Linear(hidden_dim, n_classes),
-        )
+        self.lin_one = nn.Linear(in_features, hidden_dim)
+        self.lin_two = nn.Linear(hidden_dim, hidden_dim)
+        self.lin_out = nn.Linear(hidden_dim, n_classes)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward pass."""
-        return self.net(x)
+        x = F.relu(self.lin_one(x))
+        x = F.relu(self.lin_two(x))
+        return self.lin_out(x)

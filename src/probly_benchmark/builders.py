@@ -207,9 +207,20 @@ def _natural_posterior_network_builder(
     )
 
 
+def _credal_relative_likelihood_builder(
+    method_fn: Callable[..., nn.Module],
+    params: dict[str, Any],
+    ctx: BuildContext,
+) -> nn.Module:
+    """Build credal relative likelihood and wrap the plain list in nn.ModuleList."""
+    model = _default_builder(method_fn, params, ctx)
+    return nn.ModuleList(model) if isinstance(model, list) else model  # ty: ignore[invalid-argument-type]
+
+
 BUILDERS: dict[str, Builder] = {
     "natural_posterior_network": _natural_posterior_network_builder,
     "posterior_network": _posterior_network_builder,
+    "credal_relative_likelihood": _credal_relative_likelihood_builder,
 }
 
 
