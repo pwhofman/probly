@@ -12,15 +12,22 @@ import torchvision.models as tm
 from probly_benchmark.resnet import ResNet18
 
 
-def get_base_model(name: str, num_classes: int, pretrained: bool = False, **kwargs: Any) -> nn.Module:  # noqa: PLR0912, PLR0915, C901, ANN401
+def get_base_model(  # noqa: PLR0912, PLR0915, C901
+    name: str,
+    num_classes: int,
+    pretrained: bool = False,
+    in_features: int | None = None,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> nn.Module:
     """Get a base model.
 
     Args:
         name: Name of the model
         num_classes: Number of classes in the dataset
         pretrained: Whether or not to use pretrained model. Defaults to False.
-        **kwargs: Additional model-specific arguments. For tabular_mlp,
-            ``in_features`` (int) is required.
+        in_features: Number of input features for tabular models. Ignored for image models.
+            Required for tabular_mlp and tabular_mlp_encoder.
+        **kwargs: Additional model-specific arguments.
 
     Returns:
         The base model as a PyTorch module.
@@ -67,7 +74,6 @@ def get_base_model(name: str, num_classes: int, pretrained: bool = False, **kwar
             if pretrained:
                 msg = "Pretrained weights are not supported for TabularMLP."
                 raise NotImplementedError(msg)
-            in_features = kwargs.get("in_features")
             if in_features is None:
                 msg = "TabularMLP requires 'in_features' kwarg."
                 raise ValueError(msg)
@@ -76,7 +82,6 @@ def get_base_model(name: str, num_classes: int, pretrained: bool = False, **kwar
             if pretrained:
                 msg = "Pretrained weights are not supported for TabularMLP."
                 raise NotImplementedError(msg)
-            in_features = kwargs.get("in_features")
             if in_features is None:
                 msg = "TabularMLP encoder requires 'in_features' kwarg."
                 raise ValueError(msg)

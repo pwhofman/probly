@@ -28,12 +28,11 @@ model_type: "logit_classifier"
 seed: 0
 device: "cuda"
 
-# Uncertainty measure override (null = use default for the predictor's
-# representation type — see al_estimator._DEFAULT_MEASURE_BY_REP).
-measure: null
+# Uncertainty measure EU (epistemic unc.) or TU (total unc.)
+uncertainty_decomposition: EU
 
 # Dropout/MC sampling
-num_samples: 10
+num_samples: 50
 
 # WandB (AL-level logging only)
 wandb:
@@ -43,8 +42,7 @@ wandb:
 # Local results aggregation. When ``save_results`` is true, each run appends
 # its result dict to ``results_file`` (a JSON list of run dicts) keyed by
 # (method, dataset, strategy, seed) so re-runs overwrite previous entries.
-# Read by probly_benchmark.plot.plot_al. ``results_file`` is resolved
-# relative to Hydra's original cwd, not the per-run output dir.
+# Will be read by local plotting code for debugging and sanity checks.
 # Default off so cluster/Hydra runs (where wandb is the source of truth)
 # don't write a stray file. Enable locally with ``save_results=true``.
 save_results: false

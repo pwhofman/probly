@@ -5,12 +5,6 @@ Most methods are built by :func:`_default_builder`, which just calls
 dataset or from the base model (e.g. Posterior Network, which needs
 ``class_counts`` from the training set and ``dim`` from the encoder)
 register a custom builder in :data:`BUILDERS`.
-
-The ``plain`` baseline is intentionally absent from :data:`METHODS`. It is
-not a probly UQ method -- it has no ``@predictor_transformation`` and no
-predictor type to register against -- so the AL benchmark constructs it
-directly in :class:`probly_benchmark.al_estimator.BaselineALEstimator`
-without going through this module.
 """
 
 from __future__ import annotations
