@@ -1,8 +1,13 @@
 """Quantification methods for uncertainty."""
 
-from probly.quantification.decomposition.duq import duq_uncertainty
-
-from ._quantification import QuantificationResult, Quantifier, decompose, measure as _measure, quantify
+from ._quantification import (
+    QuantificationResult,
+    Quantifier,
+    decompose,
+    measure as _measure,  # to avoid name clash with later .measure import
+    measure_atomic,
+    quantify,
+)
 from .decomposition import (
     AdditiveDecomposition,
     AleatoricDecomposition,
@@ -44,10 +49,9 @@ __all__ = [
     "SecondOrderZeroOneDecomposition",
     "TotalDecomposition",
     "TotalUncertainty",
-    "ddu_aleatoric_uncertainty",
     "decompose",
-    "duq_uncertainty",
     "measure",
+    "measure_atomic",
     "measure_sample_variance",
     "notion_registry",
     "quantify",

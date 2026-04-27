@@ -48,25 +48,36 @@ def decompose(representation: Representation, *args: Any, **kwargs: Any) -> Deco
 
 
 @flexdispatch
+def measure_atomic(representation: Representation, *args: Any, **kwargs: Any) -> MeasureResult:  # noqa: ANN401
+    """Measures the uncertainty of a given representation without attempting to decompose it."""
+    msg = f"No measure_atomic function registered for type {type(representation)}"
+    raise NotImplementedError(msg)
+
+
+@flexdispatch
 def measure(representation: Representation, *args: Any, **kwargs: Any) -> MeasureResult:  # noqa: ANN401
-    """Measures the uncertainty of a given representation."""
+    """Measures the uncertainty of a given representation.
+
+    By default, this tries to decompose the uncertainty of the representation and returns the canonical notion of
+    uncertainty of the decomposition. Normally, the canonical notion is the total uncertainty.
+    Some representations may however provide a different or no canonical notion at all.
+    """
     if _from_missing_call.get():
-        msg = f"No measure function registered for type {type(representation)}"
-        raise NotImplementedError(msg)
+        return measure_atomic(representation, *args, **kwargs)
 
     tok = _from_missing_call.set(True)
     try:
-        decomposition = decompose(representation, *args, **kwargs)
-    except NotImplementedError as e:
-        msg = f"No measure function registered for type {type(representation)}"
-        raise NotImplementedError(msg) from e
+        decompose_impl = decompose.dispatch(type(representation), registry_meta_lookup=representation)
+        default_decompose_impl = decompose.dispatch(object)
+        # If no explicit decompose implementation is registered,
+        # attempt to measure uncertainty atomically without decomposition:
+        if decompose_impl is default_decompose_impl:
+            return measure_atomic(representation, *args, **kwargs)
+        decomposition = decompose_impl(representation, *args, **kwargs)
     finally:
         _from_missing_call.reset(tok)
-    try:
-        return decomposition["total"]
-    except KeyError as e:
-        msg = f"Decomposition for type {type(representation)} does not have a (default) total uncertainty notion."
-        raise NotImplementedError(msg) from e
+
+    return decomposition.get_canonical()
 
 
 @flexdispatch

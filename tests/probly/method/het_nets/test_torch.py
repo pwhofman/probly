@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from probly.method.het_nets import het_nets
-from probly.quantification import decompose, quantify
+from probly.quantification import decompose, measure, quantify
 from probly.quantification.decomposition.entropy import LabelNoiseEntropyDecomposition
 from probly.representation.het_nets import HetNetsRepresentation
 from probly.representer import representer
@@ -47,18 +47,30 @@ def test_quantify_dispatches_hetnets_sample_to_label_noise_decomposition() -> No
     assert isinstance(quantification, LabelNoiseEntropyDecomposition)
 
 
-def test_hetnets_decomposition_is_aleatoric_total_only() -> None:
+def test_hetnets_decomposition_is_aleatoric_only() -> None:
     sample = _hetnets_sample()
 
     decomposition = decompose(sample)
 
-    total = decomposition.total
     aleatoric = decomposition.aleatoric
 
-    assert torch.allclose(total, aleatoric)
-    assert total.shape == (2,)
+    assert torch.allclose(decomposition["au"], aleatoric)
     assert aleatoric.shape == (2,)
+    with pytest.raises(AttributeError):
+        _ = decomposition.total
+    with pytest.raises(KeyError):
+        _ = decomposition["tu"]
     with pytest.raises(AttributeError):
         _ = decomposition.epistemic
     with pytest.raises(KeyError):
         _ = decomposition["eu"]
+
+
+def test_measure_hetnets_sample_returns_aleatoric_uncertainty() -> None:
+    sample = _hetnets_sample()
+
+    uncertainty = measure(sample)
+    decomposition = decompose(sample)
+
+    assert torch.allclose(uncertainty, decomposition.aleatoric)
+    assert uncertainty.shape == (2,)

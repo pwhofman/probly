@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, override
 from probly.quantification._quantification import decompose
 from probly.quantification.decomposition.decomposition import (
     AdditiveDecomposition,
-    AleatoricTotalDecomposition,
+    AleatoricDecomposition,
     CachingDecomposition,
 )
 from probly.quantification.measure.credal_set import lower_entropy, upper_entropy
@@ -75,10 +75,10 @@ class CredalSetEntropyDecomposition[T](AdditiveDecomposition[T, T, T]):
 
 @decompose.register(HetNetsRepresentation)
 @dataclass(frozen=True, slots=True, repr=False)
-class LabelNoiseEntropyDecomposition[T](CachingDecomposition, AleatoricTotalDecomposition[T, T]):
+class LabelNoiseEntropyDecomposition[T](CachingDecomposition, AleatoricDecomposition[T]):
     """Entropy decomposition for HetNets representations.
 
-    HetNets only capture aleatoric uncertainty, so TU = AU and no EU is present.
+    HetNets only capture aleatoric uncertainty.
     """
 
     distribution: SecondOrderDistributionLike

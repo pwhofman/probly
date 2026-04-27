@@ -23,6 +23,8 @@ from probly.representation.representation import Representation
 class Decomposition(Mapping[NotionKey, Notion], ABC):
     """Protocol for uncertainty decompositions."""
 
+    canonical_notion: type[Notion] | None = None
+
     @property
     @abstractmethod
     def components(self) -> list[type[Notion]]:
@@ -38,6 +40,14 @@ class Decomposition(Mapping[NotionKey, Notion], ABC):
     def get_notion[N: Notion](self, notion: type[N]) -> N:
         """Return the component corresponding to the given notion."""
         return self._get_notion(notion)
+
+    def get_canonical(self) -> Notion:
+        """Return the canonical notion of the decomposition."""
+        if self.canonical_notion is None:
+            msg = f"Decomposition of type {type(self)} does not have a canonical notion."
+            raise NotImplementedError(msg)
+
+        return self.get_notion(self.canonical_notion)
 
     @override
     def __getitem__[N: Notion](self, key: NotionName | type[N]) -> N:
@@ -59,7 +69,7 @@ class Decomposition(Mapping[NotionKey, Notion], ABC):
         return len(self.components)
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, repr=False)
 class CachingDecomposition(Decomposition, ABC):
     """Protocol for decompositions that cache their components."""
 
@@ -81,6 +91,8 @@ class CachingDecomposition(Decomposition, ABC):
 
 class AleatoricDecomposition[AU: AleatoricUncertainty](Decomposition, ABC):  # ty:ignore[inconsistent-mro]
     """Protocol for decompositions with aleatoric uncertainty."""
+
+    canonical_notion = AleatoricUncertainty
 
     @property
     @override
@@ -109,6 +121,8 @@ class AleatoricDecomposition[AU: AleatoricUncertainty](Decomposition, ABC):  # t
 class EpistemicDecomposition[EU: EpistemicUncertainty](Decomposition, ABC):  # ty:ignore[inconsistent-mro]
     """Protocol for decompositions with epistemic uncertainty."""
 
+    canonical_notion = EpistemicUncertainty
+
     @property
     @override
     def components(self) -> list[type[Notion]]:
@@ -135,6 +149,8 @@ class EpistemicDecomposition[EU: EpistemicUncertainty](Decomposition, ABC):  # t
 
 class TotalDecomposition[TU: TotalUncertainty](Decomposition, ABC):  # ty:ignore[inconsistent-mro]
     """Protocol for decompositions with total uncertainty."""
+
+    canonical_notion = TotalUncertainty
 
     @property
     @override
@@ -178,9 +194,12 @@ class AleatoricEpistemicDecomposition[AU: AleatoricUncertainty, EU: EpistemicUnc
 ):
     """Protocol for decompositions into aleatoric and epistemic uncertainty."""
 
+    # For AU/EU decompositions, there is no canonical notion, as AU and EU are equally valid notions of uncertainty.
+    canonical_notion = None
+
 
 class AleatoricTotalDecomposition[AU: AleatoricUncertainty, TU: TotalUncertainty](
-    AleatoricDecomposition[AU], TotalDecomposition[TU]
+    TotalDecomposition[TU], AleatoricDecomposition[AU]
 ):
     """Protocol for decompositions into aleatoric and total uncertainty.
 
@@ -202,7 +221,7 @@ class AleatoricTotalDecomposition[AU: AleatoricUncertainty, TU: TotalUncertainty
 
 
 class EpistemicTotalDecomposition[EU: EpistemicUncertainty, TU: TotalUncertainty](
-    EpistemicDecomposition[EU], TotalDecomposition[TU]
+    TotalDecomposition[TU], EpistemicDecomposition[EU]
 ):
     """Protocol for decompositions into epistemic and total uncertainty.
 
@@ -224,7 +243,7 @@ class EpistemicTotalDecomposition[EU: EpistemicUncertainty, TU: TotalUncertainty
 
 
 class AleatoricEpistemicTotalDecomposition[AU: AleatoricUncertainty, EU: EpistemicUncertainty, TU: TotalUncertainty](
-    AleatoricDecomposition[AU], EpistemicDecomposition[EU], TotalDecomposition[TU]
+    TotalDecomposition[TU], AleatoricDecomposition[AU], EpistemicDecomposition[EU]
 ):
     """Protocol for decompositions into aleatoric, epistemic and total uncertainty."""
 

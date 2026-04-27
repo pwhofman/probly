@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from probly.quantification.measure.distribution._common import SecondOrderDistributionLike
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, repr=False)
 class SecondOrderZeroOneDecomposition[T](AdditiveDecomposition[T, T, T]):
     """Zero-one proper scoring rule decomposition of second-order uncertainty.
 
