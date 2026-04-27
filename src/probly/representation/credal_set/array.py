@@ -17,6 +17,7 @@ from probly.representation.credal_set._common import (
     ProbabilityIntervalsCredalSet,
     SingletonCredalSet,
     create_convex_credal_set,
+    create_distance_based_credal_set,
     create_probability_intervals,
 )
 from probly.representation.distribution import ArrayCategoricalDistribution
@@ -322,3 +323,4 @@ class ArraySingletonCredalSet(
 
 create_probability_intervals.register(ArrayCategoricalDistribution, ArrayProbabilityIntervalsCredalSet.from_sample)
 create_convex_credal_set.register(ArraySample, ArrayConvexCredalSet.from_array_sample)
+create_distance_based_credal_set.register(ArraySample, ArrayDistanceBasedCredalSet.from_array_sample)

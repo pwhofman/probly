@@ -12,8 +12,10 @@ from probly.representation._protected_axis.torch import TorchAxisProtected
 from probly.representation.credal_set._common import (
     CategoricalCredalSet,
     ConvexCredalSet,
+    DistanceBasedCredalSet,
     ProbabilityIntervalsCredalSet,
     create_convex_credal_set,
+    create_distance_based_credal_set,
     create_probability_intervals,
     create_probability_intervals_from_bounds,
     create_probability_intervals_from_lower_upper_array,
@@ -98,6 +100,70 @@ class TorchConvexCredalSet(
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
+class TorchDistanceBasedCredalSet(
+    TorchAxisProtected[Any],
+    TorchCategoricalCredalSet,
+    DistanceBasedCredalSet,
+):
+    """Distance-based credal set around a nominal categorical distribution."""
+
+    nominal: TorchCategoricalDistribution
+    radius: torch.Tensor
+    protected_axes: ClassVar[dict[str, int]] = {"nominal": 0, "radius": 0}
+
+    def __post_init__(self) -> None:
+        """Validate that nominal is a valid categorical distribution and radius is non-negative."""
+        object.__setattr__(self, "nominal", _ensure_torch_categorical_distribution(self.nominal))
+        object.__setattr__(self, "radius", torch.as_tensor(self.radius))
+
+    @override
+    @classmethod
+    def from_torch_sample(
+        cls,
+        sample: TorchSample[TorchCategoricalDistribution],
+    ) -> Self:
+        probabilities = _sample_probabilities(sample)
+        nominal = torch.mean(probabilities, dim=0)
+        diff = torch.abs(probabilities - nominal)
+        tv_dists = 0.5 * torch.sum(diff, dim=-1)
+        radius = torch.max(tv_dists, dim=0).values
+        return cls(
+            nominal=TorchCategoricalDistribution(nominal),
+            radius=torch.as_tensor(radius),
+        )
+
+    @override
+    @property
+    def num_classes(self) -> int:
+        """Return the number of classes in the credal set."""
+        return self.nominal.num_classes
+
+    def lower(self) -> torch.Tensor:
+        """Compute the lower envelope of the credal set.
+
+        For L1/TV distance, the tightest element-wise lower bound is max(0, nominal - radius).
+        """
+        nominal = self.nominal.unnormalized_probabilities
+        r = self.radius
+        if isinstance(r, torch.Tensor) and r.dim() == nominal.dim() - 1:
+            r = r.unsqueeze(-1)
+
+        return torch.clamp(nominal - r, min=0.0, max=1.0)
+
+    def upper(self) -> torch.Tensor:
+        """Compute the upper envelope of the credal set.
+
+        For L1/TV distance, the tightest element-wise upper bound is min(1, nominal + radius).
+        """
+        nominal = self.nominal.unnormalized_probabilities
+        r = self.radius
+        if isinstance(r, torch.Tensor) and r.dim() == nominal.dim() - 1:
+            r = r.unsqueeze(-1)
+
+        return torch.clamp(nominal + r, min=0.0, max=1.0)
+
+
+@dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
 class TorchProbabilityIntervalsCredalSet(
     TorchAxisProtected[Any],
     TorchCategoricalCredalSet,
@@ -150,6 +216,7 @@ class TorchProbabilityIntervalsCredalSet(
 create_probability_intervals.register(TorchCategoricalDistribution, TorchProbabilityIntervalsCredalSet.from_sample)
 create_probability_intervals.register(TorchSample, TorchProbabilityIntervalsCredalSet.from_torch_sample)
 create_convex_credal_set.register(TorchSample, TorchConvexCredalSet.from_torch_sample)
+create_distance_based_credal_set.register(TorchSample, TorchDistanceBasedCredalSet.from_torch_sample)
 
 
 @create_probability_intervals_from_lower_upper_array.register(torch.Tensor)

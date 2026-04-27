@@ -92,6 +92,13 @@ def create_convex_credal_set[T: CategoricalDistribution](sample: Sample[T]) -> C
 
 
 @flexdispatch
+def create_distance_based_credal_set[T: CategoricalDistribution](sample: Sample[T]) -> DistanceBasedCredalSet[T]:
+    """Create a convex credal set from a sample."""
+    msg = f"No convex credal set factory registered for sample type {type(sample)}"
+    raise NotImplementedError(msg)
+
+
+@flexdispatch
 def create_probability_intervals_from_lower_upper_array[T: ArrayLike](
     array: T,
 ) -> ProbabilityIntervalsCredalSet:
