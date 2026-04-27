@@ -99,7 +99,8 @@ class TestRepresentationAndQuantification:
     def test_quantify_shape(self, mlp: SimpleMLP, batch: torch.Tensor) -> None:
         out = duq(mlp, centroid_size=CENTROID_SIZE)
         rep = predict(out, batch)
-        unc = quantify(rep)
+        decomposition = quantify(rep)
+        unc = decomposition["total"]
         assert unc.shape == (batch.shape[0],)
         assert torch.all(unc >= 0.0)
         assert torch.all(unc <= 1.0)

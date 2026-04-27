@@ -31,6 +31,7 @@ from probly.method.dare import dare
 from probly.method.ddu import ddu
 from probly.method.dropconnect import dropconnect
 from probly.method.dropout import dropout
+from probly.method.duq import duq
 from probly.method.efficient_credal_prediction import efficient_credal_prediction
 from probly.method.ensemble import ensemble
 from probly.method.evidential.classification import evidential_classification
@@ -53,6 +54,7 @@ METHODS = {
     "ddu": ddu,
     "dropout": dropout,
     "dropconnect": dropconnect,
+    "duq": duq,
     "evidential_classification": evidential_classification,
     "natural_posterior_network": natural_posterior_network,
     "posterior_network": posterior_network,
