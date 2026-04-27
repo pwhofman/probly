@@ -13,6 +13,7 @@ from probly.method.ensemble import EnsemblePredictor
 from probly.predictor import RandomPredictor, predict_single
 from probly.quantification import quantify
 from probly.quantification.decomposition import AleatoricEpistemicDecomposition
+from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
 from probly.representer import representer
 from probly_benchmark import models
 from probly_benchmark.builders import BuildContext, build_model
@@ -272,8 +273,9 @@ class UncertaintyEstimator:
         for i in range(0, len(x), self.batch_size):
             xb = x[i : i + self.batch_size].float().to(self.device)
             result = predict_single(self.model, xb)
-            probs = result.probabilities if hasattr(result, "probabilities") else result
-            parts.append(probs.argmax(-1).cpu())
+            if isinstance(result, TorchCategoricalDistribution):
+                result = result.probabilities
+            parts.append(result.argmax(-1).cpu())
         return torch.cat(parts)
 
     def predict_proba(self, x: torch.Tensor) -> torch.Tensor:
