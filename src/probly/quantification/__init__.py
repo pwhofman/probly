@@ -44,6 +44,7 @@ __all__ = [
     "SecondOrderZeroOneDecomposition",
     "TotalDecomposition",
     "TotalUncertainty",
+    "ddu_aleatoric_uncertainty",
     "decompose",
     "duq_uncertainty",
     "measure",

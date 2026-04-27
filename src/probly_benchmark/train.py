@@ -169,7 +169,7 @@ def _maybe_compile_forward(model: nn.Module, device: torch.device) -> None:
     so compilation is skipped on MPS and a message is printed to surface the
     deviation from the default CUDA/CPU path.
     """
-    if device.type == "mps":
+    if device.type == "mps" or isinstance(model, DUQPredictor):
         print("Skipping torch.compile on MPS (Inductor's Metal backend unsupported); using eager forward.")
         return
     model.forward = torch.compile(model.forward)

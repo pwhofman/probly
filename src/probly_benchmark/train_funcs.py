@@ -406,7 +406,7 @@ def train_epoch_duq(
     targets: torch.Tensor,
     optimizer: optim.Optimizer,
     grad_clip_norm: float | None = None,
-    amp_enabled: bool = False,  # noqa: ARG001
+    amp_enabled: bool = False,
     scaler: GradScaler | None = None,  # noqa: ARG001
     gradient_penalty: float = 0.5,
     **kwargs: Any,  # noqa: ANN401, ARG001
@@ -415,11 +415,12 @@ def train_epoch_duq(
 
     Combines binary cross-entropy on the per-class kernel values with the
     two-sided input-gradient penalty, then performs an EMA update of the class
-    centroids using the same batch. AMP is intentionally disabled here:
-    autograd-on-autograd inside ``autocast`` is not supported by all backends
-    and the gradient penalty requires a stable second-order graph. The loss
-    returned is the BCE component only so the logged training loss stays
-    comparable to other methods.
+    centroids using the same batch. When ``amp_enabled`` is ``True``, the
+    forward pass runs under ``bfloat16`` autocast (no loss scaling needed).
+    ``fp16`` autocast is not used because ``GradScaler`` is incompatible with
+    the second-order graph required by the gradient penalty. The loss returned
+    is the BCE component only so the logged training loss stays comparable to
+    other methods.
 
     Args:
         model: DUQ predictor.
@@ -427,8 +428,10 @@ def train_epoch_duq(
         targets: Integer class labels of shape ``(batch,)``.
         optimizer: Optimizer to step.
         grad_clip_norm: Optional gradient clipping norm.
-        amp_enabled: Ignored. Retained for API compatibility.
-        scaler: Ignored. Retained for API compatibility.
+        amp_enabled: When ``True``, wraps the forward pass in ``bfloat16``
+            autocast. Requires a GPU with native bf16 support (e.g. H200, B200).
+        scaler: Ignored. Retained for API compatibility with other training
+            functions; DUQ does not use loss scaling.
         gradient_penalty: Coefficient ``lambda`` for the gradient penalty.
             ``0.0`` disables the penalty (and the second-order graph).
         **kwargs: Forwarded by the training loop and ignored here.
@@ -442,9 +445,10 @@ def train_epoch_duq(
         inputs = inputs.detach().requires_grad_(True)
 
     optimizer.zero_grad()
-    kernel_values = model(inputs)
-    loss = _duq_bce_loss(kernel_values, targets_onehot)
-    total = loss + gradient_penalty * _duq_gradient_penalty(inputs, kernel_values) if use_gp else loss
+    with autocast(inputs.device.type, dtype=torch.bfloat16, enabled=amp_enabled):
+        kernel_values = model(inputs)
+        loss = _duq_bce_loss(kernel_values, targets_onehot)
+        total = loss + gradient_penalty * _duq_gradient_penalty(inputs, kernel_values) if use_gp else loss
 
     total.backward()
     if grad_clip_norm is not None:

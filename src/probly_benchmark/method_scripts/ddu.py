@@ -1,4 +1,4 @@
-"""Benchmark for credal ensembling."""
+"""Benchmark for Deep Deterministic Uncertainty (DDU)."""
 
 from __future__ import annotations
 
@@ -24,3 +24,5 @@ logger.info(output)
 logger.info(output.shape)
 quantification = quantify(output)
 logger.info(quantification)
+logger.info(quantification.aleatoric)  # ty:ignore[unresolved-attribute]
+logger.info(quantification.epistemic)  # ty:ignore[unresolved-attribute]
