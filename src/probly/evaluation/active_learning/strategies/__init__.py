@@ -10,9 +10,11 @@ from ._common import (
     MarginSampling,
     QueryStrategy,
     RandomQuery,
+    UncertaintyEstimator,
     UncertaintyQuery,
     badge_select,
     margin_select,
+    random_select,
     uncertainty_select,
 )
 
@@ -20,6 +22,7 @@ from ._common import (
 @margin_select.delayed_register(TORCH_TENSOR)
 @uncertainty_select.delayed_register(TORCH_TENSOR)
 @badge_select.delayed_register(TORCH_TENSOR)
+@random_select.delayed_register(TORCH_TENSOR)
 def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415
 
@@ -31,8 +34,10 @@ __all__ = [
     "MarginSampling",
     "QueryStrategy",
     "RandomQuery",
+    "UncertaintyEstimator",
     "UncertaintyQuery",
     "badge_select",
     "margin_select",
+    "random_select",
     "uncertainty_select",
 ]

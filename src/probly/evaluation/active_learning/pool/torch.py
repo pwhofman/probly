@@ -3,14 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
 
 import torch
 
 from ._common import from_dataset, query
-
-if TYPE_CHECKING:
-    import numpy as np
 
 
 @dataclass
@@ -68,8 +64,8 @@ def _from_dataset_torch(
 
 
 @query.register(TorchActiveLearningPool)
-def _query_torch(pool: TorchActiveLearningPool, indices: np.ndarray) -> None:
-    idx = torch.from_numpy(indices).long()
+def _query_torch(pool: TorchActiveLearningPool, indices: torch.Tensor) -> None:
+    idx = indices.long()
     pool.x_labeled = torch.cat([pool.x_labeled, pool.x_unlabeled[idx]], dim=0)
     pool.y_labeled = torch.cat([pool.y_labeled, pool.y_unlabeled[idx]], dim=0)
     mask = torch.ones(len(pool.x_unlabeled), dtype=torch.bool)

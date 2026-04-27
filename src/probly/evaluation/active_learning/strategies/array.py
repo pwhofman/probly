@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 from scipy.spatial.distance import cdist
 
-from ._common import badge_select, margin_select, uncertainty_select
+from ._common import badge_select, margin_select, random_select, uncertainty_select
 
 
 @margin_select.register(np.ndarray)
@@ -54,3 +54,13 @@ def _badge_select_numpy(
         chosen.append(next_idx)
 
     return np.array(chosen)
+
+
+@random_select.register(np.ndarray)
+def _random_select_numpy(
+    x_ref: np.ndarray,  # noqa: ARG001
+    n_pool: int,
+    n: int,
+    rng: np.random.Generator,
+) -> np.ndarray:
+    return rng.choice(n_pool, size=n, replace=False)

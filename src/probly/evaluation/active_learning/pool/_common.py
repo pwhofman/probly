@@ -7,8 +7,6 @@ from typing import TYPE_CHECKING, Protocol, runtime_checkable
 from flextype import flexdispatch
 
 if TYPE_CHECKING:
-    import numpy as np
-
     from probly.representation.array_like import ArrayLike
 
 
@@ -75,7 +73,7 @@ def from_dataset(
 
 
 @flexdispatch
-def query(pool: object, indices: np.ndarray) -> None:
+def query(pool: object, indices: object) -> None:
     """Move samples from the unlabeled pool into the labeled set.
 
     Dispatches on the type of ``pool``.

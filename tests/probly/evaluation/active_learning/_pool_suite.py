@@ -2,15 +2,14 @@
 
 from __future__ import annotations
 
-import numpy as np
-
 from probly.evaluation.active_learning.pool import from_dataset, query
 
 
 class PoolSuite:
     """Backend-agnostic pool tests.
 
-    Requires fixtures: classification_data, arrays_equal, concat_fn, sort_fn, copy_fn.
+    Requires fixtures: classification_data, arrays_equal, concat_fn, sort_fn,
+    copy_fn, index_fn.
     """
 
     def test_from_dataset_labeled_size(self, classification_data):
@@ -48,30 +47,30 @@ class PoolSuite:
         pool2 = from_dataset(x_train, y_train, x_test, y_test, initial_size=20, seed=2)
         assert not arrays_equal(pool1.x_labeled, pool2.x_labeled)
 
-    def test_query_labeled_grows(self, classification_data):
+    def test_query_labeled_grows(self, classification_data, index_fn):
         x_train, y_train, x_test, y_test = classification_data
         pool = from_dataset(x_train, y_train, x_test, y_test, initial_size=20, seed=0)
-        query(pool, np.array([0, 1, 2, 3, 4]))
+        query(pool, index_fn([0, 1, 2, 3, 4]))
         assert pool.n_labeled == 25
 
-    def test_query_unlabeled_shrinks(self, classification_data):
+    def test_query_unlabeled_shrinks(self, classification_data, index_fn):
         x_train, y_train, x_test, y_test = classification_data
         pool = from_dataset(x_train, y_train, x_test, y_test, initial_size=20, seed=0)
-        query(pool, np.array([0, 1, 2, 3, 4]))
+        query(pool, index_fn([0, 1, 2, 3, 4]))
         assert pool.n_unlabeled == 125
 
-    def test_query_total_unchanged(self, classification_data):
+    def test_query_total_unchanged(self, classification_data, index_fn):
         x_train, y_train, x_test, y_test = classification_data
         pool = from_dataset(x_train, y_train, x_test, y_test, initial_size=20, seed=0)
-        query(pool, np.array([3, 7, 10]))
+        query(pool, index_fn([3, 7, 10]))
         assert pool.n_labeled + pool.n_unlabeled == 150
 
-    def test_query_label_alignment(self, classification_data, copy_fn, arrays_equal):
+    def test_query_label_alignment(self, classification_data, copy_fn, arrays_equal, index_fn):
         x_train, y_train, x_test, y_test = classification_data
         pool = from_dataset(x_train, y_train, x_test, y_test, initial_size=20, seed=0)
         queried_x = copy_fn(pool.x_unlabeled[[0, 1, 2]])
         queried_y = copy_fn(pool.y_unlabeled[[0, 1, 2]])
-        query(pool, np.array([0, 1, 2]))
+        query(pool, index_fn([0, 1, 2]))
         assert arrays_equal(pool.x_labeled[-3:], queried_x)
         assert arrays_equal(pool.y_labeled[-3:], queried_y)
 

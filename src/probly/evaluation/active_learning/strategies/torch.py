@@ -2,22 +2,26 @@
 
 from __future__ import annotations
 
-import numpy as np
+from typing import TYPE_CHECKING
+
 import torch
 
-from ._common import badge_select, margin_select, uncertainty_select
+if TYPE_CHECKING:
+    import numpy as np
+
+from ._common import badge_select, margin_select, random_select, uncertainty_select
 
 
 @margin_select.register(torch.Tensor)
-def _margin_select_torch(probs: torch.Tensor, n: int) -> np.ndarray:
+def _margin_select_torch(probs: torch.Tensor, n: int) -> torch.Tensor:
     sorted_probs = probs.sort(dim=1).values
     margin = sorted_probs[:, -1] - sorted_probs[:, -2]
-    return torch.topk(margin, n, largest=False).indices.cpu().numpy()
+    return torch.topk(margin, n, largest=False).indices
 
 
 @uncertainty_select.register(torch.Tensor)
-def _uncertainty_select_torch(scores: torch.Tensor, n: int) -> np.ndarray:
-    return torch.topk(scores, n, largest=True).indices.cpu().numpy()
+def _uncertainty_select_torch(scores: torch.Tensor, n: int) -> torch.Tensor:
+    return torch.topk(scores, n, largest=True).indices
 
 
 @badge_select.register(torch.Tensor)
@@ -26,16 +30,18 @@ def _badge_select_torch(
     probs: torch.Tensor,
     n: int,
     seed: int | None = None,
-) -> np.ndarray:
+) -> torch.Tensor:
     flat = embeddings.reshape(len(embeddings), -1)
     predicted_class = probs.argmax(dim=1)
-    p_predicted = probs[torch.arange(len(probs)), predicted_class]
+    p_predicted = probs[torch.arange(len(probs), device=probs.device), predicted_class]
     grad_embeddings = flat * (1 - p_predicted).unsqueeze(1)
 
-    rng = np.random.default_rng(seed)
-    n_pool = len(grad_embeddings)
+    g = torch.Generator(device="cpu")
+    if seed is not None:
+        g.manual_seed(seed)
 
-    first = int(rng.integers(0, n_pool))
+    n_pool = len(grad_embeddings)
+    first = int(torch.randint(0, n_pool, (1,), generator=g))
     chosen: list[int] = [first]
 
     for _ in range(1, n):
@@ -44,14 +50,27 @@ def _badge_select_torch(
         min_dists[chosen] = 0.0
         total = min_dists.sum()
         if total == 0.0:
-            remaining = np.setdiff1d(np.arange(n_pool), chosen)
+            mask = torch.ones(n_pool, dtype=torch.bool, device=grad_embeddings.device)
+            mask[chosen] = False
+            remaining = mask.nonzero(as_tuple=False).squeeze(1)
             if len(remaining) == 0:
                 break
-            next_idx = int(rng.choice(remaining))
+            next_idx = int(remaining[int(torch.randint(len(remaining), (1,), generator=g))])
         else:
-            probs_sample = min_dists.cpu().numpy()
-            probs_sample /= probs_sample.sum()
-            next_idx = int(rng.choice(n_pool, p=probs_sample))
+            next_idx = int(torch.multinomial(min_dists, 1, generator=g))
         chosen.append(next_idx)
 
-    return np.array(chosen)
+    return torch.tensor(chosen, dtype=torch.long, device=embeddings.device)
+
+
+@random_select.register(torch.Tensor)
+def _random_select_torch(
+    x_ref: torch.Tensor,  # noqa: ARG001
+    n_pool: int,
+    n: int,
+    rng: np.random.Generator,
+) -> torch.Tensor:
+    import numpy as np  # noqa: PLC0415
+
+    indices = np.asarray(rng.choice(n_pool, size=n, replace=False))
+    return torch.from_numpy(indices).long()

@@ -57,8 +57,23 @@ def copy_fn():
 
 
 @pytest.fixture
+def index_fn():
+    return lambda lst: torch.tensor(lst, dtype=torch.long)
+
+
+@pytest.fixture
 def array_fn():
     return torch.tensor
+
+
+@pytest.fixture
+def to_numpy():
+    def _to_numpy(a):
+        if isinstance(a, torch.Tensor):
+            return a.cpu().numpy()
+        return a
+
+    return _to_numpy
 
 
 @pytest.fixture

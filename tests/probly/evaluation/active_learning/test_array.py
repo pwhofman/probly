@@ -51,8 +51,18 @@ def copy_fn():
 
 
 @pytest.fixture
+def index_fn():
+    return np.array
+
+
+@pytest.fixture
 def array_fn():
     return np.array
+
+
+@pytest.fixture
+def to_numpy():
+    return np.asarray
 
 
 @pytest.fixture

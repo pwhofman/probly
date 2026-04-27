@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Protocol, cast, runtime_checkable
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 import warnings
 
 import numpy as np
@@ -31,6 +31,14 @@ class Estimator(Protocol):
         ...
 
 
+class UncertaintyEstimator(Estimator, Protocol):
+    """Protocol for estimators that provide uncertainty scores."""
+
+    def uncertainty_scores(self, x: ArrayLike) -> ArrayLike:
+        """Return per-sample uncertainty scores of shape (n_samples,)."""
+        ...
+
+
 @runtime_checkable
 class BadgeEstimator(Estimator, Protocol):
     """Protocol for estimators usable by :class:`BADGEQuery`.
@@ -47,7 +55,7 @@ class BadgeEstimator(Estimator, Protocol):
 class QueryStrategy(Protocol):
     """Protocol for active learning query strategies."""
 
-    def select(self, estimator: Estimator, pool: ActiveLearningPool, n: int) -> np.ndarray:
+    def select(self, estimator: Estimator, pool: ActiveLearningPool, n: int) -> ArrayLike:
         """Return n indices into pool.x_unlabeled to query next.
 
         Args:
@@ -67,7 +75,7 @@ class QueryStrategy(Protocol):
 
 
 @flexdispatch
-def margin_select(probs: object, n: int) -> np.ndarray:
+def margin_select(probs: object, n: int) -> object:
     """Select n indices with the smallest margin between top-2 class probabilities.
 
     Args:
@@ -82,7 +90,7 @@ def margin_select(probs: object, n: int) -> np.ndarray:
 
 
 @flexdispatch
-def uncertainty_select(scores: object, n: int) -> np.ndarray:
+def uncertainty_select(scores: object, n: int) -> object:
     """Select n indices with the highest uncertainty scores.
 
     Args:
@@ -102,7 +110,7 @@ def badge_select(
     probs: object,
     n: int,
     seed: int | None = None,
-) -> np.ndarray:
+) -> object:
     """Select n indices via BADGE gradient embedding k-means++.
 
     Args:
@@ -115,6 +123,26 @@ def badge_select(
         Array of n integer indices.
     """
     msg = f"No badge_select implementation registered for type {type(embeddings)}"
+    raise NotImplementedError(msg)
+
+
+@flexdispatch
+def random_select(x_ref: object, n_pool: int, n: int, rng: object) -> object:
+    """Select n unique random indices, returning the backend's native index type.
+
+    Dispatches on the type of ``x_ref`` (a reference array from the pool, used
+    only for backend detection).
+
+    Args:
+        x_ref: Reference array for backend dispatch (e.g. ``pool.x_unlabeled``).
+        n_pool: Total number of items to choose from.
+        n: Number of indices to select.
+        rng: A ``numpy.random.Generator`` instance for reproducible sampling.
+
+    Returns:
+        Array of n unique integer indices in the backend's native type.
+    """
+    msg = f"No random_select implementation registered for type {type(x_ref)}"
     raise NotImplementedError(msg)
 
 
@@ -140,7 +168,12 @@ class RandomQuery:
         """
         self._rng = np.random.default_rng(seed)
 
-    def select(self, estimator: Estimator, pool: ActiveLearningPool, n: int) -> np.ndarray:  # noqa: ARG002
+    def select(
+        self,
+        estimator: Estimator,  # noqa: ARG002
+        pool: ActiveLearningPool,
+        n: int,
+    ) -> ArrayLike:
         """Return n randomly chosen indices from the unlabeled pool.
 
         Args:
@@ -152,7 +185,7 @@ class RandomQuery:
             Array of n unique integer indices into pool.x_unlabeled.
         """
         n = min(n, pool.n_unlabeled)
-        return self._rng.choice(pool.n_unlabeled, size=n, replace=False)
+        return random_select(pool.x_unlabeled, pool.n_unlabeled, n, self._rng)  # ty:ignore[invalid-return-type]
 
 
 class MarginSampling:
@@ -162,7 +195,7 @@ class MarginSampling:
     classes, making these samples most informative to label.
     """
 
-    def select(self, estimator: Estimator, pool: ActiveLearningPool, n: int) -> np.ndarray:
+    def select(self, estimator: Estimator, pool: ActiveLearningPool, n: int) -> ArrayLike:
         """Return n indices with the smallest margin in predicted probabilities.
 
         Args:
@@ -175,7 +208,7 @@ class MarginSampling:
         """
         n = min(n, pool.n_unlabeled)
         probs = estimator.predict_proba(pool.x_unlabeled)
-        return margin_select(probs, n)
+        return margin_select(probs, n)  # ty:ignore[invalid-return-type]
 
 
 class UncertaintyQuery:
@@ -186,7 +219,7 @@ class UncertaintyQuery:
     or any other UQ-based measure).
     """
 
-    def select(self, estimator: Estimator, pool: ActiveLearningPool, n: int) -> np.ndarray:
+    def select(self, estimator: UncertaintyEstimator, pool: ActiveLearningPool, n: int) -> ArrayLike:
         """Return n indices with the highest uncertainty scores from the estimator.
 
         Args:
@@ -198,8 +231,8 @@ class UncertaintyQuery:
             Array of n integer indices into pool.x_unlabeled.
         """
         n = min(n, pool.n_unlabeled)
-        scores = cast("Any", estimator).uncertainty_scores(pool.x_unlabeled)
-        return uncertainty_select(scores, n)
+        scores = estimator.uncertainty_scores(pool.x_unlabeled)
+        return uncertainty_select(scores, n)  # ty:ignore[invalid-return-type]
 
 
 class BADGEQuery:
@@ -224,7 +257,7 @@ class BADGEQuery:
         """
         self._seed = seed
 
-    def select(self, estimator: Estimator, pool: ActiveLearningPool, n: int) -> np.ndarray:
+    def select(self, estimator: BadgeEstimator | Estimator, pool: ActiveLearningPool, n: int) -> ArrayLike:
         """Return n indices chosen by BADGE k-means++ on gradient embeddings.
 
         Args:
@@ -249,4 +282,4 @@ class BADGEQuery:
                 stacklevel=2,
             )
             embeddings = pool.x_unlabeled
-        return badge_select(embeddings, probs, n, seed=self._seed)
+        return badge_select(embeddings, probs, n, seed=self._seed)  # ty:ignore[invalid-return-type]
