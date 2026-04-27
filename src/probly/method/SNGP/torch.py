@@ -12,7 +12,7 @@ from ._common import (
     EPS,
     LAST_LAYER,
     MOMENTUM,
-    N_POWER_OTERATIONS,
+    N_POWER_ITERATIONS,
     NAME,
     NORM_MULTIPLIER,
     NUM_INDUCING,
@@ -39,7 +39,7 @@ def replace_linear_with_sngp(obj: nn.Linear, state: State) -> tuple[nn.Module, S
     return SpectralNormWithMultiplier(
         module=obj,
         name=state[NAME],
-        n_power_iterations=state[N_POWER_OTERATIONS],
+        n_power_iterations=state[N_POWER_ITERATIONS],
         norm_multiplier=state[NORM_MULTIPLIER],
         eps=state[EPS],
     ), state
@@ -51,7 +51,7 @@ def replace_conv_with_spectral_norm(obj: nn.Conv2d, state: State) -> tuple[nn.Mo
     return SpectralNormWithMultiplier(
         module=obj,
         name=state[NAME],
-        n_power_iterations=state[N_POWER_OTERATIONS],
+        n_power_iterations=state[N_POWER_ITERATIONS],
         norm_multiplier=state[NORM_MULTIPLIER],
         eps=state[EPS],
     ), state
