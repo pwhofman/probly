@@ -5,8 +5,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, override
 
-from probly.quantification._quantification import quantify
-from probly.quantification.decomposition.decomposition import AdditiveDecomposition
+from probly.quantification._quantification import decompose
+from probly.quantification.decomposition.decomposition import (
+    AdditiveDecomposition,
+    AleatoricTotalDecomposition,
+    CachingDecomposition,
+)
 from probly.quantification.measure.credal_set import lower_entropy, upper_entropy
 from probly.quantification.measure.distribution import (
     conditional_entropy,
@@ -21,16 +25,12 @@ if TYPE_CHECKING:
     from probly.quantification.measure.distribution import SecondOrderDistributionLike
 
 
-@quantify.register(SecondOrderDistribution | DistributionSample)
-@dataclass(frozen=True, slots=True)
+@decompose.register(SecondOrderDistribution | DistributionSample)
+@dataclass(frozen=True, slots=True, repr=False)
 class SecondOrderEntropyDecomposition[T](AdditiveDecomposition[T, T, T]):
     """Base class for entropy-based decomposition methods."""
 
     distribution: SecondOrderDistributionLike
-
-    def __post_init__(self) -> None:
-        object.__setattr__(self, "_caching", True)
-        object.__setattr__(self, "_cache", {})
 
     @override
     @property
@@ -51,8 +51,8 @@ class SecondOrderEntropyDecomposition[T](AdditiveDecomposition[T, T, T]):
         return mutual_information(self.distribution)  # ty:ignore[invalid-return-type]
 
 
-@quantify.register(CategoricalCredalSet)
-@dataclass(frozen=True, slots=True)
+@decompose.register(CategoricalCredalSet)
+@dataclass(frozen=True, slots=True, repr=False)
 class CredalSetEntropyDecomposition[T](AdditiveDecomposition[T, T, T]):
     """Entropy decomposition for categorical credal sets.
 
@@ -61,10 +61,6 @@ class CredalSetEntropyDecomposition[T](AdditiveDecomposition[T, T, T]):
     """
 
     credal_set: CategoricalCredalSet
-
-    def __post_init__(self) -> None:
-        object.__setattr__(self, "_caching", True)
-        object.__setattr__(self, "_cache", {})
 
     @override
     @property
@@ -77,37 +73,18 @@ class CredalSetEntropyDecomposition[T](AdditiveDecomposition[T, T, T]):
         return lower_entropy(self.credal_set)  # ty:ignore[invalid-return-type]
 
 
-@quantify.register(HetNetsRepresentation)
-@dataclass(frozen=True, slots=True)
-class HetNetsDecomposition[T](AdditiveDecomposition[T, T, T]):
-    """Entropy-based decomposition for HetNets representations.
+@decompose.register(HetNetsRepresentation)
+@dataclass(frozen=True, slots=True, repr=False)
+class LabelNoiseEntropyDecomposition[T](CachingDecomposition, AleatoricTotalDecomposition[T, T]):
+    """Entropy decomposition for HetNets representations.
 
-    Since HetNets primarily capture aleatoric uncertainty, the epistemic
-    uncertainty is assumed to be zero, and total uncertainty equals aleatoric.
+    HetNets only capture aleatoric uncertainty, so TU = AU and no EU is present.
     """
 
-    representation: HetNetsRepresentation
-
-    def __post_init__(self) -> None:
-        object.__setattr__(self, "_caching", True)
-        object.__setattr__(self, "_cache", {})
+    distribution: SecondOrderDistributionLike
 
     @override
     @property
     def _aleatoric(self) -> T:
         """The aleatoric uncertainty of the decomposition."""
-        return conditional_entropy(self.representation)  # ty:ignore[invalid-return-type]
-
-    @override
-    @property
-    def _epistemic(self) -> T:
-        """HetNets capture only aleatoric uncertainty."""
-        msg = "HetNets capture only aleatoric uncertainty."
-        raise ValueError(msg)
-
-    @override
-    @property
-    def _total(self) -> T:
-        """HetNets capture only aleatoric uncertainty."""
-        msg = "HetNets capture only aleatoric uncertainty."
-        raise ValueError(msg)
+        return conditional_entropy(self.distribution)  # ty:ignore[invalid-return-type]

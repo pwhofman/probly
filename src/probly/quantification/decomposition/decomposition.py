@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Iterator, Mapping
+from dataclasses import dataclass, field
 from typing import Protocol, override
 
 from probly.quantification._quantification import Quantifier
@@ -26,12 +27,13 @@ class Decomposition(Mapping[NotionKey, Notion], ABC):
     @abstractmethod
     def components(self) -> list[type[Notion]]:
         """The components of the decomposition."""
-        raise NotImplementedError
+        return []
 
     @abstractmethod
     def _get_notion[N: Notion](self, notion: type[N]) -> N:
         """Return the component corresponding to the given notion."""
-        raise NotImplementedError
+        msg = f"Notion {notion} is not a component of the decomposition."
+        raise KeyError(msg)
 
     def get_notion[N: Notion](self, notion: type[N]) -> N:
         """Return the component corresponding to the given notion."""
@@ -57,42 +59,41 @@ class Decomposition(Mapping[NotionKey, Notion], ABC):
         return len(self.components)
 
 
+@dataclass(frozen=True, slots=True)
 class CachingDecomposition(Decomposition, ABC):
     """Protocol for decompositions that cache their components."""
 
-    _caching: bool
-    _cache: dict[type[Notion], Notion]
-
-    def __init__(self, caching: bool = True) -> None:
-        """Initialize the cache."""
-        self._caching = caching
-        self._cache = {}
+    _cache: dict[type[Notion], Notion] = field(default_factory=dict, init=False, repr=False, compare=False)
 
     @override
     def get_notion[N: Notion](self, notion: type[N]) -> N:
         """Return the component corresponding to the given notion."""
-        if self._caching and notion not in self._cache:
+        if notion not in self._cache:
             self._cache[notion] = self._get_notion(notion)
         return self._cache[notion]  # ty:ignore[invalid-return-type]
 
+    @override
+    def __repr__(self) -> str:
+        """Return a string representation of the decomposition."""
+        components_str = ", ".join(f"{notion.__name__}={self.get_notion(notion)!r}" for notion in self.components)
+        return f"{type(self).__name__}({components_str})"
 
-class AleatoricEpistemicDecomposition[AU: AleatoricUncertainty, EU: EpistemicUncertainty](Decomposition, ABC):  # ty:ignore[inconsistent-mro]
-    """Protocol for decompositions into aleatoric and epistemic uncertainty."""
+
+class AleatoricDecomposition[AU: AleatoricUncertainty](Decomposition, ABC):  # ty:ignore[inconsistent-mro]
+    """Protocol for decompositions with aleatoric uncertainty."""
 
     @property
+    @override
     def components(self) -> list[type[Notion]]:
         """The components of the decomposition."""
-        return [AleatoricUncertainty, EpistemicUncertainty]
+        return [AleatoricUncertainty, *super().components]
 
     @override
-    def _get_notion[N: (AleatoricUncertainty, EpistemicUncertainty)](self, notion: type[N]) -> N:
+    def _get_notion[N: Notion](self, notion: type[N]) -> N:
         """Return the component corresponding to the given notion."""
         if notion is AleatoricUncertainty:
-            return self._aleatoric
-        if notion is EpistemicUncertainty:
-            return self._epistemic
-        msg = f"Notion {notion} is not a component of the decomposition."
-        raise KeyError(msg)
+            return self._aleatoric  # ty:ignore[invalid-return-type]
+        return super()._get_notion(notion)
 
     @property
     @abstractmethod
@@ -100,14 +101,31 @@ class AleatoricEpistemicDecomposition[AU: AleatoricUncertainty, EU: EpistemicUnc
         """The aleatoric uncertainty of the decomposition."""
 
     @property
-    @abstractmethod
-    def _epistemic(self) -> EU:
-        """The epistemic uncertainty of the decomposition."""
-
-    @property
     def aleatoric(self) -> AU:
         """The aleatoric uncertainty of the decomposition."""
         return self.get_notion(AleatoricUncertainty)
+
+
+class EpistemicDecomposition[EU: EpistemicUncertainty](Decomposition, ABC):  # ty:ignore[inconsistent-mro]
+    """Protocol for decompositions with epistemic uncertainty."""
+
+    @property
+    @override
+    def components(self) -> list[type[Notion]]:
+        """The components of the decomposition."""
+        return [EpistemicUncertainty, *super().components]
+
+    @override
+    def _get_notion[N: Notion](self, notion: type[N]) -> N:
+        """Return the component corresponding to the given notion."""
+        if notion is EpistemicUncertainty:
+            return self._epistemic  # ty:ignore[invalid-return-type]
+        return super()._get_notion(notion)
+
+    @property
+    @abstractmethod
+    def _epistemic(self) -> EU:
+        """The epistemic uncertainty of the decomposition."""
 
     @property
     def epistemic(self) -> EU:
@@ -115,21 +133,20 @@ class AleatoricEpistemicDecomposition[AU: AleatoricUncertainty, EU: EpistemicUnc
         return self.get_notion(EpistemicUncertainty)
 
 
-class AleatoricEpistemicTotalDecomposition[AU: AleatoricUncertainty, EU: EpistemicUncertainty, TU: TotalUncertainty](
-    AleatoricEpistemicDecomposition[AU, EU], ABC
-):
-    """Protocol for decompositions into aleatoric, epistemic and total uncertainty."""
+class TotalDecomposition[TU: TotalUncertainty](Decomposition, ABC):  # ty:ignore[inconsistent-mro]
+    """Protocol for decompositions with total uncertainty."""
 
     @property
+    @override
     def components(self) -> list[type[Notion]]:
         """The components of the decomposition."""
-        return [AleatoricUncertainty, EpistemicUncertainty, TotalUncertainty]
+        return [TotalUncertainty, *super().components]
 
     @override
-    def _get_notion[N: (AleatoricUncertainty, EpistemicUncertainty, TotalUncertainty)](self, notion: type[N]) -> N:
+    def _get_notion[N: Notion](self, notion: type[N]) -> N:
         """Return the component corresponding to the given notion."""
         if notion is TotalUncertainty:
-            return self._total
+            return self._total  # ty:ignore[invalid-return-type]
         return super()._get_notion(notion)
 
     @property
@@ -143,9 +160,78 @@ class AleatoricEpistemicTotalDecomposition[AU: AleatoricUncertainty, EU: Epistem
         return self.get_notion(TotalUncertainty)
 
 
+@dataclass(frozen=True, slots=True)
+class ConstantTotalDecomposition[TU: TotalUncertainty](TotalDecomposition[TU]):
+    """Protocol for decompositions where the total uncertainty is constant."""
+
+    uncertainty: TU
+
+    @property
+    @override
+    def _total(self) -> TU:
+        """The total uncertainty of the decomposition."""
+        return self.uncertainty
+
+
+class AleatoricEpistemicDecomposition[AU: AleatoricUncertainty, EU: EpistemicUncertainty](
+    AleatoricDecomposition[AU], EpistemicDecomposition[EU]
+):
+    """Protocol for decompositions into aleatoric and epistemic uncertainty."""
+
+
+class AleatoricTotalDecomposition[AU: AleatoricUncertainty, TU: TotalUncertainty](
+    AleatoricDecomposition[AU], TotalDecomposition[TU]
+):
+    """Protocol for decompositions into aleatoric and total uncertainty.
+
+    At least one of the two components (_aleatoric, _total) must be implemented,
+    the other is then defined to be the same as the implemented component.
+    """
+
+    @override
+    @property
+    def _total(self) -> TU:
+        """The total uncertainty of the decomposition."""
+        return self.aleatoric  # ty:ignore[invalid-return-type]
+
+    @override
+    @property
+    def _aleatoric(self) -> AU:
+        """The aleatoric uncertainty of the decomposition."""
+        return self.total  # ty:ignore[invalid-return-type]
+
+
+class EpistemicTotalDecomposition[EU: EpistemicUncertainty, TU: TotalUncertainty](
+    EpistemicDecomposition[EU], TotalDecomposition[TU]
+):
+    """Protocol for decompositions into epistemic and total uncertainty.
+
+    At least one of the two components (_epistemic, _total) must be implemented,
+    the other is then defined to be the same as the implemented component.
+    """
+
+    @override
+    @property
+    def _total(self) -> TU:
+        """The total uncertainty of the decomposition."""
+        return self.epistemic  # ty:ignore[invalid-return-type]
+
+    @override
+    @property
+    def _epistemic(self) -> EU:
+        """The epistemic uncertainty of the decomposition."""
+        return self.total  # ty:ignore[invalid-return-type]
+
+
+class AleatoricEpistemicTotalDecomposition[AU: AleatoricUncertainty, EU: EpistemicUncertainty, TU: TotalUncertainty](
+    AleatoricDecomposition[AU], EpistemicDecomposition[EU], TotalDecomposition[TU]
+):
+    """Protocol for decompositions into aleatoric, epistemic and total uncertainty."""
+
+
 class AdditiveDecomposition[AU: AleatoricUncertainty, EU: EpistemicUncertainty, TU: TotalUncertainty](
-    AleatoricEpistemicTotalDecomposition[AU, EU, TU], CachingDecomposition, ABC
-):  # ty:ignore[inconsistent-mro]
+    AleatoricEpistemicTotalDecomposition[AU, EU, TU], CachingDecomposition
+):
     """Protocol for decompositions where AU and EU sum up to the total uncertainty.
 
     At least two of the three components (_total, _aleatoric, _epistemic) must be implemented,
@@ -156,19 +242,19 @@ class AdditiveDecomposition[AU: AleatoricUncertainty, EU: EpistemicUncertainty, 
     @property
     def _total(self) -> TU:
         """The total uncertainty of the decomposition."""
-        return self.aleatoric + self.epistemic
+        return self.aleatoric + self.epistemic  # ty:ignore[unsupported-operator]
 
     @override
     @property
     def _aleatoric(self) -> AU:
         """The aleatoric uncertainty of the decomposition."""
-        return self.total - self.epistemic
+        return self.total - self.epistemic  # ty:ignore[unsupported-operator]
 
     @override
     @property
     def _epistemic(self) -> EU:
         """The epistemic uncertainty of the decomposition."""
-        return self.total - self.aleatoric
+        return self.total - self.aleatoric  # ty:ignore[unsupported-operator]
 
 
 class Decomposer[R: Representation, D: Decomposition](Quantifier[R, D], Protocol):

@@ -2,17 +2,8 @@
 
 from __future__ import annotations
 
-from probly.lazy_types import TORCH_CATEGORICAL_DISTRIBUTION
-
-from ._common import HetNetsRepresentation, create_het_nets_representation
-
-
-@create_het_nets_representation.delayed_register(TORCH_CATEGORICAL_DISTRIBUTION)
-def _(_: type) -> None:
-    from . import torch as torch  # noqa: PLC0415
-
+from ._common import HetNetsRepresentation
 
 __all__ = [
     "HetNetsRepresentation",
-    "create_het_nets_representation",
 ]

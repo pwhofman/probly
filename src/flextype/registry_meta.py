@@ -25,7 +25,7 @@ EXCLUDED_ATTRS = frozenset(
 )
 
 
-def iter_registry_classes() -> list[RegistryMeta[Any]]:
+def _iter_registry_classes() -> list[RegistryMeta[Any]]:
     """Return all currently alive classes that use RegistryMeta."""
     classes = [
         registry_class
@@ -34,6 +34,21 @@ def iter_registry_classes() -> list[RegistryMeta[Any]]:
     ]
     classes.sort(key=lambda cls: (cls.__module__, cls.__qualname__))
     return classes
+
+
+def get_explicit_registry_classes(instance: object) -> list[RegistryMeta[Any]]:
+    """Collect all registry classes where `instance` was explicitly registered."""
+    return [
+        registry_class
+        for registry_class in _iter_registry_classes()
+        if registry_class.is_explicit_instance_registered(instance)
+    ]
+
+
+def copy_explicit_registry_classes(source: object, target: object) -> None:
+    """Copy explicit registry registrations from `source` to `target`."""
+    for registry_class in get_explicit_registry_classes(source):
+        registry_class.register_instance(target)
 
 
 class RegistrationError(Exception):
