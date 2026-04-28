@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Any, cast
+from typing import Any
 
 from probly.representation.distribution._common import create_categorical_distribution_from_logits
 from probly.representation.distribution.torch_categorical import (
-    TorchCategoricalDistribution,
     TorchCategoricalDistributionSample,
 )
 from probly.representation.sample.torch import TorchSample
@@ -24,5 +23,5 @@ def torch_compute_categorical_sample_from_logits(
         tensor = tensor.transpose(0, 1)
         sample_dim = 1
 
-    categorical_dist = cast("TorchCategoricalDistribution", create_categorical_distribution_from_logits(tensor))
-    return TorchCategoricalDistributionSample(tensor=categorical_dist, sample_dim=sample_dim)
+    categorical_dist = create_categorical_distribution_from_logits(tensor)
+    return TorchCategoricalDistributionSample(tensor=categorical_dist, sample_dim=sample_dim)  # ty: ignore[invalid-argument-type]

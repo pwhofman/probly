@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Any, cast
+from typing import Any
 
 from probly.representation.distribution._common import create_categorical_distribution_from_logits
 from probly.representation.distribution.array_categorical import (
-    ArrayCategoricalDistribution,
     ArrayCategoricalDistributionSample,
 )
 from probly.representation.sample.array import ArraySample
@@ -24,5 +23,5 @@ def array_compute_categorical_sample_from_logits(
         array = array.swapaxes(0, 1)
         sample_axis = 1
 
-    categorical_dist = cast("ArrayCategoricalDistribution", create_categorical_distribution_from_logits(array))
-    return ArrayCategoricalDistributionSample(array=categorical_dist, sample_axis=sample_axis)
+    categorical_dist = create_categorical_distribution_from_logits(array)
+    return ArrayCategoricalDistributionSample(array=categorical_dist, sample_axis=sample_axis)  # ty: ignore[invalid-argument-type]
