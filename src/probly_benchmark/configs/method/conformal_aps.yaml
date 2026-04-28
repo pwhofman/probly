@@ -1,0 +1,6 @@
+# @package method
+name: "conformal_aps"
+active_learning:
+  score: "aps"
+  alpha: 0.1
+  cal_split: 0.25

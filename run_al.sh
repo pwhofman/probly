@@ -2,7 +2,7 @@
 # Active learning experiment sweep.
 #
 # Arm 1: Tailored AL baselines
-#   2 methods (plain, ensemble) x 3 strategies (margin, badge, random)
+#   2 methods (plain, ensemble) x 5 strategies (entropy, margin, least_confident, badge, random)
 #
 # Arm 2: Uncertainty methods
 #   10 methods x 4 strategies (uncertainty-EU, uncertainty-TU, margin, random)
@@ -30,7 +30,7 @@ fi
 # Arm 1: tailored AL baselines
 # ---------------------------------------------------------------------------
 BASELINE_METHODS=(plain ensemble)
-BASELINE_STRATEGIES=(random margin badge)
+BASELINE_STRATEGIES=(random entropy margin least_confident badge)
 
 for seed in "${SEEDS[@]}"; do
   for dataset in "${DATASETS[@]}"; do
@@ -86,6 +86,42 @@ for seed in "${SEEDS[@]}"; do
         method=$method al_strategy=uncertainty al_dataset=$dataset \
         uncertainty_decomposition=TU \
         seed=$seed $COMMON
+    done
+  done
+done
+
+# ---------------------------------------------------------------------------
+# Arm 1b: calibrated baselines (plain model + post-hoc calibration)
+# ---------------------------------------------------------------------------
+CALIBRATED_METHODS=(plain_temperature plain_platt plain_vector)
+
+for seed in "${SEEDS[@]}"; do
+  for dataset in "${DATASETS[@]}"; do
+    for method in "${CALIBRATED_METHODS[@]}"; do
+      for strategy in "${BASELINE_STRATEGIES[@]}"; do
+        echo "=== CALIBRATED / $method / $strategy / $dataset / seed=$seed ==="
+        uv run python -m probly_benchmark.active_learning \
+          method=$method al_strategy=$strategy al_dataset=$dataset \
+          seed=$seed $COMMON
+      done
+    done
+  done
+done
+
+# ---------------------------------------------------------------------------
+# Arm 3: conformal prediction (set size as uncertainty signal)
+# ---------------------------------------------------------------------------
+CONFORMAL_METHODS=(conformal_lac conformal_aps conformal_raps)
+
+for seed in "${SEEDS[@]}"; do
+  for dataset in "${DATASETS[@]}"; do
+    for method in "${CONFORMAL_METHODS[@]}"; do
+      for strategy in uncertainty random; do
+        echo "=== CONFORMAL / $method / $strategy / $dataset / seed=$seed ==="
+        uv run python -m probly_benchmark.active_learning \
+          method=$method al_strategy=$strategy al_dataset=$dataset \
+          seed=$seed $COMMON
+      done
     done
   done
 done

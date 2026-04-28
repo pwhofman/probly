@@ -1,0 +1,5 @@
+# @package method
+name: "plain"
+calibration:
+  method: "vector"
+  cal_split: 0.25

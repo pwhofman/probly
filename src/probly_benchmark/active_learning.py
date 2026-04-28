@@ -16,6 +16,8 @@ import wandb.util
 
 from probly.evaluation.active_learning import (
     BADGEQuery,
+    EntropySampling,
+    LeastConfidentSampling,
     MarginSampling,
     RandomQuery,
     UncertaintyQuery,
@@ -25,7 +27,7 @@ from probly.evaluation.active_learning import (
     from_dataset,
 )
 from probly.quantification.notion import EpistemicUncertainty, TotalUncertainty
-from probly_benchmark.al_estimators import BaselineEstimator, UncertaintyEstimator
+from probly_benchmark.al_estimators import BaselineEstimator, ConformalEstimator, UncertaintyEstimator
 from probly_benchmark.data import get_data_al
 from probly_benchmark.metadata import AL_DATASETS
 from probly_benchmark.utils import set_seed
@@ -42,11 +44,12 @@ def _build_estimator(
     num_classes: int,
     in_features: int | None,
     device: torch.device,
-) -> BaselineEstimator | UncertaintyEstimator:
+) -> BaselineEstimator | UncertaintyEstimator | ConformalEstimator:
     """Dispatch estimator based on method and strategy combination.
 
     ``plain`` and ``ensemble`` with baseline strategies (margin/badge/random)
-    use :class:`BaselineEstimator`.  Everything else uses
+    use :class:`BaselineEstimator`.  Methods starting with ``conformal_`` use
+    :class:`ConformalEstimator`.  Everything else uses
     :class:`UncertaintyEstimator`.
     """
     method = cfg.method.name
@@ -54,6 +57,25 @@ def _build_estimator(
     raw_params = cfg.method.get("params")
     method_params = cast("dict[str, Any]", OmegaConf.to_container(raw_params, resolve=True)) if raw_params else {}
 
+    # --- Conformal methods ---
+    if method.startswith("conformal_"):
+        al_section = cfg.method.get("active_learning", {})
+        score_name = al_section.get("score", "lac")
+        alpha = float(al_section.get("alpha", 0.1))
+        cal_split = float(al_section.get("cal_split", 0.25))
+        return ConformalEstimator(
+            cfg=cfg,
+            base_model_name=base_model_name,
+            method_name=score_name,
+            method_params=method_params,
+            num_classes=num_classes,
+            device=device,
+            in_features=in_features,
+            alpha=alpha,
+            cal_split=cal_split,
+        )
+
+    # --- Baseline methods ---
     use_baseline = method == "plain" or (method == "ensemble" and strategy != "uncertainty")
     if method == "plain" and strategy == "uncertainty":
         msg = "Method 'plain' cannot use 'uncertainty' strategy — use margin, badge, or random."
@@ -70,6 +92,7 @@ def _build_estimator(
             in_features=in_features,
         )
 
+    # --- Uncertainty methods ---
     raw_train = cfg.method.get("train")
     train_kwargs = cast("dict[str, Any]", OmegaConf.to_container(raw_train, resolve=True)) if raw_train else {}
     raw_al = cfg.method.get("active_learning")
@@ -89,10 +112,16 @@ def _build_estimator(
     )
 
 
-def _build_strategy(cfg: DictConfig) -> MarginSampling | BADGEQuery | UncertaintyQuery | RandomQuery:
+def _build_strategy(
+    cfg: DictConfig,
+) -> EntropySampling | LeastConfidentSampling | MarginSampling | BADGEQuery | UncertaintyQuery | RandomQuery:
     """Dispatch query strategy based on config."""
     name = cfg.al_strategy.name.lower()
     match name:
+        case "entropy":
+            return EntropySampling()
+        case "least_confident":
+            return LeastConfidentSampling()
         case "margin":
             return MarginSampling()
         case "badge":
