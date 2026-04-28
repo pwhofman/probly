@@ -6,7 +6,7 @@ from typing import Protocol, runtime_checkable
 
 import pytest
 
-from flextype.registry_meta import ProtocolRegistry, ProtocolRegistryMeta, RegistrationError, RegistryMeta
+from flextype.registry_meta import ProtocolRegistry, ProtocolRegistryMeta, RegistrationError, RegistryMeta, annotator
 
 
 class TestRegistryMeta:
@@ -98,17 +98,129 @@ class TestRegistryMeta:
         assert isinstance(b, F)
         assert not isinstance(b, G)
 
-    def test_register_instance_raises_registration_error_for_non_weakrefable_objects(self) -> None:
+    @pytest.mark.parametrize(("factory", "target_type"), [(list, list), (dict, dict), (set, set)])
+    def test_register_instance_raises_registration_error_for_non_weakrefable_objects(
+        self,
+        factory: type[list[object] | dict[object, object] | set[object]],
+        target_type: type,
+    ) -> None:
         """Non-weakrefable instances should raise a registration-specific error."""
 
         class Base(metaclass=RegistryMeta):
             pass
 
         with pytest.raises(RegistrationError) as error:
-            Base.register_instance([])
+            Base.register_instance(factory())
 
         assert error.value.registry is Base
-        assert error.value.target_type is list
+        assert error.value.target_type is target_type
+
+    @pytest.mark.parametrize("value", [[1], {"a": 1}, {1}])
+    def test_register_instance_autocasts_builtin_instances_when_enabled(self, value: object) -> None:
+        """Builtin containers should be registered through weakrefable wrappers when opted in."""
+
+        class Base(metaclass=RegistryMeta):
+            pass
+
+        returned = Base.register_instance(value, autocast_builtins=True)
+
+        assert returned == value
+        assert returned is not value
+        assert type(returned) is not type(value)
+        assert isinstance(returned, type(value))
+        assert isinstance(returned, Base)
+
+    def test_annotator_raises_registration_error_by_default(self) -> None:
+        """Annotator should surface registration failures unless explicitly configured otherwise."""
+
+        class Base(metaclass=RegistryMeta):
+            pass
+
+        @annotator(Base)
+        def make_list() -> list[int]:
+            return [1]
+
+        with pytest.raises(RegistrationError):
+            make_list()
+
+    def test_annotator_can_ignore_registration_failures(self) -> None:
+        """Annotator should return the original result when failure handling is disabled."""
+
+        class Base(metaclass=RegistryMeta):
+            pass
+
+        @annotator(Base, raise_on_failure=False)
+        def make_list() -> list[int]:
+            return [1]
+
+        returned = make_list()
+
+        assert returned == [1]
+        assert type(returned) is list
+        assert not isinstance(returned, Base)
+
+    def test_annotator_autocasts_builtin_results_when_enabled(self) -> None:
+        """Annotator should register builtin return values through wrappers when opted in."""
+
+        class Base(metaclass=RegistryMeta):
+            pass
+
+        @annotator(Base, autocast_builtins=True)
+        def make_list() -> list[int]:
+            return [1]
+
+        returned = make_list()
+
+        assert returned == [1]
+        assert type(returned) is not list
+        assert isinstance(returned, list)
+        assert isinstance(returned, Base)
+
+    def test_register_factory_direct_form_autocasts_builtin_results(self) -> None:
+        """register_factory should forward autocast options in direct-call form."""
+
+        class Base(metaclass=RegistryMeta):
+            pass
+
+        def make_dict() -> dict[str, int]:
+            return {"a": 1}
+
+        wrapped = Base.register_factory(make_dict, autocast_builtins=True)
+        returned = wrapped()
+
+        assert returned == {"a": 1}
+        assert type(returned) is not dict
+        assert isinstance(returned, dict)
+        assert isinstance(returned, Base)
+
+    def test_register_factory_decorator_form_raises_registration_error_by_default(self) -> None:
+        """register_factory should surface registration failures by default in decorator form."""
+
+        class Base(metaclass=RegistryMeta):
+            pass
+
+        @Base.register_factory
+        def make_set() -> set[int]:
+            return {1}
+
+        with pytest.raises(RegistrationError):
+            make_set()
+
+    def test_register_factory_decorator_form_can_ignore_registration_failures(self) -> None:
+        """register_factory should forward failure handling options in decorator form."""
+
+        class Base(metaclass=RegistryMeta):
+            pass
+
+        @Base.register_factory(raise_on_failure=False)
+        def make_set() -> set[int]:
+            return {1}
+
+        returned = make_set()
+
+        assert returned == {1}
+        assert type(returned) is set
+        assert not isinstance(returned, Base)
 
     def test_regular_subclass_relationships_work_without_registration(self) -> None:
         """Regular inheritance should still satisfy issubclass and isinstance."""

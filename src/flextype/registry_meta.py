@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from abc import ABCMeta
 import functools
-from typing import TYPE_CHECKING, Any, Protocol, is_protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, is_protocol, overload, runtime_checkable
 from weakref import WeakSet
 
 from flextype.isinstance import _find_closest_string_type, _split_lazy_type
@@ -103,6 +103,35 @@ def _lazy_subclass_hook_with_pre_hook[T](
     return hook
 
 
+class List(list):
+    """A wrapper around list that allows weak references, to allow lists to be registered in registries."""
+
+    __hash__ = object.__hash__
+
+
+class Dict(dict):
+    """A wrapper around dict that allows weak references, to allow dicts to be registered in registries."""
+
+    __hash__ = object.__hash__
+
+
+class Set(set):
+    """A wrapper around set that allows weak references, to allow sets to be registered in registries."""
+
+    __hash__ = object.__hash__
+
+
+def make_builtin_weakrefable[T: object](obj: T) -> T:
+    """Wrap built-in types in a weak-referenceable wrapper to allow them to be registered in registries."""
+    if type(obj) is list:
+        return List(obj)  # ty:ignore[invalid-return-type]
+    if type(obj) is dict:
+        return Dict(obj)  # ty:ignore[invalid-return-type]
+    if type(obj) is set:
+        return Set(obj)  # ty:ignore[invalid-return-type]
+    return obj
+
+
 class RegistryMeta[T: object](ABCMeta):
     """Metaclass for registry classes."""
 
@@ -197,16 +226,51 @@ class RegistryMeta[T: object](ABCMeta):
             ) from err
         return instance
 
-    def register_instance[Q](cls: RegistryMeta[T], instance: Q) -> Q:
+    def register_instance[Q](cls: RegistryMeta[T], instance: Q, autocast_builtins: bool = False) -> Q:
         """Register an instance in the registry."""
         if isinstance(instance, cls):
             return instance
 
+        if autocast_builtins:
+            instance = make_builtin_weakrefable(instance)
+
         return cls._register_instance(instance)
 
-    def register_factory[**In, Q](cls: RegistryMeta[T], func: Callable[In, Q]) -> Callable[In, Q]:
+    @overload
+    def register_factory[**In, Q](
+        cls: RegistryMeta[T],
+        func: Callable[In, Q],
+        *,
+        autocast_builtins: bool = False,
+        raise_on_failure: bool = True,
+    ) -> Callable[In, Q]: ...
+
+    @overload
+    def register_factory[**In, Q](
+        cls: RegistryMeta[T],
+        *,
+        autocast_builtins: bool = False,
+        raise_on_failure: bool = True,
+    ) -> Callable[[Callable[In, Q]], Callable[In, Q]]: ...
+
+    def register_factory[**In, Q](
+        cls: RegistryMeta[T],
+        func: Callable[In, Q] | None = None,
+        *,
+        autocast_builtins: bool = False,
+        raise_on_failure: bool = True,
+    ) -> Callable[In, Q] | Callable[[Callable[In, Q]], Callable[In, Q]]:
         """Decorator to annotate the results of a function with the registry type."""
-        return annotator(cls)(func)
+        if func is None:
+
+            def decorator(func: Callable[In, Q]) -> Callable[In, Q]:
+                return cls.register_factory(
+                    func, autocast_builtins=autocast_builtins, raise_on_failure=raise_on_failure
+                )
+
+            return decorator
+
+        return annotator(cls, autocast_builtins=autocast_builtins, raise_on_failure=raise_on_failure)(func)
 
     def _non_registered_instancecheck(cls, instance: object) -> bool:
         """Check if an instance is an instance of cls without checking the registry."""
@@ -355,7 +419,11 @@ class _RegistryAnnotator[T: object](Protocol):
         """Decorate `func` while preserving its parameters."""
 
 
-def annotator[T: object](registry_type: RegistryMeta[T]) -> _RegistryAnnotator[T]:
+def annotator[T: object](
+    registry_type: RegistryMeta[T],
+    autocast_builtins: bool = False,
+    raise_on_failure: bool = True,
+) -> _RegistryAnnotator[T]:
     """Decorator to annotate the result of a function with a registry type.
 
     This is useful for functions that return instances of a registry, but where the return type is not known statically,
@@ -367,8 +435,10 @@ def annotator[T: object](registry_type: RegistryMeta[T]) -> _RegistryAnnotator[T
         def wrapper(*args: In.args, **kwargs: In.kwargs) -> Q:
             res = func(*args, **kwargs)
             try:
-                return registry_type.register_instance(res)
+                return registry_type.register_instance(res, autocast_builtins=autocast_builtins)
             except RegistrationError:
+                if raise_on_failure:
+                    raise
                 return res  # If the result cannot be registered, return it as is.
 
         return wrapper
