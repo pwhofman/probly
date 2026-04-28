@@ -6,6 +6,7 @@ from probly.method.credal_wrapper import credal_wrapper
 from probly.method.ddu import ddu
 from probly.method.dropconnect import dropconnect
 from probly.method.dropout import dropout
+from probly.method.duq import duq
 from probly.method.efficient_credal_prediction import efficient_credal_prediction
 from probly.method.ensemble import ensemble
 from probly.method.evidential.classification import evidential_classification
@@ -22,6 +23,7 @@ __all__ = [
     "ddu",
     "dropconnect",
     "dropout",
+    "duq",
     "efficient_credal_prediction",
     "ensemble",
     "evidential_classification",

@@ -39,6 +39,7 @@ from probly.method.credal_relative_likelihood import CredalRelativeLikelihoodPre
 from probly.method.credal_wrapper import CredalWrapperPredictor
 from probly.method.dare import DarePredictor
 from probly.method.ddu import DDUPredictor
+from probly.method.duq import DUQPredictor
 from probly.method.ensemble import EnsemblePredictor
 from probly.method.subensemble import SubensemblePredictor
 from probly_benchmark import data, metadata, utils
@@ -168,7 +169,7 @@ def _maybe_compile_forward(model: nn.Module, device: torch.device) -> None:
     so compilation is skipped on MPS and a message is printed to surface the
     deviation from the default CUDA/CPU path.
     """
-    if device.type == "mps":
+    if device.type == "mps" or isinstance(model, DUQPredictor):
         print("Skipping torch.compile on MPS (Inductor's Metal backend unsupported); using eager forward.")
         return
     model.forward = torch.compile(model.forward)
@@ -697,6 +698,41 @@ def _fit_ddu_density_head(
     density_head.cpu()
     density_head.fit(features_cat, labels_cat)
     density_head.to(density_head_device)
+
+
+@train_model.register(DUQPredictor)
+def _(
+    model: nn.Module,
+    train_loader: DataLoader,
+    val_loader: DataLoader | None,
+    cfg: DictConfig,
+    device: torch.device,
+    run: Any,  # noqa: ANN401
+    train_kwargs: dict[str, Any],
+) -> None:
+    """Train a DUQ predictor :cite:`vanamersfoortDUQ2020`.
+
+    Disables AMP because the gradient penalty requires a stable second-order
+    autograd graph that ``torch.amp.autocast`` does not support across all
+    backends. The standard training loop is otherwise reused: it dispatches to
+    ``train_epoch_duq`` (BCE on kernel values + gradient penalty + EMA
+    centroid update) and ``validate_duq`` via the flexdispatch registry.
+    """
+    cfg_ = cfg.copy()
+    if cfg_.get("amp", False):
+        print("DUQ: disabling AMP (incompatible with the second-order gradient penalty).")
+        cfg_.amp = False
+    _training_loop(
+        model,
+        train_loader,
+        val_loader,
+        cfg_,
+        device,
+        run,
+        train_kwargs,
+        train_fn=train_epoch,  # ty: ignore[invalid-argument-type]
+        val_fn=validate,
+    )
 
 
 @train_model.register(DDUPredictor)
