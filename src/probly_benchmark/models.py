@@ -96,7 +96,7 @@ def get_base_model(  # noqa: PLR0912, PLR0915, C901
 class LeNet(nn.Module):
     """LeNet-5 adapted for 28x28 grayscale input (MNIST).
 
-    Architecture: Conv -> Pool -> Conv -> Pool -> FC -> FC -> FC -> Softmax.
+    Architecture: Conv -> Pool -> Conv -> Pool -> FC -> FC -> FC (logits).
     """
 
     def __init__(self, n_classes: int = 10) -> None:
