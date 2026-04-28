@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import torch
 from torch import nn
 from torch.nn import functional as F
@@ -10,13 +12,22 @@ import torchvision.models as tm
 from probly_benchmark.resnet import ResNet18
 
 
-def get_base_model(name: str, num_classes: int, pretrained: bool = False) -> nn.Module:
+def get_base_model(  # noqa: PLR0912, PLR0915, C901
+    name: str,
+    num_classes: int,
+    pretrained: bool = False,
+    in_features: int | None = None,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> nn.Module:
     """Get a base model.
 
     Args:
         name: Name of the model
         num_classes: Number of classes in the dataset
         pretrained: Whether or not to use pretrained model. Defaults to False.
+        in_features: Number of input features for tabular models. Ignored for image models.
+            Required for tabular_mlp and tabular_mlp_encoder.
+        **kwargs: Additional model-specific arguments.
 
     Returns:
         The base model as a PyTorch module.
@@ -47,6 +58,35 @@ def get_base_model(name: str, num_classes: int, pretrained: bool = False) -> nn.
         case "regnet_y_400mf":
             model = tm.regnet_y_400mf(weights="DEFAULT" if pretrained else None)
             model.fc = nn.Linear(model.fc.in_features, num_classes)
+        case "lenet":
+            if pretrained:
+                msg = "Pretrained weights are not supported for LeNet."
+                raise NotImplementedError(msg)
+            model = LeNet(n_classes=num_classes)
+        case "lenet_encoder":
+            if pretrained:
+                msg = "Pretrained weights are not supported for LeNet."
+                raise NotImplementedError(msg)
+            model = LeNet(n_classes=num_classes)
+            # Drop final Linear, keeping up to Tanh -> output 84-d
+            model.classifier = nn.Sequential(*list(model.classifier.children())[:-1])
+        case "tabular_mlp":
+            if pretrained:
+                msg = "Pretrained weights are not supported for TabularMLP."
+                raise NotImplementedError(msg)
+            if in_features is None:
+                msg = "TabularMLP requires 'in_features' kwarg."
+                raise ValueError(msg)
+            model = TabularMLP(in_features=in_features, n_classes=num_classes)
+        case "tabular_mlp_encoder":
+            if pretrained:
+                msg = "Pretrained weights are not supported for TabularMLP."
+                raise NotImplementedError(msg)
+            if in_features is None:
+                msg = "TabularMLP encoder requires 'in_features' kwarg."
+                raise ValueError(msg)
+            model = TabularMLP(in_features=in_features, n_classes=num_classes)
+            model.lin_out = nn.Identity()  # ty: ignore[invalid-assignment]  # drop classification head, output 1024-d
         case _:
             msg = f"Model {name} not recognized"
             raise ValueError(msg)
@@ -81,7 +121,6 @@ class LeNet(nn.Module):
             nn.Linear(120, 84),
             nn.Tanh(),
             nn.Linear(84, n_classes),
-            nn.Softmax(dim=-1),
         )
 
     def forward(self, x: torch.Tensor) -> nn.Module:
@@ -134,3 +173,29 @@ class MiniResNet(nn.Module):
         x = self.pool(x)
         x = torch.flatten(x, 1)
         return self.fc(x)
+
+
+class TabularMLP(nn.Module):
+    """Two-layer MLP for tabular data.
+
+    Architecture: Linear -> ReLU -> Linear -> ReLU -> Linear.
+    """
+
+    def __init__(self, in_features: int, n_classes: int, hidden_dim: int = 1024) -> None:
+        """Initialize the model.
+
+        Args:
+            in_features: Number of input features.
+            n_classes: Number of output classes.
+            hidden_dim: Number of hidden units in each layer.
+        """
+        super().__init__()
+        self.lin_one = nn.Linear(in_features, hidden_dim)
+        self.lin_two = nn.Linear(hidden_dim, hidden_dim)
+        self.lin_out = nn.Linear(hidden_dim, n_classes)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Forward pass."""
+        x = F.relu(self.lin_one(x))
+        x = F.relu(self.lin_two(x))
+        return self.lin_out(x)

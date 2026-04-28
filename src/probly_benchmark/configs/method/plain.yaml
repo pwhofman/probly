@@ -1,0 +1,6 @@
+# @package method
+# Vanilla MLP baseline: no UQ wrapping. The base model is returned untouched
+# and trained with standard cross-entropy. Used as the fair-comparison
+# baseline for AL strategies (random, margin, badge) and as a softmax-entropy
+# reference for "uncertainty".
+name: "plain"

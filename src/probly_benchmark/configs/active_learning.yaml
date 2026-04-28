@@ -1,0 +1,46 @@
+defaults:
+  - _self_
+  - method: ???
+  - al_strategy: uncertainty
+  - al_dataset: ???
+
+# AL loop
+initial_size: 1000
+query_size: 1000
+n_iterations: 10
+
+# Training (per AL iteration)
+epochs: 50
+batch_size: 128
+optimizer:
+  name: "adam"
+  params:
+    lr: 0.001
+scheduler:
+  name: "cosine"
+  params: {}
+early_stopping:
+  patience: 0
+grad_clip_norm: null
+model_type: "logit_classifier"
+
+# Experiment
+seed: 0
+device: "cuda"
+
+# Uncertainty measure EU (epistemic unc.) or TU (total unc.)
+uncertainty_decomposition: EU
+
+# WandB (AL-level logging only)
+wandb:
+  enabled: true
+  project: "probly-active-learning"
+
+# Local results aggregation. When ``save_results`` is true, each run appends
+# its result dict to ``results_file`` (a JSON list of run dicts) keyed by
+# (method, dataset, strategy, seed) so re-runs overwrite previous entries.
+# Will be read by local plotting code for debugging and sanity checks.
+# Default off so cluster/Hydra runs (where wandb is the source of truth)
+# don't write a stray file. Enable locally with ``save_results=true``.
+save_results: false
+results_file: "al_results.json"

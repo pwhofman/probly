@@ -1,0 +1,4 @@
+# @package _global_
+dataset:
+  name: "openml"
+  openml_id: 6
