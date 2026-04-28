@@ -13,7 +13,6 @@ from torch.utils.data import DataLoader, TensorDataset
 from probly.calibrator import calibrate
 from probly.method.calibration import platt_scaling, temperature_scaling, vector_scaling
 from probly.method.conformal import conformal_aps, conformal_lac, conformal_raps
-from probly.method.ensemble import EnsemblePredictor
 from probly.predictor import predict_single
 from probly.quantification import quantify
 from probly.quantification.notion import EpistemicUncertainty, Notion, TotalUncertainty
@@ -151,7 +150,7 @@ class BaseEstimator(ABC):
 
 
 class BaselineEstimator(BaseEstimator):
-    """AL estimator for plain/ensemble baselines with margin/badge/random strategies.
+    """AL estimator for the plain baseline with optional calibration.
 
     Satisfies the ``BadgeEstimator`` protocol from
     ``probly.evaluation.active_learning``.
@@ -178,20 +177,7 @@ class BaselineEstimator(BaseEstimator):
             batch_size=self.cfg.batch_size,
             shuffle=True,
         )
-        if self.method_name == "plain":
-            model = self._train_base_model(train_loader)
-        else:
-            ctx = BuildContext(
-                base_model_name=self.base_model_name,
-                model_type=self.cfg.model_type,
-                num_classes=self.num_classes,
-                pretrained=False,
-                train_loader=train_loader,
-                in_features=self.in_features,
-            )
-            model = build_model(self.method_name, dict(self.method_params), ctx)
-            model.to(self.device)
-            train_model(model, train_loader, None, self.cfg, self.device, _NoOpRun(), {})
+        model = self._train_base_model(train_loader)
 
         if cal_cfg:
             cal_method_name = cal_cfg.get("method", "temperature")
@@ -216,9 +202,7 @@ class BaselineEstimator(BaseEstimator):
         self.model.eval()
         base = self.model
         if hasattr(base, "predictor"):
-            base = base.predictor
-        if isinstance(base, EnsemblePredictor):
-            base = base[0]
+            base = base.predictor  # unwrap calibration wrapper
         layer_fn = _CLASSIFICATION_LAYER.get(self.base_model_name)
         if layer_fn is None:
             msg = f"No embed layer mapping for base model {self.base_model_name!r}"

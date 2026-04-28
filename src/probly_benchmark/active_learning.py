@@ -79,13 +79,11 @@ def _build_estimator(
             cal_split=cal_split,
         )
 
-    # --- Baseline methods ---
-    use_baseline = method == "plain" or (method == "ensemble" and strategy != "uncertainty")
-    if method == "plain" and strategy == "uncertainty":
-        msg = "Method 'plain' cannot use 'uncertainty' strategy — use margin, badge, or random."
-        raise ValueError(msg)
-
-    if use_baseline:
+    # --- Baseline (plain model, optionally calibrated) ---
+    if method == "plain":
+        if strategy == "uncertainty":
+            msg = "Method 'plain' cannot use 'uncertainty' strategy — use margin, badge, or random."
+            raise ValueError(msg)
         return BaselineEstimator(
             cfg=cfg,
             base_model_name=base_model_name,
