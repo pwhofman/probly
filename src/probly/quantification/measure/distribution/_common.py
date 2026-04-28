@@ -5,7 +5,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Literal
 
 from flextype import flexdispatch
-from probly.representation.sample._common import Sample
+from probly.quantification._quantification import measure
+from probly.representation.distribution import CategoricalDistribution
+from probly.representation.sample import Sample
 
 if TYPE_CHECKING:
     from probly.representation.array_like import ArrayLike
@@ -14,6 +16,7 @@ if TYPE_CHECKING:
 type LogBase = float | Literal["normalize"] | None
 
 
+@measure.register(CategoricalDistribution)
 @flexdispatch
 def entropy(distribution: Distribution, base: LogBase = None) -> ArrayLike:
     """Compute the entropy of a distribution."""
