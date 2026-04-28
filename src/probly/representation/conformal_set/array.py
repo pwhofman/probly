@@ -69,6 +69,11 @@ class ArrayOneHotConformalSet(ArrayAxisProtected[ArraySample], OneHotConformalSe
         array_sample = ArraySample.from_sample(sample)
         return cls.from_array_sample(array_sample.array)
 
+    @property
+    def set_size(self) -> np.ndarray:
+        """Return the sizes of the conformal sets."""
+        return np.sum(self.array, axis=-1)
+
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
 class ArrayIntervalConformalSet(ArrayAxisProtected[ArraySample], IntervalConformalSet):
@@ -108,6 +113,11 @@ class ArrayIntervalConformalSet(ArrayAxisProtected[ArraySample], IntervalConform
             msg = "Expected ArraySample for interval conformal sets."
             raise TypeError(msg)
         return cls.from_array_samples(lower.array, upper.array)
+
+    @property
+    def set_size(self) -> np.ndarray:
+        """Return the sizes of the conformal sets."""
+        return self.array[..., 1] - self.array[..., 0]
 
 
 create_onehot_conformal_set.register(np.ndarray)(ArrayOneHotConformalSet.from_array_sample)
