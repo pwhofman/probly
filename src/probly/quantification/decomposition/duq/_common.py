@@ -11,11 +11,13 @@ from probly.quantification.decomposition.decomposition import CachingDecompositi
 from probly.representation.duq import DUQRepresentation
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from probly.representation.array_like import ArrayLike
 
 
 @flexdispatch
-def duq_uncertainty(representation: DUQRepresentation) -> ArrayLike:
+def duq_uncertainty(kernel_values: Iterable) -> ArrayLike:
     r"""Compute the DUQ uncertainty score :math:`1 - \max_c K_c(x)`.
 
     The DUQ kernel value :math:`\\max_c K_c(x)` is a confidence score in
@@ -25,18 +27,18 @@ def duq_uncertainty(representation: DUQRepresentation) -> ArrayLike:
     returned.
 
     Args:
-        representation: DUQ representation produced by a DUQ predictor.
+        kernel_values: kernel values of shape ``(..., C)``.
 
     Returns:
         Per-sample uncertainty scores of shape ``(...,)`` (the trailing class
         axis of ``kernel_values`` is reduced via max).
     """
-    msg = f"DUQ uncertainty is not implemented for representations of type {type(representation)}"
+    msg = f"DUQ uncertainty is not implemented for kernel values of type {type(kernel_values)}"
     raise NotImplementedError(msg)
 
 
 @decompose.register(DUQRepresentation)
-@dataclass(frozen=True, slots=True, repr=True)
+@dataclass(frozen=True, slots=True, weakref_slot=True, repr=False)
 class DUQDecomposition[T](CachingDecomposition, TotalDecomposition[T]):
     """Base class for entropy-based decomposition methods."""
 
@@ -46,4 +48,4 @@ class DUQDecomposition[T](CachingDecomposition, TotalDecomposition[T]):
     @property
     def _total(self) -> T:
         """The total uncertainty of the decomposition."""
-        return duq_uncertainty(self.representation)  # ty:ignore[invalid-return-type]
+        return duq_uncertainty(self.representation.kernel_values)  # ty:ignore[invalid-return-type]

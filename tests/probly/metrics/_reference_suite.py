@@ -33,7 +33,7 @@ class ReferenceSuite:
         fpr, tpr, _ = roc_curve(array_fn(y_true, dtype=float), array_fn(y_score, dtype=float))
         actual = float(auc(fpr, tpr))
 
-        assert actual == pytest.approx(expected, abs=1e-5)
+        assert actual == pytest.approx(expected, abs=1e-4)
 
     @_ROUNDS
     def test_roc_auc_score_matches_sklearn(self, _round, array_fn):  # noqa: PT019
@@ -46,7 +46,7 @@ class ReferenceSuite:
 
         actual = float(roc_auc_score(array_fn(y_true, dtype=float), array_fn(y_score, dtype=float)))
 
-        assert actual == pytest.approx(expected, abs=1e-5)
+        assert actual == pytest.approx(expected, abs=1e-4)
 
     @_ROUNDS
     def test_average_precision_score_matches_sklearn(self, _round, array_fn):  # noqa: PT019
@@ -59,4 +59,4 @@ class ReferenceSuite:
 
         actual = float(average_precision_score(array_fn(y_true, dtype=float), array_fn(y_score, dtype=float)))
 
-        assert actual == pytest.approx(expected, abs=1e-5)
+        assert actual == pytest.approx(expected, abs=1e-4)

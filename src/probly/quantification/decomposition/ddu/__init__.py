@@ -1,15 +1,13 @@
-"""Quantification of Deep Deterministic Uncertainty (DDU) representations."""
+"""DDU-specific decompositions of uncertainty."""
 
-from __future__ import annotations
+from probly.lazy_types import TORCH_TENSOR
 
-from probly.lazy_types import TORCH_TENSOR_LIKE
-
-from ._common import DDUDecomposition, ddu_epistemic_uncertainty
+from ._common import DDUDensityDecomposition, negative_log_density
 
 
-@ddu_epistemic_uncertainty.delayed_register(TORCH_TENSOR_LIKE)
+@negative_log_density.delayed_register(TORCH_TENSOR)
 def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415
 
 
-__all__ = ["DDUDecomposition", "ddu_epistemic_uncertainty"]
+__all__ = ["DDUDensityDecomposition", "negative_log_density"]

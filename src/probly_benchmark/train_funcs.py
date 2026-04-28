@@ -14,6 +14,7 @@ from probly.method.batchensemble import BatchEnsemblePredictor
 from probly.method.batchensemble.torch import tile_inputs as tile_be_inputs
 from probly.method.bayesian import BayesianPredictor
 from probly.method.credal_ensembling import CredalEnsemblingPredictor
+from probly.method.credal_net import CredalNetPredictor
 from probly.method.credal_relative_likelihood import CredalRelativeLikelihoodPredictor
 from probly.method.credal_wrapper import CredalWrapperPredictor
 from probly.method.dare import DarePredictor
@@ -28,8 +29,10 @@ from probly.method.het_nets import HetNetsPredictor
 from probly.method.natural_posterior_network import NaturalPosteriorNetworkPredictor
 from probly.method.posterior_network import PosteriorNetworkPredictor
 from probly.method.subensemble import SubensemblePredictor
+from probly.predictor import predict_raw
 from probly.train.bayesian.torch import ELBOLoss, collect_kl_divergence
 from probly.train.calibration.torch import ExpectedCalibrationError
+from probly.train.credal.torch import intersection_probability_ce_loss
 from probly.train.dare.torch import dare_regularizer
 from probly.train.evidential.torch import (
     evidential_ce_loss,
@@ -38,6 +41,7 @@ from probly.train.evidential.torch import (
     evidential_mse_loss,
     postnet_loss,
 )
+from probly.utils.torch import intersection_probability
 
 if TYPE_CHECKING:
     from torch.utils.data import DataLoader
@@ -329,6 +333,42 @@ def _(
             nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)  # ty: ignore[unresolved-attribute]
         optimizer.step()
     return loss_val.item()
+
+
+@train_epoch.register(CredalNetPredictor)
+def _(
+    model: CredalNetPredictor,
+    inputs: torch.Tensor,
+    targets: torch.Tensor,
+    optimizer: optim.Optimizer,
+    grad_clip_norm: float | None = None,
+    amp_enabled: bool = False,
+    scaler: GradScaler | None = None,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> torch.Tensor | float:
+    """Train a credal net for one step with the intersection-probability cross-entropy loss.
+
+    Reference:
+        Wang et al., "Credal-Set Interval Neural Networks", 2024.
+        https://arxiv.org/abs/2401.05043
+    """
+    optimizer.zero_grad()
+    with autocast(inputs.device.type, enabled=amp_enabled):
+        output = predict_raw(model, inputs)
+        loss = intersection_probability_ce_loss(output, targets)
+    if scaler is not None:
+        scaler.scale(loss).backward()
+        if grad_clip_norm is not None:
+            scaler.unscale_(optimizer)
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)
+        scaler.step(optimizer)
+        scaler.update()
+    else:
+        loss.backward()
+        if grad_clip_norm is not None:
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)
+        optimizer.step()
+    return loss.item()
 
 
 @train_epoch.register(DDUPredictor)
@@ -645,6 +685,35 @@ def _(
     return val_loss, val_acc
 
 
+@validate.register(CredalNetPredictor)
+@torch.no_grad()
+def _(
+    model: CredalNetPredictor,
+    val_loader: DataLoader,
+    device: torch.device,
+    amp_enabled: bool = False,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> tuple[float, float]:
+    """Validate a credal net."""
+    model.eval()  # ty:ignore[unresolved-attribute]
+    val_loss = 0.0
+    val_acc = 0.0
+    num_instances = 0
+    for inputs_, targets_ in val_loader:
+        inputs, targets = inputs_.to(device), targets_.to(device)
+        with autocast(device.type, enabled=amp_enabled):
+            output = predict_raw(model, inputs)
+            batch_loss = intersection_probability_ce_loss(output, targets)
+            n_classes = output.shape[-1] // 2
+            q_int = intersection_probability(output[..., :n_classes], output[..., n_classes:])
+        val_loss += batch_loss.item()
+        val_acc += _accuracy(q_int, targets) * inputs.shape[0]
+        num_instances += inputs.shape[0]
+    val_loss /= len(val_loader)
+    val_acc /= num_instances
+    return val_loss, val_acc
+
+
 @validate.register(DDUPredictor)
 @torch.no_grad()
 def validate_ddu(
@@ -891,6 +960,35 @@ def _(
             alpha = model(inputs)  # ty: ignore[call-non-callable]
             probs_ = alpha / alpha.sum(dim=1, keepdim=True)
         all_probs.append(probs_)
+        all_labels.append(targets)
+
+    probs = torch.cat(all_probs)
+    labels = torch.cat(all_labels)
+
+    return _compute_metrics(probs, labels, n_bins)
+
+
+@evaluate.register(CredalNetPredictor)
+@torch.no_grad()
+def _(
+    model: CredalNetPredictor,
+    test_loader: DataLoader,
+    device: torch.device,
+    amp_enabled: bool = False,
+    n_bins: int = 10,
+    **kwargs: Any,  # noqa: ANN401, ARG001
+) -> dict[str, float]:
+    """Evaluate a credal net on accuracy/NLL/ECE using the intersection probability."""
+    model.eval()  # ty:ignore[unresolved-attribute]
+    all_probs: list[torch.Tensor] = []
+    all_labels: list[torch.Tensor] = []
+    for inputs_, targets_ in test_loader:
+        inputs, targets = inputs_.to(device), targets_.to(device)
+        with autocast(device.type, enabled=amp_enabled):
+            output = predict_raw(model, inputs)
+            n_classes = output.shape[-1] // 2
+            q_int = intersection_probability(output[..., :n_classes], output[..., n_classes:])
+        all_probs.append(q_int)
         all_labels.append(targets)
 
     probs = torch.cat(all_probs)

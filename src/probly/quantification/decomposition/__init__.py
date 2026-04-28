@@ -1,6 +1,6 @@
 """Uncertainty decomposition methods."""
 
-from .ddu import DDUDecomposition
+from .ddu import DDUDensityDecomposition
 from .decomposition import (
     AdditiveDecomposition,
     AleatoricDecomposition,
@@ -25,7 +25,7 @@ __all__ = [
     "AleatoricTotalDecomposition",
     "CachingDecomposition",
     "CredalSetEntropyDecomposition",
-    "DDUDecomposition",
+    "DDUDensityDecomposition",
     "DUQDecomposition",
     "Decomposition",
     "EpistemicDecomposition",

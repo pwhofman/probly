@@ -18,17 +18,10 @@ from probly.layers.torch import (
 )
 from probly.predictor import predict_raw
 
-from ._common import REPLACED, CredalNetPredictor, credal_net_traverser, intersection_probability
+from ._common import REPLACED, CredalNetPredictor, credal_net_traverser
 
 if TYPE_CHECKING:
     from pytraverse import State
-
-
-@intersection_probability.register(torch.Tensor)
-def _intersection_probability(lower: torch.Tensor, upper: torch.Tensor) -> torch.Tensor:
-    width = upper - lower
-    alpha = (1.0 - lower.sum(dim=-1, keepdim=True)) / width.sum(dim=-1, keepdim=True)
-    return lower + alpha * width
 
 
 @predict_raw.register(CredalNetPredictor)

@@ -1,4 +1,4 @@
-"""Quantification of DUQ representations."""
+"""DDU-specific uncertainty decomposition."""
 
 from __future__ import annotations
 
@@ -8,42 +8,43 @@ from typing import TYPE_CHECKING, override
 from flextype import flexdispatch
 from probly.quantification._quantification import decompose
 from probly.quantification.decomposition.decomposition import AleatoricEpistemicDecomposition, CachingDecomposition
-from probly.quantification.measure.distribution import entropy
+from probly.quantification.measure.distribution import LogBase, entropy
 from probly.representation.ddu import DDURepresentation
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from probly.representation.array_like import ArrayLike
 
 
 @flexdispatch
-def ddu_epistemic_uncertainty(representation: DDURepresentation) -> ArrayLike:
-    r"""Compute the DDU epistemic uncertainty scores based on the fitted GMM.
-
-    Args:
-        representation: DDU representation produced by a DDU predictor.
-
-    Returns:
-        Per-sample uncertainty scores of shape ``(...,)``.
-    """
-    msg = f"DDU epistemic uncertainty is not implemented for representations of type {type(representation)}"
+def negative_log_density(densities: Iterable) -> ArrayLike:
+    """Convert DDU log-density scores to an epistemic uncertainty score."""
+    msg = f"Negative log density is not supported for densities of type {type(densities)}."
     raise NotImplementedError(msg)
 
 
 @decompose.register(DDURepresentation)
-@dataclass(frozen=True, slots=True, repr=True)
-class DDUDecomposition[T](CachingDecomposition, AleatoricEpistemicDecomposition[T, T]):
-    """Base class for entropy-based decomposition methods."""
+@dataclass(frozen=True, slots=True, weakref_slot=True, repr=False)
+class DDUDensityDecomposition[T](CachingDecomposition, AleatoricEpistemicDecomposition[T, T]):
+    """DDU decomposition into softmax entropy and negative feature log density.
+
+    DDU does not define an additive total uncertainty. The aleatoric component is
+    the entropy of the softmax distribution, while the epistemic component is a
+    monotone uncertainty score derived from the feature-space density.
+    """
 
     representation: DDURepresentation
+    base: LogBase = None
 
     @override
     @property
     def _aleatoric(self) -> T:
         """The aleatoric uncertainty of the decomposition."""
-        return entropy(self.representation.softmax)  # ty:ignore[invalid-return-type]
+        return entropy(self.representation.softmax, base=self.base)  # ty:ignore[invalid-return-type]
 
     @override
     @property
     def _epistemic(self) -> T:
         """The epistemic uncertainty of the decomposition."""
-        return ddu_epistemic_uncertainty(self.representation)  # ty:ignore[invalid-return-type]
+        return negative_log_density(self.representation.densities)  # ty:ignore[invalid-return-type]

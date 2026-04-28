@@ -28,7 +28,7 @@ class CredalEnsemblingPredictor[**In, Out: CategoricalDistribution](
     ),
     preserve_predictor_type=False,
 )
-@CredalEnsemblingPredictor.register_factory
+@CredalEnsemblingPredictor.register_factory(autocast_builtins=True)
 def credal_ensembling[**In, Out: CategoricalDistribution](
     base: Predictor[In, Out], num_members: int, reset_params: bool = True
 ) -> CredalEnsemblingPredictor[In, Out]:

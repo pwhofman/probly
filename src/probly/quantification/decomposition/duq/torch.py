@@ -2,17 +2,12 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
-from probly.representation.duq.torch import TorchDUQRepresentation
+import torch
 
 from ._common import duq_uncertainty
 
-if TYPE_CHECKING:
-    import torch
 
-
-@duq_uncertainty.register(TorchDUQRepresentation)
-def torch_duq_uncertainty(representation: TorchDUQRepresentation) -> torch.Tensor:
+@duq_uncertainty.register(torch.Tensor)
+def torch_duq_uncertainty(kernel_values: torch.Tensor) -> torch.Tensor:
     r"""Per-sample DUQ uncertainty :math:`1 - \max_c K_c(x)` for torch tensors."""
-    return 1.0 - representation.kernel_values.max(dim=-1).values
+    return 1.0 - kernel_values.max(dim=-1).values
