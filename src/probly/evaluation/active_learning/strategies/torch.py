@@ -12,42 +12,48 @@ if TYPE_CHECKING:
 from probly.quantification.measure.distribution.torch import torch_categorical_entropy
 from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
 
-from ._common import (
-    badge_select,
-    entropy_select,
-    least_confident_select,
-    margin_select,
-    random_select,
-    uncertainty_select,
-)
+from ._badge import badge_select
+from ._scores import entropy_score, least_confident_score, margin_score
+from ._selection import random_select, topk_select
+
+# ---------------------------------------------------------------------------
+# Scoring functions
+# ---------------------------------------------------------------------------
 
 
-@entropy_select.register(torch.Tensor)
-def _entropy_select_torch(probs: torch.Tensor, n: int) -> torch.Tensor:
-    """Torch implementation of entropy-based selection."""
-    h = torch_categorical_entropy(TorchCategoricalDistribution(probs))
-    return torch.topk(h, n, largest=True).indices
+@entropy_score.register(torch.Tensor)
+def _entropy_score_torch(probs: torch.Tensor) -> torch.Tensor:
+    """Torch implementation of entropy scoring."""
+    return torch_categorical_entropy(TorchCategoricalDistribution(probs))
 
 
-@least_confident_select.register(torch.Tensor)
-def _least_confident_select_torch(probs: torch.Tensor, n: int) -> torch.Tensor:
-    """Torch implementation of least confident selection."""
-    confidence = probs.max(dim=1).values
-    return torch.topk(confidence, n, largest=False).indices
+@least_confident_score.register(torch.Tensor)
+def _least_confident_score_torch(probs: torch.Tensor) -> torch.Tensor:
+    """Torch implementation of least confident scoring."""
+    return 1.0 - probs.max(dim=1).values
 
 
-@margin_select.register(torch.Tensor)
-def _margin_select_torch(probs: torch.Tensor, n: int) -> torch.Tensor:
-    """Torch implementation of margin sampling selection."""
+@margin_score.register(torch.Tensor)
+def _margin_score_torch(probs: torch.Tensor) -> torch.Tensor:
+    """Torch implementation of margin scoring (negative margin: higher = smaller margin)."""
     sorted_probs = probs.sort(dim=1).values
-    margin = sorted_probs[:, -1] - sorted_probs[:, -2]
-    return torch.topk(margin, n, largest=False).indices
+    return -(sorted_probs[:, -1] - sorted_probs[:, -2])
 
 
-@uncertainty_select.register(torch.Tensor)
-def _uncertainty_select_torch(scores: torch.Tensor, n: int) -> torch.Tensor:
-    """Torch implementation of uncertainty sampling selection."""
+# ---------------------------------------------------------------------------
+# Top-k selection
+# ---------------------------------------------------------------------------
+
+
+@topk_select.register(torch.Tensor)
+def _topk_select_torch(scores: torch.Tensor, n: int) -> torch.Tensor:
+    """Torch implementation of top-k selection (highest scores)."""
     return torch.topk(scores, n, largest=True).indices
+
+
+# ---------------------------------------------------------------------------
+# BADGE and Random
+# ---------------------------------------------------------------------------
 
 
 @badge_select.register(torch.Tensor)

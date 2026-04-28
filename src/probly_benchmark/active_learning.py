@@ -63,11 +63,15 @@ def _build_estimator(
         score_name = al_section.get("score", "lac")
         alpha = float(al_section.get("alpha", 0.1))
         cal_split = float(al_section.get("cal_split", 0.25))
+        raw_score_params = al_section.get("params")
+        score_params = (
+            cast("dict[str, Any]", OmegaConf.to_container(raw_score_params, resolve=True)) if raw_score_params else {}
+        )
         return ConformalEstimator(
             cfg=cfg,
             base_model_name=base_model_name,
             method_name=score_name,
-            method_params=method_params,
+            method_params=score_params,
             num_classes=num_classes,
             device=device,
             in_features=in_features,

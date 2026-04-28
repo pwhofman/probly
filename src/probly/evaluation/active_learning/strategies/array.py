@@ -8,42 +8,50 @@ from scipy.spatial.distance import cdist
 from probly.quantification.measure.distribution.array import array_categorical_entropy
 from probly.representation.distribution.array_categorical import ArrayCategoricalDistribution
 
-from ._common import (
-    badge_select,
-    entropy_select,
-    least_confident_select,
-    margin_select,
-    random_select,
-    uncertainty_select,
-)
+from ._badge import badge_select
+from ._scores import entropy_score, least_confident_score, margin_score
+from ._selection import random_select, topk_select
+
+# ---------------------------------------------------------------------------
+# Scoring functions
+# ---------------------------------------------------------------------------
 
 
-@entropy_select.register(np.ndarray)
-def _entropy_select_numpy(probs: np.ndarray, n: int) -> np.ndarray:
-    """Numpy implementation of entropy-based selection."""
-    h = array_categorical_entropy(ArrayCategoricalDistribution(probs))
-    return np.argpartition(-h, n)[:n]
+@entropy_score.register(np.ndarray)
+def _entropy_score_numpy(probs: np.ndarray) -> np.ndarray:
+    """Numpy implementation of entropy scoring."""
+    return array_categorical_entropy(ArrayCategoricalDistribution(probs))
 
 
-@least_confident_select.register(np.ndarray)
-def _least_confident_select_numpy(probs: np.ndarray, n: int) -> np.ndarray:
-    """Numpy implementation of least confident selection."""
-    confidence = probs.max(axis=1)
-    return np.argpartition(confidence, n)[:n]
+@least_confident_score.register(np.ndarray)
+def _least_confident_score_numpy(probs: np.ndarray) -> np.ndarray:
+    """Numpy implementation of least confident scoring."""
+    return 1.0 - probs.max(axis=1)
 
 
-@margin_select.register(np.ndarray)
-def _margin_select_numpy(probs: np.ndarray, n: int) -> np.ndarray:
-    """Numpy implementation of margin sampling selection."""
+@margin_score.register(np.ndarray)
+def _margin_score_numpy(probs: np.ndarray) -> np.ndarray:
+    """Numpy implementation of margin scoring (negative margin: higher = smaller margin)."""
     sorted_probs = np.sort(probs, axis=1)
-    margin = sorted_probs[:, -1] - sorted_probs[:, -2]
-    return np.argpartition(margin, n)[:n]
+    return -(sorted_probs[:, -1] - sorted_probs[:, -2])
 
 
-@uncertainty_select.register(np.ndarray)
-def _uncertainty_select_numpy(scores: np.ndarray, n: int) -> np.ndarray:
-    """Numpy implementation of uncertainty sampling selection."""
-    return np.argpartition(scores, -n)[-n:]
+# ---------------------------------------------------------------------------
+# Top-k selection
+# ---------------------------------------------------------------------------
+
+
+@topk_select.register(np.ndarray)
+def _topk_select_numpy(scores: np.ndarray, n: int) -> np.ndarray:
+    """Numpy implementation of top-k selection (highest scores)."""
+    if n >= len(scores):
+        return np.arange(len(scores))
+    return np.argpartition(-scores, n)[:n]
+
+
+# ---------------------------------------------------------------------------
+# BADGE and Random
+# ---------------------------------------------------------------------------
 
 
 @badge_select.register(np.ndarray)
@@ -54,6 +62,8 @@ def _badge_select_numpy(
     seed: int | None = None,
 ) -> np.ndarray:
     """Numpy implementation of BADGE selection."""
+    if n <= 0:
+        return np.array([], dtype=np.intp)
     flat = embeddings.reshape(len(embeddings), -1)
     predicted_class = probs.argmax(axis=1)
     p_predicted = probs[np.arange(len(probs)), predicted_class]

@@ -14,9 +14,9 @@ from probly.calibrator import calibrate
 from probly.method.calibration import platt_scaling, temperature_scaling, vector_scaling
 from probly.method.conformal import conformal_aps, conformal_lac, conformal_raps
 from probly.method.ensemble import EnsemblePredictor
-from probly.predictor import predict
+from probly.predictor import predict_single
 from probly.quantification import quantify
-from probly.quantification.notion import EpistemicUncertainty, Notion
+from probly.quantification.notion import EpistemicUncertainty, Notion, TotalUncertainty
 from probly.representer import representer
 from probly_benchmark import models
 from probly_benchmark.builders import BuildContext, build_model
@@ -116,6 +116,25 @@ class BaseEstimator(ABC):
             raise RuntimeError(msg)
         return self._model
 
+    def _train_base_model(self, train_loader: DataLoader) -> nn.Module:
+        """Build and train a plain base model from scratch."""
+        model = models.get_base_model(
+            self.base_model_name, self.num_classes, pretrained=False, in_features=self.in_features
+        )
+        model.to(self.device)
+        _training_loop(
+            model,
+            train_loader,
+            None,
+            self.cfg,
+            self.device,
+            _NoOpRun(),
+            {},
+            train_fn=train_epoch_cross_entropy,
+            val_fn=validate_cross_entropy,
+        )
+        return model
+
     @abstractmethod
     def fit(self, x: torch.Tensor, y: torch.Tensor) -> None:
         """Train the estimator on the labeled pool."""
@@ -160,21 +179,7 @@ class BaselineEstimator(BaseEstimator):
             shuffle=True,
         )
         if self.method_name == "plain":
-            model = models.get_base_model(
-                self.base_model_name, self.num_classes, pretrained=False, in_features=self.in_features
-            )
-            model.to(self.device)
-            _training_loop(
-                model,
-                train_loader,
-                None,
-                self.cfg,
-                self.device,
-                _NoOpRun(),
-                {},
-                train_fn=train_epoch_cross_entropy,
-                val_fn=validate_cross_entropy,
-            )
+            model = self._train_base_model(train_loader)
         else:
             ctx = BuildContext(
                 base_model_name=self.base_model_name,
@@ -196,17 +201,14 @@ class BaselineEstimator(BaseEstimator):
 
         self._model = model  # ty: ignore[invalid-assignment]
 
-    def _forward_logits(self, x: torch.Tensor) -> torch.Tensor:
-        """Raw forward pass returning averaged logits for plain and ensemble."""
-        if isinstance(self.model, nn.ModuleList):
-            return torch.stack([m(x) for m in self.model]).mean(0)
-        return self.model(x)
-
     @torch.no_grad()
     def predict_proba(self, x: torch.Tensor) -> torch.Tensor:
-        """Return class probabilities (softmax of logits)."""
+        """Return class probabilities via predict_single."""
         self.model.eval()
-        return self._forward_logits(x.float().to(self.device)).softmax(-1).cpu()
+        result = predict_single(self.model, x.float().to(self.device))
+        if isinstance(result, torch.Tensor):
+            return result.softmax(-1).cpu()
+        return result.probabilities.cpu()
 
     @torch.no_grad()
     def embed(self, x: torch.Tensor) -> torch.Tensor:
@@ -326,14 +328,11 @@ class UncertaintyEstimator(BaseEstimator):
         return scores.detach().cpu() if isinstance(scores, torch.Tensor) else torch.as_tensor(scores)
 
 
-class ConformalEstimator(BaseEstimator):
+class ConformalEstimator(UncertaintyEstimator):
     """AL estimator using conformal prediction set size as the uncertainty signal.
 
     Trains a plain base model, wraps it with a conformal predictor, and calibrates
     on a held-out split. Larger prediction sets indicate higher uncertainty.
-
-    Satisfies the ``UncertaintyEstimator`` protocol from
-    ``probly.evaluation.active_learning``.
 
     Attributes:
         alpha: Conformal coverage target.
@@ -370,22 +369,15 @@ class ConformalEstimator(BaseEstimator):
             cfg=cfg,
             base_model_name=base_model_name,
             method_name=method_name,
-            method_params=method_params,
+            method_params=method_params or {},
+            train_kwargs={},
             num_classes=num_classes,
             device=device,
             in_features=in_features,
+            uncertainty_notion=TotalUncertainty,
         )
         self.alpha = alpha
         self.cal_split = cal_split
-        self._conformal: Any = None
-
-    @property
-    def conformal_model(self) -> nn.Module:
-        """Return the calibrated conformal model, raising if ``fit()`` has not been called."""
-        if self._conformal is None:
-            msg = "Call fit() before inference"
-            raise RuntimeError(msg)
-        return self._conformal
 
     def fit(self, x: torch.Tensor, y: torch.Tensor) -> None:
         """Train a plain model and calibrate a conformal wrapper on a held-out split."""
@@ -401,37 +393,15 @@ class ConformalEstimator(BaseEstimator):
             batch_size=self.cfg.batch_size,
             shuffle=True,
         )
-        base_model = models.get_base_model(
-            self.base_model_name, self.num_classes, pretrained=False, in_features=self.in_features
-        )
-        base_model.to(self.device)
-        _training_loop(
-            base_model,
-            train_loader,
-            None,
-            self.cfg,
-            self.device,
-            _NoOpRun(),
-            {},
-            train_fn=train_epoch_cross_entropy,
-            val_fn=validate_cross_entropy,
-        )
-        self._model = base_model
+        base_model = self._train_base_model(train_loader)
 
         score_fn = _CONFORMAL_SCORES[self.method_name]
         conformal_model = score_fn(base_model, predictor_type=self.cfg.model_type, **self.method_params)
         calibrate(conformal_model, self.alpha, y_cal.long().to(self.device), x_cal.float().to(self.device))
-        self._conformal = conformal_model
+        self._model = conformal_model  # ty: ignore[invalid-assignment]
 
     @torch.no_grad()
     def predict_proba(self, x: torch.Tensor) -> torch.Tensor:
         """Return class probabilities (softmax of base model logits)."""
         self.model.eval()
-        return self.model(x.float().to(self.device)).softmax(-1).cpu()
-
-    @torch.no_grad()
-    def uncertainty_scores(self, x: torch.Tensor) -> torch.Tensor:
-        """Return per-sample conformal set sizes as uncertainty scores."""
-        self.model.eval()
-        conformal_set = predict(self.conformal_model, x.float().to(self.device))
-        return conformal_set.tensor.sum(dim=-1).float().cpu()
+        return self.model.predictor(x.float().to(self.device)).softmax(-1).cpu()  # ty: ignore[call-non-callable]

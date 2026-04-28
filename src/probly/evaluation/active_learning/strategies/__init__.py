@@ -3,30 +3,23 @@
 from probly.lazy_types import TORCH_TENSOR
 
 from . import array as array
-from ._common import (
-    BadgeEstimator,
-    BADGEQuery,
+from ._badge import BADGEQuery, badge_embed, badge_select
+from ._protocols import BadgeEstimator, Estimator, QueryStrategy, UncertaintyEstimator
+from ._scores import entropy_score, least_confident_score, margin_score
+from ._selection import random_select, topk_select
+from ._strategies import (
     EntropySampling,
-    Estimator,
     LeastConfidentSampling,
     MarginSampling,
-    QueryStrategy,
     RandomQuery,
-    UncertaintyEstimator,
     UncertaintyQuery,
-    badge_select,
-    entropy_select,
-    least_confident_select,
-    margin_select,
-    random_select,
-    uncertainty_select,
 )
 
 
-@entropy_select.delayed_register(TORCH_TENSOR)
-@least_confident_select.delayed_register(TORCH_TENSOR)
-@margin_select.delayed_register(TORCH_TENSOR)
-@uncertainty_select.delayed_register(TORCH_TENSOR)
+@entropy_score.delayed_register(TORCH_TENSOR)
+@least_confident_score.delayed_register(TORCH_TENSOR)
+@margin_score.delayed_register(TORCH_TENSOR)
+@topk_select.delayed_register(TORCH_TENSOR)
 @badge_select.delayed_register(TORCH_TENSOR)
 @random_select.delayed_register(TORCH_TENSOR)
 def _(_: type) -> None:
@@ -44,10 +37,11 @@ __all__ = [
     "RandomQuery",
     "UncertaintyEstimator",
     "UncertaintyQuery",
+    "badge_embed",
     "badge_select",
-    "entropy_select",
-    "least_confident_select",
-    "margin_select",
+    "entropy_score",
+    "least_confident_score",
+    "margin_score",
     "random_select",
-    "uncertainty_select",
+    "topk_select",
 ]
