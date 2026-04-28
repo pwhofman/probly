@@ -27,7 +27,7 @@ credal_relative_likelihood_traverser = flexdispatch_traverser[object](name="cred
 
 
 @predictor_transformation(permitted_predictor_types=(LogitClassifier,), post_transform=register_ensemble_members)
-@CredalRelativeLikelihoodPredictor.register_factory
+@CredalRelativeLikelihoodPredictor.register_factory(autocast_builtins=True)
 def credal_relative_likelihood[**In, Out](
     base: Predictor[In, Out], num_members: int, reset_params: bool = True, tobias_value: int = 100
 ) -> CredalRelativeLikelihoodPredictor[In, Out]:

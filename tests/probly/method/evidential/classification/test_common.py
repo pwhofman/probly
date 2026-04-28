@@ -12,6 +12,10 @@ from probly.method.evidential.classification import (
 
 
 def test_multiple_types_are_handled_independently() -> None:
+    class EnhancedModel:
+        def __init__(self, value: str) -> None:
+            self.value = value
+
     class ModelA:
         def __init__(self, mid: str) -> None:
             self.id = mid
@@ -20,11 +24,11 @@ def test_multiple_types_are_handled_independently() -> None:
         def __init__(self, mid: str) -> None:
             self.id = mid
 
-    def appender_a(base: ModelA) -> str:
-        return f"A_Enhanced({base.id})"
+    def appender_a(base: ModelA) -> EnhancedModel:
+        return EnhancedModel(f"A_Enhanced({base.id})")
 
-    def appender_b(base: ModelB) -> str:
-        return f"B_Enhanced({base.id})"
+    def appender_b(base: ModelB) -> EnhancedModel:
+        return EnhancedModel(f"B_Enhanced({base.id})")
 
     register(ModelA, cast(Callable[..., object], appender_a))
     register(ModelB, cast(Callable[..., object], appender_b))
@@ -35,5 +39,5 @@ def test_multiple_types_are_handled_independently() -> None:
     result_a = evidential_classification(cast(Any, a))
     result_b = evidential_classification(cast(Any, b))
 
-    assert cast(str, result_a) == "A_Enhanced(001)"
-    assert cast(str, result_b) == "B_Enhanced(002)"
+    assert cast(EnhancedModel, result_a).value == "A_Enhanced(001)"
+    assert cast(EnhancedModel, result_b).value == "B_Enhanced(002)"
