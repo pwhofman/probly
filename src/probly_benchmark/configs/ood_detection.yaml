@@ -1,6 +1,7 @@
 defaults:
   - _self_
   - supervised_loss: cross_entropy
+  - calibration: none
   - recipe: ???
   - method: ???
 

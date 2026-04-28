@@ -1,0 +1,3 @@
+# @package calibration
+name: "temperature_scaling"
+params: {}
