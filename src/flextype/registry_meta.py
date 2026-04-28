@@ -5,7 +5,7 @@ from __future__ import annotations
 from abc import ABCMeta
 import functools
 from typing import TYPE_CHECKING, Any, Protocol, is_protocol, overload, runtime_checkable
-from weakref import WeakSet
+from weakref import ReferenceType, WeakSet, ref
 
 from flextype.isinstance import _find_closest_string_type, _split_lazy_type
 
@@ -60,9 +60,59 @@ class RegistrationError(Exception):
         self.target_type = type(target)
         super().__init__(
             f"Registration failed for registry class {registry.__qualname__!r} and target type "
-            f"{self.target_type.__qualname__!r}: "
-            "Registered instances must be weak-referenceable and hashable."
+            f"{self.target_type.__qualname__!r}: Registered instances must be weak-referenceable."
         )
+
+
+class _IdentityWeakSet[T: object]:
+    """Weak set that tracks objects by identity rather than equality/hash."""
+
+    __slots__ = (
+        "__weakref__",
+        "_refs",
+    )
+    _refs: dict[int, ReferenceType[T]]
+
+    def __init__(self) -> None:
+        self._refs = {}
+
+    def add(self, instance: T) -> None:
+        """Add `instance` without requiring it to be hashable."""
+        key = id(instance)
+        registry_ref = ref(self)
+
+        def remove(instance_ref: ReferenceType[T], /, *, key: int = key) -> None:
+            registry = registry_ref()
+            if registry is not None:
+                registry.discard_ref(key, instance_ref)
+
+        self._refs[key] = ref(instance, remove)
+
+    def discard_ref(self, key: int, instance_ref: ReferenceType[T]) -> None:
+        """Discard a weak reference if it is still the one registered for `key`."""
+        if self._refs.get(key) is instance_ref:
+            self._refs.pop(key, None)
+
+    def discard(self, instance: object) -> None:
+        """Discard `instance` if this exact object is registered."""
+        key = id(instance)
+        instance_ref = self._refs.get(key)
+        if instance_ref is not None and instance_ref() is instance:
+            self._refs.pop(key, None)
+
+    def __contains__(self, instance: object) -> bool:
+        """Return whether this exact object is registered."""
+        key = id(instance)
+        instance_ref = self._refs.get(key)
+        if instance_ref is None:
+            return False
+
+        registered_instance = instance_ref()
+        if registered_instance is instance:
+            return True
+        if registered_instance is None:
+            self._refs.pop(key, None)
+        return False
 
 
 @classmethod
@@ -106,19 +156,13 @@ def _lazy_subclass_hook_with_pre_hook[T](
 class List(list):
     """A wrapper around list that allows weak references, to allow lists to be registered in registries."""
 
-    __hash__ = object.__hash__
-
 
 class Dict(dict):
     """A wrapper around dict that allows weak references, to allow dicts to be registered in registries."""
 
-    __hash__ = object.__hash__
-
 
 class Set(set):
     """A wrapper around set that allows weak references, to allow sets to be registered in registries."""
-
-    __hash__ = object.__hash__
 
 
 def make_builtin_weakrefable[T: object](obj: T) -> T:
@@ -136,8 +180,8 @@ class RegistryMeta[T: object](ABCMeta):
     """Metaclass for registry classes."""
 
     _subclass_registry: WeakSet[type]
-    _instance_registry: WeakSet[T]
-    _negative_instance_registry: WeakSet[object]
+    _instance_registry: _IdentityWeakSet[T]
+    _negative_instance_registry: _IdentityWeakSet[object]
     _string_registry: set[str]
     known_registry_classes: WeakSet[type] = WeakSet()
 
@@ -152,8 +196,8 @@ class RegistryMeta[T: object](ABCMeta):
         """Create a new class with a registry."""
         super().__init__(name, bases, namespace, **kwargs)
         cls._subclass_registry: WeakSet[type] = WeakSet()
-        cls._instance_registry: WeakSet[T] = WeakSet()
-        cls._negative_instance_registry: WeakSet[object] = WeakSet()
+        cls._instance_registry: _IdentityWeakSet[T] = _IdentityWeakSet()
+        cls._negative_instance_registry: _IdentityWeakSet[object] = _IdentityWeakSet()
         cls._string_registry: set[str] = set()
 
         if not is_protocol(cls):
@@ -198,7 +242,7 @@ class RegistryMeta[T: object](ABCMeta):
             cls._register(t)
 
         cls._register_lazy(strings)
-        cls._negative_instance_registry = WeakSet()
+        cls._negative_instance_registry = _IdentityWeakSet()
 
         if isinstance(subclass, type):
             return subclass

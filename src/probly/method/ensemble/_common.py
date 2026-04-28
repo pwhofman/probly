@@ -81,7 +81,7 @@ def register_ensemble_members(ensemble: EnsemblePredictor, t: type[Predictor] | 
     permitted_predictor_types=None,
     post_transform=register_ensemble_members,
 )
-@EnsemblePredictor.register_factory
+@EnsemblePredictor.register_factory(autocast_builtins=True)
 def ensemble[**In, Out](
     base: Predictor[In, Out], num_members: int, reset_params: bool = True
 ) -> EnsemblePredictor[In, Out]:
