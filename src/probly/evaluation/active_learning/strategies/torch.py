@@ -43,6 +43,9 @@ def _badge_select_torch(
     if seed is not None:
         g.manual_seed(seed)
 
+    if n <= 0:
+        return torch.tensor([], dtype=torch.long, device=embeddings.device)
+
     n_pool = len(grad_embeddings)
     first = int(torch.randint(0, n_pool, (1,), generator=g))
     chosen: list[int] = [first]
@@ -60,7 +63,7 @@ def _badge_select_torch(
                 break
             next_idx = int(remaining[int(torch.randint(len(remaining), (1,), generator=g))])
         else:
-            next_idx = int(torch.multinomial(min_dists, 1, generator=g))
+            next_idx = int(torch.multinomial(min_dists.cpu(), 1, generator=g))
         chosen.append(next_idx)
 
     return torch.tensor(chosen, dtype=torch.long, device=embeddings.device)
@@ -68,11 +71,11 @@ def _badge_select_torch(
 
 @random_select.register(torch.Tensor)
 def _random_select_torch(
-    x_ref: torch.Tensor,  # noqa: ARG001
+    x_ref: torch.Tensor,
     n_pool: int,
     n: int,
     rng: np.random.Generator,
 ) -> torch.Tensor:
     """Torch implementation of random selection."""
     indices = rng.choice(n_pool, size=n, replace=False)
-    return torch.from_numpy(indices).long()
+    return torch.from_numpy(indices).long().to(x_ref.device)

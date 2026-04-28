@@ -51,7 +51,7 @@ def _from_dataset_torch(
 ) -> TorchActiveLearningPool:
     _validate_initial_size(len(x), initial_size)
     g = torch.Generator().manual_seed(seed) if seed is not None else torch.Generator()
-    perm = torch.randperm(len(x), generator=g)
+    perm = torch.randperm(len(x), generator=g).to(x.device)
     labeled_idx = perm[:initial_size]
     unlabeled_idx = perm[initial_size:]
     return TorchActiveLearningPool(
@@ -69,7 +69,7 @@ def _query_torch(pool: TorchActiveLearningPool, indices: torch.Tensor) -> None:
     idx = indices.long()
     pool.x_labeled = torch.cat([pool.x_labeled, pool.x_unlabeled[idx]], dim=0)
     pool.y_labeled = torch.cat([pool.y_labeled, pool.y_unlabeled[idx]], dim=0)
-    mask = torch.ones(len(pool.x_unlabeled), dtype=torch.bool)
+    mask = torch.ones(len(pool.x_unlabeled), dtype=torch.bool, device=pool.x_unlabeled.device)
     mask[idx] = False
     pool.x_unlabeled = pool.x_unlabeled[mask]
     pool.y_unlabeled = pool.y_unlabeled[mask]
