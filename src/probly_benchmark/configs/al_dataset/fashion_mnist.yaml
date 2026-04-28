@@ -1,3 +1,10 @@
 # @package _global_
 dataset:
   name: "fashion_mnist"
+
+# LeNet on Fashion-MNIST (60k train, 10 classes):
+# Adam 1e-3 works well for LeNet. 100 epochs ensures convergence.
+epochs: 100
+initial_size: 1000
+query_size: 1000
+n_iterations: 10
