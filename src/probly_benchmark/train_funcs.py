@@ -28,7 +28,7 @@ from probly.method.natural_posterior_network import NaturalPosteriorNetworkPredi
 from probly.method.posterior_network import PosteriorNetworkPredictor
 from probly.method.subensemble import SubensemblePredictor
 from probly.train.bayesian.torch import ELBOLoss, collect_kl_divergence
-from probly.train.calibration.torch import ExpectedCalibrationError, LabelRelaxationLoss
+from probly.train.calibration.torch import ExpectedCalibrationError, LabelRelaxationLoss, LabelSmoothingLoss
 from probly.train.dare.torch import dare_regularizer
 from probly.train.evidential.torch import (
     evidential_ce_loss,
@@ -64,6 +64,8 @@ def _get_supervised_criterion(supervised_loss: dict[str, Any] | None = None) -> 
             return nn.CrossEntropyLoss(**params)
         case "label_relaxation":
             return LabelRelaxationLoss(**params)
+        case "label_smoothing":
+            return LabelSmoothingLoss(**params)
         case _:
             msg = f"Unknown supervised loss: {name}"
             raise ValueError(msg)
