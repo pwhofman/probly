@@ -1,19 +1,42 @@
-"""Representer for the efficient credal prediction method based on :cite:`hofmanefficient`."""
+"""Shared representer for the efficient credal prediction method."""
 
 from __future__ import annotations
 
 from typing import Any, override
 
-import torch
-
+from flextype import flexdispatch
 from probly.method.efficient_credal_prediction import EfficientCredalPredictor
 from probly.predictor import predict_raw
+from probly.representation.array_like import ArrayLike
 from probly.representation.credal_set import (
     ProbabilityIntervalsCredalSet,
     create_probability_intervals_from_lower_upper_array,
 )
 from probly.representation.distribution import CategoricalDistribution
 from probly.representer._representer import Representer, representer
+
+
+@flexdispatch
+def compute_efficient_credal_bounds[T: ArrayLike](logits: T, lower: T, upper: T) -> T:
+    """Compute packed ``(B, 2C)`` interval probability bounds via 2K logit perturbations.
+
+    Implements the inference step of :cite:`hofmanefficient`: for each class
+    ``k``, the kth logit is perturbed by ``lower[k]`` (signed non-positive)
+    and ``upper[k]`` (signed non-negative) independently of the others, and
+    each perturbed logit vector is softmaxed. The packed result has the
+    per-class min of the 2K resulting distributions in the first half and
+    the per-class max in the second.
+
+    Args:
+        logits: Base classifier output of shape ``(B, C)``.
+        lower: Per-class signed lower-direction logit offset, shape ``(C,)``.
+        upper: Per-class signed upper-direction logit offset, shape ``(C,)``.
+
+    Returns:
+        Packed bounds tensor of shape ``(B, 2C)``.
+    """
+    msg = f"No compute_efficient_credal_bounds implementation registered for array type {type(logits)}"
+    raise NotImplementedError(msg)
 
 
 @representer.register(EfficientCredalPredictor)
@@ -38,29 +61,6 @@ class EfficientCredalRepresenter[**In, Out: CategoricalDistribution, C: Probabil
     @override
     def represent(self, *args: In.args, **kwargs: In.kwargs) -> C:
         """Run the base, perturb each logit by the calibrated offsets, and reduce to credal bounds."""
-        logits: torch.Tensor = predict_raw(self.predictor, *args, **kwargs)
-        n_classes = logits.shape[-1]
-        lower: torch.Tensor = self.predictor.lower
-        upper: torch.Tensor = self.predictor.upper
-
-        # Per-class perturbations as diagonal matrices: row k has the kth-position
-        # offset and zeros elsewhere. Broadcasts over the batch dim cleanly.
-        eye = torch.eye(n_classes, device=logits.device, dtype=logits.dtype)
-        perturb_up = upper.unsqueeze(-1) * eye
-        perturb_lo = lower.unsqueeze(-1) * eye
-
-        # 2K perturbed logit tensors per input. Broadcasting creates a fresh
-        # (B, K, K) tensor for each side -- no in-place mutation across iterations.
-        logits_up = logits.unsqueeze(1) + perturb_up.unsqueeze(0)
-        logits_lo = logits.unsqueeze(1) + perturb_lo.unsqueeze(0)
-
-        probs_up = torch.softmax(logits_up, dim=-1)
-        probs_lo = torch.softmax(logits_lo, dim=-1)
-
-        # Per-output-class min/max across all 2K perturbations.
-        probs_all = torch.cat([probs_up, probs_lo], dim=1)
-        lower_bounds = probs_all.min(dim=1).values
-        upper_bounds = probs_all.max(dim=1).values
-
-        packed = torch.cat([lower_bounds, upper_bounds], dim=-1)
-        return create_probability_intervals_from_lower_upper_array(packed)  # ty:ignore[invalid-argument-type, invalid-return-type]
+        logits = predict_raw(self.predictor, *args, **kwargs)
+        packed = compute_efficient_credal_bounds(logits, self.predictor.lower, self.predictor.upper)
+        return create_probability_intervals_from_lower_upper_array(packed)  # ty:ignore[invalid-return-type]
