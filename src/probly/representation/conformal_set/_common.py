@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Literal, Self
+from typing import TYPE_CHECKING, Any, Literal, Self
 
 from flextype import flexdispatch
 from probly.representation.representation import Representation
@@ -19,6 +19,11 @@ class ConformalSet(Representation):
     """Base class for conformal sets."""
 
     type: ConformalSetType
+
+    @property
+    @abstractmethod
+    def set_size(self) -> Any:  # noqa: ANN401
+        """Return the sizes of the conformal sets."""
 
 
 class OneHotConformalSet[T](ConformalSet, ABC):
