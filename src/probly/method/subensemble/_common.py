@@ -33,7 +33,7 @@ def subensemble_generator[**In, H, Out](
 
 
 @predictor_transformation(permitted_predictor_types=None, preserve_predictor_type=False)
-@SubensemblePredictor.register_factory
+@SubensemblePredictor.register_factory(autocast_builtins=True)
 def subensemble[**In, H, Out](
     base: Predictor[In, H],
     num_heads: int,
