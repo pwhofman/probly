@@ -13,8 +13,10 @@ from probly.representation.distribution import (
     CategoricalDistribution,
     DirichletDistribution,
     Distribution,
+    GaussianDistribution,
     create_categorical_distribution,
     create_categorical_distribution_from_logits,
+    create_gaussian_distribution,
 )
 from probly.utils.switchdispatch import switch
 
@@ -25,6 +27,7 @@ type PredictorName = Literal[
     "logit_classifier",
     "dirichlet_distribution_predictor",
     "evidential_classifier",
+    "gaussian_distribution_predictor",
 ]
 
 
@@ -138,6 +141,12 @@ class DirichletDistributionPredictor[**In, Out: DirichletDistribution](Distribut
     """Protocol for predictors that return a Dirichlet distribution over outputs."""
 
 
+@predictor_registry.register("gaussian_distribution_predictor")
+@runtime_checkable
+class GaussianDistributionPredictor[**In, Out: GaussianDistribution](DistributionPredictor[In, Out], Protocol):
+    """Protocol for predictors that return a gaussian distribution over outputs."""
+
+
 @runtime_checkable
 class CredalPredictor[**In, Out: CredalSet](RepresentationPredictor[In, Out], Protocol):
     """Protocol for predictors that return a set of distributions over outputs."""
@@ -207,6 +216,17 @@ def predict_categorical_distribution_from_logit[**In, Out: CategoricalDistributi
 ) -> Out:
     """Predict for a categorical distribution predictor."""
     return create_categorical_distribution_from_logits(predict_raw(predictor, *args, **kwargs))  # ty:ignore[invalid-return-type]
+
+
+@predict.register(GaussianDistributionPredictor)
+def predict_gaussian_distribution[**In, Out: GaussianDistribution](
+    predictor: GaussianDistributionPredictor[In, Out], *args: In.args, **kwargs: In.kwargs
+) -> Out:
+    """Predict for a gaussian distribution predictor."""
+    raw = predict_raw(predictor, *args, **kwargs)
+    if isinstance(raw, tuple) and len(raw) == 2:
+        return create_gaussian_distribution(*raw)  # ty:ignore[invalid-return-type]
+    return create_gaussian_distribution(raw)  # ty:ignore[invalid-return-type]
 
 
 @flexdispatch
