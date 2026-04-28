@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from flextype import flexdispatch
 from probly.method.method import predictor_transformation
@@ -66,7 +66,7 @@ def compute_efficient_credal_prediction_bounds[T: ArrayLike](
     targets_train: T,
     num_classes: int,
     alpha: float,
-    **_kwargs: Any,
+    **_kwargs,  # noqa: ANN003
 ) -> tuple[np.ndarray, np.ndarray]:
     """Compute per-class additive logit bounds via classwise relative-likelihood optimization.
 

@@ -75,7 +75,7 @@ def _compute_bounds_numpy(
             if not res.success:
                 warnings.warn(
                     f"scipy.optimize.minimize did not converge for class {k} direction {direction}: {res.message}",
-                    stacklevel=2
+                    stacklevel=2,
                 )
 
             if direction == 1:
