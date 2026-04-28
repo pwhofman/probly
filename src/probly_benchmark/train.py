@@ -781,8 +781,17 @@ def _(
         num_classes=num_classes,
         alpha=alpha,
     )
-    model_.lower.copy_(torch.from_numpy(lower).to(model_.lower))
-    model_.upper.copy_(torch.from_numpy(upper).to(model_.upper))
+    lower_t = torch.from_numpy(lower).to(device)
+    upper_t = torch.from_numpy(upper).to(device)
+
+    # Initialize the buffers if they are None, otherwise copy in-place
+    if model_.lower is None:
+        model_.lower = lower_t
+        model_.upper = upper_t
+    else:
+        model_.lower.copy_(lower_t)
+        model_.upper.copy_(upper_t)
+
     run.summary["efficient_credal_alpha"] = alpha
 
 
