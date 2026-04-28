@@ -22,7 +22,7 @@ from .decomposition import (
     SecondOrderZeroOneDecomposition,
     TotalDecomposition,
 )
-from .measure import measure_sample_variance
+from .measure import measure_conformal_set_size, measure_sample_variance
 from .notion import (
     AleatoricUncertainty,
     EpistemicUncertainty,
@@ -54,6 +54,7 @@ __all__ = [
     "decompose",
     "measure",
     "measure_atomic",
+    "measure_conformal_set_size",
     "measure_sample_variance",
     "notion_registry",
     "quantify",
