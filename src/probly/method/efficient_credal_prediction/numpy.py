@@ -1,4 +1,4 @@
-"""Implementation for sklearn/numpy efficient credal prediction."""
+"""Implementation for numpy efficient credal prediction."""
 
 from __future__ import annotations
 
@@ -10,6 +10,13 @@ import scipy.special
 from tqdm import tqdm
 
 from ._common import compute_efficient_credal_prediction_bounds
+
+
+def _is_torch_available() -> bool:
+    """Check if torch is installed without triggering an ImportError."""
+    import importlib.util  # noqa: PLC0415
+
+    return importlib.util.find_spec("torch") is not None
 
 
 @compute_efficient_credal_prediction_bounds.register(np.ndarray)
@@ -44,6 +51,26 @@ def _compute_bounds_numpy(
     """
     logits_np = logits_train.astype(np.float64)
     targets_np = targets_train.astype(np.int64)
+
+    if _is_torch_available():
+        import torch  # noqa: PLC0415
+
+        logits_t = torch.from_numpy(logits_train)
+        targets_t = torch.from_numpy(targets_train)
+        lower, upper = compute_efficient_credal_prediction_bounds(
+            logits_t,
+            targets_t,
+            num_classes,
+            alpha,
+        )
+        return lower, upper
+
+    warnings.warn(
+        "Efficient Credal Prediction calibration is running on the slow NumPy/SciPy backend. "
+        "For a massive speedup, please install 'torch'.",
+        UserWarning,
+        stacklevel=2,
+    )
 
     def _mean_log_likelihood(logits: np.ndarray, targets: np.ndarray) -> float:
         log_probs = scipy.special.log_softmax(logits, axis=1)

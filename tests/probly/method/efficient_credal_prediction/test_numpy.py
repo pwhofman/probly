@@ -2,13 +2,21 @@
 
 from __future__ import annotations
 
+import importlib.util
+from unittest.mock import patch
+import warnings
+
 import pytest
 
 pytest.importorskip("scipy")
-pytest.importorskip("sklearn")
 import numpy as np
 
 from probly.method.efficient_credal_prediction import compute_efficient_credal_prediction_bounds
+
+
+def _is_torch_available() -> bool:
+    """Check if torch is installed without triggering an ImportError."""
+    return importlib.util.find_spec("torch") is not None
 
 
 class TestNumpyCredalBounds:
@@ -51,3 +59,32 @@ class TestNumpyCredalBounds:
 
         assert np.all(lower_loose <= lower_strict + 1e-5)
         assert np.all(upper_loose >= upper_strict - 1e-5)
+
+    def test_numpy_fallback_warning_without_torch(self, dummy_data: tuple[np.ndarray, np.ndarray, int]) -> None:
+        """Verify that if torch is missing, the scipy backend runs and warns the user."""
+        logits, targets, num_classes = dummy_data
+
+        # We "patch" our helper function to pretend torch doesn't exist
+        with patch("probly.method.efficient_credal_prediction.numpy._is_torch_available", return_value=False):
+            with pytest.warns(UserWarning, match="massive speedup"):
+                lower, upper = compute_efficient_credal_prediction_bounds(logits, targets, num_classes, 0.1)
+
+            assert isinstance(lower, np.ndarray)
+            assert isinstance(upper, np.ndarray)
+
+    @pytest.mark.skipif(not _is_torch_available(), reason="Requires PyTorch to test the silent upgrade.")
+    def test_numpy_upgrades_to_torch_silently(self, dummy_data: tuple[np.ndarray, np.ndarray, int]) -> None:
+        """Verify that if torch is present, the array is upgraded without a warning."""
+        logits, targets, num_classes = dummy_data
+
+        # We patch it to explicitly return True (even though it likely is True anyway)
+        with patch("probly.method.efficient_credal_prediction.numpy._is_torch_available", return_value=True):
+            with warnings.catch_warnings():
+                # This will FAIL the test if ANY warning is raised
+                warnings.simplefilter("error")
+
+                lower, upper = compute_efficient_credal_prediction_bounds(logits, targets, num_classes, 0.1)
+
+            # Ensure the re-dispatch properly converted the result back to numpy
+            assert isinstance(lower, np.ndarray)
+            assert isinstance(upper, np.ndarray)

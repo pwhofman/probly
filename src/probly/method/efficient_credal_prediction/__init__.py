@@ -23,15 +23,15 @@ def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415
 
 
-## Sklearn
+## NumPy
 @efficient_credal_prediction_generator.delayed_register(SKLEARN_MODULE)
 def _(_: type) -> None:
-    from . import sklearn as sklearn  # noqa: PLC0415
+    from . import numpy as numpy  # noqa: PLC0415
 
 
 @compute_efficient_credal_prediction_bounds.delayed_register("numpy.ndarray")
 def _(_: type) -> None:
-    from . import sklearn as sklearn  # noqa: PLC0415
+    from . import numpy as numpy  # noqa: PLC0415
 
 
 __all__ = [
