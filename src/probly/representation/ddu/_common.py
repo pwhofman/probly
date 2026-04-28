@@ -5,16 +5,15 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from flextype import flexdispatch
-from probly.representation.representation import Representation
+from probly.representation.distribution._common import CategoricalDistribution
+from probly.representation.representation import CanonicalRepresentation, Representation
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-    from probly.representation.distribution._common import CategoricalDistribution
-
 
 @runtime_checkable
-class DDURepresentation(Representation, Protocol):
+class DDURepresentation(Representation, CanonicalRepresentation[CategoricalDistribution], Protocol):
     """Representation of a DDU model output.
 
     Holds the two quantities needed for uncertainty quantification:

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from probly.method.ensemble import ensemble, ensemble_generator
+from probly.method.ensemble import EnsemblePredictor, ensemble, ensemble_generator
 from probly.predictor import Predictor
 
 pytest.importorskip("sklearn")
@@ -33,6 +33,8 @@ class TestModelGeneration:
 
         ensemble_list = ensemble(model, num_members=num_members, reset_params=False)
 
+        assert type(ensemble_list) is list
+        assert isinstance(ensemble_list, EnsemblePredictor)
         assert len(ensemble_list) == num_members
 
         for member in ensemble_list:
