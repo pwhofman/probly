@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, override
 
 from flextype import flexdispatch
-from probly.method.SNGP import SNGPPredictor
+from probly.method.sngp import SNGPPredictor
 from probly.predictor import predict
 from probly.representation.distribution import CategoricalDistributionSample
 from probly.representer._representer import Representer, representer

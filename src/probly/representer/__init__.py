@@ -9,7 +9,7 @@ from .credal_ensembler import (
 )
 from .het_nets import HetNetsRepresenter
 from .sampler import IterableSampler, Sampler
-from .SNGP import SNGPRepresenter
+from .sngp import SNGPRepresenter
 
 __all__ = [
     "CredalBNNRepresenter",

@@ -6,7 +6,7 @@ import logging
 
 import torch
 
-from probly.method.SNGP import sngp
+from probly.method.sngp import sngp
 from probly.quantification import quantify
 from probly.representer import representer
 from probly_benchmark.models import LeNet

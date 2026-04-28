@@ -10,7 +10,7 @@ from probly.representation.distribution.array_categorical import (
     ArrayCategoricalDistributionSample,
 )
 from probly.representation.sample.array import ArraySample
-from probly.representer.SNGP._common import compute_categorical_sample_from_logits
+from probly.representer.sngp._common import compute_categorical_sample_from_logits
 
 
 @compute_categorical_sample_from_logits.register(ArraySample)
