@@ -20,6 +20,7 @@ from probly.representation.credal_set._common import (
 )
 from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
 from probly.representation.sample.torch import TorchSample
+from probly.utils.torch import intersection_probability
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
@@ -42,15 +43,6 @@ def _sample_probabilities(
         raise TypeError(msg)
 
     return sample_values.unnormalized_probabilities
-
-
-def _probability_interval_center(lower_bounds: torch.Tensor, upper_bounds: torch.Tensor) -> torch.Tensor:
-    slack = upper_bounds - lower_bounds
-    slack_sum = torch.sum(slack, dim=-1, keepdim=True)
-    remaining = 1 - torch.sum(lower_bounds, dim=-1, keepdim=True)
-    denominator = torch.where(slack_sum != 0, slack_sum, torch.ones_like(slack_sum))
-    weights = torch.where(slack_sum != 0, slack / denominator, torch.zeros_like(slack))
-    return lower_bounds + remaining * weights
 
 
 class TorchCategoricalCredalSet(CategoricalCredalSet, ABC):
@@ -148,7 +140,7 @@ class TorchProbabilityIntervalsCredalSet(
     @property
     def canonical_element(self) -> TorchCategoricalDistribution:
         """Return a feasible center distribution of the probability intervals."""
-        return TorchCategoricalDistribution(_probability_interval_center(self.lower_bounds, self.upper_bounds))
+        return TorchCategoricalDistribution(intersection_probability(self.lower_bounds, self.upper_bounds))
 
     @override
     def numpy(self, *, force: bool = False) -> NDArray[Any]:

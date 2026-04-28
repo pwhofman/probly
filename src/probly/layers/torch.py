@@ -1473,6 +1473,12 @@ class IntSoftmax(nn.Module):
         lo = x[..., :n_classes]
         hi = x[..., n_classes:]
 
+        # Subtract the per-row max from all logits for numerical stability.
+        # ``hi`` dominates per-element (hi >= center >= lo), so its row-max is
+        # the largest exp argument; the formula is invariant to this shift.
+        shift = hi.max(dim=-1, keepdim=True).values
+        lo = lo - shift
+        hi = hi - shift
         center = 0.5 * (lo + hi)
         exp_center = torch.exp(center)
         exp_center_sum = torch.sum(exp_center, dim=-1, keepdim=True)
