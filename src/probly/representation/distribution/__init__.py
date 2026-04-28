@@ -15,6 +15,7 @@ from ._common import (
     create_categorical_distribution,
     create_categorical_distribution_from_logits,
     create_dirichlet_distribution_from_alphas,
+    create_gaussian_distribution,
 )
 from .array_categorical import ArrayCategoricalDistribution, ArrayCategoricalDistributionSample
 from .array_dirichlet import ArrayDirichletDistribution
@@ -55,4 +56,5 @@ __all__ = [
     "create_categorical_distribution",
     "create_categorical_distribution_from_logits",
     "create_dirichlet_distribution_from_alphas",
+    "create_gaussian_distribution",
 ]
