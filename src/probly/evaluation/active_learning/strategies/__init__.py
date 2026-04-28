@@ -6,19 +6,25 @@ from . import array as array
 from ._common import (
     BadgeEstimator,
     BADGEQuery,
+    EntropySampling,
     Estimator,
+    LeastConfidentSampling,
     MarginSampling,
     QueryStrategy,
     RandomQuery,
     UncertaintyEstimator,
     UncertaintyQuery,
     badge_select,
+    entropy_select,
+    least_confident_select,
     margin_select,
     random_select,
     uncertainty_select,
 )
 
 
+@entropy_select.delayed_register(TORCH_TENSOR)
+@least_confident_select.delayed_register(TORCH_TENSOR)
 @margin_select.delayed_register(TORCH_TENSOR)
 @uncertainty_select.delayed_register(TORCH_TENSOR)
 @badge_select.delayed_register(TORCH_TENSOR)
@@ -30,13 +36,17 @@ def _(_: type) -> None:
 __all__ = [
     "BADGEQuery",
     "BadgeEstimator",
+    "EntropySampling",
     "Estimator",
+    "LeastConfidentSampling",
     "MarginSampling",
     "QueryStrategy",
     "RandomQuery",
     "UncertaintyEstimator",
     "UncertaintyQuery",
     "badge_select",
+    "entropy_select",
+    "least_confident_select",
     "margin_select",
     "random_select",
     "uncertainty_select",

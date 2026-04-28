@@ -5,7 +5,31 @@ from __future__ import annotations
 import numpy as np
 from scipy.spatial.distance import cdist
 
-from ._common import badge_select, margin_select, random_select, uncertainty_select
+from probly.quantification.measure.distribution.array import array_categorical_entropy
+from probly.representation.distribution.array_categorical import ArrayCategoricalDistribution
+
+from ._common import (
+    badge_select,
+    entropy_select,
+    least_confident_select,
+    margin_select,
+    random_select,
+    uncertainty_select,
+)
+
+
+@entropy_select.register(np.ndarray)
+def _entropy_select_numpy(probs: np.ndarray, n: int) -> np.ndarray:
+    """Numpy implementation of entropy-based selection."""
+    h = array_categorical_entropy(ArrayCategoricalDistribution(probs))
+    return np.argpartition(-h, n)[:n]
+
+
+@least_confident_select.register(np.ndarray)
+def _least_confident_select_numpy(probs: np.ndarray, n: int) -> np.ndarray:
+    """Numpy implementation of least confident selection."""
+    confidence = probs.max(axis=1)
+    return np.argpartition(confidence, n)[:n]
 
 
 @margin_select.register(np.ndarray)

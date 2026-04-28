@@ -9,7 +9,31 @@ import torch
 if TYPE_CHECKING:
     import numpy as np
 
-from ._common import badge_select, margin_select, random_select, uncertainty_select
+from probly.quantification.measure.distribution.torch import torch_categorical_entropy
+from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
+
+from ._common import (
+    badge_select,
+    entropy_select,
+    least_confident_select,
+    margin_select,
+    random_select,
+    uncertainty_select,
+)
+
+
+@entropy_select.register(torch.Tensor)
+def _entropy_select_torch(probs: torch.Tensor, n: int) -> torch.Tensor:
+    """Torch implementation of entropy-based selection."""
+    h = torch_categorical_entropy(TorchCategoricalDistribution(probs))
+    return torch.topk(h, n, largest=True).indices
+
+
+@least_confident_select.register(torch.Tensor)
+def _least_confident_select_torch(probs: torch.Tensor, n: int) -> torch.Tensor:
+    """Torch implementation of least confident selection."""
+    confidence = probs.max(dim=1).values
+    return torch.topk(confidence, n, largest=False).indices
 
 
 @margin_select.register(torch.Tensor)

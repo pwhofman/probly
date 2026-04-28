@@ -10,6 +10,8 @@ import pytest
 from probly.evaluation.active_learning.pool import from_dataset
 from probly.evaluation.active_learning.strategies import (
     BADGEQuery,
+    EntropySampling,
+    LeastConfidentSampling,
     MarginSampling,
     RandomQuery,
     UncertaintyQuery,
@@ -33,20 +35,26 @@ class StrategySuite:
         est.fit(pool.x_labeled, pool.y_labeled)
         return est
 
-    @pytest.mark.parametrize("strategy_cls", [RandomQuery, MarginSampling, UncertaintyQuery])
+    @pytest.mark.parametrize(
+        "strategy_cls", [RandomQuery, EntropySampling, LeastConfidentSampling, MarginSampling, UncertaintyQuery]
+    )
     def test_select_returns_correct_count(self, strategy_cls, estimator, pool, to_numpy):
         strategy = strategy_cls()
         indices = to_numpy(strategy.select(estimator, pool, n=10))
         assert len(indices) == 10
 
-    @pytest.mark.parametrize("strategy_cls", [RandomQuery, MarginSampling, UncertaintyQuery])
+    @pytest.mark.parametrize(
+        "strategy_cls", [RandomQuery, EntropySampling, LeastConfidentSampling, MarginSampling, UncertaintyQuery]
+    )
     def test_select_returns_valid_indices(self, strategy_cls, estimator, pool, to_numpy):
         strategy = strategy_cls()
         indices = to_numpy(strategy.select(estimator, pool, n=10))
         assert np.all(indices >= 0)
         assert np.all(indices < pool.n_unlabeled)
 
-    @pytest.mark.parametrize("strategy_cls", [RandomQuery, MarginSampling, UncertaintyQuery])
+    @pytest.mark.parametrize(
+        "strategy_cls", [RandomQuery, EntropySampling, LeastConfidentSampling, MarginSampling, UncertaintyQuery]
+    )
     def test_select_returns_unique_indices(self, strategy_cls, estimator, pool, to_numpy):
         strategy = strategy_cls()
         indices = to_numpy(strategy.select(estimator, pool, n=10))
@@ -56,6 +64,32 @@ class StrategySuite:
         indices_a = to_numpy(RandomQuery(seed=0).select(estimator, pool, n=10))
         indices_b = to_numpy(RandomQuery(seed=99).select(estimator, pool, n=10))
         assert not np.array_equal(np.sort(indices_a), np.sort(indices_b))
+
+    def test_entropy_selects_uncertain_samples(self, estimator, pool, to_numpy):
+        """EntropySampling should select samples with higher entropy than average."""
+        n = 10
+        strategy = EntropySampling()
+        indices = to_numpy(strategy.select(estimator, pool, n=n))
+        probs = to_numpy(estimator.predict_proba(pool.x_unlabeled))
+        h = -np.sum(probs * np.log(np.clip(probs, 1e-12, None)), axis=1)
+        selected_h = float(np.mean(h[indices]))
+        remaining_mask = np.ones(len(h), dtype=bool)
+        remaining_mask[indices] = False
+        remaining_h = float(np.mean(h[remaining_mask]))
+        assert selected_h >= remaining_h
+
+    def test_least_confident_selects_uncertain_samples(self, estimator, pool, to_numpy):
+        """LeastConfidentSampling should select samples with lower max-prob than average."""
+        n = 10
+        strategy = LeastConfidentSampling()
+        indices = to_numpy(strategy.select(estimator, pool, n=n))
+        probs = estimator.predict_proba(pool.x_unlabeled)
+        confidence = to_numpy(probs).max(axis=1)
+        selected_conf = float(np.mean(confidence[indices]))
+        remaining_mask = np.ones(len(confidence), dtype=bool)
+        remaining_mask[indices] = False
+        remaining_conf = float(np.mean(confidence[remaining_mask]))
+        assert selected_conf <= remaining_conf
 
     def test_margin_sampling_selects_uncertain_samples(self, estimator, pool, margin_fn, to_numpy):
         """MarginSampling should select samples with smaller margin than average."""

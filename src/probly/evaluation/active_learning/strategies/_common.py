@@ -83,6 +83,42 @@ class QueryStrategy[E: Estimator](Protocol):
 
 
 @flexdispatch
+def entropy_select(probs: ArrayLike, n: int) -> ArrayLike:
+    """Select n indices with the highest prediction entropy.
+
+    Samples where the model's predicted distribution has the most entropy
+    are selected first.
+
+    Args:
+        probs: Class probability matrix of shape (n_pool, n_classes).
+        n: Number of indices to select.
+
+    Returns:
+        Array of n integer indices.
+    """
+    msg = f"No entropy_select implementation registered for type {type(probs)}"
+    raise NotImplementedError(msg)
+
+
+@flexdispatch
+def least_confident_select(probs: ArrayLike, n: int) -> ArrayLike:
+    """Select n indices with the lowest maximum class probability.
+
+    Samples where the model is least confident in its top prediction are
+    selected first.
+
+    Args:
+        probs: Class probability matrix of shape (n_pool, n_classes).
+        n: Number of indices to select.
+
+    Returns:
+        Array of n integer indices.
+    """
+    msg = f"No least_confident_select implementation registered for type {type(probs)}"
+    raise NotImplementedError(msg)
+
+
+@flexdispatch
 def margin_select(probs: ArrayLike, n: int) -> ArrayLike:
     """Select n indices with the smallest margin between top-2 class probabilities.
 
@@ -226,6 +262,52 @@ class RandomQuery:
         """
         n = min(n, pool.n_unlabeled)
         return random_select(pool.x_unlabeled, pool.n_unlabeled, n, self._rng)
+
+
+class EntropySampling:
+    """Selects unlabeled samples with the highest prediction entropy.
+
+    High entropy indicates the model's predicted distribution is spread across
+    classes, making these samples informative to label.
+    """
+
+    def select(self, estimator: Estimator, pool: ActiveLearningPool, n: int) -> ArrayLike:
+        """Return n indices with the highest prediction entropy.
+
+        Args:
+            estimator: Fitted estimator with a predict_proba method.
+            pool: The current active learning pool.
+            n: Number of samples to select.
+
+        Returns:
+            Array of n integer indices into pool.x_unlabeled.
+        """
+        n = min(n, pool.n_unlabeled)
+        probs = estimator.predict_proba(pool.x_unlabeled)
+        return entropy_select(probs, n)
+
+
+class LeastConfidentSampling:
+    """Selects unlabeled samples where the model is least confident in its top prediction.
+
+    A low maximum probability indicates the model is uncertain overall,
+    making these samples informative to label.
+    """
+
+    def select(self, estimator: Estimator, pool: ActiveLearningPool, n: int) -> ArrayLike:
+        """Return n indices with the lowest maximum class probability.
+
+        Args:
+            estimator: Fitted estimator with a predict_proba method.
+            pool: The current active learning pool.
+            n: Number of samples to select.
+
+        Returns:
+            Array of n integer indices into pool.x_unlabeled.
+        """
+        n = min(n, pool.n_unlabeled)
+        probs = estimator.predict_proba(pool.x_unlabeled)
+        return least_confident_select(probs, n)
 
 
 class MarginSampling:
