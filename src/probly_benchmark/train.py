@@ -153,6 +153,7 @@ SCHEDULERS: dict[str, Callable[..., optim.lr_scheduler.LRScheduler] | None] = {
 }
 
 SUPERVISED_LOSS_METHODS = {
+    "base",  # Special "method" for training a predictor without applying a method.
     "batchensemble",
     "credal_ensembling",
     "credal_wrapper",

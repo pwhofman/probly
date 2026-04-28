@@ -37,6 +37,7 @@ from probly.train.evidential.torch import (
     evidential_mse_loss,
     postnet_loss,
 )
+from probly_benchmark.base import BasePredictor
 
 if TYPE_CHECKING:
     from torch.utils.data import DataLoader
@@ -161,7 +162,9 @@ def train_epoch_batchensemble(
     return loss.item()
 
 
-@train_epoch.register((DropConnectPredictor, DropoutPredictor, EfficientCredalPredictor, HetNetsPredictor))
+@train_epoch.register(
+    (BasePredictor, DropConnectPredictor, DropoutPredictor, EfficientCredalPredictor, HetNetsPredictor)
+)
 def train_epoch_cross_entropy(
     model: Predictor,
     inputs: torch.Tensor,
@@ -459,7 +462,7 @@ def validate_batchensemble(
     return val_loss, val_acc
 
 
-@validate.register((DropConnectPredictor, DropoutPredictor, EfficientCredalPredictor, HetNetsPredictor))
+@validate.register((BasePredictor, DropConnectPredictor, DropoutPredictor, EfficientCredalPredictor, HetNetsPredictor))
 @torch.no_grad()
 def validate_cross_entropy(
     model: Predictor,
@@ -646,7 +649,7 @@ def _(
     return _compute_metrics(probs, labels, n_bins)
 
 
-@evaluate.register((EfficientCredalPredictor, HetNetsPredictor))
+@evaluate.register((BasePredictor, EfficientCredalPredictor, HetNetsPredictor))
 @torch.no_grad()
 def evaluate_single_model(
     model: Predictor,
