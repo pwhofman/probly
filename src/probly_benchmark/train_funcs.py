@@ -28,7 +28,7 @@ from probly.method.natural_posterior_network import NaturalPosteriorNetworkPredi
 from probly.method.posterior_network import PosteriorNetworkPredictor
 from probly.method.subensemble import SubensemblePredictor
 from probly.train.bayesian.torch import ELBOLoss, collect_kl_divergence
-from probly.train.calibration.torch import ExpectedCalibrationError
+from probly.train.calibration.torch import ExpectedCalibrationError, LabelRelaxationLoss
 from probly.train.dare.torch import dare_regularizer
 from probly.train.evidential.torch import (
     evidential_ce_loss,
@@ -49,6 +49,23 @@ EVIDENTIAL_LOSSES = {
     "ce": evidential_ce_loss,
     "log": evidential_log_loss,
 }
+
+
+def _get_supervised_criterion(supervised_loss: dict[str, Any] | None = None) -> nn.Module:
+    """Build the training criterion for CE-compatible supervised classifiers."""
+    if supervised_loss is None:
+        return nn.CrossEntropyLoss()
+    name = supervised_loss.get("name", "cross_entropy").lower()
+    params = dict(supervised_loss.get("params") or {})
+    match name:
+        case "cross_entropy":
+            params.pop("alpha", None)
+            return nn.CrossEntropyLoss(**params)
+        case "label_relaxation":
+            return LabelRelaxationLoss(**params)
+        case _:
+            msg = f"Unknown supervised loss: {name}"
+            raise ValueError(msg)
 
 
 def _evidential_lambda_t(kl_weight: float, annealing_epochs: int, epoch: int) -> float:
@@ -113,16 +130,17 @@ def train_epoch_batchensemble(
     grad_clip_norm: float | None = None,
     amp_enabled: bool = False,
     scaler: GradScaler | None = None,
+    supervised_loss: dict[str, Any] | None = None,
     **kwargs: Any,  # noqa: ANN401, ARG001
 ) -> torch.Tensor | float:
-    """Train a BatchEnsemble predictor for one step with per-member cross-entropy on a tiled batch.
+    """Train a BatchEnsemble predictor for one step with the configured supervised loss.
 
     Mirrors the imagenet baseline: tile ``inputs`` by ``num_members``, run the forward,
-    take mean CE on the ``[E*B, num_classes]`` output. Called directly (not via ``predict``)
-    so the loss operates on a plain tensor.
+    take the mean supervised loss on the ``[E*B, num_classes]`` output. Called directly
+    (not via ``predict``) so the loss operates on a plain tensor.
     """
     num_members = int(model.num_members)  # ty: ignore[unresolved-attribute]
-    criterion = nn.CrossEntropyLoss()
+    criterion = _get_supervised_criterion(supervised_loss)
     optimizer.zero_grad()
     with autocast(inputs.device.type, enabled=amp_enabled):
         inputs_tiled = torch.tile(inputs, (num_members,) + (1,) * (inputs.dim() - 1))
@@ -152,10 +170,11 @@ def train_epoch_cross_entropy(
     grad_clip_norm: float | None = None,
     amp_enabled: bool = False,
     scaler: GradScaler | None = None,
+    supervised_loss: dict[str, Any] | None = None,
     **kwargs: Any,  # noqa: ANN401, ARG001
 ) -> torch.Tensor | float:
-    """Train a stochastic NN (dropout/dropconnect) for one epoch with cross-entropy."""
-    criterion = nn.CrossEntropyLoss()
+    """Train a stochastic NN with the configured CE-compatible supervised loss."""
+    criterion = _get_supervised_criterion(supervised_loss)
     optimizer.zero_grad()
     with autocast(inputs.device.type, enabled=amp_enabled):
         outputs = model(inputs)  # ty: ignore[call-non-callable]

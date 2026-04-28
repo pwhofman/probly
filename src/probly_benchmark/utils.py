@@ -24,6 +24,9 @@ if TYPE_CHECKING:
     from probly.representer import Representer
 
 
+DEFAULT_SUPERVISED_LOSS = "cross_entropy"
+
+
 def set_seed(seed: int | None) -> None:
     """Set seed for reproducibility.
 
@@ -142,12 +145,38 @@ def collect_outputs_targets_raw(
     return torch.cat(outputs), torch.cat(targets)
 
 
+def get_supervised_loss_name(cfg: DictConfig) -> str:
+    """Return the configured supervised loss name."""
+    supervised_loss = cfg.get("supervised_loss", None)
+    if not supervised_loss:
+        return DEFAULT_SUPERVISED_LOSS
+    return str(supervised_loss.get("name", DEFAULT_SUPERVISED_LOSS)).lower()
+
+
+def _safe_artifact_token(value: object) -> str:
+    """Make a value safe for use in a wandb artifact name segment."""
+    return "".join(char if char.isalnum() or char in "._-" else "_" for char in str(value))
+
+
+def supervised_loss_name_suffix(cfg: DictConfig) -> str:
+    """Return the name suffix for non-default supervised training losses."""
+    name = get_supervised_loss_name(cfg)
+    if name == DEFAULT_SUPERVISED_LOSS:
+        return ""
+    supervised_loss = cfg.get("supervised_loss", {})
+    params = supervised_loss.get("params") or {}
+    parts = [_safe_artifact_token(name)]
+    for key, value in sorted(params.items()):
+        parts.append(f"{_safe_artifact_token(key)}{_safe_artifact_token(value)}")
+    return f"_{'_'.join(parts)}"
+
+
 def resolve_artifact_name(cfg: DictConfig) -> str:
     """Build the wandb artifact name from config fields.
 
     Matches the naming convention used in train.py.
     """
-    return f"{cfg.method.name}_{cfg.base_model}_{cfg.dataset}_{cfg.seed}"
+    return f"{cfg.method.name}_{cfg.base_model}_{cfg.dataset}_{cfg.seed}{supervised_loss_name_suffix(cfg)}"
 
 
 def load_model_from_wandb(
