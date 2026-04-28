@@ -174,7 +174,7 @@ def _maybe_compile_forward(model: nn.Module, device: torch.device) -> None:
     model.forward = torch.compile(model.forward)
 
 
-def _training_loop(  # noqa: PLR0912
+def _training_loop(  # noqa: PLR0912, PLR0915
     model: nn.Module,
     train_loader: DataLoader,
     val_loader: DataLoader | None,
@@ -186,6 +186,7 @@ def _training_loop(  # noqa: PLR0912
     val_fn: Callable[..., tuple[float, float]],
     log_prefix: str = "",
     param_groups: list[dict[str, Any]] | None = None,
+    extra_metrics: dict[str, Any] | None = None,
 ) -> None:
     """Run the training loop for a single model.
 
@@ -205,6 +206,8 @@ def _training_loop(  # noqa: PLR0912
             in place of ``model.parameters()``. Each dict can override the optimizer's
             default ``lr`` / ``weight_decay`` for a subset of parameters; used by
             BatchEnsemble to apply a slower lr and disable weight decay on fast weights.
+        extra_metrics: Optional dict of additional fixed metrics logged every epoch
+            alongside the standard loss/accuracy keys (e.g. ``{"member_0/relative_likelihood": 1.0}``).
     """
     _maybe_compile_forward(model, device)
 
@@ -233,12 +236,14 @@ def _training_loop(  # noqa: PLR0912
     amp_enabled = cfg.get("amp", False)
     scaler = GradScaler(device.type) if amp_enabled else None
 
-    epoch_key = "epoch"
+    # Each prefixed member gets its own hidden epoch counter as x-axis so that
+    # all member charts share a 0..n_epochs range rather than a global step.
     if log_prefix:
+        epoch_key: str | None = f"{log_prefix.rstrip('/')}_epoch"
+        wandb.define_metric(epoch_key, hidden=True)
         wandb.define_metric(f"{log_prefix}*", step_metric=epoch_key)
     else:
-        for _m in ("train_loss", "val_loss", "val_acc"):
-            wandb.define_metric(_m, step_metric=epoch_key)
+        epoch_key = None
 
     for epoch in tqdm(range(cfg.epochs), desc=f"{log_prefix}Epoch"):
         model.train()
@@ -264,7 +269,11 @@ def _training_loop(  # noqa: PLR0912
         running_loss /= len(train_loader)
 
         val_loss: float | None = None
-        log_data = {epoch_key: epoch, f"{log_prefix}train_loss": running_loss}
+        log_data: dict[str, Any] = {f"{log_prefix}train_loss": running_loss}
+        if epoch_key is not None:
+            log_data[epoch_key] = epoch
+        if extra_metrics:
+            log_data.update(extra_metrics)
         if val_loader:
             val_loss, val_acc = val_fn(model, val_loader, device, amp_enabled, epoch=epoch, **train_kwargs)
             log_data[f"{log_prefix}val_loss"] = val_loss
@@ -458,7 +467,7 @@ def _compute_log_likelihood(
     return -total_loss / total_samples
 
 
-def _training_loop_relative_likelihood(  # noqa: PLR0912
+def _training_loop_relative_likelihood(  # noqa: PLR0912, PLR0915
     model: nn.Module,
     train_loader: DataLoader,
     val_loader: DataLoader | None,
@@ -491,7 +500,8 @@ def _training_loop_relative_likelihood(  # noqa: PLR0912
     amp_enabled = cfg.get("amp", False)
     scaler = GradScaler(device.type) if amp_enabled else None
 
-    epoch_key = "epoch"
+    epoch_key = f"{log_prefix.rstrip('/')}_epoch"
+    wandb.define_metric(epoch_key, hidden=True)
     wandb.define_metric(f"{log_prefix}*", step_metric=epoch_key)
 
     stopped = False
@@ -605,7 +615,7 @@ def _(
     batch_check = train_kwargs.get("batch_check", False)
     num_remaining = len(members) - 1
 
-    # Train first member fully (standard training loop)
+    # Train first member fully; relative_likelihood is 1.0 by definition for the reference model
     _training_loop(
         members[0],
         train_loader,
@@ -617,6 +627,7 @@ def _(
         train_fn=train_epoch_cross_entropy,
         val_fn=validate_cross_entropy,
         log_prefix="member_0/",
+        extra_metrics={"member_0/relative_likelihood": 1.0},
     )
 
     # Compute reference log-likelihood from the fully trained first member
