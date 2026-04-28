@@ -31,9 +31,6 @@ device: "cuda"
 # Uncertainty measure EU (epistemic unc.) or TU (total unc.)
 uncertainty_decomposition: EU
 
-# Dropout/MC sampling
-num_samples: 50
-
 # WandB (AL-level logging only)
 wandb:
   enabled: true

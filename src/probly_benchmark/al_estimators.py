@@ -10,10 +10,8 @@ from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
 
 from probly.method.ensemble import EnsemblePredictor
-from probly.predictor import RandomPredictor, predict_single
 from probly.quantification import quantify
-from probly.quantification.decomposition import AleatoricEpistemicDecomposition
-from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
+from probly.quantification.notion import EpistemicUncertainty, Notion
 from probly.representer import representer
 from probly_benchmark import models
 from probly_benchmark.builders import BuildContext, build_model
@@ -22,6 +20,8 @@ from probly_benchmark.train_funcs import train_epoch_cross_entropy, validate_cro
 
 if TYPE_CHECKING:
     from omegaconf import DictConfig
+
+    from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +61,6 @@ class BaselineEstimator:
         num_classes: int,
         device: torch.device,
         in_features: int | None = None,
-        batch_size: int = 512,
     ) -> None:
         """Initialize the BaselineEstimator.
 
@@ -73,7 +72,6 @@ class BaselineEstimator:
             num_classes: Number of output classes.
             device: Device to train and infer on.
             in_features: Input feature dimension for tabular models; ignored for image models.
-            batch_size: Batch size used during inference to avoid OOM.
         """
         self.cfg = cfg
         self.base_model_name = base_model_name
@@ -82,8 +80,15 @@ class BaselineEstimator:
         self.num_classes = num_classes
         self.device = device
         self.in_features = in_features
-        self.batch_size = batch_size
-        self.model: nn.Module | None = None
+        self._model: nn.Module | None = None
+
+    @property
+    def model(self) -> nn.Module:
+        """Return the trained model, raising if ``fit()`` has not been called."""
+        if self._model is None:
+            msg = "Call fit() before inference"
+            raise RuntimeError(msg)
+        return self._model
 
     def fit(self, x: torch.Tensor, y: torch.Tensor) -> None:
         """Build a fresh model and train from scratch on the labeled pool."""
@@ -120,13 +125,10 @@ class BaselineEstimator:
             model = build_model(self.method_name, dict(self.method_params), ctx)
             model.to(self.device)
             train_model(model, train_loader, None, self.cfg, self.device, _NoOpRun(), {})
-        self.model = model
+        self._model = model
 
     def _forward_logits(self, x: torch.Tensor) -> torch.Tensor:
         """Raw forward pass returning averaged logits for plain and ensemble."""
-        if self.model is None:
-            msg = "Call fit() before inference"
-            raise RuntimeError(msg)
         if isinstance(self.model, nn.ModuleList):
             return torch.stack([m(x) for m in self.model]).mean(0)
         return self.model(x)
@@ -134,35 +136,18 @@ class BaselineEstimator:
     @torch.no_grad()
     def predict(self, x: torch.Tensor) -> torch.Tensor:
         """Return class predictions (argmax of logits)."""
-        if self.model is None:
-            msg = "Call fit() before inference"
-            raise RuntimeError(msg)
         self.model.eval()
-        parts = []
-        for i in range(0, len(x), self.batch_size):
-            xb = x[i : i + self.batch_size].float().to(self.device)
-            parts.append(self._forward_logits(xb).argmax(-1).cpu())
-        return torch.cat(parts)
+        return self._forward_logits(x.float().to(self.device)).argmax(-1).cpu()
 
     @torch.no_grad()
     def predict_proba(self, x: torch.Tensor) -> torch.Tensor:
         """Return class probabilities (softmax of logits)."""
-        if self.model is None:
-            msg = "Call fit() before inference"
-            raise RuntimeError(msg)
         self.model.eval()
-        parts = []
-        for i in range(0, len(x), self.batch_size):
-            xb = x[i : i + self.batch_size].float().to(self.device)
-            parts.append(self._forward_logits(xb).softmax(-1).cpu())
-        return torch.cat(parts)
+        return self._forward_logits(x.float().to(self.device)).softmax(-1).cpu()
 
     @torch.no_grad()
     def embed(self, x: torch.Tensor) -> torch.Tensor:
         """Return penultimate-layer features for BADGE."""
-        if self.model is None:
-            msg = "Call fit() before inference"
-            raise RuntimeError(msg)
         self.model.eval()
         base = self.model[0] if isinstance(self.model, EnsemblePredictor) else self.model
         layer_fn = _CLASSIFICATION_LAYER.get(self.base_model_name)
@@ -170,23 +155,17 @@ class BaselineEstimator:
             msg = f"No embed layer mapping for base model {self.base_model_name!r}"
             raise ValueError(msg)
         target_layer = layer_fn(base)
-
-        embeddings: list[torch.Tensor] = []
         hook_output: list[torch.Tensor] = []
 
         def _hook(_module: nn.Module, inp: tuple[torch.Tensor, ...], _out: Any) -> None:  # noqa: ANN401
-            hook_output.append(inp[0].detach().cpu())
+            hook_output.append(inp[0])
 
         handle = target_layer.register_forward_hook(_hook)
         try:
-            for i in range(0, len(x), self.batch_size):
-                hook_output.clear()
-                xb = x[i : i + self.batch_size].float().to(self.device)
-                base(xb)
-                embeddings.append(hook_output[0])
+            base(x.float().to(self.device))
         finally:
             handle.remove()
-        return torch.cat(embeddings)
+        return hook_output[0].detach().cpu()
 
 
 class UncertaintyEstimator:
@@ -207,9 +186,8 @@ class UncertaintyEstimator:
         num_classes: int,
         device: torch.device,
         in_features: int | None = None,
-        num_samples: int = 50,
-        uncertainty_decomposition: str = "EU",
-        batch_size: int = 512,
+        rep_kwargs: dict[str, Any] | None = None,
+        uncertainty_notion: type[Notion] = EpistemicUncertainty,
     ) -> None:
         """Initialize the UncertaintyEstimator.
 
@@ -222,9 +200,8 @@ class UncertaintyEstimator:
             num_classes: Number of output classes.
             device: Device to train and infer on.
             in_features: Input feature dimension for tabular models; ignored for image models.
-            num_samples: Number of Monte Carlo samples for stochastic methods.
-            uncertainty_decomposition: ``"EU"`` for epistemic (default), ``"TU"`` for total.
-            batch_size: Batch size used during inference to avoid OOM.
+            rep_kwargs: Representer parameters from the method config (e.g. ``num_samples``).
+            uncertainty_notion: Which uncertainty component to use for sample selection.
         """
         self.cfg = cfg
         self.base_model_name = base_model_name
@@ -234,11 +211,17 @@ class UncertaintyEstimator:
         self.num_classes = num_classes
         self.device = device
         self.in_features = in_features
-        self.num_samples = num_samples
-        self.uncertainty_decomposition = uncertainty_decomposition
-        self.batch_size = batch_size
-        self.model: nn.Module | None = None
-        self._rep_kwargs: dict[str, Any] = {}
+        self.rep_kwargs = rep_kwargs or {}
+        self.uncertainty_notion = uncertainty_notion
+        self._model: nn.Module | None = None
+
+    @property
+    def model(self) -> nn.Module:
+        """Return the trained model, raising if ``fit()`` has not been called."""
+        if self._model is None:
+            msg = "Call fit() before inference"
+            raise RuntimeError(msg)
+        return self._model
 
     def fit(self, x: torch.Tensor, y: torch.Tensor) -> None:
         """Build a fresh model via build_model + train_model from scratch."""
@@ -257,47 +240,27 @@ class UncertaintyEstimator:
         )
         model = build_model(self.method_name, dict(self.method_params), ctx)
         model.to(self.device)
-
         train_model(model, train_loader, None, self.cfg, self.device, _NoOpRun(), dict(self.train_kwargs))
-        self.model = model
-        self._rep_kwargs = {"num_samples": self.num_samples} if isinstance(model, RandomPredictor) else {}
+        self._model = model
+
+    @torch.no_grad()
+    def predict_proba(self, x: torch.Tensor) -> torch.Tensor:
+        """Return class probabilities via representer -> canonical_element."""
+        self.model.eval()
+        rep = representer(self.model, **self.rep_kwargs)
+        canonical: TorchCategoricalDistribution = rep.represent(x.float().to(self.device)).canonical_element
+        return canonical.probabilities.cpu()
 
     @torch.no_grad()
     def predict(self, x: torch.Tensor) -> torch.Tensor:
-        """Return class predictions via predict_single -> argmax."""
-        if self.model is None:
-            msg = "Call fit() before inference"
-            raise RuntimeError(msg)
-        self.model.eval()
-        parts = []
-        for i in range(0, len(x), self.batch_size):
-            xb = x[i : i + self.batch_size].float().to(self.device)
-            result = predict_single(self.model, xb)
-            if isinstance(result, TorchCategoricalDistribution):
-                result = result.probabilities
-            parts.append(result.argmax(-1).cpu())
-        return torch.cat(parts)
-
-    def predict_proba(self, x: torch.Tensor) -> torch.Tensor:
-        """Not used by UncertaintyQuery or RandomQuery."""
-        msg = "UncertaintyEstimator does not support predict_proba"
-        raise NotImplementedError(msg)
+        """Return class predictions (argmax of predict_proba)."""
+        return self.predict_proba(x).argmax(-1)
 
     @torch.no_grad()
     def uncertainty_scores(self, x: torch.Tensor) -> torch.Tensor:
         """Return per-sample uncertainty via representer -> quantify -> decomposition."""
-        if self.model is None:
-            msg = "Call fit() before inference"
-            raise RuntimeError(msg)
         self.model.eval()
-        rep = representer(self.model, **self._rep_kwargs)
-        parts = []
-        for i in range(0, len(x), self.batch_size):
-            xb = x[i : i + self.batch_size].float().to(self.device)
-            decomposition = quantify(rep.represent(xb))
-            if self.uncertainty_decomposition == "EU" and isinstance(decomposition, AleatoricEpistemicDecomposition):
-                scores = decomposition.epistemic
-            else:
-                scores = decomposition.total  # ty: ignore[unresolved-attribute]
-            parts.append(scores.detach().cpu() if isinstance(scores, torch.Tensor) else torch.as_tensor(scores))
-        return torch.cat(parts)
+        rep = representer(self.model, **self.rep_kwargs)
+        decomposition = quantify(rep.represent(x.float().to(self.device)))
+        scores = decomposition[self.uncertainty_notion]  # ty: ignore[not-subscriptable]
+        return scores.detach().cpu() if isinstance(scores, torch.Tensor) else torch.as_tensor(scores)

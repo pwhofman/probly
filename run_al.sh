@@ -42,7 +42,7 @@ done
 
 # Arm 2: uncertainty methods (uncertainty + random ablation)
 # efficient_credal_prediction: predict_single produces invalid distributions (probly#xxx)
-UQ_METHODS=(dropout dropconnect bayesian ensemble
+UQ_METHODS=(dropout dropconnect bayesian ddu ensemble
             evidential_classification posterior_network
             credal_ensembling credal_relative_likelihood)
 
@@ -56,11 +56,6 @@ for seed in "${SEEDS[@]}"; do
           seed=$seed $COMMON
       done
     done
-    # ddu: quantify not registered — random ablation only until probly adds decompose (probly#xxx)
-    echo "=== UQ / ddu / random / $dataset / seed=$seed ==="
-    uv run python -m probly_benchmark.active_learning \
-      method=ddu al_strategy=random al_dataset=$dataset \
-      seed=$seed $COMMON
   done
 done
 

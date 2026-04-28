@@ -24,12 +24,15 @@ from probly.evaluation.active_learning import (
     compute_nauc,
     from_dataset,
 )
+from probly.quantification.notion import EpistemicUncertainty, TotalUncertainty
 from probly_benchmark.al_estimators import BaselineEstimator, UncertaintyEstimator
 from probly_benchmark.data import get_data_al
 from probly_benchmark.metadata import AL_DATASETS
 from probly_benchmark.utils import set_seed
 
 logger = logging.getLogger(__name__)
+
+_UNCERTAINTY_NOTIONS = {"EU": EpistemicUncertainty, "TU": TotalUncertainty}
 
 
 def _build_estimator(
@@ -69,8 +72,8 @@ def _build_estimator(
 
     raw_train = cfg.method.get("train")
     train_kwargs = cast("dict[str, Any]", OmegaConf.to_container(raw_train, resolve=True)) if raw_train else {}
-    al_section = cfg.method.get("active_learning", {})
-    num_samples = int(al_section.get("num_samples", cfg.num_samples)) if al_section else cfg.num_samples
+    raw_al = cfg.method.get("active_learning")
+    rep_kwargs = cast("dict[str, Any]", OmegaConf.to_container(raw_al, resolve=True)) if raw_al else {}
 
     return UncertaintyEstimator(
         cfg=cfg,
@@ -81,8 +84,8 @@ def _build_estimator(
         num_classes=num_classes,
         device=device,
         in_features=in_features,
-        num_samples=num_samples,
-        uncertainty_decomposition=cfg.uncertainty_decomposition,
+        rep_kwargs=rep_kwargs,
+        uncertainty_notion=_UNCERTAINTY_NOTIONS[cfg.uncertainty_decomposition],
     )
 
 
