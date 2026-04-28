@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 @predict_raw.register(CredalNetPredictor)
 def _(predictor: CredalNetPredictor, x: torch.Tensor, /, *args: object, **kwargs: object) -> torch.Tensor:
     """Pack the input on the channel dim before invoking the credal-net model."""
-    return predictor(pack_interval(x, channel_dim=1), *args, **kwargs)  # ty:ignore[call-non-callable]
+    return predictor(pack_interval(x, channel_dim=1), *args, **kwargs)
 
 
 @credal_net_traverser.register(nn.Module)
