@@ -6,14 +6,13 @@ from typing import Any
 
 import hydra
 from omegaconf import DictConfig, OmegaConf
-import wandb
 
 from probly.evaluation.tasks import selective_prediction
 from probly.quantification import quantify
 from probly.representation._helpers import compute_mean_probs
 from probly.representer import representer
 from probly_benchmark import data, utils
-from probly_benchmark.utils import load_model_from_wandb, resolve_artifact_name
+from probly_benchmark.utils import init_wandb_for_evaluation, load_model_for_evaluation
 
 
 @hydra.main(version_base=None, config_path="configs/", config_name="selective_prediction")
@@ -27,14 +26,8 @@ def main(cfg: DictConfig) -> None:
 
     utils.set_seed(cfg.seed)
 
-    artifact_name = resolve_artifact_name(cfg)
-    model, _, run_id = load_model_from_wandb(
-        artifact_name,
-        cfg.wandb.entity,
-        cfg.wandb.project,
-        device,
-    )
-    print(f"Loaded model {artifact_name} from wandb run: {run_id}")
+    model, _, run_id = load_model_for_evaluation(cfg, device)
+    print(f"Loaded model for {cfg.method.name} from wandb run: {run_id}")
 
     test_loader = data.get_data_selective_prediction(
         cfg.dataset,
@@ -68,12 +61,7 @@ def main(cfg: DictConfig) -> None:
     print(f"Selective prediction AUROC: {auroc:.4f}")
 
     if cfg.wandb.enabled:
-        run = wandb.init(
-            id=run_id,
-            entity=cfg.wandb.entity,
-            project=cfg.wandb.project,
-            resume="must",
-        )
+        run = init_wandb_for_evaluation(cfg, run_id)
         run.summary["sp/auroc"] = auroc
         run.summary["sp/bin_losses"] = bin_losses.tolist()
         run.finish()

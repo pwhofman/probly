@@ -5,9 +5,10 @@ from __future__ import annotations
 import pathlib
 import random
 import secrets
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
+from omegaconf import OmegaConf
 import torch
 from tqdm import tqdm
 import wandb
@@ -150,11 +151,28 @@ def resolve_artifact_name(cfg: DictConfig) -> str:
     return f"{cfg.method.name}_{cfg.base_model}_{cfg.dataset}_{cfg.seed}"
 
 
+def _parse_load_from(load_from: str | DictConfig) -> tuple[str, int | None]:
+    """Parse the ``load_from`` method config field.
+
+    Args:
+        load_from: Either a method name string, or a dict with ``method`` and
+            optional ``member`` keys.
+
+    Returns:
+        A tuple of ``(source_method, member_index)`` where ``member_index`` is
+        ``None`` when the full artifact should be loaded.
+    """
+    if isinstance(load_from, str):
+        return load_from, None
+    return load_from.method, load_from.get("member")
+
+
 def load_model_from_wandb(
     artifact_name: str,
     entity: str,
     project: str,
     device: torch.device,
+    target_method: str | None = None,
 ) -> tuple[torch.nn.Module, dict[str, Any], str]:
     """Download a model artifact from wandb and reconstruct the model.
 
@@ -163,6 +181,13 @@ def load_model_from_wandb(
         entity: Wandb entity.
         project: Wandb project.
         device: Device to load the model onto.
+        target_method: If provided, call this method's factory instead of the
+            one stored in the checkpoint. The checkpoint's structural params
+            (e.g. ``num_members``) are always used so that the built model
+            matches the saved state dict. Use this when a wrapper predictor
+            (e.g. ``credal_wrapper``) loads weights from a source artifact
+            (e.g. ``ensemble``) and needs to register the model under the
+            wrapper's predictor type for correct representer dispatch.
 
     Returns:
         A tuple containing:
@@ -201,7 +226,9 @@ def load_model_from_wandb(
         pretrained=cfg.get("pretrained", False),
         train_loader=None,
     )
-    model = build_model(cfg["method"]["name"], method_params, ctx)
+
+    build_method = target_method if target_method is not None else cfg["method"]["name"]
+    model = build_model(build_method, method_params, ctx)
     model.load_state_dict(checkpoint["model_state_dict"])
     model.to(device)
     model.eval()
@@ -209,3 +236,92 @@ def load_model_from_wandb(
     run_id = artifact.logged_by().id
 
     return model, cfg, run_id
+
+
+def load_model_for_evaluation(
+    cfg: DictConfig,
+    device: torch.device,
+) -> tuple[torch.nn.Module, dict[str, Any], str]:
+    """Load a model from wandb for evaluation, respecting ``load_from`` config.
+
+    Handles three cases driven by the optional ``load_from`` key in the method
+    config:
+
+    - **Absent**: loads the method's own artifact and builds it as-is.
+    - **String** (e.g. ``load_from: "ensemble"``): loads the named method's
+      artifact and rebuilds the model under the current method type, so that a
+      wrapper predictor (e.g. ``credal_wrapper``) can be evaluated using
+      weights trained for a source method (e.g. ``ensemble``).
+    - **Dict** (e.g. ``load_from: {method: "ensemble", member: 0}``): loads
+      the named method's artifact and returns the single ensemble member at
+      the given index.
+
+    Args:
+        cfg: Hydra evaluation config containing ``method``, ``base_model``,
+            ``dataset``, ``seed``, and ``wandb`` fields.
+        device: Device to load the model onto.
+
+    Returns:
+        A tuple containing:
+            - model: The reconstructed model in eval mode.
+            - train_cfg: The saved training config dict.
+            - run_id: The ID of the original training run.
+    """
+    load_from = cfg.method.get("load_from")
+
+    if load_from is None:
+        artifact_name = resolve_artifact_name(cfg)
+        return load_model_from_wandb(artifact_name, cfg.wandb.entity, cfg.wandb.project, device)
+
+    source_method, member_index = _parse_load_from(load_from)
+    artifact_name = f"{source_method}_{cfg.base_model}_{cfg.dataset}_{cfg.seed}"
+
+    if member_index is not None:
+        model, train_cfg, run_id = load_model_from_wandb(artifact_name, cfg.wandb.entity, cfg.wandb.project, device)
+        return cast("torch.nn.ModuleList", model)[member_index], train_cfg, run_id
+
+    return load_model_from_wandb(
+        artifact_name,
+        cfg.wandb.entity,
+        cfg.wandb.project,
+        device,
+        target_method=cfg.method.name,
+    )
+
+
+def init_wandb_for_evaluation(
+    cfg: DictConfig,
+    run_id: str,
+) -> wandb.sdk.wandb_run.Run:
+    """Initialise a wandb run for an evaluation script.
+
+    For methods that own their training run (no ``load_from``), the existing
+    training run is resumed so that evaluation metrics are attached to it.
+    For methods that load weights from another method's artifact, a fresh run
+    is created, identified by ``<method>_<base_model>_<dataset>_<seed>``, with
+    the source ``run_id`` stored in the run config for traceability.
+
+    Args:
+        cfg: Hydra evaluation config.
+        run_id: Run ID returned by :func:`load_model_for_evaluation`.
+
+    Returns:
+        An initialised wandb run. The caller is responsible for calling
+        ``run.finish()``.
+    """
+    if cfg.method.get("load_from"):
+        return wandb.init(
+            name=f"{cfg.method.name}_{cfg.base_model}_{cfg.dataset}_{cfg.seed}",
+            config={
+                "source_run_id": run_id,
+                **cast("dict[str, Any]", OmegaConf.to_container(cfg, resolve=True)),
+            },
+            entity=cfg.wandb.entity,
+            project=cfg.wandb.project,
+        )
+    return wandb.init(
+        id=run_id,
+        entity=cfg.wandb.entity,
+        project=cfg.wandb.project,
+        resume="must",
+    )

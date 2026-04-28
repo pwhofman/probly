@@ -1,5 +1,6 @@
 # @package method
 name: "credal_wrapper"
+load_from: "ensemble"
 params:
   num_members: 5
   reset_params: true
