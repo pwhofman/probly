@@ -18,7 +18,7 @@ from probly.quantification.measure.distribution import (
     mutual_information,
 )
 from probly.representation.credal_set import CategoricalCredalSet
-from probly.representation.distribution import DistributionSample, SecondOrderDistribution
+from probly.representation.distribution import Distribution, DistributionSample, SecondOrderDistribution
 from probly.representation.het_nets._common import HetNetsRepresentation
 
 if TYPE_CHECKING:
@@ -92,3 +92,27 @@ class LabelNoiseEntropyDecomposition[T](CachingDecomposition, AleatoricDecomposi
     def _aleatoric(self) -> T:
         """The aleatoric uncertainty of the decomposition."""
         return conditional_entropy(self.distribution, base=self.base)  # ty:ignore[invalid-return-type]
+
+
+@decompose.register(Distribution)
+@dataclass(frozen=True, slots=True)
+class SingleDistributionEntropyDecomposition[T](AdditiveDecomposition[T, T, T]):
+    """Decomposition for a single distribution where total uncertainty is the entropy."""
+
+    distribution: Distribution
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "_caching", True)
+        object.__setattr__(self, "_cache", {})
+
+    @override
+    @property
+    def _total(self) -> T:
+        """Total uncertainty is the entropy of the distribution."""
+        return self.distribution.entropy()  # ty:ignore[invalid-return-type]
+
+    @override
+    @property
+    def _aleatoric(self) -> T:
+        """Aleatoric uncertainty is the entropy for a single distribution."""
+        return self._total
