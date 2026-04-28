@@ -1,0 +1,8 @@
+# @package method
+name: "credal_net"
+# The intersection-probability cross-entropy loss is parameter-free; optimizer
+# and scheduler choices live in the recipe. The paper uses Adam lr=1e-3 with
+# MultiStep milestones [80, 120, 160, 180]; a paper-faithful recipe can be
+# authored later if needed.
+params: {}
+train: {}
