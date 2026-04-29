@@ -3,6 +3,7 @@
 from probly.lazy_types import TORCH_TENSOR, TORCH_TENSOR_LIKE
 
 from ._common import (
+    LogBase,
     SecondOrderDistributionLike,
     conditional_entropy,
     entropy,
@@ -27,6 +28,7 @@ def _(_: type) -> None:
 
 
 __all__ = [
+    "LogBase",
     "SecondOrderDistributionLike",
     "array_categorical_entropy",
     "array_dirichlet_entropy",

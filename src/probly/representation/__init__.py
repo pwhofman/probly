@@ -8,12 +8,13 @@ from .credal_set import (
     CredalSetType,
     DiscreteCredalSet,
 )
-from .representation import Representation
+from .representation import CanonicalRepresentation, Representation
 from .sample import Sample
 
 __all__ = [
     "ArrayCategoricalCredalSet",
     "ArrayDiscreteCredalSet",
+    "CanonicalRepresentation",
     "CategoricalCredalSet",
     "CredalSet",
     "CredalSetType",

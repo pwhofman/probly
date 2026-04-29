@@ -14,10 +14,13 @@ from ._common import (
     Predictor,
     PredictorName,
     RandomPredictor,
+    RandomRepresentationPredictor,
     RepresentationPredictor,
     predict,
     predict_raw,
+    predict_single,
     predictor_registry,
+    to_single_prediction,
 )
 
 # Aliases for common predictor types
@@ -52,8 +55,11 @@ __all__ = [
     "PredictorName",
     "ProbabilisticClassifier",
     "RandomPredictor",
+    "RandomRepresentationPredictor",
     "RepresentationPredictor",
     "predict",
     "predict_raw",
+    "predict_single",
     "predictor_registry",
+    "to_single_prediction",
 ]

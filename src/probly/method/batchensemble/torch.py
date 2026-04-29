@@ -40,9 +40,9 @@ def predict_batchensemble(
     ``[E*B, ...]`` tensor, and reshapes the output to ``[E, B, ...]`` with
     ``sample_dim=0``.
     """
-    num_members = int(predictor.num_members)  # ty: ignore[unresolved-attribute]
+    num_members = int(predictor.num_members)
     b = x.shape[0]
-    raw = predictor(tile_inputs(x, num_members))  # ty: ignore[call-non-callable]
+    raw = predictor(tile_inputs(x, num_members))
     out = raw.view(num_members, b, *raw.shape[1:])
     return TorchSample(tensor=out, sample_dim=0)
 

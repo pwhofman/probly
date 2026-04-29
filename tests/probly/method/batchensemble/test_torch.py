@@ -41,7 +41,7 @@ class TestBatchEnsembleLayers:
         # the model itself preserves the original structure (e.g. nn.Sequential) and takes
         # ``[E*B, ...]`` inputs. The user-facing predict() handler tiles for you.
         assert isinstance(batchensemble_model, nn.Sequential)
-        assert batchensemble_model.num_members == num_members  # ty: ignore[unresolved-attribute]
+        assert batchensemble_model.num_members == num_members
 
         count_linear_original = count_layers(model, nn.Linear)
         count_convolutional_original = count_layers(model, nn.Conv2d)
@@ -124,7 +124,7 @@ class TestBatchEnsembleLayers:
         # Type-preserving: the traversed model is still the same class as the input.
         assert isinstance(model, type(torch_custom_model))
         assert not isinstance(model, nn.Sequential)
-        assert model.num_members == num_members  # ty: ignore[unresolved-attribute]
+        assert model.num_members == num_members
 
         count_linear_original = count_layers(torch_custom_model, nn.Linear)
         count_convolutional_original = count_layers(torch_custom_model, nn.Conv2d)

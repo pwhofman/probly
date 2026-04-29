@@ -15,6 +15,7 @@ from probly.representation.distribution.array_categorical import (
     ArrayCategoricalDistributionSample,
 )
 from probly.representation.distribution.array_dirichlet import ArrayDirichletDistribution
+from probly.representation.het_nets import HetNetsRepresentation
 
 
 def _array_dirichlet_distribution() -> ArrayDirichletDistribution:
@@ -73,6 +74,12 @@ def test_quantify_dispatches_to_entropy_decomposition_for_array_distribution_sam
     decomposition = quantify(sample)
 
     assert isinstance(decomposition, SecondOrderEntropyDecomposition)
+
+
+def test_array_categorical_distribution_sample_is_not_hetnets_representation() -> None:
+    sample = _array_categorical_sample()
+
+    assert not isinstance(sample, HetNetsRepresentation)
 
 
 def test_array_distribution_sample_decomposition_matches_measure_functions() -> None:

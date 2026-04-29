@@ -23,6 +23,7 @@ from probly.representation.credal_set._common import (
 )
 from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
 from probly.representation.sample.torch import TorchSample
+from probly.utils.torch import intersection_probability
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
@@ -98,6 +99,12 @@ class TorchConvexCredalSet(
     def num_classes(self) -> int:
         """Get the number of classes."""
         return self.tensor.num_classes
+
+    @override
+    @property
+    def canonical_element(self) -> TorchCategoricalDistribution:
+        """Return the barycenter over the convex set vertices."""
+        return TorchCategoricalDistribution(torch.mean(self.tensor.unnormalized_probabilities, dim=-2))
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
@@ -195,6 +202,12 @@ class TorchProbabilityIntervalsCredalSet(
     def num_classes(self) -> int:
         """Get the number of classes."""
         return self.lower_bounds.shape[-1]
+
+    @override
+    @property
+    def canonical_element(self) -> TorchCategoricalDistribution:
+        """Return a feasible center distribution of the probability intervals."""
+        return TorchCategoricalDistribution(intersection_probability(self.lower_bounds, self.upper_bounds))
 
     @override
     def numpy(self, *, force: bool = False) -> NDArray[Any]:

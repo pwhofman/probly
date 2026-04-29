@@ -1,0 +1,4 @@
+# @package supervised_loss
+name: "label_relaxation"
+params:
+  alpha: 0.1

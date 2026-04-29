@@ -19,7 +19,7 @@ class DarePredictor[**In, Out](EnsemblePredictor[In, Out], Protocol):
 @predictor_transformation(
     permitted_predictor_types=None,
 )
-@DarePredictor.register_factory
+@DarePredictor.register_factory(autocast_builtins=True)
 def dare[**In, Out](base: Predictor[In, Out], num_members: int, reset_params: bool = True) -> DarePredictor[In, Out]:
     """Create a dare predictor from a base predictor based on :cite:`arXiv:2304.04042`.
 

@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from flextype import flexdispatch
 from probly.method.method import predictor_transformation
-from probly.predictor import LogitClassifier, RepresentationPredictor, predict, predict_raw
-from probly.representation.credal_set import ProbabilityIntervalsCredalSet, create_probability_intervals_from_bounds
+from probly.predictor import LogitClassifier
+from probly.representation.distribution import CategoricalDistribution
 
 if TYPE_CHECKING:
     from probly.predictor import Predictor
@@ -15,24 +15,23 @@ if TYPE_CHECKING:
 
 
 @runtime_checkable
-class EfficientCredalPredictor[**In, Out: ProbabilityIntervalsCredalSet](RepresentationPredictor[In, Out], Protocol):
-    """A predictor that applies the efficient credal prediction method."""
+class EfficientCredalPredictor[**In, Out: CategoricalDistribution](LogitClassifier[In, Out], Protocol):
+    """Logit classifier wrapped with calibrated lower/upper bounds, based on :cite:`hofmanefficient`.
+
+    Wraps a base :class:`LogitClassifier` together with externally-calibrated
+    per-class lower and upper bound offsets. ``predict`` returns the base's
+    :class:`CategoricalDistribution`; the credal-set view (combining the
+    distribution with the bounds) is available via the registered
+    representer.
+    """
 
     predictor: Predictor
     lower: ArrayLike[float]
     upper: ArrayLike[float]
 
-    @property
-    def lower_bounds(self) -> ArrayLike[float]:
-        return self.lower
-
-    @property
-    def upper_bounds(self) -> ArrayLike[float]:
-        return self.upper
-
 
 @flexdispatch
-def efficient_credal_prediction_generator[**In, Out: ProbabilityIntervalsCredalSet](
+def efficient_credal_prediction_generator[**In, Out: CategoricalDistribution](
     base: Predictor,
 ) -> EfficientCredalPredictor[In, Out]:
     """Generate an efficient credal predictor from a base model."""
@@ -42,26 +41,18 @@ def efficient_credal_prediction_generator[**In, Out: ProbabilityIntervalsCredalS
 
 @predictor_transformation(permitted_predictor_types=(LogitClassifier,), preserve_predictor_type=False)
 @EfficientCredalPredictor.register_factory
-def efficient_credal_prediction[**In, Out: ProbabilityIntervalsCredalSet](
+def efficient_credal_prediction[**In, Out: CategoricalDistribution](
     base: Predictor,
 ) -> EfficientCredalPredictor[In, Out]:
     """Create an efficient credal predictor from a base predictor based on :cite:`hofmanefficient`.
 
     Args:
-        base: Predictor, The base model to be used for the efficient credal predictor.
-        num_classes: int, The number of classes to predict.
+        base: The base ``LogitClassifier`` to wrap.
 
     Returns:
-        Predictor, The efficient credal predictor.
+        The efficient credal predictor; ``predict`` returns the base's
+        :class:`CategoricalDistribution`. Use ``representer(...)`` to get the
+        credal-set view that combines the distribution with the calibrated
+        bounds.
     """
     return efficient_credal_prediction_generator(base)
-
-
-@predict.register(EfficientCredalPredictor)
-def _[**In](
-    predictor: EfficientCredalPredictor[In, ProbabilityIntervalsCredalSet], *args: In.args, **kwargs: In.kwargs
-) -> ProbabilityIntervalsCredalSet:
-    """Predict with a efficient credal predictor."""
-    return create_probability_intervals_from_bounds(
-        predict_raw(predictor, *args, **kwargs), predictor.lower_bounds, predictor.upper_bounds
-    )

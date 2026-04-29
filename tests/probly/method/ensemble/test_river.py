@@ -5,6 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
+from probly.quantification.decomposition.decomposition import TotalDecomposition
 from probly.representation.sample.array import ArraySample
 
 pytest.importorskip("river")
@@ -13,7 +14,7 @@ from river.datasets import synth
 from river.forest import ARFClassifier, ARFRegressor
 
 from probly.predictor import predict_raw
-from probly.quantification import quantify
+from probly.quantification import measure, quantify
 from probly.representation.distribution.array_categorical import (
     ArrayCategoricalDistribution,
     ArrayCategoricalDistributionSample,
@@ -158,12 +159,18 @@ class TestRegressorEndToEnd:
 
         assert isinstance(sample, ArraySample)
 
-    def test_quantify_produces_variance(self, trained_arf_regressor):
+    def test_measure_produces_variance(self, trained_arf_regressor):
         arf, x = trained_arf_regressor
         sample = representer(arf).represent(x)
 
-        variance = quantify(sample)
+        variance = measure(sample)
+        quantify_res = quantify(sample)
         expected_variance = sample.sample_var()
 
+        assert isinstance(variance, np.ndarray)
+        assert isinstance(quantify_res, TotalDecomposition)
+
         np.testing.assert_allclose(variance, expected_variance, atol=1e-10)
+        np.testing.assert_allclose(variance, quantify_res.total, atol=1e-10)
+
         assert np.all(np.asarray(variance) >= 0)

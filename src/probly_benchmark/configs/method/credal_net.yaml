@@ -1,0 +1,4 @@
+# @package method
+name: "credal_net"
+params:
+train:
