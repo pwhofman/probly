@@ -171,6 +171,14 @@ def supervised_loss_name_suffix(cfg: DictConfig) -> str:
     return f"_{'_'.join(parts)}"
 
 
+def cal_split_name_suffix(cfg: DictConfig | dict) -> str:
+    """Return the artifact name suffix for a calibration holdout split."""
+    cal_split = float(cfg.get("cal_split", 0.0) or 0.0)
+    if cal_split <= 0:
+        return ""
+    return f"_cal_split{_safe_artifact_token(cal_split)}"
+
+
 def calibration_name_suffix(cfg: DictConfig | dict) -> str:
     """Return the artifact name suffix for post-hoc calibration."""
     name = calibration.get_calibration_name(cfg)
@@ -190,7 +198,12 @@ def resolve_artifact_name(cfg: DictConfig, *, include_calibration: bool = True) 
     Matches the naming convention used in train.py.
     """
     suffix = calibration_name_suffix(cfg) if include_calibration else ""
-    return f"{cfg.method.name}_{cfg.base_model}_{cfg.dataset}_{cfg.seed}{supervised_loss_name_suffix(cfg)}{suffix}"
+    return (
+        f"{cfg.method.name}_{cfg.base_model}_{cfg.dataset}_{cfg.seed}"
+        f"{cal_split_name_suffix(cfg)}"
+        f"{supervised_loss_name_suffix(cfg)}"
+        f"{suffix}"
+    )
 
 
 def _download_checkpoint_from_wandb(
