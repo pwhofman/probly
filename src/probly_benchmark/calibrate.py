@@ -101,8 +101,11 @@ def main(cfg: DictConfig) -> None:
     )
     print(f"Loaded model {source_artifact} from wandb run: {source_run_id}")
 
-    if cfg.val_split <= 0:
-        msg = "Post-hoc calibration requires `val_split > 0` so validation data is available."
+    use_val_as_cal = cfg.calibration.get("use-val-as-cal", True)
+    split_name = "val_split" if use_val_as_cal else "cal_split"
+    split_value = cfg.val_split if use_val_as_cal else cfg.get("cal_split", 0.0)
+    if split_value <= 0:
+        msg = f"Post-hoc calibration requires `{split_name} > 0` when `calibration.use-val-as-cal={use_val_as_cal}`."
         raise ValueError(msg)
 
     loaders = data.get_data_train(
@@ -117,12 +120,12 @@ def main(cfg: DictConfig) -> None:
         prefetch_factor=cfg.get("prefetch_factor", 4),
         shuffle=False,
     )
-    val_loader = loaders.validation
-    if val_loader is None:
-        msg = "Post-hoc calibration requires a validation loader; set `val_split > 0`."
+    cal_loader = loaders.validation if use_val_as_cal else loaders.calibration
+    if cal_loader is None:
+        msg = f"Post-hoc calibration requires `{split_name} > 0` when `calibration.use-val-as-cal={use_val_as_cal}`."
         raise ValueError(msg)
 
-    logits, targets = utils.collect_outputs_targets_raw(model, val_loader, device, cfg.get("amp", False))
+    logits, targets = utils.collect_outputs_targets_raw(model, cal_loader, device, cfg.get("amp", False))
     metrics_before = _classification_metrics(logits, targets)
 
     logit_calibrator = calibration.fit_logit_calibrator(cfg, logits, targets)

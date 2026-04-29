@@ -1,3 +1,4 @@
 # @package calibration
 name: "temperature_scaling"
+use-val-as-cal: true
 params: {}
