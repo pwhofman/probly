@@ -40,7 +40,6 @@ from probly.method.credal_wrapper import CredalWrapperPredictor
 from probly.method.dare import DarePredictor
 from probly.method.ddu import DDUPredictor
 from probly.method.ensemble import EnsemblePredictor
-from probly.method.subensemble import SubensemblePredictor
 from probly_benchmark import conformal, data, metadata, utils
 from probly_benchmark.builders import BuildContext, build_model
 from probly_benchmark.paths import CHECKPOINT_PATH
@@ -258,7 +257,7 @@ def _maybe_compile_forward(model: nn.Module, device: torch.device) -> None:
     model.forward = torch.compile(model.forward)
 
 
-def _training_loop(  # noqa: PLR0912
+def _training_loop(  # noqa: PLR0912, PLR0915
     model: nn.Module,
     train_loader: DataLoader,
     val_loader: DataLoader | None,
@@ -270,6 +269,7 @@ def _training_loop(  # noqa: PLR0912
     val_fn: Callable[..., tuple[float, float]],
     log_prefix: str = "",
     param_groups: list[dict[str, Any]] | None = None,
+    extra_metrics: dict[str, Any] | None = None,
 ) -> None:
     """Run the training loop for a single model.
 
@@ -289,6 +289,8 @@ def _training_loop(  # noqa: PLR0912
             in place of ``model.parameters()``. Each dict can override the optimizer's
             default ``lr`` / ``weight_decay`` for a subset of parameters; used by
             BatchEnsemble to apply a slower lr and disable weight decay on fast weights.
+        extra_metrics: Optional dict of additional fixed metrics logged every epoch
+            alongside the standard loss/accuracy keys (e.g. ``{"member_0/relative_likelihood": 1.0}``).
     """
     _maybe_compile_forward(model, device)
 
@@ -317,12 +319,14 @@ def _training_loop(  # noqa: PLR0912
     amp_enabled = cfg.get("amp", False)
     scaler = GradScaler(device.type) if amp_enabled else None
 
-    epoch_key = "epoch"
+    # Each prefixed member gets its own hidden epoch counter as x-axis so that
+    # all member charts share a 0..n_epochs range rather than a global step.
     if log_prefix:
+        epoch_key: str | None = f"{log_prefix.rstrip('/')}_epoch"
+        wandb.define_metric(epoch_key, hidden=True)
         wandb.define_metric(f"{log_prefix}*", step_metric=epoch_key)
     else:
-        for _m in ("train_loss", "val_loss", "val_acc"):
-            wandb.define_metric(_m, step_metric=epoch_key)
+        epoch_key = None
 
     for epoch in tqdm(range(cfg.epochs), desc=f"{log_prefix}Epoch"):
         model.train()
@@ -348,7 +352,11 @@ def _training_loop(  # noqa: PLR0912
         running_loss /= len(train_loader)
 
         val_loss: float | None = None
-        log_data = {epoch_key: epoch, f"{log_prefix}train_loss": running_loss}
+        log_data: dict[str, Any] = {f"{log_prefix}train_loss": running_loss}
+        if epoch_key is not None:
+            log_data[epoch_key] = epoch
+        if extra_metrics:
+            log_data.update(extra_metrics)
         if val_loader:
             val_loss, val_acc = val_fn(model, val_loader, device, amp_enabled, epoch=epoch, **train_kwargs)
             log_data[f"{log_prefix}val_loss"] = val_loss
@@ -400,7 +408,7 @@ def train_model(
     )
 
 
-@train_model.register((EnsemblePredictor, CredalEnsemblingPredictor, CredalWrapperPredictor, SubensemblePredictor))
+@train_model.register((EnsemblePredictor, CredalEnsemblingPredictor, CredalWrapperPredictor))
 def _(
     model: EnsemblePredictor,
     train_loader: DataLoader,
@@ -466,7 +474,7 @@ def _(
     run: Any,  # noqa: ANN401
     train_kwargs: dict[str, Any],
 ) -> None:
-    """Train a BatchEnsemble predictor with the recipe of :cite:`wenBatchEnsemble2020`.
+    """Train a BatchEnsemble predictor with the recipe of :cite:`wen2020batchensemble`.
 
     The shared kernel uses the recipe's full lr and weight decay; ``r``, ``s``, and per-member
     biases use ``fast_weight_lr_multiplier * base_lr``; ``r`` and ``s`` have weight decay disabled.
@@ -542,7 +550,7 @@ def _compute_log_likelihood(
     return -total_loss / total_samples
 
 
-def _training_loop_relative_likelihood(  # noqa: PLR0912
+def _training_loop_relative_likelihood(  # noqa: PLR0912, PLR0915
     model: nn.Module,
     train_loader: DataLoader,
     val_loader: DataLoader | None,
@@ -575,7 +583,8 @@ def _training_loop_relative_likelihood(  # noqa: PLR0912
     amp_enabled = cfg.get("amp", False)
     scaler = GradScaler(device.type) if amp_enabled else None
 
-    epoch_key = "epoch"
+    epoch_key = f"{log_prefix.rstrip('/')}_epoch"
+    wandb.define_metric(epoch_key, hidden=True)
     wandb.define_metric(f"{log_prefix}*", step_metric=epoch_key)
 
     stopped = False
@@ -689,7 +698,7 @@ def _(
     batch_check = train_kwargs.get("batch_check", False)
     num_remaining = len(members) - 1
 
-    # Train first member fully (standard training loop)
+    # Train first member fully; relative_likelihood is 1.0 by definition for the reference model
     _training_loop(
         members[0],
         train_loader,
@@ -701,6 +710,7 @@ def _(
         train_fn=train_epoch_cross_entropy,
         val_fn=validate_cross_entropy,
         log_prefix="member_0/",
+        extra_metrics={"member_0/relative_likelihood": 1.0},
     )
 
     # Compute reference log-likelihood from the fully trained first member
@@ -790,6 +800,10 @@ def _(
     density estimator (GDA) on all training features extracted from the frozen
     encoder, which is used at inference time for epistemic uncertainty scoring.
     """
+    # The density head buffer is ~16 GB at ImageNet scale and is unused during training
+    # Parking it on CPU during training decreases footprint sufficiently to use H200 cards
+    density_device = next(model.density_head.buffers()).device  # ty: ignore[unresolved-attribute]
+    model.density_head.to("cpu")
     _training_loop(
         model,
         train_loader,
@@ -801,6 +815,8 @@ def _(
         train_fn=train_epoch,  # ty: ignore[invalid-argument-type]
         val_fn=validate,
     )
+    model.density_head.to(density_device)
+
     amp_enabled = cfg.get("amp", False)
     _fit_ddu_density_head(model, train_loader, device, amp_enabled)
     run.summary["ddu_gmm_fitted"] = True
@@ -904,7 +920,7 @@ def _(
     model_ = cast("Any", model)
     amp_enabled = cfg.get("amp", False)
     alpha = train_kwargs.get("alpha", 0.5)
-    num_classes = int(model_.lower.shape[0])
+    num_classes = metadata.DATASETS[cfg.dataset].num_classes
 
     logits_train, targets_train = utils.collect_outputs_targets_raw(
         model_.predictor,

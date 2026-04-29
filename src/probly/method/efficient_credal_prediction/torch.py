@@ -23,6 +23,6 @@ class TorchEfficientCredalPredictor(nn.Module):
         self.register_buffer("lower", None)
         self.register_buffer("upper", None)
 
-    def forward(self, x: torch.Tensor) -> nn.Module:
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward pass through the predictor."""
         return self.predictor(x)
