@@ -8,8 +8,9 @@ from typing import TYPE_CHECKING, Any, cast
 import torch
 
 from probly.calibrator import calibrate
-from probly.method.calibration import temperature_scaling, torch_identity_logit_model
+from probly.method.calibration import temperature_scaling, torch_identity_logit_model, vector_scaling
 from probly.predictor import predict_raw
+from probly_benchmark import metadata
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
@@ -33,17 +34,24 @@ class CalibrationSpec:
         supported_methods: Benchmark methods this calibration is currently allowed for.
         state_keys: Calibration state keys expected in saved calibration artifacts.
         metric_extractors: Functions that extract calibration-method-specific metrics.
+        requires_num_classes: Whether the transform needs the dataset class count.
     """
 
     transform: Callable[..., torch.nn.Module]
     supported_methods: frozenset[str]
     state_keys: frozenset[str]
     metric_extractors: tuple[Callable[[torch.nn.Module], dict[str, float]], ...] = ()
+    requires_num_classes: bool = False
 
 
 def _temperature_scaling(model: torch.nn.Module, **_: Any) -> torch.nn.Module:  # noqa: ANN401
     """Wrap a torch model with temperature scaling."""
     return cast("torch.nn.Module", temperature_scaling(model))
+
+
+def _vector_scaling(model: torch.nn.Module, num_classes: int, **_: Any) -> torch.nn.Module:  # noqa: ANN401
+    """Wrap a torch model with vector scaling."""
+    return cast("torch.nn.Module", vector_scaling(model, num_classes=num_classes))
 
 
 def _temperature_metrics(calibrator: torch.nn.Module) -> dict[str, float]:
@@ -54,12 +62,38 @@ def _temperature_metrics(calibrator: torch.nn.Module) -> dict[str, float]:
     return {"temperature": float(temperature.reshape(-1)[0].item())}
 
 
+def _tensor_summary(prefix: str, value: torch.Tensor | None) -> dict[str, float]:
+    """Return compact scalar summaries for vector calibration parameters."""
+    if not isinstance(value, torch.Tensor):
+        return {}
+    flat = value.detach().float().reshape(-1)
+    return {
+        f"{prefix}_mean": float(flat.mean().item()),
+        f"{prefix}_min": float(flat.min().item()),
+        f"{prefix}_max": float(flat.max().item()),
+    }
+
+
+def _vector_scaling_metrics(calibrator: torch.nn.Module) -> dict[str, float]:
+    """Extract compact vector scaling metrics from a fitted calibrator."""
+    metrics = _tensor_summary("temperature", getattr(calibrator, "temperature", None))
+    metrics.update(_tensor_summary("bias", getattr(calibrator, "bias", None)))
+    return metrics
+
+
 CALIBRATION_METHODS = {
     "temperature_scaling": CalibrationSpec(
         transform=_temperature_scaling,
         supported_methods=frozenset({"base"}),
         state_keys=frozenset({"_temperature", "_bias", "_is_calibrated"}),
         metric_extractors=(_temperature_metrics,),
+    ),
+    "vector_scaling": CalibrationSpec(
+        transform=_vector_scaling,
+        supported_methods=frozenset({"base"}),
+        state_keys=frozenset({"_temperature", "_bias", "_is_calibrated"}),
+        metric_extractors=(_vector_scaling_metrics,),
+        requires_num_classes=True,
     ),
 }
 """Registry of post-hoc calibration methods supported by the benchmark."""
@@ -118,13 +152,22 @@ def calibration_params(cfg: DictConfig | dict) -> dict[str, Any]:
     return dict(calibration_cfg.get("params") or {})
 
 
+def _calibration_transform_params(cfg: DictConfig | dict, spec: CalibrationSpec) -> dict[str, Any]:
+    """Return transform parameters, injecting benchmark-derived values where needed."""
+    params = calibration_params(cfg)
+    if spec.requires_num_classes and "num_classes" not in params:
+        dataset_name = str(cfg.get("dataset"))
+        params["num_classes"] = metadata.DATASETS[dataset_name].num_classes
+    return params
+
+
 def apply_calibration(model: torch.nn.Module, cfg: DictConfig | dict) -> torch.nn.Module:
     """Wrap a model with the configured calibration method."""
     name = get_calibration_name(cfg)
     if name == DEFAULT_CALIBRATION:
         return model
     spec = get_calibration_spec(cfg)
-    return spec.transform(model, **calibration_params(cfg))
+    return spec.transform(model, **_calibration_transform_params(cfg, spec))
 
 
 def build_logit_calibrator(cfg: DictConfig | dict) -> torch.nn.Module:
