@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from probly.lazy_types import TORCH_MODULE
-from probly.method.conformal_credal_set_prediction._common import (
+
+from ._common import (
     ConformalCredalSetPredictor,
     conformal_credal_set_generator,
     conformal_total_variation,

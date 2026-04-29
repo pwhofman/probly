@@ -3,6 +3,7 @@
 from probly.method.batchensemble import batchensemble
 from probly.method.bayesian import bayesian
 from probly.method.cast import cast
+from probly.method.conformal_credal_set_prediction import conformal_total_variation
 from probly.method.credal_wrapper import credal_wrapper
 from probly.method.ddu import ddu
 from probly.method.dropconnect import dropconnect
@@ -18,6 +19,7 @@ __all__ = [
     "batchensemble",
     "bayesian",
     "cast",
+    "conformal_total_variation",
     "credal_bnn",
     "credal_ensembling",
     "credal_relative_likelihood",
