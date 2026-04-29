@@ -1,0 +1,4 @@
+# @package calibration
+name: "vector_scaling"
+use-val-as-cal: true
+params: {}

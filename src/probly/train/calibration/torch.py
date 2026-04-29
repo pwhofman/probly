@@ -99,6 +99,40 @@ class LabelRelaxationLoss(nn.Module):
         return loss.mean()
 
 
+class LabelSmoothingLoss(nn.CrossEntropyLoss):
+    """Cross-entropy loss with label smoothing.
+
+    This is a thin wrapper around :class:`torch.nn.CrossEntropyLoss` that exposes
+    PyTorch's ``label_smoothing`` parameter as ``epsilon``.
+
+    Attributes:
+        epsilon: Amount of probability mass to smooth away from the one-hot target.
+    """
+
+    def __init__(
+        self,
+        epsilon: float = 0.1,
+        weight: torch.Tensor | None = None,
+        ignore_index: int = -100,
+        reduction: str = "mean",
+    ) -> None:
+        """Initializes an instance of the LabelSmoothingLoss class.
+
+        Args:
+            epsilon: Amount of probability mass to smooth away from the one-hot target.
+            weight: Optional manual rescaling weight for each class.
+            ignore_index: Target value ignored by the loss.
+            reduction: Reduction applied to the output. One of ``"none"``, ``"mean"``, or ``"sum"``.
+        """
+        super().__init__(
+            weight=weight,
+            ignore_index=ignore_index,
+            reduction=reduction,
+            label_smoothing=epsilon,
+        )
+        self.epsilon = epsilon
+
+
 class FocalLoss(nn.Module):
     """Focal Loss based on :cite:`linFocalLoss2017`.
 

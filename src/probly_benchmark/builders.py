@@ -41,6 +41,7 @@ from probly.method.natural_posterior_network import natural_posterior_network
 from probly.method.posterior_network import posterior_network
 from probly.method.subensemble import subensemble
 from probly_benchmark import models
+from probly_benchmark.base import base
 
 if TYPE_CHECKING:
     from torch.utils.data import DataLoader
@@ -49,6 +50,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 METHODS = {
+    "base": base,
     "batchensemble": batchensemble,
     "bayesian": bayesian,
     "dare": dare,
