@@ -12,7 +12,7 @@ import torch
 from tqdm import tqdm
 import wandb
 
-from probly_benchmark import metadata
+from probly_benchmark import calibration, conformal, metadata
 from probly_benchmark.builders import BuildContext, build_model
 
 if TYPE_CHECKING:
@@ -22,6 +22,9 @@ if TYPE_CHECKING:
 
     from probly.representation import Representation
     from probly.representer import Representer
+
+
+DEFAULT_SUPERVISED_LOSS = "cross_entropy"
 
 
 def set_seed(seed: int | None) -> None:
@@ -142,34 +145,97 @@ def collect_outputs_targets_raw(
     return torch.cat(outputs), torch.cat(targets)
 
 
-def resolve_artifact_name(cfg: DictConfig) -> str:
+def get_supervised_loss_name(cfg: DictConfig) -> str:
+    """Return the configured supervised loss name."""
+    supervised_loss = cfg.get("supervised_loss", None)
+    if not supervised_loss:
+        return DEFAULT_SUPERVISED_LOSS
+    return str(supervised_loss.get("name", DEFAULT_SUPERVISED_LOSS)).lower()
+
+
+def _safe_artifact_token(value: object) -> str:
+    """Make a value safe for use in a wandb artifact name segment."""
+    return "".join(char if char.isalnum() or char in "._-" else "_" for char in str(value))
+
+
+def supervised_loss_name_suffix(cfg: DictConfig) -> str:
+    """Return the name suffix for non-default supervised training losses."""
+    name = get_supervised_loss_name(cfg)
+    if name == DEFAULT_SUPERVISED_LOSS:
+        return ""
+    supervised_loss = cfg.get("supervised_loss", {})
+    params = supervised_loss.get("params") or {}
+    parts = [_safe_artifact_token(name)]
+    for key, value in sorted(params.items()):
+        parts.append(f"{_safe_artifact_token(key)}{_safe_artifact_token(value)}")
+    return f"_{'_'.join(parts)}"
+
+
+def cal_split_name_suffix(cfg: DictConfig | dict) -> str:
+    """Return the artifact name suffix for a calibration holdout split."""
+    cal_split = float(cfg.get("cal_split", 0.0) or 0.0)
+    if cal_split <= 0:
+        return ""
+    return f"_cal_split{_safe_artifact_token(cal_split)}"
+
+
+def calibration_name_suffix(cfg: DictConfig | dict) -> str:
+    """Return the artifact name suffix for post-hoc calibration."""
+    name = calibration.get_calibration_name(cfg)
+    if name == calibration.DEFAULT_CALIBRATION:
+        return ""
+    calibration_cfg = cfg.get("calibration", {})
+    params = calibration_cfg.get("params") or {}
+    parts = [_safe_artifact_token(name)]
+    for key, value in sorted(params.items()):
+        parts.append(f"{_safe_artifact_token(key)}{_safe_artifact_token(value)}")
+    return f"_{'_'.join(parts)}"
+
+
+def conformal_name_suffix(cfg: DictConfig | dict) -> str:
+    """Return the artifact name suffix for split-conformal prediction."""
+    name = conformal.get_conformal_name(cfg)
+    if name == conformal.DEFAULT_CONFORMAL:
+        return ""
+    conformal_cfg = cfg.get("conformal", {})
+    params = conformal_cfg.get("params") or {}
+    parts = [_safe_artifact_token(name)]
+    alpha = conformal_cfg.get("alpha", None)
+    if alpha is not None:
+        parts.append(f"alpha{_safe_artifact_token(alpha)}")
+    for key, value in sorted(params.items()):
+        parts.append(f"{_safe_artifact_token(key)}{_safe_artifact_token(value)}")
+    return f"_{'_'.join(parts)}"
+
+
+def resolve_artifact_name(
+    cfg: DictConfig,
+    *,
+    include_calibration: bool = True,
+    include_conformal: bool = True,
+) -> str:
     """Build the wandb artifact name from config fields.
 
     Matches the naming convention used in train.py.
     """
-    return f"{cfg.method.name}_{cfg.base_model}_{cfg.dataset}_{cfg.seed}"
+    calibration_suffix = calibration_name_suffix(cfg) if include_calibration else ""
+    conformal_suffix = conformal_name_suffix(cfg) if include_conformal else ""
+    return (
+        f"{cfg.method.name}_{cfg.base_model}_{cfg.dataset}_{cfg.seed}"
+        f"{cal_split_name_suffix(cfg)}"
+        f"{supervised_loss_name_suffix(cfg)}"
+        f"{calibration_suffix}"
+        f"{conformal_suffix}"
+    )
 
 
-def load_model_from_wandb(
+def _download_checkpoint_from_wandb(
     artifact_name: str,
     entity: str,
     project: str,
     device: torch.device,
-) -> tuple[torch.nn.Module, dict[str, Any], str]:
-    """Download a model artifact from wandb and reconstruct the model.
-
-    Args:
-        artifact_name: Name of the wandb artifact (without version tag).
-        entity: Wandb entity.
-        project: Wandb project.
-        device: Device to load the model onto.
-
-    Returns:
-        A tuple containing:
-            - model: The reconstructed model in eval mode.
-            - cfg: The saved training config dict.
-            - run_id: The ID of the original training run.
-    """
+) -> tuple[dict[str, Any], str]:
+    """Download a wandb checkpoint artifact."""
     api = wandb.Api()
     full_name = f"{entity}/{project}/{artifact_name}:latest"
 
@@ -190,6 +256,15 @@ def load_model_from_wandb(
         raise RuntimeError(msg)
 
     checkpoint = torch.load(pt_files[0], map_location=device, weights_only=False)
+    run_id = artifact.logged_by().id
+    return checkpoint, run_id
+
+
+def _build_uncalibrated_model_from_checkpoint(
+    checkpoint: dict[str, Any],
+    device: torch.device,
+) -> tuple[torch.nn.Module, dict[str, Any]]:
+    """Reconstruct an uncalibrated benchmark model from a training checkpoint."""
     cfg = checkpoint["config"]
 
     num_classes = metadata.DATASETS[cfg["dataset"]].num_classes
@@ -205,7 +280,99 @@ def load_model_from_wandb(
     model.load_state_dict(checkpoint["model_state_dict"])
     model.to(device)
     model.eval()
+    return model, cfg
 
-    run_id = artifact.logged_by().id
 
+def _build_calibrated_model_from_checkpoint(
+    checkpoint: dict[str, Any],
+    entity: str,
+    project: str,
+    device: torch.device,
+) -> tuple[torch.nn.Module, dict[str, Any]]:
+    """Reconstruct a calibrated model from source weights plus calibration-only state."""
+    cfg = checkpoint["config"]
+    source_artifact = checkpoint[calibration.SOURCE_ARTIFACT_KEY]
+    source_checkpoint, _ = _download_checkpoint_from_wandb(source_artifact, entity, project, device)
+    if source_checkpoint.get("artifact_type") == calibration.CALIBRATION_ARTIFACT_TYPE:
+        msg = f"Calibration source artifact {source_artifact!r} is itself a calibration artifact."
+        raise RuntimeError(msg)
+
+    model, _ = _build_uncalibrated_model_from_checkpoint(source_checkpoint, device)
+    calibrated_model = calibration.apply_calibration(model, cfg)
+    calibration.load_calibration_state(
+        calibrated_model,
+        cfg,
+        checkpoint[calibration.CALIBRATION_STATE_DICT_KEY],
+    )
+    calibrated_model.to(device)
+    calibrated_model.eval()
+    return calibrated_model, cfg
+
+
+def _build_conformal_model_from_checkpoint(
+    checkpoint: dict[str, Any],
+    entity: str,
+    project: str,
+    device: torch.device,
+) -> tuple[torch.nn.Module, dict[str, Any]]:
+    """Reconstruct a conformal model from source artifact plus conformal-only state."""
+    cfg = checkpoint["config"]
+    source_artifact = checkpoint[conformal.SOURCE_ARTIFACT_KEY]
+    source_checkpoint, _ = _download_checkpoint_from_wandb(source_artifact, entity, project, device)
+    if source_checkpoint.get("artifact_type") == conformal.CONFORMAL_ARTIFACT_TYPE:
+        msg = f"Conformal source artifact {source_artifact!r} is itself a conformal artifact."
+        raise RuntimeError(msg)
+
+    source_model, _ = _build_model_from_checkpoint(source_checkpoint, entity, project, device)
+    conformal_model = conformal.apply_conformal(source_model, cfg)
+    conformal.load_conformal_state(
+        conformal_model,
+        cfg,
+        checkpoint[conformal.CONFORMAL_STATE_DICT_KEY],
+    )
+    conformal_model.to(device)
+    conformal_model.eval()
+    return conformal_model, cfg
+
+
+def _build_model_from_checkpoint(
+    checkpoint: dict[str, Any],
+    entity: str,
+    project: str,
+    device: torch.device,
+) -> tuple[torch.nn.Module, dict[str, Any]]:
+    """Reconstruct a benchmark model from any supported checkpoint artifact."""
+    artifact_type = checkpoint.get("artifact_type")
+    if artifact_type == calibration.CALIBRATION_ARTIFACT_TYPE:
+        return _build_calibrated_model_from_checkpoint(checkpoint, entity, project, device)
+    if artifact_type == conformal.CONFORMAL_ARTIFACT_TYPE:
+        return _build_conformal_model_from_checkpoint(checkpoint, entity, project, device)
+    return _build_uncalibrated_model_from_checkpoint(checkpoint, device)
+
+
+def load_model_from_wandb(
+    artifact_name: str,
+    entity: str,
+    project: str,
+    device: torch.device,
+) -> tuple[torch.nn.Module, dict[str, Any], str]:
+    """Download a model artifact from wandb and reconstruct the model.
+
+    Calibration artifacts are restored by first loading their source model artifact,
+    then applying the configured calibration wrapper and loading calibration-only state.
+
+    Args:
+        artifact_name: Name of the wandb artifact (without version tag).
+        entity: Wandb entity.
+        project: Wandb project.
+        device: Device to load the model onto.
+
+    Returns:
+        A tuple containing:
+            - model: The reconstructed model in eval mode.
+            - cfg: The saved checkpoint config dict.
+            - run_id: The ID of the run that logged ``artifact_name``.
+    """
+    checkpoint, run_id = _download_checkpoint_from_wandb(artifact_name, entity, project, device)
+    model, cfg = _build_model_from_checkpoint(checkpoint, entity, project, device)
     return model, cfg, run_id

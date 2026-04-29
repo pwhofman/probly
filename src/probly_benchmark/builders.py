@@ -25,6 +25,7 @@ from tqdm import tqdm
 from probly.method.batchensemble import batchensemble
 from probly.method.bayesian import bayesian
 from probly.method.credal_ensembling import credal_ensembling
+from probly.method.credal_net import credal_net
 from probly.method.credal_relative_likelihood import credal_relative_likelihood
 from probly.method.credal_wrapper import credal_wrapper
 from probly.method.dare import dare
@@ -39,6 +40,7 @@ from probly.method.natural_posterior_network import natural_posterior_network
 from probly.method.posterior_network import posterior_network
 from probly.method.subensemble import subensemble
 from probly_benchmark import models
+from probly_benchmark.base import base
 
 if TYPE_CHECKING:
     from torch.utils.data import DataLoader
@@ -48,6 +50,7 @@ logger = logging.getLogger(__name__)
 
 
 METHODS = {
+    "base": base,
     "batchensemble": batchensemble,
     "bayesian": bayesian,
     "dare": dare,
@@ -59,6 +62,7 @@ METHODS = {
     "posterior_network": posterior_network,
     "ensemble": ensemble,
     "credal_ensembling": credal_ensembling,
+    "credal_net": credal_net,
     "credal_relative_likelihood": credal_relative_likelihood,
     "credal_wrapper": credal_wrapper,
     "efficient_credal_prediction": efficient_credal_prediction,

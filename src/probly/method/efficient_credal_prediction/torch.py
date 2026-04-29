@@ -35,6 +35,6 @@ class TorchEfficientCredalPredictor(nn.Module):
         """Per-class upper probability bounds."""
         return cast("torch.Tensor", self.upper)
 
-    def forward(self, x: torch.Tensor) -> nn.Module:
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward pass through the predictor."""
         return self.predictor(x)

@@ -508,6 +508,224 @@ class TestRegistryMetaDispatch:
         with pytest.raises(RuntimeError, match="Ambiguous dispatch"):
             f(candidate)
 
+    def test_registry_meta_instance_ambiguity_same_function_matches_functools(self) -> None:
+        class RegistryA(metaclass=RegistryMeta):
+            pass
+
+        class RegistryB(metaclass=RegistryMeta):
+            pass
+
+        class Candidate:
+            pass
+
+        candidate = Candidate()
+        RegistryA.register_instance(candidate)
+        RegistryB.register_instance(candidate)
+
+        @flexdispatch
+        def f(value: object) -> str:
+            del value
+            return "object"
+
+        def shared(value: object) -> str:
+            del value
+            return "shared"
+
+        f.register(RegistryA | RegistryB, shared)
+
+        with pytest.raises(RuntimeError, match="Ambiguous dispatch"):
+            f(candidate)
+
+    def test_registry_meta_regular_multiple_inheritance_same_function_matches_functools(self) -> None:
+        class RegistryA(metaclass=RegistryMeta):
+            pass
+
+        class RegistryB(metaclass=RegistryMeta):
+            pass
+
+        class Candidate(RegistryA, RegistryB):  # ty: ignore[conflicting-metaclass]
+            pass
+
+        @functools_singledispatch
+        def ref(value: object) -> str:
+            del value
+            return "object"
+
+        @flexdispatch
+        def got(value: object) -> str:
+            del value
+            return "object"
+
+        def shared(value: object) -> str:
+            del value
+            return "shared"
+
+        ref.register(RegistryA | RegistryB, shared)
+        got.register(RegistryA | RegistryB, shared)
+
+        assert ref(Candidate()) == "shared"
+        assert got(Candidate()) == "shared"
+
+    def test_registry_meta_regular_multiple_inheritance_mro_matches_functools(self) -> None:
+        class RegistryA(metaclass=RegistryMeta):
+            pass
+
+        class RegistryB(metaclass=RegistryMeta):
+            pass
+
+        class Candidate(RegistryA, RegistryB):  # ty: ignore[conflicting-metaclass]
+            pass
+
+        @functools_singledispatch
+        def ref(value: object) -> str:
+            del value
+            return "object"
+
+        @ref.register(RegistryA)
+        def _ref_a(value: RegistryA) -> str:
+            del value
+            return "A"
+
+        @ref.register(RegistryB)
+        def _ref_b(value: RegistryB) -> str:
+            del value
+            return "B"
+
+        @flexdispatch
+        def got(value: object) -> str:
+            del value
+            return "object"
+
+        @got.register(RegistryA)
+        def _got_a(value: RegistryA) -> str:
+            del value
+            return "A"
+
+        @got.register(RegistryB)
+        def _got_b(value: RegistryB) -> str:
+            del value
+            return "B"
+
+        assert ref(Candidate()) == "A"
+        assert got(Candidate()) == ref(Candidate())
+
+    def test_registry_meta_regular_multiple_inheritance_reverse_mro_matches_functools(self) -> None:
+        class RegistryA(metaclass=RegistryMeta):
+            pass
+
+        class RegistryB(metaclass=RegistryMeta):
+            pass
+
+        class Candidate(RegistryB, RegistryA):  # ty: ignore[conflicting-metaclass]
+            pass
+
+        @functools_singledispatch
+        def ref(value: object) -> str:
+            del value
+            return "object"
+
+        @ref.register(RegistryA)
+        def _ref_a(value: RegistryA) -> str:
+            del value
+            return "A"
+
+        @ref.register(RegistryB)
+        def _ref_b(value: RegistryB) -> str:
+            del value
+            return "B"
+
+        @flexdispatch
+        def got(value: object) -> str:
+            del value
+            return "object"
+
+        @got.register(RegistryA)
+        def _got_a(value: RegistryA) -> str:
+            del value
+            return "A"
+
+        @got.register(RegistryB)
+        def _got_b(value: RegistryB) -> str:
+            del value
+            return "B"
+
+        assert ref(Candidate()) == "B"
+        assert got(Candidate()) == ref(Candidate())
+
+    def test_registry_meta_regular_subclass_chain_matches_functools(self) -> None:
+        class RegistryBase(metaclass=RegistryMeta):
+            pass
+
+        class RegistrySub(RegistryBase):
+            pass
+
+        class Candidate(RegistrySub):
+            pass
+
+        @functools_singledispatch
+        def ref(value: object) -> str:
+            del value
+            return "object"
+
+        @ref.register(RegistryBase)
+        def _ref_base(value: RegistryBase) -> str:
+            del value
+            return "base"
+
+        @ref.register(RegistrySub)
+        def _ref_sub(value: RegistrySub) -> str:
+            del value
+            return "sub"
+
+        @flexdispatch
+        def got(value: object) -> str:
+            del value
+            return "object"
+
+        @got.register(RegistryBase)
+        def _got_base(value: RegistryBase) -> str:
+            del value
+            return "base"
+
+        @got.register(RegistrySub)
+        def _got_sub(value: RegistrySub) -> str:
+            del value
+            return "sub"
+
+        assert ref(Candidate()) == "sub"
+        assert got(Candidate()) == ref(Candidate())
+
+    def test_registry_meta_instance_match_still_conflicts_with_regular_type_match(self) -> None:
+        class RegistryA(metaclass=RegistryMeta):
+            pass
+
+        class RegistryB(metaclass=RegistryMeta):
+            pass
+
+        class Candidate(RegistryA):
+            pass
+
+        candidate = Candidate()
+        RegistryB.register_instance(candidate)
+
+        @flexdispatch
+        def f(value: object) -> str:
+            del value
+            return "object"
+
+        @f.register(RegistryA)
+        def _a_impl(value: RegistryA) -> str:
+            del value
+            return "A"
+
+        @f.register(RegistryB)
+        def _b_impl(value: RegistryB) -> str:
+            del value
+            return "B"
+
+        with pytest.raises(RuntimeError, match="Ambiguous dispatch"):
+            f(candidate)
+
     def test_regular_type_dispatch_more_specific_than_registry_match_wins(self) -> None:
         class RegistryType(metaclass=RegistryMeta):
             pass

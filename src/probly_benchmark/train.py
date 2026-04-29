@@ -40,8 +40,7 @@ from probly.method.credal_wrapper import CredalWrapperPredictor
 from probly.method.dare import DarePredictor
 from probly.method.ddu import DDUPredictor
 from probly.method.ensemble import EnsemblePredictor
-from probly.method.subensemble import SubensemblePredictor
-from probly_benchmark import data, metadata, utils
+from probly_benchmark import conformal, data, metadata, utils
 from probly_benchmark.builders import BuildContext, build_model
 from probly_benchmark.paths import CHECKPOINT_PATH
 from probly_benchmark.train_funcs import (
@@ -72,6 +71,34 @@ def _get_state_dict(model: nn.Module | list[nn.Module]) -> dict | list[dict]:
     if isinstance(model, list):
         return [cast("nn.Module", m).state_dict() for m in model]
     return model.state_dict()
+
+
+def _log_artifact_file(path: pathlib.Path, artifact_name: str, metadata: dict[str, Any]) -> None:
+    """Log a checkpoint file as a wandb model artifact."""
+    artifact = wandb.Artifact(name=artifact_name, type="model", metadata=metadata)
+    artifact.add_file(str(path))
+    wandb.log_artifact(artifact)
+
+
+def _save_checkpoint_artifact(model: nn.Module, cfg: DictConfig, test_metrics: dict[str, float]) -> None:
+    """Save and log the trained model checkpoint artifact."""
+    metadata = cast("dict[str, Any]", OmegaConf.to_container(cfg, resolve=True, throw_on_missing=True))
+    checkpoint = {
+        "model_state_dict": _get_state_dict(model),
+        "config": metadata,
+        "metrics": test_metrics,
+    }
+    artifact_name = utils.resolve_artifact_name(cfg)
+
+    if cfg.save_to_disk:
+        path = pathlib.Path(CHECKPOINT_PATH).joinpath(f"{artifact_name}.pt")
+        torch.save(checkpoint, path)
+        _log_artifact_file(path, artifact_name, metadata)
+    else:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp).joinpath(f"{artifact_name}.pt")
+            torch.save(checkpoint, path)
+            _log_artifact_file(path, artifact_name, metadata)
 
 
 def get_optimizer(
@@ -124,6 +151,62 @@ SCHEDULERS: dict[str, Callable[..., optim.lr_scheduler.LRScheduler] | None] = {
     "warmup_cosine": _make_warmup_cosine,
 }
 
+SUPERVISED_LOSS_METHODS = {
+    "base",  # Special "method" for training a predictor without applying a method.
+    "batchensemble",
+    "credal_ensembling",
+    "credal_wrapper",
+    "dropconnect",
+    "dropout",
+    "efficient_credal_prediction",
+    "ensemble",
+    "het_nets",
+    "subensemble",
+}
+"""The set of method names that support non-default supervised losses."""
+
+
+def _validate_supervised_loss_config(cfg: DictConfig) -> None:
+    """Validate that non-default supervised losses are only used with supported methods."""
+    supervised_loss_name = utils.get_supervised_loss_name(cfg)
+    if supervised_loss_name == utils.DEFAULT_SUPERVISED_LOSS:
+        return
+    if cfg.method.name not in SUPERVISED_LOSS_METHODS:
+        supported = ", ".join(sorted(SUPERVISED_LOSS_METHODS))
+        msg = (
+            f"supervised_loss.name={supervised_loss_name!r} is only supported for CE-compatible methods "
+            f"({supported}); got method={cfg.method.name!r}."
+        )
+        raise ValueError(msg)
+
+
+def _validate_conformal_config(cfg: DictConfig) -> None:
+    """Reject split-conformal methods during training."""
+    conformal_name = conformal.get_conformal_name(cfg)
+    if conformal_name == conformal.DEFAULT_CONFORMAL:
+        return
+    conformal.validate_conformal_config(cfg)
+    msg = (
+        f"conformal.name={conformal_name!r} is a split-conformal post-hoc method. "
+        "Train the base model first, then apply split-conformal prediction with conformalize.py."
+    )
+    raise ValueError(msg)
+
+
+def _build_train_kwargs(cfg: DictConfig) -> dict[str, Any]:
+    """Build keyword arguments forwarded to method-specific training and evaluation functions."""
+    train_kwargs: dict[str, Any] = (
+        OmegaConf.to_container(cfg.method.train, resolve=True) if cfg.method.get("train") else {}
+    )  # ty: ignore[invalid-assignment]
+    if cfg.method.name in SUPERVISED_LOSS_METHODS:
+        train_kwargs["supervised_loss"] = OmegaConf.to_container(cfg.supervised_loss, resolve=True)
+    return train_kwargs
+
+
+def _build_method_kwargs(cfg: DictConfig) -> dict[str, Any]:
+    """Build keyword arguments forwarded to the method constructor."""
+    return OmegaConf.to_container(cfg.method.params, resolve=True) if cfg.method.get("params") else {}  # ty: ignore
+
 
 def get_scheduler(
     name: str,
@@ -174,7 +257,7 @@ def _maybe_compile_forward(model: nn.Module, device: torch.device) -> None:
     model.forward = torch.compile(model.forward)
 
 
-def _training_loop(  # noqa: PLR0912
+def _training_loop(  # noqa: PLR0912, PLR0915
     model: nn.Module,
     train_loader: DataLoader,
     val_loader: DataLoader | None,
@@ -186,6 +269,7 @@ def _training_loop(  # noqa: PLR0912
     val_fn: Callable[..., tuple[float, float]],
     log_prefix: str = "",
     param_groups: list[dict[str, Any]] | None = None,
+    extra_metrics: dict[str, Any] | None = None,
 ) -> None:
     """Run the training loop for a single model.
 
@@ -205,6 +289,8 @@ def _training_loop(  # noqa: PLR0912
             in place of ``model.parameters()``. Each dict can override the optimizer's
             default ``lr`` / ``weight_decay`` for a subset of parameters; used by
             BatchEnsemble to apply a slower lr and disable weight decay on fast weights.
+        extra_metrics: Optional dict of additional fixed metrics logged every epoch
+            alongside the standard loss/accuracy keys (e.g. ``{"member_0/relative_likelihood": 1.0}``).
     """
     _maybe_compile_forward(model, device)
 
@@ -233,12 +319,14 @@ def _training_loop(  # noqa: PLR0912
     amp_enabled = cfg.get("amp", False)
     scaler = GradScaler(device.type) if amp_enabled else None
 
-    epoch_key = "epoch"
+    # Each prefixed member gets its own hidden epoch counter as x-axis so that
+    # all member charts share a 0..n_epochs range rather than a global step.
     if log_prefix:
+        epoch_key: str | None = f"{log_prefix.rstrip('/')}_epoch"
+        wandb.define_metric(epoch_key, hidden=True)
         wandb.define_metric(f"{log_prefix}*", step_metric=epoch_key)
     else:
-        for _m in ("train_loss", "val_loss", "val_acc"):
-            wandb.define_metric(_m, step_metric=epoch_key)
+        epoch_key = None
 
     for epoch in tqdm(range(cfg.epochs), desc=f"{log_prefix}Epoch"):
         model.train()
@@ -264,7 +352,11 @@ def _training_loop(  # noqa: PLR0912
         running_loss /= len(train_loader)
 
         val_loss: float | None = None
-        log_data = {epoch_key: epoch, f"{log_prefix}train_loss": running_loss}
+        log_data: dict[str, Any] = {f"{log_prefix}train_loss": running_loss}
+        if epoch_key is not None:
+            log_data[epoch_key] = epoch
+        if extra_metrics:
+            log_data.update(extra_metrics)
         if val_loader:
             val_loss, val_acc = val_fn(model, val_loader, device, amp_enabled, epoch=epoch, **train_kwargs)
             log_data[f"{log_prefix}val_loss"] = val_loss
@@ -316,7 +408,7 @@ def train_model(
     )
 
 
-@train_model.register((EnsemblePredictor, CredalEnsemblingPredictor, CredalWrapperPredictor, SubensemblePredictor))
+@train_model.register((EnsemblePredictor, CredalEnsemblingPredictor, CredalWrapperPredictor))
 def _(
     model: EnsemblePredictor,
     train_loader: DataLoader,
@@ -382,7 +474,7 @@ def _(
     run: Any,  # noqa: ANN401
     train_kwargs: dict[str, Any],
 ) -> None:
-    """Train a BatchEnsemble predictor with the recipe of :cite:`wenBatchEnsemble2020`.
+    """Train a BatchEnsemble predictor with the recipe of :cite:`wen2020batchensemble`.
 
     The shared kernel uses the recipe's full lr and weight decay; ``r``, ``s``, and per-member
     biases use ``fast_weight_lr_multiplier * base_lr``; ``r`` and ``s`` have weight decay disabled.
@@ -458,7 +550,7 @@ def _compute_log_likelihood(
     return -total_loss / total_samples
 
 
-def _training_loop_relative_likelihood(  # noqa: PLR0912
+def _training_loop_relative_likelihood(  # noqa: PLR0912, PLR0915
     model: nn.Module,
     train_loader: DataLoader,
     val_loader: DataLoader | None,
@@ -491,7 +583,8 @@ def _training_loop_relative_likelihood(  # noqa: PLR0912
     amp_enabled = cfg.get("amp", False)
     scaler = GradScaler(device.type) if amp_enabled else None
 
-    epoch_key = "epoch"
+    epoch_key = f"{log_prefix.rstrip('/')}_epoch"
+    wandb.define_metric(epoch_key, hidden=True)
     wandb.define_metric(f"{log_prefix}*", step_metric=epoch_key)
 
     stopped = False
@@ -605,7 +698,7 @@ def _(
     batch_check = train_kwargs.get("batch_check", False)
     num_remaining = len(members) - 1
 
-    # Train first member fully (standard training loop)
+    # Train first member fully; relative_likelihood is 1.0 by definition for the reference model
     _training_loop(
         members[0],
         train_loader,
@@ -617,6 +710,7 @@ def _(
         train_fn=train_epoch_cross_entropy,
         val_fn=validate_cross_entropy,
         log_prefix="member_0/",
+        extra_metrics={"member_0/relative_likelihood": 1.0},
     )
 
     # Compute reference log-likelihood from the fully trained first member
@@ -706,6 +800,10 @@ def _(
     density estimator (GDA) on all training features extracted from the frozen
     encoder, which is used at inference time for epistemic uncertainty scoring.
     """
+    # The density head buffer is ~16 GB at ImageNet scale and is unused during training
+    # Parking it on CPU during training decreases footprint sufficiently to use H200 cards
+    density_device = next(model.density_head.buffers()).device  # ty: ignore[unresolved-attribute]
+    model.density_head.to("cpu")
     _training_loop(
         model,
         train_loader,
@@ -717,6 +815,8 @@ def _(
         train_fn=train_epoch,  # ty: ignore[invalid-argument-type]
         val_fn=validate,
     )
+    model.density_head.to(density_device)
+
     amp_enabled = cfg.get("amp", False)
     _fit_ddu_density_head(model, train_loader, device, amp_enabled)
     run.summary["ddu_gmm_fitted"] = True
@@ -820,7 +920,7 @@ def _(
     model_ = cast("Any", model)
     amp_enabled = cfg.get("amp", False)
     alpha = train_kwargs.get("alpha", 0.5)
-    num_classes = int(model_.lower.shape[0])
+    num_classes = metadata.DATASETS[cfg.dataset].num_classes
 
     logits_train, targets_train = utils.collect_outputs_targets_raw(
         model_.predictor,
@@ -849,20 +949,24 @@ def _adjust_batch_size_for_method(cfg: DictConfig) -> None:
 
 
 @hydra.main(version_base=None, config_path="configs/", config_name="train")
-def main(cfg: DictConfig) -> None:  # noqa: PLR0915
+def main(cfg: DictConfig) -> None:
     """Run the training script."""
     _adjust_batch_size_for_method(cfg)
 
     print("=== Training configuration ===")
     print(OmegaConf.to_yaml(cfg))
 
+    _validate_supervised_loss_config(cfg)
+    _validate_conformal_config(cfg)
+
     run_id = wandb.util.generate_id()
     seed = cfg.get("seed", None)
     utils.set_seed(seed)
 
+    run_name = f"{cfg.method.name}_{cfg.base_model}_{cfg.dataset}{utils.supervised_loss_name_suffix(cfg)}_{run_id}"
     run = wandb.init(
         id=run_id,
-        name=f"{cfg.method.name}_{cfg.base_model}_{cfg.dataset}_{run_id}",
+        name=run_name,
         entity=cfg.wandb.get("entity", None),
         project=cfg.wandb.project,
         config=OmegaConf.to_container(cfg, resolve=True, throw_on_missing=True),  # ty: ignore
@@ -892,12 +996,8 @@ def main(cfg: DictConfig) -> None:  # noqa: PLR0915
 
     num_classes = metadata.DATASETS[cfg.dataset].num_classes
 
-    method_kwargs: dict[str, Any] = (
-        OmegaConf.to_container(cfg.method.params, resolve=True) if cfg.method.get("params") else {}
-    )  # ty: ignore[invalid-assignment]
-    train_kwargs: dict[str, Any] = (
-        OmegaConf.to_container(cfg.method.train, resolve=True) if cfg.method.get("train") else {}
-    )  # ty: ignore[invalid-assignment]
+    method_kwargs = _build_method_kwargs(cfg)
+    train_kwargs = _build_train_kwargs(cfg)
 
     context = BuildContext(
         base_model_name=cfg.base_model,
@@ -930,37 +1030,7 @@ def main(cfg: DictConfig) -> None:  # noqa: PLR0915
     run.summary.update(test_metrics)
     run.log(data=test_metrics)
 
-    checkpoint = {
-        "model_state_dict": _get_state_dict(model),
-        "config": OmegaConf.to_container(cfg, resolve=True, throw_on_missing=True),
-        "metrics": test_metrics,
-    }
-
-    artifact_name = f"{cfg.method.name}_{cfg.base_model}_{cfg.dataset}_{seed}"
-
-    if cfg.save_to_disk:
-        path = pathlib.Path(CHECKPOINT_PATH).joinpath(f"{artifact_name}.pt")
-        torch.save(checkpoint, path)
-
-        artifact = wandb.Artifact(
-            name=artifact_name,
-            type="model",
-            metadata=OmegaConf.to_container(cfg, resolve=True, throw_on_missing=True),  # ty: ignore
-        )
-        artifact.add_file(str(path))
-        wandb.log_artifact(artifact)
-    else:
-        with tempfile.TemporaryDirectory() as tmp:
-            path = pathlib.Path(tmp).joinpath(f"{artifact_name}.pt")
-            torch.save(checkpoint, path)
-
-            artifact = wandb.Artifact(
-                name=artifact_name,
-                type="model",
-                metadata=OmegaConf.to_container(cfg, resolve=True, throw_on_missing=True),  # ty: ignore
-            )
-            artifact.add_file(str(path))
-            wandb.log_artifact(artifact)
+    _save_checkpoint_artifact(model, cfg, test_metrics)
 
     run.finish()
 
