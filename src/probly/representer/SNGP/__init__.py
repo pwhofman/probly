@@ -2,15 +2,9 @@
 
 from __future__ import annotations
 
-from probly.lazy_types import NUMPY_ARRAY, TORCH_TENSOR, TORCH_TENSOR_LIKE
+from probly.lazy_types import TORCH_TENSOR, TORCH_TENSOR_LIKE
 
 from ._common import SNGPRepresenter, compute_categorical_sample_from_logits
-
-
-## Array
-@compute_categorical_sample_from_logits.delayed_register(NUMPY_ARRAY)
-def _(_: type) -> None:
-    from . import array as array  # noqa: PLC0415
 
 
 ## Torch
