@@ -41,7 +41,7 @@ from probly.method.dare import DarePredictor
 from probly.method.ddu import DDUPredictor
 from probly.method.ensemble import EnsemblePredictor
 from probly.method.subensemble import SubensemblePredictor
-from probly_benchmark import data, metadata, utils
+from probly_benchmark import conformal, data, metadata, utils
 from probly_benchmark.builders import BuildContext, build_model
 from probly_benchmark.paths import CHECKPOINT_PATH
 from probly_benchmark.train_funcs import (
@@ -179,6 +179,19 @@ def _validate_supervised_loss_config(cfg: DictConfig) -> None:
             f"({supported}); got method={cfg.method.name!r}."
         )
         raise ValueError(msg)
+
+
+def _validate_conformal_config(cfg: DictConfig) -> None:
+    """Reject split-conformal methods during training."""
+    conformal_name = conformal.get_conformal_name(cfg)
+    if conformal_name == conformal.DEFAULT_CONFORMAL:
+        return
+    conformal.validate_conformal_config(cfg)
+    msg = (
+        f"conformal.name={conformal_name!r} is a split-conformal post-hoc method. "
+        "Train the base model first, then apply split-conformal prediction with conformalize.py."
+    )
+    raise ValueError(msg)
 
 
 def _build_train_kwargs(cfg: DictConfig) -> dict[str, Any]:
@@ -928,6 +941,7 @@ def main(cfg: DictConfig) -> None:
     print(OmegaConf.to_yaml(cfg))
 
     _validate_supervised_loss_config(cfg)
+    _validate_conformal_config(cfg)
 
     run_id = wandb.util.generate_id()
     seed = cfg.get("seed", None)

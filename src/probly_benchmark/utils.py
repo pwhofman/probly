@@ -12,7 +12,7 @@ import torch
 from tqdm import tqdm
 import wandb
 
-from probly_benchmark import calibration, metadata
+from probly_benchmark import calibration, conformal, metadata
 from probly_benchmark.builders import BuildContext, build_model
 
 if TYPE_CHECKING:
@@ -192,17 +192,40 @@ def calibration_name_suffix(cfg: DictConfig | dict) -> str:
     return f"_{'_'.join(parts)}"
 
 
-def resolve_artifact_name(cfg: DictConfig, *, include_calibration: bool = True) -> str:
+def conformal_name_suffix(cfg: DictConfig | dict) -> str:
+    """Return the artifact name suffix for split-conformal prediction."""
+    name = conformal.get_conformal_name(cfg)
+    if name == conformal.DEFAULT_CONFORMAL:
+        return ""
+    conformal_cfg = cfg.get("conformal", {})
+    params = conformal_cfg.get("params") or {}
+    parts = [_safe_artifact_token(name)]
+    alpha = conformal_cfg.get("alpha", None)
+    if alpha is not None:
+        parts.append(f"alpha{_safe_artifact_token(alpha)}")
+    for key, value in sorted(params.items()):
+        parts.append(f"{_safe_artifact_token(key)}{_safe_artifact_token(value)}")
+    return f"_{'_'.join(parts)}"
+
+
+def resolve_artifact_name(
+    cfg: DictConfig,
+    *,
+    include_calibration: bool = True,
+    include_conformal: bool = True,
+) -> str:
     """Build the wandb artifact name from config fields.
 
     Matches the naming convention used in train.py.
     """
-    suffix = calibration_name_suffix(cfg) if include_calibration else ""
+    calibration_suffix = calibration_name_suffix(cfg) if include_calibration else ""
+    conformal_suffix = conformal_name_suffix(cfg) if include_conformal else ""
     return (
         f"{cfg.method.name}_{cfg.base_model}_{cfg.dataset}_{cfg.seed}"
         f"{cal_split_name_suffix(cfg)}"
         f"{supervised_loss_name_suffix(cfg)}"
-        f"{suffix}"
+        f"{calibration_suffix}"
+        f"{conformal_suffix}"
     )
 
 
@@ -286,6 +309,47 @@ def _build_calibrated_model_from_checkpoint(
     return calibrated_model, cfg
 
 
+def _build_conformal_model_from_checkpoint(
+    checkpoint: dict[str, Any],
+    entity: str,
+    project: str,
+    device: torch.device,
+) -> tuple[torch.nn.Module, dict[str, Any]]:
+    """Reconstruct a conformal model from source artifact plus conformal-only state."""
+    cfg = checkpoint["config"]
+    source_artifact = checkpoint[conformal.SOURCE_ARTIFACT_KEY]
+    source_checkpoint, _ = _download_checkpoint_from_wandb(source_artifact, entity, project, device)
+    if source_checkpoint.get("artifact_type") == conformal.CONFORMAL_ARTIFACT_TYPE:
+        msg = f"Conformal source artifact {source_artifact!r} is itself a conformal artifact."
+        raise RuntimeError(msg)
+
+    source_model, _ = _build_model_from_checkpoint(source_checkpoint, entity, project, device)
+    conformal_model = conformal.apply_conformal(source_model, cfg)
+    conformal.load_conformal_state(
+        conformal_model,
+        cfg,
+        checkpoint[conformal.CONFORMAL_STATE_DICT_KEY],
+    )
+    conformal_model.to(device)
+    conformal_model.eval()
+    return conformal_model, cfg
+
+
+def _build_model_from_checkpoint(
+    checkpoint: dict[str, Any],
+    entity: str,
+    project: str,
+    device: torch.device,
+) -> tuple[torch.nn.Module, dict[str, Any]]:
+    """Reconstruct a benchmark model from any supported checkpoint artifact."""
+    artifact_type = checkpoint.get("artifact_type")
+    if artifact_type == calibration.CALIBRATION_ARTIFACT_TYPE:
+        return _build_calibrated_model_from_checkpoint(checkpoint, entity, project, device)
+    if artifact_type == conformal.CONFORMAL_ARTIFACT_TYPE:
+        return _build_conformal_model_from_checkpoint(checkpoint, entity, project, device)
+    return _build_uncalibrated_model_from_checkpoint(checkpoint, device)
+
+
 def load_model_from_wandb(
     artifact_name: str,
     entity: str,
@@ -310,10 +374,5 @@ def load_model_from_wandb(
             - run_id: The ID of the run that logged ``artifact_name``.
     """
     checkpoint, run_id = _download_checkpoint_from_wandb(artifact_name, entity, project, device)
-
-    if checkpoint.get("artifact_type") == calibration.CALIBRATION_ARTIFACT_TYPE:
-        model, cfg = _build_calibrated_model_from_checkpoint(checkpoint, entity, project, device)
-    else:
-        model, cfg = _build_uncalibrated_model_from_checkpoint(checkpoint, device)
-
+    model, cfg = _build_model_from_checkpoint(checkpoint, entity, project, device)
     return model, cfg, run_id

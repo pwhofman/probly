@@ -2,6 +2,7 @@ defaults:
   - _self_
   - supervised_loss: cross_entropy
   - calibration: none
+  - conformal: none
   - recipe: ???
   - method: ???
 
