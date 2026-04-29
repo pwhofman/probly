@@ -99,50 +99,38 @@ class LabelRelaxationLoss(nn.Module):
         return loss.mean()
 
 
-class LabelSmoothingLoss(nn.Module):
-    """Label smoothing loss for classification logits.
+class LabelSmoothingLoss(nn.CrossEntropyLoss):
+    """Cross-entropy loss with label smoothing.
 
-    This loss uses the same smoothing convention as
-    :class:`torch.nn.CrossEntropyLoss`: each class receives ``epsilon / num_classes``
-    probability mass, and the target class receives the remaining ``1 - epsilon``.
+    This is a thin wrapper around :class:`torch.nn.CrossEntropyLoss` that exposes
+    PyTorch's ``label_smoothing`` parameter as ``epsilon``.
 
     Attributes:
         epsilon: Amount of probability mass to smooth away from the one-hot target.
     """
 
-    def __init__(self, epsilon: float = 0.1) -> None:
+    def __init__(
+        self,
+        epsilon: float = 0.1,
+        weight: torch.Tensor | None = None,
+        ignore_index: int = -100,
+        reduction: str = "mean",
+    ) -> None:
         """Initializes an instance of the LabelSmoothingLoss class.
 
         Args:
             epsilon: Amount of probability mass to smooth away from the one-hot target.
-
-        Raises:
-            ValueError: If ``epsilon`` is outside the interval ``[0, 1]``.
+            weight: Optional manual rescaling weight for each class.
+            ignore_index: Target value ignored by the loss.
+            reduction: Reduction applied to the output. One of ``"none"``, ``"mean"``, or ``"sum"``.
         """
-        super().__init__()
-        if not 0 <= epsilon <= 1:
-            msg = f"epsilon must be between 0 and 1, got {epsilon}"
-            raise ValueError(msg)
+        super().__init__(
+            weight=weight,
+            ignore_index=ignore_index,
+            reduction=reduction,
+            label_smoothing=epsilon,
+        )
         self.epsilon = epsilon
-
-    def forward(self, inputs: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
-        """Forward pass of the label smoothing loss.
-
-        Args:
-            inputs: torch.Tensor of size (n_instances, n_classes).
-            targets: torch.Tensor of size (n_instances,).
-
-        Returns:
-            loss: torch.Tensor, mean loss value.
-        """
-        num_classes = inputs.shape[1]
-        log_probs = F.log_softmax(inputs, dim=1)
-        smooth = self.epsilon / num_classes
-        target_prob = 1 - self.epsilon + smooth
-        with torch.no_grad():
-            targets_smooth = torch.full_like(log_probs, smooth)
-            targets_smooth.scatter_(1, targets.unsqueeze(1), target_prob)
-        return -(targets_smooth * log_probs).sum(dim=1).mean()
 
 
 class FocalLoss(nn.Module):
