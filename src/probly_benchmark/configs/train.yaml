@@ -1,5 +1,7 @@
 defaults:
   - _self_
+  - supervised_loss: cross_entropy
+  - conformal: none
   - method: ??? # user must specify a method.
   - recipe: ??? # user must specify a recipe.
 
