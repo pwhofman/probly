@@ -205,3 +205,104 @@ class TestEdgeCases:
                 num_heads=num_heads,
                 head_layer=head_layer,
             )
+
+    def test_non_sequential_without_head_raises(self) -> None:
+        """Non-Sequential base without an explicit head should error and point to the workaround."""
+
+        class NotSequential(nn.Module):
+            def __init__(self) -> None:
+                super().__init__()
+                self.fc = nn.Linear(2, 2)
+
+            def forward(self, x: torch.Tensor) -> torch.Tensor:
+                return self.fc(x)
+
+        with pytest.raises(ValueError, match="pass an explicit head module"):
+            subensemble(NotSequential(), num_heads=2)
+
+
+class TestNonSequentialBackbone:
+    """Tests for the explicit-head path on non-Sequential backbones (the ResNet-style use case)."""
+
+    def test_structure_with_explicit_head(self, torch_tiny_encoder: nn.Module) -> None:
+        """Each member is Sequential(frozen_backbone, head_i) with len == num_heads."""
+        head = nn.Linear(4, 3)
+        num_heads = 4
+
+        model = subensemble(torch_tiny_encoder, num_heads=num_heads, head=head)
+
+        assert isinstance(model, nn.ModuleList)
+        assert len(model) == num_heads
+        for member in model:
+            assert isinstance(member, nn.Sequential)
+
+    def test_forward_runs(self, torch_tiny_encoder: nn.Module) -> None:
+        """Forward through a member produces the head's output shape."""
+        head = nn.Linear(4, 3)
+        model = subensemble(torch_tiny_encoder, num_heads=2, head=head)
+
+        x = torch.randn(5, 1, 8, 8)
+        out = model[0](x)
+
+        assert out.shape == (5, 3)
+
+    def test_heads_have_independent_init_when_reset(self, torch_tiny_encoder: nn.Module) -> None:
+        """reset_params=True yields different head weights across members."""
+        head = nn.Linear(4, 3)
+        model = subensemble(torch_tiny_encoder, num_heads=2, head=head, reset_params=True)
+
+        w0 = model[0][1].weight.detach().clone()
+        w1 = model[1][1].weight.detach().clone()
+        assert not torch.equal(w0, w1)
+
+    def test_backbone_params_frozen(self, torch_tiny_encoder: nn.Module) -> None:
+        """All backbone parameters have requires_grad=False after wrapping."""
+        head = nn.Linear(4, 3)
+        model = subensemble(torch_tiny_encoder, num_heads=2, head=head)
+
+        frozen_backbone = model[0][0]
+        for p in frozen_backbone.parameters():
+            assert p.requires_grad is False
+        head_params = list(model[0][1].parameters())
+        assert all(p.requires_grad for p in head_params)
+
+
+class TestFrozenBackboneInvariants:
+    """Regression tests for the eval-mode-stable behavior added by _FrozenBackbone."""
+
+    def test_backbone_stays_eval_after_model_train(self) -> None:
+        """model.train() must not flip the backbone (or its BN children) back to train mode."""
+        backbone = nn.Sequential(nn.Conv2d(1, 4, 3, padding=1), nn.BatchNorm2d(4))
+        head = nn.Linear(4, 2)
+        model = subensemble(backbone, num_heads=2, head=head)
+
+        model.train()
+
+        for member in model:
+            frozen_backbone = member[0]
+            assert frozen_backbone.training is False
+            for sub in frozen_backbone.modules():
+                assert sub.training is False
+            assert member[1].training is True
+
+    def test_bn_running_stats_dont_drift(self) -> None:
+        """Forward through a member must not update the backbone's BatchNorm running stats."""
+        bn = nn.BatchNorm2d(4)
+        running_mean = bn.running_mean
+        running_var = bn.running_var
+        assert running_mean is not None
+        assert running_var is not None
+        running_mean.fill_(0.5)
+        running_var.fill_(2.0)
+        backbone = nn.Sequential(nn.Conv2d(1, 4, 3, padding=1), bn)
+        head = nn.Sequential(nn.AdaptiveAvgPool2d(1), nn.Flatten(), nn.Linear(4, 2))
+
+        model = subensemble(backbone, num_heads=1, head=head)
+        model.train()
+
+        running_mean_before = running_mean.detach().clone()
+        running_var_before = running_var.detach().clone()
+        model[0](torch.randn(8, 1, 8, 8))
+
+        assert torch.equal(running_mean, running_mean_before)
+        assert torch.equal(running_var, running_var_before)
