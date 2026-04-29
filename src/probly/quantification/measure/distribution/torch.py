@@ -25,8 +25,10 @@ from ._common import (
 # Entropy
 
 
-@entropy.register(TorchCategoricalDistribution)
-def torch_categorical_entropy(distribution: TorchCategoricalDistribution, base: LogBase = None) -> torch.Tensor:
+@entropy.register
+def torch_categorical_entropy(
+    distribution: TorchCategoricalDistribution | torch.Tensor, base: LogBase = None
+) -> torch.Tensor:
     """Compute the entropy of a categorical distribution represented as a PyTorch tensor."""
     if isinstance(distribution, TorchCategoricalDistribution):
         p = distribution.probabilities
@@ -38,7 +40,6 @@ def torch_categorical_entropy(distribution: TorchCategoricalDistribution, base: 
         return entropy
     if base == "normalize":
         base = float(p.shape[-1])
-
     return entropy / torch.log(torch.tensor(base))
 
 
