@@ -1,5 +1,0 @@
-# @package method
-name: "plain"
-calibration:
-  method: "platt"
-  cal_split: 0.25

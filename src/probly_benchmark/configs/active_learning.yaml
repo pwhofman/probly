@@ -1,8 +1,11 @@
 defaults:
   - _self_
   - method: ???
+  - calibration: none
   - al_strategy: uncertainty
+  - conformal: none
   - al_dataset: ???
+  - supervised_loss: cross_entropy
 
 # AL loop
 initial_size: 1000
@@ -28,9 +31,6 @@ model_type: "logit_classifier"
 seed: 0
 device: "cuda"
 
-# Uncertainty measure EU (epistemic unc.) or TU (total unc.)
-uncertainty_decomposition: EU
-
 # WandB (AL-level logging only)
 wandb:
   enabled: true
@@ -44,3 +44,5 @@ wandb:
 # don't write a stray file. Enable locally with ``save_results=true``.
 save_results: false
 results_file: "al_results.json"
+
+calibration_size: 0.25

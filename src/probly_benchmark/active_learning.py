@@ -26,8 +26,8 @@ from probly.evaluation.active_learning import (
     compute_nauc,
     from_dataset,
 )
-from probly.quantification.notion import EpistemicUncertainty, TotalUncertainty
-from probly_benchmark.al_estimators import BaselineEstimator, ConformalEstimator, UncertaintyEstimator
+from probly.quantification.notion import EpistemicUncertainty, Notion, TotalUncertainty
+from probly_benchmark.al_estimators import BaseEstimator, UncertaintyEstimator
 from probly_benchmark.data import get_data_al
 from probly_benchmark.metadata import AL_DATASETS
 from probly_benchmark.utils import set_seed
@@ -37,6 +37,19 @@ logger = logging.getLogger(__name__)
 _UNCERTAINTY_NOTIONS = {"EU": EpistemicUncertainty, "TU": TotalUncertainty}
 
 
+def _resolve_notion(cfg: DictConfig) -> type[Notion]:
+    """Read the uncertainty notion from the strategy config and validate it."""
+    notion_key = cfg.al_strategy.get("notion", "EU")
+    permitted = list(cfg.al_strategy.get("permitted_notions", list(_UNCERTAINTY_NOTIONS)))
+    if notion_key not in permitted:
+        msg = f"Notion {notion_key!r} is not permitted for strategy {cfg.al_strategy.name!r}. Allowed: {permitted}"
+        raise ValueError(msg)
+    if notion_key not in _UNCERTAINTY_NOTIONS:
+        msg = f"Unknown uncertainty notion {notion_key!r}. Known: {list(_UNCERTAINTY_NOTIONS)}"
+        raise ValueError(msg)
+    return _UNCERTAINTY_NOTIONS[notion_key]
+
+
 def _build_estimator(
     cfg: DictConfig,
     *,
@@ -44,59 +57,32 @@ def _build_estimator(
     num_classes: int,
     in_features: int | None,
     device: torch.device,
-) -> BaselineEstimator | UncertaintyEstimator | ConformalEstimator:
-    """Dispatch estimator based on method and strategy combination.
+) -> BaseEstimator | UncertaintyEstimator:
+    """Dispatch estimator based on method name.
 
-    ``plain`` and ``ensemble`` with baseline strategies (margin/badge/random)
-    use :class:`BaselineEstimator`.  Methods starting with ``conformal_`` use
-    :class:`ConformalEstimator`.  Everything else uses
-    :class:`UncertaintyEstimator`.
+    ``base`` uses :class:`BaseEstimator` (with optional calibration/conformal
+    via config composition).  Everything else uses :class:`UncertaintyEstimator`.
     """
     method = cfg.method.name
-    strategy = cfg.al_strategy.name
     raw_params = cfg.method.get("params")
     method_params = cast("dict[str, Any]", OmegaConf.to_container(raw_params, resolve=True)) if raw_params else {}
+    raw_train = cfg.method.get("train")
+    train_kwargs = cast("dict[str, Any]", OmegaConf.to_container(raw_train, resolve=True)) if raw_train else {}
 
-    # --- Conformal methods ---
-    if method.startswith("conformal_"):
-        al_section = cfg.method.get("active_learning", {})
-        score_name = al_section.get("score", "lac")
-        alpha = float(al_section.get("alpha", 0.1))
-        cal_split = float(al_section.get("cal_split", 0.25))
-        raw_score_params = al_section.get("params")
-        score_params = (
-            cast("dict[str, Any]", OmegaConf.to_container(raw_score_params, resolve=True)) if raw_score_params else {}
-        )
-        return ConformalEstimator(
-            cfg=cfg,
-            base_model_name=base_model_name,
-            method_name=score_name,
-            method_params=score_params,
-            num_classes=num_classes,
-            device=device,
-            in_features=in_features,
-            alpha=alpha,
-            cal_split=cal_split,
-        )
+    needs_conformal = cfg.conformal.name != "none"
 
-    # --- Baseline (plain model, optionally calibrated) ---
-    if method == "plain":
-        if strategy == "uncertainty":
-            msg = "Method 'plain' cannot use 'uncertainty' strategy — use margin, badge, or random."
-            raise ValueError(msg)
-        return BaselineEstimator(
+    if method == "base" and not needs_conformal:
+        return BaseEstimator(
             cfg=cfg,
             base_model_name=base_model_name,
             method_name=method,
             method_params=method_params,
+            train_kwargs=train_kwargs,
             num_classes=num_classes,
             device=device,
             in_features=in_features,
         )
 
-    # --- Uncertainty methods ---
-    raw_train = cfg.method.get("train")
-    train_kwargs = cast("dict[str, Any]", OmegaConf.to_container(raw_train, resolve=True)) if raw_train else {}
     raw_al = cfg.method.get("active_learning")
     rep_kwargs = cast("dict[str, Any]", OmegaConf.to_container(raw_al, resolve=True)) if raw_al else {}
 
@@ -110,7 +96,7 @@ def _build_estimator(
         device=device,
         in_features=in_features,
         rep_kwargs=rep_kwargs,
-        uncertainty_notion=_UNCERTAINTY_NOTIONS[cfg.uncertainty_decomposition],
+        uncertainty_notion=_resolve_notion(cfg),
     )
 
 

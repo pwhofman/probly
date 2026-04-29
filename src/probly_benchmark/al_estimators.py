@@ -2,25 +2,22 @@
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
 import logging
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 import torch
 from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
 
-from probly.calibrator import Calibrator, calibrate
-from probly.method.calibration import platt_scaling, temperature_scaling, vector_scaling
-from probly.method.conformal import conformal_aps, conformal_lac, conformal_raps
-from probly.predictor import predict_single
-from probly.quantification import quantify
-from probly.quantification.notion import EpistemicUncertainty, Notion, TotalUncertainty
+from probly.calibrator import calibrate
+from probly.method.calibration import CalibrationPredictor, temperature_scaling, vector_scaling
+from probly.method.conformal import ConformalSetPredictor, conformal_aps, conformal_lac, conformal_raps
+from probly.predictor import predict
+from probly.quantification import decompose
+from probly.quantification.notion import EpistemicUncertainty, Notion
 from probly.representer import representer
-from probly_benchmark import models
 from probly_benchmark.builders import BuildContext, build_model
-from probly_benchmark.train import _training_loop, train_model
-from probly_benchmark.train_funcs import train_epoch_cross_entropy, validate_cross_entropy
+from probly_benchmark.train import train_model
 
 if TYPE_CHECKING:
     from omegaconf import DictConfig
@@ -38,15 +35,14 @@ _CLASSIFICATION_LAYER = {
 }
 
 _CALIBRATION_METHODS = {
-    "temperature": lambda model, **_kw: temperature_scaling(model),
-    "platt": lambda model, **_kw: platt_scaling(model),
-    "vector": lambda model, **kw: vector_scaling(model, num_classes=kw.get("num_classes")),
+    "temperature_scaling": lambda model, **_kw: temperature_scaling(model),
+    "vector_scaling": lambda model, **kw: vector_scaling(model, num_classes=kw["num_classes"]),
 }
 
-_CONFORMAL_SCORES = {
-    "lac": conformal_lac,
-    "aps": conformal_aps,
-    "raps": conformal_raps,
+_CONFORMAL_METHODS = {
+    "conformal_lac": conformal_lac,
+    "conformal_aps": conformal_aps,
+    "conformal_raps": conformal_raps,
 }
 
 
@@ -107,7 +103,7 @@ class _NoOpRun:
         pass
 
 
-class BaseEstimator(ABC):
+class BaseEstimator:
     """Abstract base for AL estimators.
 
     Subclasses must implement ``fit`` and ``predict_proba``.
@@ -120,6 +116,7 @@ class BaseEstimator(ABC):
         method_params: Method-specific hyperparameters.
         num_classes: Number of output classes.
         device: Device to train and infer on.
+        train_kwargs: Additional training hyperparameters.
         in_features: Input feature dimension for tabular models; ignored for image models.
     """
 
@@ -132,6 +129,7 @@ class BaseEstimator(ABC):
         method_params: dict[str, Any] | None = None,
         num_classes: int,
         device: torch.device,
+        train_kwargs: dict[str, Any] | None = None,
         in_features: int | None = None,
     ) -> None:
         """Initialize common estimator state.
@@ -143,6 +141,7 @@ class BaseEstimator(ABC):
             method_params: Method-specific hyperparameters.
             num_classes: Number of output classes.
             device: Device to train and infer on.
+            train_kwargs: Additional training hyperparameters forwarded to ``train_model``.
             in_features: Input feature dimension for tabular models; ignored for image models.
         """
         self.cfg = cfg
@@ -152,6 +151,7 @@ class BaseEstimator(ABC):
         self.num_classes = num_classes
         self.device = device
         self.in_features = in_features
+        self.train_kwargs = train_kwargs or {}
         self._model: nn.Module | None = None
 
     @property
@@ -162,97 +162,99 @@ class BaseEstimator(ABC):
             raise RuntimeError(msg)
         return self._model
 
-    def _train_base_model(self, train_loader: DataLoader) -> nn.Module:
-        """Build and train a plain base model from scratch."""
-        model = models.get_base_model(
-            self.base_model_name, self.num_classes, pretrained=False, in_features=self.in_features
+    def fit(self, x: torch.Tensor, y: torch.Tensor) -> None:
+        """Build a fresh model and train from scratch on the labeled pool."""
+        needs_calibration = self.cfg.calibration.name != "none"
+        needs_conformal = self.cfg.conformal.name != "none"
+
+        if not needs_calibration and not needs_conformal:
+            self._model = self.fit_model(x, y)
+            return
+
+        calibration_split = float(self.cfg.calibration_size)
+        x_train, y_train, x_cal, y_cal = self.split_calibration_data(x, y, calibration_split, seed=self.cfg.seed)
+        model = self.fit_model(x_train, y_train)
+        if needs_calibration:
+            self._model = self.calibrate(model, x_cal, y_cal)  # ty: ignore[invalid-assignment]
+        else:
+            self._model = self.conformal(model, x_cal, y_cal)  # ty: ignore[invalid-assignment]
+
+    @staticmethod
+    def split_calibration_data(
+        x: torch.Tensor,
+        y: torch.Tensor,
+        calibration_split: float,
+        seed: int | None = None,
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        """Split ``(x, y)`` into training and calibration subsets."""
+        n = len(x)
+        n_cal = max(1, int(n * calibration_split))
+        g = torch.Generator().manual_seed(seed) if seed is not None else torch.Generator()
+        perm = torch.randperm(n, generator=g)
+        cal_idx, train_idx = perm[:n_cal], perm[n_cal:]
+        return x[train_idx], y[train_idx], x[cal_idx], y[cal_idx]
+
+    def calibrate(self, model: nn.Module, x_cal: torch.Tensor, y_cal: torch.Tensor) -> CalibrationPredictor:
+        """Wrap model with a calibration method and calibrate on held-out data."""
+        calibration_method = _CALIBRATION_METHODS[self.cfg.calibration.name]
+        cal_params = dict(self.cfg.calibration.get("params", {}))
+        calibrated = calibration_method(model, num_classes=self.num_classes, **cal_params)
+        calibrate(calibrated, y_cal.long().to(self.device), x_cal.float().to(self.device))
+        return calibrated
+
+    def conformal(self, model: nn.Module, x_cal: torch.Tensor, y_cal: torch.Tensor) -> ConformalSetPredictor:
+        """Wrap model with a conformal predictor and calibrate on held-out data."""
+        conformal_method = _CONFORMAL_METHODS[self.cfg.conformal.name]
+        conformal_params = dict(self.cfg.conformal.get("params", {}))
+        conformal_model = conformal_method(model, predictor_type=self.cfg.model_type, **conformal_params)
+        calibrate(
+            conformal_model, self.cfg.conformal.alpha, y_cal.long().to(self.device), x_cal.float().to(self.device)
         )
+        return conformal_model
+
+    def fit_model(self, x: torch.Tensor, y: torch.Tensor) -> nn.Module:
+        """Fit the model with ``x`` and ``y``."""
+        train_loader = DataLoader(
+            TensorDataset(x.float(), y.long()),
+            batch_size=self.cfg.batch_size,
+            shuffle=True,
+        )
+        ctx = BuildContext(
+            base_model_name=self.base_model_name,
+            model_type=self.cfg.model_type,
+            num_classes=self.num_classes,
+            pretrained=False,
+            train_loader=train_loader,
+            in_features=self.in_features,
+        )
+        model = build_model(self.method_name, dict(self.method_params), ctx)
         model.to(self.device)
-        _training_loop(
-            model,
-            train_loader,
-            None,
-            self.cfg,
-            self.device,
-            _NoOpRun(),
-            {},
-            train_fn=train_epoch_cross_entropy,
-            val_fn=validate_cross_entropy,
-        )
+        train_model(model, train_loader, None, self.cfg, self.device, _NoOpRun(), dict(self.train_kwargs))
         return model
 
-    @abstractmethod
-    def fit(self, x: torch.Tensor, y: torch.Tensor) -> None:
-        """Train the estimator on the labeled pool."""
-
-    @abstractmethod
     @torch.no_grad()
     def predict_proba(self, x: torch.Tensor) -> torch.Tensor:
-        """Return class probabilities of shape ``(n, num_classes)``."""
+        """Return class probabilities via probly's predict dispatch."""
+        self.model.eval()
+        parts = []
+        for i in range(0, len(x), self.cfg.batch_size):
+            xb = x[i : i + self.cfg.batch_size].float().to(self.device)
+            out: TorchCategoricalDistribution = predict(self.model, xb)
+            parts.append(out.probabilities.cpu())
+        return torch.cat(parts)
 
     @torch.no_grad()
     def predict(self, x: torch.Tensor) -> torch.Tensor:
         """Return class predictions (argmax of predict_proba)."""
         return self.predict_proba(x).argmax(-1)
 
-
-class BaselineEstimator(BaseEstimator):
-    """AL estimator for the plain baseline with optional calibration.
-
-    Satisfies the ``BadgeEstimator`` protocol from
-    ``probly.evaluation.active_learning``.
-    """
-
-    def fit(self, x: torch.Tensor, y: torch.Tensor) -> None:
-        """Build a fresh model and train from scratch on the labeled pool."""
-        cal_cfg = self.cfg.method.get("calibration")
-
-        # Split off calibration data if calibration is configured
-        if cal_cfg:
-            cal_split = float(cal_cfg.get("cal_split", 0.25))
-            n = len(x)
-            n_cal = max(1, int(n * cal_split))
-            perm = torch.randperm(n)
-            cal_idx, train_idx = perm[:n_cal], perm[n_cal:]
-            x_train, y_train = x[train_idx], y[train_idx]
-            x_cal, y_cal = x[cal_idx], y[cal_idx]
-        else:
-            x_train, y_train = x, y
-
-        train_loader = DataLoader(
-            TensorDataset(x_train.float(), y_train.long()),
-            batch_size=self.cfg.batch_size,
-            shuffle=True,
-        )
-        model = self._train_base_model(train_loader)
-
-        if cal_cfg:
-            cal_method_name = cal_cfg.get("method", "temperature")
-            cal_factory = _CALIBRATION_METHODS[cal_method_name]
-            model = cal_factory(model, num_classes=self.num_classes)
-            calibrate(model, y_cal.long().to(self.device), x_cal.float().to(self.device))
-
-        self._model = model  # ty: ignore[invalid-assignment]
-
-    @torch.no_grad()
-    def predict_proba(self, x: torch.Tensor) -> torch.Tensor:
-        """Return class probabilities via predict_single."""
-        self.model.eval()
-        parts = []
-        for i in range(0, len(x), self.cfg.batch_size):
-            xb = x[i : i + self.cfg.batch_size].float().to(self.device)
-            result = predict_single(self.model, xb)
-            probs = result.softmax(-1) if isinstance(result, torch.Tensor) else result.probabilities
-            parts.append(probs.cpu())
-        return torch.cat(parts)
-
     @torch.no_grad()
     def embed(self, x: torch.Tensor) -> torch.Tensor:
         """Return penultimate-layer features for BADGE."""
         self.model.eval()
         base = self.model
-        if isinstance(base, Calibrator):
-            base = cast("nn.Module", base.predictor)  # unwrap calibration wrapper
+        if isinstance(base, CalibrationPredictor):
+            base = base.predictor
         return extract_penultimate_features(base, x, self.base_model_name, self.cfg.batch_size, self.device)
 
 
@@ -263,7 +265,6 @@ class UncertaintyEstimator(BaseEstimator):
     ``probly.evaluation.active_learning``.
 
     Attributes:
-        train_kwargs: Method-specific training kwargs forwarded to ``train_model``.
         rep_kwargs: Representer parameters from the method config (e.g. ``num_samples``).
         uncertainty_notion: Which uncertainty component to use for sample selection.
     """
@@ -303,36 +304,19 @@ class UncertaintyEstimator(BaseEstimator):
             method_params=method_params,
             num_classes=num_classes,
             device=device,
+            train_kwargs=train_kwargs,
             in_features=in_features,
         )
-        self.train_kwargs = train_kwargs
         self.rep_kwargs = rep_kwargs or {}
         self.uncertainty_notion = uncertainty_notion
-
-    def fit(self, x: torch.Tensor, y: torch.Tensor) -> None:
-        """Build a fresh model via build_model + train_model from scratch."""
-        train_loader = DataLoader(
-            TensorDataset(x.float(), y.long()),
-            batch_size=self.cfg.batch_size,
-            shuffle=True,
-        )
-        ctx = BuildContext(
-            base_model_name=self.base_model_name,
-            model_type=self.cfg.model_type,
-            num_classes=self.num_classes,
-            pretrained=False,
-            train_loader=train_loader,
-            in_features=self.in_features,
-        )
-        model = build_model(self.method_name, dict(self.method_params), ctx)
-        model.to(self.device)
-        train_model(model, train_loader, None, self.cfg, self.device, _NoOpRun(), dict(self.train_kwargs))
-        self._model = model
 
     @torch.no_grad()
     def predict_proba(self, x: torch.Tensor) -> torch.Tensor:
         """Return class probabilities via representer -> canonical_element."""
         self.model.eval()
+        if isinstance(self.model, ConformalSetPredictor):
+            msg = "ConformalSetPredictor cannot be used with conformal sets."
+            raise NotImplementedError(msg)
         rep = representer(self.model, **self.rep_kwargs)
         parts = []
         for i in range(0, len(x), self.cfg.batch_size):
@@ -349,90 +333,7 @@ class UncertaintyEstimator(BaseEstimator):
         parts = []
         for i in range(0, len(x), self.cfg.batch_size):
             xb = x[i : i + self.cfg.batch_size].float().to(self.device)
-            decomposition = quantify(rep.represent(xb))
-            scores = decomposition[self.uncertainty_notion]  # ty: ignore[not-subscriptable]
-            parts.append(scores.detach().cpu() if isinstance(scores, torch.Tensor) else torch.as_tensor(scores))
-        return torch.cat(parts)
-
-
-class ConformalEstimator(UncertaintyEstimator):
-    """AL estimator using conformal prediction set size as the uncertainty signal.
-
-    Trains a plain base model, wraps it with a conformal predictor, and calibrates
-    on a held-out split. Larger prediction sets indicate higher uncertainty.
-
-    Attributes:
-        alpha: Conformal coverage target.
-        cal_split: Fraction of labeled pool reserved for conformal calibration.
-    """
-
-    def __init__(
-        self,
-        *,
-        cfg: DictConfig,
-        base_model_name: str,
-        method_name: str = "lac",
-        method_params: dict[str, Any] | None = None,
-        num_classes: int,
-        device: torch.device,
-        in_features: int | None = None,
-        alpha: float = 0.1,
-        cal_split: float = 0.25,
-    ) -> None:
-        """Initialize the ConformalEstimator.
-
-        Args:
-            cfg: Hydra DictConfig with training hyperparameters.
-            base_model_name: Name of the base model architecture.
-            method_name: Nonconformity score (``"lac"``, ``"aps"``, or ``"raps"``).
-            method_params: Extra kwargs for the score constructor.
-            num_classes: Number of output classes.
-            device: Device to train and infer on.
-            in_features: Input feature dimension for tabular models.
-            alpha: Conformal coverage target (e.g. 0.1 for 90% coverage).
-            cal_split: Fraction of labeled pool reserved for conformal calibration.
-        """
-        super().__init__(
-            cfg=cfg,
-            base_model_name=base_model_name,
-            method_name=method_name,
-            method_params=method_params or {},
-            train_kwargs={},
-            num_classes=num_classes,
-            device=device,
-            in_features=in_features,
-            uncertainty_notion=TotalUncertainty,
-        )
-        self.alpha = alpha
-        self.cal_split = cal_split
-
-    def fit(self, x: torch.Tensor, y: torch.Tensor) -> None:
-        """Train a plain model and calibrate a conformal wrapper on a held-out split."""
-        n = len(x)
-        n_cal = max(1, int(n * self.cal_split))
-        perm = torch.randperm(n)
-        cal_idx, train_idx = perm[:n_cal], perm[n_cal:]
-        x_train, y_train = x[train_idx], y[train_idx]
-        x_cal, y_cal = x[cal_idx], y[cal_idx]
-
-        train_loader = DataLoader(
-            TensorDataset(x_train.float(), y_train.long()),
-            batch_size=self.cfg.batch_size,
-            shuffle=True,
-        )
-        base_model = self._train_base_model(train_loader)
-
-        score_fn = _CONFORMAL_SCORES[self.method_name]
-        conformal_model = score_fn(base_model, predictor_type=self.cfg.model_type, **self.method_params)
-        calibrate(conformal_model, self.alpha, y_cal.long().to(self.device), x_cal.float().to(self.device))
-        self._model = conformal_model  # ty: ignore[invalid-assignment]
-
-    @torch.no_grad()
-    def predict_proba(self, x: torch.Tensor) -> torch.Tensor:
-        """Return class probabilities (softmax of base model logits)."""
-        self.model.eval()
-        parts = []
-        for i in range(0, len(x), self.cfg.batch_size):
-            xb = x[i : i + self.cfg.batch_size].float().to(self.device)
-            parts.append(self.model.predictor(xb).softmax(-1).cpu())  # ty: ignore[call-non-callable]
+            decomposition = decompose(rep.represent(xb))
+            scores = decomposition[self.uncertainty_notion]
+            parts.append(scores.detach().cpu())
         return torch.cat(parts)

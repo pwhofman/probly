@@ -1,6 +1,0 @@
-# @package method
-name: "conformal_lac"
-active_learning:
-  score: "lac"
-  alpha: 0.1
-  cal_split: 0.25

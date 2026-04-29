@@ -9,9 +9,11 @@ from torch import nn
 from torch.nn import functional as F
 import torchvision.models as tm
 
+from probly.predictor import LogitDistributionPredictor
 from probly_benchmark.resnet import ResNet18
 
 
+@LogitDistributionPredictor.register_factory
 def get_base_model(  # noqa: PLR0912, PLR0915, C901
     name: str,
     num_classes: int,

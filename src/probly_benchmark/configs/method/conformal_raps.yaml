@@ -1,9 +1,0 @@
-# @package method
-name: "conformal_raps"
-active_learning:
-  score: "raps"
-  alpha: 0.1
-  cal_split: 0.25
-  params:
-    lambda_reg: 0.1
-    k_reg: 5

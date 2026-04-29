@@ -1,5 +1,0 @@
-# @package method
-name: "plain"
-calibration:
-  method: "temperature"
-  cal_split: 0.25

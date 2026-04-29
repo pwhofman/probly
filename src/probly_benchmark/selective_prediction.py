@@ -9,7 +9,7 @@ from omegaconf import DictConfig, OmegaConf
 import wandb
 
 from probly.evaluation.tasks import selective_prediction
-from probly.quantification import quantify
+from probly.quantification import decompose
 from probly.representation._helpers import compute_mean_probs
 from probly.representer import representer
 from probly_benchmark import calibration, data, utils
@@ -57,7 +57,7 @@ def main(cfg: DictConfig) -> None:
         device,
         cfg.get("amp", False),
     )
-    decomposition = quantify(outputs)
+    decomposition = decompose(outputs)
     uncertainties = decomposition.total.detach().cpu().numpy()  # ty: ignore[unresolved-attribute]
 
     mean_probs = compute_mean_probs(outputs).cpu().numpy()
