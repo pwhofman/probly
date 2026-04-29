@@ -46,7 +46,7 @@ def duq[**In, Out: DUQRepresentation](
     length_scale: float = 0.1,
     gamma: float = 0.999,
 ) -> DUQPredictor[In, Out]:
-    r"""Transform a model for Deterministic Uncertainty Quantification :cite:`vanamersfoortDUQ2020`.
+    r"""Transform a model for Deterministic Uncertainty Quantification :cite:`vanAmersfoortDUQ2020`.
 
     Replaces the original classification head (the last ``nn.Linear`` layer)
     with an RBF centroid head. For each class :math:`c`, a learnable projection
