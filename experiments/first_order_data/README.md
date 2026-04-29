@@ -11,20 +11,20 @@ By default, downloaded datasets are stored in [data/image](data/image), and run 
 
 ## Image dataset overview (DCIC Datasets)
 
-| Dataset       |  size | classes | avg. entropy | type                                                                | input size |
-| ------------- | ----: | ------: | -----------: | ------------------------------------------------------------------- | :--------: |
-| Benthic       |  4867 |       8 |        0.340 | images from the seafloor and consists of underwater flora and fauna |  112x112   |
-| CIFAR-10H     | 10000 |      10 |        0.154 | reannotated variant of the original CIFAR-10 test set               |   32x32    |
-| MiceBone      |  7240 |       4 |        0.319 | Second-Harmonic-Generation images of collagen fibers                |  224x224   |
-| Pig           | 10237 |       4 |        0.735 | tail images form european farms                                     |   96x96    |
-| Plankton      | 12280 |      10 |        0.163 | underwater plankton images                                          |   96x96    |
-| QualityMRI    |   310 |       2 |        0.556 | MRI images                                                          |  224x224   |
-| Synthetic     | 15000 |       6 |        0.584 | images that contain 1 colored circle on a black background          |  224x224   |
-| TreeVersity#1 |  9489 |       6 |        0.266 | plant images, single label per image                                |  224x224   |
-| TreeVersity#6 |  9826 |       6 |        0.742 | plant images, possibly multiple labels per image                    |  224x224   |
-| Turkey        |  8040 |       3 |        0.196 | images of turkeys and their injuries                                |  192x192   |
+| Dataset       |  size | classes | avg. entropy | avg. non-zero target classes | type                                                                | input size |
+| ------------- | ----: | ------: | -----------: | ---------------------------: | ------------------------------------------------------------------- | :--------: |
+| Benthic       |  4867 |       8 |        0.340 |                         1.64 | images from the seafloor and consists of underwater flora and fauna |  112x112   |
+| CIFAR-10H     | 10000 |      10 |        0.154 |                         1.95 | reannotated variant of the original CIFAR-10 test set               |   32x32    |
+| MiceBone      |  7240 |       4 |        0.319 |                         1.56 | Second-Harmonic-Generation images of collagen fibers                |  224x224   |
+| Pig           | 10237 |       4 |        0.735 |                         2.57 | tail images form european farms                                     |   96x96    |
+| Plankton      | 12280 |      10 |        0.163 |                         1.50 | underwater plankton images                                          |   96x96    |
+| QualityMRI    |   310 |       2 |        0.556 |                         2.00 | MRI images                                                          |  224x224   |
+| Synthetic     | 15000 |       6 |        0.584 |                         2.66 | images that contain 1 colored circle on a black background          |  224x224   |
+| TreeVersity#1 |  9489 |       6 |        0.266 |                         1.68 | plant images, single label per image                                |  224x224   |
+| TreeVersity#6 |  9826 |       6 |        0.742 |                         3.11 | plant images, possibly multiple labels per image                    |  224x224   |
+| Turkey        |  8040 |       3 |        0.196 |                         1.44 | images of turkeys and their injuries                                |  192x192   |
 
-
+`avg. non-zero target classes` is the mean number of classes with non-zero target probability per image.
 
 Image datasets should be stored under [data/image](data/image). Used datasets can be downloaded here: https://zenodo.org/records/8115942 or directly with the [install_dcic_datasets.py](install_dcic_datasets.py) helper.
 
@@ -148,7 +148,62 @@ Turkey consists of images of turkeys and their injuries. The task is to classify
 | `--data-root`       |                                             `data/image` | root directory containing the image datasets                                                                   |
 | `--augmentation`    |                                                  `basic` | basic is currently just `RandomHorizontalFlip`                                                                 |
 | `--dropout`         |                                                    `0.0` | dropout rate for classification head, applied after global average pooling and before linear layer             |
-| `--entmax-alpha`    |                                                    `1.0` | alpha parameter for entmax, controls sparsity output logits, setting alpha=1 will use softmax + CE, alpha=2 is sparsemax |
+| `--entmax-alpha`    |                                                    `1.0` | alpha parameter for entmax; controls output sparsity; alpha=1 uses softmax + CE, alpha=2 is sparsemax          |
+
+<details>
+<summary><strong>Entmax details</strong></summary>
+
+With softmax, probability distributions can never reach exactly 0 or 1. Softmax can be rewritten as:
+
+$$
+softmax(z) = \arg \max_{p \in \Delta^d} z^\intercal p + H(p)
+$$
+where:
+$H(p) = - \sum_j p_j \log{p_j}$ is the Shannon entropy. Derivative of the Shannon entropy: $\frac{\partial H(p)}{\partial p_j} = -\bigl(\log p_j + 1\bigr)$. So as $p_j \to 0^+$, $\log p_j \to -\infty$. That means the entropy term doesn’t let the coordinates hit 0. So in the optimal probability distribution given the logits, every class keeps some positive mass: $p_j > 0$ for all $j$.
+
+DCIC datasets have exactly 0 as the expected predicted probability for the majority of labels (see dataset overview table).
+This is problematic, for metrics such as convex hull or interval coverage, since it will cause severe undercoverage, since label probabilities cannot reach exactly 0 due to softmax (theoretically it can happen due to floating point rounding, though only with so severe logit difference magnitudes, which realistically cannot be reached with standard training procedures).
+A naive solution to this problem is to simply change the functionality of convex hull and interval coverage metrics, to allow for a small epsilon offset. For the convex hull coverage such an alternative implementation usable in summarization script which imports convex_hull_coverage_relaxed from utils.py. Though arguably this is a "cheaty" solution to this problem and makes the metric dependent on a subjective hyperparameter choice epsilon.
+
+Thus the clean solution is to exchange the Shannon entropy with an entropy function where the argmax can have exactly 0 probabilities.
+The de-facto standard here is Entmax, which generalizes softmax by replacing Shannon entropy with the Tsallis $\alpha$-entropy:
+
+$$
+p^* = \alpha\text{-entmax}(z)
+    = \arg\max_{p \in \Delta^d} p^\intercal z + H_\alpha^T(p),
+$$
+
+where $\Delta^d$ is the probability simplex and $H_\alpha^T$ is Tsallis $\alpha$-entropy. The $\alpha$ value controls how sparse the output distribution can become:
+
+- $\alpha = 1$ is the softmax limit, so this experiment uses `softmax` plus cross entropy for `--entmax-alpha 1`.
+- $1 < \alpha < 2$ gives a smooth sparse mapping that can still assign exact zero probability; the default entmax comparison uses $\alpha = 1.5$.
+- $\alpha = 2$ is sparsemax, a piecewise-linear mapping that can assign exact zero probability to classes.
+- Larger $\alpha$ values enforce more aggressive sparsity and saturate faster.
+
+![Two-class entmax probability mappings](assets/entmax_two_class.svg)
+
+Two-class view of $\alpha\text{-entmax}([t, 0])_1$, copied over from Figure 3 of
+[Peters et al., 2019](https://aclanthology.org/P19-1146/).For $\alpha > 1$, training uses the Fenchel-Young loss matched to entmax instead of cross entropy:
+
+$$
+L_\alpha(y, z) = \Omega(y) - \Omega(p^*) - \langle z, y - p^* \rangle.
+$$
+
+For one-hot labels $e_y$, the paper writes this as:
+
+$$
+L_\alpha(y, z) = z^\intercal(p^* - e_y) + H_\alpha^T(p^*).
+$$
+
+This experiment extends the same loss to the DCIC soft labels:
+
+$$
+L_\alpha(y, z) = z^\intercal(p^* - y) - H_\alpha^T(y) + H_\alpha^T(p^*).
+$$
+
+The implementation doesnt include the target-only $-H_\alpha^T(y)$ constant, since it does not change gradients for a fixed target distribution.
+
+</details>
 
 <details>
 <summary><strong>Detailed Pipeline description</strong></summary>
