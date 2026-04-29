@@ -4,13 +4,13 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import torch
 from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
 
-from probly.calibrator import calibrate
+from probly.calibrator import Calibrator, calibrate
 from probly.method.calibration import platt_scaling, temperature_scaling, vector_scaling
 from probly.method.conformal import conformal_aps, conformal_lac, conformal_raps
 from probly.predictor import predict_single
@@ -48,6 +48,56 @@ _CONFORMAL_SCORES = {
     "aps": conformal_aps,
     "raps": conformal_raps,
 }
+
+
+def extract_penultimate_features(
+    model: nn.Module,
+    x: torch.Tensor,
+    base_model_name: str,
+    batch_size: int,
+    device: torch.device,
+) -> torch.Tensor:
+    """Extract penultimate-layer features from a model using a forward hook.
+
+    Registers a hook on the final classification layer (looked up via
+    ``_CLASSIFICATION_LAYER``), runs batched forward passes with
+    ``torch.compile`` disabled so hooks fire reliably, and returns the
+    concatenated inputs to that layer.
+
+    Args:
+        model: The base model (unwrapped, not a calibration/ensemble wrapper).
+        x: Input features tensor.
+        base_model_name: Key into ``_CLASSIFICATION_LAYER`` (e.g. ``"tabular_mlp"``).
+        batch_size: Inference batch size.
+        device: Device to run inference on.
+
+    Returns:
+        Feature tensor of shape ``(n, emb_dim)`` on CPU.
+
+    Raises:
+        ValueError: If ``base_model_name`` has no entry in ``_CLASSIFICATION_LAYER``.
+    """
+    layer_fn = _CLASSIFICATION_LAYER.get(base_model_name)
+    if layer_fn is None:
+        msg = f"No embed layer mapping for base model {base_model_name!r}"
+        raise ValueError(msg)
+    target_layer = layer_fn(model)
+    hook_output: list[torch.Tensor] = []
+
+    def _hook(_module: nn.Module, inp: tuple[torch.Tensor, ...], _out: Any) -> None:  # noqa: ANN401
+        hook_output.append(inp[0].detach().cpu())
+
+    handle = target_layer.register_forward_hook(_hook)
+    try:
+        # torch.compiler.disable ensures hooks fire even if model.forward was
+        # compiled by _maybe_compile_forward during training.
+        eager_forward = torch.compiler.disable(model)
+        for i in range(0, len(x), batch_size):
+            xb = x[i : i + batch_size].float().to(device)
+            eager_forward(xb)
+    finally:
+        handle.remove()
+    return torch.cat(hook_output)
 
 
 class _NoOpRun:
@@ -204,26 +254,9 @@ class BaselineEstimator(BaseEstimator):
         """Return penultimate-layer features for BADGE."""
         self.model.eval()
         base = self.model
-        if hasattr(base, "predictor"):
-            base = base.predictor  # unwrap calibration wrapper
-        layer_fn = _CLASSIFICATION_LAYER.get(self.base_model_name)
-        if layer_fn is None:
-            msg = f"No embed layer mapping for base model {self.base_model_name!r}"
-            raise ValueError(msg)
-        target_layer = layer_fn(base)
-        hook_output: list[torch.Tensor] = []
-
-        def _hook(_module: nn.Module, inp: tuple[torch.Tensor, ...], _out: Any) -> None:  # noqa: ANN401
-            hook_output.append(inp[0].detach().cpu())
-
-        handle = target_layer.register_forward_hook(_hook)
-        try:
-            for i in range(0, len(x), self.cfg.batch_size):
-                xb = x[i : i + self.cfg.batch_size].float().to(self.device)
-                base(xb)  # ty: ignore[call-non-callable]
-        finally:
-            handle.remove()
-        return torch.cat(hook_output)
+        if isinstance(base, Calibrator):
+            base = cast("nn.Module", base.predictor)  # unwrap calibration wrapper
+        return extract_penultimate_features(base, x, self.base_model_name, self.cfg.batch_size, self.device)
 
 
 class UncertaintyEstimator(BaseEstimator):
