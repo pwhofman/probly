@@ -41,6 +41,7 @@ from probly.method.dare import DarePredictor
 from probly.method.ddu import DDUPredictor
 from probly.method.duq import DUQPredictor
 from probly.method.ensemble import EnsemblePredictor
+from probly.method.subensemble import SubensemblePredictor
 from probly_benchmark import conformal, data, metadata, utils
 from probly_benchmark.builders import BuildContext, build_model
 from probly_benchmark.paths import CHECKPOINT_PATH
@@ -409,7 +410,7 @@ def train_model(
     )
 
 
-@train_model.register((EnsemblePredictor, CredalEnsemblingPredictor, CredalWrapperPredictor))
+@train_model.register((EnsemblePredictor, CredalEnsemblingPredictor, CredalWrapperPredictor, SubensemblePredictor))
 def _(
     model: EnsemblePredictor,
     train_loader: DataLoader,
