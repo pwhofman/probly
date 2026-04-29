@@ -6,7 +6,7 @@ import pytest
 import torch
 
 from probly.representation.distribution.torch_gaussian import TorchGaussianDistribution
-from probly.representation.sample import TorchSample
+from probly.representation.sample.torch import TorchSample
 
 
 def test_torch_gaussian_initialization_valid() -> None:
