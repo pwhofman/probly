@@ -11,6 +11,8 @@ from ._common import (
     DiscreteCredalSet,
     ProbabilityIntervalsCredalSet,
     create_convex_credal_set,
+    create_distance_based_credal_set,
+    create_distance_based_credal_set_from_center_and_radius,
     create_probability_intervals,
     create_probability_intervals_from_bounds,
     create_probability_intervals_from_lower_upper_array,
@@ -22,6 +24,8 @@ from .array import ArrayCategoricalCredalSet, ArrayDiscreteCredalSet
 @create_probability_intervals_from_lower_upper_array.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 @create_convex_credal_set.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 @create_probability_intervals_from_bounds.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
+@create_distance_based_credal_set.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
+@create_distance_based_credal_set_from_center_and_radius.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
 def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415
 
@@ -35,6 +39,8 @@ __all__ = [
     "DiscreteCredalSet",
     "ProbabilityIntervalsCredalSet",
     "create_convex_credal_set",
+    "create_distance_based_credal_set",
+    "create_distance_based_credal_set_from_center_and_radius",
     "create_probability_intervals",
     "create_probability_intervals_from_bounds",
     "create_probability_intervals_from_lower_upper_array",

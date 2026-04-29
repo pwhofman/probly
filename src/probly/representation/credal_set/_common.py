@@ -93,8 +93,8 @@ def create_convex_credal_set[T: CategoricalDistribution](sample: Sample[T]) -> C
 
 @flexdispatch
 def create_distance_based_credal_set[T: CategoricalDistribution](sample: Sample[T]) -> DistanceBasedCredalSet[T]:
-    """Create a convex credal set from a sample."""
-    msg = f"No convex credal set factory registered for sample type {type(sample)}"
+    """Create a distance-based credal set from a sample."""
+    msg = f"No distance-based credal set factory registered for sample type {type(sample)}"
     raise NotImplementedError(msg)
 
 
@@ -115,4 +115,14 @@ def create_probability_intervals_from_bounds[T: ArrayLike](
 ) -> ProbabilityIntervalsCredalSet:
     """Create a probability-interval credal set from an array of predictions and lower and upper bounds."""
     msg = f"No probability intervals factory registered for array type {type(array)}"
+    raise NotImplementedError(msg)
+
+
+@flexdispatch
+def create_distance_based_credal_set_from_center_and_radius[T: CategoricalDistribution](
+    center: T,
+    radius: float,
+) -> DistanceBasedCredalSet[T]:
+    """Create a distance-based credal set from a center distribution and a maximum distance."""
+    msg = f"No distance-based credal set factory registered for center type {type(center)}"
     raise NotImplementedError(msg)

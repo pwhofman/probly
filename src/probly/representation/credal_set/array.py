@@ -18,6 +18,7 @@ from probly.representation.credal_set._common import (
     SingletonCredalSet,
     create_convex_credal_set,
     create_distance_based_credal_set,
+    create_distance_based_credal_set_from_center_and_radius,
     create_probability_intervals,
 )
 from probly.representation.distribution import ArrayCategoricalDistribution
@@ -324,3 +325,11 @@ class ArraySingletonCredalSet(
 create_probability_intervals.register(ArrayCategoricalDistribution, ArrayProbabilityIntervalsCredalSet.from_sample)
 create_convex_credal_set.register(ArraySample, ArrayConvexCredalSet.from_array_sample)
 create_distance_based_credal_set.register(ArraySample, ArrayDistanceBasedCredalSet.from_array_sample)
+
+
+@create_distance_based_credal_set_from_center_and_radius.register(ArrayCategoricalDistribution)
+def _create_distance_based_credal_set_from_center_and_radius(
+    center: ArrayCategoricalDistribution,
+    radius: np.ndarray,
+) -> ArrayDistanceBasedCredalSet:
+    return ArrayDistanceBasedCredalSet(nominal=center, radius=np.asarray(radius))

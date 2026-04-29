@@ -16,6 +16,7 @@ from probly.representation.credal_set._common import (
     ProbabilityIntervalsCredalSet,
     create_convex_credal_set,
     create_distance_based_credal_set,
+    create_distance_based_credal_set_from_center_and_radius,
     create_probability_intervals,
     create_probability_intervals_from_bounds,
     create_probability_intervals_from_lower_upper_array,
@@ -232,3 +233,14 @@ def _create_probability_intervals_from_bounds(
     probs: torch.Tensor, lower: torch.Tensor, upper: torch.Tensor
 ) -> TorchProbabilityIntervalsCredalSet:
     return TorchProbabilityIntervalsCredalSet(probs - lower, probs + upper)
+
+
+@create_distance_based_credal_set_from_center_and_radius.register(torch.Tensor)
+def _create_distance_based_credal_set_from_center_and_radius(
+    center: torch.Tensor,
+    radius: torch.Tensor,
+) -> TorchDistanceBasedCredalSet:
+    return TorchDistanceBasedCredalSet(
+        nominal=TorchCategoricalDistribution(center),
+        radius=radius,
+    )

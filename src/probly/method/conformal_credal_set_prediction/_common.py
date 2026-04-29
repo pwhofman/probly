@@ -9,7 +9,10 @@ from flextype import flexdispatch
 from probly.conformal_scores.total_variation._common import tv_score_func
 from probly.method.method import predictor_transformation
 from probly.predictor import CredalPredictor, Predictor, predict
-from probly.representation.credal_set.array import DistanceBasedCredalSet, create_distance_based_credal_set
+from probly.representation.credal_set.array import (
+    DistanceBasedCredalSet,
+    create_distance_based_credal_set_from_center_and_radius,
+)
 from probly.utils.quantile._common import calculate_quantile
 
 if TYPE_CHECKING:
@@ -90,10 +93,9 @@ def predict_total_variation_conformal_credal_set[**In, Out: DistanceBasedCredalS
     **kwargs: In.kwargs,
 ) -> DistanceBasedCredalSet:
     """Predict a total variation conformal credal set."""
-    _, score = calibrated_state(predictor)
+    _, _ = calibrated_state(predictor)
     prediction = predict(cast("Any", predictor).predictor, *args, **kwargs)
-    score = score(prediction)
-    return create_distance_based_credal_set(score)
+    return create_distance_based_credal_set_from_center_and_radius(prediction, predictor.quantile)  # ty: ignore[invalid-argument-type]
 
 
 @flexdispatch
