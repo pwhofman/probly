@@ -30,7 +30,7 @@ from ._common import (
 # Entropy
 
 
-@entropy.register
+@entropy.register(ArrayCategoricalDistribution | np.ndarray)
 def array_categorical_entropy(
     distribution: ArrayCategoricalDistribution | np.ndarray, base: LogBase = None
 ) -> np.ndarray:

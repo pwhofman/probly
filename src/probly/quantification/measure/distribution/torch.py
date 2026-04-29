@@ -25,7 +25,7 @@ from ._common import (
 # Entropy
 
 
-@entropy.register
+@entropy.register(TorchCategoricalDistribution | torch.Tensor)
 def torch_categorical_entropy(
     distribution: TorchCategoricalDistribution | torch.Tensor, base: LogBase = None
 ) -> torch.Tensor:
