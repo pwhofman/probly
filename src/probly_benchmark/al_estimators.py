@@ -191,10 +191,13 @@ class BaselineEstimator(BaseEstimator):
     def predict_proba(self, x: torch.Tensor) -> torch.Tensor:
         """Return class probabilities via predict_single."""
         self.model.eval()
-        result = predict_single(self.model, x.float().to(self.device))
-        if isinstance(result, torch.Tensor):
-            return result.softmax(-1).cpu()
-        return result.probabilities.cpu()
+        parts = []
+        for i in range(0, len(x), self.cfg.batch_size):
+            xb = x[i : i + self.cfg.batch_size].float().to(self.device)
+            result = predict_single(self.model, xb)
+            probs = result.softmax(-1) if isinstance(result, torch.Tensor) else result.probabilities
+            parts.append(probs.cpu())
+        return torch.cat(parts)
 
     @torch.no_grad()
     def embed(self, x: torch.Tensor) -> torch.Tensor:
@@ -211,14 +214,16 @@ class BaselineEstimator(BaseEstimator):
         hook_output: list[torch.Tensor] = []
 
         def _hook(_module: nn.Module, inp: tuple[torch.Tensor, ...], _out: Any) -> None:  # noqa: ANN401
-            hook_output.append(inp[0])
+            hook_output.append(inp[0].detach().cpu())
 
         handle = target_layer.register_forward_hook(_hook)
         try:
-            base(x.float().to(self.device))  # ty: ignore[call-non-callable]
+            for i in range(0, len(x), self.cfg.batch_size):
+                xb = x[i : i + self.cfg.batch_size].float().to(self.device)
+                base(xb)  # ty: ignore[call-non-callable]
         finally:
             handle.remove()
-        return hook_output[0].detach().cpu()
+        return torch.cat(hook_output)
 
 
 class UncertaintyEstimator(BaseEstimator):
@@ -299,17 +304,25 @@ class UncertaintyEstimator(BaseEstimator):
         """Return class probabilities via representer -> canonical_element."""
         self.model.eval()
         rep = representer(self.model, **self.rep_kwargs)
-        canonical: TorchCategoricalDistribution = rep.represent(x.float().to(self.device)).canonical_element
-        return canonical.probabilities.cpu()
+        parts = []
+        for i in range(0, len(x), self.cfg.batch_size):
+            xb = x[i : i + self.cfg.batch_size].float().to(self.device)
+            canonical: TorchCategoricalDistribution = rep.represent(xb).canonical_element
+            parts.append(canonical.probabilities.cpu())
+        return torch.cat(parts)
 
     @torch.no_grad()
     def uncertainty_scores(self, x: torch.Tensor) -> torch.Tensor:
         """Return per-sample uncertainty via representer -> quantify -> decomposition."""
         self.model.eval()
         rep = representer(self.model, **self.rep_kwargs)
-        decomposition = quantify(rep.represent(x.float().to(self.device)))
-        scores = decomposition[self.uncertainty_notion]  # ty: ignore[not-subscriptable]
-        return scores.detach().cpu() if isinstance(scores, torch.Tensor) else torch.as_tensor(scores)
+        parts = []
+        for i in range(0, len(x), self.cfg.batch_size):
+            xb = x[i : i + self.cfg.batch_size].float().to(self.device)
+            decomposition = quantify(rep.represent(xb))
+            scores = decomposition[self.uncertainty_notion]  # ty: ignore[not-subscriptable]
+            parts.append(scores.detach().cpu() if isinstance(scores, torch.Tensor) else torch.as_tensor(scores))
+        return torch.cat(parts)
 
 
 class ConformalEstimator(UncertaintyEstimator):
@@ -388,4 +401,8 @@ class ConformalEstimator(UncertaintyEstimator):
     def predict_proba(self, x: torch.Tensor) -> torch.Tensor:
         """Return class probabilities (softmax of base model logits)."""
         self.model.eval()
-        return self.model.predictor(x.float().to(self.device)).softmax(-1).cpu()  # ty: ignore[call-non-callable]
+        parts = []
+        for i in range(0, len(x), self.cfg.batch_size):
+            xb = x[i : i + self.cfg.batch_size].float().to(self.device)
+            parts.append(self.model.predictor(xb).softmax(-1).cpu())  # ty: ignore[call-non-callable]
+        return torch.cat(parts)
