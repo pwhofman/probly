@@ -5,22 +5,13 @@ from __future__ import annotations
 import numpy as np
 from scipy.spatial.distance import cdist
 
-from probly.quantification.measure.distribution.array import array_categorical_entropy
-from probly.representation.distribution.array_categorical import ArrayCategoricalDistribution
-
 from ._badge import badge_select
-from ._scores import entropy_score, least_confident_score, margin_score
+from ._scores import least_confident_score, margin_score
 from ._selection import random_select, topk_select
 
 # ---------------------------------------------------------------------------
 # Scoring functions
 # ---------------------------------------------------------------------------
-
-
-@entropy_score.register(np.ndarray)
-def _entropy_score_numpy(probs: np.ndarray) -> np.ndarray:
-    """Numpy implementation of entropy scoring."""
-    return array_categorical_entropy(ArrayCategoricalDistribution(probs))
 
 
 @least_confident_score.register(np.ndarray)

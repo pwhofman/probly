@@ -9,22 +9,13 @@ import torch
 if TYPE_CHECKING:
     import numpy as np
 
-from probly.quantification.measure.distribution.torch import torch_categorical_entropy
-from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
-
 from ._badge import badge_select
-from ._scores import entropy_score, least_confident_score, margin_score
+from ._scores import least_confident_score, margin_score
 from ._selection import random_select, topk_select
 
 # ---------------------------------------------------------------------------
 # Scoring functions
 # ---------------------------------------------------------------------------
-
-
-@entropy_score.register(torch.Tensor)
-def _entropy_score_torch(probs: torch.Tensor) -> torch.Tensor:
-    """Torch implementation of entropy scoring."""
-    return torch_categorical_entropy(TorchCategoricalDistribution(probs))
 
 
 @least_confident_score.register(torch.Tensor)

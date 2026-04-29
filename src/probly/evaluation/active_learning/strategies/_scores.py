@@ -8,23 +8,13 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from flextype import flexdispatch
+from probly.quantification.measure.distribution import entropy
 
 if TYPE_CHECKING:
     from probly.representation.array_like import ArrayLike
 
 
-@flexdispatch
-def entropy_score(probs: ArrayLike) -> ArrayLike:
-    """Score each sample by prediction entropy. Higher entropy = more informative.
-
-    Args:
-        probs: Class probability matrix of shape (n_pool, n_classes).
-
-    Returns:
-        Per-sample entropy scores of shape (n_pool,).
-    """
-    msg = f"No entropy_score implementation registered for type {type(probs)}"
-    raise NotImplementedError(msg)
+entropy_score = entropy
 
 
 @flexdispatch
