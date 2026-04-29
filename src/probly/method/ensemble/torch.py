@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 import torch
 from torch import nn
 
-from probly.predictor._common import predict, predict_raw
+from probly.predictor._common import predict_raw
 from probly.traverse_nn import nn_compose, nn_traverser, reset_traverser
 from pytraverse import CLONE, traverse
 

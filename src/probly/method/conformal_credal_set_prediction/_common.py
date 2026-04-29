@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable, Self, cast
 from abc import ABC
-from flextype import flexdispatch
-from probly.method.method import predictor_transformation
+from typing import TYPE_CHECKING, Any, Protocol, Self, cast, runtime_checkable
 
+from flextype import flexdispatch
 from probly.conformal_scores.total_variation._common import tv_score_func
+from probly.method.method import predictor_transformation
 from probly.predictor import CredalPredictor, Predictor, predict
 from probly.representation.credal_set.array import DistanceBasedCredalSet, create_distance_based_credal_set
 from probly.utils.quantile._common import calculate_quantile
@@ -28,13 +28,15 @@ class ConformalCredalSetPredictor[**In, Out: DistanceBasedCredalSet](CredalPredi
         """Calibrate the predictor on calibration data."""
         ...
 
+
 @runtime_checkable
-class TVConformalCredalSetPredictor[**In, T](ConformalCredalSetPredictor[In, T], Protocol):
+class TVConformalCredalSetPredictor[**In, Out: DistanceBasedCredalSet](ConformalCredalSetPredictor[In, Out], Protocol):
     """Conformal Credal Set predictor for TV."""
 
 
 class _ConformalCredalSetPredictorBase[**In, Out](ABC):
     """Concrete implementation of a ConformalCredalSetPredictor."""
+
     predictor: Predictor[In, Out]
     quantile: float | None
     non_conformity_score: NonConformityScore[Out, Out] | None
@@ -80,17 +82,19 @@ def _[**In, Out](
 ) -> tuple[float, NonConformityScore[Out, Out]]:
     return predictor._require_calibrated()  # noqa: SLF001
 
+
 @predict.register(TVConformalCredalSetPredictor)
-def predict_total_variation_conformal_credal_set[**In, T](
-    predictor: TVConformalCredalSetPredictor[In, T],
+def predict_total_variation_conformal_credal_set[**In, Out: DistanceBasedCredalSet](
+    predictor: TVConformalCredalSetPredictor[In, Out],
     *args: In.args,
     **kwargs: In.kwargs,
 ) -> DistanceBasedCredalSet:
     """Predict a total variation conformal credal set."""
-    quantile, score = calibrated_state(predictor)
+    _, score = calibrated_state(predictor)
     prediction = predict(cast("Any", predictor).predictor, *args, **kwargs)
     score = score(prediction)
     return create_distance_based_credal_set(score)
+
 
 @flexdispatch
 def conformal_credal_set_generator[**In, T, Out](
@@ -101,19 +105,19 @@ def conformal_credal_set_generator[**In, T, Out](
     msg = f"No conformal generator is registered for type {type(base)}"
     raise NotImplementedError(msg)
 
-@predictor_transformation(
-    permitted_predictor_types=None, preserve_predictor_type=False
-)
+
+@predictor_transformation(permitted_predictor_types=None, preserve_predictor_type=False)
 @TVConformalCredalSetPredictor.register_factory
-def conformal_total_variation[**In, T, Out](
-    base: Predictor[In, Out]
-) -> TVConformalCredalSetPredictor[In, T]:
+def conformal_total_variation[**In, Out: DistanceBasedCredalSet](
+    base: Predictor[In, Out],
+) -> TVConformalCredalSetPredictor[In, Out]:
     return conformal_credal_set_generator(base, tv_score_func)
 
-__all__= [
+
+__all__ = [
     "ConformalCredalSetPredictor",
-    "_ConformalCredalSetPredictorBase",
     "TVConformalCredalSetPredictor",
+    "_ConformalCredalSetPredictorBase",
+    "conformal_credal_set_generator",
     "conformal_total_variation",
-    "conformal_credal_set_generator"
 ]

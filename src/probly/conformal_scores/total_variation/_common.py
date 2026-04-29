@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
-import numpy.typing as npt
 
-from dataclasses import dataclass
 from flextype import flexdispatch
 from probly.conformal_scores import NonConformityScore
 from probly.representation.array_like import ArrayLike
@@ -38,13 +37,15 @@ def compute_tv_score_numpy(y_pred: np.ndarray | ArrayLike, y_true: np.ndarray | 
 
     return 0.5 * np.sum(np.abs(y_pred_np - y_true_np), axis=-1)
 
+
 @dataclass(frozen=True, slots=True)
 class TVScore[In, Out](NonConformityScore):
-    def __call__(self, y_pred: In, y_true: In | None = None) -> Any:
+    def __call__(self, y_pred: In, y_true: In | None = None) -> Any:  # noqa: ANN401
         if y_true is None:
             msg = "y_true is required for TV distance."
             raise ValueError(msg)
         return tv_score_func(y_pred, y_true)
+
 
 tv_score = TVScore()
 

@@ -1,3 +1,5 @@
+"""Conformal Credal Set Prediction for PyTorch models."""
+
 from __future__ import annotations
 
 from abc import ABC
@@ -6,13 +8,11 @@ from typing import TYPE_CHECKING
 import torch
 from torch import nn
 
-from ._common import (
-    _ConformalCredalSetPredictorBase,
-    conformal_credal_set_generator
-)
+from ._common import _ConformalCredalSetPredictorBase, conformal_credal_set_generator
 
 if TYPE_CHECKING:
     from probly.conformal_scores._common import NonConformityScore
+
 
 @conformal_credal_set_generator.register(nn.Module)
 class TorchConformalCredalSetPredictor[**In, Out](_ConformalCredalSetPredictorBase[In, Out], nn.Module, ABC):
@@ -21,6 +21,7 @@ class TorchConformalCredalSetPredictor[**In, Out](_ConformalCredalSetPredictorBa
     predictor: nn.Module
 
     def __init__(self, predictor: nn.Module, non_conformity_score: NonConformityScore[Out, torch.Tensor]) -> None:
+        """Initialize the conformal predictor with the base predictor and non-conformity score."""
         super().__init__(predictor, non_conformity_score)
         self.register_buffer("_conformal_quantile", torch.tensor(float("nan"), dtype=torch.float64))
 

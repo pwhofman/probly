@@ -16,7 +16,6 @@ from ._common import (
     RandomPredictor,
     RepresentationPredictor,
     predict,
-    predict_categorical_distribution_from_logit,
     predict_raw,
     predictor_registry,
 )
