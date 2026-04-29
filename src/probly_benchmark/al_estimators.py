@@ -87,16 +87,13 @@ def extract_penultimate_features(
     def _hook(_module: nn.Module, inp: tuple[torch.Tensor, ...], _out: Any) -> None:  # noqa: ANN401
         hook_output.append(inp[0].detach().cpu())
 
+    # torch.compiler.disable ensures hooks fire even if model.forward was
+    # compiled by _maybe_compile_forward during training.
     handle = target_layer.register_forward_hook(_hook)
-    try:
-        # torch.compiler.disable ensures hooks fire even if model.forward was
-        # compiled by _maybe_compile_forward during training.
-        eager_forward = torch.compiler.disable(model)
-        for i in range(0, len(x), batch_size):
-            xb = x[i : i + batch_size].float().to(device)
-            eager_forward(xb)
-    finally:
-        handle.remove()
+    eager_forward = torch.compiler.disable(model)
+    for i in range(0, len(x), batch_size):
+        eager_forward(x[i : i + batch_size].float().to(device))
+    handle.remove()
     return torch.cat(hook_output)
 
 
