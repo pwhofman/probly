@@ -6,6 +6,7 @@ from probly.lazy_types import JAX_ARRAY, JAX_ARRAY_LIKE, TORCH_TENSOR, TORCH_TEN
 
 from ._common import ListSample, Sample, SampleAxis, SampleFactory, SampleParams, create_sample
 from .array import ArraySample
+from .torch import TorchSample
 
 
 @create_sample.delayed_register((TORCH_TENSOR, TORCH_TENSOR_LIKE))
@@ -25,5 +26,6 @@ __all__ = [
     "SampleAxis",
     "SampleFactory",
     "SampleParams",
+    "TorchSample",
     "create_sample",
 ]
