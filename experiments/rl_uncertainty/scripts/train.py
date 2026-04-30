@@ -84,21 +84,102 @@ def train_single_agent(
     return agent, log
 
 
+def track_uncertainty_during_training(
+    agents: list[DQNAgent],
+    env_name: str,
+    probe_states: np.ndarray,
+    step: int,
+) -> dict:
+    """Evaluate uncertainty on fixed probe states during training."""
+    from experiments.rl_uncertainty.uncertainty.ensemble import EnsembleEstimator
+    estimator = EnsembleEstimator(agents)
+    result = estimator.estimate(probe_states)
+    return {
+        "step": step,
+        "mean_epistemic": float(result.epistemic.mean()),
+        "mean_aleatoric": float(result.aleatoric.mean()),
+        "mean_total": float(result.total.mean()),
+    }
+
+
 def train_ensemble(
     env_name: str,
     K: int,
     base_seed: int,
     n_steps: int,
-) -> tuple[list[DQNAgent], list[list[dict]]]:
-    """Train K independent DQN agents. Returns (agents, logs)."""
+) -> tuple[list[DQNAgent], list[list[dict]], list[dict]]:
+    """Train K independent DQN agents. Returns (agents, logs, uncertainty_log)."""
+    env_template = make_env(env_name)
+    low, high = env_template.bounds
+    n_per_dim = 10
+    xs = np.linspace(low[0], high[0], n_per_dim)
+    ys = np.linspace(low[1], high[1], n_per_dim)
+    xx, yy = np.meshgrid(xs, ys)
+    probe_states = np.column_stack([xx.ravel(), yy.ravel()])
+    if env_template.state_dim > 2:
+        padding = np.zeros((probe_states.shape[0], env_template.state_dim - 2))
+        probe_states = np.concatenate([probe_states, padding], axis=1)
+    probe_states = probe_states.astype(np.float32)
+
     agents = []
-    all_logs = []
+    envs = []
+    states = []
+    logs: list[list[dict]] = [[] for _ in range(K)]
+    episode_rewards = [0.0] * K
+    episode_lens = [0] * K
+    episode_idxs = [0] * K
+
     for i in range(K):
-        print(f"  Training ensemble member {i + 1}/{K} ...")
-        agent, log = train_single_agent(env_name, seed=base_seed * 1000 + i, n_steps=n_steps)
+        seed = base_seed * 1000 + i
+        agent = DQNAgent(state_dim=env_template.state_dim, n_actions=env_template.n_actions, seed=seed)
+        env = make_env(env_name)
+        state = env.reset(seed=seed)
         agents.append(agent)
-        all_logs.append(log)
-    return agents, all_logs
+        envs.append(env)
+        states.append(state)
+
+    uncertainty_log: list[dict] = []
+    eu_track_freq = 1000
+
+    print(f"  Training {K} ensemble members in lockstep for {n_steps} steps ...")
+    for step in range(n_steps):
+        frac = min(step / max(30_000, 1), 1.0)
+        epsilon = 1.0 + (0.05 - 1.0) * frac
+
+        for i in range(K):
+            action = agents[i].select_action(states[i], epsilon=epsilon)
+            result = envs[i].step(action)
+            agents[i].store(states[i], action, result.reward, result.next_state, result.done)
+            episode_rewards[i] += result.reward
+            episode_lens[i] += 1
+
+            if step % 4 == 0:
+                agents[i].train_step(batch_size=64)
+
+            if result.done:
+                seed_i = base_seed * 1000 + i
+                logs[i].append({
+                    "step": step,
+                    "episode": episode_idxs[i],
+                    "reward": episode_rewards[i],
+                    "length": episode_lens[i],
+                    "event": result.info.get("event", ""),
+                    "epsilon": epsilon,
+                })
+                episode_idxs[i] += 1
+                episode_rewards[i] = 0.0
+                episode_lens[i] = 0
+                states[i] = envs[i].reset(seed=seed_i + episode_idxs[i])
+            else:
+                states[i] = result.next_state
+
+        if step % eu_track_freq == 0 and step > 0:
+            entry = track_uncertainty_during_training(agents, env_name, probe_states, step)
+            uncertainty_log.append(entry)
+            if step % 10000 == 0:
+                print(f"  Step {step}/{n_steps} -- EU: {entry['mean_epistemic']:.4f}")
+
+    return agents, logs, uncertainty_log
 
 
 def main() -> None:
@@ -120,8 +201,9 @@ def main() -> None:
     print(f"Training: env={args.env} method={args.method} risk={args.risk} seed={args.seed}")
     t0 = time.time()
 
+    uncertainty_log: list[dict] = []
     if args.method == "ensemble":
-        agents, logs = train_ensemble(args.env, K=args.K, base_seed=args.seed, n_steps=args.steps)
+        agents, logs, uncertainty_log = train_ensemble(args.env, K=args.K, base_seed=args.seed, n_steps=args.steps)
         for i, agent in enumerate(agents):
             agent.save(str(out_dir / f"agent_{i}.pt"))
     elif args.method == "credal":
@@ -139,6 +221,9 @@ def main() -> None:
     for i, log in enumerate(logs):
         log_path = out_dir / f"train_log_{i}.json"
         log_path.write_text(json.dumps(log, indent=2))
+
+    if uncertainty_log:
+        (out_dir / "uncertainty_log.json").write_text(json.dumps(uncertainty_log, indent=2))
 
     print(f"Saved to {out_dir}")
 
