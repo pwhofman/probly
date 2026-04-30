@@ -252,19 +252,7 @@ def _download_checkpoint_from_wandb(
     project: str,
     device: torch.device,
 ) -> tuple[dict[str, Any], str]:
-    """Download a model artifact from wandb and return the raw checkpoint.
-
-    Args:
-        artifact_name: Name of the wandb artifact (without version tag).
-        entity: Wandb entity.
-        project: Wandb project.
-        device: Device to load the model onto.
-
-    Returns:
-        A tuple containing:
-            - checkpoint: The raw checkpoint dict.
-            - run_id: The ID of the original training run.
-    """
+    """Download a model artifact from wandb and return the raw checkpoint."""
     api = wandb.Api()
     full_name = f"{entity}/{project}/{artifact_name}:latest"
 
@@ -394,23 +382,6 @@ def load_model_from_wandb(
 
     Calibration artifacts are restored by first loading their source model artifact,
     then applying the configured calibration wrapper and loading calibration-only state.
-
-    Args:
-        artifact_name: Name of the wandb artifact (without version tag).
-        entity: Wandb entity.
-        project: Wandb project.
-        device: Device to load the model onto.
-        target_method: If provided, build the model under this method type instead
-            of the one stored in the checkpoint. Use this when a wrapper predictor
-            (e.g. ``credal_wrapper``) loads weights from a source artifact
-            (e.g. ``ensemble``) and needs to be registered under the wrapper's
-            predictor type for correct representer dispatch.
-
-    Returns:
-        A tuple containing:
-            - model: The reconstructed model in eval mode.
-            - cfg: The saved checkpoint config dict.
-            - run_id: The ID of the run that logged ``artifact_name``.
     """
     checkpoint, run_id = _download_checkpoint_from_wandb(artifact_name, entity, project, device)
     model, cfg = _build_model_from_checkpoint(checkpoint, entity, project, device, target_method=target_method)
@@ -468,6 +439,20 @@ def load_model_for_evaluation(
     )
 
 
+def _find_existing_run_id(entity: str, project: str, run_name: str) -> str | None:
+    """Return the ID of the most recent wandb run with the given display name, or None."""
+    api = wandb.Api()
+    runs = api.runs(
+        f"{entity}/{project}",
+        filters={"display_name": run_name},
+        order="-created_at",
+    )
+    try:
+        return next(iter(runs)).id
+    except StopIteration:
+        return None
+
+
 def init_wandb_for_evaluation(
     cfg: DictConfig,
     run_id: str,
@@ -476,9 +461,13 @@ def init_wandb_for_evaluation(
 
     For methods that own their training run (no ``load_from``), the existing
     training run is resumed so that evaluation metrics are attached to it.
-    For methods that load weights from another method's artifact, a fresh run
-    is created, identified by ``<method>_<base_model>_<dataset>_<seed>``, with
-    the source ``run_id`` stored in the run config for traceability.
+
+    For methods that load weights from another method's artifact (``load_from``
+    is set), the run is identified by ``<method>_<base_model>_<dataset>_<seed>``.
+    If a run with that name already exists in the project it is resumed, so
+    repeated evaluations accumulate metrics on the same run rather than creating
+    duplicates. If no such run exists yet, a new one is created with the full
+    evaluation config (plus the source ``run_id`` for traceability).
 
     Args:
         cfg: Hydra evaluation config.
@@ -489,9 +478,25 @@ def init_wandb_for_evaluation(
         ``run.finish()``.
     """
     if cfg.method.get("load_from"):
+        run_name = f"{cfg.method.name}_{cfg.base_model}_{cfg.dataset}_{cfg.seed}"
+        existing_id = _find_existing_run_id(cfg.wandb.entity, cfg.wandb.project, run_name)
+        if existing_id is not None:
+            return wandb.init(
+                id=existing_id,
+                entity=cfg.wandb.entity,
+                project=cfg.wandb.project,
+                resume="must",
+            )
+        # Fetch the source run's config so training-relevant parameters are
+        # carried over (e.g. base_model, dataset, seed, training hyperparams).
+        # The current eval cfg is merged on top, so method-specific overrides win.
+        api = wandb.Api()
+        source_run = api.run(f"{cfg.wandb.entity}/{cfg.wandb.project}/{run_id}")
+        source_config: dict[str, Any] = dict(source_run.config)
         return wandb.init(
-            name=f"{cfg.method.name}_{cfg.base_model}_{cfg.dataset}_{cfg.seed}",
+            name=run_name,
             config={
+                **source_config,
                 "source_run_id": run_id,
                 **cast("dict[str, Any]", OmegaConf.to_container(cfg, resolve=True)),
             },
