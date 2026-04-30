@@ -179,26 +179,45 @@ def test_stack_preserves_distribution_type() -> None:
 
 
 def test_mean_preserves_distribution_type_and_class_axis() -> None:
-    probabilities = torch.arange(24, dtype=torch.float64).reshape((2, 3, 4)) + 1.0
-    dist = TorchCategoricalDistribution(probabilities)
+    unnormalized = torch.tensor(
+        [
+            [[1.0, 1.0], [1.0, 3.0]],
+            [[9.0, 1.0], [2.0, 2.0]],
+        ],
+        dtype=torch.float64,
+    )
+    dist = TorchCategoricalDistribution(unnormalized)
 
     meaned = torch.mean(dist, dim=0)
 
     assert isinstance(meaned, TorchCategoricalDistribution)
-    assert meaned.shape == (3,)
-    assert torch.allclose(meaned.unnormalized_probabilities, torch.mean(probabilities, dim=0))
+    assert meaned.shape == (2,)
+    expected = torch.mean(unnormalized / unnormalized.sum(dim=-1, keepdim=True), dim=0)
+    assert torch.allclose(meaned.probabilities, expected)
 
 
 def test_average_preserves_distribution_type_and_uses_weights() -> None:
-    probabilities = torch.arange(24, dtype=torch.float64).reshape((2, 3, 4)) + 1.0
+    unnormalized = torch.tensor(
+        [
+            [[1.0, 1.0], [1.0, 3.0]],
+            [[9.0, 1.0], [2.0, 2.0]],
+        ],
+        dtype=torch.float64,
+    )
     weights = torch.tensor([0.25, 0.75], dtype=torch.float64)
-    dist = TorchCategoricalDistribution(probabilities)
+    dist = TorchCategoricalDistribution(unnormalized)
 
     averaged = torch_average(dist, dim=0, weights=weights)
 
     assert isinstance(averaged, TorchCategoricalDistribution)
-    assert averaged.shape == (3,)
-    assert torch.allclose(
-        averaged.unnormalized_probabilities,
-        torch_average(probabilities, dim=0, weights=weights),
-    )
+    assert averaged.shape == (2,)
+    probabilities = unnormalized / unnormalized.sum(dim=-1, keepdim=True)
+    expected = torch_average(probabilities, dim=0, weights=weights)
+    assert torch.allclose(averaged.probabilities, expected)
+
+
+def test_sum_is_not_supported_for_categorical_distribution() -> None:
+    dist = TorchCategoricalDistribution(torch.tensor([[1.0, 1.0], [9.0, 1.0]], dtype=torch.float64))
+
+    with pytest.raises(TypeError):
+        torch.sum(dist, dim=0)

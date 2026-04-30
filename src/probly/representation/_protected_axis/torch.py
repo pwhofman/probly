@@ -75,8 +75,28 @@ class TorchAxisProtected[T: TorchLike | torch.Tensor](TorchLikeImplementation[T]
         """Return the first protected field (dict order)."""
         return next(iter(cls.protected_axes))
 
-    def protected_values(self) -> dict[str, TorchProtectedValue]:
-        """Return all protected field values as-is."""
+    def _postprocess_protected_values[V: TorchProtectedValue](
+        self, values: dict[str, V], func: Callable
+    ) -> dict[str, V]:
+        """Optionally postprocess protected values based on the triggering function."""
+        del func
+        return values
+
+    @overload
+    def protected_values(self) -> dict[str, TorchProtectedValue]: ...
+
+    @overload
+    def protected_values(self, func: Callable) -> dict[str, TorchProtectedValue] | None: ...
+
+    def protected_values(self, func: Callable | None = None) -> dict[str, TorchProtectedValue] | None:
+        """Return all protected field values as-is.
+
+        Optionally takes the torch function that triggered the call for context.
+        This can be used to conditionally modify the returned values or prevent them from being accessed.
+        """
+        if func is not None and func not in type(self).permitted_functions:
+            return None
+
         values: dict[str, TorchProtectedValue] = {}
         primary_name = type(self).primary_protected_name()
         primary_batch: tuple[int, ...] | None = None
@@ -95,6 +115,9 @@ class TorchAxisProtected[T: TorchLike | torch.Tensor](TorchLikeImplementation[T]
                 raise ValueError(msg)
 
             values[name] = value
+
+        if func is not None:
+            values = self._postprocess_protected_values(values, func)
 
         return values
 
@@ -204,7 +227,7 @@ class TorchAxisProtected[T: TorchLike | torch.Tensor](TorchLikeImplementation[T]
         field_names = tuple(type(self).protected_axes.keys())
 
         if isinstance(value, type(self)):
-            candidate_values: dict[str, Any] = dict(value.protected_values())
+            candidate_values: dict[str, object] = value.protected_values()  # ty:ignore[invalid-assignment]
         elif isinstance(value, tuple):
             if len(value) != len(field_names):
                 msg = f"Expected tuple with {len(field_names)} values for assignment."

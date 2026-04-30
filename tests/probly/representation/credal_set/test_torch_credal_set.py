@@ -36,6 +36,16 @@ def test_torch_convex_credal_set_from_distribution_sample() -> None:
     assert tuple(cset.tensor.probabilities.shape) == (2, 3, 2)
 
 
+def test_torch_convex_credal_set_barycenter_averages_normalized_probabilities() -> None:
+    vertices = torch.tensor([[1.0, 1.0], [9.0, 1.0]], dtype=torch.float64)
+    cset = TorchConvexCredalSet(tensor=TorchCategoricalDistribution(vertices))
+
+    barycenter = cset.barycenter
+
+    assert isinstance(barycenter, TorchCategoricalDistribution)
+    assert torch.allclose(barycenter.probabilities, torch.tensor([0.7, 0.3], dtype=torch.float64))
+
+
 def test_torch_probability_intervals_numpy_and_shape_ops() -> None:
     probs = torch.tensor(
         [
