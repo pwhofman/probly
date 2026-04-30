@@ -25,5 +25,6 @@ __all__ = [
     "SampleAxis",
     "SampleFactory",
     "SampleParams",
+    "TorchSample",
     "create_sample",
 ]
