@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import logging
 
+from laplace import Laplace
 import torch
 from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
 
-from probly.method.laplace import laplace
 from probly.quantification import quantify
 from probly.representer import representer
 
@@ -19,12 +19,12 @@ logger = logging.getLogger(__name__)
 # final module is a ``nn.Linear``. Build a small LeNet-style classifier inline
 # that satisfies that constraint (the standard ``LeNet`` ends in ``Softmax``).
 model = nn.Sequential(
-    nn.Conv2d(1, 6, kernel_size=5),  # (1,28,28) -> (6,24,24)
+    nn.Conv2d(1, 6, kernel_size=5),
     nn.Tanh(),
-    nn.AvgPool2d(2),  # -> (6,12,12)
-    nn.Conv2d(6, 16, kernel_size=5),  # -> (16,8,8)
+    nn.AvgPool2d(2),
+    nn.Conv2d(6, 16, kernel_size=5),
     nn.Tanh(),
-    nn.AvgPool2d(2),  # -> (16,4,4)
+    nn.AvgPool2d(2),
     nn.Flatten(),
     nn.Linear(16 * 4 * 4, 120),
     nn.Tanh(),
@@ -32,10 +32,9 @@ model = nn.Sequential(
     nn.Tanh(),
     nn.Linear(84, 5),
 )
-cep = laplace(
+cep = Laplace(
     model,
-    pred_type="glm",
-    likelihood="classification",
+    "classification",
     subset_of_weights="last_layer",
     hessian_structure="kron",
 )

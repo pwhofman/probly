@@ -1,12 +1,12 @@
 """Samplers for creating representations from predictor outputs."""
 
-from probly.lazy_types import FLAX_MODULE, SKLEARN_MODULE, TORCH_MODULE
+from probly.lazy_types import FLAX_MODULE, LAPLACE_BASE, SKLEARN_MODULE, TORCH_MODULE
 from probly.representer._representer import representer
 
 from ._common import IterableSampler, Sampler, sampling_preparation_traverser
 
 
-@representer.delayed_register(TORCH_MODULE)
+@representer.delayed_register(LAPLACE_BASE)
 @sampling_preparation_traverser.delayed_register(TORCH_MODULE)
 def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415
