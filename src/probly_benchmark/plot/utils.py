@@ -58,10 +58,17 @@ def fetch_sp_runs(
     if method_entry.get("calibration"):
         filters["config.calibration.name"] = method_entry.calibration
 
-    runs = api.runs(f"{entity}/{project}", filters=filters)
+    filters["state"] = "finished"
+    runs = api.runs(f"{entity}/{project}", filters=filters, order="-created_at")
 
+    seen_seeds: set[Any] = set()
     results = []
     for run in runs:
+        seed = run.config.get("seed")
+        if seed in seen_seeds:
+            continue
+        seen_seeds.add(seed)
+
         bin_losses = run.summary.get("sp/bin_losses")
         auroc = run.summary.get("sp/auroc")
         if bin_losses is None or auroc is None:
@@ -75,9 +82,19 @@ def fetch_sp_runs(
             {
                 "bin_losses": np.array(bin_losses),
                 "auroc": float(auroc),
-                "seed": run.config.get("seed"),
+                "seed": seed,
             }
         )
+
+    if seeds is not None:
+        found_seeds = {r["seed"] for r in results}
+        for s in seeds:
+            if s not in found_seeds:
+                warnings.warn(
+                    f"No finished run found for method '{method_entry.name}' "
+                    f"seed={s} on {dataset}/{base_model} in {entity}/{project}.",
+                    stacklevel=2,
+                )
 
     if not results:
         msg = (

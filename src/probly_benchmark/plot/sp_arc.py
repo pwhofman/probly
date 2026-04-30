@@ -33,7 +33,7 @@ def _resolve_label(entry: DictConfig) -> str:
     return str(entry.name)
 
 
-@hydra.main(version_base=None, config_path="../configs/plot", config_name="sp_arc")
+@hydra.main(version_base=None, config_path="../plot_configs", config_name="sp_arc")
 def main(cfg: DictConfig) -> Figure:
     """Plot accuracy-rejection curves for the methods defined in the config.
 
