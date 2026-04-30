@@ -10,8 +10,6 @@ from probly.predictor import LogitClassifier
 from probly.representation.distribution import CategoricalDistribution
 
 if TYPE_CHECKING:
-    import numpy as np
-
     from probly.predictor import Predictor
     from probly.representation.array_like import ArrayLike
 
@@ -67,7 +65,7 @@ def compute_efficient_credal_prediction_bounds[T: ArrayLike](
     num_classes: int,
     alpha: float,
     **_kwargs,  # noqa: ANN003
-) -> tuple[np.ndarray, np.ndarray]:
+) -> tuple[T, T]:
     """Compute per-class additive logit bounds via classwise relative-likelihood optimization.
 
     Dispatches to backend-specific implementations based on the array type.

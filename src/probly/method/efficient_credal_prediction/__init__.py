@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from probly.lazy_types import SKLEARN_MODULE, TORCH_MODULE
+from probly.lazy_types import TORCH_MODULE, TORCH_TENSOR
 
+from . import numpy as numpy
 from ._common import (
     EfficientCredalPredictor,
     compute_efficient_credal_prediction_bounds,
@@ -18,20 +19,9 @@ def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415
 
 
-@compute_efficient_credal_prediction_bounds.delayed_register("torch.Tensor")
+@compute_efficient_credal_prediction_bounds.delayed_register(TORCH_TENSOR)
 def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415
-
-
-## NumPy
-@efficient_credal_prediction_generator.delayed_register(SKLEARN_MODULE)
-def _(_: type) -> None:
-    from . import numpy as numpy  # noqa: PLC0415
-
-
-@compute_efficient_credal_prediction_bounds.delayed_register("numpy.ndarray")
-def _(_: type) -> None:
-    from . import numpy as numpy  # noqa: PLC0415
 
 
 __all__ = [

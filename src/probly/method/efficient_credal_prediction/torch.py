@@ -2,11 +2,6 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    import numpy as np
-
 import math
 
 import torch
@@ -45,7 +40,7 @@ def _compute_bounds_torch(
     chunk_size: int = 128,
     n_iter: int = 50,
     bracket: float = 1e4,
-) -> tuple[np.ndarray, np.ndarray]:
+) -> tuple[torch.Tensor, torch.Tensor]:
     """Compute per-class additive logit bounds via classwise relative-likelihood optimization.
 
     For each class ``k`` and each direction (min/max), find the optimal
@@ -107,4 +102,4 @@ def _compute_bounds_torch(
                 left = torch.where(feasible, left, mid)
             lower[start:end] = (left + right) / 2.0
 
-    return lower.cpu().numpy(), upper.cpu().numpy()
+    return lower, upper

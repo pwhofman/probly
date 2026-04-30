@@ -26,20 +26,20 @@ class TestTorchCredalBounds:
         logits, targets, num_classes = dummy_data
         lower, upper = compute_efficient_credal_prediction_bounds(logits, targets, num_classes=num_classes, alpha=0.5)
 
-        assert isinstance(lower, np.ndarray)
-        assert isinstance(upper, np.ndarray)
+        assert isinstance(lower, torch.Tensor)
+        assert isinstance(upper, torch.Tensor)
         assert lower.shape == (num_classes,)
         assert upper.shape == (num_classes,)
-        assert lower.dtype == np.float64
-        assert upper.dtype == np.float64
+        assert lower.dtype == torch.float64
+        assert upper.dtype == torch.float64
 
     def test_bounds_sign_invariants(self, dummy_data: tuple[torch.Tensor, torch.Tensor, int]) -> None:
         """The unperturbed logits always satisfy alpha=0; so lower <= 0 <= upper."""
         logits, targets, num_classes = dummy_data
         lower, upper = compute_efficient_credal_prediction_bounds(logits, targets, num_classes=num_classes, alpha=0.5)
 
-        assert np.all(lower <= 0.0), "Lower bounds must be <= 0"
-        assert np.all(upper >= 0.0), "Upper bounds must be >= 0"
+        assert torch.all(lower <= 0.0), "Lower bounds must be <= 0"
+        assert torch.all(upper >= 0.0), "Upper bounds must be >= 0"
 
     def test_chunk_size_invariance(self, dummy_data: tuple[torch.Tensor, torch.Tensor, int]) -> None:
         """Chunk size is a memory optimization; it should not affect the math."""

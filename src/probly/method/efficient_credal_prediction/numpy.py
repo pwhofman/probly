@@ -63,7 +63,7 @@ def _compute_bounds_numpy(
             num_classes,
             alpha,
         )
-        return lower, upper
+        return lower.cpu().numpy(), upper.cpu().numpy()
 
     warnings.warn(
         "Efficient Credal Prediction calibration is running on the slow NumPy/SciPy backend. "
