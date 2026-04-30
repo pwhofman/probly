@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Literal, Protocol, Self, TypedDict, Unpack
 
 from flextype import Flexdispatch, flexdispatch
-from probly.representation.representation import CanonicalRepresentation, Representation
+from probly.representation.representation import Representation
 from probly.utils.iterable import first_element
 
 if TYPE_CHECKING:
@@ -37,13 +37,8 @@ class SampleFactory[T, S: Sample](Protocol):
         """
 
 
-class Sample[T](Representation, CanonicalRepresentation[T], ABC):
+class Sample[T](Representation, ABC):
     """Abstract base class for samples."""
-
-    @property
-    def canonical_element(self) -> T:
-        """Return the sample mean as the canonical prediction."""
-        return self.sample_mean()
 
     @classmethod
     @abstractmethod

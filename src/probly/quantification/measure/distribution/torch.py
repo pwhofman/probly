@@ -25,7 +25,7 @@ from ._common import (
 # Entropy
 
 
-@entropy.register(TorchCategoricalDistribution | torch.Tensor)
+@entropy.register
 def torch_categorical_entropy(
     distribution: TorchCategoricalDistribution | torch.Tensor, base: LogBase = None
 ) -> torch.Tensor:
@@ -40,13 +40,21 @@ def torch_categorical_entropy(
         return entropy
     if base == "normalize":
         base = float(p.shape[-1])
+
     return entropy / torch.log(torch.tensor(base))
 
 
 @entropy.register(TorchDirichletDistribution)
-def torch_dirichlet_entropy(distribution: TorchDirichletDistribution, base: LogBase = None) -> torch.Tensor:
+def torch_dirichlet_entropy(
+    distribution: TorchDirichletDistribution | torch.Tensor, base: LogBase = None
+) -> torch.Tensor:
     """Compute the differential entropy of a torch Dirichlet distribution."""
-    alphas = distribution.alphas
+    if isinstance(distribution, TorchDirichletDistribution):
+        alphas = distribution.alphas
+        del distribution  # Avoid keeping a reference to the distribution for memory efficiency
+    else:
+        alphas = distribution
+
     alpha_0 = torch.sum(alphas, dim=-1)
     num_classes = alphas.shape[-1]
 
@@ -68,10 +76,14 @@ def torch_dirichlet_entropy(distribution: TorchDirichletDistribution, base: LogB
 
 @entropy_of_expected_predictive_distribution.register(TorchDirichletDistribution)
 def torch_dirichlet_entropy_of_expected_predictive_distribution(
-    distribution: TorchDirichletDistribution, base: LogBase = None
+    distribution: TorchDirichletDistribution | torch.Tensor, base: LogBase = None
 ) -> torch.Tensor:
     """Compute the entropy of the expected value of a torch Dirichlet distribution."""
-    return torch_categorical_entropy(distribution.canonical_element, base=base)
+    if isinstance(distribution, torch.Tensor):
+        distribution = TorchDirichletDistribution(alphas=distribution)
+
+    expected_distribution = distribution.mean
+    return torch_categorical_entropy(expected_distribution, base=base)
 
 
 @entropy_of_expected_predictive_distribution.register(TorchCategoricalDistributionSample)
@@ -79,20 +91,24 @@ def torch_categorical_sample_entropy_of_expected_predictive_distribution(
     sample: TorchCategoricalDistributionSample, base: LogBase = None
 ) -> torch.Tensor:
     """Compute the entropy of the expected value of a sample from a categorical distribution."""
-    p = sample.tensor.probabilities
-    axis = sample.sample_axis
-    del sample  # Avoid keeping a reference to the sample for memory efficiency
-    expected_value = torch.mean(p, dim=axis)
-    return torch_categorical_entropy(expected_value, base=base)
+    expected_distribution = sample.sample_mean()
+    return torch_categorical_entropy(expected_distribution, base=base)
 
 
 # Conditional entropy
 
 
 @conditional_entropy.register(TorchDirichletDistribution)
-def torch_dirichlet_conditional_entropy(distribution: TorchDirichletDistribution, base: LogBase = None) -> torch.Tensor:
+def torch_dirichlet_conditional_entropy(
+    distribution: TorchDirichletDistribution | torch.Tensor, base: LogBase = None
+) -> torch.Tensor:
     """Compute the expected categorical entropy under a torch Dirichlet distribution."""
-    alphas = distribution.alphas
+    if isinstance(distribution, TorchDirichletDistribution):
+        alphas = distribution.alphas
+        del distribution  # Avoid keeping a reference to the distribution for memory efficiency
+    else:
+        alphas = distribution
+
     alpha_0 = torch.sum(alphas, dim=-1, keepdim=True)
     mean = alphas / alpha_0
     result = torch.digamma(alpha_0 + 1.0).squeeze(-1) - torch.sum(mean * torch.digamma(alphas + 1.0), dim=-1)
@@ -121,7 +137,9 @@ def torch_categorical_sample_conditional_entropy(
 
 
 @mutual_information.register(TorchDirichletDistribution)
-def torch_dirichlet_mutual_information(distribution: TorchDirichletDistribution, base: LogBase = None) -> torch.Tensor:
+def torch_dirichlet_mutual_information(
+    distribution: TorchDirichletDistribution | torch.Tensor, base: LogBase = None
+) -> torch.Tensor:
     """Compute mutual information of a torch Dirichlet distribution."""
     return torch_dirichlet_entropy_of_expected_predictive_distribution(
         distribution, base=base
@@ -149,11 +167,8 @@ def torch_categorical_sample_max_probability_complement_of_expected(
     sample: TorchCategoricalDistributionSample,
 ) -> torch.Tensor:
     """Compute one minus the max probability of the expected value of a categorical sample."""
-    p = sample.tensor.probabilities
-    axis = sample.sample_axis
-    del sample  # Avoid keeping a reference to the sample for memory efficiency
-    expected_value = torch.mean(p, dim=axis)
-    return 1.0 - torch.max(expected_value, dim=-1).values
+    expected_distribution = sample.sample_mean()
+    return 1.0 - torch.max(expected_distribution.probabilities, dim=-1).values
 
 
 @expected_max_probability_complement.register(TorchCategoricalDistributionSample)
