@@ -25,11 +25,6 @@ def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415
 
 
-@entropy_score.delayed_register(TORCH_TENSOR)
-def _load_entropy_torch(_: type) -> None:
-    import probly.quantification.measure.distribution.torch  # noqa: PLC0415, F401
-
-
 __all__ = [
     "BADGEQuery",
     "BadgeEstimator",
