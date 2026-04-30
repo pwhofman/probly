@@ -6,10 +6,14 @@ from probly.representer._representer import representer
 from ._common import IterableSampler, Sampler, sampling_preparation_traverser
 
 
-@representer.delayed_register(LAPLACE_BASE)
 @sampling_preparation_traverser.delayed_register(TORCH_MODULE)
 def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415
+
+
+@representer.delayed_register(LAPLACE_BASE)
+def _(_: type) -> None:
+    from . import laplace as laplace  # noqa: PLC0415
 
 
 @sampling_preparation_traverser.delayed_register(FLAX_MODULE)
