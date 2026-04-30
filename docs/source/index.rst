@@ -1,3 +1,5 @@
+.. _nn-init-doc:
+.. _locally-disable-grad-doc:
 .. _index:
 
 ``probly``
