@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Literal, Protocol, Self
 from flextype import flexdispatch
 from probly.representation.array_like import ArrayLike
 from probly.representation.distribution import CategoricalDistribution
-from probly.representation.representation import CanonicalRepresentation, Representation
+from probly.representation.representation import Representation
 
 if TYPE_CHECKING:
     from probly.representation.sample._common import Sample
@@ -23,7 +23,7 @@ class CredalSet(Representation):
     type: CredalSetType
 
 
-class CategoricalCredalSet[T: CategoricalDistribution](CredalSet, CanonicalRepresentation[T], ABC):
+class CategoricalCredalSet[T: CategoricalDistribution](CredalSet, ABC):
     """Base class for credal sets."""
 
     type = "categorical"
@@ -47,6 +47,13 @@ class CategoricalCredalSet[T: CategoricalDistribution](CredalSet, CanonicalRepre
     def num_classes(self) -> int:
         """Return the number of classes in the credal set."""
         msg = "num_classes property not implemented."
+        raise NotImplementedError(msg)
+
+    @property
+    @abstractmethod
+    def barycenter(self) -> T:
+        """Return the barycenter of the credal set."""
+        msg = "barycenter property not implemented."
         raise NotImplementedError(msg)
 
 

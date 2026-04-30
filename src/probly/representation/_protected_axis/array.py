@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from abc import ABC
 from dataclasses import replace
-from typing import TYPE_CHECKING, Any, ClassVar, Literal, Self, cast, override
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, Self, cast, overload, override
 
 import numpy as np
 
@@ -91,11 +91,39 @@ class ArrayAxisProtected[T: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplement
         """Return the first protected field (dict order)."""
         return next(iter(cls.protected_axes))
 
-    def protected_values(self) -> dict[str, ArrayProtectedValue]:
+    def _postprocess_protected_values[V: ArrayProtectedValue](
+        self, values: dict[str, V], func: Callable
+    ) -> dict[str, V]:
+        """Optionally postprocess protected values based on the triggering function."""
+        del func
+        return values
+
+    @overload
+    def protected_values(self) -> dict[str, ArrayProtectedValue]: ...
+
+    @overload
+    def protected_values(self, func: Callable) -> dict[str, ArrayProtectedValue] | None: ...
+
+    @overload
+    def protected_values(self, func: np.ufunc, method: str) -> dict[str, ArrayProtectedValue] | None: ...
+
+    def protected_values(
+        self, func: Callable | None = None, method: str | None = None
+    ) -> dict[str, ArrayProtectedValue] | None:
         """Return all protected field values.
 
         The values are preserved as-is and are not coerced to ``np.ndarray``.
+        Optionally takes the function that triggered the call for context.
+        This can be used to conditionally modify the returned values or prevent them from being accessed.
         """
+        if func is not None:
+            if method is not None:
+                permitted_methods = type(self).permitted_ufuncs.get(func)  # ty:ignore[invalid-argument-type]
+                if permitted_methods is None or method not in permitted_methods:
+                    return None
+            elif func not in type(self).permitted_functions:
+                return None
+
         values: dict[str, ArrayProtectedValue] = {}
         primary_name = type(self).primary_protected_name()
         primary_batch: tuple[int, ...] | None = None
@@ -114,6 +142,9 @@ class ArrayAxisProtected[T: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplement
                 raise ValueError(msg)
 
             values[name] = value
+
+        if func is not None:
+            values = self._postprocess_protected_values(values, func)
 
         return values
 
@@ -202,7 +233,7 @@ class ArrayAxisProtected[T: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplement
         field_names = tuple(type(self).protected_axes.keys())
 
         if isinstance(value, type(self)):
-            candidate_values: dict[str, Any] = dict(value.protected_values())
+            candidate_values: dict[str, object] = value.protected_values()  # ty:ignore[invalid-assignment]
         elif isinstance(value, tuple):
             if len(value) != len(field_names):
                 msg = f"Expected tuple with {len(field_names)} values for assignment."
@@ -283,15 +314,10 @@ class ArrayAxisProtected[T: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplement
         *inputs: object,
         **kwargs: object,
     ) -> object:
-        permitted_methods = type(self).permitted_ufuncs.get(ufunc)
-        if permitted_methods is None or method not in permitted_methods:
-            return NotImplemented
-
         if method not in {"__call__", "reduce", "accumulate", "reduceat"}:
             return NotImplemented
 
         protected_axes = type(self).protected_axes
-        self_values = self.protected_values()
         input_values: list[dict[str, ArrayProtectedValue] | None] = []
         for value in inputs:
             if isinstance(value, type(self)):
@@ -299,9 +325,16 @@ class ArrayAxisProtected[T: NumpyArrayLike | np.ndarray](NumpyArrayLikeImplement
                 if value_protected_axes != protected_axes:
                     msg = "All protected inputs must share identical protected_axes definitions."
                     raise ValueError(msg)
-                input_values.append(value.protected_values())
+                val = value.protected_values(ufunc, method)
+                if val is None:
+                    return NotImplemented
+                input_values.append(val)
             else:
                 input_values.append(None)
+        self_values = self.protected_values(ufunc, method)
+
+        if self_values is None:
+            return NotImplemented
 
         out = kwargs.get("out")
         out_items = out if isinstance(out, tuple) else ((out,) if out is not None else ())

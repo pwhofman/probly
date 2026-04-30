@@ -2,17 +2,20 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any, cast
 
 import hydra
 from omegaconf import DictConfig, OmegaConf
 import wandb
 
+from probly.decider import categorical_from_mean
 from probly.evaluation.tasks import selective_prediction
 from probly.quantification import quantify
-from probly.representation._helpers import compute_mean_probs
 from probly.representer import representer
 from probly_benchmark import calibration, data, utils
+
+if TYPE_CHECKING:
+    from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution
 
 
 @hydra.main(version_base=None, config_path="configs/", config_name="selective_prediction")
@@ -60,10 +63,10 @@ def main(cfg: DictConfig) -> None:
     decomposition = quantify(outputs)
     uncertainties = decomposition.total.detach().cpu().numpy()  # ty: ignore[unresolved-attribute]
 
-    mean_probs = compute_mean_probs(outputs).cpu().numpy()
+    mean_probs = cast("TorchCategoricalDistribution", categorical_from_mean(outputs)).cpu().numpy()
 
     labels = targets.numpy()
-    loss = (mean_probs.argmax(axis=1) != labels).astype(float)
+    loss = (mean_probs.argmax(axis=-1) != labels).astype(float)
     auroc, bin_losses = selective_prediction(uncertainties, loss, n_bins=cfg.n_bins)
     print(f"Selective prediction AUROC: {auroc:.4f}")
 
