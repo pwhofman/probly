@@ -86,11 +86,22 @@ def torch_distance_based_upper_entropy(
 ) -> torch.Tensor:
     """Compute the upper entropy of a distance-based credal set.
 
-    Pragmatic upper entropy: entropy of nominal + radius.
+    The TV ball {p : TV(p, p_hat) <= r} implies per-class bounds
+    lower_i = max(0, p_hat_i - r), upper_i = min(1, p_hat_i + r).
+    Uses bisection on the Lagrange multiplier for sum(p) = 1.
     """
-    p = credal_set.nominal.probabilities
-    ent = _apply_base(torch_entropy(p), credal_set.num_classes, base)
-    return ent + credal_set.radius
+    lower = credal_set.lower()
+    upper = credal_set.upper()
+    lo = 1.0 + lower.amin(dim=-1).clamp_min(torch.finfo(lower.dtype).tiny).log()
+    hi = lower.new_ones(lower.shape[:-1])
+    for _ in range(_BISECT_ITERS):
+        mu = (lo + hi) / 2
+        g = torch.clamp((mu.unsqueeze(-1) - 1).exp(), lower, upper).sum(-1) - 1.0
+        lo = torch.where(g < 0, mu, lo)
+        hi = torch.where(g >= 0, mu, hi)
+    mu = (lo + hi) / 2
+    result = torch_entropy(torch.clamp((mu.unsqueeze(-1) - 1).exp(), lower, upper))
+    return _apply_base(result, credal_set.num_classes, base)
 
 
 @lower_entropy.register(TorchDistanceBasedCredalSet)
@@ -100,11 +111,25 @@ def torch_distance_based_lower_entropy(
 ) -> torch.Tensor:
     """Compute the lower entropy of a distance-based credal set.
 
-    Pragmatic lower entropy: max(0, entropy of nominal - radius).
+    The TV ball implies per-class bounds. Since entropy is concave, the
+    minimum is at an extreme point of the polytope. Greedy heuristic tries
+    each class as the primary recipient of excess mass.
     """
-    p = credal_set.nominal.probabilities
-    ent = _apply_base(torch_entropy(p), credal_set.num_classes, base)
-    return torch.clamp(ent - credal_set.radius, min=0.0)
+    lower = credal_set.lower()
+    upper = credal_set.upper()
+    n_classes = lower.shape[-1]
+    capacity = upper - lower
+    residual = 1.0 - lower.sum(-1)
+    best = lower.new_full(lower.shape[:-1], float("inf"))
+    for j in range(n_classes):
+        p = lower.detach().clone()
+        rem = residual.clone()
+        for i in [j, *[k for k in range(n_classes) if k != j]]:
+            fill = torch.minimum(rem.clamp(min=0.0), capacity[..., i])
+            p[..., i] = p[..., i] + fill
+            rem = rem - fill
+        best = torch.minimum(best, torch_entropy(p))
+    return _apply_base(best, credal_set.num_classes, base)
 
 
 @upper_entropy.register(TorchConvexCredalSet)
