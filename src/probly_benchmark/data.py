@@ -249,7 +249,18 @@ def _get_imagenet_sharded(
         **train_common,
     )
     val_loader = _make_imagenet_loader(alloc.val, alloc.val_samples, **eval_common) if alloc.val else None
-    cal_loader = _make_imagenet_loader(alloc.cal, alloc.cal_samples, **eval_common) if alloc.cal else None
+    cal_loader = (
+        _make_imagenet_loader(
+            alloc.cal,
+            alloc.cal_samples,
+            shuffle_buf=5000,
+            shardshuffle=100,
+            loader_seed=seed,
+            **eval_common,
+        )
+        if alloc.cal
+        else None
+    )
     test_loader = _make_imagenet_loader(alloc.test, alloc.test_samples, **eval_common)
 
     return DataLoaders(train_loader, val_loader, cal_loader, test_loader)
@@ -291,9 +302,11 @@ def get_data_train(
             test = torchvision.datasets.CIFAR10(
                 root=DATA_PATH, train=False, download=True, transform=TRANSFORMS_TEST[name]
             )
-            # Evaluation loaders don't shuffle and don't keep workers alive between
-            # uses (persistent_workers wastes shared memory for loaders used once).
+            # Val and test loaders don't shuffle; cal does (used for conformal/calibration).
+            # None of them need persistent_workers — it wastes shared memory for loaders
+            # used once and can cause workers to be killed (SIGABRT) on long runs.
             eval_kwargs: dict[str, Any] = {**kwargs, "shuffle": False, "persistent_workers": False}
+            cal_kwargs: dict[str, Any] = {**kwargs, "shuffle": True, "persistent_workers": False}
             val_loader = None
             cal_loader = None
             if val_split > 0 or cal_split > 0:
@@ -309,7 +322,7 @@ def get_data_train(
                 if cal_split > 0:
                     cal.dataset = copy.copy(cal.dataset)
                     cal.dataset.transform = TRANSFORMS_TEST[name]  # ty: ignore[unresolved-attribute]
-                    cal_loader = DataLoader(cal, **eval_kwargs)
+                    cal_loader = DataLoader(cal, **cal_kwargs)
             train_loader = DataLoader(train, **kwargs)
             test_loader = DataLoader(test, **eval_kwargs)
             return DataLoaders(train_loader, val_loader, cal_loader, test_loader)
