@@ -17,4 +17,4 @@ amp: true
 wandb:
   enabled: true
   entity: "probly"
-  project: "jakubpaplham"
+  project: "test"

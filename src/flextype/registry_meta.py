@@ -262,7 +262,7 @@ class RegistryMeta[T: object](ABCMeta):
     def _negative_register_instance[Q](cls: RegistryMeta[T], instance: Q) -> Q:
         try:
             cls._negative_instance_registry.add(instance)
-            cls._instance_registry.discard(instance)  # ty:ignore[invalid-argument-type]
+            cls._instance_registry.discard(instance)
         except TypeError as err:
             raise RegistrationError(
                 registry=cls,

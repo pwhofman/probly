@@ -719,7 +719,7 @@ def _(
     **kwargs: Any,  # noqa: ANN401, ARG001
 ) -> tuple[float, float]:
     """Validate a credal net."""
-    model.eval()  # ty:ignore[unresolved-attribute]
+    model.eval()
     val_loss = 0.0
     val_acc = 0.0
     num_instances = 0
@@ -1003,7 +1003,7 @@ def _(
     **kwargs: Any,  # noqa: ANN401, ARG001
 ) -> dict[str, float]:
     """Evaluate a credal net on accuracy/NLL/ECE using the intersection probability."""
-    model.eval()  # ty:ignore[unresolved-attribute]
+    model.eval()
     all_probs: list[torch.Tensor] = []
     all_labels: list[torch.Tensor] = []
     for inputs_, targets_ in test_loader:

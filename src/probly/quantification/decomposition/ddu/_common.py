@@ -41,7 +41,7 @@ class DDUDensityDecomposition[T](CachingDecomposition, AleatoricEpistemicDecompo
     @property
     def _aleatoric(self) -> T:
         """The aleatoric uncertainty of the decomposition."""
-        return entropy(self.representation.softmax, base=self.base)  # ty:ignore[invalid-return-type]
+        return entropy(self.representation.softmax, base=self.base)
 
     @override
     @property
