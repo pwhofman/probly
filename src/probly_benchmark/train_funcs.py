@@ -11,7 +11,6 @@ import torch.nn.functional as F
 
 from flextype import flexdispatch
 from probly.method.batchensemble import BatchEnsemblePredictor
-from probly.method.batchensemble.torch import tile_inputs as tile_be_inputs
 from probly.method.bayesian import BayesianPredictor
 from probly.method.credal_ensembling import CredalEnsemblingPredictor
 from probly.method.credal_net import CredalNetPredictor
@@ -41,6 +40,7 @@ from probly.train.evidential.torch import (
     evidential_mse_loss,
     postnet_loss,
 )
+from probly.transformation.batchensemble.torch import tile_inputs as tile_be_inputs
 from probly.utils.torch import intersection_probability
 from probly_benchmark.base import BasePredictor
 
