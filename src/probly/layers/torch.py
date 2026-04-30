@@ -1675,7 +1675,6 @@ class SNGPLayer(nn.Module):
         W_L: nn.Parameter, random Fourier feature weights.
         b_L: nn.Parameter, random Fourier feature biases.
         sngp: nn.Linear, Bayesian linear classifier.
-        precision_matrix: torch.Tensor, precision matrix buffer for covariance estimation.
     """
 
     precision_matrix: torch.Tensor
