@@ -29,13 +29,17 @@ def plot_decomposition(
         title: Panel title.
         window: Smoothing window size.
     """
+    effective_window = min(window, max(len(epistemic) // 2, 1))
+
     def smooth(arr: np.ndarray) -> np.ndarray:
-        kernel = np.ones(window) / window
+        if effective_window <= 1:
+            return arr
+        kernel = np.ones(effective_window) / effective_window
         return np.convolve(arr, kernel, mode="valid")
 
-    s_steps = steps[:len(smooth(epistemic))]
     s_epi = smooth(epistemic)
     s_alea = smooth(aleatoric)
+    s_steps = steps[: len(s_epi)]
 
     ax.fill_between(s_steps, 0, s_alea, alpha=0.4, color="#2196f3", label="Aleatoric")
     ax.fill_between(s_steps, s_alea, s_alea + s_epi, alpha=0.4, color="#ff9800", label="Epistemic")
