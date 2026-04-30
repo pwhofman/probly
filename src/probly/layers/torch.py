@@ -1592,7 +1592,15 @@ class HeteroscedasticLayer(nn.Module):
 
 
 class SpectralNormWithMultiplier(nn.Module):
-    """Applies spectral normalization with a bounded multiplier to a module's weight."""
+    """Applies spectral normalization with a bounded multiplier to a module's weight suggested by :cite:`liu2020SNGP`.
+
+    Attributes:
+        module: nn.Module, the module to which spectral normalization is applied.
+        name: str, the name of the weight parameter to normalize (default: "weight").
+        n_power_iterations: int, number of power iterations to perform (default: 1).
+        norm_multiplier: float, the upper bound for the spectral norm multiplier (default: 1.0).
+        eps: float, small constant for numerical stability (default: 1e-12).
+    """
 
     weight_u: torch.Tensor
     weight_v: torch.Tensor
@@ -1605,7 +1613,15 @@ class SpectralNormWithMultiplier(nn.Module):
         norm_multiplier: float = 1.0,
         eps: float = 1e-12,
     ) -> None:
-        """Initialize the SpectralNormWithMultiplier wrapper."""
+        """Initialize the SpectralNormWithMultiplier wrapper.
+
+        Args:
+            module: nn.Module, the module to which spectral normalization is applied.
+            name: str, the name of the weight parameter to normalize (default: "weight").
+            n_power_iterations: int, number of power iterations to perform (default: 1).
+            norm_multiplier: float, the upper bound for the spectral norm multiplier (default: 1.0).
+            eps: float, small constant for numerical stability (default: 1e-12).
+        """
         super().__init__()
         self.module = module
         self.name = name
@@ -1640,13 +1656,27 @@ class SpectralNormWithMultiplier(nn.Module):
         return weight_orig * factor
 
     def forward(self, *args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
-        """Apply the module with the spectrally normalized weight."""
+        """Apply the module with the spectrally normalized weight.
+
+        Returns:
+            The output of the wrapped module with the spectrally normalized weight.
+        """
         setattr(self.module, self.name, self.compute_weight())
         return self.module(*args, **kwargs)
 
 
 class SNGPLayer(nn.Module):
-    """Spectral-normalized Neural Gaussian Process (SNGP) layer."""
+    """Spectral-normalized Neural Gaussian Process (SNGP) layer based on :cite:`liu2020SNGP`.
+
+    Attributes:
+        num_inducing: int, number of inducing points.
+        ridge_penalty: float, ridge penalty for numerical stability (default: 1e-6).
+        momentum: float, momentum for the precision matrix (default: 0.999).
+        W_L: nn.Parameter, random Fourier feature weights.
+        b_L: nn.Parameter, random Fourier feature biases.
+        sngp: nn.Linear, Bayesian linear classifier.
+        precision_matrix: torch.Tensor, precision matrix buffer for covariance estimation.
+    """
 
     precision_matrix: torch.Tensor
 
@@ -1696,7 +1726,15 @@ class SNGPLayer(nn.Module):
                 self.precision_matrix.copy_(self.precision_matrix + batch_update_matrix)
 
     def forward(self, x: torch.Tensor, update_covariance: bool = True) -> tuple[torch.Tensor, torch.Tensor]:
-        """Forward pass of the SNGP layer."""
+        """Forward pass of the SNGP layer.
+
+        Args:
+            x: Input tensor of shape (batch_size, in_features).
+            update_covariance: Whether to update the precision matrix during training.
+
+        Returns:
+            Tuple of logits and variance.
+        """
         phi = self.compute_rff(x)
         logits = self.sngp(phi)
 
