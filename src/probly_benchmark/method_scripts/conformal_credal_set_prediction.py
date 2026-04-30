@@ -27,7 +27,7 @@ alpha = 0.1
 
 cep.calibrate(alpha, y_calib, x_calib)
 logger.info(cep)
-logger.info(cep.quantile)
+logger.info(cep.conformal_quantile)
 rep = representer(cep)
 logger.info(rep)
 prediction = rep.predict(inputs)

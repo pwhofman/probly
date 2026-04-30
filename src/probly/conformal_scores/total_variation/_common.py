@@ -24,8 +24,8 @@ def compute_tv_score_numpy(y_pred: np.ndarray | ArrayLike, y_true: np.ndarray | 
     """Computes the Total Variation score using NumPy Arrays.
 
     Args:
-        y_pred: Probabilities.
-        y_true: Calibration prediction
+        y_pred: Predicted probabilities.
+        y_true: Ground truth labels (class indices or probability vectors).
     """
     y_pred_np = np.asarray(y_pred)
     y_true_np = np.asarray(y_true)
@@ -40,6 +40,8 @@ def compute_tv_score_numpy(y_pred: np.ndarray | ArrayLike, y_true: np.ndarray | 
 
 @dataclass(frozen=True, slots=True)
 class TVScore[In, Out](NonConformityScore):
+    """Total Variation distance non-conformity score."""
+
     def __call__(self, y_pred: In, y_true: In | None = None) -> Any:  # noqa: ANN401
         if y_true is None:
             msg = "y_true is required for TV distance."

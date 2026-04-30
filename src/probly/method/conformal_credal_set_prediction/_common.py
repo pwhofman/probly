@@ -6,10 +6,10 @@ from abc import ABC
 from typing import TYPE_CHECKING, Any, Protocol, Self, cast, runtime_checkable
 
 from flextype import flexdispatch
-from probly.conformal_scores.total_variation._common import tv_score_func
+from probly.conformal_scores.total_variation._common import tv_score
 from probly.method.method import predictor_transformation
 from probly.predictor import CredalPredictor, Predictor, predict
-from probly.representation.credal_set.array import (
+from probly.representation.credal_set._common import (
     DistanceBasedCredalSet,
     create_distance_based_credal_set_from_center_and_radius,
 )
@@ -113,7 +113,7 @@ def conformal_credal_set_generator[**In, T, Out](
 def conformal_total_variation[**In, Out: DistanceBasedCredalSet](
     base: Predictor[In, Out],
 ) -> TVConformalCredalSetPredictor[In, Out]:
-    return conformal_credal_set_generator(base, tv_score_func)
+    return conformal_credal_set_generator(base, tv_score)
 
 
 __all__ = [
