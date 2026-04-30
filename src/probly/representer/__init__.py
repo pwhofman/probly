@@ -10,6 +10,7 @@ from .credal_ensembler import (
 from .efficient_credal_prediction import EfficientCredalRepresenter
 from .het_nets import HetNetsRepresenter
 from .sampler import IterableSampler, Sampler
+from .sngp import SNGPRepresenter
 
 __all__ = [
     "CredalBNNRepresenter",
@@ -20,6 +21,7 @@ __all__ = [
     "HetNetsRepresenter",
     "IterableSampler",
     "Representer",
+    "SNGPRepresenter",
     "Sampler",
     "representer",
 ]
