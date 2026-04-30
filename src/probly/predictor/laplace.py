@@ -18,4 +18,4 @@ def _[**In](predictor: BaseLaplace, *args: In.args, **kwargs: In.kwargs) -> Cate
     if predictor.likelihood != "classification":
         msg = f"only likelihood='classification' is supported, got {predictor.likelihood!r}"
         raise NotImplementedError(msg)
-    return create_categorical_distribution(predict_raw(predictor, *args, **kwargs))  # ty:ignore[invalid-return-type]
+    return create_categorical_distribution(predict_raw(predictor, *args, **kwargs))
