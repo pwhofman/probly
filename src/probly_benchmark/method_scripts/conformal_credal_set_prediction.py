@@ -25,7 +25,6 @@ x_calib = torch.randn(10, 1, 28, 28)
 y_calib = torch.randint(0, 5, (10,))
 alpha = 0.1
 
-# def calibrate(self, alpha: float, y_calib: Out, *calib_args: In.args, **calib_kwargs: In.kwargs) -> Self:
 cep.calibrate(alpha, y_calib, x_calib)
 logger.info(cep)
 logger.info(cep.quantile)
