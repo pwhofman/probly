@@ -184,29 +184,41 @@ def test_stack_preserves_distribution_type() -> None:
 
 
 def test_mean_preserves_distribution_type_and_class_axis() -> None:
-    probabilities = np.arange(24, dtype=float).reshape((2, 3, 4)) + 1.0
-    dist = ArrayCategoricalDistribution(probabilities)
+    unnormalized = np.array(
+        [
+            [[1.0, 1.0], [1.0, 3.0]],
+            [[9.0, 1.0], [2.0, 2.0]],
+        ],
+        dtype=float,
+    )
+    dist = ArrayCategoricalDistribution(unnormalized)
 
     meaned = np.mean(dist, axis=0)
 
     assert isinstance(meaned, ArrayCategoricalDistribution)
-    assert meaned.shape == (3,)
-    np.testing.assert_allclose(meaned.unnormalized_probabilities, np.mean(probabilities, axis=0))
+    assert meaned.shape == (2,)
+    expected = np.mean(unnormalized / np.sum(unnormalized, axis=-1, keepdims=True), axis=0)
+    np.testing.assert_allclose(meaned.probabilities, expected)
 
 
 def test_average_preserves_distribution_type_and_uses_weights() -> None:
-    probabilities = np.arange(24, dtype=float).reshape((2, 3, 4)) + 1.0
+    unnormalized = np.array(
+        [
+            [[1.0, 1.0], [1.0, 3.0]],
+            [[9.0, 1.0], [2.0, 2.0]],
+        ],
+        dtype=float,
+    )
     weights = np.array([0.25, 0.75])
-    dist = ArrayCategoricalDistribution(probabilities)
+    dist = ArrayCategoricalDistribution(unnormalized)
 
     averaged = np.average(dist, axis=0, weights=weights)
 
     assert isinstance(averaged, ArrayCategoricalDistribution)
-    assert averaged.shape == (3,)
-    np.testing.assert_allclose(
-        averaged.unnormalized_probabilities,
-        np.average(probabilities, axis=0, weights=weights),
-    )
+    assert averaged.shape == (2,)
+    probabilities = unnormalized / np.sum(unnormalized, axis=-1, keepdims=True)
+    expected = np.average(probabilities, axis=0, weights=weights)
+    np.testing.assert_allclose(averaged.probabilities, expected)
 
 
 def test_hash_is_identity_based_and_distinguishes_instances() -> None:

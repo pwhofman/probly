@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import pytest
 
+from probly.decider import categorical_from_mean
 from probly.method.ddu import ddu
-from probly.predictor import predict_single
+from probly.predictor import predict
 
 torch = pytest.importorskip("torch")
 
@@ -169,11 +170,11 @@ class TestForwardPass:
         assert logits.shape == (test_input.shape[0], NUM_CLASSES)
         assert densities.shape == (test_input.shape[0], NUM_CLASSES)
 
-    def test_predict_single_returns_ddu_canonical_softmax(self, mlp_model: SimpleMLP, test_input: torch.Tensor) -> None:
-        """predict_single should reduce DDU representations to their softmax distribution."""
+    def test_categorical_from_mean_returns_ddu_softmax(self, mlp_model: SimpleMLP, test_input: torch.Tensor) -> None:
+        """The categorical mean decider should reduce DDU representations to their softmax distribution."""
         out = ddu(mlp_model)
 
-        single = predict_single(out, test_input)
+        single = categorical_from_mean(predict(out, test_input))
         logits, _ = out(test_input)
 
         assert isinstance(single, TorchCategoricalDistribution)

@@ -259,7 +259,8 @@ class TestTorchSample:
 
         assert isinstance(result, TorchCategoricalDistribution)
         assert result.shape == (3,)
-        assert torch.allclose(result.unnormalized_probabilities, torch.mean(probabilities, dim=0))
+        assert torch.allclose(result.unnormalized_probabilities, result.probabilities)
+        assert torch.allclose(result.unnormalized_probabilities, torch.mean(sample.tensor.probabilities, dim=0))
 
     def test_weighted_sample_mean_of_categorical_distribution_uses_weights(self) -> None:
         probabilities = torch.arange(24, dtype=torch.float64).reshape((2, 3, 4)) + 1.0
@@ -272,7 +273,7 @@ class TestTorchSample:
         assert result.shape == (3,)
         assert torch.allclose(
             result.unnormalized_probabilities,
-            torch_average(probabilities, dim=0, weights=weights),
+            torch_average(sample.tensor.probabilities, dim=0, weights=weights),
         )
 
     def test_torch_average_supports_tuple_dim_weights(self) -> None:

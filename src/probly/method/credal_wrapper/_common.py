@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Protocol
 from probly.method.ensemble import EnsemblePredictor
 from probly.method.ensemble._common import ensemble
 from probly.method.method import predictor_transformation
-from probly.predictor import ProbabilisticClassifier
+from probly.predictor import LogitClassifier, ProbabilisticClassifier
 
 if TYPE_CHECKING:
     from probly.predictor import Predictor
@@ -17,7 +17,9 @@ class CredalWrapperPredictor[**In, Out](EnsemblePredictor[In, Out], Protocol):
     """A predictor that applies the credal wrapper representer."""
 
 
-@predictor_transformation(permitted_predictor_types=(ProbabilisticClassifier,), preserve_predictor_type=False)
+@predictor_transformation(
+    permitted_predictor_types=(ProbabilisticClassifier, LogitClassifier), preserve_predictor_type=False
+)
 @CredalWrapperPredictor.register_factory(autocast_builtins=True)
 def credal_wrapper[**In, Out](
     base: Predictor[In, Out], num_members: int, reset_params: bool = True
