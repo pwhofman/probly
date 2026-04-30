@@ -57,6 +57,14 @@ class TorchCategoricalDistribution(
             msg = "Relative probabilities must be non-negative."
             raise ValueError(msg)
 
+    @override
+    def _postprocess_protected_values(self, values: dict[str, torch.Tensor], func: Callable) -> dict[str, torch.Tensor]:
+        if func in (torch.mean, torch_average):
+            # Ensure mean/average of categorical distributions uses normalized probabilities.
+            values["unnormalized_probabilities"] = self.probabilities
+
+        return values
+
     @property
     def _is_bernoulli(self) -> bool:
         return self.unnormalized_probabilities.shape[-1] == 1

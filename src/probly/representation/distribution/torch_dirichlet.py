@@ -69,15 +69,9 @@ class TorchDirichletDistribution(
         return cls(alphas=torch.as_tensor(alphas, dtype=dtype))
 
     @property
-    def mean(self) -> torch.Tensor:
+    def mean(self) -> TorchCategoricalDistribution:
         """Return the expected categorical probabilities."""
-        return self.alphas / torch.sum(self.alphas, dim=-1, keepdim=True)
-
-    @override
-    @property
-    def canonical_element(self) -> TorchCategoricalDistribution:
-        """Return the expected categorical distribution."""
-        return TorchCategoricalDistribution(self.mean)
+        return TorchCategoricalDistribution(self.alphas / torch.sum(self.alphas, dim=-1, keepdim=True))
 
     @override
     def sample(self, num_samples: int = 1) -> TorchSample[TorchCategoricalDistribution]:

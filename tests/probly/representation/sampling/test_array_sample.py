@@ -110,7 +110,8 @@ class TestArraySample:
 
         assert isinstance(result, ArrayCategoricalDistribution)
         assert result.shape == (3,)
-        np.testing.assert_allclose(result.unnormalized_probabilities, np.mean(probabilities, axis=0))
+        np.testing.assert_allclose(result.unnormalized_probabilities, result.probabilities)
+        np.testing.assert_allclose(result.unnormalized_probabilities, np.mean(sample.array.probabilities, axis=0))
 
     def test_weighted_sample_mean_of_categorical_distribution_uses_weights(self) -> None:
         probabilities = np.arange(24, dtype=float).reshape((2, 3, 4)) + 1.0
@@ -123,7 +124,7 @@ class TestArraySample:
         assert result.shape == (3,)
         np.testing.assert_allclose(
             result.unnormalized_probabilities,
-            np.average(probabilities, axis=0, weights=weights),
+            np.average(sample.array.probabilities, axis=0, weights=weights),
         )
 
     def test_sample_var_and_std_use_weights(self) -> None:
