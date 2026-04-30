@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Protocol, runtime_checkable
 from probly.method.bayesian._common import bayesian
 from probly.method.ensemble import EnsemblePredictor, register_ensemble_members
 from probly.method.method import predictor_transformation
-from probly.predictor import ProbabilisticClassifier
+from probly.predictor import LogitClassifier, ProbabilisticClassifier
 from pytraverse import GlobalVariable
 
 if TYPE_CHECKING:
@@ -43,7 +43,7 @@ def _resolve_param(
 
 
 @predictor_transformation(
-    permitted_predictor_types=(ProbabilisticClassifier,), post_transform=register_ensemble_members
+    permitted_predictor_types=(ProbabilisticClassifier, LogitClassifier), post_transform=register_ensemble_members
 )
 @CredalBNNPredictor.register_factory(autocast_builtins=True)
 def credal_bnn[**In, Out](

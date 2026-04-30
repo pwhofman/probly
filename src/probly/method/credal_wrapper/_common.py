@@ -18,11 +18,7 @@ class CredalWrapperPredictor[**In, Out](EnsemblePredictor[In, Out], Protocol):
 
 
 @predictor_transformation(
-    permitted_predictor_types=(
-        LogitClassifier,
-        ProbabilisticClassifier,
-    ),
-    preserve_predictor_type=False,
+    permitted_predictor_types=(ProbabilisticClassifier, LogitClassifier), preserve_predictor_type=False
 )
 @CredalWrapperPredictor.register_factory(autocast_builtins=True)
 def credal_wrapper[**In, Out](

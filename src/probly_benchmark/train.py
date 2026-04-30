@@ -34,9 +34,7 @@ from flextype import flexdispatch
 from probly.layers.torch import BatchEnsembleConv2d, BatchEnsembleLinear
 from probly.method.batchensemble import BatchEnsemblePredictor
 from probly.method.bayesian import BayesianPredictor
-from probly.method.credal_ensembling import CredalEnsemblingPredictor
 from probly.method.credal_relative_likelihood import CredalRelativeLikelihoodPredictor
-from probly.method.credal_wrapper import CredalWrapperPredictor
 from probly.method.dare import DarePredictor
 from probly.method.ddu import DDUPredictor
 from probly.method.duq import DUQPredictor
@@ -409,7 +407,7 @@ def train_model(
     )
 
 
-@train_model.register((EnsemblePredictor, CredalEnsemblingPredictor, CredalWrapperPredictor))
+@train_model.register(EnsemblePredictor)
 def _(
     model: EnsemblePredictor,
     train_loader: DataLoader,
