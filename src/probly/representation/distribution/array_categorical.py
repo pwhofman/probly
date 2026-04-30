@@ -56,8 +56,6 @@ class ArrayCategoricalDistribution(
 
     @override
     def _postprocess_protected_values(self, values: dict[str, np.ndarray], func: Callable) -> dict[str, np.ndarray]:
-        values = super()._postprocess_protected_values(values, func)
-
         if func in (np.mean, np.average):
             # Ensure that mean/average of probabilities remains a valid categorical distribution, by normalizing:
             values["unnormalized_probabilities"] = self.probabilities

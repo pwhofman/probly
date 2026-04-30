@@ -40,7 +40,13 @@ class _SupportsProtectedInternals(Protocol):
     protected_axes: dict[str, int]
     permitted_functions: set[Callable[..., Any]]
 
-    def protected_values(self) -> dict[str, TorchProtectedValue]:
+    @overload
+    def protected_values(self) -> dict[str, TorchProtectedValue]: ...
+
+    @overload
+    def protected_values(self, func: Callable) -> dict[str, TorchProtectedValue] | None: ...
+
+    def protected_values(self, func: Callable | None = None) -> dict[str, TorchProtectedValue] | None:
         """Return protected field values."""
 
     def with_protected_values(self, values: dict[str, TorchProtectedValue]) -> Any:  # noqa: ANN401
@@ -56,7 +62,6 @@ class TorchAxisProtectedInternals:
     protected_axes: dict[str, int]
     primary_name: str
     owner_type: type[Any]
-    permitted_functions: set[Callable[..., Any]]
 
     @property
     def primary_value(self) -> TorchProtectedValue:
@@ -77,14 +82,19 @@ class ProtectedValueSequenceInternals:
     values_by_field: dict[str, list[object]]
 
 
-def torch_axis_protected_internals(obj: object) -> TorchAxisProtectedInternals | None:
+def torch_axis_protected_internals(
+    obj: object, func: Callable | None = None, *, check_is_permitted: bool = False
+) -> TorchAxisProtectedInternals | None:
     """Extract protected-axis internals from object."""
     if not isinstance(obj, _SupportsProtectedInternals):
         return None
 
     protected_axes = obj.protected_axes
-    values = obj.protected_values()
     if not isinstance(protected_axes, dict) or len(protected_axes) == 0:
+        return None
+    values = obj.protected_values(func if check_is_permitted else None)  # ty:ignore[invalid-argument-type]
+
+    if values is None:
         return None
 
     for name, axes in protected_axes.items():
@@ -97,14 +107,12 @@ def torch_axis_protected_internals(obj: object) -> TorchAxisProtectedInternals |
     primary_name = next(iter(protected_axes))
     create: TorchAxisProtectedCreator = obj.with_protected_values
     owner_type = type(obj)
-    permitted_functions = set(getattr(owner_type, "permitted_functions", set()))
     return TorchAxisProtectedInternals(
         create=create,
         values=dict(values),
         protected_axes=dict(protected_axes),
         primary_name=primary_name,
         owner_type=owner_type,
-        permitted_functions=permitted_functions,
     )
 
 
@@ -138,14 +146,16 @@ def _apply_unary(
     return internals.create(results)
 
 
-def _extract_protected_value_sequence_internals(values: tuple[object, ...]) -> ProtectedValueSequenceInternals:
+def _extract_protected_value_sequence_internals(
+    values: tuple[object, ...], func: Callable | None = None
+) -> ProtectedValueSequenceInternals:
     """Extract and align protected values for sequence operations."""
     template: TorchAxisProtectedInternals | None = None
     values_by_field: dict[str, list[object]] = {}
     has_protected = False
 
     for value in values:
-        internals = torch_axis_protected_internals(value)
+        internals = torch_axis_protected_internals(value, func)
         if internals is None:
             if template is None:
                 continue
@@ -168,10 +178,6 @@ def _extract_protected_value_sequence_internals(values: tuple[object, ...]) -> P
         return ProtectedValueSequenceInternals(False, None, {})
 
     return ProtectedValueSequenceInternals(True, template, values_by_field)
-
-
-def _is_permitted_function(internals: TorchAxisProtectedInternals, func: Callable) -> bool:
-    return func in internals.permitted_functions
 
 
 def _normalize_batch_reduction_dims(dim: object, batch_ndim: int) -> int | tuple[int, ...]:
@@ -249,6 +255,8 @@ def torch_function_override(torch_func: _BoundTorchFunction) -> _TorchFunction:
 @overload
 def torch_internals_override(
     torch_param_name: str,
+    *,
+    check_is_permitted: bool = False,
 ) -> Callable[[_BoundTorchFunctionWithInternals], _TorchFunction]: ...
 
 
@@ -256,6 +264,7 @@ def torch_internals_override(
 def torch_internals_override(
     *,
     torch_param_pos: int,
+    check_is_permitted: bool = False,
 ) -> Callable[[_BoundTorchFunctionWithInternals], _TorchFunction]: ...
 
 
@@ -263,6 +272,7 @@ def torch_internals_override(
     torch_param_name: str | None = None,
     *,
     torch_param_pos: int | None = None,
+    check_is_permitted: bool = False,
 ) -> Callable[[_BoundTorchFunctionWithInternals], _TorchFunction]:
     """Decorator to convert a function taking a protected-axis argument."""
     if torch_param_name is None and torch_param_pos is None:
@@ -289,7 +299,11 @@ def torch_internals_override(
             else:
                 return NotImplemented
 
-            internals = torch_axis_protected_internals(protected_arg)
+            internals = torch_axis_protected_internals(
+                protected_arg,
+                func,
+                check_is_permitted=check_is_permitted,
+            )
             if internals is None:
                 return NotImplemented
 
@@ -314,16 +328,13 @@ def protected_clone_function(
 
 
 @torch_function.multi_register([torch.mean, torch.sum, torch_average])
-@torch_internals_override(torch_param_pos=0)
+@torch_internals_override(torch_param_pos=0, check_is_permitted=True)
 def protected_batch_reduction_function(  # noqa: PLR0912
     func: Callable,
     args: tuple[Any, ...],
     kwargs: dict[str, Any],
     internals: TorchAxisProtectedInternals,
 ) -> Any:  # noqa: ANN401
-    if not _is_permitted_function(internals, func):
-        return NotImplemented
-
     dim = args[1] if len(args) > 1 else kwargs.get("dim", kwargs.get("axis"))
     out = kwargs.get("out")
     out_internals = torch_axis_protected_internals(out)
