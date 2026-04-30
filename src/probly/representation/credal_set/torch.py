@@ -262,3 +262,14 @@ def _create_distance_based_credal_set_from_center_and_radius(
         nominal=TorchCategoricalDistribution(center),
         radius=radius,
     )
+
+
+@create_distance_based_credal_set_from_center_and_radius.register(TorchCategoricalDistribution)
+def _create_distance_based_credal_set_from_categorical_distribution(
+    center: TorchCategoricalDistribution,
+    radius: torch.Tensor,
+) -> TorchDistanceBasedCredalSet:
+    return TorchDistanceBasedCredalSet(
+        nominal=center,
+        radius=torch.as_tensor(radius),
+    )
