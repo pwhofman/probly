@@ -105,7 +105,8 @@ def array_dirichlet_entropy_of_expected_predictive_distribution(
     if isinstance(distribution, np.ndarray):
         distribution = ArrayDirichletDistribution(alphas=distribution)
 
-    return array_categorical_entropy(distribution.mean, base=base)
+    expected_distribution = distribution.mean
+    return array_categorical_entropy(expected_distribution, base=base)
 
 
 @entropy_of_expected_predictive_distribution.register(ArrayGaussianDistributionSample)
@@ -131,11 +132,8 @@ def array_categorical_sample_entropy_of_expected_predictive_distribution(
     sample: ArrayCategoricalDistributionSample, base: LogBase = None
 ) -> np.ndarray:
     """Compute the entropy of the expected value of a sample from a categorical distribution."""
-    p = sample.array.probabilities
-    axis = sample.sample_axis
-    del sample  # Avoid keeping a reference to the sample for memory efficiency
-    expected_value = np.mean(p, axis=axis)
-    return array_categorical_entropy(expected_value, base=base)
+    expected_distribution = sample.sample_mean()
+    return array_categorical_entropy(expected_distribution, base=base)
 
 
 # Conditional entropy
@@ -241,11 +239,8 @@ def array_categorical_sample_max_probability_complement_of_expected(
     sample: ArrayCategoricalDistributionSample,
 ) -> np.ndarray:
     """Compute one minus the max probability of the expected value of a categorical sample."""
-    p = sample.array.probabilities
-    axis = sample.sample_axis
-    del sample  # Avoid keeping a reference to the sample for memory efficiency
-    expected_value = np.mean(p, axis=axis)
-    return 1.0 - np.max(expected_value, axis=-1)
+    expected_distribution = sample.sample_mean()
+    return 1.0 - np.max(expected_distribution.probabilities, axis=-1)
 
 
 @expected_max_probability_complement.register(ArrayCategoricalDistributionSample)

@@ -82,7 +82,8 @@ def torch_dirichlet_entropy_of_expected_predictive_distribution(
     if isinstance(distribution, torch.Tensor):
         distribution = TorchDirichletDistribution(alphas=distribution)
 
-    return torch_categorical_entropy(distribution.mean, base=base)
+    expected_distribution = distribution.mean
+    return torch_categorical_entropy(expected_distribution, base=base)
 
 
 @entropy_of_expected_predictive_distribution.register(TorchCategoricalDistributionSample)
@@ -90,11 +91,8 @@ def torch_categorical_sample_entropy_of_expected_predictive_distribution(
     sample: TorchCategoricalDistributionSample, base: LogBase = None
 ) -> torch.Tensor:
     """Compute the entropy of the expected value of a sample from a categorical distribution."""
-    p = sample.tensor.probabilities
-    axis = sample.sample_axis
-    del sample  # Avoid keeping a reference to the sample for memory efficiency
-    expected_value = torch.mean(p, dim=axis)
-    return torch_categorical_entropy(expected_value, base=base)
+    expected_distribution = sample.sample_mean()
+    return torch_categorical_entropy(expected_distribution, base=base)
 
 
 # Conditional entropy
@@ -169,11 +167,8 @@ def torch_categorical_sample_max_probability_complement_of_expected(
     sample: TorchCategoricalDistributionSample,
 ) -> torch.Tensor:
     """Compute one minus the max probability of the expected value of a categorical sample."""
-    p = sample.tensor.probabilities
-    axis = sample.sample_axis
-    del sample  # Avoid keeping a reference to the sample for memory efficiency
-    expected_value = torch.mean(p, dim=axis)
-    return 1.0 - torch.max(expected_value, dim=-1).values
+    expected_distribution = sample.sample_mean()
+    return 1.0 - torch.max(expected_distribution.probabilities, dim=-1).values
 
 
 @expected_max_probability_complement.register(TorchCategoricalDistributionSample)
