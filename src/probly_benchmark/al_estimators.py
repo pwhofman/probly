@@ -10,6 +10,7 @@ from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
 
 from probly.calibrator import calibrate
+from probly.decider import categorical_from_mean
 from probly.method.calibration import CalibrationPredictor, temperature_scaling, vector_scaling
 from probly.method.conformal import ConformalSetPredictor, conformal_aps, conformal_lac, conformal_raps
 from probly.predictor import predict
@@ -312,17 +313,14 @@ class UncertaintyEstimator(BaseEstimator):
 
     @torch.no_grad()
     def predict_proba(self, x: torch.Tensor) -> torch.Tensor:
-        """Return class probabilities via representer -> canonical_element."""
+        """Return class probabilities via representer -> categorical_from_mean."""
         self.model.eval()
-        if isinstance(self.model, ConformalSetPredictor):
-            msg = "ConformalSetPredictor cannot be used with conformal sets."
-            raise NotImplementedError(msg)
         rep = representer(self.model, **self.rep_kwargs)
         parts = []
         for i in range(0, len(x), self.cfg.batch_size):
             xb = x[i : i + self.cfg.batch_size].float().to(self.device)
-            canonical: TorchCategoricalDistribution = rep.represent(xb).canonical_element
-            parts.append(canonical.probabilities.cpu())
+            probs = categorical_from_mean(rep.represent(xb)).probabilities
+            parts.append(probs.cpu())  # ty: ignore[unresolved-attribute]
         return torch.cat(parts)
 
     @torch.no_grad()
