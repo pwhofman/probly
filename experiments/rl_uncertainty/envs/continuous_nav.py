@@ -22,10 +22,8 @@ _DIRS = np.array([
 ])
 
 _DEFAULT_OBSTACLES: list[tuple[np.ndarray, float]] = [
-    (np.array([0.3, 0.6]), 0.08),
-    (np.array([0.5, 0.3]), 0.10),
-    (np.array([0.7, 0.7]), 0.07),
-    (np.array([0.6, 0.5]), 0.06),
+    (np.array([0.5, 0.5]), 0.15),  # large center obstacle blocking direct path
+    (np.array([0.3, 0.75]), 0.07),  # small upper-left obstacle
 ]
 
 
@@ -46,14 +44,19 @@ class ContinuousNavEnv:
     obstacles: list[tuple[np.ndarray, float]] = field(default_factory=lambda: list(_DEFAULT_OBSTACLES))
     start: np.ndarray = field(default_factory=lambda: np.array([0.1, 0.1]))
     goal: np.ndarray = field(default_factory=lambda: np.array([0.9, 0.9]))
-    goal_radius: float = 0.05
+    goal_radius: float = 0.08
     step_size: float = 0.05
     noise_std: float = 0.005
     max_steps: int = 200
+    collision_reward: float = -10.0
+    goal_reward: float = 50.0
+    step_reward: float = 0.0
+    distance_shaping: float = 20.0
 
     _pos: np.ndarray = field(init=False, repr=False)
     _rng: np.random.Generator = field(init=False, repr=False)
     _t: int = field(init=False, repr=False, default=0)
+    _prev_dist: float = field(init=False, repr=False, default=0.0)
 
     @property
     def state_dim(self) -> int:
@@ -82,6 +85,7 @@ class ContinuousNavEnv:
         self._rng = np.random.default_rng(seed)
         self._pos = self.start.copy()
         self._t = 0
+        self._prev_dist = float(np.linalg.norm(self._pos - self.goal))
         return self._pos.copy()
 
     def step(self, action: int) -> StepResult:
@@ -98,17 +102,21 @@ class ContinuousNavEnv:
         self._pos = np.clip(self._pos + direction + noise, 0.0, 1.0)
         self._t += 1
 
+        cur_dist = float(np.linalg.norm(self._pos - self.goal))
+        shaping = self.distance_shaping * (self._prev_dist - cur_dist)
+        self._prev_dist = cur_dist
+
         # Check collision
         for center, radius in self.obstacles:
             if np.linalg.norm(self._pos - center) < radius:
-                return StepResult(self._pos.copy(), -10.0, True, {"event": "collision"})
+                return StepResult(self._pos.copy(), self.collision_reward, True, {"event": "collision"})
 
         # Check goal
-        if np.linalg.norm(self._pos - self.goal) < self.goal_radius:
-            return StepResult(self._pos.copy(), 10.0, True, {"event": "goal"})
+        if cur_dist < self.goal_radius:
+            return StepResult(self._pos.copy(), self.goal_reward, True, {"event": "goal"})
 
         # Check timeout
         if self._t >= self.max_steps:
-            return StepResult(self._pos.copy(), -1.0, True, {"event": "timeout"})
+            return StepResult(self._pos.copy(), self.step_reward, True, {"event": "timeout"})
 
-        return StepResult(self._pos.copy(), -1.0, False, {})
+        return StepResult(self._pos.copy(), self.step_reward + shaping, False, {})

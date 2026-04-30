@@ -76,6 +76,37 @@ def rollout(
         state = result.next_state
 
 
+def rollout_single_agent(
+    env_name: str,
+    agent: DQNAgent,
+    seed: int,
+) -> dict:
+    """Rollout using a single agent's greedy policy (no ensemble)."""
+    env = make_env(env_name)
+    state = env.reset(seed=seed)
+    states = [state.copy()]
+    actions = []
+    rewards = []
+
+    while True:
+        action = agent.select_action(state, epsilon=0.0)
+        result = env.step(action)
+        states.append(result.next_state.copy())
+        actions.append(action)
+        rewards.append(result.reward)
+        if result.done:
+            return {
+                "states": np.array(states).tolist(),
+                "actions": actions,
+                "rewards": rewards,
+                "total_reward": sum(rewards),
+                "event": result.info.get("event", ""),
+                "length": len(actions),
+                "seed": seed,
+            }
+        state = result.next_state
+
+
 def compute_eu_grid(
     env_name: str,
     estimator: UncertaintyEstimator,
@@ -146,6 +177,18 @@ def main() -> None:
         n_goals = events.count("goal") + events.count("finish")
         print(f"    Crashes: {n_crashes}/{len(trajectories)}, Goals: {n_goals}/{len(trajectories)}")
         (out_dir / f"trajectories_{label}.json").write_text(json.dumps(trajectories, indent=2))
+
+    # Per-member ensemble trajectories (spaghetti plot)
+    if args.method == "ensemble":
+        print(f"  Rolling out per-member trajectories ({args.K} members) ...")
+        member_trajs = []
+        for i, agent in enumerate(agents):
+            traj = rollout_single_agent(args.env, agent, seed=0)
+            traj["member"] = i
+            member_trajs.append(traj)
+            event = traj["event"]
+            print(f"    Member {i}: len={traj['length']}, event={event}")
+        (out_dir / "trajectories_members.json").write_text(json.dumps(member_trajs, indent=2))
 
     # EU heatmap grid
     print(f"  Computing EU grid ({args.grid_resolution}x{args.grid_resolution}) ...")

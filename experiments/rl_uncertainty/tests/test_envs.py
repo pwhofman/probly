@@ -45,7 +45,7 @@ def test_continuous_nav_reaches_goal():
 
 
 def test_continuous_nav_collision():
-    """Walking into an obstacle gives -10 and ends episode."""
+    """Walking into an obstacle gives collision_reward and ends episode."""
     from experiments.rl_uncertainty.envs.continuous_nav import ContinuousNavEnv
 
     env = ContinuousNavEnv(
@@ -57,7 +57,7 @@ def test_continuous_nav_collision():
     env.reset(seed=0)
     result = env.step(1)  # right -> into obstacle
     assert result.done
-    assert result.reward == -10.0
+    assert result.reward == env.collision_reward
 
 
 def test_continuous_nav_bounds():
