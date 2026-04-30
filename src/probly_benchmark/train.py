@@ -1024,8 +1024,7 @@ def main(cfg: DictConfig) -> None:
         pin_memory=cfg.pin_memory,
         persistent_workers=cfg.persistent_workers,
         prefetch_factor=cfg.get("prefetch_factor", 4),
-        shuffle=True,
-        seed=seed,
+        shuffle=True
     )
     train_loader = loaders.train
     val_loader = loaders.validation
