@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from functools import wraps
 from inspect import BoundArguments, signature
-from typing import TYPE_CHECKING, Any, Protocol, cast, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, cast, overload, runtime_checkable
 
 import numpy as np
 
@@ -39,7 +39,13 @@ class _SupportsProtectedInternals(Protocol):
     protected_axes: dict[str, int]
     permitted_functions: set[Callable[..., Any]]
 
-    def protected_values(self) -> dict[str, ArrayProtectedValue]:
+    @overload
+    def protected_values(self) -> dict[str, ArrayProtectedValue]: ...
+
+    @overload
+    def protected_values(self, func: Callable) -> dict[str, ArrayProtectedValue] | None: ...
+
+    def protected_values(self, func: Callable | None = None) -> dict[str, ArrayProtectedValue] | None:
         """Return protected field values."""
 
     def with_protected_values(self, values: dict[str, ArrayProtectedValue]) -> Any:  # noqa: ANN401
@@ -55,7 +61,6 @@ class ArrayAxisProtectedInternals:
     protected_axes: dict[str, int]
     primary_name: str
     owner_type: type[Any]
-    permitted_functions: set[Callable[..., Any]]
 
     @property
     def primary_value(self) -> ArrayProtectedValue:
@@ -76,14 +81,19 @@ class ProtectedValueSequenceInternals:
     values_by_field: dict[str, list[object]]
 
 
-def array_axis_protected_internals(obj: object) -> ArrayAxisProtectedInternals | None:
+def array_axis_protected_internals(
+    obj: object, func: Callable | None, *, check_is_permitted: bool = False
+) -> ArrayAxisProtectedInternals | None:
     """Extract protected-axis internals from object."""
     if not isinstance(obj, _SupportsProtectedInternals):
         return None
 
     protected_axes = obj.protected_axes
-    values = obj.protected_values()
     if not isinstance(protected_axes, dict) or len(protected_axes) == 0:
+        return None
+    values = obj.protected_values(func if check_is_permitted else None)  # ty:ignore[invalid-argument-type]
+
+    if values is None:
         return None
 
     for name, axes in protected_axes.items():
@@ -96,14 +106,12 @@ def array_axis_protected_internals(obj: object) -> ArrayAxisProtectedInternals |
     primary_name = next(iter(protected_axes))
     create: ArrayAxisProtectedCreator = obj.with_protected_values
     owner_type = type(obj)
-    permitted_functions = set(getattr(owner_type, "permitted_functions", set()))
     return ArrayAxisProtectedInternals(
         create=create,
         values=dict(values),
         protected_axes=dict(protected_axes),
         primary_name=primary_name,
         owner_type=owner_type,
-        permitted_functions=permitted_functions,
     )
 
 
@@ -134,10 +142,6 @@ def _map_batch_axes(
     return (*normalized, *range(batch_ndim, ndim))
 
 
-def _is_permitted_function(internals: ArrayAxisProtectedInternals, func: Callable) -> bool:
-    return func in internals.permitted_functions
-
-
 def _normalize_batch_reduction_axes(axis: object, batch_ndim: int) -> int | tuple[int, ...]:
     if axis is None:
         return tuple(range(batch_ndim))
@@ -163,14 +167,16 @@ def _apply_unary(
     return internals.create(results)
 
 
-def _extract_protected_value_sequence_internals(values: tuple[object, ...]) -> ProtectedValueSequenceInternals:
+def _extract_protected_value_sequence_internals(
+    values: tuple[object, ...], func: Callable | None
+) -> ProtectedValueSequenceInternals:
     """Extract and align protected values for sequence operations."""
     template: ArrayAxisProtectedInternals | None = None
     values_by_field: dict[str, list[object]] = {}
     has_protected = False
 
     for value in values:
-        internals = array_axis_protected_internals(value)
+        internals = array_axis_protected_internals(value, func)
         if internals is None:
             if template is None:
                 continue
@@ -256,6 +262,7 @@ def array_function_override(array_func: _BoundArrayFunction) -> _ArrayFunction:
 
 def array_internals_override(
     array_param_name: str,
+    check_is_permitted: bool = False,
 ) -> Callable[[_BoundArrayFunctionWithInternals], _ArrayFunction]:
     """Decorator for functions that operate on one protected-axis argument."""
 
@@ -266,7 +273,11 @@ def array_internals_override(
             params: BoundArguments,
         ) -> Any:  # noqa: ANN401
             argument = params.arguments[array_param_name]
-            internals = array_axis_protected_internals(argument)
+            internals = array_axis_protected_internals(
+                argument,
+                func,
+                check_is_permitted=check_is_permitted,
+            )
             if internals is None:
                 return NotImplemented
             return f(func, params, internals)
@@ -308,18 +319,15 @@ def protected_astype_function(
 
 
 @array_function.multi_register([np.mean, np.sum, np.average])
-@array_internals_override("a")
+@array_internals_override("a", check_is_permitted=True)
 def protected_batch_reduction_function(  # noqa: PLR0912
     func: Callable,
     params: BoundArguments,
     internals: ArrayAxisProtectedInternals,
 ) -> Any:  # noqa: ANN401
-    if not _is_permitted_function(internals, func):
-        return NotImplemented
-
     axis = params.arguments.get("axis", None)
     out = params.arguments.get("out", None)
-    out_internals = array_axis_protected_internals(out)
+    out_internals = array_axis_protected_internals(out, None)
     if out_internals is not None and out_internals.protected_axes != internals.protected_axes:
         msg = "out must use the same protected_axes layout as input values."
         raise ValueError(msg)
@@ -585,8 +593,8 @@ def protected_concatenate_function(
     axis = kwargs.get("axis", 0)
     out = kwargs.get("out")
 
-    out_internals = array_axis_protected_internals(out)
-    sequence = _extract_protected_value_sequence_internals(values)
+    out_internals = array_axis_protected_internals(out, None)
+    sequence = _extract_protected_value_sequence_internals(values, None)
     template = sequence.template if sequence.template is not None else out_internals
     if template is None:
         return NotImplemented
@@ -633,8 +641,8 @@ def protected_stack_function(
     axis = params.arguments.get("axis", 0)
     out = params.arguments.get("out", None)
 
-    out_internals = array_axis_protected_internals(out)
-    sequence = _extract_protected_value_sequence_internals(values)
+    out_internals = array_axis_protected_internals(out, None)
+    sequence = _extract_protected_value_sequence_internals(values, None)
     template = sequence.template if sequence.template is not None else out_internals
     if template is None:
         return NotImplemented

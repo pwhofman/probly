@@ -6,13 +6,12 @@ from typing import Any
 
 import hydra
 from omegaconf import DictConfig, OmegaConf
-import wandb
 
 from probly.evaluation.ood import out_of_distribution_detection_auroc
 from probly.quantification import quantify
 from probly.representer import representer
-from probly_benchmark import data, utils
-from probly_benchmark.utils import load_model_from_wandb, resolve_artifact_name
+from probly_benchmark import calibration, data, utils
+from probly_benchmark.utils import init_wandb_for_evaluation, load_model_for_evaluation
 
 
 @hydra.main(version_base=None, config_path="configs/", config_name="ood_detection")
@@ -25,14 +24,9 @@ def main(cfg: DictConfig) -> None:
     print(f"Running on device: {device}")
 
     utils.set_seed(cfg.seed)
+    calibration.validate_calibration_config(cfg)
 
-    artifact_name = resolve_artifact_name(cfg)
-    model, _, run_id = load_model_from_wandb(
-        artifact_name,
-        cfg.wandb.entity,
-        cfg.wandb.project,
-        device,
-    )
+    model, _, run_id = load_model_for_evaluation(cfg, device)
 
     id_loader, ood_loader = data.get_data_ood(
         cfg.dataset,
@@ -58,12 +52,7 @@ def main(cfg: DictConfig) -> None:
     print(f"OOD detection AUROC: {auroc:.4f}")
 
     if cfg.wandb.enabled:
-        run = wandb.init(
-            id=run_id,
-            entity=cfg.wandb.entity,
-            project=cfg.wandb.project,
-            resume="must",
-        )
+        run = init_wandb_for_evaluation(cfg, run_id)
         run.summary["ood/auroc"] = auroc
         run.finish()
 

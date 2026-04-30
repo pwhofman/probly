@@ -6,7 +6,7 @@ import pytest
 
 torch = pytest.importorskip("torch")
 
-from probly.predictor import to_single_prediction  # noqa: E402
+from probly.decider import categorical_from_mean  # noqa: E402
 from probly.representation.distribution import create_dirichlet_distribution_from_alphas  # noqa: E402
 from probly.representation.distribution.torch_categorical import TorchCategoricalDistribution  # noqa: E402
 from probly.representation.distribution.torch_dirichlet import TorchDirichletDistribution  # noqa: E402
@@ -41,10 +41,10 @@ def test_torch_dirichlet_raises_on_non_positive_alphas(invalid_value: float) -> 
         TorchDirichletDistribution(alphas)
 
 
-def test_torch_dirichlet_canonical_element_is_expected_categorical_distribution() -> None:
+def test_categorical_from_mean_reduces_torch_dirichlet_to_expected_categorical_distribution() -> None:
     distribution = TorchDirichletDistribution(torch.tensor([[1.0, 2.0, 3.0], [2.0, 2.0, 4.0]]))
 
-    single = to_single_prediction(distribution)
+    single = categorical_from_mean(distribution)
 
     assert isinstance(single, TorchCategoricalDistribution)
     assert torch.allclose(single.probabilities, torch.tensor([[1 / 6, 2 / 6, 3 / 6], [2 / 8, 2 / 8, 4 / 8]]))
