@@ -228,13 +228,17 @@ def _get_imagenet_sharded(
         loaders. Validation and calibration are None when their split is 0.
     """
     alloc = _allocate_imagenet_shards(val_split, cal_split)
-    common = {
+    train_common: dict[str, Any] = {
         "batch_size": batch_size,
         "num_workers": num_workers,
         "pin_memory": pin_memory,
         "persistent_workers": persistent_workers,
         "prefetch_factor": prefetch_factor,
     }
+    # Evaluation loaders don't need persistent workers; test is used only once
+    # after potentially hours of training, so keeping workers alive wastes shared
+    # memory and causes workers to be killed (SIGABRT) on long runs.
+    eval_common: dict[str, Any] = {**train_common, "persistent_workers": False}
 
     train_loader = _make_imagenet_loader(
         alloc.train,
@@ -242,11 +246,11 @@ def _get_imagenet_sharded(
         shuffle_buf=5000,
         shardshuffle=100,
         loader_seed=seed,
-        **common,
+        **train_common,
     )
-    val_loader = _make_imagenet_loader(alloc.val, alloc.val_samples, **common) if alloc.val else None
-    cal_loader = _make_imagenet_loader(alloc.cal, alloc.cal_samples, **common) if alloc.cal else None
-    test_loader = _make_imagenet_loader(alloc.test, alloc.test_samples, **common)
+    val_loader = _make_imagenet_loader(alloc.val, alloc.val_samples, **eval_common) if alloc.val else None
+    cal_loader = _make_imagenet_loader(alloc.cal, alloc.cal_samples, **eval_common) if alloc.cal else None
+    test_loader = _make_imagenet_loader(alloc.test, alloc.test_samples, **eval_common)
 
     return DataLoaders(train_loader, val_loader, cal_loader, test_loader)
 
@@ -287,6 +291,9 @@ def get_data_train(
             test = torchvision.datasets.CIFAR10(
                 root=DATA_PATH, train=False, download=True, transform=TRANSFORMS_TEST[name]
             )
+            # Evaluation loaders don't shuffle and don't keep workers alive between
+            # uses (persistent_workers wastes shared memory for loaders used once).
+            eval_kwargs: dict[str, Any] = {**kwargs, "shuffle": False, "persistent_workers": False}
             val_loader = None
             cal_loader = None
             if val_split > 0 or cal_split > 0:
@@ -298,13 +305,13 @@ def get_data_train(
                 if val_split > 0:
                     val.dataset = copy.copy(val.dataset)
                     val.dataset.transform = TRANSFORMS_TEST[name]  # ty: ignore[unresolved-attribute]
-                    val_loader = DataLoader(val, **kwargs)
+                    val_loader = DataLoader(val, **eval_kwargs)
                 if cal_split > 0:
                     cal.dataset = copy.copy(cal.dataset)
                     cal.dataset.transform = TRANSFORMS_TEST[name]  # ty: ignore[unresolved-attribute]
-                    cal_loader = DataLoader(cal, **kwargs)
+                    cal_loader = DataLoader(cal, **eval_kwargs)
             train_loader = DataLoader(train, **kwargs)
-            test_loader = DataLoader(test, **kwargs)
+            test_loader = DataLoader(test, **eval_kwargs)
             return DataLoaders(train_loader, val_loader, cal_loader, test_loader)
         case "imagenet":
             return _get_imagenet_sharded(
