@@ -29,7 +29,7 @@ current_predictor_type: ContextVar[tuple[Predictor, type[Predictor] | None]] = C
 )
 
 
-class PredictorTransformationMethod[PIn: Predictor, **In, POut: Predictor](Protocol):
+class PredictorTransformation[PIn: Predictor, **In, POut: Predictor](Protocol):
     """Protocol for methods."""
 
     def __call__(self, base: PIn, *args: In.args, **kwargs: In.kwargs) -> POut:
@@ -42,7 +42,7 @@ def predictor_transformation[Pin: Predictor, **In, POut: Predictor](
     *,
     preserve_predictor_type: bool = False,
     auto_infer_predictor_type: bool = True,
-) -> Callable[[PredictorTransformationMethod[Pin, In, POut]], PredictorTransformationMethod[Pin, In, POut]]: ...
+) -> Callable[[PredictorTransformation[Pin, In, POut]], PredictorTransformation[Pin, In, POut]]: ...
 
 
 @overload
@@ -51,17 +51,17 @@ def predictor_transformation[Pin: Predictor, **In, POut: Predictor](
     *,
     auto_infer_predictor_type: bool = True,
     post_transform: Callable[[POut, type[Predictor] | None], POut],
-) -> Callable[[PredictorTransformationMethod[Pin, In, POut]], PredictorTransformationMethod[Pin, In, POut]]: ...
+) -> Callable[[PredictorTransformation[Pin, In, POut]], PredictorTransformation[Pin, In, POut]]: ...
 
 
-@stub_transform_factory("probly.method._sigx_transforms:predictor_transformation_transform")
+@stub_transform_factory("probly.transformation._sigx_transforms:predictor_transformation_transform")
 def predictor_transformation[Pin: Predictor, **In, POut: Predictor](
     permitted_predictor_types: Collection[type[Predictor]] | None,
     *,
     preserve_predictor_type: bool = False,
     auto_infer_predictor_type: bool = True,
     post_transform: Callable[[POut, type[Predictor] | None], POut] | None = None,
-) -> Callable[[PredictorTransformationMethod[Pin, In, POut]], PredictorTransformationMethod[Pin, In, POut]]:
+) -> Callable[[PredictorTransformation[Pin, In, POut]], PredictorTransformation[Pin, In, POut]]:
     """Decorator factory for predictor transformation methods.
 
     Args:
@@ -83,9 +83,8 @@ def predictor_transformation[Pin: Predictor, **In, POut: Predictor](
     """
 
     def decorator(
-        func: PredictorTransformationMethod[Pin, In, POut],
-    ) -> PredictorTransformationMethod[Pin, In, POut]:
-
+        func: PredictorTransformation[Pin, In, POut],
+    ) -> PredictorTransformation[Pin, In, POut]:
         @functools.wraps(func)
         def wrapper(  # noqa: PLR0912
             base: Pin,

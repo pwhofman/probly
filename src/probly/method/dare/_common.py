@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from probly.method.ensemble import EnsemblePredictor, ensemble
-from probly.method.method import predictor_transformation
+from probly.transformation.transformation import predictor_transformation
 
 if TYPE_CHECKING:
     from probly.predictor import Predictor

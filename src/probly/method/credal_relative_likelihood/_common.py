@@ -5,8 +5,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Protocol
 
 from probly.method.ensemble import EnsemblePredictor, register_ensemble_members
-from probly.method.method import predictor_transformation
 from probly.predictor import LogitClassifier
+from probly.transformation.transformation import predictor_transformation
 from probly.traverse_nn import nn_compose, reset_traverser
 from pytraverse import TRAVERSE_REVERSED, GlobalVariable, flexdispatch_traverser, traverse
 

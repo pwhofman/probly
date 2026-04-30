@@ -1,4 +1,4 @@
-"""Transformations for models."""
+"""Uncertainty-aware methods."""
 
 from probly.method.batchensemble import batchensemble
 from probly.method.bayesian import bayesian

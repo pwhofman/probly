@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING, Protocol
 
 from probly.method.ensemble import EnsemblePredictor
 from probly.method.ensemble._common import ensemble
-from probly.method.method import predictor_transformation
 from probly.predictor import ProbabilisticClassifier
+from probly.transformation.transformation import predictor_transformation
 
 if TYPE_CHECKING:
     from probly.predictor import Predictor

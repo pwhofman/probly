@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 from flextype import flexdispatch
 from probly.method.ensemble import EnsemblePredictor
-from probly.method.method import predictor_transformation
+from probly.transformation.transformation import predictor_transformation
 
 if TYPE_CHECKING:
     from probly.predictor import Predictor

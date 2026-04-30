@@ -9,11 +9,12 @@ import subprocess
 import sys
 
 INCLUDES = (
+    "probly/transformation/*/_common.py",
+    "probly/transformation/transformation.py",
+    "probly/transformation/_sigx_transforms.py",
     "probly/method/*/_common.py",
-    "probly/method/method.py",
-    "probly/method/_sigx_transforms.py",
 )
-STUB_PATHSPEC = "src/probly/method/*/_common.pyi"
+STUB_PATHSPEC = "stubs/probly/**/*.pyi"
 
 
 def build_command(src_root: Path, out_root: Path) -> list[str]:

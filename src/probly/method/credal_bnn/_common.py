@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from probly.method.bayesian._common import bayesian
 from probly.method.ensemble import EnsemblePredictor, register_ensemble_members
-from probly.method.method import predictor_transformation
 from probly.predictor import ProbabilisticClassifier
+from probly.transformation.transformation import predictor_transformation
 from pytraverse import GlobalVariable
 
 if TYPE_CHECKING:

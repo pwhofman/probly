@@ -6,9 +6,9 @@ from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from probly.method.ensemble import EnsembleCategoricalDistributionPredictor
 from probly.method.ensemble._common import ensemble
-from probly.method.method import predictor_transformation
 from probly.predictor import LogitClassifier, ProbabilisticClassifier
 from probly.representation.distribution import CategoricalDistribution
+from probly.transformation.transformation import predictor_transformation
 
 if TYPE_CHECKING:
     from probly.predictor import Predictor
