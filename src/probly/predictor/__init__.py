@@ -18,9 +18,7 @@ from ._common import (
     RepresentationPredictor,
     predict,
     predict_raw,
-    predict_single,
     predictor_registry,
-    to_single_prediction,
 )
 
 # Aliases for common predictor types
@@ -59,7 +57,5 @@ __all__ = [
     "RepresentationPredictor",
     "predict",
     "predict_raw",
-    "predict_single",
     "predictor_registry",
-    "to_single_prediction",
 ]

@@ -30,7 +30,7 @@ from ._common import (
 # Entropy
 
 
-@entropy.register(ArrayCategoricalDistribution)
+@entropy.register
 def array_categorical_entropy(
     distribution: ArrayCategoricalDistribution | np.ndarray, base: LogBase = None
 ) -> np.ndarray:
@@ -102,14 +102,10 @@ def array_dirichlet_entropy_of_expected_predictive_distribution(
     distribution: ArrayDirichletDistribution | np.ndarray, base: LogBase = None
 ) -> np.ndarray:
     """Compute the entropy of the expected value of a Dirichlet distribution."""
-    if isinstance(distribution, ArrayDirichletDistribution):
-        alphas = distribution.alphas
-        del distribution  # Avoid keeping a reference to the distribution for memory efficiency
-    else:
-        alphas = distribution
+    if isinstance(distribution, np.ndarray):
+        distribution = ArrayDirichletDistribution(alphas=distribution)
 
-    expected_value = alphas / np.sum(alphas, axis=-1, keepdims=True)
-    return array_categorical_entropy(expected_value, base=base)
+    return array_categorical_entropy(distribution.mean, base=base)
 
 
 @entropy_of_expected_predictive_distribution.register(ArrayGaussianDistributionSample)
