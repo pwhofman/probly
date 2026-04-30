@@ -10,7 +10,6 @@ from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
 
 from probly.calibrator import calibrate
-from probly.decider import categorical_from_mean
 from probly.method.calibration import CalibrationPredictor, temperature_scaling, vector_scaling
 from probly.method.conformal import ConformalSetPredictor, conformal_aps, conformal_lac, conformal_raps
 from probly.predictor import predict
@@ -18,6 +17,7 @@ from probly.quantification import decompose
 from probly.quantification.notion import EpistemicUncertainty, Notion
 from probly.representer import representer
 from probly_benchmark.builders import BuildContext, build_model
+from probly_benchmark.decision import decide
 from probly_benchmark.train import train_model
 
 if TYPE_CHECKING:
@@ -313,13 +313,12 @@ class UncertaintyEstimator(BaseEstimator):
 
     @torch.no_grad()
     def predict_proba(self, x: torch.Tensor) -> torch.Tensor:
-        """Return class probabilities via representer -> categorical_from_mean."""
+        """Return class probabilities via the ``decide`` dispatch."""
         self.model.eval()
-        rep = representer(self.model, **self.rep_kwargs)
         parts = []
         for i in range(0, len(x), self.cfg.batch_size):
             xb = x[i : i + self.cfg.batch_size].float().to(self.device)
-            probs = categorical_from_mean(rep.represent(xb)).probabilities
+            probs = decide(self.model, xb, rep_kwargs=self.rep_kwargs).probabilities
             parts.append(probs.cpu())  # ty: ignore[unresolved-attribute]
         return torch.cat(parts)
 
