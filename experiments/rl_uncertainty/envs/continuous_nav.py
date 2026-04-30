@@ -48,7 +48,7 @@ class ContinuousNavEnv:
     step_size: float = 0.05
     noise_std: float = 0.005
     max_steps: int = 200
-    collision_reward: float = -10.0
+    collision_reward: float = -25.0
     goal_reward: float = 50.0
     step_reward: float = 0.0
     distance_shaping: float = 20.0

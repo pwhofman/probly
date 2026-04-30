@@ -46,6 +46,9 @@ class RacetrackEnv:
     max_steps: int = 300
     start_angle: float = 0.0
     finish_laps: int = 1
+    wall_reward: float = -25.0
+    finish_reward: float = 50.0
+    angle_shaping: float = 10.0
 
     _pos: np.ndarray = field(init=False, repr=False)
     _vel: np.ndarray = field(init=False, repr=False)
@@ -151,7 +154,7 @@ class RacetrackEnv:
         state = np.concatenate([self._pos, self._vel])
 
         if not self._on_track(self._pos):
-            return StepResult(state, -10.0, True, {"event": "wall"})
+            return StepResult(state, self.wall_reward, True, {"event": "wall"})
 
         cur_angle = self._get_angle(self._pos)
         delta = cur_angle - self._prev_angle
@@ -162,10 +165,13 @@ class RacetrackEnv:
         self._angle_traveled += delta
         self._prev_angle = cur_angle
 
+        # Reward progress around the track (positive delta = forward progress)
+        shaping = self.angle_shaping * max(delta, 0.0)
+
         if self._angle_traveled >= 2 * np.pi * self.finish_laps:
-            return StepResult(state, 20.0, True, {"event": "finish"})
+            return StepResult(state, self.finish_reward, True, {"event": "finish"})
 
         if self._t >= self.max_steps:
             return StepResult(state, 0.0, True, {"event": "timeout"})
 
-        return StepResult(state, 1.0, False, {})
+        return StepResult(state, shaping, False, {})
