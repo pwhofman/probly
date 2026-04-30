@@ -334,7 +334,7 @@ def _training_loop(  # noqa: PLR0912, PLR0915
         running_loss = 0.0
         for inputs_, targets_ in tqdm(train_loader):
             inputs = inputs_.to(device, non_blocking=True)
-            if device.type == "cuda" and inputs.ndim >= 4:
+            if device.type == "cuda":
                 inputs = inputs.contiguous(memory_format=torch.channels_last)
             targets = targets_.to(device, non_blocking=True)
             running_loss += train_fn(
@@ -594,7 +594,7 @@ def _training_loop_relative_likelihood(  # noqa: PLR0912, PLR0915
         running_loss = 0.0
         for inputs_, targets_ in tqdm(train_loader):
             inputs = inputs_.to(device, non_blocking=True)
-            if device.type == "cuda" and inputs.ndim >= 4:
+            if device.type == "cuda":
                 inputs = inputs.contiguous(memory_format=torch.channels_last)
             targets = targets_.to(device, non_blocking=True)
             running_loss += train_fn(
@@ -767,7 +767,7 @@ def _fit_ddu_density_head(
     all_labels: list[torch.Tensor] = []
     for inputs_, targets_ in tqdm(train_loader, desc="Fitting DDU density head"):
         inputs = inputs_.to(device, non_blocking=True)
-        if device.type == "cuda" and inputs.ndim >= 4:
+        if device.type == "cuda":
             inputs = inputs.contiguous(memory_format=torch.channels_last)
         targets = targets_.to(device, non_blocking=True)
         with torch.amp.autocast(device.type, enabled=amp_enabled):
@@ -1025,6 +1025,7 @@ def main(cfg: DictConfig) -> None:
         persistent_workers=cfg.persistent_workers,
         prefetch_factor=cfg.get("prefetch_factor", 4),
         shuffle=True,
+        seed=seed,
     )
     train_loader = loaders.train
     val_loader = loaders.validation
