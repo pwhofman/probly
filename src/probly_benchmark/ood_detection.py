@@ -10,7 +10,7 @@ from omegaconf import DictConfig, OmegaConf
 from probly.evaluation.ood import out_of_distribution_detection_auroc
 from probly.quantification import quantify
 from probly.representer import representer
-from probly_benchmark import data, utils
+from probly_benchmark import calibration, data, utils
 from probly_benchmark.utils import init_wandb_for_evaluation, load_model_for_evaluation
 
 
@@ -24,6 +24,7 @@ def main(cfg: DictConfig) -> None:
     print(f"Running on device: {device}")
 
     utils.set_seed(cfg.seed)
+    calibration.validate_calibration_config(cfg)
 
     model, _, run_id = load_model_for_evaluation(cfg, device)
 

@@ -57,6 +57,11 @@ class TorchOneHotConformalSet(TorchAxisProtected[Any], OneHotConformalSet):
             raise TypeError(msg)
         return cls.from_tensor_sample(cast("torch.Tensor", sample.tensor))
 
+    @property
+    def set_size(self) -> torch.Tensor:
+        """Return the sizes of the conformal sets."""
+        return torch.sum(self.tensor, dim=-1)
+
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
 class TorchIntervalConformalSet(TorchAxisProtected[Any], IntervalConformalSet):
@@ -96,6 +101,11 @@ class TorchIntervalConformalSet(TorchAxisProtected[Any], IntervalConformalSet):
             msg = "Expected TorchSample for interval conformal sets."
             raise TypeError(msg)
         return cls.from_tensor_samples(lower.tensor, upper.tensor)
+
+    @property
+    def set_size(self) -> torch.Tensor:
+        """Return the sizes of the conformal sets."""
+        return self.tensor[..., 1] - self.tensor[..., 0]
 
 
 create_onehot_conformal_set.register(torch.Tensor)(TorchOneHotConformalSet.from_tensor_sample)

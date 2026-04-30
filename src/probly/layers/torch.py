@@ -1472,13 +1472,21 @@ class IntSoftmax(nn.Module):
         n_classes = x.shape[-1] // 2
         lo = x[..., :n_classes]
         hi = x[..., n_classes:]
-
         center = 0.5 * (lo + hi)
-        exp_center = torch.exp(center)
-        exp_center_sum = torch.sum(exp_center, dim=-1, keepdim=True)
 
-        lo_probs = torch.exp(lo) / (exp_center_sum - exp_center + torch.exp(lo))
-        hi_probs = torch.exp(hi) / (exp_center_sum - exp_center + torch.exp(hi))
+        # Eq. 7's per-class formula ``q[k] = exp(perturb[k]) / (sum_j exp(center[j]) -
+        # exp(center[k]) + exp(perturb[k]))`` is the softmax of a modified logit
+        # vector that holds ``perturb[k]`` at position ``k`` and ``center[j]``
+        # elsewhere. Building that family of vectors and reading the diagonal
+        # of the resulting softmax matrix lets us delegate numerical stability
+        # to ``torch.softmax``.
+        eye = torch.eye(n_classes, device=x.device, dtype=x.dtype)
+        center_off_diag = center.unsqueeze(-2) * (1 - eye)  # (..., K, K), zeros on diagonal
+        lo_modified = center_off_diag + lo.unsqueeze(-1) * eye  # diag holds lo
+        hi_modified = center_off_diag + hi.unsqueeze(-1) * eye  # diag holds hi
+
+        lo_probs = torch.softmax(lo_modified, dim=-1).diagonal(dim1=-2, dim2=-1)
+        hi_probs = torch.softmax(hi_modified, dim=-1).diagonal(dim1=-2, dim2=-1)
 
         sum_lo = lo_probs.sum(dim=-1, keepdim=True)
         sum_hi = hi_probs.sum(dim=-1, keepdim=True)

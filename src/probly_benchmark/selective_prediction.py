@@ -11,7 +11,7 @@ from probly.evaluation.tasks import selective_prediction
 from probly.quantification import quantify
 from probly.representation._helpers import compute_mean_probs
 from probly.representer import representer
-from probly_benchmark import data, utils
+from probly_benchmark import calibration, data, utils
 from probly_benchmark.utils import init_wandb_for_evaluation, load_model_for_evaluation
 
 
@@ -25,6 +25,7 @@ def main(cfg: DictConfig) -> None:
     print(f"Running on device: {device}")
 
     utils.set_seed(cfg.seed)
+    calibration.validate_calibration_config(cfg)
 
     model, _, run_id = load_model_for_evaluation(cfg, device)
     print(f"Loaded model for {cfg.method.name} from wandb run: {run_id}")

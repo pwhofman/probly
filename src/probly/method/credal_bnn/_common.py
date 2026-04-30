@@ -45,7 +45,7 @@ def _resolve_param(
 @predictor_transformation(
     permitted_predictor_types=(ProbabilisticClassifier,), post_transform=register_ensemble_members
 )
-@CredalBNNPredictor.register_factory
+@CredalBNNPredictor.register_factory(autocast_builtins=True)
 def credal_bnn[**In, Out](
     base: Predictor[In, Out],
     use_base_weights: bool = USE_BASE_WEIGHTS.default,

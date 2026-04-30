@@ -69,7 +69,7 @@ class Decomposition(Mapping[NotionKey, Notion], ABC):
         return len(self.components)
 
 
-@dataclass(frozen=True, slots=True, repr=False)
+@dataclass(frozen=True, slots=True, weakref_slot=True, repr=False)
 class CachingDecomposition(Decomposition, ABC):
     """Protocol for decompositions that cache their components."""
 
@@ -176,7 +176,7 @@ class TotalDecomposition[TU: TotalUncertainty](Decomposition, ABC):  # ty:ignore
         return self.get_notion(TotalUncertainty)
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, weakref_slot=True)
 class ConstantTotalDecomposition[TU: TotalUncertainty](TotalDecomposition[TU]):
     """Protocol for decompositions where the total uncertainty is constant."""
 

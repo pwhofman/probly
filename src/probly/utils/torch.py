@@ -77,3 +77,27 @@ def torch_entropy(p: torch.Tensor) -> torch.Tensor:
     """
     log_p = torch.where(p > 0, p.log(), p.new_zeros(()))
     return -(p * log_p).sum(-1)
+
+
+def intersection_probability(lower: torch.Tensor, upper: torch.Tensor) -> torch.Tensor:
+    """Intersection probability of a probability interval, per :cite:`wang2024credalnet` Section 3.4.
+
+    Reduces an interval credal set ``[lower, upper]`` to a single probability
+    vector by ``q_int_k = lower_k + alpha * (upper_k - lower_k)`` with
+    ``alpha = (1 - sum(lower)) / sum(upper - lower)``. The implementation
+    handles the degenerate case ``upper == lower`` (zero width) by returning
+    ``lower`` directly, avoiding ``0 / 0`` and keeping autograd well-defined.
+
+    Args:
+        lower: Lower bounds of shape ``(..., num_classes)``.
+        upper: Upper bounds of shape ``(..., num_classes)``.
+
+    Returns:
+        Intersection probability tensor of shape ``(..., num_classes)``.
+    """
+    slack = upper - lower
+    slack_sum = torch.sum(slack, dim=-1, keepdim=True)
+    remaining = 1 - torch.sum(lower, dim=-1, keepdim=True)
+    denominator = torch.where(slack_sum != 0, slack_sum, torch.ones_like(slack_sum))
+    weights = torch.where(slack_sum != 0, slack / denominator, torch.zeros_like(slack))
+    return lower + remaining * weights

@@ -24,7 +24,7 @@ class CredalWrapperPredictor[**In, Out](EnsemblePredictor[In, Out], Protocol):
     ),
     preserve_predictor_type=False,
 )
-@CredalWrapperPredictor.register_factory
+@CredalWrapperPredictor.register_factory(autocast_builtins=True)
 def credal_wrapper[**In, Out](
     base: Predictor[In, Out], num_members: int, reset_params: bool = True
 ) -> CredalWrapperPredictor[In, Out]:
