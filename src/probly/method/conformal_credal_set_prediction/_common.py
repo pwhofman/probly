@@ -24,7 +24,7 @@ class ConformalCredalSetPredictor[**In, Out: DistanceBasedCredalSet](CredalPredi
     """Protocol for predictors that output conformalized credal sets."""
 
     predictor: Predictor
-    quantile: float | None
+    conformal_quantile: float | None
     non_conformity_score: NonConformityScore | None
 
     def calibrate(self, alpha: float, y_calib: Out, *calib_args: In.args, **calib_kwargs: In.kwargs) -> Self:
@@ -41,13 +41,13 @@ class _ConformalCredalSetPredictorBase[**In, Out](ABC):
     """Concrete implementation of a ConformalCredalSetPredictor."""
 
     predictor: Predictor[In, Out]
-    quantile: float | None
+    conformal_quantile: float | None
     non_conformity_score: NonConformityScore[Out, Out] | None
 
     def __init__(self, predictor: Predictor[In, Out], non_conformity_score: NonConformityScore[Out, Out]) -> None:
         super().__init__()
         self.predictor = predictor
-        self.quantile = None
+        self.conformal_quantile = None
         self.non_conformity_score = non_conformity_score
 
     def _require_score(self) -> NonConformityScore[Out, Out]:
@@ -57,7 +57,7 @@ class _ConformalCredalSetPredictorBase[**In, Out](ABC):
         return self.non_conformity_score
 
     def _require_calibrated(self) -> tuple[float, NonConformityScore[Out, Out]]:
-        quantile = self.quantile
+        quantile = self.conformal_quantile
         if quantile is None:
             msg = "Conformal predictor is not calibrated. Please call calibrate() before prediction."
             raise ValueError(msg)
@@ -69,7 +69,7 @@ class _ConformalCredalSetPredictorBase[**In, Out](ABC):
         score = self._require_score()
         prediction = predict(self.predictor, *calib_args, **calib_kwargs)
         scores = score(prediction, y_calib)
-        self.quantile = calculate_quantile(scores, alpha)
+        self.conformal_quantile = calculate_quantile(scores, alpha)
         return self
 
 
@@ -93,9 +93,9 @@ def predict_total_variation_conformal_credal_set[**In, Out: DistanceBasedCredalS
     **kwargs: In.kwargs,
 ) -> DistanceBasedCredalSet:
     """Predict a total variation conformal credal set."""
-    _, _ = calibrated_state(predictor)
+    quantile, _ = calibrated_state(predictor)
     prediction = predict(cast("Any", predictor).predictor, *args, **kwargs)
-    return create_distance_based_credal_set_from_center_and_radius(prediction, predictor.quantile)  # ty: ignore[invalid-argument-type]
+    return create_distance_based_credal_set_from_center_and_radius(prediction, quantile)
 
 
 @flexdispatch

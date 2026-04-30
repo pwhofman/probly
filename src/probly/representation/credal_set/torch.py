@@ -170,6 +170,12 @@ class TorchDistanceBasedCredalSet(
 
         return torch.clamp(nominal + r, min=0.0, max=1.0)
 
+    @override
+    @property
+    def barycenter(self) -> TorchCategoricalDistribution:
+        """Return the nominal distribution as the barycenter of the credal set."""
+        return self.nominal
+
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
 class TorchProbabilityIntervalsCredalSet(
