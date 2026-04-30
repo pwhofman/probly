@@ -6,8 +6,7 @@ from probly.representer._representer import representer
 from ._common import IterableSampler, Sampler, sampling_preparation_traverser
 
 
-@representer.delayed_register("probly.method.laplace._common.LaplaceGLMPredictor")
-@representer.delayed_register("probly.method.laplace._common.LaplaceMCPredictor")
+@representer.delayed_register(TORCH_MODULE)
 @sampling_preparation_traverser.delayed_register(TORCH_MODULE)
 def _(_: type) -> None:
     from . import torch as torch  # noqa: PLC0415

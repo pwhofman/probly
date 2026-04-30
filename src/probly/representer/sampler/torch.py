@@ -23,6 +23,7 @@ from probly.representation.distribution import (
     CategoricalDistribution,
     create_categorical_distribution,
 )
+from probly.representation.sample import Sample
 from probly.representer._representer import representer
 
 from ._common import CLEANUP_FUNCS, Sampler, sampling_preparation_traverser
@@ -32,7 +33,6 @@ if TYPE_CHECKING:
     from typing import Any
 
     from flextype.isinstance import LazyType
-    from probly.representation.sample import Sample
     from pytraverse import State
 
 
@@ -69,7 +69,7 @@ register_forced_train_mode(
 
 @representer.register(LaplaceGLMPredictor)
 @representer.register(LaplaceMCPredictor)
-class LaplaceSampler[**In, S: "Sample"](Sampler[In, CategoricalDistribution, S]):
+class LaplaceSampler[**In, S: Sample](Sampler[In, CategoricalDistribution, S]):
     """Representer that builds a :class:`Sample` of categorical posterior draws.
 
     Hooks directly into ``laplace.BaseLaplace.predictive_samples`` so that one
