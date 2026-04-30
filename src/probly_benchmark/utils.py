@@ -5,9 +5,10 @@ from __future__ import annotations
 import pathlib
 import random
 import secrets
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
+from omegaconf import OmegaConf
 import torch
 from tqdm import tqdm
 import wandb
@@ -229,13 +230,29 @@ def resolve_artifact_name(
     )
 
 
+def _parse_load_from(load_from: str | DictConfig) -> tuple[str, int | None]:
+    """Parse the ``load_from`` method config field.
+
+    Args:
+        load_from: Either a method name string, or a dict with ``method`` and
+            optional ``member`` keys.
+
+    Returns:
+        A tuple of ``(source_method, member_index)`` where ``member_index`` is
+        ``None`` when the full artifact should be loaded.
+    """
+    if isinstance(load_from, str):
+        return load_from, None
+    return load_from.method, load_from.get("member")
+
+
 def _download_checkpoint_from_wandb(
     artifact_name: str,
     entity: str,
     project: str,
     device: torch.device,
 ) -> tuple[dict[str, Any], str]:
-    """Download a wandb checkpoint artifact."""
+    """Download a model artifact from wandb and return the raw checkpoint."""
     api = wandb.Api()
     full_name = f"{entity}/{project}/{artifact_name}:latest"
 
@@ -263,6 +280,7 @@ def _download_checkpoint_from_wandb(
 def _build_uncalibrated_model_from_checkpoint(
     checkpoint: dict[str, Any],
     device: torch.device,
+    target_method: str | None = None,
 ) -> tuple[torch.nn.Module, dict[str, Any]]:
     """Reconstruct an uncalibrated benchmark model from a training checkpoint."""
     cfg = checkpoint["config"]
@@ -276,7 +294,9 @@ def _build_uncalibrated_model_from_checkpoint(
         pretrained=cfg.get("pretrained", False),
         train_loader=None,
     )
-    model = build_model(cfg["method"]["name"], method_params, ctx)
+
+    build_method = target_method if target_method is not None else cfg["method"]["name"]
+    model = build_model(build_method, method_params, ctx)
     model.load_state_dict(checkpoint["model_state_dict"])
     model.to(device)
     model.eval()
@@ -340,6 +360,7 @@ def _build_model_from_checkpoint(
     entity: str,
     project: str,
     device: torch.device,
+    target_method: str | None = None,
 ) -> tuple[torch.nn.Module, dict[str, Any]]:
     """Reconstruct a benchmark model from any supported checkpoint artifact."""
     artifact_type = checkpoint.get("artifact_type")
@@ -347,7 +368,7 @@ def _build_model_from_checkpoint(
         return _build_calibrated_model_from_checkpoint(checkpoint, entity, project, device)
     if artifact_type == conformal.CONFORMAL_ARTIFACT_TYPE:
         return _build_conformal_model_from_checkpoint(checkpoint, entity, project, device)
-    return _build_uncalibrated_model_from_checkpoint(checkpoint, device)
+    return _build_uncalibrated_model_from_checkpoint(checkpoint, device, target_method=target_method)
 
 
 def load_model_from_wandb(
@@ -355,24 +376,136 @@ def load_model_from_wandb(
     entity: str,
     project: str,
     device: torch.device,
+    target_method: str | None = None,
 ) -> tuple[torch.nn.Module, dict[str, Any], str]:
     """Download a model artifact from wandb and reconstruct the model.
 
     Calibration artifacts are restored by first loading their source model artifact,
     then applying the configured calibration wrapper and loading calibration-only state.
+    """
+    checkpoint, run_id = _download_checkpoint_from_wandb(artifact_name, entity, project, device)
+    model, cfg = _build_model_from_checkpoint(checkpoint, entity, project, device, target_method=target_method)
+    return model, cfg, run_id
+
+
+def load_model_for_evaluation(
+    cfg: DictConfig,
+    device: torch.device,
+) -> tuple[torch.nn.Module, dict[str, Any], str]:
+    """Load a model from wandb for evaluation, respecting ``load_from`` config.
+
+    Handles three cases driven by the optional ``load_from`` key in the method
+    config:
+
+    - **Absent**: loads the method's own artifact and builds it as-is.
+    - **String** (e.g. ``load_from: "ensemble"``): loads the named method's
+      artifact and rebuilds the model under the current method type, so that a
+      wrapper predictor (e.g. ``credal_wrapper``) can be evaluated using
+      weights trained for a source method (e.g. ``ensemble``).
+    - **Dict** (e.g. ``load_from: {method: "ensemble", member: 0}``): loads
+      the named method's artifact and returns the single ensemble member at
+      the given index.
 
     Args:
-        artifact_name: Name of the wandb artifact (without version tag).
-        entity: Wandb entity.
-        project: Wandb project.
+        cfg: Hydra evaluation config containing ``method``, ``base_model``,
+            ``dataset``, ``seed``, and ``wandb`` fields.
         device: Device to load the model onto.
 
     Returns:
         A tuple containing:
             - model: The reconstructed model in eval mode.
-            - cfg: The saved checkpoint config dict.
-            - run_id: The ID of the run that logged ``artifact_name``.
+            - train_cfg: The saved training config dict.
+            - run_id: The ID of the original training run.
     """
-    checkpoint, run_id = _download_checkpoint_from_wandb(artifact_name, entity, project, device)
-    model, cfg = _build_model_from_checkpoint(checkpoint, entity, project, device)
-    return model, cfg, run_id
+    load_from = cfg.method.get("load_from")
+
+    if load_from is None:
+        artifact_name = resolve_artifact_name(cfg)
+        return load_model_from_wandb(artifact_name, cfg.wandb.entity, cfg.wandb.project, device)
+
+    source_method, member_index = _parse_load_from(load_from)
+    artifact_name = f"{source_method}_{cfg.base_model}_{cfg.dataset}_{cfg.seed}"
+
+    if member_index is not None:
+        model, train_cfg, run_id = load_model_from_wandb(artifact_name, cfg.wandb.entity, cfg.wandb.project, device)
+        return cast("torch.nn.ModuleList", model)[member_index], train_cfg, run_id
+
+    return load_model_from_wandb(
+        artifact_name,
+        cfg.wandb.entity,
+        cfg.wandb.project,
+        device,
+        target_method=cfg.method.name,
+    )
+
+
+def _find_existing_run_id(entity: str, project: str, run_name: str) -> str | None:
+    """Return the ID of the most recent wandb run with the given display name, or None."""
+    api = wandb.Api()
+    runs = api.runs(
+        f"{entity}/{project}",
+        filters={"display_name": run_name},
+        order="-created_at",
+    )
+    try:
+        return next(iter(runs)).id
+    except StopIteration:
+        return None
+
+
+def init_wandb_for_evaluation(
+    cfg: DictConfig,
+    run_id: str,
+) -> wandb.sdk.wandb_run.Run:
+    """Initialise a wandb run for an evaluation script.
+
+    For methods that own their training run (no ``load_from``), the existing
+    training run is resumed so that evaluation metrics are attached to it.
+
+    For methods that load weights from another method's artifact (``load_from``
+    is set), the run is identified by ``<method>_<base_model>_<dataset>_<seed>``.
+    If a run with that name already exists in the project it is resumed, so
+    repeated evaluations accumulate metrics on the same run rather than creating
+    duplicates. If no such run exists yet, a new one is created with the full
+    evaluation config (plus the source ``run_id`` for traceability).
+
+    Args:
+        cfg: Hydra evaluation config.
+        run_id: Run ID returned by :func:`load_model_for_evaluation`.
+
+    Returns:
+        An initialised wandb run. The caller is responsible for calling
+        ``run.finish()``.
+    """
+    if cfg.method.get("load_from"):
+        run_name = f"{cfg.method.name}_{cfg.base_model}_{cfg.dataset}_{cfg.seed}"
+        existing_id = _find_existing_run_id(cfg.wandb.entity, cfg.wandb.project, run_name)
+        if existing_id is not None:
+            return wandb.init(
+                id=existing_id,
+                entity=cfg.wandb.entity,
+                project=cfg.wandb.project,
+                resume="must",
+            )
+        # Fetch the source run's config so training-relevant parameters are
+        # carried over (e.g. base_model, dataset, seed, training hyperparams).
+        # The current eval cfg is merged on top, so method-specific overrides win.
+        api = wandb.Api()
+        source_run = api.run(f"{cfg.wandb.entity}/{cfg.wandb.project}/{run_id}")
+        source_config: dict[str, Any] = dict(source_run.config)
+        return wandb.init(
+            name=run_name,
+            config={
+                **source_config,
+                "source_run_id": run_id,
+                **cast("dict[str, Any]", OmegaConf.to_container(cfg, resolve=True)),
+            },
+            entity=cfg.wandb.entity,
+            project=cfg.wandb.project,
+        )
+    return wandb.init(
+        id=run_id,
+        entity=cfg.wandb.entity,
+        project=cfg.wandb.project,
+        resume="must",
+    )
