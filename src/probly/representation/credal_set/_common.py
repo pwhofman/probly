@@ -73,6 +73,10 @@ class ProbabilityIntervalsCredalSet[T: CategoricalDistribution](CategoricalCreda
     """A credal set defined by probability intervals over outcomes."""
 
 
+class DirichletLevelSetCredalSet[T: CategoricalDistribution](CategoricalCredalSet[T]):
+    """A credal set defined as a Dirichlet density level set."""
+
+
 class SingletonCredalSet[T: CategoricalDistribution](DiscreteCredalSet[T]):
     """A credal set containing a single distribution."""
 
@@ -132,4 +136,22 @@ def create_distance_based_credal_set_from_center_and_radius[T: CategoricalDistri
 ) -> DistanceBasedCredalSet[T]:
     """Create a distance-based credal set from a center distribution and a maximum distance."""
     msg = f"No distance-based credal set factory registered for center type {type(center)}"
+    raise NotImplementedError(msg)
+
+
+@flexdispatch
+def create_dirichlet_level_set_credal_set[T](
+    alphas: T,
+    threshold: float,
+) -> DirichletLevelSetCredalSet:
+    """Create a Dirichlet level set credal set from alpha parameters and a threshold.
+
+    Args:
+        alphas: Dirichlet concentration parameters.
+        threshold: Relative likelihood threshold in [0, 1].
+
+    Returns:
+        The created Dirichlet level set credal set.
+    """
+    msg = f"No Dirichlet level set credal set factory registered for type {type(alphas)}"
     raise NotImplementedError(msg)

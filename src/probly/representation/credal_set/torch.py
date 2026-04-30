@@ -12,9 +12,11 @@ from probly.representation._protected_axis.torch import TorchAxisProtected
 from probly.representation.credal_set._common import (
     CategoricalCredalSet,
     ConvexCredalSet,
+    DirichletLevelSetCredalSet,
     DistanceBasedCredalSet,
     ProbabilityIntervalsCredalSet,
     create_convex_credal_set,
+    create_dirichlet_level_set_credal_set,
     create_distance_based_credal_set,
     create_distance_based_credal_set_from_center_and_radius,
     create_probability_intervals,
@@ -177,6 +179,144 @@ class TorchDistanceBasedCredalSet(
         return self.nominal
 
 
+_LEVEL_SET_SAMPLES = 10_000
+
+
+@dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
+class TorchDirichletLevelSetCredalSet(
+    TorchAxisProtected[Any],
+    TorchCategoricalCredalSet,
+    DirichletLevelSetCredalSet,
+):
+    """Dirichlet density level set credal set.
+
+    Contains all distributions whose Dirichlet likelihood is at least
+    ``threshold`` times the peak density.
+    """
+
+    alphas: torch.Tensor
+    threshold: torch.Tensor
+    protected_axes: ClassVar[dict[str, int]] = {"alphas": 1, "threshold": 0}
+
+    def __post_init__(self) -> None:
+        """Validate alpha parameters and threshold."""
+        object.__setattr__(self, "alphas", torch.as_tensor(self.alphas))
+        object.__setattr__(self, "threshold", torch.as_tensor(self.threshold))
+
+    @override
+    @classmethod
+    def from_torch_sample(
+        cls,
+        sample: TorchSample[TorchCategoricalDistribution],
+    ) -> Self:
+        """Create from a torch sample (not supported).
+
+        Raises:
+            NotImplementedError: Always, as this credal set type cannot be created from samples.
+        """
+        msg = "DirichletLevelSetCredalSet cannot be created from samples."
+        raise NotImplementedError(msg)
+
+    @override
+    @property
+    def num_classes(self) -> int:
+        """Return the number of classes."""
+        return self.alphas.shape[-1]
+
+    @override
+    @property
+    def barycenter(self) -> TorchCategoricalDistribution:
+        """Return the Dirichlet mean as the barycenter."""
+        return TorchCategoricalDistribution(self.alphas / self.alphas.sum(dim=-1, keepdim=True))
+
+    def _log_relative_likelihood(self, samples: torch.Tensor) -> torch.Tensor:
+        """Compute log relative likelihood of samples under this Dirichlet.
+
+        Args:
+            samples: Probability vectors, shape (n_samples, ..., K).
+
+        Returns:
+            Log relative likelihood, shape (n_samples, ...).
+        """
+        alpha = self.alphas  # (..., K)
+        alpha_m1 = alpha - 1.0  # (..., K)
+
+        # Log density of samples: sum((alpha_k - 1) * log(lambda_k))
+        # (normalization constant cancels in ratio)
+        log_density = (alpha_m1 * torch.log(samples.clamp(min=1e-30))).sum(dim=-1)
+
+        # Log density at mode
+        alpha_0 = alpha.sum(dim=-1)  # (...)
+        k = alpha.shape[-1]
+        mode = (alpha_m1) / (alpha_0 - k).unsqueeze(-1)  # (..., K)
+        # When any alpha_k <= 1, mode doesn't exist in interior
+        # Clamp mode to avoid log(0)
+        mode = mode.clamp(min=1e-30)
+        log_mode_density = (alpha_m1 * torch.log(mode)).sum(dim=-1)
+
+        return log_density - log_mode_density
+
+    def _sample_and_filter(self, n_samples: int = _LEVEL_SET_SAMPLES) -> tuple[torch.Tensor, torch.Tensor]:
+        """Sample from Dir(alpha) and filter to the level set.
+
+        Args:
+            n_samples: Number of samples to draw.
+
+        Returns:
+            Tuple of (samples, mask) where samples has shape (n_samples, ..., K)
+            and mask has shape (n_samples, ...).
+        """
+        # Sample from Dirichlet
+        dist = torch.distributions.Dirichlet(self.alphas)
+        samples = dist.sample((n_samples,))  # (n_samples, ..., K)
+
+        # Compute relative likelihood
+        log_rl = self._log_relative_likelihood(samples)  # (n_samples, ...)
+        rl = torch.exp(log_rl)  # (n_samples, ...)
+
+        # Mask: keep samples in the level set
+        mask = rl >= self.threshold  # (n_samples, ...)
+        return samples, mask
+
+    def lower(self) -> torch.Tensor:
+        """Compute per-class lower bounds via Monte Carlo sampling.
+
+        Returns:
+            Lower probability bounds, shape (..., K).
+        """
+        samples, mask = self._sample_and_filter()
+        # Replace non-accepted samples with inf so they don't affect amin
+        masked = torch.where(mask.unsqueeze(-1), samples, torch.tensor(float("inf")))
+        result = masked.amin(dim=0)
+        # If no samples accepted (e.g., threshold too high), fall back to mode
+        no_accepted = ~mask.any(dim=0)
+        if no_accepted.any():
+            alpha_0 = self.alphas.sum(dim=-1)
+            k = self.alphas.shape[-1]
+            mode = (self.alphas - 1.0).clamp(min=0.0) / (alpha_0 - k).unsqueeze(-1).clamp(min=1.0)
+            mode = mode / mode.sum(dim=-1, keepdim=True)
+            result = torch.where(no_accepted.unsqueeze(-1), mode, result)
+        return result.clamp(min=0.0, max=1.0)
+
+    def upper(self) -> torch.Tensor:
+        """Compute per-class upper bounds via Monte Carlo sampling.
+
+        Returns:
+            Upper probability bounds, shape (..., K).
+        """
+        samples, mask = self._sample_and_filter()
+        masked = torch.where(mask.unsqueeze(-1), samples, torch.tensor(float("-inf")))
+        result = masked.amax(dim=0)
+        no_accepted = ~mask.any(dim=0)
+        if no_accepted.any():
+            alpha_0 = self.alphas.sum(dim=-1)
+            k = self.alphas.shape[-1]
+            mode = (self.alphas - 1.0).clamp(min=0.0) / (alpha_0 - k).unsqueeze(-1).clamp(min=1.0)
+            mode = mode / mode.sum(dim=-1, keepdim=True)
+            result = torch.where(no_accepted.unsqueeze(-1), mode, result)
+        return result.clamp(min=0.0, max=1.0)
+
+
 @dataclass(frozen=True, slots=True, weakref_slot=True)  # ty:ignore[conflicting-metaclass]
 class TorchProbabilityIntervalsCredalSet(
     TorchAxisProtected[Any],
@@ -272,4 +412,15 @@ def _create_distance_based_credal_set_from_categorical_distribution(
     return TorchDistanceBasedCredalSet(
         nominal=center,
         radius=torch.as_tensor(radius),
+    )
+
+
+@create_dirichlet_level_set_credal_set.register(torch.Tensor)
+def _create_dirichlet_level_set_from_tensor(
+    alphas: torch.Tensor,
+    threshold: torch.Tensor,
+) -> TorchDirichletLevelSetCredalSet:
+    return TorchDirichletLevelSetCredalSet(
+        alphas=alphas,
+        threshold=torch.as_tensor(threshold),
     )

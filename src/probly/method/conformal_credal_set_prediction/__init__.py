@@ -6,7 +6,9 @@ from probly.lazy_types import TORCH_MODULE
 
 from ._common import (
     ConformalCredalSetPredictor,
+    DirichletConformalCredalSetPredictor,
     conformal_credal_set_generator,
+    conformal_dirichlet_relative_likelihood,
     conformal_total_variation,
 )
 
@@ -16,4 +18,10 @@ def _(_cls: type[object]) -> None:
     from . import torch as torch  # noqa: PLC0415
 
 
-__all__ = ["ConformalCredalSetPredictor", "conformal_credal_set_generator", "conformal_total_variation"]
+__all__ = [
+    "ConformalCredalSetPredictor",
+    "DirichletConformalCredalSetPredictor",
+    "conformal_credal_set_generator",
+    "conformal_dirichlet_relative_likelihood",
+    "conformal_total_variation",
+]
