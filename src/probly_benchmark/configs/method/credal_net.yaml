@@ -1,4 +1,5 @@
 # @package method
 name: "credal_net"
+label: "Credal Net"
 params:
 train:

@@ -1,0 +1,7 @@
+# @package _global_
+recipe: "resnet18_cifar10"
+filename: "sp_arc_cifar10.pdf"
+
+methods:
+  - name: "dropconnect"
+  - name: "dropout"

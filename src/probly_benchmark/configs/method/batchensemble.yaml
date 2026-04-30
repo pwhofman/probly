@@ -1,5 +1,6 @@
 # @package method
 name: "batchensemble"
+label: "BatchEnsemble"
 params:
   # ImageNet baseline (Wen et al., 2020) trains an ensemble of size 4.
   num_members: 10

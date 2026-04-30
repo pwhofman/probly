@@ -1,5 +1,6 @@
 # @package method
 name: "duq"
+label: "DUQ"
 params:
   # Embedding dimension n of the per-class projection W_c.
   centroid_size: 256

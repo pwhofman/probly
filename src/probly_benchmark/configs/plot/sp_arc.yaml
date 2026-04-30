@@ -1,0 +1,10 @@
+defaults:
+  - comparison: ???
+  - _self_
+
+wandb:
+  entity: "probly"
+  project: "test"
+
+seeds: [0, 1, 2]
+show: false

@@ -1,5 +1,6 @@
 # @package method
 name: "subensemble"
+label: "SubEnsemble"
 params:
   num_heads: 10
   # Heads starts from independent random init. If false, all heads start from same params, and data order is only random

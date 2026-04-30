@@ -1,5 +1,6 @@
 # @package method
 name: "het_nets"
+label: "HetNet"
 params:
   num_factors: 10
   temperature: 1.0

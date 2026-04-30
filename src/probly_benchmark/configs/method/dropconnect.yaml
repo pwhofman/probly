@@ -1,5 +1,6 @@
 # @package method
 name: "dropconnect"
+label: "DropConnect"
 params:
   p: 0.5
 train:
