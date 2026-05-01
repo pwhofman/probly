@@ -343,19 +343,19 @@ def _(
     lambda_t = _evidential_lambda_t(kl_weight, annealing_epochs, epoch)
     optimizer.zero_grad()
     with autocast(inputs.device.type, enabled=amp_enabled):
-        alpha = model(inputs)  # ty: ignore[call-non-callable]
+        alpha = model(inputs)
         loss_val = base_loss_fn(alpha, targets) + lambda_t * evidential_kl_divergence(alpha, targets)
     if scaler is not None:
         scaler.scale(loss_val).backward()
         if grad_clip_norm is not None:
             scaler.unscale_(optimizer)
-            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)  # ty: ignore[unresolved-attribute]
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)
         scaler.step(optimizer)
         scaler.update()
     else:
         loss_val.backward()
         if grad_clip_norm is not None:
-            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)  # ty: ignore[unresolved-attribute]
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)
         optimizer.step()
     return loss_val.item()
 
@@ -693,14 +693,14 @@ def _(
     """Validate an evidential classifier using the same loss as training at the current epoch."""
     base_loss_fn = EVIDENTIAL_LOSSES[loss]
     lambda_t = _evidential_lambda_t(kl_weight, annealing_epochs, epoch)
-    model.eval()  # ty: ignore[unresolved-attribute]
+    model.eval()
     val_loss = 0.0
     val_acc = 0.0
     num_instances = 0
     for inputs_, targets_ in val_loader:
         inputs, targets = inputs_.to(device), targets_.to(device)
         with autocast(device.type, enabled=amp_enabled):
-            alpha = model(inputs)  # ty: ignore[call-non-callable]
+            alpha = model(inputs)
             batch_loss = base_loss_fn(alpha, targets) + lambda_t * evidential_kl_divergence(alpha, targets)
         val_loss += batch_loss.item()
         val_acc += _accuracy(alpha, targets) * inputs.shape[0]
@@ -976,13 +976,13 @@ def _(
 
     Uses the mean of the predicted Dirichlet (alpha / alpha.sum) as class probabilities.
     """
-    model.eval()  # ty: ignore[unresolved-attribute]
+    model.eval()
     all_probs: list[torch.Tensor] = []
     all_labels: list[torch.Tensor] = []
     for inputs_, targets_ in test_loader:
         inputs, targets = inputs_.to(device), targets_.to(device)
         with autocast(device.type, enabled=amp_enabled):
-            alpha = model(inputs)  # ty: ignore[call-non-callable]
+            alpha = model(inputs)
             probs_ = alpha / alpha.sum(dim=1, keepdim=True)
         all_probs.append(probs_)
         all_labels.append(targets)
