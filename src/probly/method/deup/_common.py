@@ -166,13 +166,13 @@ class DEUPDecomposition[T](AdditiveDecomposition[T, T, T]):
     @property
     def _aleatoric(self) -> T:
         """The aleatoric uncertainty: entropy of the softmax distribution."""
-        return entropy(self.representation.softmax, base=self.base)  # ty:ignore[invalid-return-type]
+        return entropy(self.representation.softmax, base=self.base)
 
     @override
     @property
     def _epistemic(self) -> T:
         """The epistemic uncertainty: excess risk (total minus aleatoric)."""
-        return self.representation.error_score - entropy(self.representation.softmax, base=self.base)  # ty:ignore[invalid-return-type]
+        return self.representation.error_score - entropy(self.representation.softmax, base=self.base)
 
 
 @categorical_from_mean.register(DEUPRepresentation)

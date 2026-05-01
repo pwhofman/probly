@@ -15,7 +15,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 model = LeNet(n_classes=5)
-cep = het_net(model, predictor_type="probabilistic_classifier")  # ty:ignore[unknown-argument, invalid-argument-type]
+cep = het_net(model, predictor_type="probabilistic_classifier")
 rep = representer(cep, num_samples=10)
 logger.info(rep)
 inputs = torch.randn(3, 1, 28, 28)

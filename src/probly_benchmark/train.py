@@ -1006,8 +1006,8 @@ def _(
         device,
         run,
         train_kwargs,
-        train_fn=train_epoch_deup,  # ty: ignore[invalid-argument-type]
-        val_fn=validate_deup,  # ty: ignore[invalid-argument-type]
+        train_fn=train_epoch_deup,
+        val_fn=validate_deup,
         param_groups=phase1_params,
     )
 
