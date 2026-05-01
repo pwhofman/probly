@@ -18,6 +18,7 @@ import pathlib
 import tempfile
 
 import hydra
+from laplace.baselaplace import BaseLaplace
 import numpy as np
 from omegaconf import DictConfig, OmegaConf
 from pytorch_optimizer import Lamb
@@ -854,6 +855,48 @@ def _(
     amp_enabled = cfg.get("amp", False)
     _fit_ddu_density_head(model, train_loader, device, amp_enabled)
     run.summary["ddu_gmm_fitted"] = True
+
+
+@train_model.register(BaseLaplace)
+def _(
+    model: BaseLaplace,
+    train_loader: DataLoader,
+    val_loader: DataLoader | None,
+    cfg: DictConfig,
+    device: torch.device,
+    run: Any,  # noqa: ANN401
+    train_kwargs: dict[str, Any],
+) -> None:
+    """Fine-tune the underlying network, then fit the Laplace posterior post-hoc.
+
+    Phase 1 runs the standard supervised loop on the underlying ``nn.Module`` (laplace-torch's wrapped model).
+    Phase 2 calls ``BaseLaplace.fit(train_loader)`` and, if ``cfg.method.params.optimize_prior`` is set, tunes
+    the prior precision by marginal-likelihood maximization.
+    """
+    _training_loop(
+        model,  # ty: ignore[invalid-argument-type]
+        train_loader,
+        val_loader,
+        cfg,
+        device,
+        run,
+        train_kwargs,
+        train_fn=train_epoch,  # ty: ignore[invalid-argument-type]
+        val_fn=validate,
+    )
+    model.fit(train_loader)
+    run.summary["laplace_fitted"] = True
+    params = cfg.method.params
+    if params.get("optimize_prior", False):
+        # ``pred_type`` is required by laplace-torch's signature but unused when ``method='marglik'``
+        # (marglik works directly on the closed-form log-marginal-likelihood); any value is fine.
+        model.optimize_prior_precision(
+            pred_type="glm",
+            method="marglik",
+            n_steps=params.get("n_steps", 100),
+            lr=params.get("lr", 0.1),
+        )
+        run.summary["laplace_prior_precision"] = float(model.prior_precision)
 
 
 def _compute_efficient_credal_prediction_bounds(

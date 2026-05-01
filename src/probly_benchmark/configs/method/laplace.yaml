@@ -1,0 +1,13 @@
+# @package method
+name: "laplace"
+params:
+  # Forwarded to laplace-torch's Laplace, see https://github.com/aleximmer/Laplace for docs.
+    # params chosen according to paper recommendations
+  likelihood: "classification"
+  subset_of_weights: "last_layer"
+  hessian_structure: "kron"
+  # Post-fit prior-precision tuning via marginal-likelihood maximisation, these values are defaults as per
+  # laplace/baselaplace.py for marglik.
+  optimize_prior: true
+  n_steps: 100
+  lr: 0.1
