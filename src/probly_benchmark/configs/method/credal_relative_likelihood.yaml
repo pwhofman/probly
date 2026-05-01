@@ -2,8 +2,9 @@
 name: "credal_relative_likelihood"
 label: "Credal RL"
 params:
-  num_members: 10
-  reset_params: true
+    num_members: 10
+    reset_params: true
+    tobias_value: 100.0
 train:
     alpha: 1.0
     batch_check: false # determines whether likelihood constraint is checked after batch (if true) or epoch (if false)
